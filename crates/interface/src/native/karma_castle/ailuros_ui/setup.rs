@@ -1074,7 +1074,11 @@ pub(super) fn maintain(world: &mut World) {
                     identity.flash_bytes,
                     identity.psram_bytes,
                     identity.public_key,
-                    if identity.provisioning { "open" } else { "closed" }
+                    if identity.provisioning {
+                        "open"
+                    } else {
+                        "closed"
+                    }
                 );
                 world.get_mut::<Form>(owner).unwrap().identity = Some(identity);
                 status(world, owner, label);

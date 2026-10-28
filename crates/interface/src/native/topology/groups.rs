@@ -64,6 +64,37 @@ pub fn members(world: &World, entity: Entity) -> Vec<Entity> {
         })
 }
 
+pub(crate) fn rebind(world: &mut World, entity: Entity) {
+    let Some(pose) = world
+        .get::<GroupPose>(entity)
+        .copied()
+        .filter(GroupPose::valid)
+    else {
+        return;
+    };
+    let Some(previous) = world.get::<Attachment>(entity).copied() else {
+        return;
+    };
+    let Some(position) = super::position(world, entity) else {
+        return;
+    };
+    let inverse = DQuat::from_array(pose.rotation).inverse();
+    let current = spatial(world, entity).rotation();
+    let expected =
+        (DQuat::from_array(pose.rotation) * DQuat::from_array(previous.rotation)).normalize();
+    let attachment = Attachment {
+        position: (inverse * (position - DVec3::from_array(pose.position))).to_array(),
+        rotation: if expected.dot(current).abs() >= 1.0 - 1e-12 {
+            previous.rotation
+        } else {
+            (inverse * current).normalize().to_array()
+        },
+    };
+    if attachment.valid() && world.get::<Attachment>(entity) != Some(&attachment) {
+        world.entity_mut(entity).insert(attachment);
+    }
+}
+
 pub fn transform(world: &mut World, entity: Entity, translation: DVec3, rotation: DQuat) {
     let members = members(world, entity);
     if members.len() > 1 && world.get::<GroupPose>(entity).is_none() {

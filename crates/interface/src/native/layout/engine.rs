@@ -236,6 +236,18 @@ pub(crate) fn edited(world: &mut World, entity: Entity, before: CanvasItem, afte
     super::records::remember(world, entity);
 }
 
+fn content_intrinsic(world: &World, entity: Entity) -> Vec2 {
+    let mut intrinsic = world
+        .get::<ComputedNode>(entity)
+        .map_or(Vec2::ZERO, |node| {
+            node.content_size * node.inverse_scale_factor()
+        });
+    if let Some(height) = crate::native::protein_area::preferred_height(world, entity) {
+        intrinsic.y = height;
+    }
+    intrinsic
+}
+
 pub(super) fn resolve(world: &mut World) {
     super::records::restore(world);
     super::desktop::resolve(world);
@@ -258,7 +270,9 @@ pub(super) fn resolve(world: &mut World) {
     let mut items: Vec<_> = entries
         .iter()
         .map(|(entity, layout, item)| solver::Item {
-            rules: if super::desktop::tiled(world, *entity) {
+            rules: if super::desktop::tiled(world, *entity)
+                || super::desktop::manipulation::held(world, *entity)
+            {
                 let mut rules = layout.rules;
                 for axis in 0..2 {
                     rules.axes[axis].sizing = Sizing::Fixed;
@@ -286,11 +300,7 @@ pub(super) fn resolve(world: &mut World) {
                     .get::<crate::native::area::InfluenceArea>(*entity)
                     .is_none()
             {
-                world
-                    .get::<ComputedNode>(*entity)
-                    .map_or(Vec2::ZERO, |node| {
-                        node.content_size * node.inverse_scale_factor()
-                    })
+                content_intrinsic(world, *entity)
             } else {
                 Vec2::ZERO
             },
@@ -568,22 +578,20 @@ pub(super) fn finish(
     }
 }
 
-pub(super) fn finish_content(
-    contents: Query<
-        (&ComputedNode, &LayoutRuntime),
-        (
+pub(super) fn finish_content(world: &mut World) {
+    let changed = world
+        .query_filtered::<(Entity, &LayoutRuntime), (
             With<CanvasItem>,
+            With<ComputedNode>,
             Without<crate::native::sand_store::StoredSand>,
             Without<crate::native::area::InfluenceArea>,
-        ),
-    >,
-    wake: Option<Res<crate::native::wake::WakeSignal>>,
-) {
-    if contents.iter().any(|(node, runtime)| {
-        let measured = node.content_size * node.inverse_scale_factor();
-        measured.is_finite() && measured != runtime.intrinsic
-    }) && let Some(wake) = wake
-    {
+        )>()
+        .iter(world)
+        .any(|(entity, runtime)| {
+            let measured = content_intrinsic(world, entity);
+            measured.is_finite() && measured != runtime.intrinsic
+        });
+    if changed && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
         wake.ring();
     }
 }

@@ -6,8 +6,8 @@ use crate::{
         canvas::{CanvasItem, CanvasView},
         edit_mode::EditAction,
         sand_store::{SandKind, StoredSand, spawn_sand},
-        topology::{assets, ui::TopologyAction},
-        workspace::{self, WorkspaceMember, Workspaces},
+        topology::assets,
+        workspace::{self, Workspaces},
     },
 };
 use bevy::{math::DVec2, prelude::*};
@@ -18,21 +18,6 @@ pub const MODEL: &[u8] = include_bytes!("../../../fixtures/showoff.glb");
 
 #[derive(Resource)]
 pub struct Launch;
-
-#[derive(Component)]
-pub struct Controls;
-
-#[derive(Clone, Copy)]
-enum Control {
-    Canvas,
-    Map,
-    Shader,
-    Scatter,
-    Help,
-}
-
-#[derive(Component)]
-struct Help;
 
 pub(crate) fn install(app: &mut App) {
     app.add_systems(Update, update.after(crate::native::edit_mode::setup));
@@ -55,45 +40,6 @@ fn update(world: &mut World) {
             open(world);
         } else if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
             wake.ring();
-        }
-    }
-    let roots: Vec<_> = world
-        .query::<(Entity, &Workspaces)>()
-        .iter(world)
-        .filter_map(|(root, spaces)| {
-            let workspace = spaces.entries.iter().find(|entry| entry.name == NAME)?.id;
-            Some((root, workspace))
-        })
-        .collect();
-    for (root, workspace) in roots {
-        let exists = world
-            .query_filtered::<(&ChildOf, &WorkspaceMember), With<Controls>>()
-            .iter(world)
-            .any(|(parent, member)| parent.parent() == root && member.0 == workspace);
-        if !exists {
-            controls(world, root, workspace);
-        }
-        let visible = world.get::<Workspaces>(root).is_some_and(|spaces| {
-            spaces.active == workspace
-                && spaces
-                    .entries
-                    .iter()
-                    .any(|entry| entry.id == workspace && entry.desktop.fullscreen().is_none())
-        });
-        for (parent, member, mut node) in world
-            .query_filtered::<(&ChildOf, &WorkspaceMember, &mut Node), With<Controls>>()
-            .iter_mut(world)
-        {
-            if parent.parent() == root && member.0 == workspace {
-                let display = if visible {
-                    Display::Flex
-                } else {
-                    Display::None
-                };
-                if node.display != display {
-                    node.display = display;
-                }
-            }
         }
     }
 }
@@ -161,15 +107,6 @@ fn populate(world: &mut World, root: Entity) -> io::Result<()> {
         "showoff\nA real, saved workspace. Edit this note, move it, tile it alongside Firefox, or add any Sand from the editor.",
         [-650.0, -150.0],
         [340.0, 260.0],
-    );
-    sand(
-        world,
-        root,
-        workspace,
-        SandKind::Text,
-        "Canvas\nDrag background: pan\nRight-drag: move a Sand\nScroll background: zoom\nAlt + E: edit\nSuper + Backspace: unfocus\nSuper + H/J/K/L: focus\nSuper + Shift + H/J/K/L: move\nSuper + V: float\nSuper + F: fullscreen",
-        [-650.0, 180.0],
-        [340.0, 330.0],
     );
     sand(
         world,
@@ -272,7 +209,6 @@ fn populate(world: &mut World, root: Entity) -> io::Result<()> {
     world.entity_mut(model).insert(assets::CenteredAsset);
     EditAction::Close.apply(world, root);
     DesktopAction::Unfocus.apply(world, root);
-    controls(world, root, workspace);
     Ok(())
 }
 
@@ -354,146 +290,4 @@ fn sand(
         layout.rules = crate::layout::Rules::fixed(size);
     }
     entity
-}
-
-fn controls(world: &mut World, root: Entity, workspace: u64) {
-    let panel = world
-        .spawn((
-            Controls,
-            crate::native::inspection::InspectionExcluded,
-            Name::new("showoff controls"),
-            WorkspaceMember(workspace),
-            ChildOf(root),
-            GlobalZIndex(24),
-            crate::native::token_style::background(crate::native::tokens::Token::Surface),
-            Node {
-                position_type: PositionType::Absolute,
-                top: px(8),
-                left: px(8),
-                max_width: percent(95),
-                flex_direction: FlexDirection::Column,
-                padding: UiRect::all(px(6)),
-                row_gap: px(4),
-                ..default()
-            },
-        ))
-        .id();
-    let buttons = crate::native::sand_panel::row(world, panel);
-    world.get_mut::<Node>(buttons).unwrap().flex_wrap = FlexWrap::Wrap;
-    crate::native::description::button(world, buttons, root, "Canvas", Control::Canvas);
-    crate::native::description::button(world, buttons, root, "Map", Control::Map);
-    crate::native::description::button(world, buttons, root, "WGSL 3D", Control::Shader);
-    for (title, action) in [
-        ("Tile", DesktopAction::SetLayout(WorkspaceLayout::Grid)),
-        (
-            "Columns",
-            DesktopAction::SetLayout(WorkspaceLayout::ScrollingColumns),
-        ),
-        ("Unfocus", DesktopAction::Unfocus),
-    ] {
-        crate::native::description::button(world, buttons, root, title, action);
-    }
-    crate::native::description::button(world, buttons, root, "Edit", EditAction::Toggle);
-    crate::native::information::action_button(
-        world,
-        buttons,
-        root,
-        "Areas",
-        crate::native::actions![EditAction::Open, EditAction::Areas],
-    );
-    crate::native::description::button(world, buttons, root, "2D / 3D", TopologyAction::ToggleView);
-    crate::native::description::button(world, buttons, root, "Scatter physics", Control::Scatter);
-    crate::native::description::button(world, buttons, root, "Help", Control::Help);
-    let help = crate::native::edit_mode::label(
-        world,
-        panel,
-        "showoff · saved Laboratory workspace\nDrag background: pan · Scroll background: zoom · Right-drag: move a Sand\nEdit: Alt+E · Unfocus: Super+Backspace · Focus: Super+H/J/K/L · Move: add Shift\n3D: WASD + Q/E · Look: arrows · Log out: Super+Shift+Escape",
-        13.0,
-    );
-    world.entity_mut(help).insert(Help);
-}
-
-impl Action for Control {
-    fn apply(&self, world: &mut World, root: Entity) {
-        if matches!(self, Self::Canvas | Self::Map | Self::Shader) {
-            DesktopAction::SetLayout(WorkspaceLayout::Free).apply(world, root);
-            DesktopAction::Unfocus.apply(world, root);
-            if world
-                .get::<crate::native::topology::view::View>(root)
-                .is_some_and(|view| view.spatial)
-            {
-                TopologyAction::ToggleView.apply(world, root);
-            }
-            let mut view = overview(world, root);
-            if matches!(self, Self::Map) {
-                let workspace = world.get::<Workspaces>(root).map(|spaces| spaces.active);
-                let item = world.query_filtered::<(&CanvasItem, &WorkspaceMember, &ChildOf), With<crate::native::map_castle::MapSand>>()
-                    .iter(world)
-                    .find(|(_, member, parent)| Some(member.0) == workspace && parent.parent() == root)
-                    .map(|(item, _, _)| *item);
-                if let Some(item) = item {
-                    let size = viewport_size(world, root);
-                    let reserved = world.query_filtered::<(&ComputedNode, &ChildOf, &WorkspaceMember), With<Controls>>()
-                        .iter(world)
-                        .find(|(_, parent, member)| parent.parent() == root && Some(member.0) == workspace)
-                        .map_or(120.0, |(node, _, _)| f64::from(node.size().y * node.inverse_scale_factor()) + 16.0);
-                    view.zoom = ((size[0] - 32.0) / f64::from(item.size.x))
-                        .min((size[1] - reserved - 16.0) / f64::from(item.size.y))
-                        .clamp(0.1, 1.0);
-                    view.center = item.position - DVec2::new(0.0, reserved * 0.5 / view.zoom);
-                }
-            }
-            if matches!(self, Self::Shader) {
-                let workspace = world.get::<Workspaces>(root).map(|spaces| spaces.active);
-                let position = world.query_filtered::<(&CanvasItem, &WorkspaceMember, &ChildOf), With<crate::native::shader_effects::Surface>>()
-                    .iter(world)
-                    .find(|(_, member, parent)| Some(member.0) == workspace && parent.parent() == root)
-                    .map(|(item, _, _)| item.position);
-                if let Some(position) = position {
-                    view.center = position;
-                }
-            }
-            if let Some(mut current) = world.get_mut::<CanvasView>(root) {
-                *current = view;
-            }
-            if matches!(self, Self::Shader) {
-                TopologyAction::ToggleView.apply(world, root);
-            }
-            return;
-        }
-        if matches!(self, Self::Help) {
-            for mut node in world
-                .query_filtered::<&mut Node, With<Help>>()
-                .iter_mut(world)
-            {
-                node.display = if node.display == Display::None {
-                    Display::Flex
-                } else {
-                    Display::None
-                };
-            }
-            return;
-        }
-        let Some(workspace) = world.get::<Workspaces>(root).map(|spaces| spaces.active) else {
-            return;
-        };
-        let pebbles: Vec<_> = world
-            .query::<(Entity, &StoredSand, &WorkspaceMember, &ChildOf)>()
-            .iter(world)
-            .filter(|(_, _, member, parent)| member.0 == workspace && parent.parent() == root)
-            .filter_map(|(entity, sand, _, _)| {
-                let content = world.get::<Text>(sand.content?)?;
-                let index = ["Physics 1", "Physics 2", "Physics 3"]
-                    .iter()
-                    .position(|name| content.0 == *name)?;
-                Some((entity, index))
-            })
-            .collect();
-        DesktopAction::SetLayout(WorkspaceLayout::Free).apply(world, root);
-        DesktopAction::Unfocus.apply(world, root);
-        for (entity, index) in pebbles {
-            world.get_mut::<CanvasItem>(entity).unwrap().position =
-                DVec2::from_array(pebble_positions()[index]);
-        }
-    }
 }

@@ -10,6 +10,8 @@ pub(crate) struct SavedExtensions {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedExtensions);
+
 impl SavedExtensions {
     pub(crate) fn valid(&self) -> bool {
         self.settings.valid()

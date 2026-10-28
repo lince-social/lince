@@ -74,10 +74,15 @@ pub async fn replace_inline(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Resu
     let Some(condition) = row.get::<Option<String>, _>("condition_src") else {
         return Ok(());
     };
-    let consequences: Vec<nucleus::karma::Consequence> = serde_json::from_str(&row.get::<String, _>("consequences_json"))
+    let consequences: Vec<nucleus::karma::Consequence> =
+        serde_json::from_str(&row.get::<String, _>("consequences_json"))
             .map_err(|_| invalid("Unreadable consequences"))?;
     let consequence = RuleConsequence {
-        target: consequences.iter().find_map(nucleus::karma::Consequence::transfer_target).map(str::to_owned).unwrap_or_else(|| row.get("record_uid")),
+        target: consequences
+            .iter()
+            .find_map(nucleus::karma::Consequence::transfer_target)
+            .map(str::to_owned)
+            .unwrap_or_else(|| row.get("record_uid")),
         consequences,
     };
     let sources = [condition, row.get("gate"), consequence.as_text()];

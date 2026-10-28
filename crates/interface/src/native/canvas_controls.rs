@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 use crate::native::{
     actions::{Action, ActionButton, ActionsPlugin},
     canvas::{CanvasItem, CanvasView},
@@ -60,11 +61,11 @@ struct CanvasRequest {
 impl CanvasAction {
     fn label(self) -> &'static str {
         match self {
-            Self::Recenter => "Recenter",
-            Self::BringHere => "Bring Sands here",
-            Self::ZoomOut => "Zoom out",
-            Self::ResetZoom => "Reset zoom to 100%",
-            Self::ZoomIn => "Zoom in",
+            Self::Recenter => Tr::Recenter.text(),
+            Self::BringHere => Tr::BringHere.text(),
+            Self::ZoomOut => Tr::ZoomOut.text(),
+            Self::ResetZoom => Tr::ResetZoom.text(),
+            Self::ZoomIn => Tr::ZoomIn.text(),
         }
     }
 }
@@ -81,6 +82,12 @@ struct ZoomLabel(Entity);
 #[derive(Component)]
 pub(crate) struct CanvasToolbar(Entity);
 
+#[derive(Component)]
+pub(crate) struct ToolbarOrder(pub u8);
+
+#[derive(Component)]
+struct ToolbarScroll;
+
 const CONTROL_HEIGHT: f32 = 40.0;
 
 fn toolbar_bundle(view: Entity) -> impl Bundle {
@@ -95,12 +102,12 @@ fn toolbar_bundle(view: Entity) -> impl Bundle {
             right: px(0),
             bottom: px(0),
             max_width: Val::Vw(96.0),
-            flex_wrap: FlexWrap::Wrap,
+            flex_wrap: FlexWrap::NoWrap,
             align_items: AlignItems::Center,
             column_gap: px(6),
             row_gap: px(6),
             padding: UiRect::all(px(4)),
-            overflow: Overflow::scroll_x(),
+            overflow: Overflow::clip(),
             ..default()
         },
         ScrollPosition::default(),
@@ -158,7 +165,9 @@ impl Plugin for CanvasControlsPlugin {
             .add_systems(Update, (create_controls, label_controls).chain())
             .add_systems(
                 PostUpdate,
-                corner::update.before(bevy::ui::UiSystems::Prepare),
+                (order_controls, corner::update)
+                    .chain()
+                    .before(bevy::ui::UiSystems::Prepare),
             )
             .add_systems(
                 PostUpdate,
@@ -171,18 +180,86 @@ impl Plugin for CanvasControlsPlugin {
     }
 }
 
-pub(crate) fn create_controls(
-    mut commands: Commands,
-    views: Query<Entity, Added<CanvasView>>,
-    typography: Res<Typography>,
-    bars: Query<(Entity, &CanvasToolbar)>,
-) {
-    for view in &views {
-        let toolbar = bars
+fn order_controls(world: &mut World) {
+    let bars: Vec<_> = world
+        .query_filtered::<Entity, With<CanvasToolbar>>()
+        .iter(world)
+        .collect();
+    for bar in bars {
+        let children = world
+            .get::<Children>(bar)
+            .map(|children| children.iter().collect::<Vec<_>>())
+            .unwrap_or_default();
+        let scroll = children
             .iter()
-            .find(|(_, bar)| bar.0 == view)
-            .map(|(entity, _)| entity)
-            .unwrap_or_else(|| commands.spawn(toolbar_bundle(view)).id());
+            .copied()
+            .find(|child| world.get::<ToolbarScroll>(*child).is_some())
+            .unwrap_or_else(|| {
+                world
+                    .spawn((
+                        ToolbarScroll,
+                        Node {
+                            min_width: px(0),
+                            flex_shrink: 1.0,
+                            align_items: AlignItems::Center,
+                            column_gap: px(6),
+                            overflow: Overflow::scroll_x(),
+                            ..default()
+                        },
+                        ScrollPosition::default(),
+                        ChildOf(bar),
+                    ))
+                    .id()
+            });
+        let mut ordered = world
+            .get::<Children>(scroll)
+            .map(|children| children.iter().collect::<Vec<_>>())
+            .unwrap_or_default();
+        let mut pinned = Vec::new();
+        for child in children.iter().copied().filter(|child| *child != scroll) {
+            if world
+                .get::<ToolbarOrder>(child)
+                .is_some_and(|order| order.0 == 0)
+            {
+                pinned.push(child);
+            } else {
+                ordered.push(child);
+            }
+        }
+        ordered.sort_by_key(|entity| {
+            world
+                .get::<ToolbarOrder>(*entity)
+                .map_or(u8::MAX, |order| order.0)
+        });
+        for child in &ordered {
+            if world
+                .get::<ChildOf>(*child)
+                .is_none_or(|parent| parent.parent() != scroll)
+            {
+                world.entity_mut(*child).insert(ChildOf(scroll));
+            }
+        }
+        let existing = world
+            .get::<Children>(scroll)
+            .map(|children| children.iter().collect::<Vec<_>>())
+            .unwrap_or_default();
+        if ordered != existing {
+            world.entity_mut(scroll).replace_children(&ordered);
+        }
+        pinned.push(scroll);
+        if pinned != children {
+            world.entity_mut(bar).replace_children(&pinned);
+        }
+    }
+}
+
+pub(crate) fn create_controls(world: &mut World) {
+    let views: Vec<_> = world
+        .query_filtered::<Entity, Added<CanvasView>>()
+        .iter(world)
+        .collect();
+    for view in views {
+        let toolbar = toolbar(world, view);
         for action in [
             CanvasAction::Recenter,
             CanvasAction::BringHere,
@@ -190,7 +267,7 @@ pub(crate) fn create_controls(
             CanvasAction::ResetZoom,
             CanvasAction::ZoomIn,
         ] {
-            let control = commands
+            let control = world
                 .spawn((
                     CanvasControl { view, action },
                     ActionButton::new(view, crate::native::actions![action]),
@@ -223,21 +300,22 @@ pub(crate) fn create_controls(
                     CanvasAction::ZoomIn => crate::native::icons::Icon::Plus,
                     CanvasAction::ResetZoom => unreachable!(),
                 };
-                commands
-                    .entity(control)
+                world
+                    .entity_mut(control)
                     .insert(crate::native::icons::IconButton::new(icon, action.label()));
                 continue;
             }
-            commands
-                .entity(control)
+            world
+                .entity_mut(control)
                 .insert(crate::native::icons::Tooltip(action.label().into()));
-            let mut label = commands.spawn((
+            let font = world.resource::<Typography>().text(14.0);
+            let mut label = world.spawn((
                 Text::new(if action == CanvasAction::ResetZoom {
                     "100%"
                 } else {
                     action.label()
                 }),
-                typography.text(14.0),
+                font,
                 crate::native::token_style::text(crate::native::tokens::Token::Ink),
                 ChildOf(control),
             ));
@@ -250,7 +328,7 @@ pub(crate) fn create_controls(
 
 fn scroll_toolbar(
     mut event: On<Pointer<bevy::picking::events::Scroll>>,
-    mut bars: Query<(&ComputedNode, &mut ScrollPosition), With<CanvasToolbar>>,
+    mut bars: Query<(&ComputedNode, &mut ScrollPosition), With<ToolbarScroll>>,
 ) {
     if let Ok((node, mut scroll)) = bars.get_mut(event.entity) {
         let step = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
@@ -270,7 +348,7 @@ fn reveal_toolbar_focus(
     mut previous: Local<(Option<Entity>, Vec2)>,
     parents: Query<&ChildOf>,
     geometry: Query<(&ComputedNode, &UiGlobalTransform)>,
-    mut bars: Query<(&ComputedNode, &UiGlobalTransform, &mut ScrollPosition), With<CanvasToolbar>>,
+    mut bars: Query<(&ComputedNode, &UiGlobalTransform, &mut ScrollPosition), With<ToolbarScroll>>,
     wake: Option<Res<crate::native::wake::WakeSignal>>,
 ) {
     let changed = previous.0 != focus.get();
@@ -326,7 +404,14 @@ fn zoom_labels(
 ) {
     for (label, mut text) in &mut labels {
         if let Ok(view) = views.get(label.0) {
-            let value = format!("{:.0}%", view.zoom * 100.0);
+            let percentage = view.zoom * 100.0;
+            let value = if percentage < 1.0 {
+                format!("{percentage:.2}%")
+            } else if percentage < 10.0 {
+                format!("{percentage:.1}%")
+            } else {
+                format!("{percentage:.0}%")
+            };
             if text.0 != value {
                 text.0 = value;
             }
@@ -443,6 +528,105 @@ pub(crate) mod tests {
         let view = app.world_mut().spawn(CanvasView::default()).id();
         app.update();
         (app, view)
+    }
+
+    #[test]
+    fn control_factories_share_one_toolbar_without_a_deferred_command_flush() {
+        let mut app = App::new();
+        crate::native::laboratory::isolate(app.world_mut());
+        app.init_resource::<Assets<Font>>()
+            .init_resource::<Typography>()
+            .add_systems(
+                Update,
+                (create_controls, |world: &mut World| {
+                    let roots: Vec<_> = world
+                        .query_filtered::<Entity, With<CanvasView>>()
+                        .iter(world)
+                        .collect();
+                    for root in roots {
+                        let bar = toolbar(world, root);
+                        world.spawn((ToolbarOrder(0), Node::default(), ChildOf(bar)));
+                    }
+                })
+                    .chain_ignore_deferred(),
+            );
+        let roots: Vec<_> = (0..2)
+            .map(|_| app.world_mut().spawn(CanvasView::default()).id())
+            .collect();
+        app.update();
+        for root in roots {
+            let bars: Vec<_> = app
+                .world_mut()
+                .query::<(Entity, &CanvasToolbar)>()
+                .iter(app.world())
+                .filter(|(_, bar)| bar.0 == root)
+                .map(|(entity, _)| entity)
+                .collect();
+            assert_eq!(bars.len(), 1);
+            let bar = bars[0];
+            let controls: Vec<_> = app
+                .world_mut()
+                .query::<(Entity, &CanvasControl)>()
+                .iter(app.world())
+                .filter(|(_, control)| control.view == root)
+                .map(|(entity, _)| entity)
+                .collect();
+            assert_eq!(controls.len(), 5);
+            assert!(
+                controls
+                    .iter()
+                    .all(|entity| { app.world().get::<ChildOf>(*entity).unwrap().parent() == bar })
+            );
+        }
+    }
+
+    #[test]
+    fn edit_stays_first_when_controls_are_inserted_later_without_losing_focus() {
+        let (mut app, root) = crate::native::edit_mode::tests::fixture();
+        let world = app.world_mut();
+        let bar = toolbar(world, root);
+        let edit = world
+            .get::<crate::native::edit_mode::EditMode>(root)
+            .unwrap()
+            .toggle;
+        let view_toggle = world
+            .spawn((ToolbarOrder(4), Node::default(), ChildOf(bar)))
+            .id();
+        let ordinary = world.spawn((Node::default(), ChildOf(bar))).id();
+        world
+            .entity_mut(bar)
+            .insert_children(0, &[ordinary, view_toggle]);
+        world
+            .resource_mut::<InputFocus>()
+            .set(view_toggle, FocusCause::Navigated);
+        order_controls(world);
+        let ordered: Vec<_> = world.get::<Children>(bar).unwrap().iter().collect();
+        assert_eq!(ordered[0], edit);
+        let scroll = ordered[1];
+        assert!(world.get::<ToolbarScroll>(scroll).is_some());
+        assert_eq!(world.get::<Children>(scroll).unwrap()[0], view_toggle);
+        assert_eq!(world.resource::<InputFocus>().get(), Some(view_toggle));
+        assert_eq!(world.get::<ChildOf>(view_toggle).unwrap().parent(), scroll);
+        world.get_mut::<ScrollPosition>(scroll).unwrap().0.x = 200.0;
+        assert_eq!(world.get::<ChildOf>(edit).unwrap().parent(), bar);
+        let late = world
+            .spawn((ToolbarOrder(1), Node::default(), ChildOf(bar)))
+            .id();
+        order_controls(world);
+        assert_eq!(world.get::<ChildOf>(late).unwrap().parent(), scroll);
+        assert_eq!(world.get::<ChildOf>(view_toggle).unwrap().parent(), scroll);
+        assert_eq!(world.get::<Children>(scroll).unwrap()[0], late);
+        assert_eq!(world.resource::<InputFocus>().get(), Some(view_toggle));
+        assert_eq!(world.get::<ScrollPosition>(scroll).unwrap().0.x, 200.0);
+        order_controls(world);
+        assert_eq!(
+            world
+                .get::<Children>(bar)
+                .unwrap()
+                .iter()
+                .collect::<Vec<_>>(),
+            ordered
+        );
     }
 
     fn press(app: &mut App, view: Entity, action: CanvasAction) {
@@ -646,14 +830,15 @@ pub(crate) mod tests {
         assert_eq!(app.world().get::<Text>(label).unwrap().0, "120%");
         press(&mut app, view, CanvasAction::ZoomOut);
         assert_eq!(app.world().get::<CanvasView>(view).unwrap().zoom, 1.0);
-        for _ in 0..30 {
+        for _ in 0..64 {
             press(&mut app, view, CanvasAction::ZoomOut);
         }
         assert_eq!(
             app.world().get::<CanvasView>(view).unwrap().zoom,
             CanvasView::MIN_ZOOM
         );
-        for _ in 0..40 {
+        assert_eq!(app.world().get::<Text>(label).unwrap().0, "0.01%");
+        for _ in 0..64 {
             press(&mut app, view, CanvasAction::ZoomIn);
         }
         assert_eq!(

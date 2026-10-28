@@ -11,10 +11,19 @@ use std::{
 
 const SUBSCRIPTION: &str = "park-window-records";
 
+mod inspection;
+use inspection::Inspection;
+
+#[cfg(test)]
+#[path = "records/recovery.rs"]
+mod recovery;
+
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct Saved {
     pub uid: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub creation: Option<String>,
     pub layout: native::layout::LayoutBox,
     pub workspace: u64,
     pub position: [f64; 2],
@@ -25,9 +34,11 @@ pub(super) struct Saved {
 
 impl Saved {
     fn valid(&self) -> bool {
-        self.uid
-            .as_ref()
-            .is_some_and(|uid| nucleus::valid_uid(uid, "r"))
+        let uid = match (&self.uid, &self.creation) {
+            (Some(uid), None) | (None, Some(uid)) => uid,
+            _ => return false,
+        };
+        nucleus::valid_uid(uid, "r")
             && self.layout.valid()
             && self.workspace > 0
             && self.position.iter().all(|value| value.is_finite())
@@ -46,6 +57,7 @@ impl Saved {
 pub(super) struct Records {
     path: PathBuf,
     saved: BTreeMap<PlacementId, Saved>,
+    creations: BTreeSet<PlacementId>,
     requests: HashMap<String, PlacementId>,
     errors: BTreeMap<PlacementId, String>,
     subscribed: BTreeSet<String>,
@@ -54,18 +66,24 @@ pub(super) struct Records {
     dirty: bool,
     last_write: Instant,
     wake_pending: bool,
-    inspect: Option<PlacementId>,
+    inspect: Option<Inspection>,
+    sender: Option<tokio::sync::mpsc::Sender<cell::ClientMessage>>,
+    subscription: String,
+    intents_durable: bool,
+    intent_retry: Option<Instant>,
 }
 
 impl Records {
     pub fn load(path: PathBuf) -> io::Result<Self> {
         let records = read(&path)?;
+        let creations = records.iter().filter(|record| record.creation.is_some()).map(|record| PlacementId(record.layout.id)).collect();
         Ok(Self {
             path,
             saved: records
                 .into_iter()
                 .map(|record| (PlacementId(record.layout.id), record))
                 .collect(),
+            creations,
             requests: HashMap::new(),
             errors: BTreeMap::new(),
             subscribed: BTreeSet::new(),
@@ -75,11 +93,40 @@ impl Records {
             last_write: Instant::now(),
             wake_pending: false,
             inspect: None,
+            sender: None,
+            subscription: format!("{SUBSCRIPTION}-{}", nucleus::new_uid("op")),
+            intents_durable: true,
+            intent_retry: None,
         })
     }
 
     pub fn profile(&self, identity: PlacementId) -> Option<&Saved> {
         self.saved.get(&identity)
+    }
+
+    pub(super) fn capture_metadata_excluded(&self, identity: PlacementId, uid: &str) -> bool {
+        self.profile(identity)
+            .filter(|profile| profile.uid.as_deref() == Some(uid) || profile.creation.as_deref() == Some(uid))
+            .is_none_or(|profile| profile.layout.capture_excluded)
+    }
+
+    pub(super) fn capture_exclusion(&mut self, identity: PlacementId, uid: &str, excluded: bool) -> io::Result<()> {
+        let profile = self.saved.get_mut(&identity).filter(|profile| profile.uid.as_deref() == Some(uid))
+            .ok_or_else(|| io::Error::other("The original window profile association is unavailable"))?;
+        let previous = profile.layout.capture_excluded;
+        let dirty = self.dirty;
+        profile.layout.capture_excluded = excluded;
+        self.dirty = true;
+        if let Err(error) = self.flush() {
+            self.saved.get_mut(&identity).unwrap().layout.capture_excluded = previous;
+            self.dirty = dirty;
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    pub(super) fn opening_references(&self) -> Vec<String> {
+        self.saved.values().filter_map(|saved| saved.uid.clone()).take(512).collect()
     }
 
     pub fn capture(&mut self, world: &World, window: &clients::Window, identity: PlacementId) {
@@ -99,8 +146,20 @@ impl Records {
             return;
         };
         let previous = self.saved.get(&identity);
+        if previous.is_none() && self.saved.len() >= 65536 {
+            if self.errors.insert(identity, "Window customization history is full".into()).is_none() {
+                native::notifications::report(world, "Park window Record", "Window customization history is full");
+            }
+            return;
+        }
+        let creation = previous.map_or_else(|| Some(nucleus::new_uid("r")), |saved| saved.creation.clone());
+        if previous.is_none() {
+            self.intents_durable = false;
+            self.creations.insert(identity);
+        }
         let saved = Saved {
             uid: previous.and_then(|record| record.uid.clone()),
+            creation,
             launch: previous.and_then(|record| record.launch.clone()),
             layout,
             workspace: member.0,
@@ -123,16 +182,29 @@ impl Records {
         windows: &HashMap<SurfaceId, clients::Window>,
         identities: &HashMap<SurfaceId, PlacementId>,
     ) {
+        let sender = world.get_non_send::<native::cell_bridge::CellBridge>().map(|bridge| bridge.outgoing.clone());
+        let changed = match (&self.sender, &sender) {
+            (Some(previous), Some(current)) => !previous.same_channel(current),
+            (None, None) => false,
+            _ => true,
+        };
+        if changed {
+            self.sender = sender.clone();
+            self.subscription = format!("{SUBSCRIPTION}-{}", nucleus::new_uid("op"));
+            self.requests.clear();
+            self.subscribed.clear();
+            self.errors.clear();
+        }
         let messages: Vec<_> = self
             .cursor
             .read(world.resource::<Messages<native::cell_bridge::CellMessage>>())
             .filter(|message| match &message.0 {
                 cell::ServerMessage::ActionOk { id, .. }
                 | cell::ServerMessage::Error { id, .. } => {
-                    self.requests.contains_key(id) || id == SUBSCRIPTION
+                    self.requests.contains_key(id) || id == &self.subscription
                 }
                 cell::ServerMessage::Snapshot { id, .. }
-                | cell::ServerMessage::Update { id, .. } => id == SUBSCRIPTION,
+                | cell::ServerMessage::Update { id, .. } => id == &self.subscription,
                 _ => false,
             })
             .cloned()
@@ -145,11 +217,17 @@ impl Records {
                     ..
                 } => {
                     if let Some(identity) = self.requests.remove(&id)
-                        && nucleus::valid_uid(&uid, "r")
                         && let Some(saved) = self.saved.get_mut(&identity)
                     {
-                        saved.uid = Some(uid);
-                        self.dirty = true;
+                        if saved.creation.as_deref() == Some(uid.as_str()) && nucleus::valid_uid(&uid, "r") {
+                            saved.uid = Some(uid);
+                            saved.creation = None;
+                            self.creations.remove(&identity);
+                            self.dirty = true;
+                        } else {
+                            self.errors.insert(identity, "Record creation returned an unexpected identity".into());
+                            native::notifications::report(world, "Park window Record", "Record creation returned an unexpected identity");
+                        }
                     }
                 }
                 cell::ServerMessage::ActionOk {
@@ -178,16 +256,9 @@ impl Records {
                 _ => {}
             }
         }
-        let sender = world
-            .get_non_send::<native::cell_bridge::CellBridge>()
-            .map(|bridge| bridge.outgoing.clone());
         let active: BTreeSet<_> = identities.values().copied().collect();
-        let pending: BTreeSet<_> = self.requests.values().copied().collect();
-        self.saved.retain(|identity, saved| {
-            saved.uid.is_some() || active.contains(identity) || pending.contains(identity)
-        });
         self.errors
-            .retain(|identity, _| self.saved.contains_key(identity));
+            .retain(|identity, _| self.saved.contains_key(identity) || active.contains(identity));
         let mut live = BTreeSet::new();
         let mut waiting = false;
         for (surface, window) in windows {
@@ -232,40 +303,13 @@ impl Records {
                             source: native::protein_area::Source::Local,
                         });
                 }
-            } else if !self.errors.contains_key(&identity) {
-                let request = format!("park-new-window-{:032x}", u128::from_be_bytes(identity.0));
-                if self.requests.contains_key(&request) {
-                    continue;
-                }
-                if self.saved.len() > 65536 {
-                    self.errors
-                        .insert(identity, "Window customization history is full".into());
-                    continue;
-                }
-                let message = cell::ClientMessage::Act {
-                    id: request.clone(),
-                    action: engine::actions::Action::CreateRecord {
-                        slug: None,
-                        kind: nucleus::RecordKind::Plain,
-                        head: "Application window".into(),
-                        body: String::new(),
-                        quantity: 0.0,
-                    },
-                };
-                if sender
-                    .as_ref()
-                    .is_some_and(|sender| sender.try_send(message).is_ok())
-                {
-                    self.requests.insert(request, identity);
-                } else {
-                    waiting = true;
-                }
             }
         }
+        waiting |= self.create_pending(world, sender.as_ref());
         if live != self.subscribed {
             let message = if live.is_empty() {
                 Some(cell::ClientMessage::Unsubscribe {
-                    id: SUBSCRIPTION.into(),
+                    id: self.subscription.clone(),
                 })
             } else {
                 let mut draft = native::protein_castle::ProteinDraft::default();
@@ -275,7 +319,7 @@ impl Records {
                     .compile()
                     .ok()
                     .map(|protein| cell::ClientMessage::Subscribe {
-                        id: SUBSCRIPTION.into(),
+                        id: self.subscription.clone(),
                         protein,
                     })
             };
@@ -305,7 +349,7 @@ impl Records {
             && let Some(wake) = world.get_resource::<WakeSignal>()
         {
             wake.after(if waiting {
-                Duration::from_millis(50)
+                self.intent_retry.map_or(Duration::from_millis(50), |due| due.saturating_duration_since(Instant::now()))
             } else {
                 Duration::from_secs(1).saturating_sub(self.last_write.elapsed())
             });
@@ -316,6 +360,37 @@ impl Records {
         }
     }
 
+    fn create_pending(&mut self, world: &World, sender: Option<&tokio::sync::mpsc::Sender<cell::ClientMessage>>) -> bool {
+        if !self.intents_durable {
+            if self.intent_retry.is_some_and(|due| due > Instant::now()) { return true; }
+            if let Err(error) = self.flush() {
+                self.last_write = Instant::now();
+                self.intent_retry = Some(self.last_write + Duration::from_secs(1));
+                native::notifications::report(world, "Park window Record", &format!("Record creation is waiting for its window profile to be saved: {error}"));
+                return true;
+            }
+        }
+        let pending: BTreeSet<_> = self.requests.values().copied().collect();
+        for identity in &self.creations {
+            let Some(saved) = self.saved.get(identity) else { continue; };
+            let Some(uid) = &saved.creation else { continue; };
+            if pending.contains(identity) || self.errors.contains_key(identity) { continue; }
+            if self.requests.len() >= 64 { return true; }
+            let request = format!("{}-create-{:032x}-{}", self.subscription, u128::from_be_bytes(identity.0), nucleus::new_uid("op"));
+            let message = cell::ClientMessage::Act {
+                id: request.clone(),
+                action: engine::actions::Action::CreateRecordDraft {
+                    draft: engine::record_creation::Draft {
+                        uid: uid.clone(), head: "Application window".into(), ..Default::default()
+                    },
+                },
+            };
+            if sender.is_none_or(|sender| sender.try_send(message).is_err()) { return true; }
+            self.requests.insert(request, *identity);
+        }
+        false
+    }
+
     pub fn flush(&mut self) -> io::Result<()> {
         if !self.dirty {
             return Ok(());
@@ -323,7 +398,6 @@ impl Records {
         let records: Vec<_> = self
             .saved
             .values()
-            .filter(|record| record.uid.is_some())
             .collect();
         if records.iter().any(|record| !record.valid()) {
             return Err(io::Error::other("invalid window customization data"));
@@ -331,20 +405,35 @@ impl Records {
         super::outputs::save(&self.path, &records)?;
         self.last_write = Instant::now();
         self.dirty = false;
+        self.intents_durable = true;
+        self.intent_retry = None;
         Ok(())
     }
 
-    pub fn pending(&self) -> bool { !self.requests.is_empty() }
+    pub fn pending(&self) -> bool { !self.requests.is_empty() || !self.creations.is_empty() }
 
-    pub fn inspect(&mut self, identity: PlacementId) {
+    pub fn retry(&mut self, identity: PlacementId) {
         self.errors.remove(&identity);
-        self.inspect = Some(identity);
+        self.intent_retry = None;
     }
 
-    pub fn take_inspection(&mut self) -> Option<String> {
-        let uid = self.saved.get(&self.inspect?)?.uid.clone()?;
-        self.inspect = None;
-        Some(uid)
+    pub fn inspect(&mut self, target: lince_interface::host::WindowInspection, title: String, app_id: String) -> Result<(), &'static str> {
+        let identity = PlacementId(target.placement);
+        let saved = self.saved.get(&identity).ok_or("This window does not have its own saved Record association.")?;
+        let uid = saved.uid.as_ref().or(saved.creation.as_ref())
+            .filter(|uid| nucleus::valid_uid(uid, "r"))
+            .cloned().ok_or("The window Record identity is unavailable.")?;
+        self.retry(identity);
+        self.inspect = Some(Inspection { target, uid, title, app_id });
+        Ok(())
+    }
+
+    pub fn take_inspection(&mut self) -> Option<Inspection> {
+        let pending = self.inspect.as_ref()?;
+        let profile = self.saved.get(&PlacementId(pending.target.placement))?;
+        let uid = profile.uid.as_ref().or(profile.creation.as_ref())?;
+        if uid != &pending.uid { return None; }
+        self.inspect.take()
     }
 
     pub fn launch(
@@ -382,30 +471,6 @@ impl Presentation {
             .launch(identity, launch)
     }
 
-    pub(super) fn inspect_window_record(&mut self) {
-        let surface = self.application_focus.or_else(|| {
-            self.last_geometry.as_ref()?.focused.and_then(|item| {
-                if let lince_interface::host::ItemId::Application(surface) = item {
-                    Some(surface)
-                } else {
-                    None
-                }
-            })
-        });
-        if let Some(identity) = surface
-            .and_then(|surface| self.identities.get(&surface))
-            .copied()
-            && let Some(records) = &mut self.records
-        {
-            records.inspect(identity);
-        } else {
-            native::notifications::report(
-                self.app.world(),
-                "Park",
-                "Focus an application connected to this Cell to inspect its Record.",
-            );
-        }
-    }
 }
 
 impl Drop for Records {
@@ -445,7 +510,79 @@ fn read(path: &Path) -> io::Result<Vec<Saved>> {
 mod tests {
     use super::*;
 
-    fn window(world: &mut World, root: Entity) -> (SurfaceId, clients::Window, PlacementId) {
+    #[test]
+    fn capture_exclusion_saves_only_the_captured_profile_and_survives_restart() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("park-windows.json");
+        let mut records = Records::load(path.clone()).unwrap();
+        let mut identities = Vec::new();
+        for _ in 0..2 {
+            let layout = native::layout::LayoutBox::new(Vec2::splat(300.0));
+            let uid = nucleus::new_uid("r");
+            let identity = PlacementId(layout.id);
+            records.saved.insert(identity, Saved { uid: Some(uid.clone()), creation: None, layout, workspace: 1, position: [0.0; 2], size: [300.0; 2], tokens: Default::default(), launch: None });
+            identities.push((identity, uid));
+        }
+        records.dirty = true;
+        records.flush().unwrap();
+        assert!(records.capture_exclusion(identities[0].0, &identities[1].1, true).is_err());
+        records.capture_exclusion(identities[0].0, &identities[0].1, true).unwrap();
+        drop(records);
+        let records = Records::load(path).unwrap();
+        assert!(records.profile(identities[0].0).unwrap().layout.capture_excluded);
+        assert!(!records.profile(identities[1].0).unwrap().layout.capture_excluded);
+        assert!(records.profile(identities[0].0).unwrap().launch.is_none());
+    }
+
+    #[test]
+    fn failed_exclusion_write_retains_the_original_profile_for_a_real_retry() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("profile");
+        let mut records = Records::load(path.clone()).unwrap();
+        let layout = native::layout::LayoutBox::new(Vec2::splat(300.0));
+        let identity = PlacementId(layout.id);
+        let uid = nucleus::new_uid("r");
+        records.saved.insert(identity, Saved { uid: Some(uid.clone()), creation: None, layout, workspace: 1, position: [0.0; 2], size: [300.0; 2], tokens: Default::default(), launch: None });
+        std::fs::create_dir(&path).unwrap();
+        assert!(records.capture_exclusion(identity, &uid, true).is_err());
+        assert!(!records.profile(identity).unwrap().layout.capture_excluded);
+        std::fs::remove_dir(&path).unwrap();
+        records.capture_exclusion(identity, &uid, true).unwrap();
+        assert!(Records::load(path).unwrap().profile(identity).unwrap().layout.capture_excluded);
+    }
+
+    #[test]
+    fn retained_metadata_follows_its_saved_source_after_close_and_refuses_replaced_associations() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("park-windows.json");
+        let mut records = Records::load(path.clone()).unwrap();
+        let mut layout = native::layout::LayoutBox::new(Vec2::splat(300.0));
+        layout.capture_excluded = true;
+        let identity = PlacementId(layout.id);
+        let uid = nucleus::new_uid("r");
+        let other = nucleus::new_uid("r");
+        records.saved.insert(identity, Saved { uid: Some(uid.clone()), creation: None, layout, workspace: 1, position: [0.0; 2], size: [300.0; 2], tokens: Default::default(), launch: None });
+        records.dirty = true;
+        records.flush().unwrap();
+        drop(records);
+        let mut records = Records::load(path).unwrap();
+        assert!(records.capture_metadata_excluded(identity, &uid));
+        records.capture_exclusion(identity, &uid, false).unwrap();
+        assert!(!records.capture_metadata_excluded(identity, &uid));
+        assert!(records.capture_metadata_excluded(identity, &other));
+        records.saved.get_mut(&identity).unwrap().uid = Some(other.clone());
+        assert!(records.capture_metadata_excluded(identity, &uid));
+        assert!(!records.capture_metadata_excluded(identity, &other));
+        let profile = records.saved.get_mut(&identity).unwrap();
+        profile.uid = None;
+        profile.creation = Some(other.clone());
+        assert!(records.capture_metadata_excluded(identity, &uid));
+        assert!(!records.capture_metadata_excluded(identity, &other));
+        records.saved.remove(&identity);
+        assert!(records.capture_metadata_excluded(identity, &other));
+    }
+
+    pub(super) fn window(world: &mut World, root: Entity) -> (SurfaceId, clients::Window, PlacementId) {
         let layout = native::layout::LayoutBox::new(Vec2::new(600.0, 400.0));
         let mut tokens = native::tokens::TokenOverrides::default();
         assert!(tokens.set(
@@ -460,7 +597,7 @@ mod tests {
         )
     }
 
-    async fn pump(
+    pub(super) async fn pump(
         world: &mut World,
         records: &mut Records,
         windows: &HashMap<SurfaceId, clients::Window>,

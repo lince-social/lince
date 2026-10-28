@@ -80,7 +80,9 @@ impl Promise {
     }
 }
 
-pub fn reserved_for<'a>(commitments: impl IntoIterator<Item = &'a Commitment>) -> Result<DecimalValue, StoreError> {
+pub fn reserved_for<'a>(
+    commitments: impl IntoIterator<Item = &'a Commitment>,
+) -> Result<DecimalValue, StoreError> {
     let mut reservations = Vec::new();
     let mut alternatives: BTreeMap<(String, String), BTreeMap<String, (DecimalValue, bool)>> =
         BTreeMap::new();

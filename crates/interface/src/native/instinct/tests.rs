@@ -61,7 +61,7 @@ fn pages_embed_records_and_navigation_is_independent_and_bounded() {
             .take(65)
             .map(|page| page.id.as_str())
             .collect::<Vec<_>>(),
-        lince_interface::handbook::PAGES
+        lince_interface::handbook::pages()
             .iter()
             .map(|page| page.slug)
             .collect::<Vec<_>>()

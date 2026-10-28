@@ -55,7 +55,11 @@ impl Plugin for CanvasSelectionPlugin {
                     .after(generate_hovermap)
                     .before(crate::native::inspection::InspectInput),
             )
-            .add_systems(PostUpdate, draw.before(bevy::ui::UiSystems::Prepare));
+            .add_systems(
+                PostUpdate,
+                draw.after(bevy::camera::CameraUpdateSystems)
+                    .before(bevy::ui::UiSystems::Prepare),
+            );
     }
 }
 

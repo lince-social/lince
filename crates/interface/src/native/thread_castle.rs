@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 mod composer_tools;
 mod controls;
 #[cfg(test)]
@@ -184,6 +185,11 @@ impl Plugin for ThreadCastlePlugin {
                     .before(crate::native::protein_area::UpdateProteinAreas),
             )
             .add_systems(
+                Update,
+                crate::native::full_record::window::refresh
+                    .after(crate::native::protein_area::UpdateProteinAreas),
+            )
+            .add_systems(
                 PostUpdate,
                 anchor_scroll.after(bevy::ui::UiSystems::PostLayout),
             )
@@ -321,7 +327,7 @@ fn form(
         })
         .id();
     world.get_mut::<EditableText>(input).unwrap().max_characters = Some(65_536);
-    crate::native::accessibility::input(world, input, "Message", true);
+    crate::native::accessibility::input(world, input, Tr::Message.text(), true);
     world.get_mut::<EditableText>(input).unwrap().visible_lines = Some(1.0);
     world.get_mut::<TextFont>(input).unwrap().font_size = 16.0.into();
     if social {

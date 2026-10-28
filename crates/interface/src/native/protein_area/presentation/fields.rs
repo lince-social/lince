@@ -297,6 +297,7 @@ pub(super) fn arrange(world: &mut World, row: Entity, view: &Presentation) {
             .flatten()
             .filter(|entity| {
                 world.get::<Controls>(**entity).is_none()
+                    && !super::super::availability::chrome(world, **entity)
                     && world
                         .get::<crate::native::shader_effects::EffectSlot>(**entity)
                         .is_none()

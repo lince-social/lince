@@ -917,6 +917,8 @@ pub(crate) struct SavedDrawing {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedDrawing);
+
 impl SavedDrawing {
     pub(crate) fn valid(&self) -> bool {
         self.drawing.validate().is_ok()

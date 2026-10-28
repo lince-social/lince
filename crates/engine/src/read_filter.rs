@@ -86,59 +86,124 @@ impl Engine {
     ) -> Result<Vec<String>, EngineError> {
         use crate::actions::Action;
         let named: Vec<&String> = match action {
-            Action::Identity {request} => match request {
-                nucleus::identity::Command::PersonKeys {subject} => vec![subject],
-                nucleus::identity::Command::PreviewPersonKey {key} | nucleus::identity::Command::AcceptPersonKey {key,..} => vec![&key.subject],
-                nucleus::identity::Command::OrganRoots {subject} | nucleus::identity::Command::ExportOrganRoot {subject} | nucleus::identity::Command::PreviewOrganRoot {subject,..} => vec![subject],
-                nucleus::identity::Command::AcceptOrganRoot {review,..} => vec![&review.proof.organ],
+            Action::Identity { request } => match request {
+                nucleus::identity::Command::PersonKeys { subject } => vec![subject],
+                nucleus::identity::Command::PreviewPersonKey { key }
+                | nucleus::identity::Command::AcceptPersonKey { key, .. } => vec![&key.subject],
+                nucleus::identity::Command::OrganRoots { subject }
+                | nucleus::identity::Command::ExportOrganRoot { subject }
+                | nucleus::identity::Command::PreviewOrganRoot { subject, .. } => vec![subject],
+                nucleus::identity::Command::AcceptOrganRoot { review, .. } => {
+                    vec![&review.proof.organ]
+                }
             },
             Action::TransferReceipt { request, .. } => match request {
-                nucleus::transfer::receipt::Command::Delivery {request}=>request.records(),
-                nucleus::transfer::receipt::Command::PreviewEvent { request } | nucleus::transfer::receipt::Command::PublishEvent { request, .. } => {
+                nucleus::transfer::receipt::Command::Delivery { request } => request.records(),
+                nucleus::transfer::receipt::Command::PreviewEvent { request }
+                | nucleus::transfer::receipt::Command::PublishEvent { request, .. } => {
                     let mut records = vec![&request.record, &request.authority_record];
-                    if let nucleus::transfer::receipt::EventSource::Outcome { record } | nucleus::transfer::receipt::EventSource::Snapshot {record} = &request.source { records.push(record); }
-                    records
-                },
-                nucleus::transfer::receipt::Command::PrepareParticipation { transfer, party, .. } => std::iter::once(transfer).chain(party.iter()).collect(),
-                nucleus::transfer::receipt::Command::RecordSource {request} => {
-                    let mut records=vec![&request.receipt];
-                    match &request.outcome {
-                        nucleus::transfer::outcome::Request::BindNeed {selection,supersedes,..}=>{records.push(&selection.need);records.extend(supersedes.iter());},
-                        nucleus::transfer::outcome::Request::State {measure,need_binding,supersedes,..}=>{records.extend(measure.object.iter().chain(need_binding.iter()).chain(supersedes.iter()));},
+                    if let nucleus::transfer::receipt::EventSource::Outcome { record }
+                    | nucleus::transfer::receipt::EventSource::Snapshot { record } =
+                        &request.source
+                    {
+                        records.push(record);
                     }
                     records
-                },
-                nucleus::transfer::receipt::Command::InspectSource {record}=>vec![record],
-                nucleus::transfer::receipt::Command::SourceOptions {receipt}=>vec![receipt],
-                nucleus::transfer::receipt::Command::ApprovePerson {record,..} => vec![record],
-                nucleus::transfer::receipt::Command::Approve { record, authority_record, .. } => vec![record, authority_record],
-                nucleus::transfer::receipt::Command::Inspect { record } | nucleus::transfer::receipt::Command::Export { record }
-                | nucleus::transfer::receipt::Command::InspectVersion {record,..} | nucleus::transfer::receipt::Command::ExportVersion {record,..}
-                | nucleus::transfer::receipt::Command::Versions {record,..} | nucleus::transfer::receipt::Command::Proof {record,..} => vec![record],
-                nucleus::transfer::receipt::Command::Prepare { scope } => scope.outcome_records.iter().collect(),
+                }
+                nucleus::transfer::receipt::Command::PrepareParticipation {
+                    transfer,
+                    party,
+                    ..
+                } => std::iter::once(transfer).chain(party.iter()).collect(),
+                nucleus::transfer::receipt::Command::RecordSource { request } => {
+                    let mut records = vec![&request.receipt];
+                    match &request.outcome {
+                        nucleus::transfer::outcome::Request::BindNeed {
+                            selection,
+                            supersedes,
+                            ..
+                        } => {
+                            records.push(&selection.need);
+                            records.extend(supersedes.iter());
+                        }
+                        nucleus::transfer::outcome::Request::State {
+                            measure,
+                            need_binding,
+                            supersedes,
+                            ..
+                        } => {
+                            records.extend(
+                                measure
+                                    .object
+                                    .iter()
+                                    .chain(need_binding.iter())
+                                    .chain(supersedes.iter()),
+                            );
+                        }
+                    }
+                    records
+                }
+                nucleus::transfer::receipt::Command::InspectSource { record } => vec![record],
+                nucleus::transfer::receipt::Command::SourceOptions { receipt } => vec![receipt],
+                nucleus::transfer::receipt::Command::ApprovePerson { record, .. } => vec![record],
+                nucleus::transfer::receipt::Command::Approve {
+                    record,
+                    authority_record,
+                    ..
+                } => vec![record, authority_record],
+                nucleus::transfer::receipt::Command::Inspect { record }
+                | nucleus::transfer::receipt::Command::Export { record }
+                | nucleus::transfer::receipt::Command::InspectVersion { record, .. }
+                | nucleus::transfer::receipt::Command::ExportVersion { record, .. }
+                | nucleus::transfer::receipt::Command::Versions { record, .. }
+                | nucleus::transfer::receipt::Command::Proof { record, .. } => vec![record],
+                nucleus::transfer::receipt::Command::Prepare { scope } => {
+                    scope.outcome_records.iter().collect()
+                }
                 _ => vec![],
             },
-            Action::ActivateTransferOccurrence { original_authorities, .. } => {
+            Action::ActivateTransferOccurrence {
+                original_authorities,
+                ..
+            } => {
                 if original_authorities.len() > nucleus::transfer::receipt::MAX_AUTHORITIES {
-                    return Err(EngineError::Consequence("Select at most 64 participation approvals".into()));
+                    return Err(EngineError::Consequence(
+                        "Select at most 64 participation approvals".into(),
+                    ));
                 }
                 original_authorities.iter().collect()
-            },
+            }
             Action::RecordTransferOutcome { request, .. } => match request {
-                nucleus::transfer::outcome::Request::BindNeed { selection, supersedes, .. } => {
-                    std::iter::once(&selection.need).chain(supersedes.iter()).collect()
-                }
-                nucleus::transfer::outcome::Request::State { measure, need_binding, supersedes, .. } => {
-                    measure.object.iter().chain(need_binding.iter()).chain(supersedes.iter()).collect()
-                }
+                nucleus::transfer::outcome::Request::BindNeed {
+                    selection,
+                    supersedes,
+                    ..
+                } => std::iter::once(&selection.need)
+                    .chain(supersedes.iter())
+                    .collect(),
+                nucleus::transfer::outcome::Request::State {
+                    measure,
+                    need_binding,
+                    supersedes,
+                    ..
+                } => measure
+                    .object
+                    .iter()
+                    .chain(need_binding.iter())
+                    .chain(supersedes.iter())
+                    .collect(),
             },
             Action::PresentComponent { target, component } => match component {
                 nucleus::component::ComponentState::Record { record, .. } => vec![target, record],
                 _ => vec![target],
             },
             Action::AddQuantityGroupExact { changes } => changes.keys().collect(),
-            Action::SetTransferPrivateApplicationPolicy { effects, .. } => effects.iter().map(|effect| &effect.record).collect(),
-            Action::SetTransferChildRequirement { transfer, child, .. } => vec![transfer, child],
+            Action::SetTransferPrivateApplicationPolicy { effects, .. } => {
+                effects.iter().map(|effect| &effect.record).collect()
+            }
+            Action::SetTransferChildRequirement {
+                transfer, child, ..
+            } => vec![transfer, child],
             Action::ProposeTransferCancellation { transfer, .. }
             | Action::ProposeTransferLoanExtension { transfer, .. }
             | Action::ApplyTransferCancellation { transfer, .. } => vec![transfer],
@@ -207,18 +272,29 @@ impl Engine {
                 );
                 targets
             }
-            Action::TransitionRecord { subject, .. }
-            | Action::SetIdentity { subject, .. } => vec![subject],
-            Action::RetractRecord { subject, object, .. } => {
+            Action::TransitionRecord { subject, .. } | Action::SetIdentity { subject, .. } => {
+                vec![subject]
+            }
+            Action::RetractRecord {
+                subject, object, ..
+            } => {
                 let mut targets = vec![subject];
-                targets.extend(object.iter());
+                targets.extend(
+                    object
+                        .iter()
+                        .filter(|value| !lince_resources::reference::is_address(value)),
+                );
                 targets
             }
             Action::AssertRecord {
                 subject, object, ..
             } => {
                 let mut targets = vec![subject];
-                targets.extend(object.iter());
+                targets.extend(
+                    object
+                        .iter()
+                        .filter(|value| !lince_resources::reference::is_address(value)),
+                );
                 targets
             }
             Action::RefineAssertion {
@@ -259,39 +335,101 @@ impl Engine {
                 }
             }
             Action::CompensateTransferApplication { application, .. } => {
-                if let Some(fact) = store::sqlx::query_scalar::<_, String>("SELECT application_fact_uid FROM transfer_local_application WHERE uid = ?")
-                    .bind(application).fetch_optional(&self.store.pool).await? {
+                if let Some(fact) = store::sqlx::query_scalar::<_, String>(
+                    "SELECT application_fact_uid FROM transfer_local_application WHERE uid = ?",
+                )
+                .bind(application)
+                .fetch_optional(&self.store.pool)
+                .await?
+                {
                     out.extend(store::transfer_effects::records(&self.store.pool, &fact).await?);
                 }
             }
-            Action::ApplyTransferApplication { handoff, request_id, .. } => {
-                if let Some(previous) = store::transfer_delivery::local_application_for_request(&self.store.pool, request_id).await? {
-                    out.extend(store::transfer_effects::records(&self.store.pool, &previous.application_fact_uid).await?);
-                } else if let Some(handoff) = store::transfer_delivery::application_effect_handoff(&self.store.pool, handoff).await? {
+            Action::ApplyTransferApplication {
+                handoff,
+                request_id,
+                ..
+            } => {
+                if let Some(previous) = store::transfer_delivery::local_application_for_request(
+                    &self.store.pool,
+                    request_id,
+                )
+                .await?
+                {
+                    out.extend(
+                        store::transfer_effects::records(
+                            &self.store.pool,
+                            &previous.application_fact_uid,
+                        )
+                        .await?,
+                    );
+                } else if let Some(handoff) =
+                    store::transfer_delivery::application_effect_handoff(&self.store.pool, handoff)
+                        .await?
+                {
                     let exchange = self.application_handoff_exchange(&handoff, false).await?;
-                    if let Some(policy) = store::transfer_accounting::policy(&self.store.pool, &handoff.transfer_uid, &exchange, &handoff.participant_person_uid).await? {
+                    if let Some(policy) = store::transfer_accounting::policy(
+                        &self.store.pool,
+                        &handoff.transfer_uid,
+                        &exchange,
+                        &handoff.participant_person_uid,
+                    )
+                    .await?
+                    {
                         out.extend(policy.effects.into_iter().map(|effect| effect.record));
                     }
                 }
             }
             Action::SettleTransferOccurrence { occurrence, .. } => {
-                if let Some(occurrence) = store::transfers::occurrence(&self.store.pool, occurrence).await? {
-                    let owner = store::misc::get_promise(&self.store.pool, &occurrence.promise_uid).await?
+                if let Some(occurrence) =
+                    store::transfers::occurrence(&self.store.pool, occurrence).await?
+                {
+                    let owner = store::misc::get_promise(&self.store.pool, &occurrence.promise_uid)
+                        .await?
                         .and_then(|promise| promise.party_uid);
                     if let Some(owner) = owner {
-                        if let Some(policy) = store::transfer_accounting::policy(&self.store.pool, &occurrence.transfer_uid,
-                            occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid), &owner).await? {
+                        if let Some(policy) = store::transfer_accounting::policy(
+                            &self.store.pool,
+                            &occurrence.transfer_uid,
+                            occurrence
+                                .exchange_uid
+                                .as_deref()
+                                .unwrap_or(&occurrence.promise_uid),
+                            &owner,
+                        )
+                        .await?
+                        {
                             out.extend(policy.effects.into_iter().map(|effect| effect.record));
                         }
-                        if let Some(record) = store::transfer_accounting::bound_record(&self.store.pool, &occurrence.transfer_uid,
-                            occurrence.exchange_uid.as_deref().unwrap_or(&occurrence.promise_uid), &owner,
-                            occurrence.record_uid.as_deref()).await? { out.push(record); }
+                        if let Some(record) = store::transfer_accounting::bound_record(
+                            &self.store.pool,
+                            &occurrence.transfer_uid,
+                            occurrence
+                                .exchange_uid
+                                .as_deref()
+                                .unwrap_or(&occurrence.promise_uid),
+                            &owner,
+                            occurrence.record_uid.as_deref(),
+                        )
+                        .await?
+                        {
+                            out.push(record);
+                        }
                     }
                 }
             }
             Action::CompensateTransferOccurrenceSettlement { settlement, .. } => {
-                if let Some(slice) = store::transfers::occurrence_settlement_slice(&self.store.pool, settlement).await? {
-                    out.extend(store::transfer_effects::records(&self.store.pool, &slice.application_fact_uid).await?);
+                if let Some(slice) =
+                    store::transfers::occurrence_settlement_slice(&self.store.pool, settlement)
+                        .await?
+                {
+                    out.extend(
+                        store::transfer_effects::records(
+                            &self.store.pool,
+                            &slice.application_fact_uid,
+                        )
+                        .await?,
+                    );
                 }
             }
             Action::ClassifyFact { fact, .. } => {
@@ -318,7 +456,7 @@ impl Engine {
         for target in targets {
             if !self.may_read_record(Some(actor), target).await? {
                 return Err(EngineError::Forbidden(
-                    "Record unavailable for this login".into()
+                    "Record unavailable for this login".into(),
                 ));
             }
         }

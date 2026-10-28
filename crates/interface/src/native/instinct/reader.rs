@@ -162,6 +162,14 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         label(world, body, &error, 14.0);
         return;
     }
+    if world.resource::<Book>().0.is_empty() {
+        label(
+            world,
+            body,
+            "No external handbook is installed. Open a content folder in the source reader, or place content beside Lince.",
+            14.0,
+        );
+    }
     let query = world
         .get::<Search>(owner)
         .map(|search| search.query.clone())
@@ -312,7 +320,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             crate::native::description::heading(world, container, &section.title, 22.0);
         }
         if let Some(slug) = section.slug.as_ref().filter(|slug| {
-            lince_interface::handbook::PAGES
+            lince_interface::handbook::pages()
                 .iter()
                 .any(|page| page.slug == *slug)
         }) {
@@ -370,7 +378,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             .slug
             .as_ref()
             .and_then(|slug| {
-                lince_interface::handbook::PAGES
+                lince_interface::handbook::pages()
                     .iter()
                     .find(|page| page.slug == *slug)
             })

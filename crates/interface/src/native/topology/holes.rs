@@ -480,7 +480,7 @@ pub(crate) fn surface_pieces_in(
     item: &CanvasItem,
 ) -> (Vec<Polygon>, DVec2, DMat2) {
     let (offset, clip) = crate::native::layout::viewport::clip(world, entity);
-    let placement = super::spatial(world, entity);
+    let placement = crate::native::canvas::presented_spatial(world, entity);
     let scale = f64::from(
         world
             .get::<crate::native::area_effects::AreaScale>(entity)

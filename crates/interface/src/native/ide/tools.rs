@@ -172,7 +172,7 @@ pub(super) fn visible(world: &World, owner: Entity) -> bool {
     })
 }
 
-fn message(world: &mut World, owner: Entity, text: impl Into<String>) {
+fn message(world: &mut World, owner: Entity, text: impl AsRef<str>) {
     if let Some(panel) = world.get::<Panel>(owner) {
         crate::native::sand_panel::status(world, panel.status, text);
     }

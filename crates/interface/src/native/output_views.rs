@@ -22,12 +22,13 @@ impl OutputViews {
             .fold(0, u64::saturating_add);
         if outputs.is_empty()
             || pixels > 64 * 1024 * 1024
-            || outputs.len() > 16
+            || outputs.len() > crate::native::render_layers::OUTPUTS.len
             || !outputs.iter().any(|output| output.id == focused)
             || outputs.iter().any(|output| {
                 output.workspace == 0
                     || !ids.insert(output.id)
                     || !workspaces.insert(output.workspace)
+                    || !output.valid_raster()
                     || output
                         .physical_size
                         .iter()
@@ -77,11 +78,15 @@ mod tests {
 
     fn output(id: u64, workspace: u64) -> OutputViewport {
         let bounds = Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap();
-        OutputViewport {
+        OutputViewport { rotation: Default::default(),
             id: OutputId(id),
             bounds,
             usable: Some(bounds),
             physical_size: [800, 600],
+            raster: crate::host::raster::RasterMapping {
+                origin: (bounds).origin(),
+                scale: [1.0; 2],
+            },
             workspace,
         }
     }

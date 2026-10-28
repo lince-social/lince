@@ -51,7 +51,7 @@ impl Check {
         let center = std::array::from_fn(|axis| region.origin()[axis] + region.size()[axis] * 0.5);
         let modal = current.frame.input.modal;
         let fullscreen = current.frame.fullscreen;
-        let size = current.frame.dmabuf().size();
+        let size = current.frame.dmabuf().ok_or_else(|| io::Error::other("The smoke-test output image is unavailable"))?.size();
         let origin = current.frame.origin;
         let available = desktop
             .server

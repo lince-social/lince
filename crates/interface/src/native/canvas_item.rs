@@ -15,9 +15,14 @@ pub struct CanvasItem {
     pub size: Vec2,
 }
 
+#[derive(Component, Default)]
+pub(crate) struct Ephemeral;
+
 pub(crate) fn eligible(world: &World, root: Entity, entity: Entity) -> bool {
     crate::native::instinct::practice::permits_target(world, entity)
         && world.get::<CanvasItem>(entity).is_some()
+        && world.get::<Ephemeral>(entity).is_none()
+        && crate::native::layout::desktop::visible_item(world, root, entity)
         && !crate::native::inspection::excluded(world, entity)
         && world
             .get::<ChildOf>(entity)

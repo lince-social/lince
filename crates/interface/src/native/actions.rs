@@ -156,6 +156,40 @@ pub struct Modifiers {
 }
 
 impl Modifiers {
+    pub(crate) fn contains(self, other: Self) -> bool {
+        (!other.control || self.control)
+            && (!other.alt || self.alt)
+            && (!other.shift || self.shift)
+            && (!other.super_key || self.super_key)
+    }
+
+    pub(crate) fn intersection(self, other: Self) -> Self {
+        Self {
+            control: self.control && other.control,
+            alt: self.alt && other.alt,
+            shift: self.shift && other.shift,
+            super_key: self.super_key && other.super_key,
+        }
+    }
+
+    pub(crate) fn difference(self, other: Self) -> Self {
+        Self {
+            control: self.control && !other.control,
+            alt: self.alt && !other.alt,
+            shift: self.shift && !other.shift,
+            super_key: self.super_key && !other.super_key,
+        }
+    }
+
+    pub(crate) fn union(self, other: Self) -> Self {
+        Self {
+            control: self.control || other.control,
+            alt: self.alt || other.alt,
+            shift: self.shift || other.shift,
+            super_key: self.super_key || other.super_key,
+        }
+    }
+
     pub const NONE: Self = Self {
         alt: false,
         control: false,
@@ -178,6 +212,61 @@ impl Modifiers {
             shift: keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]),
             super_key: keys.any_pressed([KeyCode::SuperLeft, KeyCode::SuperRight]),
         }
+    }
+
+    pub(crate) fn pressed_for(
+        keys: &ButtonInput<KeyCode>,
+        keyboard: Option<&crate::host::input::KeyboardSnapshot>,
+    ) -> Self {
+        let Some(keyboard) = keyboard.filter(|keyboard| !keyboard.labels.is_empty()) else {
+            return Self::pressed(keys);
+        };
+        let mut result = Self::NONE;
+        for key in keys.get_pressed() {
+            let Some(label) = keyboard.labels.get(&format!("{key:?}")) else {
+                continue;
+            };
+            result.control |= label.modifiers.control;
+            result.alt |= label.modifiers.alt;
+            result.shift |= label.modifiers.shift;
+            result.super_key |= label.modifiers.super_key;
+        }
+        result
+    }
+}
+
+pub(crate) fn native_key_matches(
+    physical: KeyCode,
+    logical: &bevy::input::keyboard::Key,
+    expected: KeyCode,
+) -> bool {
+    use bevy::input::keyboard::Key;
+    let named = match expected {
+        KeyCode::Escape => Key::Escape,
+        KeyCode::Enter | KeyCode::NumpadEnter => Key::Enter,
+        KeyCode::Tab => Key::Tab,
+        KeyCode::Backspace => Key::Backspace,
+        KeyCode::Delete => Key::Delete,
+        KeyCode::Insert => Key::Insert,
+        KeyCode::ArrowLeft => Key::ArrowLeft,
+        KeyCode::ArrowRight => Key::ArrowRight,
+        KeyCode::ArrowUp => Key::ArrowUp,
+        KeyCode::ArrowDown => Key::ArrowDown,
+        KeyCode::Home => Key::Home,
+        KeyCode::End => Key::End,
+        KeyCode::PageUp => Key::PageUp,
+        KeyCode::PageDown => Key::PageDown,
+        KeyCode::Space => Key::Space,
+        _ => return physical == expected,
+    };
+    if matches!(logical, Key::Unidentified(_)) {
+        physical == expected
+    } else if expected == KeyCode::Space
+        && matches!(logical, Key::Character(value) if value.as_str() == " ")
+    {
+        true
+    } else {
+        logical == &named
     }
 }
 
@@ -216,6 +305,7 @@ pub struct WindowActionTarget(pub Entity);
 struct Request {
     target: Entity,
     actions: ActionSequence,
+    activity: Option<u64>,
 }
 
 #[derive(Resource, Default)]
@@ -228,10 +318,18 @@ pub struct ActionsPlugin;
 
 impl Plugin for ActionsPlugin {
     fn build(&self, app: &mut App) {
+        crate::native::keyboard::install(app);
         app.init_resource::<PendingActions>()
             .init_resource::<InputFocus>()
             .add_observer(activate)
             .add_observer(keyboard)
+            .add_systems(
+                PreUpdate,
+                crate::native::shortcuts::desktop_input
+                    .after(crate::native::keyboard::Prepare)
+                    .after(crate::native::shortcuts::CaptureInput)
+                    .before(bevy::input_focus::InputFocusSystems::Dispatch),
+            )
             .add_systems(
                 PostUpdate,
                 apply_pending
@@ -242,10 +340,11 @@ impl Plugin for ActionsPlugin {
 }
 
 pub fn dispatch(world: &mut World, target: Entity, actions: ActionSequence) {
+    let activity = world.get_resource::<crate::host::input::InputActivity>().map(|activity| activity.frame_revision());
     world
         .resource_mut::<PendingActions>()
         .0
-        .push_back(Request { target, actions });
+        .push_back(Request { target, actions, activity });
     wake(world);
 }
 
@@ -259,11 +358,13 @@ fn activate(
     event: On<Activate>,
     buttons: Query<&ActionButton, Without<InteractionDisabled>>,
     mut pending: ResMut<PendingActions>,
+    activity: Option<Res<crate::host::input::InputActivity>>,
 ) {
     if let Ok(button) = buttons.get(event.entity) {
         pending.0.push_back(Request {
             target: button.target,
             actions: button.actions.clone(),
+            activity: activity.map(|activity| activity.frame_revision()),
         });
     }
 }
@@ -281,7 +382,11 @@ fn keyboard(
     parents: Query<&ChildOf>,
     editors: Query<(), With<bevy::text::EditableText>>,
     windows: Query<(&Window, Option<&WindowActionTarget>)>,
+    keyboard_modal: Option<Res<crate::native::shortcuts::KeyboardModalOwner>>,
+    keyboard: Option<Res<crate::host::input::KeyboardSnapshot>>,
+    context: Option<Res<crate::native::keyboard::Dispatch>>,
     mut pending: ResMut<PendingActions>,
+    activity: Option<Res<crate::host::input::InputActivity>>,
 ) {
     if !event.input.state.is_pressed() {
         return;
@@ -302,16 +407,54 @@ fn keyboard(
     let Ok((bindings, configured)) = scopes.get(target) else {
         return;
     };
-    let modifiers = keys.as_deref().map(Modifiers::pressed).unwrap_or_default();
+    let modifiers = context
+        .as_deref()
+        .filter(|context| context.window == event.input.window)
+        .map(|context| context.modifiers)
+        .unwrap_or_else(|| {
+            keys.as_deref()
+                .map(|keys| Modifiers::pressed_for(keys, keyboard.as_deref()))
+                .unwrap_or_default()
+        });
+    let modal = keyboard_modal
+        .as_deref()
+        .and_then(|owner| owner.0)
+        .filter(|owner| scopes.contains(*owner));
+    let configured = configured.filter(|_| modal.is_none());
+    let bindings = bindings.filter(|_| {
+        let Some(owner) = modal else {
+            return true;
+        };
+        let mut cursor = Some(target);
+        for _ in 0..crate::native::layout::MAX_DEPTH {
+            let Some(entity) = cursor else {
+                break;
+            };
+            if entity == owner {
+                return true;
+            }
+            cursor = parents.get(entity).ok().map(ChildOf::parent);
+        }
+        false
+    });
     if let Some(binding) = bindings
         .into_iter()
         .flat_map(|bindings| bindings.0.iter().rev())
+        .map(|binding| (binding, true))
         .chain(
             configured
                 .into_iter()
-                .flat_map(|bindings| bindings.0.iter()),
+                .flat_map(|bindings| bindings.0.iter())
+                .map(|binding| (binding, false)),
         )
-        .find(|binding| binding.key == event.input.key_code && binding.modifiers == modifiers)
+        .find_map(|(binding, native)| {
+            let matches = if native {
+                native_key_matches(event.input.key_code, &event.input.logical_key, binding.key)
+            } else {
+                binding.key == event.input.key_code
+            };
+            (matches && binding.modifiers == modifiers).then_some(binding)
+        })
     {
         if binding.outside_text {
             let mut cursor = Some(event.original_event_target());
@@ -326,6 +469,7 @@ fn keyboard(
             pending.0.push_back(Request {
                 target,
                 actions: binding.actions.clone(),
+                activity: activity.as_ref().map(|activity| activity.frame_revision()),
             });
         }
         event.propagate(false);
@@ -335,6 +479,7 @@ fn keyboard(
 fn apply_pending(world: &mut World) {
     let requests = std::mem::take(&mut world.resource_mut::<PendingActions>().0);
     for request in requests {
+        if world.get_resource::<crate::host::input::InputActivity>().is_some_and(|activity| !activity.active() || request.activity != Some(activity.revision())) { continue; }
         request.actions.run(world, request.target);
     }
 }
@@ -543,6 +688,31 @@ pub(crate) mod tests {
                 .unwrap()
                 .is_changed()
         );
+    }
+
+    #[test]
+    fn queued_ui_actions_refuse_lost_and_returned_activity_while_fresh_and_windowed_actions_still_run() {
+        for returned in [false, true] {
+            let (mut app, root, _) = fixture();
+            let activity = crate::host::input::InputActivity::default();
+            app.insert_resource(activity.clone());
+            app.update();
+            dispatch(app.world_mut(), root, ActionSequence::default().then(Append(1)));
+            activity.set_active(false);
+            if returned { activity.set_active(true); }
+            app.update();
+            assert!(app.world().get::<Values>(root).unwrap().0.is_empty());
+            activity.set_active(true);
+            app.update();
+            dispatch(app.world_mut(), root, ActionSequence::default().then(Append(2)));
+            app.update();
+            assert_eq!(app.world().get::<Values>(root).unwrap().0, vec![2]);
+        }
+        let (mut sandbox, root, _) = fixture();
+        sandbox.update();
+        dispatch(sandbox.world_mut(), root, ActionSequence::default().then(Append(3)));
+        sandbox.update();
+        assert_eq!(sandbox.world().get::<Values>(root).unwrap().0, vec![3]);
     }
 
     crate::native::laboratory_cases! {

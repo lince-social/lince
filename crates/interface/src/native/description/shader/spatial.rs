@@ -41,6 +41,7 @@ pub(crate) struct MeshMaterial {
     lighting: lighting::Parameters,
     #[texture(4)]
     #[sampler(5)]
+    #[dependency]
     texture: Option<Handle<Image>>,
     key: MeshShaderKey,
 }
@@ -625,7 +626,7 @@ pub(super) fn candidate(
         .get(&owner)
         .map(|state| state.slot)
         .or_else(|| {
-            (0..64).find(|slot| {
+            (0..crate::native::render_layers::SHADERS.len).find(|slot| {
                 !world
                     .resource::<MeshEffects>()
                     .0
@@ -765,7 +766,9 @@ pub(super) fn draw(world: &mut World, owner: Entity, program: &str, inputs: Shad
             matches!(bundle.effect.mode, Mode::Volume(_)),
         )
     };
-    geometry::update(world, &geometry, inputs);
+    if !world.get::<EffectPreview>(owner).unwrap().snapshot.frozen() {
+        geometry::update(world, &geometry, inputs);
+    }
     for handle in std::iter::once(&material).chain(world_material.as_ref()) {
         world
             .resource_mut::<Assets<MeshMaterial>>()
@@ -776,7 +779,7 @@ pub(super) fn draw(world: &mut World, owner: Entity, program: &str, inputs: Shad
     let data = world.get::<EffectPreview>(owner).unwrap();
     let camera = data.camera;
     let render_surface = data.render_surface;
-    let layer = RenderLayers::from_layers(&[64 + slot]);
+    let layer = RenderLayers::none().with(crate::native::render_layers::SHADERS.get(slot).unwrap());
     if camera != Entity::PLACEHOLDER && world.get::<Camera3d>(camera).is_none() {
         world.entity_mut(camera).remove::<Camera2d>().insert((
             Camera3d::default(),
@@ -813,6 +816,7 @@ pub(super) fn draw(world: &mut World, owner: Entity, program: &str, inputs: Shad
     world.entity_mut(entity).insert((
         Mesh3d(mesh.clone()),
         MeshMaterial3d(material.clone()),
+        crate::native::capture::render::TargetSource(owner),
         Aabb {
             center: Vec3::ZERO.into(),
             half_extents: Vec3::splat(extent).into(),
@@ -921,6 +925,27 @@ pub(crate) fn place(
         volume::world_views(world);
     }
     transform.scale /= 2.0 * extent;
+    let mut layers = RenderLayers::layer(0);
+    if let Some((root, workspace)) = world
+        .get::<ChildOf>(anchor)
+        .map(ChildOf::parent)
+        .filter(|root| {
+            world
+                .get::<crate::native::workspace::Workspaces>(*root)
+                .is_some()
+        })
+        .zip(
+            world
+                .get::<crate::native::workspace::WorkspaceMember>(anchor)
+                .map(|member| member.0),
+        )
+    {
+        let origin = crate::native::topology::presentation::origin(world, root);
+        let canonical = crate::native::output_views::canvas(world, root, workspace).center;
+        transform.translation +=
+            (origin - bevy::math::DVec3::new(canonical.x, 0.0, canonical.y)).as_vec3();
+        layers = crate::native::topology::output_views::asset_layers(world, root, workspace);
+    }
     let entity = existing.unwrap_or_else(|| {
         world
             .spawn((
@@ -943,6 +968,8 @@ pub(crate) fn place(
     world.entity_mut(entity).insert((
         Mesh3d(mesh),
         MeshMaterial3d(material),
+        crate::native::capture::render::TargetSource(preview),
+        layers,
         transform,
         if visible {
             Visibility::Visible

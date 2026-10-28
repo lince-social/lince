@@ -127,6 +127,27 @@ impl Engine {
                     .map(ControlFlow::Continue)
             });
         }
+        if let Action::Demeter { request } = action {
+            return Box::pin(async move {
+                self.demeter_command(request, actor.as_deref(), now)
+                    .await
+                    .map(ControlFlow::Continue)
+            });
+        }
+        if let Action::Optimize { request } = action {
+            return Box::pin(async move {
+                self.optimization_command(request, actor.as_deref(), now)
+                    .await
+                    .map(ControlFlow::Continue)
+            });
+        }
+        if let Action::Sources { request } = action {
+            return Box::pin(async move {
+                self.source_command(request, actor.as_deref())
+                    .await
+                    .map(ControlFlow::Continue)
+            });
+        }
         if let Action::SavedLocation { request } = action {
             return Box::pin(async move {
                 self.saved_location_command(request, actor.as_deref(), now)
@@ -224,6 +245,9 @@ impl Engine {
             Action::Identity { .. }
             | Action::Vocabulary { .. }
             | Action::Knowledge { .. }
+            | Action::Sources { .. }
+            | Action::Demeter { .. }
+            | Action::Optimize { .. }
             | Action::SavedLocation { .. }
             | Action::Plugins { .. }
             | Action::Visibility { .. }

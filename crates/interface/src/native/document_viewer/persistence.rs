@@ -11,6 +11,8 @@ pub(crate) struct SavedDocumentViewer {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedDocumentViewer);
+
 impl SavedDocumentViewer {
     pub(crate) fn valid(&self) -> bool {
         self.castle.valid()
@@ -54,7 +56,7 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedDocumentView
         .filter(|(entity, parent, _, _, _)| {
             parent.parent() == root
                 && world
-                    .get::<crate::native::external_drop::Preview>(*entity)
+                    .get::<crate::native::canvas_item::Ephemeral>(*entity)
                     .is_none()
         })
         .map(|(entity, _, member, item, castle)| SavedDocumentViewer {

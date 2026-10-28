@@ -35,13 +35,18 @@ use std::{
     collections::{HashMap, HashSet, hash_map::DefaultHasher},
     hash::{Hash, Hasher},
     sync::{
-        Arc, Mutex,
+        Mutex,
         atomic::{AtomicBool, Ordering},
     },
 };
 
+mod origins;
+mod order;
+pub(crate) use origins::{CaptureOrigins, CompletedCaptures};
+
 #[derive(Resource, Default)]
 struct CaptureCache {
+    external: bool,
     pending: AtomicBool,
     fingerprints: HashMap<Entity, DefaultHasher>,
     dirty: HashSet<Entity>,
@@ -51,28 +56,53 @@ struct CaptureCache {
     targets: Mutex<HashMap<Entity, Texture>>,
 }
 
+pub(super) fn staging_textures(world: &World) -> Vec<Texture> {
+    world
+        .get_resource::<CaptureCache>()
+        .map(|cache| cache.targets.lock().unwrap().values().cloned().collect())
+        .unwrap_or_default()
+}
+
 #[derive(Component, Clone, ExtractComponent)]
 pub struct SurfaceCapture(pub Handle<Image>);
 
 #[derive(Component, Clone, ExtractComponent)]
 pub(crate) struct CaptureReady(pub bool);
 
-#[derive(Resource, Clone, Default)]
-pub(crate) struct CompletedCaptures(Arc<Mutex<HashSet<AssetId<Image>>>>);
-
-impl CompletedCaptures {
-    pub(crate) fn contains(&self, image: &Handle<Image>) -> bool {
-        self.0.lock().unwrap().contains(&image.id())
-    }
-}
-
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SurfacePass;
 
 pub struct SurfaceRenderPlugin;
 
+pub struct ExternalCaptureCache {
+    cache: CaptureCache,
+    completed: CompletedCaptures,
+    aliases: Option<crate::native::capture::render::aliases::ExternalAliases>,
+    prepared: crate::native::capture::render::aliases::PreparedAliases,
+}
+
+pub fn begin_external_capture(world: &mut World) -> ExternalCaptureCache {
+    let cache = world.remove_resource::<CaptureCache>().unwrap_or_default();
+    let completed = world.remove_resource::<CompletedCaptures>().unwrap_or_default();
+    let aliases = world.remove_resource::<crate::native::capture::render::aliases::ExternalAliases>();
+    let prepared = world.remove_resource::<crate::native::capture::render::aliases::PreparedAliases>().unwrap_or_default();
+    world.insert_resource(CaptureCache { external: true, ..Default::default() });
+    world.insert_resource(CompletedCaptures::default());
+    world.insert_resource(crate::native::capture::render::aliases::PreparedAliases::default());
+    ExternalCaptureCache { cache, completed, aliases, prepared }
+}
+
+pub fn end_external_capture(world: &mut World, saved: ExternalCaptureCache) {
+    world.insert_resource(saved.cache);
+    world.insert_resource(saved.completed);
+    if let Some(aliases) = saved.aliases { world.insert_resource(aliases); }
+    else { world.remove_resource::<crate::native::capture::render::aliases::ExternalAliases>(); }
+    world.insert_resource(saved.prepared);
+}
+
 impl Plugin for SurfaceRenderPlugin {
     fn build(&self, app: &mut App) {
+        super::stacking::install(app);
         let completed = CompletedCaptures::default();
         app.insert_resource(completed.clone()).add_plugins((
             ExtractComponentPlugin::<SurfaceCapture>::default(),
@@ -85,6 +115,13 @@ impl Plugin for SurfaceRenderPlugin {
         render_app
             .insert_resource(completed)
             .init_resource::<CaptureCache>()
+            .init_resource::<crate::native::capture::render::aliases::PreparedAliases>()
+            .add_systems(ExtractSchedule, origins::extract.after(extract_cameras))
+            .add_systems(Render, crate::native::capture::render::aliases::prepare.in_set(RenderSystems::Prepare).ambiguous_with_all())
+            .add_systems(Render, origins::begin.after(RenderSystems::Prepare).before(RenderSystems::Render))
+            .add_systems(Render, origins::finish.after(RenderSystems::Render).before(RenderSystems::Cleanup))
+            .add_systems(bevy::core_pipeline::schedule::Core2d, origins::record_view.after(bevy::core_pipeline::upscaling::upscaling))
+            .add_systems(bevy::core_pipeline::schedule::Core3d, origins::record_view.after(bevy::core_pipeline::upscaling::upscaling))
             .add_systems(
                 ExtractSchedule,
                 extract_captures
@@ -202,13 +239,7 @@ fn fingerprint_captures(
     nodes: Res<ExtractedUiNodes>,
     changed: Res<ExtractedAssets<GpuImage>>,
     images: Res<RenderAssets<GpuImage>>,
-    completed: Res<CompletedCaptures>,
 ) {
-    completed
-        .0
-        .lock()
-        .unwrap()
-        .retain(|image| images.get(*image).is_some());
     cache.targets.get_mut().unwrap().retain(|entity, _| {
         captures
             .get(*entity)
@@ -419,7 +450,33 @@ fn render_surface(
     if !cache.pending.swap(false, Ordering::Relaxed) {
         return;
     }
-    for (entity, capture, ui_view, ready) in &captures {
+    let mut captured_origins = std::collections::BTreeMap::new();
+    let ordered = if cache.external {
+        let mut producers: std::collections::BTreeMap<_, std::collections::BTreeSet<_>> = std::collections::BTreeMap::new();
+        for (entity, capture, ui_view, _) in &captures {
+            producers.entry(capture.0.id()).or_default().insert(entity);
+            if let Ok(view) = views.get(ui_view.0) && let Some(phase) = phases.get(&view.retained_view_entity) {
+                captured_origins.insert(entity, origins::surface(world, entity, phase));
+            }
+        }
+        if let Some(aliases) = world.get_resource::<crate::native::capture::render::aliases::ExternalAliases>() {
+            for (source, aliases) in &aliases.0 {
+                let writers = producers.get(source).cloned().unwrap_or_default();
+                for alias in aliases { producers.entry(*alias).or_default().extend(writers.iter().copied()); }
+            }
+        }
+        let public = completed.snapshot().unwrap_or_default();
+        let dependencies = captures.iter().map(|(entity, _, _, _)| {
+            let dependencies = captured_origins.get(&entity).into_iter().flat_map(|origins| origins.images.iter())
+                .filter(|image| public.get(*image).is_none_or(|origins| !origins.complete))
+                .flat_map(|image| producers.get(image).into_iter().flatten().copied()).collect();
+            (entity, dependencies)
+        }).collect();
+        order::sources_first(dependencies)
+    } else { captures.iter().map(|(entity, _, _, _)| entity).collect() };
+    let first_order = captures.iter().filter_map(|(entity, _, _, _)| world.get::<ExtractedCamera>(entity).map(|camera| camera.order)).min().unwrap_or(0);
+    for (index, entity) in ordered.into_iter().enumerate() {
+        let Ok((_, capture, ui_view, ready)) = captures.get(entity) else { continue; };
         if ready.is_some_and(|ready| !ready.0)
             || cache.skipped.contains(&entity)
             || cache.blocked.contains(&entity)
@@ -442,7 +499,7 @@ fn render_surface(
             .values()
             .all(|item| pipelines.get_render_pipeline(item.pipeline).is_some())
         {
-            if let Some(wake) = &wake {
+            if let Some(wake) = &wake && !cache.external {
                 wake.ring();
             }
             continue;
@@ -519,10 +576,11 @@ fn render_surface(
                 image.texture.as_image_copy(),
                 image.texture.size(),
             );
-            let changed = completed.0.lock().unwrap().insert(capture.0.id());
-            if changed && let Some(wake) = &wake {
-                wake.ring();
-            }
+            let order = if cache.external { (first_order, index) }
+                else { world.get::<ExtractedCamera>(entity).map_or((0, 0), |camera| (camera.order, camera.sorted_camera_index_for_target)) };
+            let origins = captured_origins.remove(&entity).unwrap_or_else(|| origins::surface(world, entity, phase));
+            completed.queue(capture.0.id(), order, true, origins.clone());
+            crate::native::capture::render::aliases::copy(world, &mut context, capture.0.id(), &origins, order);
             if cacheable {
                 cache.rendered.lock().unwrap().insert(entity, fingerprint);
             } else {

@@ -431,19 +431,11 @@ pub fn update(world: &mut World) {
         {
             let toolbar = crate::native::canvas_controls::toolbar(world, root);
             let toggle = button(world, toolbar, root, "2D / 3D", TopologyAction::ToggleView);
+            world
+                .entity_mut(toggle)
+                .insert(crate::native::canvas_controls::ToolbarOrder(4));
             world.get_mut::<Node>(toggle).unwrap().height = px(40);
             world.get_mut::<Node>(toggle).unwrap().align_items = AlignItems::Center;
-            if let Some(index) = world.get::<Children>(toolbar).and_then(|children| {
-                children.iter().position(|child| {
-                    world
-                        .get::<crate::native::edit_mode::EditControl>(child)
-                        .is_some_and(|control| {
-                            control.action == crate::native::edit_mode::EditAction::Toggle
-                        })
-                })
-            }) {
-                world.entity_mut(toolbar).insert_children(index, &[toggle]);
-            }
             world.entity_mut(root).insert(Controls);
         }
         let selected = world

@@ -89,7 +89,10 @@ pub(crate) fn pointer(
         Query<(), With<crate::native::time_castle::TimeSettings>>,
         Query<(), With<crate::native::time_castle::AttachedCard>>,
     ),
-    owners: Query<(&VisualOwner, &GlobalTransform)>,
+    (owners, order): (
+        Query<(&VisualOwner, &GlobalTransform)>,
+        Query<&super::stacking::Order>,
+    ),
     parents: Query<&ChildOf>,
     assets: Query<
         (
@@ -250,6 +253,13 @@ pub(crate) fn pointer(
                                 .get(*mesh)
                                 .is_ok_and(|(owner, _)| cards.contains(owner.0))
                     })
+                    .or(Some(closest))
+            } else if order.contains(closest.0) {
+                hits.iter()
+                    .filter(|(mesh, hit)| {
+                        (hit.distance - closest.1.distance).abs() <= 1e-4 && order.contains(*mesh)
+                    })
+                    .max_by_key(|(mesh, _)| order.get(*mesh).ok().copied())
                     .or(Some(closest))
             } else {
                 Some(closest)

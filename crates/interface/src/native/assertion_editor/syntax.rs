@@ -92,7 +92,14 @@ pub(super) fn parse(text: &str) -> Result<Vec<Assertion>, String> {
             }
             assertion.predicate = uid.into();
         }
-        if words.peek().is_some_and(|word| word.starts_with('@')) {
+        if words.peek().is_some_and(|word| word.starts_with('"')) {
+            let uri: String = serde_json::from_str(words.next().unwrap())
+                .map_err(|_| "Finish the quoted reference")?;
+            if uri.is_empty() || uri.len() > 8192 || uri.chars().any(char::is_control) {
+                return Err("Check the reference address".into());
+            }
+            assertion.object = Some(uri);
+        } else if words.peek().is_some_and(|word| word.starts_with('@')) {
             assertion.object = Some(reference(words.next().unwrap())?);
         }
         if words.peek() == Some(&":") {
@@ -119,7 +126,7 @@ pub(super) fn from_value(value: &Value) -> Assertion {
         predicate: optional("predicate_uid")
             .or_else(|| optional("predicate"))
             .unwrap_or_default(),
-        object: optional("object"),
+        object: optional("uri").or_else(|| optional("object")),
         quantity: optional("quantity"),
         unit: optional("unit"),
     }
@@ -128,7 +135,12 @@ pub(super) fn from_value(value: &Value) -> Assertion {
 pub(super) fn format(assertion: &Assertion) -> String {
     let mut text = format!("#{}", term_text(&assertion.predicate));
     if let Some(object) = &assertion.object {
-        text.push_str(&format!(" @{object}"));
+        if lince_resources::reference::is_uri(object) || object.contains('/') {
+            text.push(' ');
+            text.push_str(&serde_json::to_string(object).expect("reference text"));
+        } else {
+            text.push_str(&format!(" @{object}"));
+        }
     }
     if let Some(quantity) = &assertion.quantity {
         text.push_str(&format!(": {quantity}"));

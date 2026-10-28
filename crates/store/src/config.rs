@@ -80,11 +80,13 @@ pub async fn set_interface_storage(
 }
 
 pub async fn ensure_default(pool: &SqlitePool) -> Result<(), StoreError> {
-    sqlx::query("INSERT OR IGNORE INTO configuration (id, created_at, updated_at) VALUES (1, ?, ?)")
-        .bind(nucleus::execution::now().to_rfc3339())
-        .bind(nucleus::execution::now().to_rfc3339())
-        .execute(pool)
-        .await?;
+    sqlx::query(
+        "INSERT OR IGNORE INTO configuration (id, created_at, updated_at) VALUES (1, ?, ?)",
+    )
+    .bind(nucleus::execution::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
+    .execute(pool)
+    .await?;
     Ok(())
 }
 
@@ -278,6 +280,10 @@ pub async fn set_deletion_confirmation(
     } else {
         "UPDATE configuration SET sand_delete_confirmation = ?, updated_at = ? WHERE id = 1"
     };
-    sqlx::query(query).bind(enabled).bind(nucleus::execution::now().to_rfc3339()).execute(pool).await?;
+    sqlx::query(query)
+        .bind(enabled)
+        .bind(nucleus::execution::now().to_rfc3339())
+        .execute(pool)
+        .await?;
     deletion_confirmations(pool).await
 }

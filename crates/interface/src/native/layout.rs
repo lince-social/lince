@@ -11,6 +11,9 @@ pub(crate) mod viewport;
 
 pub(crate) use engine::edited;
 
+#[cfg(test)]
+pub(crate) fn resolve_for_test(world: &mut World) { engine::resolve(world); }
+
 pub(crate) fn linked(world: &World, entity: Entity) -> bool {
     let Some(layout) = world.get::<LayoutBox>(entity) else {
         return false;
@@ -55,6 +58,8 @@ pub const MAX_DEPTH: usize = 32;
 #[derive(Component, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LayoutBox {
     pub id: [u8; 16],
+    #[serde(default)]
+    pub capture_excluded: bool,
     pub parent: Option<[u8; 16]>,
     pub offset: [f32; 2],
     pub order: i32,
@@ -67,6 +72,7 @@ impl LayoutBox {
         getrandom::fill(&mut id).expect("layout identity");
         Self {
             id,
+            capture_excluded: false,
             parent: None,
             offset: [0.0; 2],
             order: 0,
@@ -89,11 +95,25 @@ impl LayoutBox {
 #[derive(SystemSet, Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ResolveLayout;
 
+#[derive(SystemSet, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ResolveFollow;
+
 pub struct LayoutPlugin;
 
 impl Plugin for LayoutPlugin {
     fn build(&self, app: &mut App) {
+        crate::native::capture::install(app);
+        desktop::windowed_fullscreen::install(app);
+        desktop::compact::install(app);
+        desktop::scratch::install(app);
         app.init_resource::<ButtonInput<KeyCode>>()
+            .add_systems(
+                PreUpdate,
+                desktop::manipulation::pointer::input
+                    .after(crate::native::shortcuts::CaptureInput)
+                    .before(crate::native::shortcuts::desktop_input)
+                    .before(bevy::picking::PickingSystems::ProcessInput),
+            )
             .add_systems(
                 PostUpdate,
                 engine::resolve
@@ -104,10 +124,65 @@ impl Plugin for LayoutPlugin {
             )
             .add_systems(
                 PostUpdate,
-                (engine::finish, engine::finish_content).after(bevy::ui::UiSystems::PostLayout),
+                (
+                    engine::finish,
+                    engine::finish_content.after(crate::native::protein_area::MeasureRecords),
+                )
+                    .after(bevy::ui::UiSystems::PostLayout),
             )
-            .add_systems(Update, panel::cleanup)
+            .add_systems(
+                PostUpdate,
+                (desktop::focus::resolve, desktop::publish)
+                    .chain()
+                    .in_set(ResolveFollow)
+                    .after(ResolveLayout)
+                    .before(bevy::camera::CameraUpdateSystems),
+            )
+            .add_systems(
+                PostUpdate,
+                desktop::manipulation::update
+                    .after(ResolveLayout)
+                    .before(ResolveFollow)
+                    .before(crate::native::topology::presentation::synchronize),
+            )
+            .add_systems(Update, (panel::cleanup, desktop::create_controls))
+            .add_systems(
+                PostUpdate,
+                desktop::monitors::identify
+                    .after(ResolveFollow)
+                    .after(crate::native::topology::presentation::synchronize)
+                    .before(bevy::camera::CameraUpdateSystems)
+                    .before(bevy::ui::UiSystems::Prepare),
+            )
+            .add_systems(
+                PostUpdate,
+                desktop::monitors::update
+                    .after(crate::native::actions::ApplyActions)
+                    .before(bevy::ui::UiSystems::Layout),
+            )
+            .add_systems(
+                PostUpdate,
+                desktop::overview::update
+                    .after(ResolveFollow)
+                    .before(crate::native::topology::assets::update)
+                    .before(crate::native::topology::presentation::synchronize)
+                    .before(bevy::camera::CameraUpdateSystems)
+                    .before(bevy::ui::UiSystems::Prepare),
+            )
+            .add_systems(
+                PostUpdate,
+                desktop::label_controls
+                    .after(crate::native::actions::ApplyActions)
+                    .before(bevy::ui::UiSystems::Layout),
+            )
             .add_observer(desktop::clicked)
+            .add_observer(desktop::focus::moved)
+            .add_systems(
+                PostUpdate,
+                desktop::recent::update
+                    .after(ResolveFollow)
+                    .before(bevy::ui::UiSystems::Layout),
+            )
             .add_observer(engine::scroll);
     }
 }

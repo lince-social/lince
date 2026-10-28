@@ -23,9 +23,9 @@ use crate::records::{self, NewRecord};
 mod agreement_target;
 mod participation;
 pub use agreement_target::{AgreementTargetInput, AgreementTargetOutcome, assign_agreement};
+mod history_terms;
 pub mod karma_snapshot;
 mod publication;
-mod history_terms;
 pub use history_terms::read as public_history;
 pub use publication::publication_input;
 
@@ -237,9 +237,18 @@ pub struct PromiseRevisionInput {
 
 #[derive(Debug, Clone)]
 pub enum RevisionCommit {
-    Committed { revision: u64, fact: Fact, parent_facts: Vec<Fact> },
-    Replayed { revision: u64, fact: Fact },
-    Stale { current_revision: u64 },
+    Committed {
+        revision: u64,
+        fact: Fact,
+        parent_facts: Vec<Fact>,
+    },
+    Replayed {
+        revision: u64,
+        fact: Fact,
+    },
+    Stale {
+        current_revision: u64,
+    },
 }
 
 pub async fn revision_for_request(
@@ -295,13 +304,26 @@ pub async fn revise_whole_draft_guarded<F>(
     pool: &SqlitePool,
     input: WholeDraftRevisionInput,
     expected_state: &nucleus::transfer::karma::Guard,
-    stock_basis: (&str,&str),
+    stock_basis: (&str, &str),
     now: DateTime<Utc>,
     fact_actor: Option<String>,
     sign: F,
 ) -> Result<RevisionCommit, StoreError>
-where F: Fn(&str) -> Option<String> + Send + Sync {
-    commit_whole_draft(pool,input,now,fact_actor,"revise-transfer-draft",false,true,Some((None,Some(expected_state),Some(stock_basis))),sign).await
+where
+    F: Fn(&str) -> Option<String> + Send + Sync,
+{
+    commit_whole_draft(
+        pool,
+        input,
+        now,
+        fact_actor,
+        "revise-transfer-draft",
+        false,
+        true,
+        Some((None, Some(expected_state), Some(stock_basis))),
+        sign,
+    )
+    .await
 }
 
 pub async fn adopt_legacy_draft<F>(
@@ -367,12 +389,44 @@ pub async fn publish_whole_draft<F>(
 where
     F: Fn(&str) -> Option<String> + Send + Sync,
 {
-    commit_whole_draft(pool, input, now, fact_actor, "publish-transfer", false, false, None, sign).await
+    commit_whole_draft(
+        pool,
+        input,
+        now,
+        fact_actor,
+        "publish-transfer",
+        false,
+        false,
+        None,
+        sign,
+    )
+    .await
 }
 
-pub async fn publish_whole_draft_guarded<F>(pool: &SqlitePool, input: WholeDraftRevisionInput, expected: Option<&nucleus::transfer::AgreementGuard>, expected_state: Option<&nucleus::transfer::karma::Guard>, now: DateTime<Utc>, fact_actor: Option<String>, sign: F) -> Result<RevisionCommit, StoreError>
-where F: Fn(&str) -> Option<String> + Send + Sync {
-    commit_whole_draft(pool, input, now, fact_actor, "publish-transfer", false, false, Some((expected, expected_state,None)), sign).await
+pub async fn publish_whole_draft_guarded<F>(
+    pool: &SqlitePool,
+    input: WholeDraftRevisionInput,
+    expected: Option<&nucleus::transfer::AgreementGuard>,
+    expected_state: Option<&nucleus::transfer::karma::Guard>,
+    now: DateTime<Utc>,
+    fact_actor: Option<String>,
+    sign: F,
+) -> Result<RevisionCommit, StoreError>
+where
+    F: Fn(&str) -> Option<String> + Send + Sync,
+{
+    commit_whole_draft(
+        pool,
+        input,
+        now,
+        fact_actor,
+        "publish-transfer",
+        false,
+        false,
+        Some((expected, expected_state, None)),
+        sign,
+    )
+    .await
 }
 
 pub async fn reopen_promise_revision<F>(
@@ -412,7 +466,11 @@ async fn commit_whole_draft<F>(
     action: &'static str,
     allow_legacy: bool,
     mark_submitting_party_as_creator: bool,
-    source_guard: Option<(Option<&nucleus::transfer::AgreementGuard>, Option<&nucleus::transfer::karma::Guard>,Option<(&str,&str)>)>,
+    source_guard: Option<(
+        Option<&nucleus::transfer::AgreementGuard>,
+        Option<&nucleus::transfer::karma::Guard>,
+        Option<(&str, &str)>,
+    )>,
     sign: F,
 ) -> Result<RevisionCommit, StoreError>
 where
@@ -470,15 +528,34 @@ where
         return Ok(RevisionCommit::Replayed { revision, fact });
     }
 
-    if let Some((expected, expected_state,stock_basis)) = source_guard {
-        if let Some((record,expected_basis))=stock_basis {
-            let balance=crate::transfer_balances::read_on(&mut tx,record).await?;
-            let unit:Option<String>=sqlx::query_scalar("SELECT unit_uid FROM record WHERE uid=? AND deleted_at IS NULL").bind(record).fetch_one(&mut *tx).await?;
-            let current=nucleus::karma::canonical_hash("lince.stock-policy-basis.v1",&serde_json::json!({"balance":balance,"unit":unit})).map_err(|error|sqlx::Error::Protocol(error.to_string()))?;
-            if current.as_str()!=expected_basis {return Err(sqlx::Error::Protocol("stock policy inputs changed; refresh the offer".into()));}
+    if let Some((expected, expected_state, stock_basis)) = source_guard {
+        if let Some((record, expected_basis)) = stock_basis {
+            let balance = crate::transfer_balances::read_on(&mut tx, record).await?;
+            let unit: Option<String> = sqlx::query_scalar(
+                "SELECT unit_uid FROM record WHERE uid=? AND deleted_at IS NULL",
+            )
+            .bind(record)
+            .fetch_one(&mut *tx)
+            .await?;
+            let current = nucleus::karma::canonical_hash(
+                "lince.stock-policy-basis.v1",
+                &serde_json::json!({"balance":balance,"unit":unit}),
+            )
+            .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+            if current.as_str() != expected_basis {
+                return Err(sqlx::Error::Protocol(
+                    "stock policy inputs changed; refresh the offer".into(),
+                ));
+            }
         }
         karma_snapshot::check_on(&mut tx, &input.transfer_uid, expected_state).await?;
-        karma_snapshot::check_participant_on(&mut tx, &input.transfer_uid, &input.proposal_author_person_uid, expected).await?;
+        karma_snapshot::check_participant_on(
+            &mut tx,
+            &input.transfer_uid,
+            &input.proposal_author_person_uid,
+            expected,
+        )
+        .await?;
     }
     if let Some(successor) = &input.successor {
         let predecessor = sqlx::query(
@@ -532,11 +609,19 @@ where
     let revision = expected_revision
         .checked_add(1)
         .ok_or_else(|| sqlx::Error::Protocol("transfer revision overflow".into()))?;
-    let old_parent: Option<String> = sqlx::query_scalar("SELECT parent_uid FROM transfer WHERE record_uid = ?")
-        .bind(&input.transfer_uid).fetch_one(&mut *tx).await?;
+    let old_parent: Option<String> =
+        sqlx::query_scalar("SELECT parent_uid FROM transfer WHERE record_uid = ?")
+            .bind(&input.transfer_uid)
+            .fetch_one(&mut *tx)
+            .await?;
     if old_parent != input.terms.parent_uid {
         for parent in old_parent.iter().chain(input.terms.parent_uid.iter()) {
-            crate::transfer_children::require_participant(&mut tx, parent, &input.proposal_author_person_uid).await?;
+            crate::transfer_children::require_participant(
+                &mut tx,
+                parent,
+                &input.proposal_author_person_uid,
+            )
+            .await?;
         }
     }
     validate_transfer_parent(
@@ -598,7 +683,12 @@ where
         .bind(&input.transfer_uid)
         .execute(&mut *tx)
         .await?;
-    records::set_transfer_public_history_on(&mut tx, &input.transfer_uid, input.terms.public_history.as_ref()).await?;
+    records::set_transfer_public_history_on(
+        &mut tx,
+        &input.transfer_uid,
+        input.terms.public_history.as_ref(),
+    )
+    .await?;
     let submitting_party_exists: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM transfer_party
          WHERE transfer_uid = ? AND actor_uid = ?)",
@@ -919,13 +1009,30 @@ where
     let mut parent_facts = Vec::new();
     if old_parent != input.terms.parent_uid {
         if let Some(parent) = &old_parent {
-            sqlx::query("DELETE FROM transfer_child_requirement WHERE parent_uid = ? AND child_uid = ?")
-                .bind(parent).bind(&input.transfer_uid).execute(&mut *tx).await?;
+            sqlx::query(
+                "DELETE FROM transfer_child_requirement WHERE parent_uid = ? AND child_uid = ?",
+            )
+            .bind(parent)
+            .bind(&input.transfer_uid)
+            .execute(&mut *tx)
+            .await?;
         }
         for parent in old_parent.iter().chain(input.terms.parent_uid.iter()) {
-            let key = nucleus::fact::sha256_hex(format!("child-membership:{request_key}:{parent}").as_bytes());
-            parent_facts.push(crate::transfer_children::amend(&mut tx, parent,
-                &input.proposal_author_person_uid, &key, input.authorization_intent_uid.as_deref(), now, &sign).await?);
+            let key = nucleus::fact::sha256_hex(
+                format!("child-membership:{request_key}:{parent}").as_bytes(),
+            );
+            parent_facts.push(
+                crate::transfer_children::amend(
+                    &mut tx,
+                    parent,
+                    &input.proposal_author_person_uid,
+                    &key,
+                    input.authorization_intent_uid.as_deref(),
+                    now,
+                    &sign,
+                )
+                .await?,
+            );
         }
     }
     tx.commit().await?;
@@ -938,7 +1045,9 @@ where
 }
 
 fn validate_revision_request(input: &WholeDraftRevisionInput) -> Result<(), StoreError> {
-    if let Some(terms) = &input.terms.public_history { terms.validate().map_err(sqlx::Error::Protocol)?; }
+    if let Some(terms) = &input.terms.public_history {
+        terms.validate().map_err(sqlx::Error::Protocol)?;
+    }
     let request_key = input.idempotency_key.trim();
     if request_key.is_empty() || request_key.chars().count() > 200 {
         return Err(sqlx::Error::Protocol(
@@ -1027,8 +1136,12 @@ fn validate_dependency_inputs(dependencies: &[TransferDependencyInput]) -> Resul
             ));
         }
         let required_state = normalized_dependency_state(&dependency.required_state)?;
-        if dependency.upstream_kind == TransferDependencyUpstreamKind::Transfer && !matches!(required_state, "agreed" | "kept") {
-            return Err(sqlx::Error::Protocol("Transfer dependencies require an agreed or settled outcome".into()));
+        if dependency.upstream_kind == TransferDependencyUpstreamKind::Transfer
+            && !matches!(required_state, "agreed" | "kept")
+        {
+            return Err(sqlx::Error::Protocol(
+                "Transfer dependencies require an agreed or settled outcome".into(),
+            ));
         }
         if !terms.insert((
             dependency.scope,
@@ -1047,7 +1160,11 @@ fn validate_dependency_inputs(dependencies: &[TransferDependencyInput]) -> Resul
 
 fn normalized_dependency_state(value: &str) -> Result<&str, StoreError> {
     let value = value.trim();
-    let value = if value.is_empty() || value == "settled" { "kept" } else { value };
+    let value = if value.is_empty() || value == "settled" {
+        "kept"
+    } else {
+        value
+    };
     PromiseState::parse(value)
         .map(|state| state.as_str())
         .ok_or_else(|| sqlx::Error::Protocol(format!("unknown dependency state `{value}`")))
@@ -1130,9 +1247,14 @@ async fn replace_dependencies(
         .execute(&mut **tx)
         .await?;
     for dependency in dependencies {
-        let (origin, reference) = if dependency.upstream_kind == TransferDependencyUpstreamKind::Transfer {
-            crate::transfer_outcomes::source_on(tx, transfer_uid, dependency.upstream_uid.trim()).await?
-        } else { (None, None) };
+        let (origin, reference) = if dependency.upstream_kind
+            == TransferDependencyUpstreamKind::Transfer
+        {
+            crate::transfer_outcomes::source_on(tx, transfer_uid, dependency.upstream_uid.trim())
+                .await?
+        } else {
+            (None, None)
+        };
         sqlx::query(
             "INSERT INTO transfer_dependency
                 (uid, transfer_uid, revision, scope, promise_uid, upstream_kind,
@@ -2010,7 +2132,9 @@ where
         return Err(sqlx::Error::Protocol(format!("invalid slug `{slug}`")));
     }
     validate_location(draft.default_place.as_ref())?;
-    if let Some(terms) = &draft.public_history { terms.validate().map_err(sqlx::Error::Protocol)?; }
+    if let Some(terms) = &draft.public_history {
+        terms.validate().map_err(sqlx::Error::Protocol)?;
+    }
     let supplied_promise_uids = draft
         .promises
         .iter()
@@ -2080,7 +2204,8 @@ where
     .execute(&mut *tx)
     .await?;
 
-    records::set_transfer_public_history_on(&mut tx, &transfer_uid, draft.public_history.as_ref()).await?;
+    records::set_transfer_public_history_on(&mut tx, &transfer_uid, draft.public_history.as_ref())
+        .await?;
     let party_uid = nucleus::new_uid("y");
     sqlx::query(
         "INSERT INTO transfer_party (uid, transfer_uid, actor_uid, kind)
@@ -2296,9 +2421,21 @@ where
 
     let mut parent_facts = Vec::new();
     if let Some(parent) = &draft.parent_uid {
-        let key = nucleus::fact::sha256_hex(format!("child-membership:{request_key}:{parent}").as_bytes());
-        parent_facts.push(crate::transfer_children::amend(&mut tx, parent, &draft.creator_person,
-            &key, draft.authorization_intent_uid.as_deref(), now, &sign).await?);
+        let key = nucleus::fact::sha256_hex(
+            format!("child-membership:{request_key}:{parent}").as_bytes(),
+        );
+        parent_facts.push(
+            crate::transfer_children::amend(
+                &mut tx,
+                parent,
+                &draft.creator_person,
+                &key,
+                draft.authorization_intent_uid.as_deref(),
+                now,
+                &sign,
+            )
+            .await?,
+        );
     }
     tx.commit().await?;
     Ok(CreatedTransferDraft {
@@ -4191,7 +4328,9 @@ where
     let source_delta: f64 = source.get("delta");
     let mut pair_item = decode_item(source.get("item_json"))?;
     if pair_item.is_none() && (proposer_record_uid.is_none() || input.record_uid.is_none()) {
-        return Err(sqlx::Error::Protocol("an unbound OPEN claim requires a public item".into()));
+        return Err(sqlx::Error::Protocol(
+            "an unbound OPEN claim requires a public item".into(),
+        ));
     }
     if let Some(item) = &mut pair_item {
         let (giver, receiver) = if source_delta < 0.0 {
@@ -4200,7 +4339,9 @@ where
             (&input.claimant_person_uid, &proposer_person_uid)
         };
         item.exchange = Some(nucleus::transfer::exchange::ExchangeRoute {
-            uid: nucleus::new_uid("exchange"), giver: giver.clone(), receiver: receiver.clone(),
+            uid: nucleus::new_uid("exchange"),
+            giver: giver.clone(),
+            receiver: receiver.clone(),
         });
     }
     if !source_delta.is_finite() || source_delta == 0.0 {
@@ -4388,7 +4529,8 @@ where
         .bind(encode_item(pair_item.as_ref())?)
         .bind(&proposer_promise_uid)
         .bind(&claimant_promise_uid)
-        .execute(&mut *tx).await?;
+        .execute(&mut *tx)
+        .await?;
     reset_agreements_for_revision(&mut tx, &input.transfer_uid, revision, now).await?;
     sqlx::query(
         "INSERT INTO transfer_agreement (uid, transfer_uid, party_uid, level, at, revision)
@@ -4800,7 +4942,8 @@ async fn transition_agreement_on<F>(
     now: DateTime<Utc>,
     sign: &F,
 ) -> Result<AgreementTransitionCommit, StoreError>
-where F: Fn(&str) -> Option<String> + Send + Sync,
+where
+    F: Fn(&str) -> Option<String> + Send + Sync,
 {
     let request_id = validate_request_key(&input.idempotency_key)?;
     let expected_revision = i64::try_from(input.expected_revision)
@@ -5065,7 +5208,10 @@ where F: Fn(&str) -> Option<String> + Send + Sync,
             .bind(expected_revision)
             .fetch_one(&mut **tx)
             .await?;
-            if eligible > 0 && committed * 100 >= eligible * pct && (!cancellation_pending || committed == eligible) {
+            if eligible > 0
+                && committed * 100 >= eligible * pct
+                && (!cancellation_pending || committed == eligible)
+            {
                 sqlx::query(
                     "INSERT INTO transfer_agreement_coalition
                         (transfer_uid, revision, threshold_pct, eligible_count,
@@ -5109,8 +5255,15 @@ where F: Fn(&str) -> Option<String> + Send + Sync,
         created_at: at,
     };
     let coalition = agreement_coalition_on(&mut **tx, &event.transfer_uid, event.revision)
-        .await?.filter(|coalition| coalition.frozen_by_event_uid == event.uid);
-    Ok(AgreementTransitionCommit::Committed(AgreementTransitionOutcome { event, fact, coalition }))
+        .await?
+        .filter(|coalition| coalition.frozen_by_event_uid == event.uid);
+    Ok(AgreementTransitionCommit::Committed(
+        AgreementTransitionOutcome {
+            event,
+            fact,
+            coalition,
+        },
+    ))
 }
 
 fn map_dependency_row(row: SqliteRow) -> Result<TransferRevisionDependency, StoreError> {
@@ -5209,24 +5362,26 @@ pub(crate) async fn agreement_readiness_input_on(
     .fetch_all(&mut *connection)
     .await?
     .into_iter()
-    .map(|row| -> Result<_, StoreError> { Ok(AgreementPromiseReadinessRow {
-        uid: row.get("uid"),
-        exchange: decode_item(row.get("item_json"))?.and_then(|item| item.exchange),
-        record_uid: row.get("record_uid"),
-        concept_uid: row.get("concept_uid"),
-        unit_uid: row.get("unit_uid"),
-        person_uid: row.get("party_uid"),
-        delta: row.get("delta"),
-        window_start: row.get("window_start"),
-        window_end: row.get("window_end"),
-        location: location_snapshot(
-            row.get("location_lat"),
-            row.get("location_lon"),
-            row.get("location_address"),
-        ),
-        state: row.get("state"),
-        revision: row.get::<i64, _>("revision") as u64,
-    }) })
+    .map(|row| -> Result<_, StoreError> {
+        Ok(AgreementPromiseReadinessRow {
+            uid: row.get("uid"),
+            exchange: decode_item(row.get("item_json"))?.and_then(|item| item.exchange),
+            record_uid: row.get("record_uid"),
+            concept_uid: row.get("concept_uid"),
+            unit_uid: row.get("unit_uid"),
+            person_uid: row.get("party_uid"),
+            delta: row.get("delta"),
+            window_start: row.get("window_start"),
+            window_end: row.get("window_end"),
+            location: location_snapshot(
+                row.get("location_lat"),
+                row.get("location_lon"),
+                row.get("location_address"),
+            ),
+            state: row.get("state"),
+            revision: row.get::<i64, _>("revision") as u64,
+        })
+    })
     .collect::<Result<Vec<_>, _>>()?;
     let agreement_pct = transfer
         .get::<Option<i64>, _>("agreement_pct")
@@ -5526,14 +5681,26 @@ where
     activate_occurrences_guarded(pool, input, None, None, now, sign).await
 }
 
-pub async fn activate_occurrences_guarded<F>(pool: &SqlitePool, input: ActivateOccurrencesInput, expected: Option<&nucleus::transfer::AgreementGuard>, expected_state: Option<&nucleus::transfer::karma::Guard>, now: DateTime<Utc>, sign: F) -> Result<OccurrenceActivationCommit, StoreError>
-where F: Fn(&str) -> Option<String> + Send + Sync {
+pub async fn activate_occurrences_guarded<F>(
+    pool: &SqlitePool,
+    input: ActivateOccurrencesInput,
+    expected: Option<&nucleus::transfer::AgreementGuard>,
+    expected_state: Option<&nucleus::transfer::karma::Guard>,
+    now: DateTime<Utc>,
+    sign: F,
+) -> Result<OccurrenceActivationCommit, StoreError>
+where
+    F: Fn(&str) -> Option<String> + Send + Sync,
+{
     let request_id = validate_request_key(&input.idempotency_key)?;
-    let original_authority_records = nucleus::transfer::receipt::original_authority_records(&input.original_authority_records)
-        .map_err(sqlx::Error::Protocol)?;
+    let original_authority_records =
+        nucleus::transfer::receipt::original_authority_records(&input.original_authority_records)
+            .map_err(sqlx::Error::Protocol)?;
     if let Some(outcome) = activation_outcome_for_request(pool, request_id).await? {
-        let original: TransferActivationEvidence = serde_json::from_str(outcome.fact.payload.as_deref()
-            .ok_or_else(|| sqlx::Error::Protocol("missing original activation evidence".into()))?)
+        let original: TransferActivationEvidence =
+            serde_json::from_str(outcome.fact.payload.as_deref().ok_or_else(|| {
+                sqlx::Error::Protocol("missing original activation evidence".into())
+            })?)
             .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
         let requested = input
             .occurrences
@@ -5587,7 +5754,13 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
         .map_err(|_| sqlx::Error::Protocol("transfer revision exceeds SQLite range".into()))?;
     let mut tx = crate::write_tx(pool).await?;
     karma_snapshot::check_on(&mut tx, &input.transfer_uid, expected_state).await?;
-    karma_snapshot::check_participant_on(&mut tx, &input.transfer_uid, &input.actor_person_uid, expected).await?;
+    karma_snapshot::check_participant_on(
+        &mut tx,
+        &input.transfer_uid,
+        &input.actor_person_uid,
+        expected,
+    )
+    .await?;
     let transfer =
         sqlx::query("SELECT revision, agreement_type FROM transfer WHERE record_uid = ?")
             .bind(&input.transfer_uid)
@@ -5652,9 +5825,14 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
         serde_json::from_str(&signed_revision.get::<String, _>("payload"))
             .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
     let original_authorities = participation::read_on(
-        &mut tx, &original_authority_records, &input, &revision_evidence,
-        &signed_revision.get::<String, _>("hash"), now,
-    ).await?;
+        &mut tx,
+        &original_authority_records,
+        &input,
+        &revision_evidence,
+        &signed_revision.get::<String, _>("hash"),
+        now,
+    )
+    .await?;
     let party = sqlx::query(
         "SELECT tp.uid, coalesce(ta.level, 0) AS level
          FROM transfer_party tp
@@ -5671,7 +5849,9 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
     .ok_or_else(|| {
         sqlx::Error::Protocol("occurrence activation requires an accepted Person party".into())
     })?;
-    if transfer.get::<String, _>("agreement_type") != "dependency" && party.get::<i64, _>("level") != 2 {
+    if transfer.get::<String, _>("agreement_type") != "dependency"
+        && party.get::<i64, _>("level") != 2
+    {
         return Err(sqlx::Error::Protocol(
             "occurrence activation requires the acting Person's current agreement".into(),
         ));
@@ -5724,7 +5904,8 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
             )));
         }
         if !(promise.state == PromiseState::Agreed.as_str()
-                || transfer.get::<String, _>("agreement_type") == "dependency" && promise.state == PromiseState::Proposed.as_str())
+            || transfer.get::<String, _>("agreement_type") == "dependency"
+                && promise.state == PromiseState::Proposed.as_str())
             || promise.person_uid != input.actor_person_uid
         {
             return Err(sqlx::Error::Protocol(format!(
@@ -5785,8 +5966,12 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
         }
 
         if let Some(exchange) = &promise.exchange {
-            if exchange.giver != requested.giver_person_uid || exchange.receiver != requested.receiver_person_uid {
-                return Err(sqlx::Error::Protocol("activation must use the agreed exchange route".into()));
+            if exchange.giver != requested.giver_person_uid
+                || exchange.receiver != requested.receiver_person_uid
+            {
+                return Err(sqlx::Error::Protocol(
+                    "activation must use the agreed exchange route".into(),
+                ));
             }
         }
         let opposite = if let Some(uid) = requested.opposite_promise_uid.as_deref() {
@@ -5803,8 +5988,11 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
                 )));
             }
             if !promises_are_exact_opposites(&promise, &opposite)
-                || !(matches!(PromiseState::parse(&opposite.state), Some(PromiseState::Agreed | PromiseState::Active))
-                    || transfer.get::<String, _>("agreement_type") == "dependency" && opposite.state == "proposed")
+                || !(matches!(
+                    PromiseState::parse(&opposite.state),
+                    Some(PromiseState::Agreed | PromiseState::Active)
+                ) || transfer.get::<String, _>("agreement_type") == "dependency"
+                    && opposite.state == "proposed")
                 || (promise.delta < 0.0 && opposite.person_uid != requested.receiver_person_uid)
                 || (promise.delta > 0.0 && opposite.person_uid != requested.giver_person_uid)
             {
@@ -5857,7 +6045,12 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
             .bind(primary_uid)
             .bind(opposite_uid)
             .bind(&at)
-            .bind(promise.exchange.as_ref().map(|exchange| exchange.uid.as_str()))
+            .bind(
+                promise
+                    .exchange
+                    .as_ref()
+                    .map(|exchange| exchange.uid.as_str()),
+            )
             .execute(&mut *tx)
             .await?;
             uid
@@ -5866,7 +6059,10 @@ where F: Fn(&str) -> Option<String> + Send + Sync {
             uid: nucleus::new_uid("toc"),
             promise_uid: promise.uid,
             exchange_path_uid,
-            exchange_uid: promise.exchange.as_ref().map(|exchange| exchange.uid.clone()),
+            exchange_uid: promise
+                .exchange
+                .as_ref()
+                .map(|exchange| exchange.uid.clone()),
             opposite_promise_uid: opposite.map(|value| value.uid),
             record_uid: promise.record_uid,
             concept_uid: promise.concept_uid,
@@ -6908,7 +7104,10 @@ pub async fn occurrence_settlement_progress(
     let slices = occurrence_settlement_slices(pool, occurrence_uid).await?;
     let settled = crate::transfer_accounting::allocated(pool, occurrence_uid, false).await?;
     let cancelled = crate::transfer_cancellations::cancelled(pool, occurrence_uid).await?;
-    let effective_total = crate::exact::difference(crate::transfer_accounting::amount(canonical_quantity)?, cancelled)?;
+    let effective_total = crate::exact::difference(
+        crate::transfer_accounting::amount(canonical_quantity)?,
+        cancelled,
+    )?;
     let remaining = crate::exact::difference(effective_total, settled)?;
     let settled_quantity = settled.to_f64();
     let remaining_quantity = remaining.to_f64().max(0.0);
@@ -7281,7 +7480,8 @@ where
             || slice.application_formula != formula
             || slice.application_formula_version != input.application_formula_version
             || slice.remainder_policy != input.remainder_policy
-            || crate::transfer_effects::reviewed_hash(pool, &slice.application_fact_uid).await? != input.expected_effects_hash
+            || crate::transfer_effects::reviewed_hash(pool, &slice.application_fact_uid).await?
+                != input.expected_effects_hash
         {
             return Err(sqlx::Error::Protocol(
                 "settlement request id was already used with different preview values".into(),
@@ -7360,32 +7560,66 @@ where
 
     let exchange: Option<String> = occurrence.get("exchange_uid");
     let binding = crate::transfer_accounting::Binding {
-        transfer: &transfer_uid, exchange: exchange.as_deref().unwrap_or(&promise_uid),
-        occurrence: Some(&input.occurrence_uid), person: &input.actor_person_uid,
-        record: Some(&input.local_record_uid), unit: canonical_unit_uid.as_deref(),
-        outgoing: occurrence.get::<f64,_>("delta") < 0.0,
+        transfer: &transfer_uid,
+        exchange: exchange.as_deref().unwrap_or(&promise_uid),
+        occurrence: Some(&input.occurrence_uid),
+        person: &input.actor_person_uid,
+        record: Some(&input.local_record_uid),
+        unit: canonical_unit_uid.as_deref(),
+        outgoing: occurrence.get::<f64, _>("delta") < 0.0,
     };
     let application = crate::transfer_accounting::effective_on(&mut tx, &binding).await?;
-    if application.formula != formula || application.formula_hash != formula_hash || application.version != input.application_formula_version {
-        return Err(sqlx::Error::Protocol("settlement private policy or units changed after review".into()));
+    if application.formula != formula
+        || application.formula_hash != formula_hash
+        || application.version != input.application_formula_version
+    {
+        return Err(sqlx::Error::Protocol(
+            "settlement private policy or units changed after review".into(),
+        ));
     }
-    crate::transfer_accounting::require_same_record(&mut tx, &input.occurrence_uid, &input.actor_person_uid, &input.local_record_uid).await?;
-    let applied = crate::transfer_accounting::applied_on(&mut tx, &input.occurrence_uid, &input.actor_person_uid).await?;
-    let amount = nucleus::transfer::application::amount(input.canonical_quantity).map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
-    let total = nucleus::transfer::application::amount(canonical_total).map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
-    let total = crate::transfer_cancellations::effective_total_on(&mut tx, &input.occurrence_uid, total).await?;
+    crate::transfer_accounting::require_same_record(
+        &mut tx,
+        &input.occurrence_uid,
+        &input.actor_person_uid,
+        &input.local_record_uid,
+    )
+    .await?;
+    let applied = crate::transfer_accounting::applied_on(
+        &mut tx,
+        &input.occurrence_uid,
+        &input.actor_person_uid,
+    )
+    .await?;
+    let amount = nucleus::transfer::application::amount(input.canonical_quantity)
+        .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+    let total = nucleus::transfer::application::amount(canonical_total)
+        .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+    let total =
+        crate::transfer_cancellations::effective_total_on(&mut tx, &input.occurrence_uid, total)
+            .await?;
     let exact_after = crate::exact::sum_exact([applied.canonical, amount])?;
     let exact_remaining = crate::exact::difference(total, exact_after)?;
     if exact_remaining.mantissa() < 0 {
-        return Err(sqlx::Error::Protocol("settlement slice exceeds the occurrence's remaining quantity".into()));
+        return Err(sqlx::Error::Protocol(
+            "settlement slice exceeds the occurrence's remaining quantity".into(),
+        ));
     }
     let group = crate::transfer_effects::quote_on(&mut tx, &binding, exact_after).await?;
-    crate::transfer_effects::require_review(group.as_ref(), input.expected_effects_hash.as_deref())?;
+    crate::transfer_effects::require_review(
+        group.as_ref(),
+        input.expected_effects_hash.as_deref(),
+    )?;
     let (exact_delta, exact_local_after) = if let Some(group) = &group {
         (group.effects[0].delta, group.effects[0].cumulative_after)
-    } else { crate::transfer_accounting::calculate(formula, exact_after, applied.local)? };
-    if exact_delta.to_f64() != input.local_delta || exact_local_after.to_f64() != input.local_cumulative_after {
-        return Err(sqlx::Error::Protocol("settlement local delta differs from the reviewed cumulative result".into()));
+    } else {
+        crate::transfer_accounting::calculate(formula, exact_after, applied.local)?
+    };
+    if exact_delta.to_f64() != input.local_delta
+        || exact_local_after.to_f64() != input.local_cumulative_after
+    {
+        return Err(sqlx::Error::Protocol(
+            "settlement local delta differs from the reviewed cumulative result".into(),
+        ));
     }
     let cumulative_before = applied.canonical.to_f64();
     let cumulative_after = exact_after.to_f64();
@@ -7544,16 +7778,19 @@ where
             .execute(&mut *tx)
             .await?;
     }
-    crate::records::bump_quantity(
+    crate::records::bump_quantity(&mut tx, &input.local_record_uid, exact_delta, &at).await?;
+    crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::zero(), &at).await?;
+    crate::transfer_effects::apply_on(
         &mut tx,
-        &input.local_record_uid,
-        exact_delta,
-        &at,
+        group.as_ref(),
+        &application_fact,
+        &input.occurrence_uid,
+        &input.actor_person_uid,
+        input.authorization_intent_uid.as_deref(),
+        now,
+        &sign,
     )
     .await?;
-    crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::zero(), &at).await?;
-    crate::transfer_effects::apply_on(&mut tx, group.as_ref(), &application_fact,
-        &input.occurrence_uid, &input.actor_person_uid, input.authorization_intent_uid.as_deref(), now, &sign).await?;
     tx.commit().await?;
 
     let outcome = occurrence_settlement_outcome_for_request(pool, request_id)
@@ -7718,8 +7955,12 @@ where
     }
     let original = sqlx::query("SELECT f.delta_mantissa, f.delta_scale, json_extract(f.payload, '$.local_unit_uid') AS original_unit, r.unit_uid AS current_unit FROM fact f JOIN record r ON r.uid = f.record_uid WHERE f.uid = ? AND f.record_uid = ?")
         .bind(&slice.application_fact_uid).bind(&slice.local_record_uid).fetch_one(&mut *tx).await?;
-    if original.get::<Option<String>,_>("original_unit") != original.get::<Option<String>,_>("current_unit") {
-        return Err(sqlx::Error::Protocol("restore the original Record unit before correcting this application".into()));
+    if original.get::<Option<String>, _>("original_unit")
+        != original.get::<Option<String>, _>("current_unit")
+    {
+        return Err(sqlx::Error::Protocol(
+            "restore the original Record unit before correcting this application".into(),
+        ));
     }
     let inverse_delta = crate::exact::negate(crate::exact::read_decimal(&original, "delta")?)?;
     let correction_uid = nucleus::new_uid("tsc");
@@ -7796,15 +8037,16 @@ where
     .bind(&at)
     .execute(&mut *tx)
     .await?;
-    crate::records::bump_quantity(
+    crate::records::bump_quantity(&mut tx, &slice.local_record_uid, inverse_delta, &at).await?;
+    crate::transfer_effects::compensate_on(
         &mut tx,
-        &slice.local_record_uid,
-        inverse_delta,
-        &at,
+        &slice.application_fact_uid,
+        &input.actor_person_uid,
+        input.authorization_intent_uid.as_deref(),
+        now,
+        &sign,
     )
     .await?;
-    crate::transfer_effects::compensate_on(&mut tx, &slice.application_fact_uid, &input.actor_person_uid,
-        input.authorization_intent_uid.as_deref(), now, &sign).await?;
     tx.commit().await?;
 
     let outcome = occurrence_settlement_compensation_outcome_for_request(pool, request_id)

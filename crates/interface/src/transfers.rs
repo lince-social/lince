@@ -3,6 +3,7 @@ pub mod fields;
 pub mod matching;
 pub mod transport;
 pub mod workflows;
+pub mod workspace;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};

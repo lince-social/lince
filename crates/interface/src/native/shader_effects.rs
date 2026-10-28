@@ -22,6 +22,7 @@ mod catalog;
 mod cleaning_tests;
 mod mesh;
 mod numeric;
+pub(crate) mod compositor;
 mod placement;
 mod sphere;
 pub use sphere::RecordSphere;
@@ -36,6 +37,14 @@ pub(crate) fn appearance_owner(world: &World, preview: Entity) -> Option<Entity>
             .get::<Floating>(parent)
             .map_or(parent, |floating| floating.record),
     )
+}
+
+pub(crate) fn capture_sources(world: &World, entity: Entity) -> impl Iterator<Item = Entity> {
+    [
+        world.get::<Floating>(entity).map(|floating| floating.record),
+        world.get::<RecordMesh>(entity).map(|mesh| mesh.0),
+        world.get::<RecordSphere>(entity).map(|sphere| sphere.0),
+    ].into_iter().flatten()
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -441,6 +450,8 @@ struct Feeds(HashMap<String, Feed>, Vec<(RecordBinding, String)>);
 pub(crate) struct ShaderSettings {
     pub disabled: bool,
     pub reduced_motion: bool,
+    #[serde(default)]
+    pub compositor: compositor::Settings,
 }
 
 pub(crate) fn motion_allowed(world: &World) -> bool {
@@ -452,6 +463,16 @@ pub(crate) fn disabled(world: &World) -> bool {
     world
         .get_resource::<ShaderSettings>()
         .is_some_and(|settings| settings.disabled)
+}
+
+pub fn set_compositor_presentation_active(world: &mut World, active: bool) {
+    if world.get_resource::<compositor::PresentationActive>().is_none_or(|current| current.0 != active) {
+        world.insert_resource(compositor::PresentationActive(active));
+    }
+}
+
+pub(crate) fn compositor_presentation_active(world: &World) -> bool {
+    world.get_resource::<compositor::PresentationActive>().is_none_or(|current| current.0)
 }
 
 pub(crate) fn lighting_inputs(world: &World, entity: Entity) -> Option<model::ResolvedInputs> {
@@ -476,9 +497,17 @@ pub(crate) fn surface_image(world: &World, entity: Entity) -> Option<(Entity, Ha
 }
 
 pub(crate) fn projection_image(world: &mut World, entity: Entity) -> Option<Handle<Image>> {
-    if let Some((_, image)) = surface_image(world, entity) { return Some(image); }
-    if disabled(world) { return None; }
-    let preview = world.query::<&Floating>().iter(world).find(|floating| floating.record == entity && !floating.distant).map(|floating| floating.preview)?;
+    if let Some((_, image)) = surface_image(world, entity) {
+        return Some(image);
+    }
+    if disabled(world) {
+        return None;
+    }
+    let preview = world
+        .query::<&Floating>()
+        .iter(world)
+        .find(|floating| floating.record == entity && !floating.distant)
+        .map(|floating| floating.preview)?;
     shader::effect_image(world, preview)
 }
 
@@ -505,6 +534,21 @@ pub fn surface_reading(world: &World, entity: Entity) -> Option<SurfaceReading> 
     })
 }
 
+pub(crate) fn inspected_source(world: &World, mut preview: Entity) -> Option<Entity> {
+    for _ in 0..128 {
+        if let Some(editor) = world.get::<Editor>(preview) {
+            return match editor.target {
+                Target::Surface(entity) => world
+                    .get::<Background>(entity)
+                    .map(|background| background.preview),
+                Target::Record(_) => None,
+            };
+        }
+        preview = world.get::<ChildOf>(preview)?.parent();
+    }
+    None
+}
+
 pub(crate) fn organs(world: &World) -> std::collections::HashSet<String> {
     let mut organs = numeric::organs(world);
     if let Some(feeds) = world.get_resource::<Feeds>() {
@@ -529,6 +573,7 @@ pub(crate) struct UpdateShaderEffects;
 impl Plugin for ShaderEffectsPlugin {
     fn build(&self, app: &mut App) {
         sphere::install(app);
+        compositor::install(app);
         app.init_resource::<Feeds>()
             .init_resource::<numeric::NumericFeeds>()
             .init_resource::<ShaderSettings>()
@@ -578,7 +623,9 @@ impl Action for ToggleRecords {
 pub(crate) struct OpenRecord(pub RecordBinding);
 impl Action for OpenRecord {
     fn apply(&self, world: &mut World, owner: Entity) {
-        if crate::native::laboratory::blocked(world, owner) { return; }
+        if crate::native::laboratory::blocked(world, owner) {
+            return;
+        }
         let Some(root) = root(world, owner) else {
             return;
         };
@@ -2258,13 +2305,17 @@ fn update(
     }
     let mut bindings: HashMap<String, RecordBinding> = HashMap::new();
     for (entity, editor) in world.query::<(Entity, &Editor)>().iter(world) {
-        if crate::native::laboratory::blocked(world, entity) { continue; }
+        if crate::native::laboratory::blocked(world, entity) {
+            continue;
+        }
         if let Target::Record(binding) = &editor.target {
             bindings.insert(feed_key(binding), binding.clone());
         }
     }
     for (entity, surface) in world.query::<(Entity, &Surface)>().iter(world) {
-        if crate::native::laboratory::blocked(world, entity) { continue; }
+        if crate::native::laboratory::blocked(world, entity) {
+            continue;
+        }
         if let Some(uid) = &surface.record
             && nucleus::valid_uid(uid, "r")
         {
@@ -2633,7 +2684,7 @@ fn update_presentations(world: &mut World) {
             .filter(|preview| world.get_entity(*preview).is_ok())
             .unwrap_or_else(|| {
                 let preview = shader::effect(world, entity, effect.clone(), quantity.clone());
-                let output = shader::output(world, preview);
+                let output = shader::background_output(world, preview);
                 world.entity_mut(preview).insert((
                     Node {
                         position_type: PositionType::Absolute,
@@ -2778,7 +2829,7 @@ impl Action for ToggleAll {
 }
 
 pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {
-    crate::native::sand_panel::button(
+    let effects = crate::native::sand_panel::button(
         world,
         panel,
         root,
@@ -2789,7 +2840,8 @@ pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {
         },
         ToggleAll,
     );
-    crate::native::sand_panel::button(
+    world.entity_mut(effects).insert(SettingsToggle::Effects);
+    let motion = crate::native::sand_panel::button(
         world,
         panel,
         root,
@@ -2800,6 +2852,29 @@ pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {
         },
         ToggleMotion,
     );
+    world.entity_mut(motion).insert(SettingsToggle::Motion);
+    compositor::controls(world, root, panel);
+}
+
+#[derive(Component, Clone, Copy)]
+enum SettingsToggle { Effects, Motion }
+
+fn update_settings_controls(world: &mut World) {
+    let controls = world.query::<(Entity, &SettingsToggle)>().iter(world).map(|(entity, kind)| (entity, *kind)).collect::<Vec<_>>();
+    for (entity, kind) in controls {
+        let caption = match kind {
+            SettingsToggle::Effects if disabled(world) => "Shader effects: Off",
+            SettingsToggle::Effects => "Shader effects: On",
+            SettingsToggle::Motion if motion_allowed(world) => "Shader reduced motion: Off",
+            SettingsToggle::Motion => "Shader reduced motion: On",
+        };
+        let children = world.get::<Children>(entity).map(|children| children.into_iter().copied().collect::<Vec<_>>()).unwrap_or_default();
+        for child in children {
+            if let Some(mut text) = world.get_mut::<Text>(child) && text.0 != caption { text.0 = caption.into(); }
+        }
+        if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) && node.label() != Some(caption) { node.set_label(caption); }
+        if let Some(mut tooltip) = world.get_mut::<crate::native::icons::Tooltip>(entity) && tooltip.0 != caption { tooltip.0 = caption.into(); }
+    }
 }
 
 #[derive(Clone)]
@@ -2827,6 +2902,8 @@ pub(crate) struct SavedEditor {
     size: [f32; 2],
     placement: crate::native::sand_placement::Placement,
 }
+
+crate::native::sand_placement::scratch::saved!(SavedEditor);
 
 impl SavedEditor {
     pub(crate) fn matches(&self, binding: &RecordBinding) -> bool {

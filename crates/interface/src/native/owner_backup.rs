@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::{prelude::*, text::EditableText};
 use cell::owner_backup::{BackupRequest, Passphrase};
@@ -56,7 +57,7 @@ impl Plugin for BackupPlugin {
 
 pub(crate) fn populate(world: &mut World, parent: Entity) {
     let form = panel::column(world, parent);
-    crate::native::edit_mode::label(world, form, "Encrypted owner backup", 16.0);
+    crate::native::edit_mode::label(world, form, Tr::EncryptedBackup.text(), 16.0);
     if world.contains_resource::<crate::native::layout::desktop::HostRequests>() {
         crate::native::edit_mode::label(
             world,
@@ -72,17 +73,12 @@ pub(crate) fn populate(world: &mut World, parent: Entity) {
         "Use the owner device. Lince closes, captures retained Records and owner keys, then reopens. Choose a new file outside the data folder. External attachments, interface layouts and live messaging sessions are excluded. Database limit: 1 GiB. Copying the complete data directory requires Lince to be stopped.",
         13.0,
     );
-    let destination = panel::field(world, form, "New backup file", "");
-    let passphrase = secret_field(world, form, "Backup passphrase");
-    let confirmation = secret_field(world, form, "Repeat backup passphrase");
-    let status = crate::native::edit_mode::label(
-        world,
-        form,
-        "Use a long passphrase and keep it with your backup; it is required to open the file.",
-        13.0,
-    );
+    let destination = panel::field(world, form, Tr::NewBackupFile.text(), "");
+    let passphrase = secret_field(world, form, Tr::BackupPassphrase.text());
+    let confirmation = secret_field(world, form, Tr::RepeatBackupPassphrase.text());
+    let status = crate::native::edit_mode::label(world, form, Tr::PassphraseHelp.text(), 13.0);
     crate::native::accessibility::status(world, status);
-    panel::button(world, form, form, "Back up and reopen Lince", Submit);
+    panel::button(world, form, form, Tr::BackupReopen.text(), Submit);
     world.entity_mut(form).insert(Form {
         destination,
         passphrase,

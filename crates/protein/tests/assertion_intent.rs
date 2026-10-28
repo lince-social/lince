@@ -57,6 +57,7 @@ fn assertion(number: u128) -> AssertionState {
         subject_uid: r(3),
         predicate_uid: c(1),
         object_uid: None,
+        object_uri: None,
         role: AssertionRole::Ordinary,
         quantity: None,
         unit_uid: None,
@@ -74,6 +75,7 @@ fn graph() -> GraphSnapshot {
             })
             .collect(),
         assertions: vec![assertion(1)],
+        resolved_links: Default::default(),
         places: BTreeSet::new(),
     }
 }
@@ -1176,5 +1178,33 @@ fn assertion_intent_place_depth_and_cycle_limits_remain_fail_closed() {
     assert_eq!(
         check(&nested, &before, &before, &[]),
         Err(AuthorityError::CyclicGraph)
+    );
+}
+
+#[test]
+fn uri_assertions_require_the_declared_uri_grant_and_remain_distinct_from_unary_assertions() {
+    let before = graph();
+    let mut external = assertion(2);
+    external.object_uri =
+        Some("https://example.org/Plato.lingua#r_00000000000000000000000009".into());
+    let mut after = before.clone();
+    after.assertions.push(external.clone());
+    let attempted = intent(None, Some(external.clone()), &[]);
+    let mut allowed = policy();
+    assert_eq!(
+        check(&allowed, &before, &after, std::slice::from_ref(&attempted)),
+        Err(AuthorityError::Denied)
+    );
+    allowed.grants[0].assertions_add.push(rule(
+        1,
+        AssertionRole::Ordinary,
+        AssertionTarget::Uri(external.object_uri.clone().unwrap()),
+    ));
+    assert!(check(&allowed, &before, &after, std::slice::from_ref(&attempted)).is_ok());
+    allowed.grants[0].assertions_add.last_mut().unwrap().target =
+        AssertionTarget::Uri("https://example.org/Another.lingua".into());
+    assert_eq!(
+        check(&allowed, &before, &after, &[attempted]),
+        Err(AuthorityError::Denied)
     );
 }

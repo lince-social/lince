@@ -205,12 +205,8 @@ impl Action for Command {
                         let mut text = String::new();
                         std::fs::File::open(&path)
                             .map_err(|error| error.to_string())?
-                            .take((store::knowledge::BUNDLE_LIMIT + 1) as u64)
                             .read_to_string(&mut text)
                             .map_err(|error| error.to_string())?;
-                        if text.len() > store::knowledge::BUNDLE_LIMIT {
-                            return Err("Choose a knowledge file of at most 16 MiB".into());
-                        }
                         Ok(Some((
                             format!("Loaded {} ({} bytes)", path.display(), text.len()),
                             text,

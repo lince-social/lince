@@ -20,6 +20,9 @@ use std::{
 
 const STEP: Duration = Duration::from_nanos(8_333_333);
 
+#[cfg(test)]
+mod manipulation;
+
 fn collider(size: Vec2) -> Collider {
     Collider::cuboid(
         f64::from(size.x),
@@ -186,12 +189,21 @@ pub(crate) fn held(world: &World, sand: Entity) -> bool {
         .get::<crate::native::protein_area::placement::Pending>(sand)
         .is_some()
         || crate::native::canvas_pan::dragged(world) == Some(sand)
+        || crate::native::layout::desktop::manipulation::held(world, sand)
     {
         return true;
     }
     let mut focus = world
         .get_resource::<InputFocus>()
         .and_then(|focus| focus.get());
+    if focus == Some(sand)
+        && world
+            .get::<crate::native::layout::desktop::Managed>(sand)
+            .is_some()
+        && world.get::<bevy::text::EditableText>(sand).is_none()
+    {
+        return false;
+    }
     let mut cursor = focus;
     while let Some(entity) = cursor {
         if world
@@ -267,7 +279,7 @@ fn synchronize(world: &mut World) -> bool {
                     .get::<crate::native::layout::desktop::Suppressed>(*entity)
                     .is_none()
                 && world
-                    .get::<crate::native::external_drop::Preview>(*entity)
+                    .get::<crate::native::canvas_item::Ephemeral>(*entity)
                     .is_none()
                 && world
                     .get::<crate::native::area::InfluenceArea>(*entity)
@@ -294,7 +306,7 @@ fn synchronize(world: &mut World) -> bool {
                 && crate::native::workspace_config::enabled(world, parent.parent(), member.0)
         })
         .map(|(entity, item, parent, member, _)| {
-            let mut item = *item;
+            let mut item = crate::native::canvas::presented(world, entity).unwrap_or(*item);
             item.size *= world
                 .get::<crate::native::area_effects::AreaScale>(entity)
                 .map_or(1.0, |scale| scale.0);
@@ -371,9 +383,11 @@ fn synchronize(world: &mut World) -> bool {
                 world
                     .resource_mut::<crate::native::area_effects::Influences>()
                     .forget(sand);
-                world
-                    .entity_mut(entity)
-                    .insert((Position(position.extend(0.0)), LinearVelocity::ZERO));
+                world.entity_mut(entity).insert((
+                    Position(position.extend(0.0)),
+                    LinearVelocity::ZERO,
+                    AngularVelocity::ZERO,
+                ));
                 world.entity_mut(entity).remove::<Sleeping>();
             }
             if changed_held {
@@ -666,12 +680,32 @@ pub(crate) mod tests {
     use bevy::time::TimeUpdateStrategy;
 
     fn fixture(offset: DVec2) -> (App, Entity, Entity, Entity) {
+        desktop_fixture(offset, false)
+    }
+
+    pub(super) fn desktop_fixture(offset: DVec2, desktop: bool) -> (App, Entity, Entity, Entity) {
         let mut app = App::new();
         crate::native::laboratory::isolate(app.world_mut());
         app.add_plugins((MinimalPlugins, WorkspacePhysicsPlugin))
             .insert_resource(TimeUpdateStrategy::ManualDuration(STEP));
+        if desktop {
+            app.add_plugins(crate::native::layout::LayoutPlugin)
+                .insert_resource(crate::native::layout::desktop::DefaultLayout(
+                    crate::host::WorkspaceLayout::Free,
+                ));
+        }
         app.finish();
         let root = app.world_mut().spawn(Workspaces::default()).id();
+        if desktop {
+            app.world_mut().entity_mut(root).insert((
+                crate::native::canvas::CanvasView::default(),
+                ComputedNode {
+                    size: Vec2::new(1000.0, 700.0),
+                    inverse_scale_factor: 1.0,
+                    ..default()
+                },
+            ));
+        }
         let mut area = InfluenceArea::new(AreaShape::Square, offset, DVec2::splat(1000.0));
         area.rules = vec![PropertyRule {
             property: Property::Quantity,
@@ -695,7 +729,7 @@ pub(crate) mod tests {
         (app, root, area, sand)
     }
 
-    fn advance(app: &mut App, ticks: usize) {
+    pub(super) fn advance(app: &mut App, ticks: usize) {
         for _ in 0..ticks {
             app.update();
         }
@@ -735,6 +769,84 @@ pub(crate) mod tests {
             .remove::<crate::native::layout::desktop::Suppressed>();
         advance(&mut app, 60);
         assert!(app.world().get::<CanvasItem>(sand).unwrap().position.x < start.x - 10.0);
+    }
+
+    #[cfg_attr(test, test)]
+    fn workspace_tiling_pauses_motion_and_free_mode_resumes_from_the_authored_position() {
+        use crate::{host::DesktopAction, native::actions::Action};
+
+        let (mut app, root, _, sand) = desktop_fixture(DVec2::ZERO, true);
+        crate::native::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        advance(&mut app, 30);
+        let free = app.world().get::<CanvasItem>(sand).unwrap().position;
+        assert!(free.x < 200.0);
+        DesktopAction::ToggleTiling.apply(app.world_mut(), root);
+        advance(&mut app, 4);
+        let tiled = app.world().get::<CanvasItem>(sand).unwrap().position;
+        assert_ne!(tiled, free);
+        advance(&mut app, 60);
+        assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, tiled);
+        assert_eq!(
+            app.world_mut()
+                .query::<&BodyLink>()
+                .iter(app.world())
+                .count(),
+            0
+        );
+        DesktopAction::ToggleTiling.apply(app.world_mut(), root);
+        advance(&mut app, 60);
+        let resumed = app.world().get::<CanvasItem>(sand).unwrap().position;
+        assert!(resumed.x < free.x - 10.0, "{free:?} -> {resumed:?}");
+        assert!(resumed.y.abs() < 0.000_001, "{resumed:?}");
+        assert_eq!(
+            app.world_mut()
+                .query::<&BodyLink>()
+                .iter(app.world())
+                .count(),
+            1
+        );
+        DesktopAction::CycleItemWidth.apply(app.world_mut(), root);
+        advance(&mut app, 2);
+        let width = app.world().get::<CanvasItem>(sand).unwrap().size.x;
+        advance(&mut app, 30);
+        assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().size.x, width);
+        assert!(
+            app.world().get::<Workspaces>(root).unwrap().entries[0]
+                .desktop
+                .items()[0]
+                .free_width
+                .is_some()
+        );
+    }
+
+    #[cfg_attr(test, test)]
+    fn following_uses_the_current_physics_position_without_relative_screen_motion() {
+        use crate::{host::DesktopAction, native::actions::Action};
+        let (mut app, root, _, sand) = desktop_fixture(DVec2::ZERO, true);
+        app.world_mut()
+            .entity_mut(root)
+            .insert(crate::native::canvas_selection::SandSelection(vec![sand]));
+        DesktopAction::Unfocus.apply(app.world_mut(), root);
+        DesktopAction::ToggleFocus.apply(app.world_mut(), root);
+        crate::native::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        let start = app.world().get::<CanvasItem>(sand).unwrap().position;
+        for _ in 0..60 {
+            app.update();
+            let item = app.world().get::<CanvasItem>(sand).unwrap();
+            let view = app
+                .world()
+                .get::<crate::native::canvas::CanvasView>(root)
+                .unwrap();
+            let top_left = view
+                .screen_position(item, Vec2::new(1000.0, 700.0))
+                .unwrap();
+            let center = top_left + item.size * view.zoom as f32 * 0.5;
+            assert!(
+                center.distance(Vec2::new(500.0, 350.0)) < 0.001,
+                "{center:?}"
+            );
+        }
+        assert!(app.world().get::<CanvasItem>(sand).unwrap().position.x < start.x - 1.0);
     }
 
     #[test]
@@ -1485,6 +1597,8 @@ pub(crate) mod tests {
 
     crate::native::laboratory_cases! {
         tiling_and_fullscreen_suppression_remove_physics_until_released,
+        workspace_tiling_pauses_motion_and_free_mode_resumes_from_the_authored_position,
+        following_uses_the_current_physics_position_without_relative_screen_motion,
         size_and_immunity_update_colliders_and_saved_force_without_resizing_the_sand,
         protein_membership_wakes_only_matching_source_bodies_and_stops_force_on_disconnect,
         area_reach_changes_wake_offscreen_bodies_and_apply_real_motion,

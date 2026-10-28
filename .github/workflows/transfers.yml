@@ -1,0 +1,71 @@
+name: Transfer validation
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: transfers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      RUSTFLAGS: '-D warnings -C link-arg=-fuse-ld=mold'
+      RUST_MIN_STACK: '33554432'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.96.0'
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mold pkg-config clang libclang-dev libfontconfig-dev libpipewire-0.3-dev libdbus-1-dev libglib2.0-dev libpulse-dev libspeechd-dev libva-dev libssl-dev libsqlite3-dev libasound2-dev libwayland-dev libxkbcommon-dev libx11-dev libxcb1-dev libxrandr-dev libxi-dev libxcursor-dev libgl1-mesa-dev libvulkan-dev libegl1-mesa-dev libgbm-dev libdrm-dev libudev-dev libinput-dev libseat-dev
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: transfers-native
+      - name: Check migration guard
+        run: |
+          mkdir -p transfer-validation
+          set -o pipefail
+          cargo check --locked -p store 2>&1 | tee transfer-validation/store-check.log
+          cargo test --locked -p store --test migration_guard 2>&1 | tee transfer-validation/migration-guard.log
+      - name: Check native and mobile
+        run: |
+          mkdir -p transfer-validation
+          set -o pipefail
+          cargo check --locked -p lince-interface -p lince-mobile --features lince-interface/native-presentation,lince-mobile/preview 2>&1 | tee transfer-validation/check.log
+      - name: Run Transfer and location regressions
+        run: |
+          set -o pipefail
+          cargo test --locked -p lince-interface -p lince-mobile --features lince-interface/native-presentation,lince-mobile/preview --lib -- transfers::workspace::tests transfers::actions::lifecycle_tests transport::tests native::transfer_castle:: map_navigation::tests map::tests location::tests visibility::tests workflows::tests --test-threads=1 2>&1 | tee transfer-validation/regressions.log
+      - name: Run backend Transport journeys
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          cargo test --locked -p engine --test transport_journey -- --test-threads=1 2>&1 | tee transfer-validation/journeys.log
+      - name: Run Transfer Laboratory
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          cargo run --locked -p lince-interface --features native-presentation,images --example transfer_laboratory -- transfer-validation/laboratory.json map_first_transport_panels_preserve_map_and_guard_an_open_draft four_lince_transport_control_draft_finishes_sharing_before_later_settlement 2>&1 | tee transfer-validation/laboratory.log
+      - name: Record source identity
+        if: always()
+        run: |
+          mkdir -p transfer-validation
+          printf '%s\n' "$GITHUB_SHA" > transfer-validation/revision
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-regressions
+          path: transfer-validation
+          if-no-files-found: error

@@ -1,6 +1,6 @@
 use crate::Result;
-use base64::{engine::general_purpose::STANDARD, Engine as _};
-use serde_json::{json, Value};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use serde_json::{Value, json};
 use std::{
     ffi::OsString,
     fs,

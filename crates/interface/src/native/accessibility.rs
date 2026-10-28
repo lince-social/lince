@@ -1,5 +1,12 @@
 use bevy::{a11y::AccessibilityNode, prelude::*};
 
+mod actions;
+mod text;
+pub use actions::{Context, context, owner_context, owns_keyboard, perform, supported_actions};
+pub use actions::{reveal_target, revealed};
+pub use actions::MAX_ACTION_BYTES;
+pub use text::text_nodes;
+
 #[derive(Component)]
 struct LiveText;
 
@@ -7,13 +14,21 @@ struct LiveText;
 struct AccessibleInput(bool);
 
 pub fn protected_text_input(world: &World, entity: Entity) -> bool {
-    world.get::<AccessibleInput>(entity).is_some_and(|input| input.0)
+    world
+        .get::<AccessibleInput>(entity)
+        .is_some_and(|input| input.0)
 }
 
 pub(crate) struct AccessibilityPlugin;
 
 impl Plugin for AccessibilityPlugin {
     fn build(&self, app: &mut App) {
+        app.add_observer(|event: On<bevy::input_focus::FocusGained>, mut commands: Commands| {
+            if event.cause == bevy::input_focus::FocusCause::Navigated && event.entity == event.original_event_target() {
+                let entity = event.entity;
+                commands.queue(move |world: &mut World| actions::navigated(world, entity));
+            }
+        });
         app.add_systems(
             PostUpdate,
             (sync, inputs)

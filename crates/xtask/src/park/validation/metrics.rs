@@ -38,11 +38,19 @@ fn parse(log: &str) -> Samples {
             let fields: Vec<_> = line.split_whitespace().collect();
             if let [output, presented, observed, clock @ ("drm" | "dispatch")] = fields.as_slice()
                 && let (Ok(output), Ok(presented), Ok(observed)) = (
-                    output.parse(), presented.parse::<f64>(), observed.parse::<f64>(),
+                    output.parse(),
+                    presented.parse::<f64>(),
+                    observed.parse::<f64>(),
                 )
-                && presented.is_finite() && presented >= 0.0 && observed.is_finite()
+                && presented.is_finite()
+                && presented >= 0.0
+                && observed.is_finite()
             {
-                samples.scanouts.entry(output).or_default().push((presented, observed, *clock == "drm"));
+                samples.scanouts.entry(output).or_default().push((
+                    presented,
+                    observed,
+                    *clock == "drm",
+                ));
             }
         } else if let Some(line) = line.strip_prefix("Park frame ") {
             let fields: Vec<_> = line.split_whitespace().collect();
@@ -78,10 +86,25 @@ fn summarize(
     minimum_fps: f64,
     surface: Option<u64>,
 ) -> Result<Value> {
-    let selected = surface.or_else(|| samples.windows.iter().max_by_key(|(_, events)| {
-        events.iter().map(|(node, version, _)| (*node, *version)).collect::<BTreeSet<_>>().len()
-    }).map(|(id, _)| *id)).ok_or("No application presentation traces; enable LINCE_PARK_TRACE_FRAMES=1")?;
-    let selected_events = samples.windows.get(&selected).ok_or("Requested application surface was not present")?;
+    let selected = surface
+        .or_else(|| {
+            samples
+                .windows
+                .iter()
+                .max_by_key(|(_, events)| {
+                    events
+                        .iter()
+                        .map(|(node, version, _)| (*node, *version))
+                        .collect::<BTreeSet<_>>()
+                        .len()
+                })
+                .map(|(id, _)| *id)
+        })
+        .ok_or("No application presentation traces; enable LINCE_PARK_TRACE_FRAMES=1")?;
+    let selected_events = samples
+        .windows
+        .get(&selected)
+        .ok_or("Requested application surface was not present")?;
     let first = selected_events
         .iter()
         .map(|(_, _, time)| *time)
@@ -142,7 +165,14 @@ fn summarize(
             "hardware_timestamps": times.values().filter(|value| **value).count(),
             "dispatch_timestamps": times.values().filter(|value| !**value).count()})))
     }).collect();
-    let physical_present_fps = if scanouts.len() == 1 { scanouts.values().next().map(|value| value["present_fps"].clone()) } else { None };
+    let physical_present_fps = if scanouts.len() == 1 {
+        scanouts
+            .values()
+            .next()
+            .map(|value| value["present_fps"].clone())
+    } else {
+        None
+    };
     Ok(
         json!({"measurement_start_unix": start, "warmup_seconds": warmup, "measurement_seconds": seconds,
         "selected_surface": selected, "windows": windows, "stages": stages, "physical_present_fps": physical_present_fps,
@@ -265,16 +295,27 @@ mod tests {
             let observed = time + if frame % 2 == 0 { 0.001 } else { 0.012 };
             log.push_str(&format!("Park app-presentation: 1 7 {frame} {time:.6}\n"));
             for _ in 0..2 {
-                log.push_str(&format!("Park scanout: 1 {presented:.9} {observed:.6} drm\n"));
+                log.push_str(&format!(
+                    "Park scanout: 1 {presented:.9} {observed:.6} drm\n"
+                ));
             }
         }
         let report = summarize(parse(&log), 0.0, 2.0, 57.0, None).unwrap();
         assert_eq!(report["physical_present_fps"], 60.0);
         assert_eq!(report["scanout_outputs"]["1"]["hardware_timestamps"], 120);
         assert_eq!(report["scanout_outputs"]["1"]["dispatch_timestamps"], 0);
-        assert!(report["scanout_outputs"]["1"]["interval_p95_ms"].as_f64().unwrap() < 17.0);
-        log.push_str(&log.lines().filter_map(|line| line.strip_prefix("Park scanout: 1 "))
-            .map(|line| format!("Park scanout: 2 {line}\n")).collect::<String>());
+        assert!(
+            report["scanout_outputs"]["1"]["interval_p95_ms"]
+                .as_f64()
+                .unwrap()
+                < 17.0
+        );
+        log.push_str(
+            &log.lines()
+                .filter_map(|line| line.strip_prefix("Park scanout: 1 "))
+                .map(|line| format!("Park scanout: 2 {line}\n"))
+                .collect::<String>(),
+        );
         let report = summarize(parse(&log), 0.0, 2.0, 57.0, None).unwrap();
         assert!(report["physical_present_fps"].is_null());
         assert_eq!(report["scanout_outputs"]["1"]["present_fps"], 60.0);

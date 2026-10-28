@@ -25,6 +25,7 @@ pub mod session;
 #[cfg(all(target_os = "android", feature = "android-smoke", debug_assertions))]
 mod smoke;
 pub mod storage;
+mod transport;
 pub mod views;
 mod visibility;
 pub mod workflows;

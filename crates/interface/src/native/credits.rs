@@ -7,6 +7,8 @@ pub const LORO_LICENSE: &str = include_str!("../../licenses/native/loro-MIT.txt"
 pub const ACCESSKIT_LICENSE: &str = include_str!("../../licenses/native/accesskit-MIT.txt");
 
 pub const ATTRIBUTIONS: &[Attribution] = &[
+    crate::credits::TNIL,
+    crate::credits::ITHKUIL_BASIC,
     Attribution {
         name: "Naga",
         author: "The gfx-rs developers",

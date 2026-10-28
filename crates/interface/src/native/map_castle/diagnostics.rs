@@ -51,11 +51,7 @@ pub(super) fn query(world: &mut World, owner: Entity, micros: u64) {
     );
 }
 
-pub(super) fn rendered(
-    metrics: &Diagnostics,
-    owner: Entity,
-    rendered: crate::map_view::Rendered,
-) {
+pub(super) fn rendered(metrics: &Diagnostics, owner: Entity, rendered: crate::map_view::Rendered) {
     let now = rendered.submitted;
     let mut state = metrics.0.lock().unwrap_or_else(|error| error.into_inner());
     state.device = rendered.device;
@@ -79,8 +75,14 @@ pub(super) fn rendered(
     }
 }
 
-pub(super) fn callback(world: &World, owner: Entity) -> Arc<dyn Fn(crate::map_view::Rendered) + Send + Sync> {
-    let metrics = world.get_resource::<Diagnostics>().cloned().unwrap_or_default();
+pub(super) fn callback(
+    world: &World,
+    owner: Entity,
+) -> Arc<dyn Fn(crate::map_view::Rendered) + Send + Sync> {
+    let metrics = world
+        .get_resource::<Diagnostics>()
+        .cloned()
+        .unwrap_or_default();
     Arc::new(move |sample| rendered(&metrics, owner, sample))
 }
 
@@ -197,7 +199,13 @@ pub(super) fn maintain(world: &mut World) {
             .0
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if let Some(readback) = world.get_resource::<crate::map_view::Readback>() { state.device = readback.0.lock().unwrap_or_else(|error| error.into_inner()).clone(); }
+        if let Some(readback) = world.get_resource::<crate::map_view::Readback>() {
+            state.device = readback
+                .0
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .clone();
+        }
         state
             .views
             .retain(|owner, _| rows.iter().any(|(key, _, _)| key == owner));

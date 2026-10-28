@@ -1363,7 +1363,7 @@ pub fn snapshot(world: &mut World, root: Entity) -> Vec<SavedAsset> {
         .filter(|(entity, _, _, _, p)| {
             p.parent() == root
                 && world
-                    .get::<crate::native::external_drop::Preview>(*entity)
+                    .get::<crate::native::canvas_item::Ephemeral>(*entity)
                     .is_none()
         })
         .map(|(e, asset, item, member, _)| SavedAsset {

@@ -1,10 +1,10 @@
 use super::*;
 use axum::{
+    Router,
     extract::{Query, State},
-    http::{header, HeaderMap, StatusCode, Uri},
+    http::{HeaderMap, StatusCode, Uri, header},
     response::{IntoResponse, Response},
     routing::get,
-    Router,
 };
 use std::{
     hash::{Hash, Hasher},

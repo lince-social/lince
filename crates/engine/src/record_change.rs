@@ -241,14 +241,22 @@ async fn apply_register_on(
     }
     match property {
         "location.source" => {
-            if !register.value.as_object().is_some_and(|value| value.len() == 1 && value.contains_key("assertion")) {
+            if !register
+                .value
+                .as_object()
+                .is_some_and(|value| value.len() == 1 && value.contains_key("assertion"))
+            {
                 return Err(invalid("Invalid saved location selection"));
             }
             match &register.value["assertion"] {
-                Value::Null => {},
+                Value::Null => {}
                 Value::String(assertion) if nucleus::valid_uid(assertion, "a") => {
-                    let subject: Option<String> = store::sqlx::query_scalar("SELECT subject_uid FROM record_assertion WHERE uid=?")
-                        .bind(assertion).fetch_optional(&mut **tx).await?;
+                    let subject: Option<String> = store::sqlx::query_scalar(
+                        "SELECT subject_uid FROM record_assertion WHERE uid=?",
+                    )
+                    .bind(assertion)
+                    .fetch_optional(&mut **tx)
+                    .await?;
                     if subject.is_some_and(|subject| subject != uid) {
                         return Err(invalid("Choose an Assertion attached to this Record"));
                     }
@@ -355,6 +363,44 @@ async fn apply_register_on(
 }
 
 impl Engine {
+    pub(crate) async fn assertion_object(
+        &self,
+        subject: &str,
+        target: &str,
+    ) -> Result<String, EngineError> {
+        if lince_resources::reference::is_uri(target) {
+            return lince_resources::address(target)
+                .map(|uri| uri.to_string())
+                .map_err(invalid);
+        }
+        if lince_resources::reference::is_address(target) {
+            let base = store::records::get_extension(
+                &self.store.pool,
+                subject,
+                crate::sources::IMPORT_NAMESPACE,
+            )
+            .await?
+            .and_then(|value| value["base"].as_str().map(str::to_owned));
+            let base = if let Some(base) = base {
+                Some(base)
+            } else {
+                store::sqlx::query_scalar::<_,String>("SELECT uri FROM record_source_location WHERE record_uid=? ORDER BY uri LIMIT 1").bind(subject).fetch_optional(&self.store.pool).await?.map(|uri| uri.split('#').next().unwrap_or(&uri).to_owned())
+            };
+            if let Some(base) = base {
+                return lince_resources::resolve(&base, target).map_err(invalid);
+            }
+            if std::path::Path::new(target).is_absolute() {
+                return lince_resources::Reference::path(std::path::Path::new(target))
+                    .map(|reference| reference.target)
+                    .map_err(invalid);
+            }
+            return Err(invalid(
+                "A relative reference needs this Record's declaring document",
+            ));
+        }
+        self.resolve(target).await
+    }
+
     pub(crate) async fn project_work_registers(&self, uid: &str) -> Result<(), EngineError> {
         let mut tx = store::write_tx(&self.store.pool).await?;
         let rows: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property IN ('work.start', 'work.due', 'work.estimate_min', 'work.projection_occurrence')").bind(uid).fetch_all(&mut *tx).await?;
@@ -492,8 +538,11 @@ impl Engine {
         actor: Option<&str>,
         expected_revision: i64,
     ) -> Result<ActionOutcome, EngineError> {
-        self.access_scope(true, self.change_record_inner(request, actor, Some(expected_revision)))
-            .await
+        self.access_scope(
+            true,
+            self.change_record_inner(request, actor, Some(expected_revision)),
+        )
+        .await
     }
 
     async fn change_record_inner(
@@ -554,17 +603,21 @@ impl Engine {
             }
         }
         if let Mutation::WorkMetadata { value } = &request.mutation {
-            let mut required: std::collections::BTreeSet<_> = ["start", "due", "estimate_min", "logs"]
-                .into_iter()
-                .map(|field| {
-                    Property::Extension(ExtensionProperty {
-                        namespace: "work".into(),
-                        field: field.into(),
+            let mut required: std::collections::BTreeSet<_> =
+                ["start", "due", "estimate_min", "logs"]
+                    .into_iter()
+                    .map(|field| {
+                        Property::Extension(ExtensionProperty {
+                            namespace: "work".into(),
+                            field: field.into(),
+                        })
                     })
-                })
-                .collect();
+                    .collect();
             if value.get("projection_occurrence").is_some() {
-                required.insert(Property::Extension(ExtensionProperty { namespace: "work".into(), field: "projection_occurrence".into() }));
+                required.insert(Property::Extension(ExtensionProperty {
+                    namespace: "work".into(),
+                    field: "projection_occurrence".into(),
+                }));
             }
             if self
                 .record_property_permissions(actor, uid, required.clone())
@@ -596,7 +649,9 @@ impl Engine {
                 | Mutation::NumberAssertion { .. }
                 | Mutation::RetractAssertion { .. }
         ) {
-            return self.change_assertion(&request, actor, &payload, location_revision).await;
+            return self
+                .change_assertion(&request, actor, &payload, location_revision)
+                .await;
         }
         let identity = store::cells::local(&self.store.pool)
             .await?
@@ -604,7 +659,14 @@ impl Engine {
         let signer = self.signer.lock().await.clone();
         let _serial = self.import_lock.lock().await;
         let mut tx = store::write_tx(&self.store.pool).await?;
-        let checkpoint = self.record_checkpoint_on(&mut tx, actor, vec![uid.clone()], protein::authority::Operation::Update).await?;
+        let checkpoint = self
+            .record_checkpoint_on(
+                &mut tx,
+                actor,
+                vec![uid.clone()],
+                protein::authority::Operation::Update,
+            )
+            .await?;
         let prior: Option<(String, String)> = store::sqlx::query_as(
             "SELECT payload, result FROM record_change_receipt WHERE actor = ? AND change_uid = ?",
         )
@@ -740,8 +802,14 @@ impl Engine {
                 change_uid: request.id.clone(),
                 value,
             };
-            changed |= apply_register_on(&mut tx, uid, &property, &register,
-                matches!(request.mutation, Mutation::WorkMetadata { .. })).await?;
+            changed |= apply_register_on(
+                &mut tx,
+                uid,
+                &property,
+                &register,
+                matches!(request.mutation, Mutation::WorkMetadata { .. }),
+            )
+            .await?;
             store::sync_ops::log_local_tx(
                 &mut tx,
                 "record",
@@ -776,7 +844,9 @@ impl Engine {
         let data = json!({"change_id":request.id,"state":"saved","changed":changed});
         store::sqlx::query("INSERT INTO record_change_receipt (actor, change_uid, record_uid, payload, result) VALUES (?, ?, ?, ?, ?)")
             .bind(actor.unwrap_or("")).bind(&request.id).bind(uid).bind(payload).bind(data.to_string()).execute(&mut *tx).await?;
-        if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
+        if let Some(checkpoint) = checkpoint {
+            checkpoint.finish(&mut tx, Default::default()).await?;
+        }
         tx.commit().await?;
         drop(_serial);
         let mut outcome = ActionOutcome {
@@ -849,7 +919,12 @@ impl Engine {
                     .await?
                     .ok_or_else(|| invalid("Unknown assertion"))?;
                 let object = match object {
-                    Some(value) => Some(self.resolve(value).await?),
+                    Some(value) if lince_resources::reference::is_uri(value) => Some(
+                        lince_resources::address(value)
+                            .map_err(invalid)?
+                            .to_string(),
+                    ),
+                    Some(value) => Some(self.assertion_object(uid, value).await?),
                     None => None,
                 };
                 let unit = match unit {
@@ -884,7 +959,7 @@ impl Engine {
                 }
                 (
                     row.predicate_uid,
-                    row.object_uid,
+                    row.object_uri.or(row.object_uid),
                     row.quantity,
                     row.unit_uid,
                     Some(assertion.clone()),
@@ -893,17 +968,36 @@ impl Engine {
             _ => unreachable!(),
         };
         if retract.is_none()
-            && store::vocabulary::feature_binding(&self.store.pool,"ancestry").await?.concept_uids.contains(&predicate)
-            && store::records::get_extension(&self.store.pool, uid, "lince.fiote").await?.is_some()
+            && store::vocabulary::feature_binding(&self.store.pool, "ancestry")
+                .await?
+                .concept_uids
+                .contains(&predicate)
+            && store::records::get_extension(&self.store.pool, uid, "lince.fiote")
+                .await?
+                .is_some()
         {
-            let parent = object.as_deref().ok_or_else(|| invalid("Choose a Fiote parent."))?;
-            if self.fiote_parent(uid).await?.is_some_and(|existing| existing != parent) {
-                return Err(invalid("Remove the current prompt parent before choosing another."));
+            let parent = object
+                .as_deref()
+                .ok_or_else(|| invalid("Choose a Fiote parent."))?;
+            if self
+                .fiote_parent(uid)
+                .await?
+                .is_some_and(|existing| existing != parent)
+            {
+                return Err(invalid(
+                    "Remove the current prompt parent before choosing another.",
+                ));
             }
             self.validate_fiote_parent(uid, Some(parent), actor).await?;
         }
         if let Some(actor) = actor {
-            if let Some(policy) = protein::role_authority::policy_for(&self.store, actor, Some(protein::authority::Operation::Update)).await? {
+            if let Some(policy) = protein::role_authority::policy_for(
+                &self.store,
+                actor,
+                Some(protein::authority::Operation::Update),
+            )
+            .await?
+            {
                 {
                     use protein::authority::{
                         AssertionProperty, AssertionRole, AssertionTarget, Operation,
@@ -943,8 +1037,13 @@ impl Engine {
                             grant.predicate_uid == predicate
                                 && grant.role == role
                                 && match (&grant.target, &object) {
-                                    (AssertionTarget::Unary, None)
-                                    | (AssertionTarget::AnyReadableRecord, Some(_)) => true,
+                                    (AssertionTarget::Unary, None) => true,
+                                    (AssertionTarget::Uri(target), Some(object)) => {
+                                        target == object
+                                    }
+                                    (AssertionTarget::AnyReadableRecord, Some(object)) => {
+                                        !lince_resources::reference::is_uri(object)
+                                    }
                                     (AssertionTarget::Record(target), Some(object)) => {
                                         target == object
                                     }
@@ -984,17 +1083,35 @@ impl Engine {
                 }
             }
         }
+        let object_uri = object
+            .as_ref()
+            .filter(|value| lince_resources::reference::is_uri(value))
+            .cloned();
+        let object = object.filter(|value| !lince_resources::reference::is_uri(value));
         let signer = self.signer.lock().await.clone();
         let serial = self.import_lock.lock().await;
         let mut tx = store::write_tx(&self.store.pool).await?;
         if let Some(expected_revision) = location_revision {
-            let current: (String, i64) = store::sqlx::query_as("SELECT write_concept_uid,revision FROM vocabulary_role WHERE uid=?")
-                .bind(nucleus::vocabulary::SAVED_LOCATION_ROLE_UID).fetch_one(&mut *tx).await?;
+            let current: (String, i64) = store::sqlx::query_as(
+                "SELECT write_concept_uid,revision FROM vocabulary_role WHERE uid=?",
+            )
+            .bind(nucleus::vocabulary::SAVED_LOCATION_ROLE_UID)
+            .fetch_one(&mut *tx)
+            .await?;
             if current != (predicate.clone(), expected_revision) {
-                return Err(invalid("The location bindings changed; refresh before linking an address"));
+                return Err(invalid(
+                    "The location bindings changed; refresh before linking an address",
+                ));
             }
         }
-        let checkpoint = self.record_checkpoint_on(&mut tx, actor, vec![uid.clone()], protein::authority::Operation::Update).await?;
+        let checkpoint = self
+            .record_checkpoint_on(
+                &mut tx,
+                actor,
+                vec![uid.clone()],
+                protein::authority::Operation::Update,
+            )
+            .await?;
         let prior: Option<(String, String)> = store::sqlx::query_as(
             "SELECT payload, result FROM record_change_receipt WHERE actor = ? AND change_uid = ?",
         )
@@ -1022,7 +1139,7 @@ impl Engine {
                 store::assertions::retract_tx(&mut tx, assertion, actor).await?,
             )
         } else {
-            let existing: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND retracted_at IS NULL ORDER BY uid").bind(uid).bind(&predicate).bind(&object).fetch_all(&mut *tx).await?;
+            let existing: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND object_uri IS ? AND retracted_at IS NULL ORDER BY uid").bind(uid).bind(&predicate).bind(&object).bind(&object_uri).fetch_all(&mut *tx).await?;
             if numbering && existing.len() > 1 {
                 return Err(invalid("Resolve duplicate assertions before numbering"));
             }
@@ -1051,25 +1168,44 @@ impl Engine {
                     )
                     .await?;
                     (row.uid, changed)
+                } else if quantity.is_some() || unit.is_some() {
+                    let previous = store::sqlx::query("SELECT quantity_mantissa, quantity_scale, unit_uid FROM record_assertion WHERE uid = ?")
+                        .bind(&assertion).fetch_one(&mut *tx).await?;
+                    let old_quantity = previous
+                        .get::<Option<String>, _>("quantity_mantissa")
+                        .map(|_| store::exact::read_decimal(&previous, "quantity"))
+                        .transpose()?;
+                    let old_unit = previous.get::<Option<String>, _>("unit_uid");
+                    let changed = old_quantity != quantity || old_unit != unit;
+                    let row = store::assertions::set_quantity_tx(
+                        &mut tx,
+                        &assertion,
+                        store::assertions::AssertionQuantity {
+                            quantity,
+                            unit_uid: unit.as_deref(),
+                        },
+                    )
+                    .await?;
+                    (row.uid, changed)
                 } else {
                     (assertion, false)
                 }
             } else {
                 let assertion = nucleus::new_uid("a");
-                store::assertions::insert_tx(
-                    &mut tx,
-                    &assertion,
-                    store::assertions::NewAssertion {
-                        subject_uid: uid,
-                        predicate_uid: &predicate,
-                        object_uid: object.as_deref(),
-                        role: store::assertions::AssertionRole::Ordinary,
-                        quantity,
-                        unit_uid: unit.as_deref(),
-                        asserted_by: actor,
-                    },
-                )
-                .await?;
+                let new = store::assertions::NewAssertion {
+                    subject_uid: uid,
+                    predicate_uid: &predicate,
+                    object_uid: object.as_deref(),
+                    role: store::assertions::AssertionRole::Ordinary,
+                    quantity,
+                    unit_uid: unit.as_deref(),
+                    asserted_by: actor,
+                };
+                if let Some(uri) = &object_uri {
+                    store::assertions::insert_uri_tx(&mut tx, &assertion, new, uri).await?;
+                } else {
+                    store::assertions::insert_tx(&mut tx, &assertion, new).await?;
+                }
                 (assertion, true)
             }
         };
@@ -1101,7 +1237,9 @@ impl Engine {
                 }
             }
         }
-        if let Some(checkpoint) = checkpoint { checkpoint.finish(&mut tx, Default::default()).await?; }
+        if let Some(checkpoint) = checkpoint {
+            checkpoint.finish(&mut tx, Default::default()).await?;
+        }
         tx.commit().await?;
         drop(serial);
         let mut outcome = ActionOutcome {

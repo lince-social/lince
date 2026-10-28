@@ -13,6 +13,8 @@ use wgpu::hal::api::Vulkan;
 
 #[cfg(feature = "native-presentation")]
 mod buffers;
+#[cfg(feature = "native-presentation")]
+pub(crate) use buffers::{RetainedCapture, retained_capture, retire_capture};
 #[cfg(feature = "graphics-gate")]
 mod canvas;
 mod import;
@@ -68,6 +70,17 @@ impl ProbeFailure {
 
 type Result<T> = std::result::Result<T, ProbeFailure>;
 
+fn shared_format(format: wgpu::TextureFormat) -> Result<(wgpu::TextureFormat, vk::Format, smithay::backend::allocator::Fourcc)> {
+    use smithay::backend::allocator::Fourcc;
+    match format {
+        wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb => Ok((wgpu::TextureFormat::Bgra8Unorm, vk::Format::B8G8R8A8_UNORM, Fourcc::Argb8888)),
+        wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Rgba8UnormSrgb => Ok((wgpu::TextureFormat::Rgba8Unorm, vk::Format::R8G8B8A8_UNORM, Fourcc::Abgr8888)),
+        wgpu::TextureFormat::Rgba16Float => Ok((wgpu::TextureFormat::Rgba16Float, vk::Format::R16G16B16A16_SFLOAT, Fourcc::Abgr16161616f)),
+        wgpu::TextureFormat::Rgb10a2Unorm => Ok((wgpu::TextureFormat::Rgb10a2Unorm, vk::Format::A2B10G10R10_UNORM_PACK32, Fourcc::Abgr2101010)),
+        _ => Err(ProbeFailure::at("export_color_format", "This texture format has no supported shared color-buffer encoding")),
+    }
+}
+
 pub fn probe() -> ProbeReport {
     let mut report = ProbeReport {
         adapter: None,
@@ -96,6 +109,8 @@ pub fn gate() -> ProbeReport {
 }
 
 pub(crate) struct VulkanRenderer {
+    #[cfg(feature = "native-presentation")]
+    capture_bytes: Arc<std::sync::atomic::AtomicU64>,
     #[cfg(feature = "native-presentation")]
     waits: std::cell::RefCell<std::collections::HashMap<(smithay::reexports::wayland_server::protocol::wl_buffer::WlBuffer, u64), wait::Watch>>,
     #[cfg(feature = "native-presentation")]
@@ -146,6 +161,48 @@ struct SharedImage {
 }
 
 impl VulkanRenderer {
+    #[cfg(feature = "native-presentation")]
+    pub(crate) fn client_import_formats(&self) -> Vec<smithay::backend::allocator::Fourcc> {
+        let mut formats = Vec::new();
+        for format in [wgpu::TextureFormat::Bgra8Unorm, wgpu::TextureFormat::Rgba8Unorm,
+            wgpu::TextureFormat::Rgb10a2Unorm, wgpu::TextureFormat::Rgba16Float] {
+            let features = self.adapter.get_texture_format_features(format);
+            if !features.allowed_usages.contains(wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST)
+                || !features.flags.contains(wgpu::TextureFormatFeatureFlags::FILTERABLE) { continue; }
+            let Ok((_, vk_format, fourcc)) = shared_format(format) else { continue };
+            let mut modifier = vk::PhysicalDeviceImageDrmFormatModifierInfoEXT::default()
+                .drm_format_modifier(0).sharing_mode(vk::SharingMode::EXCLUSIVE);
+            let mut external = vk::PhysicalDeviceExternalImageFormatInfo::default()
+                .handle_type(vk::ExternalMemoryHandleTypeFlags::DMA_BUF_EXT);
+            let information = vk::PhysicalDeviceImageFormatInfo2::default().format(vk_format)
+                .ty(vk::ImageType::TYPE_2D).tiling(vk::ImageTiling::DRM_FORMAT_MODIFIER_EXT)
+                .usage(vk::ImageUsageFlags::TRANSFER_SRC).push_next(&mut modifier).push_next(&mut external);
+            let mut external_properties = vk::ExternalImageFormatProperties::default();
+            let supported = {
+                let mut properties = vk::ImageFormatProperties2::default().push_next(&mut external_properties);
+                unsafe { self.raw_instance.get_physical_device_image_format_properties2(self.physical_device, &information, &mut properties) }.is_ok()
+            };
+            if supported && external_properties.external_memory_properties.external_memory_features.contains(vk::ExternalMemoryFeatureFlags::IMPORTABLE)
+                && external_properties.external_memory_properties.compatible_handle_types.contains(vk::ExternalMemoryHandleTypeFlags::DMA_BUF_EXT) {
+                formats.push(fourcc);
+            }
+        }
+        formats
+    }
+
+    #[cfg(feature = "native-presentation")]
+    pub(crate) fn linear_scene_support(&self) -> Result<()> {
+        let format = self.adapter.get_texture_format_features(wgpu::TextureFormat::Rgba16Float);
+        let usages = wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::COPY_DST
+            | wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
+        if !format.allowed_usages.contains(usages)
+            || !format.flags.contains(wgpu::TextureFormatFeatureFlags::FILTERABLE | wgpu::TextureFormatFeatureFlags::BLENDABLE) {
+            return Err(ProbeFailure::at("native_linear_color", "The Vulkan adapter does not support filtered, blendable RGBA16F scene targets"));
+        }
+        let _probe = self.create_shared_image_format(1, 1, wgpu::TextureFormat::Rgba16Float)?;
+        Ok(())
+    }
+
     pub(crate) fn new() -> Result<Self> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::VULKAN,
@@ -220,6 +277,8 @@ impl VulkanRenderer {
         };
         Ok(Self {
             #[cfg(feature = "native-presentation")]
+            capture_bytes: Default::default(),
+            #[cfg(feature = "native-presentation")]
             waits: Default::default(),
             #[cfg(feature = "native-presentation")]
             reactor,
@@ -237,6 +296,11 @@ impl VulkanRenderer {
     }
 
     fn create_shared_image(&self, width: u32, height: u32) -> Result<SharedImage> {
+        self.create_shared_image_format(width, height, wgpu::TextureFormat::Bgra8Unorm)
+    }
+
+    fn create_shared_image_format(&self, width: u32, height: u32, format: wgpu::TextureFormat) -> Result<SharedImage> {
+        let (format, vk_format, fourcc) = shared_format(format)?;
         if width == 0 || height == 0 || width > 16384 || height > 16384 {
             return Err(ProbeFailure::at(
                 "image_dimensions",
@@ -250,7 +314,7 @@ impl VulkanRenderer {
             .handle_types(vk::ExternalMemoryHandleTypeFlags::DMA_BUF_EXT);
         let image_info = vk::ImageCreateInfo::default()
             .image_type(vk::ImageType::TYPE_2D)
-            .format(vk::Format::B8G8R8A8_UNORM)
+            .format(vk_format)
             .extent(vk::Extent3D {
                 width,
                 height,
@@ -333,7 +397,7 @@ impl VulkanRenderer {
             .map_err(|error| ProbeFailure::at("dmabuf_stride", error))?;
         let mut builder = Dmabuf::builder(
             (width as i32, height as i32),
-            smithay::backend::allocator::Fourcc::Argb8888,
+            fourcc,
             smithay::backend::allocator::Modifier::Linear,
             DmabufFlags::empty(),
         );
@@ -363,7 +427,7 @@ impl VulkanRenderer {
                     mip_level_count: 1,
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     usage: wgpu::TextureUses::COLOR_TARGET
                         | wgpu::TextureUses::RESOURCE
                         | wgpu::TextureUses::COPY_SRC
@@ -384,7 +448,7 @@ impl VulkanRenderer {
                     mip_level_count: 1,
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     usage: wgpu::TextureUsages::RENDER_ATTACHMENT
                         | wgpu::TextureUsages::TEXTURE_BINDING
                         | wgpu::TextureUsages::COPY_SRC

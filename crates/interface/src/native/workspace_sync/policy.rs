@@ -93,7 +93,10 @@ impl Modify {
                 let predicate_uid = panel::value(world, *predicate)?.trim().to_owned();
                 let target = panel::value(world, *target)?.trim().to_owned();
                 if !nucleus::valid_uid(&predicate_uid, "c")
-                    || !target.is_empty() && target != "*" && !nucleus::valid_uid(&target, "r")
+                    || !target.is_empty()
+                        && target != "*"
+                        && !nucleus::valid_uid(&target, "r")
+                        && !lince_resources::reference::is_uri(&target)
                 {
                     return Err(
                         "Use a Concept UID and a target Record UID, * or empty for unary".into(),
@@ -107,7 +110,11 @@ impl Modify {
                 } else if target == "*" {
                     AssertionTarget::AnyReadableRecord
                 } else {
-                    AssertionTarget::Record(target)
+                    if lince_resources::reference::is_uri(&target) {
+                        AssertionTarget::Uri(target)
+                    } else {
+                        AssertionTarget::Record(target)
+                    }
                 };
                 let mut properties = std::collections::BTreeSet::new();
                 if !identity && *quantity {

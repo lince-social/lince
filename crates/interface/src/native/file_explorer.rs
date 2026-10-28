@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 mod actions;
 mod navigation;
 mod operations;
@@ -207,12 +208,30 @@ fn populate(world: &mut World, owner: Entity, config: FileExplorer, target: Targ
     let row = crate::native::sand_panel::row(world, owner);
     button(world, row, owner, "Add root", actions::Control::Add);
     if !matches!(target, Target::Input { .. }) {
-        button(world, row, owner, "New file", actions::Control::NewFile);
+        button(
+            world,
+            row,
+            owner,
+            Tr::NewFile.text(),
+            actions::Control::NewFile,
+        );
     }
-    button(world, row, owner, "Choose…", actions::Control::Choose);
-    button(world, row, owner, "Refresh", actions::Control::Refresh);
-    button(world, row, owner, "Back", actions::Control::Back);
-    button(world, row, owner, "Up", actions::Control::Up);
+    button(
+        world,
+        row,
+        owner,
+        Tr::Choose.text(),
+        actions::Control::Choose,
+    );
+    button(
+        world,
+        row,
+        owner,
+        Tr::Refresh.text(),
+        actions::Control::Refresh,
+    );
+    button(world, row, owner, Tr::Back.text(), actions::Control::Back);
+    button(world, row, owner, Tr::Up.text(), actions::Control::Up);
     button(
         world,
         row,
@@ -260,11 +279,11 @@ fn populate(world: &mut World, owner: Entity, config: FileExplorer, target: Targ
     if !matches!(target, Target::Input { .. }) {
         let row = crate::native::sand_panel::row(world, operations);
         for (caption, action) in [
-            ("New folder", operations::Control::NewFolder),
-            ("Rename", operations::Control::Rename),
-            ("Move", operations::Control::Move),
-            ("Delete…", operations::Control::Delete),
-            ("Undo delete", operations::Control::UndoDelete),
+            (Tr::NewFolder.text(), operations::Control::NewFolder),
+            (Tr::Rename.text(), operations::Control::Rename),
+            (Tr::Move.text(), operations::Control::Move),
+            (Tr::DeletePrompt.text(), operations::Control::Delete),
+            (Tr::UndoDelete.text(), operations::Control::UndoDelete),
         ] {
             crate::native::sand_panel::button(world, row, owner, caption, action);
         }
@@ -272,17 +291,41 @@ fn populate(world: &mut World, owner: Entity, config: FileExplorer, target: Targ
         world.get_mut::<Node>(destination).unwrap().display = Display::None;
         world.get_mut::<Node>(selected_label).unwrap().display = Display::None;
     }
-    let search = self::input(world, owner, "Find a path in the selected roots", "", 256);
+    let search = self::input(world, owner, Tr::FindPath.text(), "", 256);
     let row = crate::native::sand_panel::row(world, owner);
-    button(world, row, owner, "Search", actions::Control::Search);
-    button(world, row, owner, "Tree", actions::Control::Tree);
-    button(world, row, owner, "Grid", actions::Control::Grid);
-    button(world, row, owner, "Ignored", actions::Control::Ignored);
+    button(
+        world,
+        row,
+        owner,
+        Tr::Search.text(),
+        actions::Control::Search,
+    );
+    button(world, row, owner, Tr::Tree.text(), actions::Control::Tree);
+    button(world, row, owner, Tr::Grid.text(), actions::Control::Grid);
+    button(
+        world,
+        row,
+        owner,
+        Tr::Ignored.text(),
+        actions::Control::Ignored,
+    );
     if matches!(target, Target::Editor(_)) {
-        button(world, row, owner, "Extract", actions::Control::Extract);
+        button(
+            world,
+            row,
+            owner,
+            Tr::Extract.text(),
+            actions::Control::Extract,
+        );
     }
     if matches!(target, Target::Input { .. }) {
-        button(world, row, owner, "Cancel", actions::Control::Cancel);
+        button(
+            world,
+            row,
+            owner,
+            Tr::Cancel.text(),
+            actions::Control::Cancel,
+        );
     }
     let status = crate::native::edit_mode::label(
         world,
@@ -390,7 +433,7 @@ fn button(
     crate::native::sand_panel::button(world, parent, owner, caption, action);
 }
 
-fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
+fn status(world: &mut World, owner: Entity, message: impl AsRef<str>) {
     if let Some(view) = world.get::<View>(owner) {
         crate::native::sand_panel::status(world, view.status, message);
     }

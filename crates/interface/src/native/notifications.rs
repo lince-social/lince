@@ -133,9 +133,10 @@ impl Plugin for NotificationsPlugin {
         app.init_resource::<Notifications>()
             .add_systems(
                 Update,
-                (ui::setup, render)
+                (ui::setup, cell_connection, render)
                     .chain()
-                    .after(crate::native::edit_mode::setup),
+                    .after(crate::native::edit_mode::setup)
+                    .after(crate::native::cell_bridge::ReceiveCell),
             )
             .add_systems(
                 PostUpdate,
@@ -154,6 +155,30 @@ pub fn report(world: &World, source: &str, message: &str) {
         .map(|notifications| notifications.log.clone())
         .unwrap_or_else(cell::Diagnostics::global);
     log.report(source, message);
+}
+
+pub(crate) fn cell_connection(
+    world: &mut World,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+) {
+    let Some(messages) = world.get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
+    else {
+        return;
+    };
+    let closed: Vec<_> = cursor
+        .read(messages)
+        .filter_map(|message| match &message.0 {
+            cell::ServerMessage::Error { id, message, .. }
+                if id == crate::native::cell_bridge::CONNECTION =>
+            {
+                Some(message.clone())
+            }
+            _ => None,
+        })
+        .collect();
+    for message in closed {
+        report(world, "interface::connection", &message);
+    }
 }
 
 fn recommendation(source: &str, message: &str) -> &'static str {
@@ -178,7 +203,7 @@ fn recommendation(source: &str, message: &str) -> &'static str {
         "Try this: keep a copy of the affected data and reopen Lince. If it happens again, share this message when reporting the problem."
     } else if detail.contains("connection to this cell") || detail.contains("interface::connection")
     {
-        "Try this: reopen Lince to reconnect to this Cell. Keep a copy of any text whose save was not confirmed."
+        "Try this: open the Configuration Sand and choose Refresh to reconnect to this Cell. Keep any text whose save was not confirmed until you check its Record."
     } else if detail.contains("connection")
         || detail.contains("peer")
         || detail.contains("discovery")

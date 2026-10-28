@@ -63,6 +63,8 @@ pub struct Watch {
 }
 
 impl Watch {
+    pub fn event_driven(&self) -> bool { self.watcher.is_some() }
+
     pub fn pending(&self) -> Arc<Mutex<Changes>> {
         self.changes.clone()
     }

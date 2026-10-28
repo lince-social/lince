@@ -24,6 +24,76 @@ fn fit(size: Vec2) -> Rules {
     rules
 }
 
+#[test]
+fn content_owned_record_height_settles_without_repeating_redraws() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+
+    let (mut app, _, owner) = crate::native::protein_area::tests::fixture();
+    let uid = nucleus::new_uid("r");
+    crate::native::protein_area::tests::authoring_record(
+        app.world_mut(),
+        owner,
+        serde_json::json!({
+            "uid":uid,
+            "head":"Owner title",
+            "body":"Owner description",
+            "kind":"plain",
+            "quantity":0,
+            "assertions":[],
+            "threads":[]
+        }),
+    );
+    let world = app.world_mut();
+    let row = world
+        .query::<(Entity, &crate::native::protein_area::RecordBinding)>()
+        .iter(world)
+        .find(|(entity, binding)| binding.uid == uid && world.get::<CanvasItem>(*entity).is_some())
+        .unwrap()
+        .0;
+    let mut layout = LayoutBox::new(Vec2::new(320.0, 176.0));
+    layout.rules.axes[1].sizing = Sizing::Fit;
+    world.entity_mut(row).insert((
+        layout,
+        ComputedNode {
+            size: Vec2::new(320.0, 176.0),
+            content_size: Vec2::new(296.0, 128.0),
+            inverse_scale_factor: 1.0,
+            ..default()
+        },
+    ));
+    engine::resolve(world);
+    let wakes = Arc::new(AtomicUsize::new(0));
+    let notified = wakes.clone();
+    world.insert_resource(crate::native::wake::WakeSignal::new(move || {
+        notified.fetch_add(1, Ordering::SeqCst);
+    }));
+    for _ in 0..20 {
+        engine::finish_content(world);
+    }
+    assert_eq!(wakes.load(Ordering::SeqCst), 0);
+    world.get_mut::<ComputedNode>(row).unwrap().content_size.x += 40.0;
+    engine::finish_content(world);
+    assert_eq!(wakes.load(Ordering::SeqCst), 1);
+    engine::resolve(world);
+    wakes.store(0, Ordering::SeqCst);
+    for _ in 0..20 {
+        engine::finish_content(world);
+    }
+    assert_eq!(wakes.load(Ordering::SeqCst), 0);
+    world.get_mut::<LayoutBox>(row).unwrap().rules.axes[1].size += 32.0;
+    engine::finish_content(world);
+    assert_eq!(wakes.load(Ordering::SeqCst), 1);
+    engine::resolve(world);
+    wakes.store(0, Ordering::SeqCst);
+    for _ in 0..20 {
+        engine::finish_content(world);
+    }
+    assert_eq!(wakes.load(Ordering::SeqCst), 0);
+}
+
 fn text(world: &mut World, parent: Entity, editable: bool, measured: Vec2) -> Entity {
     let mut text = SandText::new(editable);
     text.offset = [0.0; 2];

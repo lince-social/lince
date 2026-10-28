@@ -277,21 +277,35 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
-    fn editing_keeps_the_complete_toolbar_visible() {
+    fn editing_keeps_edit_pinned_and_other_controls_scrollable() {
         let (mut app, root) = crate::native::edit_mode::tests::fixture();
         app.world_mut()
             .get_mut::<crate::native::edit_mode::EditMode>(root)
             .unwrap()
             .enabled = true;
         let bar = super::super::toolbar(app.world_mut(), root);
+        super::super::order_controls(app.world_mut());
         update(app.world_mut());
         assert_eq!(
             *app.world().get::<Visibility>(bar).unwrap(),
             Visibility::Inherited
         );
         let node = app.world().get::<Node>(bar).unwrap();
-        assert_eq!(node.flex_wrap, FlexWrap::Wrap);
+        assert_eq!(node.flex_wrap, FlexWrap::NoWrap);
         assert_eq!(node.max_width, Val::Vw(96.0));
+        let children = app.world().get::<Children>(bar).unwrap();
+        assert_eq!(
+            children[0],
+            app.world()
+                .get::<crate::native::edit_mode::EditMode>(root)
+                .unwrap()
+                .toggle
+        );
+        let scroll = *children.last().unwrap();
+        assert_eq!(
+            app.world().get::<Node>(scroll).unwrap().overflow,
+            Overflow::scroll_x()
+        );
     }
 
     #[cfg_attr(test, test)]
@@ -328,7 +342,7 @@ pub(crate) mod tests {
     }
     crate::native::laboratory_cases! {
         corner_reveals_on_hover_and_preserves_keyboard_access,
-        editing_keeps_the_complete_toolbar_visible,
+        editing_keeps_edit_pinned_and_other_controls_scrollable,
         corner_color_and_transparency_follow_saved_tokens,
     }
 }

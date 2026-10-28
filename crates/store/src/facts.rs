@@ -87,29 +87,49 @@ fn map_facts(rows: Vec<sqlx::sqlite::SqliteRow>) -> Result<Vec<Fact>, StoreError
     rows.into_iter().map(map_fact).collect()
 }
 
-pub async fn after_position(pool: &SqlitePool, after: i64, limit: i64) -> Result<Vec<(i64, Fact)>, StoreError> {
+pub async fn after_position(
+    pool: &SqlitePool,
+    after: i64,
+    limit: i64,
+) -> Result<Vec<(i64, Fact)>, StoreError> {
     sqlx::query("SELECT rowid AS position, * FROM fact WHERE rowid > ? ORDER BY rowid LIMIT ?")
-        .bind(after).bind(limit).fetch_all(pool).await?.into_iter()
-        .map(|row| { let position = row.get("position"); map_fact(row).map(|fact| (position, fact)) }).collect()
+        .bind(after)
+        .bind(limit)
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(|row| {
+            let position = row.get("position");
+            map_fact(row).map(|fact| (position, fact))
+        })
+        .collect()
 }
 
-pub async fn after_position_with_commits(pool: &SqlitePool, after: i64, limit: i64) -> Result<Vec<(i64, Option<i64>, Fact)>, StoreError> {
+pub async fn after_position_with_commits(
+    pool: &SqlitePool,
+    after: i64,
+    limit: i64,
+) -> Result<Vec<(i64, Option<i64>, Fact)>, StoreError> {
     sqlx::query("SELECT rowid AS position, * FROM fact WHERE rowid > ? ORDER BY rowid LIMIT ?")
-        .bind(after).bind(limit).fetch_all(pool).await?.into_iter()
+        .bind(after)
+        .bind(limit)
+        .fetch_all(pool)
+        .await?
+        .into_iter()
         .map(|row| {
             let position = row.get("position");
             let commit = row.get("commit_sequence");
             map_fact(row).map(|fact| (position, commit, fact))
-        }).collect()
+        })
+        .collect()
 }
 
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Fact>, StoreError> {
-    if let Some(payload) = sqlx::query_scalar::<_, String>(
-        "SELECT payload FROM fact_origin WHERE fact_uid = ?",
-    )
-    .bind(uid)
-    .fetch_optional(pool)
-    .await?
+    if let Some(payload) =
+        sqlx::query_scalar::<_, String>("SELECT payload FROM fact_origin WHERE fact_uid = ?")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
     {
         return serde_json::from_str(&payload)
             .map(Some)
@@ -123,14 +143,26 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Fact>, StoreErro
         .transpose()
 }
 
-pub async fn get_on(connection: &mut sqlx::SqliteConnection, uid: &str) -> Result<Option<Fact>, StoreError> {
-    if let Some(payload) = sqlx::query_scalar::<_, String>("SELECT payload FROM fact_origin WHERE fact_uid=?")
-        .bind(uid).fetch_optional(&mut *connection).await?
+pub async fn get_on(
+    connection: &mut sqlx::SqliteConnection,
+    uid: &str,
+) -> Result<Option<Fact>, StoreError> {
+    if let Some(payload) =
+        sqlx::query_scalar::<_, String>("SELECT payload FROM fact_origin WHERE fact_uid=?")
+            .bind(uid)
+            .fetch_optional(&mut *connection)
+            .await?
     {
-        return serde_json::from_str(&payload).map(Some).map_err(|error| StoreError::Protocol(error.to_string()));
+        return serde_json::from_str(&payload)
+            .map(Some)
+            .map_err(|error| StoreError::Protocol(error.to_string()));
     }
     sqlx::query("SELECT * FROM fact WHERE uid = ?")
-        .bind(uid).fetch_optional(connection).await?.map(map_fact).transpose()
+        .bind(uid)
+        .fetch_optional(connection)
+        .await?
+        .map(map_fact)
+        .transpose()
 }
 
 pub async fn retain_origin(
@@ -139,14 +171,17 @@ pub async fn retain_origin(
     organ: &str,
     cell: &str,
 ) -> Result<(), StoreError> {
-    let payload = serde_json::to_string(fact)
-        .map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let payload =
+        serde_json::to_string(fact).map_err(|error| StoreError::Protocol(error.to_string()))?;
     let saved: Option<(String, String, String)> =
         sqlx::query_as("SELECT payload, organ_uid, cell_uid FROM fact_origin WHERE fact_uid = ?")
             .bind(&fact.uid)
             .fetch_optional(&mut **tx)
             .await?;
-    if saved.as_ref().is_some_and(|saved| saved.0 != payload || saved.1 != organ || saved.2 != cell) {
+    if saved
+        .as_ref()
+        .is_some_and(|saved| saved.0 != payload || saved.1 != organ || saved.2 != cell)
+    {
         return Err(StoreError::Protocol(
             "Fact identity was reused with different original evidence".into(),
         ));

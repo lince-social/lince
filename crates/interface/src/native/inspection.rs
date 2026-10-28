@@ -529,6 +529,7 @@ pub(crate) fn edit_connection(
         EditAction::Customization => "Global Customization Panel Toggle",
         EditAction::Information => "Information Clicked Show",
         EditAction::Shortcuts => "Cheat Sheet Clicked Show",
+        EditAction::Park => "Park Settings Clicked Show",
         EditAction::Areas => "Areas of Influence Clicked Show",
         EditAction::Area(_) => "Area of Influence Clicked Edit",
         EditAction::ResetCanvasColors => "Canvas Colors Clicked Reset",

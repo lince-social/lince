@@ -7,6 +7,17 @@ use std::{
     },
 };
 
+pub mod display;
+pub mod color;
+pub mod control;
+pub mod capture;
+pub mod external;
+pub mod input;
+pub mod launch;
+pub mod raster;
+pub mod mapping;
+pub mod magnification;
+
 #[cfg_attr(feature = "ui", derive(bevy::prelude::Resource))]
 #[derive(Clone)]
 pub struct WakeSignal(Arc<dyn Fn() + Send + Sync>);
@@ -46,7 +57,9 @@ pub struct SurfaceId(pub u64);
 pub struct WindowState {
     pub minimized: bool,
     pub fullscreen: bool,
+    pub windowed_fullscreen: bool,
     pub maximized: bool,
+    pub resizing: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -76,8 +89,16 @@ pub enum Direction {
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
+pub enum Manipulation {
+    Move,
+    Resize,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum WorkspaceLayout {
     Free,
+    Tiled,
     Row,
     Column,
     Grid,
@@ -88,28 +109,87 @@ pub enum WorkspaceLayout {
 #[serde(rename_all = "kebab-case")]
 pub enum DesktopAction {
     Unfocus,
+    ToggleFocus,
+    ToggleOverview,
+    RecentNext,
+    RecentPrevious,
+    CommitRecent {
+        request: u64,
+    },
+    ToggleEdit,
+    SelectPlacement {
+        workspace: u64,
+        item: Option<[u8; 16]>,
+    },
     Focus(Direction),
     Move(Direction),
     Stack(Direction),
     ResizeColumn(i32),
     ResizeItem(i32),
     CycleColumnWidth,
+    CycleItemWidth,
+    Resize(Direction),
+    CycleRowHeight,
     SetLayout(WorkspaceLayout),
+    ToggleTiling,
     ToggleFloating,
     ToggleFullscreen,
+    ToggleWindowedFullscreen,
+    CreateCompactGroup,
+    AddCompactMembers,
+    NextCompactMember,
+    PreviousCompactMember,
+    MoveCompactMember(Direction),
+    DetachCompactMember,
+    DissolveCompactGroup,
+    MarkScratch,
+    ShowScratch,
+    HideScratch,
+    UnmarkScratch,
+    Magnify(magnification::Adjustment),
     ToggleMaximized,
     Close,
     OpenOperation,
     OpenTerminal,
     OpenLauncher,
+    External(external::Action),
     Workspace(u32),
+    PreviousWorkspace,
+    NextWorkspace,
+    MoveWorkspaceEarlier,
+    MoveWorkspaceLater,
     MoveToWorkspace(u32),
     FocusOutput(Direction),
     MoveToOutput(Direction),
+    MoveRowToOutput(Direction),
     MoveWorkspaceToOutput(Direction),
     InspectWindowRecord,
+    ReapplyOpeningRules,
     Lock,
     Logout,
+}
+
+impl DesktopAction {
+    pub fn is_recent(self) -> bool {
+        matches!(self, Self::RecentNext | Self::RecentPrevious)
+    }
+
+    pub fn requires_host(self) -> bool {
+        matches!(
+            self,
+            Self::FocusOutput(_)
+                | Self::MoveToOutput(_)
+                | Self::MoveRowToOutput(_)
+                | Self::MoveWorkspaceToOutput(_)
+                | Self::ReapplyOpeningRules
+                | Self::OpenTerminal
+                | Self::OpenLauncher
+                | Self::External(_)
+                | Self::Magnify(_)
+                | Self::Lock
+                | Self::Logout
+        )
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -119,6 +199,12 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
+    pub fn intersection(self, other: Self) -> Option<Self> {
+        let low = std::array::from_fn(|axis| self.origin[axis].max(other.origin[axis]));
+        let high: [f64; 2] = std::array::from_fn(|axis| (self.origin[axis] + self.size[axis]).min(other.origin[axis] + other.size[axis]));
+        Self::new(low, std::array::from_fn(|axis| high[axis] - low[axis]))
+    }
+
     pub fn new(origin: [f64; 2], size: [f64; 2]) -> Option<Self> {
         origin
             .iter()
@@ -253,7 +339,58 @@ pub struct OutputViewport {
     pub bounds: Rectangle,
     pub usable: Option<Rectangle>,
     pub physical_size: [u32; 2],
+    pub rotation: mapping::QuarterTurn,
+    pub raster: raster::RasterMapping,
     pub workspace: u64,
+}
+
+impl OutputViewport {
+    pub fn source_size(&self) -> [u32; 2] { self.rotation.source_size(self.physical_size) }
+
+    pub fn valid_raster(&self) -> bool {
+        self.raster
+            .origin
+            .iter()
+            .all(|value| value.is_finite() && value.abs() <= 1_048_576.0)
+            && self
+                .raster
+                .scale
+                .iter()
+                .all(|value| value.is_finite() && (0.5..=4.0).contains(value))
+            && self.raster.scale[0] == self.raster.scale[1]
+    }
+
+    pub fn raster_mapping(&self) -> raster::RasterMapping {
+        self.raster
+    }
+
+    pub fn physical_region(&self, rectangle: Rectangle) -> Option<([i32; 2], [u32; 2])> {
+        let (origin, size) = self.raster_mapping().pixel_region(rectangle)?;
+        let limit = self.source_size();
+        let low = std::array::from_fn::<_, 2, _>(|axis| {
+            if rectangle.origin()[axis] <= self.bounds.origin()[axis] {
+                0
+            } else {
+                origin[axis].max(0).min(limit[axis] as i32)
+            }
+        });
+        let high = std::array::from_fn::<_, 2, _>(|axis| {
+            if rectangle.origin()[axis] + rectangle.size()[axis]
+                >= self.bounds.origin()[axis] + self.bounds.size()[axis]
+            {
+                limit[axis] as i32
+            } else {
+                (i64::from(origin[axis]) + i64::from(size[axis]))
+                    .clamp(0, i64::from(limit[axis])) as i32
+            }
+        });
+        (0..2).all(|axis| high[axis] > low[axis]).then(|| {
+            (
+                low,
+                std::array::from_fn(|axis| (high[axis] - low[axis]) as u32),
+            )
+        })
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -320,12 +457,90 @@ pub struct ActionRequest {
     pub action: DesktopAction,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct WindowInspection {
+    pub owner: u64,
+    pub workspace: u64,
+    pub position: [f64; 2],
+    pub surface: SurfaceId,
+    pub placement: [u8; 16],
+}
+
+impl WindowInspection {
+    pub fn valid(self) -> bool {
+        self.workspace > 0
+            && self
+                .position
+                .iter()
+                .all(|value| value.is_finite() && value.abs() <= 1_000_000_000.0)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OpeningRevision {
+    pub generation: u64,
+    pub order: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct OpeningView {
+    pub canvas: String,
+    pub workspace: u64,
+    pub output: Option<OutputId>,
+    pub outputs: Vec<OutputViewport>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct OpeningRequest {
+    pub target: WindowInspection,
+    pub revision: OpeningRevision,
+    pub view: OpeningView,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum HostRequest {
+    ControlRevoke,
+    StopCapture(u64),
+    OverviewHover(OverviewHoverRequest),
     DropFinished { token: u64, accepted: bool },
     Close(SurfaceId),
     Action(DesktopAction),
+    Inspect(WindowInspection),
+    ReapplyOpening(OpeningRequest),
+    Workspace { owner: u64, id: u64 },
+    CreateWorkspace { owner: u64 },
+    Display(display::DisplayRequest),
+    Keyboard(input::KeyboardRequest),
+    Pointer(input::PointerRequest),
+    Absolute(input::AbsoluteRequest),
+    AbsoluteReload(input::AbsoluteReload),
+    External(external::Request),
+    Magnification(magnification::Request),
+    MagnificationReload(magnification::Reload),
+    ExternalReload,
     Exit,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct FileDragContext {
+    pub owner: u64,
+    pub output: Option<OutputId>,
+    pub token: u64,
+}
+
+#[cfg_attr(feature = "ui", derive(bevy::prelude::Resource))]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct FileDragSupport {
+    pub available: bool,
+    pub reason: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct OverviewHoverRequest {
+    pub drag: FileDragContext,
+    pub modal: u64,
+    pub sequence: u64,
+    pub workspace: u64,
 }
 
 pub struct PresentedFrame<T> {

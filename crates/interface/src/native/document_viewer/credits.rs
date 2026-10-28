@@ -1,10 +1,54 @@
 use crate::native::credits::Attribution;
 
-pub(super) const CREDITS: &[Attribution] = &[
+pub(crate) const CREDITS: &[Attribution] = &[
+    Attribution {
+        name: "FFmpeg",
+        author: "The FFmpeg developers · https://ffmpeg.org · external media decoder",
+        license: include_str!("../../../licenses/native/ffmpeg-GPLv3.txt"),
+    },
+    Attribution {
+        name: "PDFium Render",
+        author: "Alastair Carey · https://github.com/ajrcarey/pdfium-render",
+        license: include_str!("../../../licenses/native/document/pdfium-render-Apache.txt"),
+    },
+    Attribution {
+        name: "PDFium binaries and bundled dependencies",
+        author: "PDFium authors, Benoit Blanchon and contributors · https://github.com/bblanchon/pdfium-binaries",
+        license: concat!(
+            include_str!("../../../licenses/native/document/pdfium-binaries-MIT.txt"),
+            "\n",
+            include_str!("../../../licenses/native/document/pdfium-third-party.txt")
+        ),
+    },
+    Attribution {
+        name: "BLAKE3",
+        author: "Jack O'Connor, Samuel Neves and contributors",
+        license: include_str!("../../../licenses/native/document/blake3-CC0.txt"),
+    },
+    Attribution {
+        name: "Reqwest",
+        author: "Sean McArthur and contributors",
+        license: include_str!("../../../licenses/native/reqwest-MIT.txt"),
+    },
     Attribution {
         name: "ZIP",
         author: "ZIP Rust contributors",
         license: include_str!("../../../licenses/native/document/zip-MIT.txt"),
+    },
+    Attribution {
+        name: "Chrono",
+        author: "Kang Seonghoon and contributors",
+        license: include_str!("../../../licenses/chrono.txt"),
+    },
+    Attribution {
+        name: "URL",
+        author: "The rust-url developers",
+        license: include_str!("../../../licenses/native/url-MIT.txt"),
+    },
+    Attribution {
+        name: "Tempfile",
+        author: "Steven Allen and contributors",
+        license: include_str!("../../../licenses/native/document/tempfile-MIT.txt"),
     },
     Attribution {
         name: "Quick XML",

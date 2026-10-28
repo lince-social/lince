@@ -14,6 +14,8 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
     match arguments.first().and_then(|argument| argument.to_str()) {
         Some("release") => release(&arguments[1..]),
         #[cfg(target_os = "linux")]
+        Some("control") => checked(cargo_command().args(["run", "--locked", "-p", "lince-park", "--features", "server-tests", "--example", "park_control", "--"]).args(&arguments[1..]).env("RUSTFLAGS", warning_flags())),
+        #[cfg(target_os = "linux")]
         Some("validate") => validation::dispatch(&arguments[1..]),
         #[cfg(target_os = "linux")]
         Some("showoff") => showoff::run(&arguments[1..]).map_err(|error| error.to_string()),
@@ -155,7 +157,7 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
         }
         None | Some("help" | "--help" | "-h") => {
             println!(
-                "cargo xtask park <session|nested|clipboard-check|protocol-check|input-check|policy-check|graphics-check|graphics-gate|native-check|native-client-check|worker-check|sync-check>"
+                "cargo xtask park <session|nested|control|clipboard-check|protocol-check|input-check|policy-check|graphics-check|graphics-gate|native-check|native-client-check|worker-check|sync-check>"
             );
             println!("Runs Park protocol regressions and Vulkan/wgpu sharing probes.");
             println!("Use park validate help for isolated, bounded session acceptance runs.");
@@ -206,9 +208,17 @@ fn release(arguments: &[OsString]) -> Result<()> {
     let revision = match std::env::var("LINCE_REVISION") {
         Ok(revision) if !revision.trim().is_empty() => revision,
         _ => {
-            let output = std::process::Command::new("git").args(["rev-parse", "HEAD"]).output().map_err(|error| error.to_string())?;
-            if !output.status.success() { return Err("Set LINCE_REVISION when releasing outside a Git checkout".into()); }
-            String::from_utf8(output.stdout).map_err(|error| error.to_string())?.trim().to_owned()
+            let output = std::process::Command::new("git")
+                .args(["rev-parse", "HEAD"])
+                .output()
+                .map_err(|error| error.to_string())?;
+            if !output.status.success() {
+                return Err("Set LINCE_REVISION when releasing outside a Git checkout".into());
+            }
+            String::from_utf8(output.stdout)
+                .map_err(|error| error.to_string())?
+                .trim()
+                .to_owned()
         }
     };
     let mut command = cargo_command();

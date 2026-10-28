@@ -134,13 +134,15 @@ fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
                 worker
                     .scene(Scene {
                         revision: 0,
+                        display: None,
                         outputs: vec![crate::presentation::Output {
                             name: "Park-1".into(),
-                            viewport: OutputViewport {
+                            viewport: OutputViewport { rotation: Default::default(),
                                 id: OutputId(1),
                                 bounds,
                                 usable: Rectangle::new([0.0, 32.0], [800.0, 424.0]),
                                 physical_size: [800, 480],
+                                raster: lince_interface::host::raster::RasterMapping { origin: (bounds).origin(), scale: [1.0; 2] },
                                 workspace: 1,
                             },
                         }],
@@ -188,7 +190,8 @@ fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
                 {
                     maximize_restored = true;
                 }
-                if completed.frame.dmabuf().size() != (expected[0], expected[1]).into() {
+                let buffer = completed.frame.dmabuf().ok_or_else(|| failure("The probe output image is unavailable".into()))?;
+                if buffer.size() != (expected[0], expected[1]).into() {
                     return Err(failure(
                         "the native view does not fit its reserved output area".into(),
                     ));
@@ -235,7 +238,7 @@ fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
                             completed.windows.iter().find(|window| window.id == id)
                         {
                             let pixels =
-                                crate::presentation::probe_pixels(completed.frame.dmabuf())?;
+                                crate::presentation::probe_pixels(buffer)?;
                             let sample = |content: [f64; 2]| {
                                 let point: [f64; 2] = std::array::from_fn(|axis| {
                                     item.mapping.canvas.origin()[axis]

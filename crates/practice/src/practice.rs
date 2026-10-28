@@ -183,111 +183,23 @@ impl Operation {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct Step {
     pub slug: &'static str,
     pub subject: &'static str,
     pub operation: Option<Operation>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct Lesson {
     pub subject: &'static str,
     pub prerequisites: &'static [&'static str],
     pub steps: &'static [Step],
 }
 
-pub const LESSONS: &[Lesson] = &[
-    Lesson {
-        subject: "sands",
-        prerequisites: &["interface"],
-        steps: &[
-            Step {
-                slug: "step-interface-open-edit",
-                subject: "sands",
-                operation: Some(Operation::OpenEdit),
-            },
-            Step {
-                slug: "step-interface-place-sand",
-                subject: "sands",
-                operation: Some(Operation::PlaceSand),
-            },
-            Step {
-                slug: "step-interface-move-sand",
-                subject: "sands",
-                operation: Some(Operation::MoveSand),
-            },
-            Step {
-                slug: "step-interface-compose-castle",
-                subject: "castles",
-                operation: Some(Operation::ComposeCastle),
-            },
-        ],
-    },
-    Lesson {
-        subject: "areas-of-influence",
-        prerequisites: &["sands"],
-        steps: &[
-            Step {
-                slug: "step-area-place",
-                subject: "areas-of-influence",
-                operation: Some(Operation::PlaceArea),
-            },
-            Step {
-                slug: "step-area-attract",
-                subject: "areas-of-influence",
-                operation: Some(Operation::Attract),
-            },
-            Step {
-                slug: "step-area-repel",
-                subject: "areas-of-influence",
-                operation: Some(Operation::Repel),
-            },
-        ],
-    },
-    Lesson {
-        subject: "protein",
-        prerequisites: &["record", "assertion", "areas-of-influence"],
-        steps: &[
-            Step {
-                slug: "step-protein-create-spawn-area",
-                subject: "protein",
-                operation: Some(Operation::CreateProteinArea),
-            },
-            Step {
-                slug: "step-protein-filter-preview",
-                subject: "protein",
-                operation: Some(Operation::PreviewProtein),
-            },
-            Step {
-                slug: "step-protein-present-properties",
-                subject: "protein",
-                operation: Some(Operation::PresentProperties),
-            },
-        ],
-    },
-    Lesson {
-        subject: "area-record-actions",
-        prerequisites: &["protein", "assertion", "areas-of-influence"],
-        steps: &[
-            Step {
-                slug: "step-area-match-record",
-                subject: "area-record-actions",
-                operation: Some(Operation::MatchRecord),
-            },
-            Step {
-                slug: "step-area-change-on-entry",
-                subject: "area-record-actions",
-                operation: Some(Operation::EnterArea),
-            },
-            Step {
-                slug: "step-area-change-on-exit",
-                subject: "area-record-actions",
-                operation: Some(Operation::LeaveArea),
-            },
-        ],
-    },
-];
+pub fn lessons() -> &'static [Lesson] {
+    &crate::content::get().lessons
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Target {

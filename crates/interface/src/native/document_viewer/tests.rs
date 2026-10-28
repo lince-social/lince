@@ -91,3 +91,49 @@ fn invalid_saved_positions_do_not_enter_workspace() {
     state.path = "bad\0path".into();
     assert!(!state.valid());
 }
+
+#[test]
+fn manual_online_sources_and_retention_results_follow_the_current_document() {
+    let (mut world, root) = world();
+    world.init_resource::<worker::Worker>();
+    let owner = spawn(&mut world, root, 1, DVec2::ZERO, DocumentViewer::default());
+    let uri = "https://example.invalid/book.epub";
+    ui::open(&mut world, owner, uri.into());
+    let state = world.get::<DocumentViewer>(owner).unwrap();
+    assert_eq!(state.path, uri);
+    assert_eq!(state.resource.as_ref().unwrap().uri, uri);
+    world
+        .resource::<worker::Worker>()
+        .reply_sender
+        .send(worker::Reply::Retained {
+            owner,
+            path: "/old.pdf".into(),
+            result: Ok("/retained".into()),
+        })
+        .unwrap();
+    runtime::update(&mut world);
+    assert!(world.get::<View>(owner).unwrap().retention.is_none());
+    world
+        .resource::<worker::Worker>()
+        .reply_sender
+        .send(worker::Reply::Retained {
+            owner,
+            path: uri.into(),
+            result: Ok("/retained".into()),
+        })
+        .unwrap();
+    runtime::update(&mut world);
+    assert_eq!(
+        world.get::<View>(owner).unwrap().retention.as_deref(),
+        Some("Available offline")
+    );
+    ui::open(&mut world, owner, "/new.pdf".into());
+    assert!(world.get::<View>(owner).unwrap().retention.is_none());
+    assert!(
+        world
+            .get::<DocumentViewer>(owner)
+            .unwrap()
+            .resource
+            .is_none()
+    );
+}

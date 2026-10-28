@@ -11,6 +11,8 @@ pub(crate) struct SavedExplorer {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedExplorer);
+
 impl SavedExplorer {
     pub(crate) fn valid(&self) -> bool {
         self.castle.valid()

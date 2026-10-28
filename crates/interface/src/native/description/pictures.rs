@@ -3,7 +3,6 @@ use base64::Engine;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex, mpsc},
-    time::Duration,
 };
 
 const MAX_BYTES: usize = 8 * 1024 * 1024;
@@ -49,6 +48,7 @@ pub(super) fn spawn(world: &mut World, parent: Entity, source: &str, alt: &str) 
     });
 }
 
+#[cfg(test)]
 fn url(source: &str) -> Result<reqwest::Url, String> {
     let url = reqwest::Url::parse(source).map_err(|_| "Invalid image URL")?;
     if !matches!(url.scheme(), "http" | "https")
@@ -76,7 +76,7 @@ pub(super) fn decode(bytes: Vec<u8>) -> Pixels {
     Ok((image.width(), image.height(), image.into_raw()))
 }
 
-async fn load(source: &str) -> Pixels {
+fn load(source: &str) -> Pixels {
     let bytes = if let Some(data) = source.strip_prefix("data:") {
         let (format, payload) = data.split_once(',').ok_or("Invalid embedded image")?;
         if !matches!(
@@ -90,39 +90,24 @@ async fn load(source: &str) -> Pixels {
             .decode(payload)
             .map_err(|e| e.to_string())?
     } else {
-        let requested_url = url(source)?;
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(20))
-            .redirect(reqwest::redirect::Policy::custom(|attempt| {
-                if attempt.previous().len() >= 5 || url(attempt.url().as_str()).is_err() {
-                    attempt.stop()
-                } else {
-                    attempt.follow()
-                }
-            }))
-            .build()
-            .map_err(|e| e.to_string())?;
-        let mut response = client
-            .get(requested_url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?
-            .error_for_status()
-            .map_err(|e| e.to_string())?;
-        if response
-            .content_length()
-            .is_some_and(|size| size > MAX_BYTES as u64)
-        {
-            return Err("Image exceeds 8 MB.".into());
+        let uri = lince_resources::address(source)?;
+        let library = engine::sources::library().map_err(|error| error.to_string())?;
+        if uri.scheme() == "file" {
+            let path = uri
+                .to_file_path()
+                .map_err(|_| "Invalid local image address")?;
+            let file = std::fs::File::open(path).map_err(|error| error.to_string())?;
+            let mut bytes = Vec::new();
+            std::io::Read::read_to_end(
+                &mut std::io::Read::take(file, MAX_BYTES as u64 + 1),
+                &mut bytes,
+            )
+            .map_err(|error| error.to_string())?;
+            bytes
+        } else {
+            let file = library.http_file(source, Default::default(), MAX_BYTES as u64, false)?;
+            std::fs::read(file.path).map_err(|error| error.to_string())?
         }
-        let mut bytes = Vec::new();
-        while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
-            if bytes.len().saturating_add(chunk.len()) > MAX_BYTES {
-                return Err("Image exceeds 8 MB.".into());
-            }
-            bytes.extend_from_slice(&chunk);
-        }
-        bytes
     };
     decode(bytes)
 }
@@ -211,11 +196,7 @@ pub(super) fn update(world: &mut World) {
             .get_resource::<crate::native::wake::WakeSignal>()
             .cloned();
         std::thread::spawn(move || {
-            let result = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .map_err(|e| e.to_string())
-                .and_then(|runtime| runtime.block_on(load(&source)));
+            let result = load(&source);
             let _ = sender.send(result);
             if let Some(wake) = wake {
                 wake.ring();
@@ -265,16 +246,8 @@ mod tests {
                 "../../../../../institute/assets/logo/black_in_white.png"
             ))
         );
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        let (width, height, pixels) = runtime.block_on(load(&source)).unwrap();
+        let (width, height, pixels) = load(&source).unwrap();
         assert_eq!(pixels.len(), (width * height * 4) as usize);
-        assert!(
-            runtime
-                .block_on(load("data:text/html;base64,PHNjcmlwdD4="))
-                .is_err()
-        );
+        assert!(load("data:text/html;base64,PHNjcmlwdD4=").is_err());
     }
 }

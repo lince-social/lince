@@ -562,7 +562,11 @@ impl Engine {
                             creator_person_uid: acting.clone(),
                             proposal_author_person_uid: acting.clone(),
                             terms: store::transfers::TransferDraftTermsInput {
-                                public_history: store::transfers::public_history(&self.store.pool, &transfer).await?,
+                                public_history: store::transfers::public_history(
+                                    &self.store.pool,
+                                    &transfer,
+                                )
+                                .await?,
                                 slug: transfer_record.slug,
                                 head: transfer_record.head,
                                 agreement_type: transfer_row.agreement_type,
@@ -802,8 +806,11 @@ impl Engine {
                     self.require_permission(actor.as_deref(), "user:assign_role")
                         .await?;
                     let person = self.resolve(&user).await?;
-                    let expected = store::auth::person_access(&self.store.pool, &person).await?.map_or(0, |access| access.revision);
-                    self.assign_roles(actor.as_deref(), &person, &[role], expected).await?;
+                    let expected = store::auth::person_access(&self.store.pool, &person)
+                        .await?
+                        .map_or(0, |access| access.revision);
+                    self.assign_roles(actor.as_deref(), &person, &[role], expected)
+                        .await?;
                 }
                 Action::SetPersonReadFilter { person, filter } => {
                     self.require_permission(actor.as_deref(), "user:update")

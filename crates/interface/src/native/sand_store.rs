@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 pub(crate) mod preview;
 
 use crate::native::{
@@ -54,50 +55,46 @@ impl SandKind {
     ];
     pub fn name(self) -> &'static str {
         match self {
-            Self::Square => "Square",
-            Self::Text => "Plain text",
-            Self::EditableText => "Editable text",
-            Self::Operation => "Operation",
-            Self::WorkTimer => "Time Castle",
-            Self::AccessControl => "Access Control",
-            Self::Visibility => "Visibility",
-            Self::Trust => "Trust",
-            Self::HandCamera => "Hand Camera Castle",
-            Self::Video => "Video Castle",
-            Self::Sync => "Sync",
+            Self::Square => Tr::Square.text(),
+            Self::Text => Tr::PlainText.text(),
+            Self::EditableText => Tr::EditableText.text(),
+            Self::Operation => Tr::Operation.text(),
+            Self::WorkTimer => Tr::TimeCastle.text(),
+            Self::AccessControl => Tr::AccessControl.text(),
+            Self::Visibility => Tr::Visibility.text(),
+            Self::Trust => Tr::Trust.text(),
+            Self::HandCamera => Tr::HandCamera.text(),
+            Self::Video => Tr::Video.text(),
+            Self::Sync => Tr::Sync.text(),
             #[cfg(feature = "stuff")]
             Self::Freedoom => "Freedoom",
-            Self::Terminal => "Terminal",
-            Self::Configuration => "Configuration",
-            Self::Organ => "Organ",
-            Self::Todo => "Todo",
-            Self::Ontology => "Ontology",
+            Self::Terminal => Tr::Terminal.text(),
+            Self::Configuration => Tr::Configuration.text(),
+            Self::Organ => Tr::Organ.text(),
+            Self::Todo => Tr::Todo.text(),
+            Self::Ontology => Tr::Ontology.text(),
         }
     }
     pub fn description(self) -> &'static str {
         match self {
-            Self::Square => "An empty space to compose with.",
-            Self::Text => "A simple text label.",
-            Self::EditableText => "A note you can write in.",
-            Self::Operation => "Run commands or set a Record quantity to zero by slug.",
-            Self::WorkTimer => {
-                "A quiet clock for upcoming work. Unfold the timeline or open its scheduling and stopwatch controls."
-            }
-            Self::AccessControl => "Manage local users, Roles and permissions.",
-            Self::Visibility => {
-                "Compose Organ and proximity rules for Record data, saved places, and live locations."
-            }
-            Self::Trust => "Review signed contact disclosures and permitted paths for transfer evidence analysis.",
-            Self::HandCamera => "Move the 2D camera with an open hand using your webcam.",
-            Self::Video => "Watch live memory-only Signals and play GIF videos.",
-            Self::Sync => "Sync a Protein to a directory as .lingua or Markdown.",
+            Self::Square => Tr::EmptySpaceHelp.text(),
+            Self::Text => Tr::PlainTextHelp.text(),
+            Self::EditableText => Tr::EditableTextHelp.text(),
+            Self::Operation => Tr::OperationHelp.text(),
+            Self::WorkTimer => Tr::TimeCastleHelp.text(),
+            Self::AccessControl => Tr::AccessControlHelp.text(),
+            Self::Visibility => Tr::VisibilityHelp.text(),
+            Self::Trust => Tr::TrustHelp.text(),
+            Self::HandCamera => Tr::HandCameraHelp.text(),
+            Self::Video => Tr::VideoHelp.text(),
+            Self::Sync => Tr::SyncHelp.text(),
             #[cfg(feature = "stuff")]
             Self::Freedoom => "Play Freedoom locally with keyboard controls.",
-            Self::Terminal => "A local shell powered by libghostty.",
-            Self::Configuration => "Cell identity, discovery, storage, and contacts.",
-            Self::Organ => "Pairing, contacts, nearby chat, discovery, devices, sharing and mail.",
-            Self::Ontology => "Manage Linguas, concepts, hierarchy and Record assertions.",
-            Self::Todo => "A live task queue with completion, undo, and saved Proteins.",
+            Self::Terminal => Tr::TerminalHelp.text(),
+            Self::Configuration => Tr::ConfigurationHelp.text(),
+            Self::Organ => Tr::OrganHelp.text(),
+            Self::Ontology => Tr::OntologyHelp.text(),
+            Self::Todo => Tr::TodoHelp.text(),
         }
     }
 
@@ -607,7 +604,9 @@ fn spawn_with_source(
         ))
         .id();
     if crate::native::laboratory::temporary(world, root, workspace) {
-        world.entity_mut(sand).insert(crate::native::laboratory::LaboratoryOwner);
+        world
+            .entity_mut(sand)
+            .insert(crate::native::laboratory::LaboratoryOwner);
     }
     if let Some(source) = source {
         world

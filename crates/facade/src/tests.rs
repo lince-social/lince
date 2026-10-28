@@ -1301,3 +1301,18 @@ async fn tagged_creation_is_visible_immediately_and_invalid_drafts_leave_no_reco
     assert_eq!(full["messages"].as_array().unwrap().len(), 1);
     assert_eq!(full["messages"][0]["body"], "Visible comment");
 }
+
+#[tokio::test]
+async fn facade_serves_apis_without_the_html_frontend() {
+    let state = fixture().await;
+    let server = Facade::start(state.cell, "127.0.0.1:0").await.unwrap();
+    let origin = format!("http://{}", server.address);
+    let client = reqwest::Client::new();
+    for path in ["/", "/records/example", "/licenses/datastar", "/credits"] {
+        let response = client.get(format!("{origin}{path}")).send().await.unwrap();
+        assert_eq!(response.status(), axum::http::StatusCode::NOT_FOUND, "{path}");
+    }
+    let response = client.get(format!("{origin}/session")).send().await.unwrap();
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    assert_eq!(response.json::<Value>().await.unwrap()["ready"], false);
+}

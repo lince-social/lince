@@ -13,6 +13,9 @@ pub mod app;
 pub mod output_views;
 
 #[cfg(feature = "native-presentation")]
+pub(crate) mod render_layers;
+
+#[cfg(feature = "native-presentation")]
 pub mod physical_workspace;
 
 #[cfg(feature = "native-presentation")]
@@ -23,9 +26,12 @@ pub mod owner_backup;
 
 #[cfg(feature = "native-presentation")]
 pub mod actions;
+pub(crate) mod keyboard;
+pub use keyboard::cancel as cancel_keyboard_input;
+pub use keyboard::synchronize_modifiers as synchronize_keyboard_modifiers;
 
 #[cfg(feature = "native-presentation")]
-mod accessibility;
+pub mod accessibility;
 #[cfg(feature = "native-presentation")]
 pub use accessibility::{protected_text_input, secret as protect_text_input};
 
@@ -71,9 +77,9 @@ pub mod frequency_castle;
 
 #[cfg(feature = "native-presentation")]
 pub mod access_control;
+pub mod trust_castle;
 #[cfg(feature = "native-presentation")]
 pub mod visibility_castle;
-pub mod trust_castle;
 pub mod workspace_sync;
 
 #[cfg(feature = "native-presentation")]
@@ -84,6 +90,12 @@ pub mod color_picker;
 
 #[cfg(feature = "native-presentation")]
 pub mod canvas;
+
+#[cfg(feature = "native-presentation")]
+pub mod capture;
+
+#[cfg(feature = "native-presentation")]
+pub(crate) mod pointer_hit;
 
 #[cfg(feature = "native-presentation")]
 pub mod canvas_host;
@@ -351,6 +363,7 @@ pub mod sound_area;
 #[cfg(feature = "native-presentation")]
 pub mod recorder_castle;
 
+pub mod demeter_castle;
 #[cfg(feature = "native-presentation")]
 pub mod document_viewer;
 #[cfg(feature = "native-presentation")]
@@ -361,6 +374,8 @@ pub mod file_explorer;
 pub mod ide;
 #[cfg(feature = "native-presentation")]
 pub mod media_sand;
+mod resource_preview;
+pub mod source_view;
 
 #[cfg(feature = "native-presentation")]
 pub mod transfer_castle;

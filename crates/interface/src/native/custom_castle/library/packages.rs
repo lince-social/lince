@@ -341,7 +341,8 @@ pub(super) fn update(world: &mut World, root: Entity, messages: &[ServerMessage]
         }
     }
     let state = world.get::<State>(root).unwrap();
-    if !state.loaded && state.pending.is_none() && !crate::native::laboratory::blocked(world, root) {
+    if !state.loaded && state.pending.is_none() && !crate::native::laboratory::blocked(world, root)
+    {
         let command = model::Command::List {
             organ: state.organ.clone(),
             offset: state.offset,

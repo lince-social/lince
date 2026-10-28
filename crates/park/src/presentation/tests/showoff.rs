@@ -44,23 +44,27 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         .outputs(vec![
             Output {
                 name: "Showoff-1".into(),
-                viewport: lince_interface::host::OutputViewport {
+                viewport: lince_interface::host::OutputViewport { rotation: Default::default(),
                     id: lince_interface::host::OutputId(1),
                     bounds: lince_interface::host::Rectangle::new([0.0; 2], [1280.0, 720.0])
                         .unwrap(),
                     usable: lince_interface::host::Rectangle::new([0.0; 2], [1280.0, 720.0]),
                     physical_size: [1280, 720],
+                    raster: lince_interface::host::raster::RasterMapping { origin: (lince_interface::host::Rectangle::new([0.0; 2], [1280.0, 720.0])
+                        .unwrap()).origin(), scale: [1.0; 2] },
                     workspace: 1,
                 },
             },
             Output {
                 name: "Showoff-2".into(),
-                viewport: lince_interface::host::OutputViewport {
+                viewport: lince_interface::host::OutputViewport { rotation: Default::default(),
                     id: lince_interface::host::OutputId(2),
                     bounds: lince_interface::host::Rectangle::new([1280.0, 0.0], [800.0, 600.0])
                         .unwrap(),
                     usable: lince_interface::host::Rectangle::new([1280.0, 0.0], [800.0, 600.0]),
                     physical_size: [800, 600],
+                    raster: lince_interface::host::raster::RasterMapping { origin: (lince_interface::host::Rectangle::new([1280.0, 0.0], [800.0, 600.0])
+                        .unwrap()).origin(), scale: [1.0; 2] },
                     workspace: 2,
                 },
             },
@@ -73,12 +77,17 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         canvas.probe_frame().unwrap();
     }
     let root = canvas.canvas_root().unwrap();
+    let initial_view = *canvas
+        .app
+        .world()
+        .get::<native::canvas::CanvasView>(root)
+        .unwrap();
     assert!(native::laboratory::normal(canvas.app.world()));
     assert!(
         native::shortcuts::desktop_bindings(canvas.app.world())
             .iter()
             .any(|binding| {
-                binding.action == DesktopAction::Unfocus
+                binding.action == DesktopAction::ToggleFocus
                     && binding.key == KeyCode::Backspace
                     && binding.modifiers.super_key
                     && !binding.modifiers.alt
@@ -121,7 +130,7 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
                 .count(),
         )
     };
-    assert_eq!(counts(canvas.world_mut()), (7, 1, 1));
+    assert_eq!(counts(canvas.world_mut()), (6, 1, 1));
     assert_eq!(
         canvas
             .world_mut()
@@ -160,7 +169,7 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         assert!(start.elapsed().as_secs() < 30, "GLB was not rendered");
         canvas.probe_frame().unwrap();
     }
-    let before = probe_pixels(canvas.probe_frame().unwrap().dmabuf()).unwrap();
+    let before = probe_pixels(canvas.probe_frame().unwrap().dmabuf().unwrap()).unwrap();
     let model = canvas
         .world_mut()
         .query_filtered::<Entity, With<native::topology::assets::ImportedAsset>>()
@@ -196,7 +205,6 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
     );
     capture("flat", &before);
     benchmark(&mut canvas, "flat");
-    click_control(&mut canvas, "Map");
     let (map, map_position, map_camera) = canvas
         .world_mut()
         .query::<(
@@ -208,9 +216,14 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         .map(|(entity, map, item)| (entity, item.position, map.camera))
         .next()
         .unwrap();
-    let map_view = canvas.app.world().get::<native::canvas::CanvasView>(root).unwrap();
-    assert_eq!(map_view.center.x, map_position.x);
-    assert!(map_view.center.y < map_position.y);
+    *canvas
+        .world_mut()
+        .get_mut::<native::canvas::CanvasView>(root)
+        .unwrap() = native::canvas::CanvasView {
+        center: map_position,
+        zoom: 0.8,
+    };
+    canvas.probe_frame().unwrap();
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
     while !canvas
         .app
@@ -230,8 +243,10 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
     }
     capture(
         "map",
-        &probe_pixels(canvas.probe_frame().unwrap().dmabuf()).unwrap(),
+        &probe_pixels(canvas.probe_frame().unwrap().dmabuf().unwrap()).unwrap(),
     );
+    overview_case(&mut canvas, root, space, model);
+    assert_eq!(counts(canvas.world_mut()), (6, 1, 1));
     let viewport = canvas.world_mut().query_filtered::<(Entity, &UiGlobalTransform), (With<ImageNode>, With<bevy::ui::RelativeCursorPosition>)>()
         .iter(canvas.app.world()).find_map(|(entity, transform)| descendant(canvas.app.world(), entity, map).then(|| transform.to_scale_angle_translation().2.to_array())).unwrap();
     let world = canvas.app.world();
@@ -268,7 +283,11 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
             .zoom,
         map_camera.zoom
     );
-    click_control(&mut canvas, "Canvas");
+    *canvas
+        .world_mut()
+        .get_mut::<native::canvas::CanvasView>(root)
+        .unwrap() = initial_view;
+    canvas.probe_frame().unwrap();
     let other_workspace = canvas
         .app
         .world()
@@ -455,7 +474,8 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         zoom
     );
     native::edit_mode::EditAction::Open.apply(canvas.world_mut(), root);
-    canvas.probe_frame().unwrap();
+    let frame = super::shortcuts::settle(&mut canvas);
+    capture("before-note-drag", &probe_pixels(frame.dmabuf().unwrap()).unwrap());
     let note = canvas
         .world_mut()
         .query::<(Entity, &native::sand_store::StoredSand)>()
@@ -465,7 +485,31 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         .0;
     let corners =
         native::topology::presentation::projected_corners(canvas.app.world(), note).unwrap();
-    let point = std::array::from_fn(|axis| (corners[0][axis] + corners[2][axis]) as f32 * 0.5);
+    let point = [0.5, 0.25, 0.75, 0.1, 0.9]
+        .into_iter()
+        .flat_map(|u| {
+            [0.5, 0.25, 0.75, 0.1, 0.9].into_iter().map(move |v| {
+                std::array::from_fn(|axis| {
+                    corners[0][axis] * (1.0 - u) * (1.0 - v)
+                        + corners[1][axis] * u * (1.0 - v)
+                        + corners[2][axis] * u * v
+                        + corners[3][axis] * (1.0 - u) * v
+                })
+            })
+        })
+        .find(|point| {
+            point[0] >= 0.0
+                && point[0] < 1280.0
+                && point[1] >= 0.0
+                && point[1] < 720.0
+                && !frame
+                    .input
+                    .controls
+                    .iter()
+                    .any(|bounds| bounds.contains(*point))
+        })
+        .expect("The note has no exposed draggable point beside the edit panel")
+        .map(|axis| axis as f32);
     let before_drag = canvas
         .app
         .world()
@@ -500,11 +544,7 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         "Dragging the note did not move the real Sand"
     );
     native::edit_mode::EditAction::Close.apply(canvas.world_mut(), root);
-    for layout in [
-        WorkspaceLayout::Grid,
-        WorkspaceLayout::ScrollingColumns,
-        WorkspaceLayout::Free,
-    ] {
+    for layout in [WorkspaceLayout::Tiled, WorkspaceLayout::Free] {
         canvas
             .desktop_action(DesktopAction::SetLayout(layout))
             .unwrap();
@@ -563,23 +603,11 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
     ))
     .apply(canvas.world_mut(), root);
     canvas.probe_frame().unwrap();
-    assert_eq!(counts(canvas.world_mut()), (7, 2, 1));
+    assert_eq!(counts(canvas.world_mut()), (6, 2, 1));
     native::edit_mode::EditAction::Close.apply(canvas.world_mut(), root);
     canvas.probe_frame().unwrap();
-    canvas.pointer([35.0, 30.0]).unwrap();
-    for _ in 0..2 {
-        canvas.probe_frame().unwrap();
-    }
-    canvas
-        .button(bevy::input::mouse::MouseButton::Left, true)
-        .unwrap();
+    native::canvas_controls::CanvasAction::Recenter.apply(canvas.world_mut(), root);
     canvas.probe_frame().unwrap();
-    canvas
-        .button(bevy::input::mouse::MouseButton::Left, false)
-        .unwrap();
-    for _ in 0..2 {
-        canvas.probe_frame().unwrap();
-    }
     assert_eq!(
         canvas
             .app
@@ -587,8 +615,8 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
             .get::<native::canvas::CanvasView>(root)
             .unwrap()
             .center,
-        bevy::math::DVec2::new(0.0, 80.0),
-        "The Showoff Canvas button did not restore the overview"
+        bevy::math::DVec2::ZERO,
+        "The shared canvas recenter action did not restore the origin"
     );
     native::topology::ui::TopologyAction::ToggleView.apply(canvas.world_mut(), root);
     for _ in 0..5 {
@@ -603,13 +631,14 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         "The WGSL geometry was not placed in the 3D scene"
     );
     let model_bounds = native::topology::presentation::bounds(canvas.app.world(), model).unwrap();
-    let spatial_pixels = probe_pixels(canvas.probe_frame().unwrap().dmabuf()).unwrap();
+    let spatial_pixels = probe_pixels(canvas.probe_frame().unwrap().dmabuf().unwrap()).unwrap();
     assert!(
         colored_model_pixels(&spatial_pixels, model_bounds) > 100,
         "The GLB disappeared when switching to 3D"
     );
     capture("spatial", &spatial_pixels);
     benchmark(&mut canvas, "spatial");
+    overview_case(&mut canvas, root, space, model);
     let geometry = canvas.probe_frame().unwrap().geometry.unwrap();
     if !geometry
         .items
@@ -753,7 +782,7 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
             .position,
         camera_position
     );
-    let after = probe_pixels(canvas.probe_frame().unwrap().dmabuf()).unwrap();
+    let after = probe_pixels(canvas.probe_frame().unwrap().dmabuf().unwrap()).unwrap();
     assert!(
         before
             .iter()
@@ -793,7 +822,7 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
     for _ in 0..12 {
         restored.probe_frame().unwrap();
     }
-    assert_eq!(counts(restored.world_mut()), (7, 2, 1));
+    assert_eq!(counts(restored.world_mut()), (6, 2, 1));
     assert_eq!(
         restored
             .world_mut()
@@ -835,12 +864,129 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
     assert_eq!(
         restored
             .world_mut()
-            .query_filtered::<Entity, With<native::laboratory::showoff::Controls>>()
+            .query::<&Name>()
             .iter(restored.app.world())
+            .filter(|name| name.as_str() == "showoff controls")
             .count(),
-        1
+        0
     );
     restored.finish().unwrap();
+}
+
+fn overview_case(canvas: &mut Presentation, root: Entity, workspace: u64, model: Entity) {
+    let spatial = *canvas
+        .app
+        .world()
+        .get::<native::topology::view::View>(root)
+        .unwrap();
+    let view = *canvas
+        .app
+        .world()
+        .get::<native::canvas::CanvasView>(root)
+        .unwrap();
+    for (key, pressed) in [
+        (KeyCode::SuperLeft, true),
+        (KeyCode::Space, true),
+        (KeyCode::Space, false),
+        (KeyCode::SuperLeft, false),
+    ] {
+        super::shortcuts::key(canvas, key, pressed);
+    }
+    let frame = super::shortcuts::settle(canvas);
+    assert!(frame.input.keyboard_modal);
+    let world = canvas.world_mut();
+    let preview = world
+        .query::<(Entity, &Name, &ImageNode)>()
+        .iter(world)
+        .find(|(_, name, _)| name.as_str() == format!("overview.workspace.{workspace}"))
+        .map(|(entity, _, image)| (entity, image.image.clone()))
+        .unwrap();
+    let (camera, transform, layers) = world.query::<(&Camera, &GlobalTransform, &bevy::camera::RenderTarget, &bevy::camera::visibility::RenderLayers)>().iter(world)
+        .find(|(_, _, target, _)| matches!(target, bevy::camera::RenderTarget::Image(image) if image.handle == preview.1)).map(|(camera, transform, _, layers)| (camera, transform, layers.clone())).unwrap();
+    let point = camera
+        .world_to_viewport(
+            transform,
+            world.get::<GlobalTransform>(model).unwrap().translation(),
+        )
+        .unwrap();
+    let node = world.get::<ComputedNode>(preview.0).unwrap();
+    let origin = world
+        .get::<UiGlobalTransform>(preview.0)
+        .unwrap()
+        .transform_point2(Vec2::ZERO)
+        - node.size() * 0.5;
+    let image_size = world
+        .resource::<Assets<Image>>()
+        .get(&preview.1)
+        .unwrap()
+        .size()
+        .as_vec2();
+    let point = origin + point / image_size * node.size();
+    assert!(origin.y >= 0.0 && origin.y + node.size().y <= 720.0, "The current workspace preview was not fully revealed: {origin:?}, {:?}", node.size());
+    let rectangle = Rect::from_center_size(point, Vec2::splat(24.0));
+    let pixels = probe_pixels(frame.dmabuf().unwrap()).unwrap();
+    let colored = pixels
+        .chunks_exact(4)
+        .enumerate()
+        .filter(|(index, pixel)| {
+            rectangle.contains(Vec2::new((index % 1280) as f32, (index / 1280) as f32))
+                && pixel[..3]
+                    .iter()
+                    .max()
+                    .unwrap()
+                    .abs_diff(*pixel[..3].iter().min().unwrap())
+                    > 60
+        })
+        .count();
+    assert!(
+        colored > 10,
+        "The actual GLB is missing from the workspace preview at {point:?}: {colored}"
+    );
+    if spatial.spatial {
+        assert!(
+            world
+                .query::<(
+                    &native::shader_effects::RecordMesh,
+                    &bevy::camera::visibility::RenderLayers,
+                    &Visibility
+                )>()
+                .iter(world)
+                .any(|(mesh, rendered, visibility)| {
+                    world
+                        .get::<native::workspace::WorkspaceMember>(mesh.0)
+                        .is_some_and(|member| member.0 == workspace)
+                        && rendered.intersects(&layers)
+                        && *visibility == Visibility::Visible
+                }),
+            "The spatial WGSL mesh is missing from overview's render layers"
+        );
+    }
+    capture(
+        if spatial.spatial {
+            "overview-spatial"
+        } else {
+            "overview-flat"
+        },
+        &pixels,
+    );
+    super::shortcuts::key(canvas, KeyCode::Escape, true);
+    super::shortcuts::key(canvas, KeyCode::Escape, false);
+    assert!(!super::shortcuts::settle(canvas).input.keyboard_modal);
+    let restored = canvas
+        .app
+        .world()
+        .get::<native::canvas::CanvasView>(root)
+        .unwrap();
+    assert_eq!(restored.center, view.center);
+    assert_eq!(restored.zoom, view.zoom);
+    assert_eq!(
+        *canvas
+            .app
+            .world()
+            .get::<native::topology::view::View>(root)
+            .unwrap(),
+        spatial
+    );
 }
 
 fn capture(name: &str, pixels: &[u8]) {
@@ -887,35 +1033,4 @@ fn descendant(world: &World, mut entity: Entity, parent: Entity) -> bool {
         }
     }
     false
-}
-
-fn click_control(canvas: &mut Presentation, label: &str) {
-    let panel = canvas
-        .world_mut()
-        .query_filtered::<Entity, With<native::laboratory::showoff::Controls>>()
-        .single(canvas.app.world())
-        .unwrap();
-    let point = canvas
-        .world_mut()
-        .query::<(Entity, &native::icons::Tooltip, &UiGlobalTransform)>()
-        .iter(canvas.app.world())
-        .find_map(|(entity, tooltip, transform)| {
-            (tooltip.0 == label && descendant(canvas.app.world(), entity, panel))
-                .then(|| transform.to_scale_angle_translation().2.to_array())
-        })
-        .unwrap();
-    canvas.pointer(point).unwrap();
-    for _ in 0..2 {
-        canvas.probe_frame().unwrap();
-    }
-    canvas
-        .button(bevy::input::mouse::MouseButton::Left, true)
-        .unwrap();
-    canvas.probe_frame().unwrap();
-    canvas
-        .button(bevy::input::mouse::MouseButton::Left, false)
-        .unwrap();
-    for _ in 0..4 {
-        canvas.probe_frame().unwrap();
-    }
 }

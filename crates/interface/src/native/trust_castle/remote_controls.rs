@@ -298,11 +298,26 @@ pub(super) fn maintain(world: &mut World) {
 
 pub(super) fn apply(world: &mut World, owner: Entity, command: &UiCommand) {
     if let UiCommand::ReviewClaim(index) = command {
-        let Some(view) = world.get::<View>(owner) else { return };
-        if view.pending.is_some() { return; }
-        let Some(value) = view.remote.verified["claim_checks"].as_array().and_then(|checks| checks.get(*index)) else { return };
-        if value["review_required"] != true { return; }
-        let Ok(document) = serde_json::from_value::<nucleus::trust_analysis::claims::Document>(value["document"].clone()) else { return };
+        let Some(view) = world.get::<View>(owner) else {
+            return;
+        };
+        if view.pending.is_some() {
+            return;
+        }
+        let Some(value) = view.remote.verified["claim_checks"]
+            .as_array()
+            .and_then(|checks| checks.get(*index))
+        else {
+            return;
+        };
+        if value["review_required"] != true {
+            return;
+        }
+        let Ok(document) = serde_json::from_value::<nucleus::trust_analysis::claims::Document>(
+            value["document"].clone(),
+        ) else {
+            return;
+        };
         let mut view = world.get_mut::<View>(owner).unwrap();
         view.generation = view.generation.wrapping_add(1);
         view.remote = Draft::default();
@@ -567,10 +582,34 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         if state.verified["analysis"].is_object() {
             analysis::render_result(world, owner, &state.verified, analysis_page);
         }
-        for (index, check) in state.verified["claim_checks"].as_array().into_iter().flatten().enumerate() {
-            label(world, owner, &format!("Claim {} · {} · claimed {} · observed {}", check["claim"].as_str().unwrap_or_default(), check["state"].as_str().unwrap_or("unknown"), check["document"]["statement"]["amount"]["value"].as_str().unwrap_or("unavailable"), check["support"]["observed"]["value"].as_str().unwrap_or("unavailable")));
+        for (index, check) in state.verified["claim_checks"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .enumerate()
+        {
+            label(
+                world,
+                owner,
+                &format!(
+                    "Claim {} · {} · claimed {} · observed {}",
+                    check["claim"].as_str().unwrap_or_default(),
+                    check["state"].as_str().unwrap_or("unknown"),
+                    check["document"]["statement"]["amount"]["value"]
+                        .as_str()
+                        .unwrap_or("unavailable"),
+                    check["support"]["observed"]["value"]
+                        .as_str()
+                        .unwrap_or("unavailable")
+                ),
+            );
             if check["review_required"] == true {
-                button(world, owner, "Review changed claim scope in a separate check", UiCommand::ReviewClaim(index));
+                button(
+                    world,
+                    owner,
+                    "Review changed claim scope in a separate check",
+                    UiCommand::ReviewClaim(index),
+                );
             }
         }
         let text = serde_json::to_string_pretty(&state.verified).unwrap_or_default();

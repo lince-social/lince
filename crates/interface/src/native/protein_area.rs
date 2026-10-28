@@ -2,10 +2,12 @@
 pub(crate) struct MeasureRecords;
 
 mod assignees;
+mod availability;
 mod date_order;
 pub(crate) mod filter;
 pub(crate) mod grouping;
 mod history;
+mod local;
 mod login;
 mod model;
 pub(crate) mod placement;
@@ -232,6 +234,8 @@ struct State {
     subscription: Option<String>,
     remote: Option<String>,
     ready: bool,
+    refreshing: bool,
+    single_record: Option<String>,
     login: bool,
     login_pending: bool,
     status: String,
@@ -254,6 +258,7 @@ struct Runtime {
     areas: HashMap<Entity, State>,
     sessions: HashMap<String, sessions::Session>,
     outgoing: VecDeque<ClientMessage>,
+    local_sender: Option<tokio::sync::mpsc::Sender<ClientMessage>>,
 }
 
 #[derive(Component)]
@@ -286,6 +291,23 @@ pub(crate) fn laboratory_attach(world: &mut World, owner: Entity, data: Value) {
 
 pub(crate) fn authoring_draft(world: &World, entity: Entity) -> bool {
     rows::authoring_draft(world, entity)
+}
+
+pub(crate) fn uses_content_height(world: &World, entity: Entity) -> bool {
+    world.get::<rows::Row>(entity).is_some()
+}
+
+pub(crate) fn row_area(world: &World, entity: Entity) -> Option<Entity> {
+    world.get::<rows::Row>(entity).map(|row| row.area)
+}
+
+pub(crate) fn preferred_height(world: &World, entity: Entity) -> Option<f32> {
+    world.get::<rows::Row>(entity)?;
+    let axis = world
+        .get::<crate::native::layout::LayoutBox>(entity)?
+        .rules
+        .axes[1];
+    (axis.sizing == crate::native::layout::Sizing::Fit).then_some(axis.size)
 }
 
 pub(crate) fn laboratory_detach(world: &mut World, owner: Entity) {
@@ -520,32 +542,43 @@ pub(crate) fn connect_organ(world: &World, organ: &str) -> Result<Remote, String
 
 fn start(world: &mut World, owner: Entity, config: Config) {
     stop(world, owner);
+    crate::native::full_record::window::restore(world, owner, &config);
+    let single_record = availability::target(&config);
     let mut state = State {
         applied: Some(config.clone()),
+        dirty: single_record.is_some(),
+        single_record,
         ..default()
     };
-    if config.enabled {
-        match query(world, owner, &config) {
-            Ok(query) => {
-                let id = id(world);
-                state.subscription = Some(id.clone());
-                state.ready = matches!(config.source, Source::Local);
-                state.status = "Connecting".into();
-                if let Source::Organ(organ) = &config.source {
-                    sessions::attach(world, organ, &mut state);
-                }
-                state
-                    .pending
-                    .push_back(ClientMessage::Subscribe { id, protein: query });
-            }
-            Err(error) => {
-                state.status = error;
-            }
-        }
+    if config.enabled && config.creating() {
+        state.status = "Creating window Record".into();
+    } else if config.enabled {
+        subscribe(world, owner, &config, &mut state);
     } else {
         state.status = "Stopped".into();
     }
     world.resource_mut::<Runtime>().areas.insert(owner, state);
+}
+
+fn subscribe(world: &mut World, owner: Entity, config: &Config, state: &mut State) {
+    match query(world, owner, config) {
+        Ok(query) => {
+            let id = id(world);
+            state.subscription = Some(id.clone());
+            state.refreshing = state.single_record.is_some();
+            state.ready = matches!(config.source, Source::Local);
+            state.status = "Connecting".into();
+            if let Source::Organ(organ) = &config.source {
+                sessions::attach(world, organ, state);
+            }
+            state
+                .pending
+                .push_back(ClientMessage::Subscribe { id, protein: query });
+        }
+        Err(error) => {
+            state.status = error;
+        }
+    }
 }
 
 fn refresh_relation_styles(
@@ -621,7 +654,10 @@ pub(crate) fn auxiliary_sender(
     source: &Source,
 ) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
     if let Source::Organ(source) = source
-        && crate::native::laboratory::reserved_source(source) { return None; }
+        && crate::native::laboratory::reserved_source(source)
+    {
+        return None;
+    }
     match source {
         Source::Local => world
             .get_non_send::<CellBridge>()
@@ -632,7 +668,10 @@ pub(crate) fn auxiliary_sender(
 
 pub(crate) fn ensure_auxiliary(world: &mut World, source: &Source) {
     if let Source::Organ(source) = source
-        && crate::native::laboratory::reserved_source(source) { return; }
+        && crate::native::laboratory::reserved_source(source)
+    {
+        return;
+    }
     if let Source::Organ(organ) = source {
         sessions::ensure_auxiliary(world, organ);
     }
@@ -767,6 +806,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
             if state.subscription.as_ref() == Some(&id) && !state.login =>
         {
+            state.refreshing = false;
             if snapshot {
                 state.thread_requests = state.thread_requests.saturating_sub(1);
                 state.thread_error = None;
@@ -776,10 +816,19 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 || rows
                     .iter()
                     .any(|row| !row.is_object() || row["uid"].as_str().is_none())
+                || state
+                    .applied
+                    .as_ref()
+                    .and_then(availability::target)
+                    .is_some_and(|uid| {
+                        rows.iter()
+                            .any(|row| row["uid"].as_str() != Some(uid.as_str()))
+                    })
             {
                 state.status = "Invalid Record rows".into();
                 state.ready = false;
                 state.data.clear();
+                state.order = Default::default();
                 state.dirty = true;
             } else {
                 state.ready = true;
@@ -795,9 +844,10 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
             }
         }
         ServerMessage::SessionAuthenticated { .. } => {
-            state.ready = true;
+            state.ready = state.ready || state.remote.is_some() || state.data.is_empty();
             state.login = false;
             state.login_pending = false;
+            state.refreshing = state.data.is_empty() && state.subscription.is_some();
             state.status = "Loading".into();
         }
         ServerMessage::LiveHello {
@@ -807,6 +857,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
             state.login = true;
             state.login_pending = false;
             state.data.clear();
+            state.refreshing = false;
             state.order = Default::default();
             state.dirty = true;
             state
@@ -842,7 +893,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 rows::action_finished(world, editor, None);
             }
         }
-        ServerMessage::Error { id, message, .. } => {
+        ServerMessage::Error { id, message, code } => {
             if state.subscription.as_ref() == Some(&id) && state.thread_requests > 0 {
                 state.thread_requests -= 1;
                 state.thread_error = Some(message);
@@ -856,6 +907,17 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 return;
             }
             state.status = message.clone();
+            state.refreshing = false;
+            if id == crate::native::cell_bridge::CONNECTION
+                && code.as_deref() == Some("connection_closed")
+                && local::owns(state)
+            {
+                let actions = local::interrupt(state);
+                drop(runtime);
+                local::failed(world, actions, &message);
+                mirror_editor(world, owner);
+                return;
+            }
             if id == "connection" {
                 state.login = false;
                 state.login_pending = false;
@@ -896,7 +958,9 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         .map(|(link, castle)| (link.0, castle.draft.clone()))
         .collect();
     for (owner, draft) in editors {
-        if crate::native::laboratory::blocked(world, owner) { continue; }
+        if crate::native::laboratory::blocked(world, owner) {
+            continue;
+        }
         if let Some(mut config) = configuration(world, owner) {
             if config.draft != draft {
                 config.draft = draft;
@@ -951,6 +1015,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         }
     }
     for (owner, config) in configs {
+        crate::native::full_record::window::restore(world, owner, &config);
         let previous = world
             .resource::<Runtime>()
             .areas
@@ -967,7 +1032,21 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                             .ok()
                             .and_then(|q| serde_json::to_value(q).ok())
             });
-            if query_same {
+            if query_same && previous.as_ref().is_some_and(Config::creating) && !config.creating() {
+                let mut state = world
+                    .resource_mut::<Runtime>()
+                    .areas
+                    .remove(&owner)
+                    .unwrap();
+                state.applied = Some(config.clone());
+                state.dirty = true;
+                subscribe(world, owner, &config, &mut state);
+                world.resource_mut::<Runtime>().areas.insert(owner, state);
+            } else if query_same
+                && previous.as_ref().is_some_and(Config::creating) != config.creating()
+            {
+                start(world, owner, config);
+            } else if query_same {
                 let state = world
                     .resource_mut::<Runtime>()
                     .into_inner()
@@ -1010,13 +1089,18 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 receive(world, owner, message.clone());
             }
         }
+    }
+    local::synchronize(world);
+    for owner in &owners {
+        let owner = *owner;
         let mut state = world
             .resource_mut::<Runtime>()
             .areas
             .remove(&owner)
             .unwrap();
-        if state.ready {
-            while let Some(message) = state.pending.pop_front() {
+        let mut interrupted = Vec::new();
+        while local::sendable(&state) {
+            if let Some(message) = state.pending.pop_front() {
                 let sender = match state.remote.as_deref() {
                     Some(organ) => sessions::sender(world, organ),
                     None => world
@@ -1043,20 +1127,27 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                         state.login = false;
                         state.login_pending = false;
                         state.status = "Connection closed".into();
-                        state.data.clear();
-                        state.order = Default::default();
-                        state.pending.clear();
-                        state.dirty = true;
-                        if let Some(organ) = &state.remote {
-                            sessions::disconnected(world, organ);
+                        if !local::owns(&state) {
+                            state.data.clear();
+                            state.order = Default::default();
+                            state.pending.clear();
+                            state.dirty = true;
+                            if let Some(organ) = &state.remote {
+                                sessions::disconnected(world, organ);
+                            }
+                        } else {
+                            interrupted = local::interrupt(&mut state);
                         }
                         break;
                     }
                 }
+            } else {
+                break;
             }
         }
         date_order::sort(&mut state);
         world.resource_mut::<Runtime>().areas.insert(owner, state);
+        local::failed(world, interrupted, "Connection closed");
     }
     for owner in owners {
         rows::reconcile(world, owner);
@@ -1103,11 +1194,16 @@ fn execute_action(
         .areas
         .get(&binding.area)
         .ok_or("Protein Area is closed")?;
+    if !state.ready && !state.data.is_empty() {
+        return Err(
+            "The Cell connection is unavailable. Your draft is kept; refresh before saving.".into(),
+        );
+    }
     if !state.ready
         || !state
             .applied
             .as_ref()
-            .is_some_and(|config| config.source == binding.source)
+            .is_some_and(|config| config.source == binding.source && !config.creating())
         || !state
             .data
             .iter()
@@ -1238,11 +1334,34 @@ pub(crate) fn editor_sender(
     world: &World,
     binding: &RecordBinding,
 ) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
-    if binding.area != Entity::PLACEHOLDER && crate::native::laboratory::blocked(world, binding.area) { return None; }
+    if binding.area != Entity::PLACEHOLDER
+        && crate::native::laboratory::blocked(world, binding.area)
+    {
+        return None;
+    }
     match &binding.source {
-        Source::Local => world
-            .get_non_send::<CellBridge>()
-            .map(|bridge| bridge.outgoing.clone()),
+        Source::Local => {
+            if world
+                .get_resource::<Runtime>()
+                .and_then(|runtime| runtime.areas.get(&binding.area))
+                .is_some_and(|state| {
+                    !state.ready
+                        || !state.applied.as_ref().is_some_and(|config| {
+                            config.source == binding.source && !config.creating()
+                        })
+                        || !state
+                            .data
+                            .iter()
+                            .any(|row| row["uid"].as_str() == Some(&binding.uid))
+                })
+            {
+                return None;
+            }
+            world
+                .get_non_send::<CellBridge>()
+                .filter(|bridge| !bridge.outgoing.is_closed() && !bridge.incoming.is_closed())
+                .map(|bridge| bridge.outgoing.clone())
+        }
         Source::Organ(organ) => {
             let areas = &world.get_resource::<Runtime>()?.areas;
             let active = areas

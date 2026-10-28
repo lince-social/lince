@@ -156,8 +156,8 @@ impl Dispatch<Handle, SurfaceId> for State {
             handle::Request::UnsetFullscreen => state.requests.entry(*id).or_default().fullscreen = Some(false),
             handle::Request::Activate { seat } if Seat::<State>::from_resource(&seat).as_ref() == Some(&state.seat) => {
                 if state.activations.len() < 64 {
-                    state.activations.retain(|(pending, _, _)| pending != id);
-                    state.activations.push_back((*id, Instant::now(), state.input_epoch));
+                    state.activations.retain(|(pending, _, _, _)| pending != id);
+                    state.activations.push_back((*id, Instant::now(), state.input_epoch, false));
                 }
             }
             handle::Request::Close => { if let Some(window) = state.windows.get(id) { window.role.send_close(); } }

@@ -18,6 +18,15 @@ pub(crate) struct Saved {
     layout: LayoutBox,
 }
 
+impl crate::native::sand_placement::scratch::Saved for Saved {
+    fn normalize_scratch(&mut self, homes: &crate::native::sand_placement::scratch::Homes) {
+        if let Some(home) = homes.get(&self.layout.id) {
+            self.workspace = home.workspace;
+            self.layout.rules = home.rules;
+        }
+    }
+}
+
 impl Saved {
     pub(crate) fn owner(&self) -> &str {
         &self.owner
@@ -51,7 +60,7 @@ pub(crate) struct SavedLayouts(pub Vec<Saved>);
 #[derive(Component)]
 struct Restored;
 
-pub(super) fn remember(world: &mut World, entity: Entity) {
+pub(crate) fn remember(world: &mut World, entity: Entity) {
     let Some(binding) = world.get::<RecordBinding>(entity) else {
         return;
     };

@@ -80,7 +80,9 @@ fn save(
     access: crate::native::laboratory::OwnerAccess,
 ) {
     for (entity, text, mut record, mut automatic, mut feedback) in &mut editors {
-        if access.blocked(entity) { continue; }
+        if access.blocked(entity) {
+            continue;
+        }
         if text.is_composing() || pending_text(text) {
             continue;
         }
@@ -123,7 +125,7 @@ fn save(
             Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
                 feedback.set_failed(true);
                 automatic.0 = Some(head);
-                "Connection closed. Your draft is here; reopen Lince to reconnect."
+                "Connection closed. Your draft is here; open Configuration and choose Refresh to reconnect."
             }
         };
         if let Ok(mut label) = labels.get_mut(record.status) {
@@ -160,7 +162,6 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                             text.0 = "Save was not confirmed. Your draft is still here.".into();
                         }
                     }
-                    crate::native::notifications::report(world, "interface::connection", &message);
                 } else if id == RECORDS {
                     crate::native::notifications::report(
                         world,
@@ -595,7 +596,7 @@ pub(crate) mod tests {
             code: None,
         }));
         let mut schedule = Schedule::default();
-        schedule.add_systems(receive);
+        schedule.add_systems((receive, crate::native::notifications::cell_connection).chain());
         schedule.run(&mut world);
         let record = world.get::<RecordEditor>(editor).unwrap();
         assert!(record.pending.is_none());

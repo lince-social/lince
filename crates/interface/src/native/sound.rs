@@ -36,7 +36,11 @@ pub(crate) enum Command {
 }
 
 pub(crate) enum Event {
-    Spoken(Entity, Arc<std::sync::atomic::AtomicBool>, Result<(), String>),
+    Spoken(
+        Entity,
+        Arc<std::sync::atomic::AtomicBool>,
+        Result<(), String>,
+    ),
     Library(Vec<String>),
     Status(Entity, String),
     Recording(Entity, bool),
@@ -59,13 +63,23 @@ pub(crate) struct StopPending;
 pub(crate) struct StoppedPlayback;
 
 #[derive(Component)]
-pub(crate) struct SpokenPlayback(pub Result<(), String>, pub Arc<std::sync::atomic::AtomicBool>);
+pub(crate) struct SpokenPlayback(
+    pub Result<(), String>,
+    pub Arc<std::sync::atomic::AtomicBool>,
+);
 
 #[derive(Component)]
 pub(crate) struct VoiceOutputActive;
 
 pub(crate) fn speaking(world: &mut World) -> bool {
-    world.query_filtered::<Entity, (With<VoiceOutputActive>, bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>)>().iter(world).next().is_some()
+    world
+        .query_filtered::<Entity, (
+            With<VoiceOutputActive>,
+            bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
+        )>()
+        .iter(world)
+        .next()
+        .is_some()
 }
 
 #[derive(Resource)]
@@ -142,7 +156,9 @@ pub(crate) fn send(world: &World, command: Command) -> Result<(), String> {
 }
 
 pub(crate) fn audio_for(world: &World, owner: Entity) -> Option<&Audio> {
-    if crate::native::laboratory::blocked(world, owner) { return None; }
+    if crate::native::laboratory::blocked(world, owner) {
+        return None;
+    }
     if let Some(source) = crate::native::practice_cells::source(world, owner) {
         return world
             .get_resource::<crate::native::practice_cells::PracticeCells>()?
@@ -238,8 +254,12 @@ fn receive(world: &mut World) {
             }
             Event::Saved(owner, path) => crate::native::recorder_castle::saved(world, owner, path),
             Event::Spoken(owner, cancelled, result) => {
-                if world.get_entity(owner).is_ok() && !cancelled.load(std::sync::atomic::Ordering::Acquire) {
-                    world.entity_mut(owner).insert(SpokenPlayback(result, cancelled));
+                if world.get_entity(owner).is_ok()
+                    && !cancelled.load(std::sync::atomic::Ordering::Acquire)
+                {
+                    world
+                        .entity_mut(owner)
+                        .insert(SpokenPlayback(result, cancelled));
                 }
             }
             Event::Playback(owner, result) => {
@@ -258,7 +278,12 @@ fn receive(world: &mut World) {
 
 fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(Event)) {
     let mut output: Option<device::Output> = None;
-    let mut speech: Option<(Entity, device::Output, std::time::Instant, Arc<std::sync::atomic::AtomicBool>)> = None;
+    let mut speech: Option<(
+        Entity,
+        device::Output,
+        std::time::Instant,
+        Arc<std::sync::atomic::AtomicBool>,
+    )> = None;
     let mut capture: Option<(Entity, String, device::Capture)> = None;
     let mut cache: HashMap<String, Arc<Clip>> = HashMap::new();
     refresh(&library, notify);
@@ -297,7 +322,9 @@ fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(
             let owner = *owner;
             let cancelled = cancelled.clone();
             let error = device.error.lock().unwrap().take().or_else(|| {
-                (std::time::Instant::now() >= *deadline).then(|| "The speaker stopped producing audio. Choose an output and retry.".into())
+                (std::time::Instant::now() >= *deadline).then(|| {
+                    "The speaker stopped producing audio. Choose an output and retry.".into()
+                })
             });
             if cancelled.load(std::sync::atomic::Ordering::Acquire) {
                 speech = None;
@@ -308,18 +335,38 @@ fn worker(library: Library, receiver: mpsc::Receiver<Command>, notify: &impl Fn(
         }
         let Some(command) = command else { continue };
         let (owner, result) = match command {
-            Command::Speak { owner, clip, output: selected, cancelled } => {
-                if cancelled.load(std::sync::atomic::Ordering::Acquire) { continue; }
+            Command::Speak {
+                owner,
+                clip,
+                output: selected,
+                cancelled,
+            } => {
+                if cancelled.load(std::sync::atomic::Ordering::Acquire) {
+                    continue;
+                }
                 let result: Result<(), String> = (|| {
-                    if speech.is_some() { return Err("Another spoken reply is playing.".into()); }
+                    if speech.is_some() {
+                        return Err("Another spoken reply is playing.".into());
+                    }
                     let device = device::Output::open_on(selected.as_deref())?;
-                    if cancelled.load(std::sync::atomic::Ordering::Acquire) { return Ok(()); }
-                    let duration = Duration::from_secs_f64(clip.samples.len() as f64 / f64::from(clip.rate)) + Duration::from_secs(5);
+                    if cancelled.load(std::sync::atomic::Ordering::Acquire) {
+                        return Ok(());
+                    }
+                    let duration =
+                        Duration::from_secs_f64(clip.samples.len() as f64 / f64::from(clip.rate))
+                            + Duration::from_secs(5);
                     device.speak(owner, clip, cancelled.clone());
-                    speech = Some((owner, device, std::time::Instant::now() + duration, cancelled.clone()));
+                    speech = Some((
+                        owner,
+                        device,
+                        std::time::Instant::now() + duration,
+                        cancelled.clone(),
+                    ));
                     Ok(())
                 })();
-                if let Err(error) = &result { notify(Event::Spoken(owner, cancelled, Err(error.clone()))); }
+                if let Err(error) = &result {
+                    notify(Event::Spoken(owner, cancelled, Err(error.clone())));
+                }
                 (owner, result)
             }
             Command::Refresh => {

@@ -6,60 +6,20 @@ use std::{
     process::{Child, Command},
 };
 
-#[cfg_attr(
-    feature = "native-presentation",
-    derive(serde::Serialize, serde::Deserialize)
-)]
-#[cfg_attr(feature = "native-presentation", serde(rename_all = "kebab-case"))]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Capability {
-    Clipboard,
-    WindowList,
-    WindowControl,
-    OutputControl,
-    Capture,
-    InputMethod,
-}
+#[cfg(feature = "server")]
+pub use lince_interface::host::launch::{Capability, Description};
 
-#[cfg_attr(
-    feature = "native-presentation",
-    derive(serde::Serialize, serde::Deserialize)
-)]
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "native-presentation", serde(deny_unknown_fields))]
-pub struct Description {
-    pub program: String,
-    #[cfg_attr(feature = "native-presentation", serde(default))]
-    pub arguments: Vec<String>,
-    #[cfg_attr(feature = "native-presentation", serde(default))]
-    pub directory: Option<PathBuf>,
-    #[cfg_attr(feature = "native-presentation", serde(default))]
-    pub capabilities: Vec<Capability>,
-}
-
-impl Description {
-    pub fn valid(&self) -> bool {
-        !self.program.is_empty()
-            && self.capabilities.len() <= 6
-            && self.program.len() <= 4096
-            && !self.program.contains('\0')
-            && self.arguments.len() <= 4096
-            && self
-                .arguments
-                .iter()
-                .all(|argument| !argument.contains('\0'))
-            && self.arguments.iter().map(String::len).sum::<usize>() <= 262144
-    }
-
-    pub fn application(&self) -> io::Result<Application> {
-        if !self.valid() {
+#[cfg(feature = "server")]
+impl Application {
+    pub fn from_description(description: &Description) -> io::Result<Self> {
+        if !description.valid() {
             return Err(io::Error::other("invalid application launch description"));
         }
-        let mut application = Application::new(&self.program)?;
-        for argument in &self.arguments {
+        let mut application = Self::new(&description.program)?;
+        for argument in &description.arguments {
             application = application.arg(argument);
         }
-        if let Some(directory) = &self.directory {
+        if let Some(directory) = &description.directory {
             application = application.current_dir(directory);
         }
         Ok(application)
@@ -70,6 +30,7 @@ pub struct Application {
     program: OsString,
     arguments: Vec<OsString>,
     directory: Option<PathBuf>,
+    activation_token: Option<String>,
 }
 
 fn display_name<'a>(socket: &'a Path, runtime: Option<&Path>) -> &'a OsStr {
@@ -125,6 +86,7 @@ impl Application {
             program,
             arguments: Vec::new(),
             directory: None,
+            activation_token: None,
         })
     }
 
@@ -135,6 +97,12 @@ impl Application {
 
     pub fn current_dir(mut self, directory: impl Into<PathBuf>) -> Self {
         self.directory = Some(directory.into());
+        self
+    }
+
+    #[cfg(feature = "server")]
+    pub(crate) fn activation_token(mut self, token: String) -> Self {
+        self.activation_token = Some(token);
         self
     }
 
@@ -170,6 +138,9 @@ impl Application {
             .env_remove("HYPRLAND_INSTANCE_SIGNATURE")
             .env_remove("WAYFIRE_SOCKET")
             .env_remove("WAYLAND_SOCKET");
+        if let Some(token) = &self.activation_token {
+            command.env("XDG_ACTIVATION_TOKEN", token);
+        }
         Ok(command)
     }
 
@@ -216,7 +187,10 @@ mod tests {
             .env("PATH", std::env::var_os("PATH").unwrap_or_default())
             .env("LINCE_HOST_LD_LIBRARY_PATH", "0")
             .env("LINCE_HOST_GBM_BACKENDS_PATH", "1")
-            .env("LINCE_HOST___EGL_VENDOR_LIBRARY_DIRS", "1original:$value with spaces")
+            .env(
+                "LINCE_HOST___EGL_VENDOR_LIBRARY_DIRS",
+                "1original:$value with spaces",
+            )
             .env("LD_LIBRARY_PATH", "private");
         restore_graphics_environment(&mut command, |key| match key {
             "LINCE_HOST_LD_LIBRARY_PATH" => Some("0".into()),
@@ -312,6 +286,39 @@ mod tests {
             socket.as_os_str()
         );
         assert_eq!(display_name(socket, None), socket.as_os_str());
+    }
+
+    #[cfg(feature = "server")]
+    #[test]
+    fn only_an_explicit_fresh_token_is_exported_to_the_child() {
+        let socket = Path::new("/run/user/1000/park-0");
+        let parent = std::env::var_os("XDG_ACTIVATION_TOKEN");
+        let plain = Application::new("native-client")
+            .unwrap()
+            .command(socket)
+            .unwrap();
+        assert_eq!(
+            plain
+                .get_envs()
+                .find(|(key, _)| *key == "XDG_ACTIVATION_TOKEN")
+                .unwrap()
+                .1,
+            None
+        );
+        let foreground = Application::new("native-client")
+            .unwrap()
+            .activation_token("fresh literal $token".into())
+            .command(socket)
+            .unwrap();
+        assert_eq!(
+            foreground
+                .get_envs()
+                .find(|(key, _)| *key == "XDG_ACTIVATION_TOKEN")
+                .unwrap()
+                .1,
+            Some(OsStr::new("fresh literal $token"))
+        );
+        assert_eq!(std::env::var_os("XDG_ACTIVATION_TOKEN"), parent);
     }
 
     #[test]

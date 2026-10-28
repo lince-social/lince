@@ -32,11 +32,9 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
         include_bytes!("../../../fixtures/showoff.webm"),
     )
     .map_err(error)?;
-    let script = directory.join("browser.py");
-    fs::write(&script, include_str!("browser.py")).map_err(error)?;
-    let mut command = Command::new("python3");
+    let mut command = Command::new(env::current_exe().map_err(error)?);
     command
-        .arg(script)
+        .args(["maintenance", "browser"])
         .args(arguments)
         .arg("--fixtures")
         .arg(fixtures);

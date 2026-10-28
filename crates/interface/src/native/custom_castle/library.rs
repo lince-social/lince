@@ -544,7 +544,10 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             }
         }
         let library = world.get::<Library>(root).unwrap();
-        if library.connected && !library.subscribed && !crate::native::laboratory::blocked(world, root) {
+        if library.connected
+            && !library.subscribed
+            && !crate::native::laboratory::blocked(world, root)
+        {
             let request = ClientMessage::Subscribe {
                 id: library.list_id.clone(),
                 protein: query(None),

@@ -52,7 +52,30 @@ struct GeometryCache(HashMap<(String, String, u32, bool), Weak<dyn avian3d::parr
 pub struct Runtime;
 
 #[derive(Component)]
-struct Part;
+struct Part(Entity);
+
+#[derive(Component)]
+struct Offsets(Vec<DVec3>);
+
+fn presented_position(world: &World, entity: Entity) -> Option<DVec3> {
+    let item = crate::native::canvas::presented(world, entity)?;
+    Some(crate::native::canvas::presented_spatial(world, entity).position(item.position))
+}
+
+fn part_center(
+    world: &World,
+    entity: Entity,
+    size: Vec3,
+    rotation: DQuat,
+    relative: DVec3,
+) -> DVec3 {
+    relative
+        + if world.get::<super::assets::ImportedAsset>(entity).is_some() {
+            DVec3::ZERO
+        } else {
+            rotation * DVec3::new(0.0, -f64::from(size.y) * 0.5, 0.0)
+        }
+}
 
 pub(crate) fn imported_shape(
     world: &mut World,
@@ -254,7 +277,7 @@ pub fn synchronize(world: &mut World) -> bool {
                     .get::<crate::native::layout::desktop::Suppressed>(*e)
                     .is_none()
                 && world
-                    .get::<crate::native::external_drop::Preview>(*e)
+                    .get::<crate::native::canvas_item::Ephemeral>(*e)
                     .is_none()
                 && super::holes::live(world, root.parent(), member.0)
                 && world
@@ -277,6 +300,7 @@ pub fn synchronize(world: &mut World) -> bool {
         })
         .map(|(e, _, _, _)| e)
         .collect();
+    let eligible: HashSet<_> = entities.iter().copied().collect();
     let mut covered = HashSet::new();
     let mut retained = HashSet::new();
     let mut changed_static_scopes = HashSet::new();
@@ -285,7 +309,13 @@ pub fn synchronize(world: &mut World) -> bool {
         if covered.contains(&entity) {
             continue;
         }
-        let members = members(world, entity);
+        let group = members(world, entity);
+        let members: Vec<_> = group
+            .iter()
+            .copied()
+            .filter(|member| eligible.contains(member))
+            .collect();
+        let partial = members.len() != group.len();
         let room_proxy = members
             .iter()
             .any(|member| super::rooms::collider(world, *member));
@@ -297,7 +327,7 @@ pub fn synchronize(world: &mut World) -> bool {
             covered.extend(members);
             continue;
         }
-        if members.len() == 1 {
+        if group.len() == 1 {
             world
                 .entity_mut(entity)
                 .remove::<(GroupPose, super::Attachment)>();
@@ -326,8 +356,8 @@ pub fn synchronize(world: &mut World) -> bool {
         if solid.is_empty() {
             continue;
         }
-        if members.len() > 1 && world.get::<GroupPose>(entity).is_none() {
-            super::groups::attach(world, &members);
+        if group.len() > 1 && world.get::<GroupPose>(entity).is_none() {
+            super::groups::attach(world, &group);
         }
         let root = world.get::<ChildOf>(entity).unwrap().parent();
         let workspace = world
@@ -336,15 +366,16 @@ pub fn synchronize(world: &mut World) -> bool {
             .0;
         let pose = world.get::<GroupPose>(entity).copied();
         let position = pose.map_or_else(
-            || super::position(world, entity).unwrap(),
+            || presented_position(world, entity).unwrap(),
             |p| DVec3::from_array(p.position),
         );
         let rotation = pose.map_or_else(
-            || spatial(world, entity).rotation(),
+            || crate::native::canvas::presented_spatial(world, entity).rotation(),
             |p| DQuat::from_array(p.rotation),
         );
         let enabled = crate::native::workspace_config::enabled(world, root, workspace);
-        let held = room_proxy
+        let held = partial
+            || room_proxy
             || !enabled
             || members.iter().any(|e| {
                 spatial(world, *e).world_pinned
@@ -358,8 +389,8 @@ pub fn synchronize(world: &mut World) -> bool {
         let signature: Vec<_> = solid
             .iter()
             .filter_map(|e| {
-                let item = world.get::<crate::native::canvas::CanvasItem>(*e)?;
-                let mut placement = spatial(world, *e);
+                let item = crate::native::canvas::presented(world, *e)?;
+                let mut placement = crate::native::canvas::presented_spatial(world, *e);
                 placement.elevation = 0.0;
                 placement.world_pinned = false;
                 let scale = world
@@ -381,14 +412,30 @@ pub fn synchronize(world: &mut World) -> bool {
                     body.root == root && body.workspace == workspace && body.members == members
                 })
             });
-        let rebuild = existing.is_none_or(|e| world.get::<Body>(e).unwrap().signature != signature);
+        let offsets: Vec<_> = signature
+            .iter()
+            .map(|(entity, _, _)| {
+                rotation.inverse() * (presented_position(world, *entity).unwrap() - position)
+            })
+            .collect();
+        let offsets_changed = existing.is_none_or(|e| {
+            world.get::<Offsets>(e).is_none_or(|previous| {
+                previous.0.len() != offsets.len()
+                    || previous.0.iter().zip(&offsets).any(|(before, after)| {
+                        let distance = before.distance_squared(*after);
+                        !distance.is_finite() || distance > 1e-12
+                    })
+            })
+        });
+        let rebuild = existing.is_none_or(|e| {
+            world.get::<Body>(e).unwrap().signature != signature
+                || world.get::<Offsets>(e).is_none()
+        });
         let mut shape = None;
         if rebuild {
             let mut parts = Vec::new();
             let mut complete = true;
-            for (e, size, placement) in &signature {
-                let relative =
-                    rotation.inverse() * (super::position(world, *e).unwrap() - position);
+            for ((e, size, placement), relative) in signature.iter().zip(&offsets) {
                 let local_rotation = rotation.inverse() * placement.rotation();
                 let collider = if let Some(asset) = world.get::<super::assets::ImportedAsset>(*e) {
                     let scale = super::assets::effective_scale(world, *e, asset);
@@ -401,12 +448,12 @@ pub fn synchronize(world: &mut World) -> bool {
                     ))
                 };
                 if let Some(collider) = collider {
-                    let offset = if world.get::<super::assets::ImportedAsset>(*e).is_some() {
-                        DVec3::ZERO
-                    } else {
-                        DVec3::new(0.0, -f64::from(size.y) * 0.5, 0.0)
-                    };
-                    parts.push((relative + local_rotation * offset, local_rotation, collider));
+                    parts.push((
+                        *e,
+                        part_center(world, *e, *size, local_rotation, *relative),
+                        local_rotation,
+                        collider,
+                    ));
                 } else {
                     complete = false;
                 }
@@ -456,6 +503,7 @@ pub fn synchronize(world: &mut World) -> bool {
             world.entity_mut(body).insert(kind);
         }
         if let Some(parts) = shape {
+            world.entity_mut(body).insert(Offsets(offsets));
             if held {
                 changed_static_scopes.insert((root, workspace));
             }
@@ -469,10 +517,10 @@ pub fn synchronize(world: &mut World) -> bool {
                 world.entity_mut(entity).remove::<Collider>();
                 world.despawn(entity);
             }
-            for (local, local_rotation, shape) in parts {
+            for (member, local, local_rotation, shape) in parts {
                 world
                     .spawn((
-                        Part,
+                        Part(member),
                         ChildOf(body),
                         Transform::from_translation(local.as_vec3())
                             .with_rotation(local_rotation.as_quat()),
@@ -485,6 +533,44 @@ pub fn synchronize(world: &mut World) -> bool {
             }
             world.entity_mut(body).remove::<Sleeping>();
             changed = true;
+        } else if offsets_changed {
+            let parts: HashMap<_, _> = world
+                .query::<(Entity, &Part, &ChildOf)>()
+                .iter(world)
+                .filter(|(_, _, parent)| parent.parent() == body)
+                .map(|(entity, part, _)| (part.0, entity))
+                .collect();
+            for ((member, size, placement), relative) in signature.iter().zip(&offsets) {
+                let Some(part) = parts.get(member).copied() else {
+                    continue;
+                };
+                let local_rotation = rotation.inverse() * placement.rotation();
+                let local = part_center(world, *member, *size, local_rotation, *relative);
+                let point = position + rotation * local;
+                let orientation = rotation * local_rotation;
+                if world
+                    .get::<Position>(part)
+                    .is_none_or(|current| current.0 != point)
+                    || world
+                        .get::<Rotation>(part)
+                        .is_none_or(|current| current.0 != orientation)
+                {
+                    world.entity_mut(part).insert((
+                        Position(point),
+                        Rotation(orientation),
+                        Transform::from_translation(local.as_vec3())
+                            .with_rotation(local_rotation.as_quat()),
+                    ));
+                }
+            }
+            world
+                .entity_mut(body)
+                .insert(Offsets(offsets))
+                .remove::<Sleeping>();
+            if held {
+                changed_static_scopes.insert((root, workspace));
+            }
+            changed = true;
         }
         let previous = world.get::<Body>(body).unwrap();
         if previous.position != position || previous.rotation != rotation || previous.held != held {
@@ -493,7 +579,12 @@ pub fn synchronize(world: &mut World) -> bool {
             }
             world
                 .entity_mut(body)
-                .insert((Position(position), Rotation(rotation), LinearVelocity::ZERO))
+                .insert((
+                    Position(position),
+                    Rotation(rotation),
+                    LinearVelocity::ZERO,
+                    AngularVelocity::ZERO,
+                ))
                 .remove::<Sleeping>();
             changed = true;
         }

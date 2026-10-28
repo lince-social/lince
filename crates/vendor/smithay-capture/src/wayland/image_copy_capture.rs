@@ -139,6 +139,8 @@ impl IsAlive for SessionRef {
 }
 
 impl SessionRef {
+    pub fn client(&self) -> Option<Client> { self.obj.client() }
+
     pub fn update_constraints(&self, constraints: BufferConstraints) {
         let mut inner = self.inner.lock().unwrap();
 
@@ -285,6 +287,8 @@ impl IsAlive for CursorSessionRef {
 }
 
 impl CursorSessionRef {
+    pub fn client(&self) -> Option<Client> { self.obj.client() }
+
     pub fn update_constraints(&self, constraints: BufferConstraints) {
         let mut inner = self.inner.lock().unwrap();
 
@@ -484,6 +488,8 @@ impl PartialEq for FrameRef {
 }
 
 impl FrameRef {
+    pub fn client(&self) -> Option<Client> { self.obj.client() }
+
     pub fn buffer(&self) -> WlBuffer {
         self.inner
             .lock()

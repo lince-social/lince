@@ -5,12 +5,26 @@ use serde_json::{Map, Value};
 
 use crate::{Diagnostic, diagnostic, grammar::grammar as ast};
 
+pub fn project(extension: &ast::Extension) -> Result<crate::ProjectedExtension, Diagnostic> {
+    Ok(crate::ProjectedExtension {
+        target_slug: extension.target.value().to_owned(),
+        target_uid: None,
+        namespace: text(&extension.namespace)?,
+        fields: object(&extension.fields, 0)?,
+    })
+}
+
 pub(crate) fn validate(document: &ast::Document) -> Result<(), Diagnostic> {
     let mut seen = HashSet::new();
     for declaration in &document.declarations {
         let ast::Declaration::Extension(extension) = declaration else {
             continue;
         };
+        if extension.target.is_uri() {
+            return Err(diagnostic(
+                "An Extension target must be a local Record reference",
+            ));
+        }
         let namespace = text(&extension.namespace)?;
         if namespace.is_empty()
             || namespace.len() > 200
@@ -19,16 +33,17 @@ pub(crate) fn validate(document: &ast::Document) -> Result<(), Diagnostic> {
         {
             return Err(diagnostic("Extension namespace is invalid"));
         }
-        if !seen.insert((&extension.target.slug.0, namespace.clone())) {
+        if !seen.insert((extension.target.value(), namespace.clone())) {
             return Err(diagnostic(format!(
                 "duplicate extension `{namespace}` for `@{}`",
-                extension.target.slug.0
+                extension.target.value()
             )));
         }
         let value = object(&extension.fields, 0).map_err(|error| {
             diagnostic(format!(
                 "@{} {namespace}: {}",
-                extension.target.slug.0, error.message
+                extension.target.value(),
+                error.message
             ))
         })?;
         if value.to_string().len() > 1024 * 1024 {
@@ -95,7 +110,8 @@ pub(crate) fn format_ast(output: &mut String, extension: &ast::Extension) {
     writeln!(
         output,
         "Extension @{} {} {{",
-        extension.target.slug.0, extension.namespace.0
+        extension.target.value(),
+        extension.namespace.0
     )
     .unwrap();
     format_fields(output, &extension.fields, 1);

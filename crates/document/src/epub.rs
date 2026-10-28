@@ -10,7 +10,7 @@ use blitz_traits::{
 use peniko::{Fill, color::palette::css::WHITE, kurbo::Rect};
 use std::{
     collections::VecDeque,
-    io::Cursor,
+    io::{Cursor, Read, Seek},
     sync::{Arc, Mutex},
 };
 
@@ -34,8 +34,11 @@ pub(super) struct Epub {
 
 impl Epub {
     pub(super) fn new(bytes: Vec<u8>) -> Result<Self> {
-        let mut archive =
-            zip::ZipArchive::new(Cursor::new(&bytes)).map_err(|error| error.to_string())?;
+        Self::from_reader(Cursor::new(bytes))
+    }
+
+    pub(super) fn from_reader<R: Read + Seek + Send + Sync + 'static>(reader: R) -> Result<Self> {
+        let mut archive = zip::ZipArchive::new(reader).map_err(|error| error.to_string())?;
         if archive.len() > 20_000 || archive.by_name("META-INF/encryption.xml").is_ok() {
             return Err(
                 "Encrypted EPUBs and archives over 20,000 entries are not supported".into(),
@@ -49,8 +52,7 @@ impl Epub {
                 return Err("EPUB resources exceed the size limit".into());
             }
         }
-        drop(archive);
-        let book = rbook::Epub::read(Cursor::new(bytes)).map_err(|error| error.to_string())?;
+        let book = rbook::Epub::read(archive.into_inner()).map_err(|error| error.to_string())?;
         let sections: Vec<_> = book
             .spine()
             .iter()
@@ -70,6 +72,43 @@ impl Epub {
             document: None,
             renderer: VelloCpuImageRenderer::new(1, 1),
         })
+    }
+
+    pub(super) fn resource(&self, href: &str) -> Result<Vec<u8>> {
+        self.book
+            .read_resource_bytes(format!("/{}", href.trim_start_matches('/')))
+            .or_else(|_| self.book.read_resource_bytes(href))
+            .map_err(|error| error.to_string())
+    }
+
+    pub(super) fn anchor(&self, fragment: &str, quote: &str) -> Option<f32> {
+        let (_, layout, document) = self.document.as_ref()?;
+        let doc = document.as_ref();
+        let id = if !fragment.is_empty() {
+            doc.get_element_by_id(fragment)
+        } else if !quote.is_empty() {
+            doc.query_selector_all("*")
+                .ok()?
+                .into_iter()
+                .filter_map(|id| {
+                    let node = doc.get_node(id)?;
+                    let text = node.text_content();
+                    text.contains(quote).then_some((id, text.len()))
+                })
+                .min_by_key(|(_, length)| *length)
+                .map(|(id, _)| id)
+        } else {
+            None
+        }?;
+        let node = doc.get_node(id)?;
+        let mut top = node.final_layout().location.y;
+        let mut parent = node.parent;
+        while let Some(id) = parent {
+            let node = doc.get_node(id)?;
+            top += node.final_layout().location.y;
+            parent = node.parent;
+        }
+        Some((top / layout.height as f32).clamp(0.0, 1.0))
     }
 
     pub(super) fn layout(&mut self, section: usize, width: u32) -> Result<Layout> {

@@ -1,3 +1,4 @@
+use crate::i18n::Token as Tr;
 use crate::native::actions::Action;
 use bevy::prelude::*;
 pub(crate) use lince_interface::controls::{clear, column, row, status, value};
@@ -84,7 +85,11 @@ pub(crate) fn frame(world: &mut World, sand: Entity, title: &str) -> Entity {
     body
 }
 
-pub(crate) fn send(world: &World, owner: Entity, message: cell::ClientMessage) -> Result<(), String> {
+pub(crate) fn send(
+    world: &World,
+    owner: Entity,
+    message: cell::ClientMessage,
+) -> Result<(), String> {
     crate::native::practice_cells::send(world, owner, message)
 }
 
@@ -112,7 +117,7 @@ pub(crate) fn credits(
         world,
         controls,
         content,
-        "Licenses and credits",
+        Tr::Licenses.text(),
         Credits(attributions),
     );
 }

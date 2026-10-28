@@ -9,6 +9,22 @@ use std::{
     path::Path,
 };
 
+mod suspension;
+pub(super) use suspension::install as install_suspension;
+
+#[derive(Debug)]
+pub(super) enum ActionFailure { Refused(String), Backend(ProbeFailure) }
+
+impl From<ProbeFailure> for ActionFailure {
+    fn from(error: ProbeFailure) -> Self { Self::Backend(error) }
+}
+
+impl std::fmt::Display for ActionFailure {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self { Self::Refused(reason) => formatter.write_str(reason), Self::Backend(error) => std::fmt::Display::fmt(error, formatter) }
+    }
+}
+
 #[derive(Clone)]
 pub struct Output {
     pub name: String,
@@ -19,6 +35,7 @@ pub(super) struct Target {
     pub image: Handle<Image>,
     pub size: [u32; 2],
     pub origin: [f64; 2],
+    pub raster: lince_interface::host::raster::RasterMapping,
     pub fullscreen: bool,
 }
 
@@ -32,10 +49,19 @@ pub(super) struct State {
 }
 
 impl Presentation {
+    pub(crate) fn suspended(&self) -> bool {
+        self.app.world().resource::<suspension::Suspension>().active
+    }
+
     pub fn activate_application(
         &mut self,
         surface: lince_interface::host::SurfaceId,
     ) -> Result<(), ProbeFailure> {
+        self.activate_application_on(surface, None)
+    }
+
+    pub(super) fn activate_application_on(&mut self, surface: lince_interface::host::SurfaceId, output: Option<OutputId>) -> Result<(), ProbeFailure> {
+        if self.suspended() { return Ok(()); }
         native::laboratory::close(self.app.world_mut());
         let Some(window) = self.windows.get(&surface) else {
             return Ok(());
@@ -49,17 +75,22 @@ impl Presentation {
             return Ok(());
         };
         let root = self.canvas_root()?;
-        if let Some(output) = self.output_state.assignments.focused() {
-            self.output_state
-                .assignments
-                .select(output, workspace)
-                .map_err(|_| input_failure("could not activate the application's workspace"))?;
-            self.select_output_workspace()?;
-            self.refresh_outputs()?;
-        } else {
-            native::workspace::switch_output(self.app.world_mut(), root, workspace);
+        native::layout::desktop::manipulation::pointer::cancel(self.app.world_mut());
+        native::layout::desktop::overview::dismiss(self.app.world_mut());
+        native::layout::desktop::recent::dismiss(self.app.world_mut());
+        let prepared = native::layout::desktop::transfers::prepare_identity(self.app.world(), root, workspace);
+        self.apply_workspace_transfer(prepared, output, true)?;
+        if !self.app.world().get::<native::workspace::Workspaces>(root).is_some_and(|spaces| spaces.active == workspace) { return Ok(()); }
+        if let Some(entity) = self.windows.get(&surface).map(|window| window.entity)
+            && let Err(reason) = native::layout::desktop::activate_compact_member(self.app.world_mut(), root, entity)
+        {
+            native::notifications::report(self.app.world_mut(), "Window activation", reason);
+            return Ok(());
         }
         self.focus_application(surface);
+        if let Some(entity) = self.windows.get(&surface).map(|window| window.entity) {
+            native::layout::desktop::focus::request_warp(self.app.world_mut(), root, entity);
+        }
         Ok(())
     }
 
@@ -84,6 +115,7 @@ impl Presentation {
     }
 
     pub fn outputs(&mut self, outputs: Vec<Output>) -> Result<(), ProbeFailure> {
+        let initial = self.output_state.assignments.outputs().is_empty();
         let mut ids = HashSet::new();
         let mut names = HashSet::new();
         let pixels: u64 = outputs
@@ -93,8 +125,7 @@ impl Presentation {
                     * u64::from(output.viewport.physical_size[1])
             })
             .fold(0, u64::saturating_add);
-        if outputs.is_empty()
-            || pixels > 64 * 1024 * 1024
+        if pixels > 64 * 1024 * 1024
             || outputs.len() > 16
             || outputs.iter().any(|output| {
                 output.name.is_empty()
@@ -102,9 +133,19 @@ impl Presentation {
                     || !ids.insert(output.viewport.id)
                     || !names.insert(&output.name)
                     || validate_size(output.viewport.physical_size).is_err()
+                    || !output.viewport.valid_raster()
             })
         {
             return Err(input_failure("invalid Park output configuration"));
+        }
+        if self.output_state.outputs.len() != outputs.len()
+            || self.output_state.outputs.iter().any(|current| {
+                !outputs.iter().any(|output| output.name == current.name && output.viewport == current.viewport)
+            })
+        {
+            self.cancel_gesture();
+            native::layout::desktop::cancel_scratch_interactions(self.app.world_mut());
+            if let Some(bridge) = &mut self.accessibility { bridge.invalidate(); }
         }
         if self.output_state.outputs.len() != outputs.len()
             || self.output_state.outputs.iter().any(|current| {
@@ -116,6 +157,18 @@ impl Presentation {
             native::laboratory::close(self.app.world_mut());
         }
         let root = self.canvas_root()?;
+        if outputs.is_empty() {
+            native::shader_effects::set_compositor_presentation_active(self.app.world_mut(), false);
+            if !self.suspended() { self.focus(false)?; }
+            let removed: Vec<_> = self.output_state.assignments.outputs().iter().map(|output| output.id).collect();
+            for id in removed { self.output_state.assignments.disconnect(id); }
+            self.output_state.outputs.clear();
+            self.app.world_mut().resource_mut::<suspension::Suspension>().active = true;
+            self.save_output_preferences().map_err(|error| input_failure(&error.to_string()))?;
+            return Ok(());
+        }
+        self.app.world_mut().resource_mut::<suspension::Suspension>().active = false;
+        native::shader_effects::set_compositor_presentation_active(self.app.world_mut(), true);
         self.synchronize_workspaces(root)?;
         let active = self
             .app
@@ -216,6 +269,10 @@ impl Presentation {
                     .map_err(|_| input_failure("could not connect an output"))?;
             }
         }
+        if initial {
+            self.output_state.assignments.restore_initial(active)
+                .map_err(|_| input_failure("could not restore the initial output workspace"))?;
+        }
         let stale: Vec<_> = self
             .output_state
             .targets
@@ -242,6 +299,7 @@ impl Presentation {
     }
 
     pub fn focus_output(&mut self, output: OutputId) -> Result<(), ProbeFailure> {
+        if self.suspended() { return Ok(()); }
         if self.output_state.assignments.focused() == Some(output) {
             return Ok(());
         }
@@ -269,40 +327,105 @@ impl Presentation {
         self.refresh_outputs()
     }
 
-    pub(super) fn output_action(&mut self, action: DesktopAction) -> Result<bool, ProbeFailure> {
-        if self.output_state.outputs.is_empty() {
-            return Ok(false);
+    pub(super) fn apply_workspace_transfer(
+        &mut self,
+        prepared: Result<native::layout::desktop::transfers::Prepared, String>,
+        output: Option<OutputId>,
+        dismiss_laboratory: bool,
+    ) -> Result<(), ProbeFailure> {
+        match self.try_apply_workspace_transfer(prepared, output, dismiss_laboratory) {
+            Ok(()) => Ok(()),
+            Err(ActionFailure::Refused(message)) => { native::notifications::report(self.app.world_mut(), "Park", &message); Ok(()) }
+            Err(ActionFailure::Backend(error)) => Err(error),
         }
+    }
+
+    pub(super) fn try_apply_workspace_transfer(
+        &mut self,
+        prepared: Result<native::layout::desktop::transfers::Prepared, String>,
+        output: Option<OutputId>,
+        dismiss_laboratory: bool,
+    ) -> Result<(), ActionFailure> {
+        let prepared = prepared.map_err(ActionFailure::Refused)?;
         let root = self.canvas_root()?;
-        if matches!(
-            action,
-            DesktopAction::Workspace(_)
-                | DesktopAction::MoveToOutput(_)
-                | DesktopAction::MoveWorkspaceToOutput(_)
-        ) {
+        let destination = prepared.destination();
+        let output = output.or_else(|| self.output_state.assignments.outputs().iter()
+            .find(|output| output.active == destination).map(|output| output.id))
+            .or(self.output_state.assignments.focused());
+        let mut assignments = self.output_state.assignments.clone();
+        let registered = assignments.preferences().iter().any(|preference| preference.workspace == destination)
+            || assignments.register_workspace(destination).is_ok();
+        let valid = registered && output.is_some_and(|output| {
+            assignments.select(output, destination).is_ok() && assignments.focus(output).is_ok()
+        });
+        if !registered || !valid && !self.output_state.outputs.is_empty() {
+            return Err(ActionFailure::Refused("The destination monitor is unavailable.".into()));
+        }
+        self.input_window()?;
+        let unchanged = self.app.world().get::<native::workspace::Workspaces>(root)
+            .is_some_and(|spaces| spaces.active == destination)
+            && assignments.focused() == self.output_state.assignments.focused();
+        let selection = prepared.commit(self.app.world_mut()).map_err(ActionFailure::Refused)?;
+        if dismiss_laboratory || native::laboratory::scope(self.app.world()).is_some_and(|(owner, current, workspace, _)| {
+            owner == root && Some(current) == output && workspace != destination
+        }) {
             native::laboratory::close(self.app.world_mut());
         }
+        if unchanged { return Ok(()); }
+        self.application_focus = None;
+        let modal = native::layout::desktop::recent::active(self.app.world());
+        if !modal { self.focus(false)?; }
+        if self.output_state.outputs.is_empty() {
+            native::workspace::switch_output(self.app.world_mut(), root, destination);
+        } else {
+            self.output_state.assignments = assignments;
+            self.select_output_workspace()?;
+            self.refresh_outputs()?;
+        }
+        if !modal { self.focus(true)?; }
+        if let Some(selection) = selection { selection.activate(self.app.world_mut()); }
+        Ok(())
+    }
+
+    pub(super) fn output_action(&mut self, action: DesktopAction) -> Result<bool, ProbeFailure> {
+        match self.try_output_action(action) {
+            Ok(handled) => Ok(handled),
+            Err(ActionFailure::Refused(message)) => { native::notifications::report(self.app.world_mut(), "Park", &message); Ok(true) }
+            Err(ActionFailure::Backend(error)) => Err(error),
+        }
+    }
+
+    pub(super) fn try_output_action(&mut self, action: DesktopAction) -> Result<bool, ActionFailure> {
+        if self.output_state.outputs.is_empty()
+            && matches!(action, DesktopAction::FocusOutput(_) | DesktopAction::MoveToOutput(_) | DesktopAction::MoveRowToOutput(_) | DesktopAction::MoveWorkspaceToOutput(_))
+        {
+            return Err(ActionFailure::Refused("No monitor is available for this command.".into()));
+        }
+        let root = self.canvas_root()?;
+        let previous = matches!(action, DesktopAction::Workspace(_) | DesktopAction::PreviousWorkspace | DesktopAction::NextWorkspace | DesktopAction::MoveToWorkspace(_))
+            .then(|| native::workspace::navigation::capture(self.app.world(), root)).flatten();
         match action {
+            DesktopAction::PreviousWorkspace | DesktopAction::NextWorkspace => {
+                let offset = if action == DesktopAction::PreviousWorkspace { -1 } else { 1 };
+                let prepared = native::workspace::navigation::destination(self.app.world(), root, offset)
+                    .map_err(str::to_owned).and_then(|destination| {
+                        native::layout::desktop::transfers::prepare_identity(self.app.world(), root, destination)
+                    });
+                self.try_apply_workspace_transfer(prepared, None, true)?;
+            }
+            DesktopAction::MoveWorkspaceEarlier | DesktopAction::MoveWorkspaceLater => {
+                let offset = if action == DesktopAction::MoveWorkspaceEarlier { -1 } else { 1 };
+                native::workspace::navigation::reorder(self.app.world_mut(), root, offset).map_err(|message| ActionFailure::Refused(message.into()))?;
+            }
             DesktopAction::Workspace(index) => {
-                let Some(workspace) = index.checked_sub(1).and_then(|index| {
-                    self.app
-                        .world()
-                        .get::<native::workspace::Workspaces>(root)?
-                        .entries
-                        .get(index as usize)
-                        .map(|space| space.id)
-                }) else {
-                    return Ok(true);
-                };
-                let output = self.output_state.assignments.focused().unwrap();
-                self.focus(false)?;
-                self.output_state
-                    .assignments
-                    .select(output, workspace)
-                    .map_err(|_| input_failure("could not select the workspace"))?;
-                self.select_output_workspace()?;
-                self.refresh_outputs()?;
-                self.focus(true)?;
+                let prepared = native::layout::desktop::transfers::prepare_selection(self.app.world(), root, index);
+                self.try_apply_workspace_transfer(prepared, None, true)?;
+            }
+            DesktopAction::MoveToWorkspace(index) => {
+                let prepared = native::layout::desktop::transfers::prepare_numbered_move(
+                    self.app.world_mut(), root, index, lince_interface::layout::desktop::TransferKind::Item,
+                );
+                self.try_apply_workspace_transfer(prepared, None, false)?;
             }
             DesktopAction::FocusOutput(direction) => {
                 if let Some(output) = self.output_state.assignments.directional(direction) {
@@ -310,6 +433,7 @@ impl Presentation {
                 }
             }
             DesktopAction::MoveWorkspaceToOutput(direction) => {
+                native::laboratory::close(self.app.world_mut());
                 if let Some(output) = self.output_state.assignments.directional(direction) {
                     let workspace = self
                         .app
@@ -320,7 +444,7 @@ impl Presentation {
                     self.move_workspace_to_output(workspace, output)?;
                 }
             }
-            DesktopAction::MoveToOutput(direction) => {
+            DesktopAction::MoveToOutput(direction) | DesktopAction::MoveRowToOutput(direction) => {
                 if let Some(output) = self.output_state.assignments.directional(direction) {
                     let workspace = self
                         .output_state
@@ -330,50 +454,24 @@ impl Presentation {
                         .find(|candidate| candidate.id == output)
                         .unwrap()
                         .active;
-                    let focused = self
-                        .app
-                        .world()
-                        .get::<native::workspace::Workspaces>(root)
-                        .unwrap()
-                        .entries
-                        .iter()
-                        .find(|space| {
-                            space.id
-                                == self
-                                    .app
-                                    .world()
-                                    .get::<native::workspace::Workspaces>(root)
-                                    .unwrap()
-                                    .active
-                        })
-                        .and_then(|space| space.desktop.focused());
-                    if let Some(focused) = focused {
-                        let entity = {
-                            let world = self.app.world_mut();
-                            world
-                                .query::<(Entity, &native::layout::desktop::Managed, &ChildOf)>()
-                                .iter(world)
-                                .find(|(_, item, parent)| {
-                                    parent.parent() == root && item.id == focused
-                                })
-                                .map(|(entity, _, _)| entity)
-                        };
-                        if let Some(entity) = entity {
-                            self.app
-                                .world_mut()
-                                .entity_mut(entity)
-                                .insert(native::workspace::WorkspaceMember(workspace));
-                        }
-                        self.focus_output(output)?;
-                    }
+                    let kind = if matches!(action, DesktopAction::MoveRowToOutput(_)) {
+                        lince_interface::layout::desktop::TransferKind::Row
+                    } else { lince_interface::layout::desktop::TransferKind::Item };
+                    let prepared = native::layout::desktop::transfers::prepare_move(
+                        self.app.world_mut(), root, workspace, kind,
+                    );
+                    self.try_apply_workspace_transfer(prepared, Some(output), false)?;
                 }
             }
             _ => return Ok(false),
         }
+        if let Some(previous) = previous {
+            previous.remember(self.app.world_mut());
+        }
         Ok(true)
     }
 
-    fn select_output_workspace(&mut self) -> Result<(), ProbeFailure> {
+    pub(super) fn select_output_workspace(&mut self) -> Result<(), ProbeFailure> {
         let root = self.canvas_root()?;
         let output = self
             .output_state
@@ -459,11 +557,19 @@ impl Presentation {
             } else {
                 output.viewport.usable
             };
-            let size = region.map_or([1; 2], |region| {
-                region.size().map(|value| value.round().max(1.0) as u32)
-            });
+            let (pixel_origin, size) = region
+                .and_then(|region| output.viewport.physical_region(region))
+                .unwrap_or(([0; 2], [1; 2]));
+            let logical_size = region.map_or([1.0; 2], |region| region.size());
             validate_size(size)?;
             let origin = region.map_or(output.viewport.bounds.origin(), |region| region.origin());
+            let raster = lince_interface::host::raster::RasterMapping {
+                origin: output
+                    .viewport
+                    .raster
+                    .logical_point(pixel_origin.map(f64::from)),
+                scale: output.viewport.raster.scale,
+            };
             let target = self
                 .output_state
                 .targets
@@ -473,9 +579,10 @@ impl Presentation {
                         .app
                         .world_mut()
                         .resource_mut::<Assets<Image>>()
-                        .add(output_image(size)),
+                        .add(output_image_format(size, self.linear_output)),
                     size,
                     origin,
+                    raster,
                     fullscreen,
                 });
             if target.size != size {
@@ -484,7 +591,7 @@ impl Presentation {
                     self.app
                         .world_mut()
                         .resource_mut::<Assets<Image>>()
-                        .add(output_image(size)),
+                        .add(output_image_format(size, self.linear_output)),
                 );
                 self.app
                     .world_mut()
@@ -493,14 +600,18 @@ impl Presentation {
                 target.size = size;
             }
             target.origin = origin;
+            target.raster = raster;
             target.fullscreen = fullscreen;
-            let bounds =
-                lince_interface::host::Rectangle::new([0.0; 2], size.map(f64::from)).unwrap();
-            locals.push(OutputViewport {
+            let bounds = lince_interface::host::Rectangle::new([0.0; 2], logical_size).unwrap();
+            locals.push(OutputViewport { rotation: Default::default(),
                 id: assignment.id,
                 bounds,
                 usable: region.map(|_| bounds),
                 physical_size: size,
+                raster: lince_interface::host::raster::RasterMapping {
+                    origin: std::array::from_fn(|axis| raster.origin[axis] - origin[axis]),
+                    scale: raster.scale,
+                },
                 workspace,
             });
         }
@@ -542,7 +653,10 @@ impl Presentation {
             std::array::from_fn(|axis| target.origin[axis] - viewport.bounds.origin()[axis]);
         self.render_fullscreen = target.fullscreen;
         self.output_view = Some(viewport);
-        let destination = RenderTarget::Image(self.target.clone().into());
+        let destination = RenderTarget::Image(bevy::camera::ImageRenderTarget {
+            handle: self.target.clone(),
+            scale_factor: target.raster.scale[0] as f32,
+        });
         for camera in [
             self.app
                 .world()
@@ -556,7 +670,8 @@ impl Presentation {
         .into_iter()
         .flatten()
         {
-            if !matches!(self.app.world().get::<RenderTarget>(camera), Some(RenderTarget::Image(current)) if current.handle == self.target)
+            if !matches!(self.app.world().get::<RenderTarget>(camera), Some(RenderTarget::Image(current))
+                if current.handle == self.target && current.scale_factor == target.raster.scale[0] as f32)
             {
                 self.app
                     .world_mut()
@@ -574,6 +689,11 @@ impl Presentation {
                     .resolution
                     .set_physical_resolution(target.size[0], target.size[1]);
             }
+            if window.resolution.scale_factor() != target.raster.scale[0] as f32 {
+                window
+                    .resolution
+                    .set_scale_factor_override(Some(target.raster.scale[0] as f32));
+            }
         }
         world.insert_resource(OutputTarget(destination));
         world.insert_resource(native::topology::output_views::Targets(
@@ -588,6 +708,23 @@ impl Presentation {
         }
         self.save_output_preferences()
             .map_err(|error| input_failure(&error.to_string()))
+    }
+
+    pub(super) fn input_mapping(&self) -> lince_interface::host::raster::RasterMapping {
+        if let Some(target) = self
+            .output_state
+            .assignments
+            .focused()
+            .and_then(|output| self.output_state.targets.get(&output))
+        {
+            return target.raster;
+        }
+        lince_interface::host::raster::RasterMapping {
+            origin: self.output_view.as_ref().map_or([0.0; 2], |output| {
+                std::array::from_fn(|axis| output.bounds.origin()[axis] + self.render_origin[axis])
+            }),
+            scale: [1.0; 2],
+        }
     }
 
     fn synchronize_workspaces(&mut self, root: Entity) -> Result<(), ProbeFailure> {
@@ -706,11 +843,15 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
         let bounds = Rectangle::new([x, 0.0], size.map(f64::from)).unwrap();
         Output {
             name: name.into(),
-            viewport: OutputViewport {
+            viewport: OutputViewport { rotation: Default::default(),
                 id: OutputId(id),
                 bounds,
                 usable: Some(bounds),
                 physical_size: size,
+                raster: lince_interface::host::raster::RasterMapping {
+                    origin: (bounds).origin(),
+                    scale: [1.0; 2],
+                },
                 workspace: 1,
             },
         }
@@ -775,12 +916,12 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
             "both canonical output views were not rendered",
         ));
     }
-    if frame.dmabuf().size() != (640, 400).into()
+    if frame.dmabuf().ok_or_else(|| input_failure("The probe output image is unavailable"))?.size() != (640, 400).into()
         || frame.outputs[0].dmabuf().size() != (800, 480).into()
     {
         return Err(input_failure("output views did not keep independent sizes"));
     }
-    let green = super::probe_pixels(frame.dmabuf())?;
+    let green = super::probe_pixels(frame.dmabuf().ok_or_else(|| input_failure("The probe output image is unavailable"))?)?;
     let red = super::probe_pixels(frame.outputs[0].dmabuf())?;
     let colored = |pixels: &[u8], channel| {
         pixels
@@ -845,7 +986,7 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
         hole_frame = Some(canvas.probe_frame()?);
     }
     let hole_frame = hole_frame.unwrap();
-    let hole_pixels = super::probe_pixels(hole_frame.dmabuf())?;
+    let hole_pixels = super::probe_pixels(hole_frame.dmabuf().ok_or_else(|| input_failure("The probe output image is unavailable"))?)?;
     if colored(&hole_pixels, 0) < 1000 {
         if let Ok(file) = tempfile::Builder::new()
             .prefix("park-hole-")
@@ -948,10 +1089,23 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
         laboratory_frame = Some(canvas.probe_frame()?);
     }
     let laboratory_frame = laboratory_frame.unwrap();
-    if laboratory_frame.input.workspaces.entries.iter().any(|entry| entry.id == temporary)
+    if laboratory_frame
+        .input
+        .workspaces
+        .entries
+        .iter()
+        .any(|entry| entry.id == temporary)
         || laboratory_frame.input.workspaces.owner != root.to_bits()
-        || !laboratory_frame.input.workspaces.entries.iter().any(|entry| entry.id == previous) {
-        return Err(input_failure("the external workspace snapshot leaked temporary Laboratory state or lost ordinary ownership"));
+        || !laboratory_frame
+            .input
+            .workspaces
+            .entries
+            .iter()
+            .any(|entry| entry.id == previous)
+    {
+        return Err(input_failure(
+            "the external workspace snapshot leaked temporary Laboratory state or lost ordinary ownership",
+        ));
     }
     if colored(
         &super::probe_pixels(
@@ -972,18 +1126,33 @@ pub(super) fn probe(canvas: &mut Presentation) -> Result<(), ProbeFailure> {
     }
     canvas.focus_output(OutputId(1))?;
     if native::laboratory::scope(canvas.app.world()).is_none() {
-        return Err(input_failure("focusing another output closed the Laboratory"));
+        return Err(input_failure(
+            "focusing another output closed the Laboratory",
+        ));
     }
-    let ordinary_workspace = canvas.app.world()
-        .get::<native::workspace::Workspaces>(root).unwrap().active;
+    let ordinary_workspace = canvas
+        .app
+        .world()
+        .get::<native::workspace::Workspaces>(root)
+        .unwrap()
+        .active;
     let other = lince_interface::host::SurfaceId(u64::MAX - 1);
-    canvas.open_window(other, "Ordinary output during Laboratory", "social.lince.probe")?;
+    canvas.open_window(
+        other,
+        "Ordinary output during Laboratory",
+        "social.lince.probe",
+    )?;
     let other_entity = canvas.windows[&other].entity;
-    if ordinary_workspace == temporary || canvas.app.world()
-        .get::<native::workspace::WorkspaceMember>(other_entity)
-        .is_none_or(|member| member.0 != ordinary_workspace)
+    if ordinary_workspace == temporary
+        || canvas
+            .app
+            .world()
+            .get::<native::workspace::WorkspaceMember>(other_entity)
+            .is_none_or(|member| member.0 != ordinary_workspace)
     {
-        return Err(input_failure("an ordinary output inherited the Laboratory workspace"));
+        return Err(input_failure(
+            "an ordinary output inherited the Laboratory workspace",
+        ));
     }
     native::laboratory::close(canvas.app.world_mut());
     canvas.probe_frame()?;
@@ -1165,11 +1334,13 @@ mod tests {
         let first = vec![Preference {
             workspace: 1,
             output: "eDP-1".into(),
+            active: false,
         }];
         save(&path, &first).unwrap();
         let second = vec![Preference {
             workspace: 1,
             output: "DP-1".into(),
+            active: true,
         }];
         save(&path, &second).unwrap();
         assert_eq!(

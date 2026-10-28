@@ -487,6 +487,7 @@ struct Prepared<'a> {
     rows: BTreeMap<&'a str, &'a RecordScalarRow>,
     readable: &'a ReadableIdentities,
     assertions: Vec<&'a AssertionState>,
+    resolved_links: &'a BTreeMap<String, String>,
     concept_children: BTreeMap<&'a str, BTreeSet<&'a str>>,
     identity_concepts: BTreeMap<&'a str, &'a str>,
 }
@@ -615,6 +616,7 @@ impl<'a> Prepared<'a> {
                     assertion.subject_uid.as_str(),
                     assertion.predicate_uid.as_str(),
                     assertion.object_uid.as_deref(),
+                    assertion.object_uri.as_deref(),
                 ))
             {
                 return Err(QueryError::InvalidInput);
@@ -640,6 +642,7 @@ impl<'a> Prepared<'a> {
             }
             if assertion.role == AssertionRole::Identity
                 && (assertion.object_uid.is_some()
+                    || assertion.object_uri.is_some()
                     || assertion.quantity.is_some()
                     || assertion.unit_uid.is_some()
                     || !identity_subjects.insert(assertion.subject_uid.as_str()))
@@ -657,6 +660,27 @@ impl<'a> Prepared<'a> {
             budget,
         )?;
 
+        within(graph.resolved_links.len(), budget.limits.assertions)?;
+        for (uid, target) in &graph.resolved_links {
+            budget.step()?;
+            budget.text(uid)?;
+            budget.text(target)?;
+            let assertion = indexed_assertions
+                .get(uid.as_str())
+                .ok_or(QueryError::InvalidInput)?;
+            let object = records
+                .get(target.as_str())
+                .ok_or(QueryError::InvalidInput)?;
+            let subject = records
+                .get(assertion.subject_uid.as_str())
+                .ok_or(QueryError::InvalidInput)?;
+            if assertion.object_uri.is_none()
+                || assertion.object_uid.is_some()
+                || object.organ_uid != subject.organ_uid
+            {
+                return Err(QueryError::InvalidInput);
+            }
+        }
         let mut assertions = Vec::with_capacity(readable.assertions.len());
         let mut identity_concepts = BTreeMap::new();
         for uid in &readable.assertions {
@@ -756,6 +780,7 @@ impl<'a> Prepared<'a> {
             rows,
             readable,
             assertions,
+            resolved_links: &graph.resolved_links,
             concept_children,
             identity_concepts,
         })
@@ -796,8 +821,13 @@ impl<'a> Prepared<'a> {
         uid: &str,
         budget: &mut Budget<'_>,
     ) -> Result<BTreeSet<String>, QueryError> {
-        if let Some(concepts)=nucleus::vocabulary::parse_meaning_set(uid).map_err(|_|QueryError::InvalidInput)? {
-            for concept in &concepts {budget.step()?;self.require_concept(concept)?;}
+        if let Some(concepts) =
+            nucleus::vocabulary::parse_meaning_set(uid).map_err(|_| QueryError::InvalidInput)?
+        {
+            for concept in &concepts {
+                budget.step()?;
+                self.require_concept(concept)?;
+            }
             return Ok(concepts.into_iter().collect());
         }
         self.require_concept(uid)?;
@@ -1074,9 +1104,16 @@ fn compile(
                 {
                     continue;
                 }
-                let Some(object) = &assertion.object_uid else {
+                let Some(object) = assertion
+                    .object_uid
+                    .as_ref()
+                    .or_else(|| prepared.resolved_links.get(&assertion.uid))
+                else {
                     continue;
                 };
+                if !prepared.readable.records.contains(object) {
+                    continue;
+                }
                 if matches!(direction, LinkDirection::Out | LinkDirection::Both)
                     && other.as_ref().is_none_or(|other| other == object)
                 {
@@ -1114,7 +1151,15 @@ fn compile(
                 {
                     continue;
                 }
-                if let Some(object) = assertion.object_uid.as_deref() {
+                if let Some(object) = assertion.object_uid.as_deref().or_else(|| {
+                    prepared
+                        .resolved_links
+                        .get(&assertion.uid)
+                        .map(String::as_str)
+                }) {
+                    if !prepared.readable.records.contains(object) {
+                        continue;
+                    }
                     budget.edge()?;
                     edges
                         .get_mut(object)

@@ -101,6 +101,7 @@ pub fn spawn(world: &mut World, sand: Entity, saved: SavedText) -> Entity {
         let mut editor = world.get_mut::<EditableText>(entity).unwrap();
         editor.max_characters = Some(4096);
         editor.visible_lines = None;
+        crate::native::accessibility::input(world, entity, "Editable text in Sand", true);
         entity
     } else {
         let font = world.resource::<Typography>().text(22.0);

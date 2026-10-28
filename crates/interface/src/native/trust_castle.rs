@@ -15,12 +15,12 @@ use std::collections::BTreeSet;
 
 mod analysis;
 mod claims;
+mod custody_controls;
 mod profile_claims;
 mod recipe_controls;
+mod remote_controls;
 mod root_controls;
 mod serving_controls;
-mod custody_controls;
-mod remote_controls;
 pub(crate) mod tests;
 mod ui;
 use ui::render;
@@ -30,7 +30,13 @@ impl Plugin for TrustCastlePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (receive.after(ReceiveCell), capture, maintain, remote_controls::maintain).chain(),
+            (
+                receive.after(ReceiveCell),
+                capture,
+                maintain,
+                remote_controls::maintain,
+            )
+                .chain(),
         );
     }
 }
@@ -162,10 +168,18 @@ fn label(world: &mut World, parent: Entity, text: &str) {
 }
 fn field(world: &mut World, parent: Entity, owner: Entity, key: Key, caption: &str, value: &str) {
     let entity = panel::field(world, parent, caption, value);
-    if matches!(key, Key::Import | Key::Claim(claims::Field::Import) | Key::OrganRoot(root_controls::Field::Document))
-        && let Some(mut input) = world.get_mut::<EditableText>(entity)
+    if matches!(
+        key,
+        Key::Import
+            | Key::Claim(claims::Field::Import)
+            | Key::OrganRoot(root_controls::Field::Document)
+    ) && let Some(mut input) = world.get_mut::<EditableText>(entity)
     {
-        input.max_characters = Some(if matches!(key,Key::OrganRoot(_)) {16384} else {32768});
+        input.max_characters = Some(if matches!(key, Key::OrganRoot(_)) {
+            16384
+        } else {
+            32768
+        });
     }
     world.entity_mut(entity).insert(Input {
         owner,
@@ -263,48 +277,79 @@ impl Action for Open {
 }
 
 fn open_view(world: &mut World, root: Entity, subject: Option<&Identity>) -> Option<Entity> {
-        let workspace = world
-            .get::<crate::native::workspace::Workspaces>(root)
-            .map_or(1, |value| value.active);
-        let placement = world
-            .get::<crate::native::canvas::CanvasView>(root)
-            .map_or(DVec2::ZERO, |view| view.center);
-        let sand = crate::native::sand_store::spawn_sand(
-            world,
-            root,
-            workspace,
-            crate::native::sand_store::SandKind::Trust,
-            "Trust",
-            placement,
-        );
-        if let Some(body) = world
-            .get::<crate::native::sand_store::StoredSand>(sand)
-            .and_then(|sand| sand.content)
-        {
-            if let Some(subject) = subject {
-                let mut view = world.get_mut::<View>(body).unwrap();
-                view.contact = subject.uid().into();
-                view.contact_organ = matches!(subject, Identity::Organ(_));
-                view.analysis.subject = subject.uid().into();
-                view.analysis.organ = matches!(subject, Identity::Organ(_));
-                view.analyze_after_context = true;
-            }
-            render(world, body);
-            return Some(body);
+    let workspace = world
+        .get::<crate::native::workspace::Workspaces>(root)
+        .map_or(1, |value| value.active);
+    let placement = world
+        .get::<crate::native::canvas::CanvasView>(root)
+        .map_or(DVec2::ZERO, |view| view.center);
+    let sand = crate::native::sand_store::spawn_sand(
+        world,
+        root,
+        workspace,
+        crate::native::sand_store::SandKind::Trust,
+        "Trust",
+        placement,
+    );
+    if let Some(body) = world
+        .get::<crate::native::sand_store::StoredSand>(sand)
+        .and_then(|sand| sand.content)
+    {
+        if let Some(subject) = subject {
+            let mut view = world.get_mut::<View>(body).unwrap();
+            view.contact = subject.uid().into();
+            view.contact_organ = matches!(subject, Identity::Organ(_));
+            view.analysis.subject = subject.uid().into();
+            view.analysis.organ = matches!(subject, Identity::Organ(_));
+            view.analyze_after_context = true;
         }
-        None
+        render(world, body);
+        return Some(body);
+    }
+    None
 }
 
-pub(crate) fn claim_controls(world: &mut World, parent: Entity, document: &nucleus::trust_analysis::claims::Document) {
-    panel::button(world, parent, parent, "Inspect and independently check this claim", profile_claims::OpenSnapshot(document.clone()));
+pub(crate) fn claim_controls(
+    world: &mut World,
+    parent: Entity,
+    document: &nucleus::trust_analysis::claims::Document,
+) {
+    panel::button(
+        world,
+        parent,
+        parent,
+        "Inspect and independently check this claim",
+        profile_claims::OpenSnapshot(document.clone()),
+    );
 }
 
-pub(crate) fn organ_root_controls(world:&mut World,parent:Entity,subject:&str) {
-    panel::button(world,parent,parent,"Compare or recover Organ owner identity",root_controls::Open(subject.into()));
+pub(crate) fn organ_root_controls(world: &mut World, parent: Entity, subject: &str) {
+    panel::button(
+        world,
+        parent,
+        parent,
+        "Compare or recover Organ owner identity",
+        root_controls::Open(subject.into()),
+    );
 }
 
-pub(crate) fn evidence_serving_controls(world:&mut World,parent:Entity,record:&str,kind:nucleus::trust_analysis::serving::SourceKind) {
-    panel::button(world,parent,parent,"Review minimal evidence sharing",serving_controls::Open {source:record.into(),kind,scope:nucleus::trust_analysis::serving::Scope::Fixed});
+pub(crate) fn evidence_serving_controls(
+    world: &mut World,
+    parent: Entity,
+    record: &str,
+    kind: nucleus::trust_analysis::serving::SourceKind,
+) {
+    panel::button(
+        world,
+        parent,
+        parent,
+        "Review minimal evidence sharing",
+        serving_controls::Open {
+            source: record.into(),
+            kind,
+            scope: nucleus::trust_analysis::serving::Scope::Fixed,
+        },
+    );
 }
 
 pub(crate) fn record_controls(
@@ -321,7 +366,12 @@ pub(crate) fn record_controls(
     subject_controls(world, parent, binding.area, subject);
 }
 
-pub(crate) fn subject_controls(world: &mut World, parent: Entity, context: Entity, subject: Identity) {
+pub(crate) fn subject_controls(
+    world: &mut World,
+    parent: Entity,
+    context: Entity,
+    subject: Identity,
+) {
     let mut cursor = Some(context);
     while let Some(entity) = cursor {
         if world
@@ -535,10 +585,25 @@ fn send_action(
 impl Action for Command {
     fn apply(&self, world: &mut World, owner: Entity) {
         capture(world);
-        if let Self::Remote(command)=self {remote_controls::apply(world,owner,command);return;}
-        if let Self::Serving(command)=self {serving_controls::apply(world,owner,command);render(world,owner);return;}
-        if let Self::Custody(command)=self {custody_controls::apply(world,owner,command);render(world,owner);return;}
-        if let Self::OrganRoot(command)=self {root_controls::apply(world,owner,command);render(world,owner);return;}
+        if let Self::Remote(command) = self {
+            remote_controls::apply(world, owner, command);
+            return;
+        }
+        if let Self::Serving(command) = self {
+            serving_controls::apply(world, owner, command);
+            render(world, owner);
+            return;
+        }
+        if let Self::Custody(command) = self {
+            custody_controls::apply(world, owner, command);
+            render(world, owner);
+            return;
+        }
+        if let Self::OrganRoot(command) = self {
+            root_controls::apply(world, owner, command);
+            render(world, owner);
+            return;
+        }
         if let Self::Recipe(command) = self {
             recipe_controls::apply(world, owner, command);
             return;
@@ -709,7 +774,7 @@ impl Action for Command {
         }
         let mut view = world.get_mut::<View>(owner).unwrap();
         if !matches!(self, Self::QueryPage(_)) {
-            view.remote.review=None;
+            view.remote.review = None;
             view.review = None;
             view.claims.review = None;
             view.recipes.review = None;
@@ -845,16 +910,22 @@ fn capture(world: &mut World) {
             continue;
         };
         view.review = None;
-        view.remote.review=None;
+        view.remote.review = None;
         view.claims.review = None;
         view.recipes.review = None;
         view.generation = view.generation.wrapping_add(1);
         match key {
-            Key::Custody(field)=>{custody_controls::capture(&mut view.custody,field,value.clone());view.result=Value::Null;},
-            Key::Serving(field)=>{serving_controls::capture(&mut view.serving,field,value.clone());view.result=Value::Null;},
+            Key::Custody(field) => {
+                custody_controls::capture(&mut view.custody, field, value.clone());
+                view.result = Value::Null;
+            }
+            Key::Serving(field) => {
+                serving_controls::capture(&mut view.serving, field, value.clone());
+                view.result = Value::Null;
+            }
             Key::OrganRoot(field) => {
-                root_controls::capture(&mut view.roots,field,value.clone());
-                view.result=Value::Null;
+                root_controls::capture(&mut view.roots, field, value.clone());
+                view.result = Value::Null;
             }
             Key::Recipe(field) => {
                 recipe_controls::capture(&mut view.recipes, field, value.clone());
@@ -1032,8 +1103,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     let context_result = result["kind"] == "contact_context";
                     let mut view = world.get_mut::<View>(owner).unwrap();
                     view.pending = None;
-                    if remote_controls::receive(&mut view,&result) {
-                        view.notice="Reader-owned remote evidence updated".into();
+                    if remote_controls::receive(&mut view, &result) {
+                        view.notice = "Reader-owned remote evidence updated".into();
                     } else if result["kind"] == "contact_context" {
                         if let Some(person) = result["person"].as_str() {
                             if !view.person.is_empty() && view.person != person {
@@ -1074,7 +1145,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                             .zip(serde_json::from_value(result["hash"].clone()).ok());
                         view.notice="Review the exact issuer, subject, amount, basis, audience and term before signing this claim.".into();
                     } else {
-                        custody_controls::receive(&mut view,&result);
+                        custody_controls::receive(&mut view, &result);
                         if result["kind"] == "measurement"
                             && let Ok(measurement) =
                                 serde_json::from_value(result["measurement"].clone())
@@ -1105,15 +1176,22 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                         view.result = result;
                         view.notice = "Updated from the Cell".into();
                     }
-                    let analyze = view.analyze_after_context && context_result && !view.person.is_empty();
-                    if context_result { view.analyze_after_context = false; }
+                    let analyze =
+                        view.analyze_after_context && context_result && !view.person.is_empty();
+                    if context_result {
+                        view.analyze_after_context = false;
+                    }
                     drop(view);
                     render(world, owner);
-                    if analyze { Command::Analyze.apply(world, owner); }
+                    if analyze {
+                        Command::Analyze.apply(world, owner);
+                    }
                 }
                 cell::ServerMessage::Error { id, message, .. } if *id == pending => {
                     let mut view = world.get_mut::<View>(owner).unwrap();
-                    if view.remote.pending {view.remote=remote_controls::Draft::default();}
+                    if view.remote.pending {
+                        view.remote = remote_controls::Draft::default();
+                    }
                     view.pending = None;
                     view.result = Value::Null;
                     view.review = None;

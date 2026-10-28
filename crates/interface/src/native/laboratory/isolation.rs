@@ -1,6 +1,6 @@
-use bevy::{ecs::system::SystemParam, prelude::*};
 use super::workspace::{Laboratory, LaboratoryRoot, SuspendedRoot};
 use crate::native::workspace::WorkspaceMember;
+use bevy::{ecs::system::SystemParam, prelude::*};
 
 #[derive(Component)]
 pub(crate) struct LaboratoryOwner;
@@ -8,20 +8,44 @@ pub(crate) struct LaboratoryOwner;
 #[derive(SystemParam)]
 pub(crate) struct OwnerAccess<'w, 's> {
     laboratory: Option<Res<'w, Laboratory>>,
-    ancestry: Query<'w, 's, (
-        Option<&'static ChildOf>, Option<&'static WorkspaceMember>,
-        Has<LaboratoryOwner>, Has<LaboratoryRoot>, Has<SuspendedRoot>,
-    )>,
+    ancestry: Query<
+        'w,
+        's,
+        (
+            Option<&'static ChildOf>,
+            Option<&'static WorkspaceMember>,
+            Has<LaboratoryOwner>,
+            Has<LaboratoryRoot>,
+            Has<SuspendedRoot>,
+        ),
+    >,
 }
 
 impl OwnerAccess<'_, '_> {
     pub(crate) fn blocked(&self, entity: Entity) -> bool {
-        if self.laboratory.as_ref().is_some_and(|lab| lab.global_pause()) { return true; }
+        if self
+            .laboratory
+            .as_ref()
+            .is_some_and(|lab| lab.global_pause())
+        {
+            return true;
+        }
         let scope = self.laboratory.as_ref().and_then(|lab| lab.owner_scope());
-        belongs(entity, scope, |entity| {
-            let (parent, member, temporary, laboratory, suspended) = self.ancestry.get(entity).ok()?;
-            Some((parent.map(ChildOf::parent), member.map(|member| member.0), temporary || laboratory, suspended))
-        }, true)
+        belongs(
+            entity,
+            scope,
+            |entity| {
+                let (parent, member, temporary, laboratory, suspended) =
+                    self.ancestry.get(entity).ok()?;
+                Some((
+                    parent.map(ChildOf::parent),
+                    member.map(|member| member.0),
+                    temporary || laboratory,
+                    suspended,
+                ))
+            },
+            true,
+        )
     }
 }
 
@@ -33,11 +57,20 @@ fn belongs(
 ) -> bool {
     let mut workspace = None;
     for _ in 0..crate::native::layout::MAX_DEPTH {
-        let Some((parent, member, temporary, suspended)) = ancestry(entity) else { return true };
-        if temporary || include_suspended && suspended { return true; }
-        if workspace.is_none() { workspace = member; }
+        let Some((parent, member, temporary, suspended)) = ancestry(entity) else {
+            return true;
+        };
+        if temporary || include_suspended && suspended {
+            return true;
+        }
+        if workspace.is_none() {
+            workspace = member;
+        }
         if let Some((root, temporary)) = scope
-            && entity == root { return workspace == Some(temporary); }
+            && entity == root
+        {
+            return workspace == Some(temporary);
+        }
         let Some(parent) = parent else { return false };
         entity = parent;
     }
@@ -46,13 +79,23 @@ fn belongs(
 
 pub fn temporary_owner(world: &World, entity: Entity) -> bool {
     let scope = super::scope(world).map(|(root, _, workspace, _)| (root, workspace));
-    belongs(entity, scope, |entity| {
-        if world.get_entity(entity).is_err() { return None; }
-        Some((world.get::<ChildOf>(entity).map(ChildOf::parent),
-            world.get::<WorkspaceMember>(entity).map(|member| member.0),
-            world.get::<LaboratoryOwner>(entity).is_some() || world.get::<LaboratoryRoot>(entity).is_some(),
-            world.get::<SuspendedRoot>(entity).is_some()))
-    }, false)
+    belongs(
+        entity,
+        scope,
+        |entity| {
+            if world.get_entity(entity).is_err() {
+                return None;
+            }
+            Some((
+                world.get::<ChildOf>(entity).map(ChildOf::parent),
+                world.get::<WorkspaceMember>(entity).map(|member| member.0),
+                world.get::<LaboratoryOwner>(entity).is_some()
+                    || world.get::<LaboratoryRoot>(entity).is_some(),
+                world.get::<SuspendedRoot>(entity).is_some(),
+            ))
+        },
+        false,
+    )
 }
 
 pub fn blocked(world: &World, entity: Entity) -> bool {
@@ -63,7 +106,9 @@ pub(crate) fn source(world: &World, entity: Entity) -> Option<String> {
     temporary_owner(world, entity).then(|| format!("laboratory-internal:{}", entity.to_bits()))
 }
 
-pub(crate) fn reserved(source: &str) -> bool { source.starts_with("laboratory-internal:") }
+pub(crate) fn reserved(source: &str) -> bool {
+    source.starts_with("laboratory-internal:")
+}
 
 #[cfg(test)]
 mod tests {
@@ -74,19 +119,31 @@ mod tests {
         let mut app = App::new();
         app.add_plugins(crate::native::time_limit::TimeLimitPlugin);
         let root = app.world_mut().spawn_empty().id();
-        let ordinary = app.world_mut().spawn((
-            ChildOf(root), WorkspaceMember(1),
-            crate::native::time_limit::TimeLimit(std::time::Duration::ZERO),
-        )).id();
+        let ordinary = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                WorkspaceMember(1),
+                crate::native::time_limit::TimeLimit(std::time::Duration::ZERO),
+            ))
+            .id();
         app.insert_resource(Laboratory::scoped_for_test(root, 2, 1));
         app.update();
-        assert_eq!(app.world().get::<Visibility>(ordinary), Some(&Visibility::Hidden));
+        assert_eq!(
+            app.world().get::<Visibility>(ordinary),
+            Some(&Visibility::Hidden)
+        );
         let mut laboratory = Laboratory::default();
         laboratory.root = Some(root);
         app.insert_resource(laboratory);
-        app.world_mut().entity_mut(ordinary).insert(Visibility::Inherited);
+        app.world_mut()
+            .entity_mut(ordinary)
+            .insert(Visibility::Inherited);
         app.update();
-        assert_eq!(app.world().get::<Visibility>(ordinary), Some(&Visibility::Inherited));
+        assert_eq!(
+            app.world().get::<Visibility>(ordinary),
+            Some(&Visibility::Inherited)
+        );
     }
 
     #[test]
@@ -117,7 +174,9 @@ mod tests {
         let mut world = World::new();
         let root = world.spawn_empty().id();
         let ordinary = world.spawn((ChildOf(root), WorkspaceMember(1))).id();
-        let benchmark = world.spawn((ChildOf(root), WorkspaceMember(2), LaboratoryOwner)).id();
+        let benchmark = world
+            .spawn((ChildOf(root), WorkspaceMember(2), LaboratoryOwner))
+            .id();
         let editor = world.spawn(ChildOf(benchmark)).id();
         assert!(!blocked(&world, ordinary));
         assert!(blocked(&world, editor));
@@ -134,7 +193,14 @@ mod tests {
         let ordinary = world.spawn((ChildOf(root), WorkspaceMember(1))).id();
         let benchmark = world.spawn((ChildOf(root), WorkspaceMember(2))).id();
         let editor = world.spawn(ChildOf(benchmark)).id();
-        let inspect = |entity| Some((world.get::<ChildOf>(entity).map(ChildOf::parent), world.get::<WorkspaceMember>(entity).map(|member| member.0), false, false));
+        let inspect = |entity| {
+            Some((
+                world.get::<ChildOf>(entity).map(ChildOf::parent),
+                world.get::<WorkspaceMember>(entity).map(|member| member.0),
+                false,
+                false,
+            ))
+        };
         assert!(!belongs(ordinary, Some((root, 2)), inspect, true));
         assert!(belongs(editor, Some((root, 2)), inspect, true));
         assert!(!belongs(root, Some((root, 2)), inspect, true));

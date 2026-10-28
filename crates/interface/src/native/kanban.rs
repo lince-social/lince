@@ -711,7 +711,9 @@ fn update(world: &mut World) {
         return;
     }
     while let Some((owner, message)) = world.resource_mut::<Requests>().outgoing.pop_front() {
-        if crate::native::laboratory::blocked(world, owner) { continue; }
+        if crate::native::laboratory::blocked(world, owner) {
+            continue;
+        }
         let Some(sender) = crate::native::practice_cells::sender(world, owner) else {
             world
                 .resource_mut::<Requests>()
@@ -754,7 +756,9 @@ fn update(world: &mut World) {
         .map(|(e, k)| (e, k.clone()))
         .collect();
     for (owner, board) in owners {
-        if crate::native::laboratory::blocked(world, owner) { continue; }
+        if crate::native::laboratory::blocked(world, owner) {
+            continue;
+        }
         if !world.get::<View>(owner).unwrap().initialized
             && crate::native::practice_cells::sender(world, owner).is_some()
         {

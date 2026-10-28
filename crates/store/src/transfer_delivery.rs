@@ -698,12 +698,29 @@ pub async fn create_remote_reference(
     input: NewRemoteReference<'_>,
     now: DateTime<Utc>,
 ) -> Result<RemoteReferenceRow, StoreError> {
-    let uid = format!("trr:{}", nucleus::fact::sha256_hex(serde_json::to_string(&(input.origin_organ_uid, input.transfer_uid, input.recipient_person_uid, input.recipient_organ_uid)).map_err(|error| protocol(error.to_string()))?.as_bytes()));
+    let uid = format!(
+        "trr:{}",
+        nucleus::fact::sha256_hex(
+            serde_json::to_string(&(
+                input.origin_organ_uid,
+                input.transfer_uid,
+                input.recipient_person_uid,
+                input.recipient_organ_uid
+            ))
+            .map_err(|error| protocol(error.to_string()))?
+            .as_bytes()
+        )
+    );
     let at = now.to_rfc3339();
     let signed_payload = serde_json::to_string(input.signed_policy_payload)
         .map_err(|error| protocol(error.to_string()))?;
     let mut tx = crate::write_tx(pool).await?;
-    crate::transfer_replication::require_private_writer(&mut tx, input.transfer_uid, input.recipient_person_uid).await?;
+    crate::transfer_replication::require_private_writer(
+        &mut tx,
+        input.transfer_uid,
+        input.recipient_person_uid,
+    )
+    .await?;
     sqlx::query(
         "INSERT INTO transfer_remote_reference
          (uid, origin_organ_uid, transfer_uid, delivery_policy_uid, recipient_person_uid, recipient_organ_uid,
@@ -873,7 +890,11 @@ pub async fn enqueue_pull(
     }
     let owner: Option<String> = sqlx::query_scalar("SELECT cell_uid FROM transfer_sync_owner WHERE table_name = 'transfer_remote_reference' AND row_key = json_array(?) AND cell_uid != (SELECT uid FROM record WHERE slug = 'local-cell')")
         .bind(reference_uid).fetch_optional(pool).await?;
-    if let Some(owner) = owner { return Err(protocol(format!("Refresh this Transfer from its writing Cell {owner}"))); }
+    if let Some(owner) = owner {
+        return Err(protocol(format!(
+            "Refresh this Transfer from its writing Cell {owner}"
+        )));
+    }
     let reference = sqlx::query("SELECT * FROM transfer_remote_reference WHERE uid = ?")
         .bind(reference_uid)
         .fetch_optional(pool)
@@ -1551,7 +1572,9 @@ pub async fn persist_remote_command_with_karma(
     }
     command.validate_shape().map_err(protocol)?;
     if origin.is_some() && direction != "outgoing" {
-        return Err(protocol("Only outgoing commands can have a local Rule origin"));
+        return Err(protocol(
+            "Only outgoing commands can have a local Rule origin",
+        ));
     }
     let payload = serde_json::to_string(command).map_err(|error| protocol(error.to_string()))?;
     let payload_hash = command.payload_hash();
@@ -1571,9 +1594,17 @@ pub async fn persist_remote_command_with_karma(
             && existing.payload == payload
         {
             if let Some(origin) = origin {
-                let original: Option<String> = sqlx::query_scalar("SELECT origin FROM karma_transfer_command WHERE command_uid = ?")
-                    .bind(&command.command_uid).fetch_optional(&mut *tx).await?;
-                let original: Option<crate::karma_commands::Origin> = original.map(|value| serde_json::from_str(&value).map_err(|error| protocol(error.to_string()))).transpose()?;
+                let original: Option<String> = sqlx::query_scalar(
+                    "SELECT origin FROM karma_transfer_command WHERE command_uid = ?",
+                )
+                .bind(&command.command_uid)
+                .fetch_optional(&mut *tx)
+                .await?;
+                let original: Option<crate::karma_commands::Origin> = original
+                    .map(|value| {
+                        serde_json::from_str(&value).map_err(|error| protocol(error.to_string()))
+                    })
+                    .transpose()?;
                 if original.as_ref() != Some(origin) {
                     return Err(protocol("Remote automation origin changed on replay"));
                 }
@@ -1621,11 +1652,13 @@ pub async fn remote_command(
     pool: &SqlitePool,
     command_uid: &str,
 ) -> Result<Option<RemoteCommandRow>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM transfer_remote_command WHERE command_uid = ?")
-        .bind(command_uid)
-        .fetch_optional(pool)
-        .await?
-        .map(map_remote_command))
+    Ok(
+        sqlx::query("SELECT * FROM transfer_remote_command WHERE command_uid = ?")
+            .bind(command_uid)
+            .fetch_optional(pool)
+            .await?
+            .map(map_remote_command),
+    )
 }
 
 pub async fn remote_commands_due(
@@ -2219,8 +2252,13 @@ pub async fn application_effect_handoff(
     pool: &SqlitePool,
     uid: &str,
 ) -> Result<Option<RemoteApplicationHandoffRow>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM transfer_application_effect_handoff WHERE uid = ?")
-        .bind(uid).fetch_optional(pool).await?.map(map_remote_application_handoff))
+    Ok(
+        sqlx::query("SELECT * FROM transfer_application_effect_handoff WHERE uid = ?")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
+            .map(map_remote_application_handoff),
+    )
 }
 
 pub async fn accept_remote_application_handoff(
@@ -2258,7 +2296,9 @@ pub async fn accept_remote_application_handoff(
         || crate::exact::sum_exact([
             crate::transfer_accounting::amount(input.canonical_cumulative_before)?,
             crate::transfer_accounting::amount(input.canonical_quantity)?,
-        ])?.to_f64() != input.canonical_cumulative_after
+        ])?
+        .to_f64()
+            != input.canonical_cumulative_after
     {
         return Err(protocol(
             "remote application handoff quantities are invalid",
@@ -2385,8 +2425,13 @@ pub async fn local_application_for_request(
     pool: &SqlitePool,
     request_id: &str,
 ) -> Result<Option<LocalTransferApplicationRow>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM transfer_local_application WHERE request_id = ?")
-        .bind(request_id).fetch_optional(pool).await?.map(map_local_application))
+    Ok(
+        sqlx::query("SELECT * FROM transfer_local_application WHERE request_id = ?")
+            .bind(request_id)
+            .fetch_optional(pool)
+            .await?
+            .map(map_local_application),
+    )
 }
 
 pub struct NewLocalTransferApplication {
@@ -2443,7 +2488,9 @@ where
             && application.application_formula == input.application_formula
             && application.application_formula_hash == input.application_formula_hash
             && application.application_formula_version == input.application_formula_version
-            && crate::transfer_effects::reviewed_hash(pool, &application.application_fact_uid).await? == input.expected_effects_hash;
+            && crate::transfer_effects::reviewed_hash(pool, &application.application_fact_uid)
+                .await?
+                == input.expected_effects_hash;
         if !exact {
             return Err(protocol(
                 "local Transfer application request was replayed with changed contents",
@@ -2472,7 +2519,12 @@ where
             "remote Transfer application handoff is not pending for this Person",
         ));
     }
-    crate::transfer_replication::require_private_writer(&mut tx, handoff.get::<&str, _>("transfer_uid"), &input.participant_person_uid).await?;
+    crate::transfer_replication::require_private_writer(
+        &mut tx,
+        handoff.get::<&str, _>("transfer_uid"),
+        &input.participant_person_uid,
+    )
+    .await?;
     let local = handoff.get::<String, _>("reference_uid").is_empty();
     let active: bool = local || sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM transfer_remote_reference WHERE uid = ? AND state = 'active')",
@@ -2505,28 +2557,54 @@ where
     let occurrence: String = handoff.get("occurrence_uid");
     let canonical_unit: Option<String> = handoff.get("canonical_unit_uid");
     let binding = crate::transfer_accounting::Binding {
-        transfer: &handoff.get::<String,_>("transfer_uid"), exchange: &input.exchange_uid,
-        occurrence: Some(&occurrence), person: &input.participant_person_uid,
-        record: Some(&input.local_record_uid), unit: canonical_unit.as_deref(),
-        outgoing: handoff.get::<i64,_>("application_direction") < 0,
+        transfer: &handoff.get::<String, _>("transfer_uid"),
+        exchange: &input.exchange_uid,
+        occurrence: Some(&occurrence),
+        person: &input.participant_person_uid,
+        record: Some(&input.local_record_uid),
+        unit: canonical_unit.as_deref(),
+        outgoing: handoff.get::<i64, _>("application_direction") < 0,
     };
     let application = crate::transfer_accounting::effective_on(&mut tx, &binding).await?;
-    if application.formula != input.application_formula || application.formula_hash != input.application_formula_hash || application.version != input.application_formula_version {
-        return Err(protocol("private application policy or units changed after review"));
+    if application.formula != input.application_formula
+        || application.formula_hash != input.application_formula_hash
+        || application.version != input.application_formula_version
+    {
+        return Err(protocol(
+            "private application policy or units changed after review",
+        ));
     }
-    crate::transfer_accounting::require_same_record(&mut tx, &occurrence, &input.participant_person_uid, &input.local_record_uid).await?;
-    let applied = crate::transfer_accounting::applied_on(&mut tx, &occurrence, &input.participant_person_uid).await?;
-    let amount = nucleus::transfer::application::amount(handoff.get("canonical_quantity")).map_err(|error| protocol(error.to_string()))?;
+    crate::transfer_accounting::require_same_record(
+        &mut tx,
+        &occurrence,
+        &input.participant_person_uid,
+        &input.local_record_uid,
+    )
+    .await?;
+    let applied =
+        crate::transfer_accounting::applied_on(&mut tx, &occurrence, &input.participant_person_uid)
+            .await?;
+    let amount = nucleus::transfer::application::amount(handoff.get("canonical_quantity"))
+        .map_err(|error| protocol(error.to_string()))?;
     let canonical_after = crate::exact::sum_exact([applied.canonical, amount])?;
     let group = crate::transfer_effects::quote_on(&mut tx, &binding, canonical_after).await?;
-    crate::transfer_effects::require_review(group.as_ref(), input.expected_effects_hash.as_deref())?;
+    crate::transfer_effects::require_review(
+        group.as_ref(),
+        input.expected_effects_hash.as_deref(),
+    )?;
     let (exact_delta, exact_after) = if let Some(group) = &group {
         (group.effects[0].delta, group.effects[0].cumulative_after)
-    } else { crate::transfer_accounting::calculate(&application.formula, canonical_after, applied.local)? };
+    } else {
+        crate::transfer_accounting::calculate(&application.formula, canonical_after, applied.local)?
+    };
     if applied.local.to_f64() != input.local_cumulative_before
-        || applied.canonical.to_f64() != handoff.get::<f64,_>("canonical_cumulative_before")
-        || exact_delta.to_f64() != input.local_delta || exact_after.to_f64() != input.local_cumulative_after {
-        return Err(protocol("Transfer application changed after review or an earlier slice is not applied"));
+        || applied.canonical.to_f64() != handoff.get::<f64, _>("canonical_cumulative_before")
+        || exact_delta.to_f64() != input.local_delta
+        || exact_after.to_f64() != input.local_cumulative_after
+    {
+        return Err(protocol(
+            "Transfer application changed after review or an earlier slice is not applied",
+        ));
     }
     let application_uid = nucleus::new_uid("tla");
     let payload = serde_json::json!({
@@ -2636,8 +2714,17 @@ where
         &now.to_rfc3339(),
     )
     .await?;
-    crate::transfer_effects::apply_on(&mut tx, group.as_ref(), &fact, &occurrence,
-        &input.participant_person_uid, input.authorization_intent_uid.as_deref(), now, &sign).await?;
+    crate::transfer_effects::apply_on(
+        &mut tx,
+        group.as_ref(),
+        &fact,
+        &occurrence,
+        &input.participant_person_uid,
+        input.authorization_intent_uid.as_deref(),
+        now,
+        &sign,
+    )
+    .await?;
     tx.commit().await?;
     let application = sqlx::query("SELECT * FROM transfer_local_application WHERE uid = ?")
         .bind(&application_uid)
@@ -2709,27 +2796,51 @@ pub async fn store_application_handoff_detail(
     now: DateTime<Utc>,
 ) -> Result<ApplicationHandoffDetailRow, StoreError> {
     let mut tx = crate::write_tx(pool).await?;
-    if let Some(row) = sqlx::query("SELECT * FROM transfer_application_handoff_detail WHERE handoff_uid = ?").bind(handoff_uid).fetch_optional(&mut *tx).await? {
+    if let Some(row) =
+        sqlx::query("SELECT * FROM transfer_application_handoff_detail WHERE handoff_uid = ?")
+            .bind(handoff_uid)
+            .fetch_optional(&mut *tx)
+            .await?
+    {
         let stored = map_handoff_detail(row);
-        if stored.source_promise_uid != source_promise_uid || stored.canonical_quantity != canonical_quantity
-            || stored.canonical_unit_uid.as_deref() != canonical_unit_uid || stored.canonical_cumulative_before != canonical_cumulative_before
-            || stored.canonical_cumulative_after != canonical_cumulative_after || stored.canonical_remaining_after != canonical_remaining_after
-            || stored.application_direction != application_direction {
-            return Err(protocol("application handoff details changed during replay"));
+        if stored.source_promise_uid != source_promise_uid
+            || stored.canonical_quantity != canonical_quantity
+            || stored.canonical_unit_uid.as_deref() != canonical_unit_uid
+            || stored.canonical_cumulative_before != canonical_cumulative_before
+            || stored.canonical_cumulative_after != canonical_cumulative_after
+            || stored.canonical_remaining_after != canonical_remaining_after
+            || stored.application_direction != application_direction
+        {
+            return Err(protocol(
+                "application handoff details changed during replay",
+            ));
         }
         return Ok(stored);
     }
     let allocation: Option<(String, f64)> = sqlx::query_as("SELECT h.occurrence_uid, o.quantity FROM transfer_application_handoff h JOIN transfer_occurrence o ON o.uid = h.occurrence_uid JOIN promise p ON p.uid = ? AND p.party_uid = h.participant_person_uid WHERE h.uid = ?")
         .bind(source_promise_uid).bind(handoff_uid).fetch_optional(&mut *tx).await?;
     if let Some((occurrence, total)) = allocation {
-        let total = crate::transfer_cancellations::effective_total_on(&mut tx,&occurrence,crate::transfer_accounting::amount(total)?).await?;
-        let committed = crate::transfer_accounting::allocated_on(&mut tx, &occurrence, true).await?;
-        let after = crate::exact::sum_exact([committed, crate::transfer_accounting::amount(canonical_quantity)?])?;
-        if canonical_quantity <= 0.0 || committed.to_f64() != canonical_cumulative_before
+        let total = crate::transfer_cancellations::effective_total_on(
+            &mut tx,
+            &occurrence,
+            crate::transfer_accounting::amount(total)?,
+        )
+        .await?;
+        let committed =
+            crate::transfer_accounting::allocated_on(&mut tx, &occurrence, true).await?;
+        let after = crate::exact::sum_exact([
+            committed,
+            crate::transfer_accounting::amount(canonical_quantity)?,
+        ])?;
+        if canonical_quantity <= 0.0
+            || committed.to_f64() != canonical_cumulative_before
             || after.exact_numeric_cmp(total) == std::cmp::Ordering::Greater
             || after.to_f64() != canonical_cumulative_after
-            || crate::exact::difference(total, after)?.to_f64() != canonical_remaining_after {
-            return Err(protocol("Transfer application allocation changed after review"));
+            || crate::exact::difference(total, after)?.to_f64() != canonical_remaining_after
+        {
+            return Err(protocol(
+                "Transfer application allocation changed after review",
+            ));
         }
     }
     sqlx::query(

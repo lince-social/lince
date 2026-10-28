@@ -88,7 +88,7 @@ pub fn update(world: &mut World) {
         ), (
             Without<InfluenceArea>,
             Without<super::terrain::Effect>,
-            Without<crate::native::external_drop::Preview>,
+            Without<crate::native::canvas_item::Ephemeral>,
         )>()
         .iter(world)
         .map(|(e, i, p, m)| (e, *i, p.parent(), m.0))

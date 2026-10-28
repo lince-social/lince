@@ -81,6 +81,7 @@ pub struct AssertionMetadata {
     pub subject_uid: String,
     pub predicate_uid: String,
     pub object_uid: Option<String>,
+    pub object_uri: Option<String>,
     pub role: AssertionRole,
     pub quantity: Option<DecimalValue>,
     pub unit_uid: Option<String>,
@@ -153,6 +154,7 @@ pub struct AccessMetadataSnapshot {
     pub concepts: Vec<ConceptMetadata>,
     pub concept_parents: Vec<ConceptParentMetadata>,
     pub assertions: Vec<AssertionMetadata>,
+    pub resolved_links: BTreeMap<String, String>,
     pub places: BTreeSet<String>,
     pub role_ids: BTreeSet<i64>,
     pub visibility_rules: Vec<VisibilityRuleMetadata>,
@@ -433,6 +435,7 @@ pub async fn metadata_on(
                   + COALESCE(length(CAST(subject_uid AS BLOB)), 0)
                   + COALESCE(length(CAST(predicate_uid AS BLOB)), 0)
                   + COALESCE(length(CAST(object_uid AS BLOB)), 0)
+                  + COALESCE(length(CAST(object_uri AS BLOB)), 0)
                   + COALESCE(length(CAST(role AS BLOB)), 0)
                   + COALESCE(length(CAST(quantity_mantissa AS BLOB)), 0)
                   + COALESCE(length(CAST(unit_uid AS BLOB)), 0) + 8 AS row_bytes
@@ -543,12 +546,16 @@ pub async fn metadata_on(
     )
     .await?;
 
+    let source_stats = table_stats(connection,
+        "SELECT COUNT(*) AS row_count, COALESCE(SUM(row_bytes),0) AS total_bytes, COALESCE(MAX(row_bytes),0) AS largest_bytes FROM (SELECT length(CAST(record_uid AS BLOB))+length(CAST(source_uid AS BLOB))+length(CAST(uri AS BLOB))+length(CAST(hash AS BLOB)) AS row_bytes FROM record_source_location)",
+        limits.records.saturating_mul(64), limits.row_bytes, "Source location metadata").await?;
     let mut budget = ByteBudget::new(limits.metadata_bytes);
     for (stats, label) in [
         (record_stats, "Record metadata"),
         (concept_stats, "Concept metadata"),
         (parent_stats, "Concept parent metadata"),
         (assertion_stats, "Assertion metadata"),
+        (source_stats, "Source location metadata"),
         (place_stats, "Place metadata"),
         (role_stats, "Role metadata"),
         (visibility_stats, "Visibility rule metadata"),
@@ -676,19 +683,20 @@ pub async fn metadata_on(
 
     let assertion_rows = sqlx::query(
         "WITH bounded AS (
-             SELECT uid, subject_uid, predicate_uid, object_uid, role,
+             SELECT uid, subject_uid, predicate_uid, object_uid, object_uri, role,
                     quantity_mantissa, quantity_scale, unit_uid,
                     COALESCE(length(CAST(uid AS BLOB)), 0)
                   + COALESCE(length(CAST(subject_uid AS BLOB)), 0)
                   + COALESCE(length(CAST(predicate_uid AS BLOB)), 0)
                   + COALESCE(length(CAST(object_uid AS BLOB)), 0)
+                  + COALESCE(length(CAST(object_uri AS BLOB)), 0)
                   + COALESCE(length(CAST(role AS BLOB)), 0)
                   + COALESCE(length(CAST(quantity_mantissa AS BLOB)), 0)
                   + COALESCE(length(CAST(unit_uid AS BLOB)), 0) + 8 AS row_bytes
                FROM record_assertion
               WHERE retracted_at IS NULL
          )
-         SELECT uid, subject_uid, predicate_uid, object_uid, role,
+         SELECT uid, subject_uid, predicate_uid, object_uid, object_uri, role,
                 quantity_mantissa, quantity_scale, unit_uid
            FROM bounded WHERE row_bytes <= ? ORDER BY uid",
     )
@@ -707,6 +715,13 @@ pub async fn metadata_on(
         let subject_uid: String = row.try_get("subject_uid")?;
         let predicate_uid: String = row.try_get("predicate_uid")?;
         let object_uid: Option<String> = row.try_get("object_uid")?;
+        let object_uri: Option<String> = row.try_get("object_uri")?;
+        if object_uri.as_ref().is_some_and(|uri| {
+            uri.is_empty() || uri.len() > 8192 || uri.chars().any(char::is_control)
+        }) || (object_uri.is_some() && object_uid.is_some())
+        {
+            return Err(protocol("Invalid URI assertion endpoint"));
+        }
         let unit_uid: Option<String> = row.try_get("unit_uid")?;
         require_uid(&uid, "a", "Assertion")?;
         require_uid(&subject_uid, "r", "Assertion subject")?;
@@ -744,7 +759,10 @@ pub async fn metadata_on(
         let role_value: String = row.try_get("role")?;
         let role = assertion_role(&role_value)?;
         if role == AssertionRole::Identity
-            && (object_uid.is_some() || quantity.is_some() || unit_uid.is_some())
+            && (object_uid.is_some()
+                || object_uri.is_some()
+                || quantity.is_some()
+                || unit_uid.is_some())
         {
             return Err(protocol("identity Assertion has an invalid stored shape"));
         }
@@ -753,12 +771,22 @@ pub async fn metadata_on(
             subject_uid,
             predicate_uid,
             object_uid,
+            object_uri,
             role,
             quantity,
             unit_uid,
         });
     }
 
+    let resolved_links: BTreeMap<String,String> = sqlx::query_as::<_,(String,String)>("SELECT uid,target_uid FROM record_assertion_link WHERE object_uri IS NOT NULL AND target_uid IS NOT NULL AND retracted_at IS NULL")
+        .fetch_all(&mut *connection).await?.into_iter().collect();
+    for (assertion, target) in &resolved_links {
+        require_uid(assertion, "a", "Resolved assertion")?;
+        require_uid(target, "r", "Resolved assertion target")?;
+        if !assertion_ids.contains(assertion) || !record_kinds.contains_key(target) {
+            return Err(protocol("Invalid resolved assertion target"));
+        }
+    }
     let place_rows = sqlx::query(
         "SELECT uid FROM place
           WHERE COALESCE(length(CAST(uid AS BLOB)), 0) <= ? ORDER BY uid",
@@ -1090,6 +1118,7 @@ pub async fn metadata_on(
         concepts,
         concept_parents,
         assertions,
+        resolved_links,
         places,
         role_ids,
         visibility_rules,

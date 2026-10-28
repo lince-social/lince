@@ -16,6 +16,8 @@ pub(crate) struct SavedMap {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedMap);
+
 impl SavedMap {
     pub(crate) fn valid(&self) -> bool {
         self.camera.valid()

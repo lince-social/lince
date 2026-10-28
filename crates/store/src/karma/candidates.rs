@@ -154,10 +154,7 @@ where
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
         tx.rollback().await?;
-        return Ok(CandidateReviewCommit::Replayed {
-            state,
-            fact,
-        });
+        return Ok(CandidateReviewCommit::Replayed { state, fact });
     }
     let candidate = get_candidate_tx(&mut tx, &input.candidate_hash)
         .await?
@@ -302,10 +299,7 @@ where
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;
-    Ok(CandidateReviewCommit::Committed {
-        state,
-        fact,
-    })
+    Ok(CandidateReviewCommit::Committed { state, fact })
 }
 
 pub(crate) async fn insert_tx(

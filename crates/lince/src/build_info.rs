@@ -6,6 +6,7 @@ pub fn print() -> io::Result<()> {
         "revision": utils::build_info::revision(),
         "target": utils::build_info::target_triple(),
         "optimized": !cfg!(debug_assertions),
+        "content": {"embedded": false, "delivery": "external"},
         "features": {
             "ui": cfg!(feature = "ui"),
             "instinct": cfg!(feature = "instinct"),

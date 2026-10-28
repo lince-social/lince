@@ -11,6 +11,9 @@ use std::time::{Duration, Instant};
 
 use crate::native::protein_area::{RecordBinding, Source};
 
+mod recovery;
+pub(crate) use recovery::retry;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -81,11 +84,21 @@ mod tests {
     async fn scoped_laboratory_denies_real_bindings_and_keeps_ordinary_edits_live() {
         let (mut world, engine, uid, first, second) = fixture().await;
         let root = world.spawn_empty().id();
-        world.entity_mut(first).insert((ChildOf(root), crate::native::workspace::WorkspaceMember(1)));
-        world.entity_mut(second).insert((ChildOf(root), crate::native::workspace::WorkspaceMember(1)));
-        let temporary = world.spawn((ChildOf(root), crate::native::workspace::WorkspaceMember(2))).id();
-        let denied = world.spawn((ChildOf(temporary), EditableText::new("Private benchmark"))).id();
-        world.insert_resource(crate::native::laboratory::Laboratory::scoped_for_test(root, 2, 1));
+        world
+            .entity_mut(first)
+            .insert((ChildOf(root), crate::native::workspace::WorkspaceMember(1)));
+        world
+            .entity_mut(second)
+            .insert((ChildOf(root), crate::native::workspace::WorkspaceMember(1)));
+        let temporary = world
+            .spawn((ChildOf(root), crate::native::workspace::WorkspaceMember(2)))
+            .id();
+        let denied = world
+            .spawn((ChildOf(temporary), EditableText::new("Private benchmark")))
+            .id();
+        world.insert_resource(crate::native::laboratory::Laboratory::scoped_for_test(
+            root, 2, 1,
+        ));
         let record = world.get::<TextBinding>(first).unwrap().record.clone();
         attach(&mut world, denied, record, "body", None);
         assert!(world.get::<TextBinding>(denied).is_none());
@@ -97,14 +110,48 @@ mod tests {
         world.entity_mut(denied).insert(injected);
         assert!(!can_edit(&world, denied));
         assert!(can_edit(&world, first));
-        world.get_mut::<EditableText>(first).unwrap().editor.set_text("Ordinary live change");
+        world
+            .get_mut::<EditableText>(first)
+            .unwrap()
+            .editor
+            .set_text("Ordinary live change");
         update(&mut world);
-        assert_eq!(world.get::<EditableText>(second).unwrap().value().to_string(), "Ordinary live change");
-        assert_eq!(world.get::<EditableText>(denied).unwrap().value().to_string(), "Private benchmark");
-        pump(&mut world, |world| world.resource::<Bindings>().documents.values()
-            .all(|document| document.pending.is_empty() && !document.saving)).await;
-        assert_eq!(engine.doc_text(&uid).await.unwrap().1, "Ordinary live change");
-        assert_eq!(world.get::<EditableText>(denied).unwrap().value().to_string(), "Private benchmark");
+        assert_eq!(
+            world
+                .get::<EditableText>(second)
+                .unwrap()
+                .value()
+                .to_string(),
+            "Ordinary live change"
+        );
+        assert_eq!(
+            world
+                .get::<EditableText>(denied)
+                .unwrap()
+                .value()
+                .to_string(),
+            "Private benchmark"
+        );
+        pump(&mut world, |world| {
+            world
+                .resource::<Bindings>()
+                .documents
+                .values()
+                .all(|document| document.pending.is_empty() && !document.saving)
+        })
+        .await;
+        assert_eq!(
+            engine.doc_text(&uid).await.unwrap().1,
+            "Ordinary live change"
+        );
+        assert_eq!(
+            world
+                .get::<EditableText>(denied)
+                .unwrap()
+                .value()
+                .to_string(),
+            "Private benchmark"
+        );
     }
 
     #[tokio::test]
@@ -681,6 +728,7 @@ struct Document {
     loaded: bool,
     joined: bool,
     joining: Option<Instant>,
+    recovery_join: Option<String>,
     writable: Vec<String>,
     revision: u64,
     saved: u64,
@@ -710,6 +758,7 @@ impl Document {
             loaded: false,
             joined: false,
             joining: None,
+            recovery_join: None,
             writable: Vec::new(),
             revision: 0,
             saved: 0,
@@ -798,7 +847,9 @@ impl Plugin for RecordBindingPlugin {
 }
 
 pub fn can_edit(world: &World, entity: Entity) -> bool {
-    if crate::native::laboratory::blocked(world, entity) { return false; }
+    if crate::native::laboratory::blocked(world, entity) {
+        return false;
+    }
     let Some(binding) = world.get::<TextBinding>(entity) else {
         return false;
     };
@@ -810,14 +861,21 @@ pub fn can_edit(world: &World, entity: Entity) -> bool {
         })
 }
 
-fn gate(bindings: Res<Bindings>, access: crate::native::laboratory::OwnerAccess, mut fields: Query<(Entity, &TextBinding, &mut EditableText)>) {
+fn gate(
+    bindings: Res<Bindings>,
+    access: crate::native::laboratory::OwnerAccess,
+    mut fields: Query<(Entity, &TextBinding, &mut EditableText)>,
+) {
     for (entity, binding, mut text) in &mut fields {
-        let writable = !access.blocked(entity) && bindings
-            .documents
-            .get(&key(&binding.record))
-            .is_some_and(|document| {
-                document.joined && document.writable.contains(&binding.property) && !document.failed
-            });
+        let writable = !access.blocked(entity)
+            && bindings
+                .documents
+                .get(&key(&binding.record))
+                .is_some_and(|document| {
+                    document.joined
+                        && document.writable.contains(&binding.property)
+                        && !document.failed
+                });
         if !writable {
             text.pending_paste = None;
             text.pending_edits.retain(|edit| {
@@ -859,7 +917,9 @@ pub fn attach(
     property: &str,
     status: Option<Entity>,
 ) {
-    if crate::native::laboratory::blocked(world, entity) { return; }
+    if crate::native::laboratory::blocked(world, entity) {
+        return;
+    }
     if let Some(status) = status {
         world.entity_mut(status).insert(BindingStatus);
     }
@@ -913,15 +973,24 @@ pub fn receive(world: &mut World, source: Source, message: ServerMessage) {
             continue;
         }
         let applies = match &message {
-            ServerMessage::CollabState { record_uid, .. }
-            | ServerMessage::CollabChange { record_uid, .. }
+            ServerMessage::CollabState { id, record_uid, .. } => {
+                record_uid == uid
+                    && document
+                        .recovery_join
+                        .as_ref()
+                        .is_none_or(|expected| expected == id)
+            }
+            ServerMessage::CollabChange { record_uid, .. }
             | ServerMessage::CollabCursors { record_uid, .. } => record_uid == uid,
             ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => {
                 document
                     .inflight
                     .as_ref()
                     .is_some_and(|(pending, _)| pending == id)
-                    || id == &format!("binding-join-{uid}")
+                    || document.recovery_join.as_ref().map_or_else(
+                        || id == &format!("binding-join-{uid}"),
+                        |expected| id == expected,
+                    )
                     || id == crate::native::cell_bridge::CONNECTION
             }
             _ => false,
@@ -1399,7 +1468,10 @@ fn update(world: &mut World) {
             if document.sender.as_ref().is_some_and(|sender| {
                 sender
                     .try_send(ClientMessage::CollabJoin {
-                        id: format!("binding-join-{}", key.1),
+                        id: document
+                            .recovery_join
+                            .clone()
+                            .unwrap_or_else(|| format!("binding-join-{}", key.1)),
                         record_uid: key.1.clone(),
                     })
                     .is_ok()

@@ -112,12 +112,12 @@ fn update(world: &mut World) {
         .filter(|(entity, area, parent, member)| {
             !crate::native::laboratory::blocked(world, *entity)
                 && crate::native::influence_report::activity(
-                world,
-                *entity,
-                area,
-                parent.parent(),
-                member.0,
-            ) == crate::native::influence_report::Outcome::Active
+                    world,
+                    *entity,
+                    area,
+                    parent.parent(),
+                    member.0,
+                ) == crate::native::influence_report::Outcome::Active
                 && area.sound.is_some()
                 && area.validate()
                 && crate::native::topology::holes::live(world, parent.parent(), member.0)

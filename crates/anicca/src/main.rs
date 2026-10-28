@@ -41,7 +41,8 @@ fn run() -> Result<(), String> {
                                 anicca::grammar::grammar::Declaration::Extension(_) => {
                                     extensions += 1
                                 }
-                                anicca::grammar::grammar::Declaration::Statement(_) => {}
+                                anicca::grammar::grammar::Declaration::Statement(_)
+                                | anicca::grammar::grammar::Declaration::Import(_) => {}
                             }
                         }
                     }

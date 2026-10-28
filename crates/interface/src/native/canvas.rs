@@ -1,6 +1,6 @@
 use bevy::{input_focus::InputFocus, math::DVec2, prelude::*, ui::UiSystems};
 
-#[derive(Component, Clone, Copy, Reflect)]
+#[derive(Component, Clone, Copy, PartialEq, Reflect)]
 #[reflect(Component)]
 #[require(Node)]
 pub struct CanvasView {
@@ -19,8 +19,28 @@ impl Default for CanvasView {
 
 pub use crate::native::canvas_item::CanvasItem;
 
+#[derive(Component, Clone, Copy)]
+pub(crate) struct ItemPreview(pub CanvasItem);
+
+#[derive(Component, Clone, Copy)]
+pub(crate) struct SpatialPreview(pub crate::native::topology::Spatial);
+
+pub(crate) fn presented_spatial(world: &World, entity: Entity) -> crate::native::topology::Spatial {
+    world.get::<SpatialPreview>(entity).map_or_else(
+        || crate::native::topology::spatial(world, entity),
+        |preview| preview.0,
+    )
+}
+
+pub fn presented(world: &World, entity: Entity) -> Option<CanvasItem> {
+    world
+        .get::<ItemPreview>(entity)
+        .map(|preview| preview.0)
+        .or_else(|| world.get::<CanvasItem>(entity).copied())
+}
+
 impl CanvasView {
-    pub const MIN_ZOOM: f64 = 0.1;
+    pub const MIN_ZOOM: f64 = 0.0001;
     pub const MAX_ZOOM: f64 = 3.0;
 
     pub fn set_zoom(&mut self, zoom: f64) {
@@ -100,6 +120,7 @@ pub(crate) fn project_canvas(
         Option<&crate::native::area_effects::AreaScale>,
         Option<&crate::native::topology::presentation::Surface>,
         Option<&crate::native::topology::assets::ImportedAsset>,
+        Option<&ItemPreview>,
     )>,
     parents: Query<&ChildOf>,
     layouts: Query<&crate::native::layout::LayoutRuntime>,
@@ -107,9 +128,21 @@ pub(crate) fn project_canvas(
     suppressed: Query<(), With<crate::native::layout::desktop::Suppressed>>,
     mut focus: ResMut<InputFocus>,
 ) {
-    for (entity, parent, item, mut node, mut transform, member, pinned, scale, surface, imported) in
-        &mut items
+    for (
+        entity,
+        parent,
+        item,
+        mut node,
+        mut transform,
+        member,
+        pinned,
+        scale,
+        surface,
+        imported,
+        preview,
+    ) in &mut items
     {
+        let item = preview.map_or(item, |preview| &preview.0);
         if local_views.contains(parent.parent()) {
             continue;
         }

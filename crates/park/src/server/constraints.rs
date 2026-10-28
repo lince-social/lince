@@ -75,6 +75,12 @@ impl Server {
         })
     }
 
+    pub fn pointer_constrained(&self) -> bool {
+        let Some(pointer) = self.state.seat.get_pointer() else { return false; };
+        let Some(surface) = pointer.current_focus() else { return false; };
+        with_pointer_constraint(&surface, &pointer, |constraint| constraint.is_some_and(|constraint| constraint.is_active()))
+    }
+
     pub fn constrain_pointer(&self, surface: &WlSurface, previous: [f64; 2], proposed: [f64; 2], size: [f64; 2]) -> [f64; 2] {
         if !self.state.constraint_eligible(surface) { return proposed; }
         let Some(pointer) = self.state.seat.get_pointer() else { return proposed };

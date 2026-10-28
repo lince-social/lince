@@ -82,7 +82,9 @@ pub async fn grant_on(
 
 pub async fn revoke(pool: &SqlitePool, role_id: i64, permission_id: i64) -> Result<(), StoreError> {
     let mut tx = crate::write_tx(pool).await?;
-    let recoverable = !crate::person_roles::recovery_people_on(&mut tx).await?.is_empty();
+    let recoverable = !crate::person_roles::recovery_people_on(&mut tx)
+        .await?
+        .is_empty();
     sqlx::query("DELETE FROM role_permission WHERE role_id = ? AND permission_id = ?")
         .bind(role_id)
         .bind(permission_id)
@@ -561,10 +563,16 @@ pub async fn list_users(
     })
 }
 
-pub async fn list_actors(pool: &SqlitePool) -> Result<Vec<(String, String, String, String)>, StoreError> {
+pub async fn list_actors(
+    pool: &SqlitePool,
+) -> Result<Vec<(String, String, String, String)>, StoreError> {
     let rows = sqlx::query_as::<_, (String, String, String, String)>("SELECT p.uid, COALESCE(c.username, ''), p.head, COALESCE(r.name, '') FROM record p LEFT JOIN person_credential c ON c.person_uid = p.uid LEFT JOIN person_access a ON a.person_uid = p.uid LEFT JOIN role r ON r.id = a.role_id WHERE p.kind = 'person' AND p.deleted_at IS NULL ORDER BY p.head LIMIT 4097")
         .fetch_all(pool).await?;
-    if rows.len() > 4096 { return Err(sqlx::Error::Protocol("Actor catalogue exceeds its bounds".into())); }
+    if rows.len() > 4096 {
+        return Err(sqlx::Error::Protocol(
+            "Actor catalogue exceeds its bounds".into(),
+        ));
+    }
     Ok(rows)
 }
 

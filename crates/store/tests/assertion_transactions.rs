@@ -121,6 +121,7 @@ async fn assert_payload(store: &Store, expected: &AssertionRow) {
             "predicate_uid": stored.predicate_uid,
             "predicate_revision": stored.predicate_revision,
             "object_uid": stored.object_uid,
+            "object_uri": stored.object_uri,
             "role": stored.role,
             "quantity_mantissa": stored.quantity.map(|quantity| quantity.mantissa().to_string()),
             "quantity_scale": stored.quantity.map(|quantity| quantity.scale()),
@@ -1139,4 +1140,135 @@ async fn assertion_transactions_missing_or_deleted_local_identity_cannot_silentl
     let uid = nucleus::new_uid("a");
     let inserted = f.insert(&uid, f.new_assertion()).await;
     assert_payload(&f.store, &inserted).await;
+}
+
+#[tokio::test]
+async fn uri_endpoints_are_durable_distinct_from_unary_and_retract_independently() {
+    let fixture = Fixture::new().await;
+    let mut tx = store::write_tx(&fixture.store.pool).await.unwrap();
+    let unary = nucleus::new_uid("a");
+    assertions::insert_tx(&mut tx, &unary, fixture.new_assertion())
+        .await
+        .unwrap();
+    let first = nucleus::new_uid("a");
+    let second = nucleus::new_uid("a");
+    for (uid, uri) in [
+        (
+            &first,
+            "https://example.org/Plato.lingua#r_00000000000000000000000001",
+        ),
+        (
+            &second,
+            "https://example.org/Aristotle.lingua#r_00000000000000000000000002",
+        ),
+    ] {
+        let row = assertions::insert_uri_tx(&mut tx, uid, fixture.new_assertion(), uri)
+            .await
+            .unwrap();
+        assert_eq!(row.object_uri.as_deref(), Some(uri));
+        assert!(row.object_uid.is_none());
+    }
+    tx.commit().await.unwrap();
+    let projected =
+        assertions::for_subjects(&fixture.store.pool, std::slice::from_ref(&fixture.subject))
+            .await
+            .unwrap();
+    assert_eq!(projected.len(), 3);
+    let value: String = sqlx::query_scalar("SELECT value FROM sync_op WHERE tbl='record_assertion' AND uid=? AND kind='set' ORDER BY seq DESC LIMIT 1").bind(&first).fetch_one(&fixture.store.pool).await.unwrap();
+    assert!(
+        serde_json::from_str::<Value>(&value).unwrap()["object_uri"]
+            .as_str()
+            .unwrap()
+            .contains("Plato.lingua")
+    );
+    let mut tx = store::write_tx(&fixture.store.pool).await.unwrap();
+    assertions::retract_tx(&mut tx, &first, Some(&fixture.actor))
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert!(
+        assertions::get(&fixture.store.pool, &first)
+            .await
+            .unwrap()
+            .unwrap()
+            .retracted_at
+            .is_some()
+    );
+    for uid in [&unary, &second] {
+        assert!(
+            assertions::get(&fixture.store.pool, uid)
+                .await
+                .unwrap()
+                .unwrap()
+                .retracted_at
+                .is_none()
+        );
+    }
+}
+
+#[tokio::test]
+async fn accepted_source_locations_resolve_links_without_changing_the_uri_assertion() {
+    let fixture = Fixture::new().await;
+    let authored = "r_00000000000000000000000001";
+    let document = "https://example.org/Plato.lingua";
+    let uri = format!("{document}#{authored}");
+    let uid = nucleus::new_uid("a");
+    let mut tx = store::write_tx(&fixture.store.pool).await.unwrap();
+    assertions::insert_uri_tx(&mut tx, &uid, fixture.new_assertion(), &uri)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert!(
+        assertions::get(&fixture.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap()
+            .resolved_object_uid
+            .is_none()
+    );
+    let mut tx = store::write_tx(&fixture.store.pool).await.unwrap();
+    store::source_locations::remember_on(
+        &mut tx,
+        &fixture.object,
+        authored,
+        document,
+        &"a".repeat(64),
+    )
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+    let row = assertions::get(&fixture.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(row.object_uri.as_deref(), Some(uri.as_str()));
+    assert!(row.object_uid.is_none());
+    assert_eq!(
+        row.resolved_object_uid.as_deref(),
+        Some(fixture.object.as_str())
+    );
+    let edges = assertions::binary_of_predicate(&fixture.store.pool, &fixture.predicate)
+        .await
+        .unwrap();
+    assert_eq!(edges.len(), 1);
+    assert_eq!(edges[0].object_uid, fixture.object);
+    let mut tx = store::write_tx(&fixture.store.pool).await.unwrap();
+    store::source_locations::remember_on(
+        &mut tx,
+        &fixture.actor,
+        authored,
+        document,
+        &"a".repeat(64),
+    )
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+    assert!(
+        assertions::get(&fixture.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap()
+            .resolved_object_uid
+            .is_none()
+    );
 }

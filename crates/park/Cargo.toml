@@ -10,11 +10,12 @@ description = "Wayland window management and desktop policies for Lince Park."
 [features]
 graphics-probe = ["dep:ash", "dep:pollster", "dep:serde", "dep:serde_json", "dep:wgpu", "dep:rustix", "smithay/backend_egl", "smithay/renderer_gl", "smithay/backend_vulkan"]
 graphics-gate = ["graphics-probe", "dep:bevy", "dep:lince-interface", "lince-interface/ui", "dep:wayland-client", "dep:wayland-protocols", "smithay/backend_winit"]
-server = ["dep:lince-interface", "dep:rustix", "dep:wayland-protocols-wlr", "dep:lince-smithay-capture"]
+server = ["dep:lince-interface", "dep:rustix", "dep:serde_json", "dep:wayland-scanner", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:lince-smithay-capture"]
 server-tests = ["server", "dep:serde_json", "dep:wayland-client", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:wayland-protocols-misc", "dep:tempfile"]
 clipboard-gate = ["server", "dep:bevy_clipboard", "dep:wayland-client"]
-native-presentation = ["graphics-probe", "server", "dep:bevy", "lince-interface/native-presentation", "dep:tokio", "dep:tempfile", "dep:cell", "dep:engine", "dep:nucleus"]
+native-presentation = ["graphics-probe", "server", "dep:bevy", "lince-interface/native-presentation", "dep:tokio", "dep:tempfile", "dep:cell", "dep:engine", "dep:nucleus", "dep:accesskit", "dep:accesskit_unix"]
 native-client-gate = ["native-presentation", "graphics-gate"]
+accessibility-gate = ["native-presentation", "dep:zbus", "dep:atspi-common"]
 worker-gate = ["native-presentation", "server-tests"]
 nested = ["native-presentation", "smithay/backend_winit", "dep:wayland-client", "dep:wayland-protocols"]
 session = ["nested", "smithay/backend_drm", "smithay/backend_gbm", "smithay/backend_libinput", "smithay/backend_udev", "smithay/backend_session_libseat", "lince-interface/activation", "tokio/signal", "tokio/macros"]
@@ -32,9 +33,10 @@ serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 wgpu = { version = "=29.0.4", default-features = false, features = ["std", "vulkan", "wgsl"], optional = true }
 lince-interface = { workspace = true, optional = true }
-rustix = { version = "=1.1.4", features = ["event", "time", "fs", "process", "net"], optional = true }
+rustix = { version = "=1.1.4", features = ["event", "time", "fs", "process", "net", "rand"], optional = true }
+wayland-scanner = { version = "=0.31.11", optional = true }
 wayland-client = { version = "=0.31.15", optional = true }
-wayland-protocols = { version = "=0.32.13", features = ["client"], optional = true }
+wayland-protocols = { version = "=0.32.13", features = ["client", "server", "staging"], optional = true }
 wayland-protocols-wlr = { version = "=0.3.12", features = ["client", "server"], optional = true }
 wayland-protocols-misc = { version = "=0.3.12", features = ["client"], optional = true }
 tokio = { workspace = true, optional = true }
@@ -42,9 +44,18 @@ tempfile = { version = "=3.27.0", optional = true }
 cell = { workspace = true, optional = true }
 engine = { workspace = true, optional = true }
 nucleus = { workspace = true, optional = true }
+accesskit = { version = "=0.24.1", optional = true }
+accesskit_unix = { version = "=0.21.1", optional = true }
+zbus = { version = "=5.19.0", default-features = false, features = ["async-io", "blocking-api"], optional = true }
+atspi-common = { version = "=0.13.0", default-features = false, optional = true }
 
 [dev-dependencies]
+sha2.workspace = true
+store = { workspace = true }
 tempfile = "=3.27.0"
+
+[build-dependencies]
+pkg-config = "=0.3.34"
 
 [[example]]
 name = "graphics_probe"
@@ -84,6 +95,14 @@ required-features = ["server-tests"]
 
 [[example]]
 name = "input_probe"
+required-features = ["server-tests"]
+
+[[example]]
+name = "park_control"
+required-features = ["server-tests"]
+
+[[example]]
+name = "park_control_probe"
 required-features = ["server-tests"]
 
 [[example]]

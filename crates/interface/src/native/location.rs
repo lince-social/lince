@@ -6,9 +6,13 @@ mod portal;
 
 pub(crate) async fn locate_once() -> Result<nucleus::location::Fix, String> {
     #[cfg(target_os = "linux")]
-    { portal::locate_once().await }
+    {
+        portal::locate_once().await
+    }
     #[cfg(not(target_os = "linux"))]
-    { Err("One-time device location is unavailable on this platform".into()) }
+    {
+        Err("One-time device location is unavailable on this platform".into())
+    }
 }
 
 pub struct LocationPlugin;
@@ -58,7 +62,11 @@ fn copy_reference(
         .collect();
     for request in requests {
         if crate::native::laboratory::blocked(world, request.panel) {
-            ui::reference_copied(world, request.panel, Err("Clipboard is unavailable in the Laboratory".into()));
+            ui::reference_copied(
+                world,
+                request.panel,
+                Err("Clipboard is unavailable in the Laboratory".into()),
+            );
             continue;
         }
         let result = world
@@ -160,7 +168,7 @@ impl crate::native::actions::Action for Open {
             )
         };
         if let Some(reference) = &self.reference {
-            let _ = ui::load_reference(world,panel,reference);
+            let _ = ui::load_reference(world, panel, reference);
         }
         #[cfg(target_os = "linux")]
         {
@@ -225,14 +233,53 @@ pub fn record_controls(
     );
 }
 
-pub fn sharing_review(world: &mut World,parent:Entity,record:&str,transfer:Option<&str>,person:Option<&str>,caption:&str) {
-    crate::native::sand_panel::button(world,parent,parent,caption,Open {record:record.into(),transfer:transfer.map(str::to_owned),person:person.filter(|person|!person.is_empty()).map(str::to_owned),observer:false,reference:None});
+pub fn sharing_review(
+    world: &mut World,
+    parent: Entity,
+    record: &str,
+    transfer: Option<&str>,
+    person: Option<&str>,
+    caption: &str,
+) {
+    crate::native::sand_panel::button(
+        world,
+        parent,
+        parent,
+        caption,
+        Open {
+            record: record.into(),
+            transfer: transfer.map(str::to_owned),
+            person: person
+                .filter(|person| !person.is_empty())
+                .map(str::to_owned),
+            observer: false,
+            reference: None,
+        },
+    );
 }
 
 pub fn invitation_controls(world: &mut World, parent: Entity, body: &str) {
-    let Some(reference) = body.lines().map(str::trim).find(|line|nucleus::location::Invitation::parse(line).is_ok()) else {return;};
-    let container = crate::native::sand_panel::column(world,parent);
-    crate::native::sand_panel::button(world,container,container,"Open location invitation",Open {record:String::new(),transfer:None,person:None,observer:true,reference:Some(reference.into())});
+    let Some(reference) = body
+        .lines()
+        .map(str::trim)
+        .find(|line| nucleus::location::Invitation::parse(line).is_ok())
+    else {
+        return;
+    };
+    let container = crate::native::sand_panel::column(world, parent);
+    crate::native::sand_panel::button(
+        world,
+        container,
+        container,
+        "Open location invitation",
+        Open {
+            record: String::new(),
+            transfer: None,
+            person: None,
+            observer: true,
+            reference: Some(reference.into()),
+        },
+    );
 }
 
 fn send(
@@ -310,7 +357,9 @@ fn receive(
         .unwrap_or_default();
     for message in messages {
         match message.0 {
-            cell::ServerMessage::SessionAuthenticated {person,..} => ui::actor_changed(world,&person),
+            cell::ServerMessage::SessionAuthenticated { person, .. } => {
+                ui::actor_changed(world, &person)
+            }
             cell::ServerMessage::ActionOk { id, data, .. } => {
                 ui::receive(world, &id, Ok(data.unwrap_or(serde_json::Value::Null)));
             }
@@ -339,13 +388,19 @@ fn capture(world: &mut World) {
             let Some(engine) = engine.upgrade() else {
                 break;
             };
-            let sources =
-                engine.location_sources().await.into_iter().filter(|source| {
+            let sources = engine
+                .location_sources()
+                .await
+                .into_iter()
+                .filter(|source| {
                     source.settings.source_kind == nucleus::location::SourceKind::Device
-                }).collect::<Vec<_>>();
-            if sources.is_empty() {continue;}
+                })
+                .collect::<Vec<_>>();
+            if sources.is_empty() {
+                continue;
+            }
             #[cfg(target_os = "linux")]
-            let result = portal::capture(&engine,&sources).await;
+            let result = portal::capture(&engine, &sources).await;
             #[cfg(not(target_os = "linux"))]
             let result: Result<(), String> = Err("Use a manual source on this platform".into());
             if result.is_err() {

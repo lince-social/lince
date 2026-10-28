@@ -33,6 +33,8 @@ pub(crate) struct SavedProteinCastle {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedProteinCastle);
+
 impl SavedProteinCastle {
     pub(crate) fn valid(&self) -> bool {
         self.draft.valid_storage()

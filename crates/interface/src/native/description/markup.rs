@@ -37,10 +37,33 @@ pub(super) fn render(
                 super::assets::spawn(world, parent, source, context);
                 continue;
             }
+            let mut cursor = Some(context.owner);
+            let mut base = None;
+            while let Some(entity) = cursor {
+                if let Some(value) = world.get::<crate::native::source_view::ReferenceBase>(entity)
+                {
+                    base = Some(value.0.clone());
+                    break;
+                }
+                cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+            }
+            let resolved = if source.starts_with("data:") {
+                Ok(source.clone())
+            } else if let Some(base) = base {
+                lince_resources::resolve(&base, source)
+            } else {
+                lince_resources::address(source).map(|uri| uri.to_string())
+            };
+            let Ok(source) = resolved else {
+                continue;
+            };
+            if !matches!(context.source, Source::Local) && source.starts_with("file:") {
+                continue;
+            }
             pictures::spawn(
                 world,
                 parent,
-                source,
+                &source,
                 &block
                     .runs
                     .iter()
@@ -130,16 +153,14 @@ pub(super) fn render(
                 world.entity_mut(entity).insert(bevy::text::Strikethrough);
             }
             if let Some(reference) = reference {
-                if !reference.contains("://") {
-                    world.entity_mut(entity).insert(bevy::text::Underline);
-                    links.push((
-                        index + 1,
-                        Link {
-                            reference,
-                            context: context.clone(),
-                        },
-                    ));
-                }
+                world.entity_mut(entity).insert(bevy::text::Underline);
+                links.push((
+                    index + 1,
+                    Link {
+                        reference,
+                        context: context.clone(),
+                    },
+                ));
             }
         }
         if !links.is_empty() {
@@ -240,4 +261,42 @@ fn keyboard(
         _ => return,
     }
     event.propagate(false);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn absolute_relative_and_fragment_links_are_actionable_without_prefetch() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Font>>();
+        world.init_resource::<crate::native::theme::Typography>();
+        let parent = world.spawn(Node::default()).id();
+        render(
+            &mut world,
+            parent,
+            "[Online](https://example.org/Plato.lingua) [Nearby](../Plato.lingua) [Here](#r_00000000000000000000000001)",
+            &Context {
+                owner: parent,
+                source: Source::Local,
+            },
+            Vec::new(),
+        );
+        let links = world.query::<&ParagraphLinks>().single(&world).unwrap();
+        assert_eq!(links.links.len(), 3);
+        assert_eq!(
+            links.links[0].1.reference,
+            "https://example.org/Plato.lingua"
+        );
+        assert_eq!(links.links[1].1.reference, "../Plato.lingua");
+        assert_eq!(links.links[2].1.reference, "#r_00000000000000000000000001");
+        assert_eq!(
+            world
+                .query::<&crate::native::source_view::SourceView>()
+                .iter(&world)
+                .count(),
+            0
+        );
+    }
 }

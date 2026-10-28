@@ -638,7 +638,10 @@ fn show(world: &mut World, owner: Entity, step: Step) {
             world,
             content,
             owner,
-            if matches!(step, Step::Agent | Step::Manage | Step::Connections | Step::Assistant) {
+            if matches!(
+                step,
+                Step::Agent | Step::Manage | Step::Connections | Step::Assistant
+            ) {
                 "Close"
             } else {
                 "Cancel"
@@ -1270,7 +1273,10 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
         .as_ref()
         .is_none_or(|previous| previous.agent_info != saved.agent_info);
     let label = panel.status;
-    let next = if matches!(step, Step::Agent | Step::Manage | Step::Connections | Step::Assistant) {
+    let next = if matches!(
+        step,
+        Step::Agent | Step::Manage | Step::Connections | Step::Assistant
+    ) {
         step
     } else if saved.login_pending {
         Step::Browser
@@ -1604,10 +1610,10 @@ fn protect_keys(mut fields: Query<&mut EditableText, With<SecretField>>) {
 }
 
 mod agent;
+mod assistant;
 mod connections;
 mod live;
 mod management;
-mod assistant;
 mod questions;
 #[cfg(test)]
 mod tests;

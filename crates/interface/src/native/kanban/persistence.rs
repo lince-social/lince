@@ -10,6 +10,8 @@ pub(crate) struct SavedKanban {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedKanban);
+
 impl SavedKanban {
     pub(crate) fn areas(&self) -> impl Iterator<Item = &String> {
         self.board.ids()

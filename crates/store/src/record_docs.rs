@@ -1,4 +1,4 @@
-use chrono::{DateTime};
+use chrono::DateTime;
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
 use crate::StoreError;

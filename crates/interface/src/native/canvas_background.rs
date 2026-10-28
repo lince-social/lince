@@ -212,7 +212,16 @@ fn draw(world: &mut World) {
                         .number()
                 })
                 .unwrap_or(1.0),
-            center: view.center,
+            center: view.center
+                + world
+                    .get::<crate::native::layout::desktop::HostViewport>(root)
+                    .map_or(DVec2::ZERO, |viewport| {
+                        ((target.logical_size().as_dvec2()
+                            - DVec2::from_array(viewport.0.bounds.size()))
+                            * 0.5
+                            + DVec2::from_array(viewport.0.raster.origin))
+                            / view.zoom
+                    }),
             zoom: view.zoom,
             viewport: target.logical_size(),
             colors: current(world, root),

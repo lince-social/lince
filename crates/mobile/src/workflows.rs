@@ -947,6 +947,12 @@ pub fn render(world: &mut World, parent: Entity) {
     }
     match world.resource::<Mobile>().navigation.current.clone() {
         Page::Transfers => {
+            app::button(
+                world,
+                parent,
+                "Transport",
+                app::Intent::Transport(crate::transport::Intent::Enter),
+            );
             discovery::entry(world, parent, None);
             let row = controls::row(world, parent);
             for preset in model::PRESETS {
@@ -1062,6 +1068,9 @@ pub fn render(world: &mut World, parent: Entity) {
             for form in model::actions::outcome_forms(&transfer, &person) {
                 let caption = form.title.clone();
                 button(world, parent, &caption, Intent::Open(form));
+            }
+            for form in model::actions::lifecycle_forms(&transfer, &person) {
+                button(world, parent, &form.title.clone(), Intent::Open(form));
             }
             let record = model::transport::sharing_record(&transfer, &person);
             app::button(

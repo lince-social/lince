@@ -389,13 +389,16 @@ fn index(world: &mut World, host: Entity) -> Result<Editing, String> {
 }
 
 pub(crate) fn owner(world: &World, entity: Entity) -> Entity {
-    if let Some(binding) = world.get::<crate::native::protein_area::RecordBinding>(entity)
-        && world
-            .get::<crate::native::area::InfluenceArea>(binding.area)
-            .and_then(|area| area.protein.as_ref())
-            .is_some_and(|config| config.record_cards && config.draft.query["limit"] == 1)
+    if let Some(owner) = crate::native::protein_area::row_area(world, entity).or_else(|| {
+        world
+            .get::<crate::native::protein_area::RecordBinding>(entity)
+            .map(|binding| binding.area)
+    }) && world
+        .get::<crate::native::area::InfluenceArea>(owner)
+        .and_then(|area| area.protein.as_ref())
+        .is_some_and(|config| config.record_cards && config.draft.query["limit"] == 1)
     {
-        return binding.area;
+        return owner;
     }
     if let Some(area) = world.get::<crate::native::area::InfluenceArea>(entity)
         && let Some(parent) = world.get::<ChildOf>(entity)

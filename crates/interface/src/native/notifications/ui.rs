@@ -2,6 +2,7 @@ use super::{
     NotificationAction, NotificationBadge, NotificationCenter, NotificationCount,
     NotificationPanel, NotificationToast, Notifications, ToastStack,
 };
+use crate::i18n::Token as Tr;
 use crate::native::{
     actions::{Action, ActionButton, KeyBinding, KeyBindings, Modifiers},
     edit_mode::{EditAction, EditMode},
@@ -30,7 +31,7 @@ pub(super) fn setup(world: &mut World) {
             toolbar,
             NotificationAction::Toggle,
             Icon::Bell,
-            "Notifications",
+            Tr::Notifications.text(),
         );
         world.entity_mut(toggle).insert(NotificationCount);
         let index = world
@@ -196,14 +197,14 @@ pub(super) fn toggle(world: &mut World, target: Entity) {
             ChildOf(drawer),
         ))
         .id();
-    label(world, heading, "Notifications", 22.0);
+    label(world, heading, Tr::Notifications.text(), 22.0);
     let close = control(
         world,
         root,
         heading,
         NotificationAction::Close,
         Icon::Close,
-        "Close notifications",
+        Tr::CloseNotifications.text(),
     );
     let list = world
         .spawn((
@@ -354,7 +355,7 @@ pub(super) fn render_toasts(world: &mut World) {
                         row_gap: px(8),
                         ..default()
                     },
-                    GlobalZIndex(22),
+                    GlobalZIndex(20),
                     ChildOf(root),
                 ))
                 .id();
@@ -403,7 +404,7 @@ pub(super) fn render_panels(world: &mut World) {
             ChildOf(panel),
         ));
         if notices.is_empty() {
-            label(world, panel, "No notifications.", 15.0);
+            label(world, panel, Tr::NoNotificationsShort.text(), 15.0);
             continue;
         }
         control(
@@ -412,7 +413,7 @@ pub(super) fn render_panels(world: &mut World) {
             panel,
             NotificationAction::DeleteAll,
             Icon::Delete,
-            "Delete all notifications",
+            Tr::DeleteNotifications.text(),
         );
         for notice in notices.iter().rev() {
             card(world, root, panel, notice, false);
@@ -486,13 +487,13 @@ fn card(
         (
             NotificationAction::CloseToast(notice.id),
             Icon::Close,
-            "Close notification toast",
+            Tr::CloseToast.text(),
         )
     } else {
         (
             NotificationAction::Delete(notice.id),
             Icon::Delete,
-            "Delete notification",
+            Tr::DeleteNotification.text(),
         )
     };
     control(world, root, row, action, icon, label);

@@ -18,6 +18,8 @@ pub(super) struct Request {
     pub owner: Entity,
     pub key: Key,
     pub tiles: Vec<u32>,
+    pub resource: Option<lince_resources::Resource>,
+    pub locate: bool,
     pub wake: Option<crate::native::wake::WakeSignal>,
 }
 
@@ -27,12 +29,18 @@ pub(super) enum Job {
 }
 
 pub(super) struct Rendered {
+    pub position: Option<Position>,
     pub info: Info,
     pub layout: Layout,
     pub tiles: Vec<(u32, lince_document::Tile)>,
 }
 
 pub(super) enum Reply {
+    Retained {
+        owner: Entity,
+        path: String,
+        result: Result<String, String>,
+    },
     Render {
         owner: Entity,
         key: Key,
@@ -86,11 +94,29 @@ impl Default for Worker {
                                 request.owner,
                                 request.key.path.clone(),
                                 request.key.epoch,
-                                lince_document::Reader::open(Path::new(&request.key.path))?,
+                                if let Some(resource) = &request.resource {
+                                    let library = engine::sources::library()
+                                        .map_err(|error| error.to_string())?;
+                                    lince_document::Reader::open_resource(library, resource)?
+                                } else {
+                                    lince_document::Reader::open(Path::new(&request.key.path))?
+                                },
                             )
                         };
                         let reader = &mut entry.3;
-                        let section = request.key.section.min(reader.info.sections.len() - 1);
+                        let position = if request.locate {
+                            request
+                                .resource
+                                .as_ref()
+                                .map(|resource| reader.locate(&resource.locator, request.key.width))
+                                .transpose()?
+                        } else {
+                            None
+                        };
+                        let section = position
+                            .as_ref()
+                            .map_or(request.key.section, |position| position.section)
+                            .min(reader.info.sections.len() - 1);
                         let layout = reader.layout(section, request.key.width)?;
                         let mut tiles = Vec::new();
                         for index in request.tiles.iter().copied().take(10) {
@@ -100,6 +126,7 @@ impl Default for Worker {
                             }
                         }
                         let rendered = Rendered {
+                            position,
                             info: reader.info.clone(),
                             layout,
                             tiles,

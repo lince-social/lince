@@ -990,6 +990,10 @@ async fn invalid_exact_decimals_and_invalid_record_identities_are_refused() {
 #[tokio::test]
 async fn non_strict_blob_record_values_return_errors_instead_of_panicking() {
     let store = Store::open_memory().await.unwrap();
+    store::sqlx::query("DROP TRIGGER record_content_update")
+        .execute(&store.pool)
+        .await
+        .unwrap();
     let uid = record(
         &store,
         RecordKind::Plain,
@@ -1093,6 +1097,10 @@ async fn non_strict_real_integer_fields_return_errors_instead_of_panicking() {
 #[tokio::test]
 async fn large_blob_integer_columns_are_refused_before_payload_reads() {
     let store = Store::open_memory().await.unwrap();
+    store::sqlx::query("DROP TRIGGER record_content_update")
+        .execute(&store.pool)
+        .await
+        .unwrap();
     let subject = record(
         &store,
         RecordKind::Plain,

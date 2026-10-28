@@ -968,6 +968,8 @@ pub(crate) struct SavedSimulation {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedSimulation);
+
 impl SavedSimulation {
     pub(crate) fn valid(&self) -> bool {
         self.castle.record_form.valid()

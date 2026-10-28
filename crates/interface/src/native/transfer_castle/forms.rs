@@ -10,7 +10,28 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     let (container, list) = (view.form, view.list);
     let body = world.get::<ChildOf>(list).unwrap().parent();
     let form = world.get::<TransferCastle>(owner).unwrap().form.clone();
-    world.get_mut::<Node>(body).unwrap().display = if form.is_some() {
+    if let Some(transport) = view.transport {
+        world.get_mut::<Node>(transport).unwrap().display = if form.is_none()
+            && world
+                .get::<TransferCastle>(owner)
+                .unwrap()
+                .workflow
+                .workflow
+                == crate::transfers::workspace::Workflow::Transport
+        {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
+    world.get_mut::<Node>(body).unwrap().display = if form.is_some()
+        || world
+            .get::<TransferCastle>(owner)
+            .unwrap()
+            .workflow
+            .workflow
+            == crate::transfers::workspace::Workflow::Transport
+    {
         Display::None
     } else {
         Display::Flex
@@ -20,6 +41,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     } else {
         Display::None
     };
+    world.get_mut::<Node>(container).unwrap().flex_grow = 1.0;
     ui::clear(world, container);
     let Some(mut form) = form else { return };
     match form.commit_fields() {

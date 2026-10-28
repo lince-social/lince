@@ -345,6 +345,9 @@ fn toolbar_visibility(
     toolbar: Entity,
     presentation: crate::native::record_presentation::RecordPresentation,
 ) {
+    if super::availability::hidden(world, row) {
+        return;
+    }
     let contains = |mut entity| loop {
         if entity == row {
             return true;
@@ -398,6 +401,9 @@ fn toolbar_visibility(
 }
 
 pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data: &Value) {
+    if super::availability::hidden(world, row) {
+        return;
+    }
     if super::presentation::current(world, row).is_some() {
         return;
     }
@@ -565,6 +571,7 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
         .copied()
         .filter(|entity| {
             !managed.contains(entity)
+                && !super::availability::chrome(world, *entity)
                 && world
                     .get::<crate::native::shader_effects::EffectSlot>(*entity)
                     .is_none()

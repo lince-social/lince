@@ -1,6 +1,47 @@
 use bevy::{math::DVec3, prelude::*};
 
+mod allocation;
+pub(crate) mod residency;
+mod ui;
+pub(crate) use allocation::{Entry, Grant, allocate, bytes};
+pub(crate) use ui::{panel, reduction};
+
 pub const PIXEL_BUDGET: u64 = 32 * 1024 * 1024;
+pub(crate) const BYTE_BUDGET: u64 = PIXEL_BUDGET * 8;
+
+pub(crate) struct BudgetPlugin;
+
+impl Plugin for BudgetPlugin {
+    fn build(&self, app: &mut App) {
+        residency::install(app);
+        app.add_systems(
+            Update,
+            ui::update.after(crate::native::actions::ApplyActions),
+        );
+        app.add_systems(
+            PostUpdate,
+            super::presentation::synchronize
+                .after(crate::native::layout::ResolveFollow)
+                .before(bevy::camera::CameraUpdateSystems)
+                .before(bevy::ui::UiSystems::Prepare),
+        );
+    }
+}
+
+#[derive(Resource, Default)]
+pub(crate) struct Diagnostics {
+    pub granted_bytes: u64,
+    pub limited_targets: usize,
+    pub maximum_extent: u32,
+}
+
+#[derive(Component, Clone, Copy, Debug, PartialEq)]
+pub(crate) struct NativeRaster {
+    pub pixels: UVec2,
+    pub requested: UVec2,
+    pub device_limited: bool,
+    pub budget_limited: bool,
+}
 
 #[derive(Clone, Copy)]
 pub struct Request {
@@ -9,6 +50,7 @@ pub struct Request {
     pub previous: f32,
     pub visible: bool,
     pub text: bool,
+    pub exact: bool,
 }
 
 pub fn dimensions(size: Vec2, density: f32) -> (UVec2, f32) {
@@ -18,52 +60,20 @@ pub fn dimensions(size: Vec2, density: f32) -> (UVec2, f32) {
     ((size * density).ceil().max(Vec2::ONE).as_uvec2(), density)
 }
 
+#[cfg(test)]
 pub fn plan(requests: &[Request], budget: u64) -> Vec<(UVec2, f32)> {
-    let mut result: Vec<_> = requests
+    let entries: Vec<_> = requests
         .iter()
-        .map(|request| {
-            if !request.visible {
-                return (UVec2::ONE, 1.0);
-            }
-            let density = if request.previous >= request.density
-                && request.previous <= request.density * 2.0
-            {
-                request.previous
-            } else {
-                request.density
-            };
-            dimensions(request.size, density)
+        .map(|request| Entry {
+            request: *request,
+            priority: u8::from(request.text),
+            bytes_per_pixel: 1,
         })
         .collect();
-    loop {
-        let pixels: u64 = result
-            .iter()
-            .map(|(size, _)| u64::from(size.x) * u64::from(size.y))
-            .sum();
-        if pixels <= budget.max(requests.len() as u64) {
-            break;
-        }
-        let reduction =
-            ((budget as f64 / pixels as f64).sqrt() as f32).min(std::f32::consts::FRAC_1_SQRT_2);
-        let reduce_media = requests
-            .iter()
-            .zip(&result)
-            .any(|(request, (pixels, density))| {
-                request.visible
-                    && !request.text
-                    && pixels.max_element() > 1
-                    && *density > request.density * 0.125
-            });
-        for (request, (pixels, density)) in requests.iter().zip(&mut result) {
-            if request.visible && (!reduce_media || !request.text) {
-                *density *= reduction;
-                let exponent = (*density).log2().mul_add(2.0, -0.0001).floor() * 0.5;
-                *density = 2.0_f32.powf(exponent);
-                *pixels = (request.size * *density).ceil().max(Vec2::ONE).as_uvec2();
-            }
-        }
-    }
-    result
+    allocate(&entries, budget, 4096)
+        .into_iter()
+        .map(|grant| (grant.pixels, grant.density))
+        .collect()
 }
 
 pub fn perspective_visible(points: &[DVec3; 8], aspect: f64, tangent: f64) -> bool {
@@ -122,6 +132,7 @@ mod tests {
                 previous: 0.0,
                 visible: index % 3 != 0,
                 text: index % 5 == 0,
+                exact: false,
             })
             .collect();
         let result = plan(&requests, PIXEL_BUDGET);
@@ -157,8 +168,29 @@ mod tests {
                 previous: 1.0,
                 visible: true,
                 text: true,
+                exact: false,
             };
             assert_eq!(plan(&[request], PIXEL_BUDGET)[0], (UVec2::splat(300), 1.0));
+        }
+    }
+
+    #[test]
+    fn exact_pixel_consumers_do_not_inherit_bucket_blur_or_previous_output_density() {
+        for density in [1.0, 1.25, 1.5, 2.0] {
+            let request = Request {
+                size: Vec2::new(160.0, 120.0),
+                density,
+                previous: 2.0,
+                visible: true,
+                text: false,
+                exact: true,
+            };
+            assert_eq!(
+                plan(&[request], PIXEL_BUDGET)[0],
+                ((request.size * density).as_uvec2(), density)
+            );
+            let reduced = plan(&[request], 1000);
+            assert!(u64::from(reduced[0].0.x) * u64::from(reduced[0].0.y) <= 1000);
         }
     }
 
@@ -170,6 +202,7 @@ mod tests {
             previous: 0.0,
             visible: true,
             text: true,
+            exact: false,
         };
         let media = Request {
             size: Vec2::splat(1000.0),

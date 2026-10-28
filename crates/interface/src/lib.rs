@@ -13,12 +13,15 @@ pub mod map_view;
 
 pub mod blob_sync;
 pub mod credits;
-pub use lince_practice::{handbook, practice};
+pub use lince_practice::{content, handbook, practice};
 #[cfg(feature = "activation")]
 pub mod activation;
 pub mod host;
+pub use lince_i18n as i18n;
 #[cfg(feature = "images")]
 pub mod images;
+#[cfg(feature = "ui")]
+pub mod ithkuil;
 pub mod layout;
 pub mod motion;
 pub mod settings;

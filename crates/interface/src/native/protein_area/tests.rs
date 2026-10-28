@@ -6,12 +6,32 @@ use serde_json::json;
 fn protein_cards_open_typed_person_and_organ_experience_without_discovery() {
     for (kind, organ) in [("person", false), ("organ", true)] {
         let mut app = crate::native::sand_panel::tests::app();
-        let root = app.world_mut().spawn(crate::native::workspace::Workspaces::default()).id();
+        let root = app
+            .world_mut()
+            .spawn(crate::native::workspace::Workspaces::default())
+            .id();
         let area = app.world_mut().spawn((Node::default(), ChildOf(root))).id();
         let row = app.world_mut().spawn((Node::default(), ChildOf(area))).id();
         let uid = nucleus::new_uid("r");
-        rows::content(app.world_mut(), row, &Config {record_cards:true, ..Default::default()}, &json!({"uid":uid,"kind":kind,"head":"Experience subject"}), Some(RecordBinding {area,uid:uid.clone(),source:Source::Local}));
-        let subject = if organ {nucleus::trust_analysis::Identity::Organ(uid)} else {nucleus::trust_analysis::Identity::Person(uid)};
+        rows::content(
+            app.world_mut(),
+            row,
+            &Config {
+                record_cards: true,
+                ..Default::default()
+            },
+            &json!({"uid":uid,"kind":kind,"head":"Experience subject"}),
+            Some(RecordBinding {
+                area,
+                uid: uid.clone(),
+                source: Source::Local,
+            }),
+        );
+        let subject = if organ {
+            nucleus::trust_analysis::Identity::Organ(uid)
+        } else {
+            nucleus::trust_analysis::Identity::Person(uid)
+        };
         crate::native::trust_castle::tests::assert_subject_entry(app.world_mut(), row, subject);
     }
 }
@@ -63,7 +83,9 @@ async fn speech_cancellation_uses_the_owning_cell_and_never_falls_back_after_dis
         .sessions
         .insert("speech-practice".into(), session);
     let parent = world
-        .spawn(crate::native::practice_cells::PracticeSource("speech-practice".into()))
+        .spawn(crate::native::practice_cells::PracticeSource(
+            "speech-practice".into(),
+        ))
         .id();
     let owner = world.spawn(ChildOf(parent)).id();
     let cancellation = SpeechCancellation::for_owner(&world, owner).unwrap();
@@ -78,26 +100,39 @@ async fn speech_cancellation_uses_the_owning_cell_and_never_falls_back_after_dis
     })
     .join()
     .unwrap();
-    assert!(matches!(requests.recv().await, Some(ClientMessage::Speech { id, .. }) if id == "queued-inspection"));
+    assert!(
+        matches!(requests.recv().await, Some(ClientMessage::Speech { id, .. }) if id == "queued-inspection")
+    );
     let cancelled = tokio::time::timeout(std::time::Duration::from_secs(2), requests.recv())
         .await
         .unwrap()
         .unwrap();
-    assert!(matches!(cancelled, ClientMessage::Speech { id: observed, request: cell::speech::Request::Voice { request: cell::fiote_communication::speech::voice::Request::Cancel { job } } } if observed == id && job == expected));
+    assert!(
+        matches!(cancelled, ClientMessage::Speech { id: observed, request: cell::speech::Request::Voice { request: cell::fiote_communication::speech::voice::Request::Cancel { job } } } if observed == id && job == expected)
+    );
     assert!(personal_requests.try_recv().is_err());
     let root = tempfile::tempdir().unwrap();
     let speech = cell::speech::Host::open(root.path().join("speech.json")).unwrap();
     let message = ServerMessage::Speech {
         id: "speech-practice-result".into(),
-        status: cell::speech::Service::handle(&speech, cell::speech::Request::Inspect).await.unwrap(),
+        status: cell::speech::Service::handle(&speech, cell::speech::Request::Inspect)
+            .await
+            .unwrap(),
     };
-    observe(&mut world, &Source::Organ("speech-practice".into()), &message);
+    observe(
+        &mut world,
+        &Source::Organ("speech-practice".into()),
+        &message,
+    );
     observe(&mut world, &Source::Organ("other-cell".into()), &message);
     let messages = world.resource::<Messages<CellMessage>>();
     assert_eq!(messages.len(), 1);
     assert!(messages.iter_current_update_messages().any(|message| matches!(&message.0, ServerMessage::Speech { id, .. } if id == "speech-practice-result")));
     speech.shutdown().await;
-    world.resource_mut::<Runtime>().sessions.remove("speech-practice");
+    world
+        .resource_mut::<Runtime>()
+        .sessions
+        .remove("speech-practice");
     assert!(SpeechCancellation::for_owner(&world, owner).is_none());
     assert!(personal_requests.try_recv().is_err());
     let personal_owner = world.spawn_empty().id();
@@ -108,7 +143,9 @@ async fn speech_cancellation_uses_the_owning_cell_and_never_falls_back_after_dis
             generation: 0,
         })
         .unwrap();
-    assert!(matches!(personal_requests.recv().await, Some(ClientMessage::Speech { id: observed, request: cell::speech::Request::StopListening { .. } }) if observed == id));
+    assert!(
+        matches!(personal_requests.recv().await, Some(ClientMessage::Speech { id: observed, request: cell::speech::Request::StopListening { .. } }) if observed == id)
+    );
 }
 
 #[test]
@@ -553,7 +590,17 @@ async fn command_record_castles_save_clear_and_refresh_slugs() {
             .resource::<Runtime>()
             .areas
             .get(&owner)
-            .is_some_and(|state| state.row_entities.contains_key(&uid))
+            .is_some_and(|state| {
+                state.ready
+                    && state
+                        .data
+                        .iter()
+                        .any(|data| data["uid"].as_str() == Some(uid.as_str()))
+                    && state
+                        .row_entities
+                        .get(&uid)
+                        .is_some_and(|row| world.get::<rows::Loading>(*row).is_none())
+            })
     })
     .await;
     let editor = app
@@ -709,6 +756,97 @@ fn castle_content_is_capped_and_manual_resizing_survives_row_layout() {
             after.position.to_array()
         );
     }
+}
+
+#[test]
+fn managed_record_cards_keep_intrinsic_height_caps_and_explicit_manual_size() {
+    use crate::native::{
+        canvas::{CanvasItem, CanvasView},
+        layout::{LayoutBox, Sizing, desktop},
+    };
+    let (mut app, root, owner) = fixture();
+    let uid = nucleus::new_uid("r");
+    app.world_mut()
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .protein = Some(crate::native::full_record::config(&uid, Source::Local));
+    authoring_record(
+        app.world_mut(),
+        owner,
+        json!({"uid":uid,"head":"Record","body":"Description"}),
+    );
+    app.world_mut().entity_mut(root).insert((
+        CanvasView::default(),
+        ComputedNode {
+            size: Vec2::new(1000.0, 700.0),
+            inverse_scale_factor: 1.0,
+            ..default()
+        },
+    ));
+    app.world_mut()
+        .insert_resource(desktop::DefaultLayout(crate::host::WorkspaceLayout::Free));
+    desktop::resolve(app.world_mut());
+    let row = app.world().resource::<Runtime>().areas[&owner].row_entities[&uid];
+    let initial = *app.world().get::<LayoutBox>(row).unwrap();
+    assert_eq!(initial.rules.axes[1].sizing, Sizing::Fit);
+    let child = app
+        .world()
+        .get::<Children>(row)
+        .unwrap()
+        .iter()
+        .find(|child| {
+            app.world()
+                .get::<Node>(*child)
+                .is_some_and(|node| node.display != Display::None)
+        })
+        .unwrap();
+    app.world_mut().entity_mut(child).insert(ComputedNode {
+        size: Vec2::new(400.0, 1500.0),
+        inverse_scale_factor: 1.0,
+        ..default()
+    });
+    rows::layout(app.world_mut());
+    let fitted = app.world().get::<LayoutBox>(row).unwrap().rules.axes[1];
+    assert_eq!(fitted.size, 1000.0);
+    assert_eq!(fitted.min, initial.rules.axes[1].min);
+    assert_eq!(preferred_height(app.world(), row), Some(1000.0));
+    let changed = app
+        .world()
+        .entity(row)
+        .get_ref::<LayoutBox>()
+        .unwrap()
+        .last_changed();
+    app.world_mut().increment_change_tick();
+    rows::layout(app.world_mut());
+    assert_eq!(
+        app.world()
+            .entity(row)
+            .get_ref::<LayoutBox>()
+            .unwrap()
+            .last_changed(),
+        changed
+    );
+    app.world_mut()
+        .get_mut::<ComputedNode>(child)
+        .unwrap()
+        .size
+        .y = 120.0;
+    rows::layout(app.world_mut());
+    assert!(preferred_height(app.world(), row).unwrap() < 1000.0);
+    let before = *app.world().get::<CanvasItem>(row).unwrap();
+    let after = CanvasItem {
+        size: Vec2::new(650.0, 450.0),
+        ..before
+    };
+    app.world_mut().entity_mut(row).insert(after);
+    crate::native::layout::edited(app.world_mut(), row, before, after);
+    rows::layout(app.world_mut());
+    assert_eq!(app.world().get::<CanvasItem>(row).unwrap().size, after.size);
+    assert_eq!(
+        app.world().get::<LayoutBox>(row).unwrap().rules.axes[1].sizing,
+        Sizing::Fixed
+    );
+    assert_eq!(preferred_height(app.world(), row), None);
 }
 
 #[test]

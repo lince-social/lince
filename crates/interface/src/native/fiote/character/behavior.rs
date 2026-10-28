@@ -114,6 +114,7 @@ impl Activity {
     }
 }
 
+#[derive(Clone)]
 pub(super) struct Behavior {
     pub activity: Activity,
     pub position: Vec2,

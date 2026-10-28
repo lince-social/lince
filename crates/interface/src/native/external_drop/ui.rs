@@ -360,9 +360,7 @@ fn accept(world: &mut World, root: Entity, control: Control) {
     let Some(session) = world.resource::<Sessions>().entries.get(&root) else {
         return;
     };
-    if session.hovering
-        || !workspace_available(world, root, session.workspace)
-    {
+    if session.hovering || !workspace_available(world, root, session.workspace) {
         return;
     }
     if matches!(control, Control::Link) && !matches!(session.source, source::Source::Url(_)) {
@@ -419,6 +417,7 @@ fn accept(world: &mut World, root: Entity, control: Control) {
         restore_tint(world, preview);
         world.entity_mut(preview).remove::<(
             Preview,
+            crate::native::canvas_item::Ephemeral,
             crate::native::inspection::InspectionExcluded,
             GlobalZIndex,
         )>();

@@ -3,7 +3,7 @@ use smithay::backend::allocator::{Buffer, Fourcc, Modifier};
 use std::os::fd::{AsRawFd, IntoRawFd};
 
 impl VulkanRenderer {
-    pub(super) fn import_dmabuf(&self, buffer: &Dmabuf) -> Result<wgpu::Texture> {
+    pub(crate) fn import_dmabuf(&self, buffer: &Dmabuf) -> Result<wgpu::Texture> {
         self.import_dmabuf_into(buffer, None)
     }
 
@@ -40,8 +40,14 @@ impl VulkanRenderer {
             }
         }
         let size = buffer.size();
+        let (vk_format, texture_format, bytes_per_pixel) = match buffer.format().code {
+            Fourcc::Argb8888 => (vk::Format::B8G8R8A8_UNORM, wgpu::TextureFormat::Bgra8Unorm, 4),
+            Fourcc::Abgr8888 => (vk::Format::R8G8B8A8_UNORM, wgpu::TextureFormat::Rgba8Unorm, 4),
+            Fourcc::Abgr16161616f => (vk::Format::R16G16B16A16_SFLOAT, wgpu::TextureFormat::Rgba16Float, 8),
+            Fourcc::Abgr2101010 => (vk::Format::A2B10G10R10_UNORM_PACK32, wgpu::TextureFormat::Rgb10a2Unorm, 4),
+            _ => return Err(ProbeFailure::at("vulkan_import", "This DMA-BUF color format is not implemented")),
+        };
         if buffer.num_planes() != 1
-            || buffer.format().code != Fourcc::Argb8888
             || buffer.format().modifier != Modifier::Linear
             || size.w <= 0
             || size.h <= 0
@@ -50,7 +56,7 @@ impl VulkanRenderer {
         {
             return Err(ProbeFailure::at(
                 "vulkan_import",
-                "only single-plane linear ARGB8888 buffers with valid dimensions are implemented",
+                "Only single-plane linear BGRA8, RGBA8, RGB10A2 or RGBA16F buffers with valid dimensions are implemented",
             ));
         }
         let fd = buffer
@@ -72,6 +78,7 @@ impl VulkanRenderer {
             layout.row_pitch,
             layout.offset,
             buffer_size,
+            bytes_per_pixel,
         )?;
         let layouts = [layout];
         let mut modifier = vk::ImageDrmFormatModifierExplicitCreateInfoEXT::default()
@@ -81,7 +88,7 @@ impl VulkanRenderer {
             .handle_types(vk::ExternalMemoryHandleTypeFlags::DMA_BUF_EXT);
         let image_info = vk::ImageCreateInfo::default()
             .image_type(vk::ImageType::TYPE_2D)
-            .format(vk::Format::B8G8R8A8_UNORM)
+            .format(vk_format)
             .extent(vk::Extent3D {
                 width: size.w as u32,
                 height: size.h as u32,
@@ -159,7 +166,7 @@ impl VulkanRenderer {
             .filter(|texture| {
                 texture.width() == size.w as u32
                     && texture.height() == size.h as u32
-                    && texture.format() == wgpu::TextureFormat::Bgra8Unorm
+                    && texture.format() == texture_format
                     && texture.usage().contains(usage)
             });
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
@@ -172,7 +179,7 @@ impl VulkanRenderer {
                     mip_level_count: 1,
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format: texture_format,
                     usage,
                     view_formats: &[],
                 });
@@ -289,7 +296,7 @@ impl VulkanRenderer {
     }
 
     pub(crate) fn export_copy(&self, source: &wgpu::Texture) -> Result<ExportedImage> {
-        let target = self.create_shared_image(source.width(), source.height())?;
+        let target = self.create_shared_image_format(source.width(), source.height(), source.format())?;
         let mut encoder = self.device.create_command_encoder(&Default::default());
         encoder.copy_texture_to_texture(
             source.as_image_copy(),
@@ -312,9 +319,10 @@ impl VulkanRenderer {
     }
 }
 
-fn validate_plane(width: u64, height: u64, stride: u64, offset: u64, length: u64) -> Result<()> {
+fn validate_plane(width: u64, height: u64, stride: u64, offset: u64, length: u64, bytes_per_pixel: u64) -> Result<()> {
+    if !matches!(bytes_per_pixel, 4 | 8) { return Err(ProbeFailure::at("vulkan_import_size", "Unsupported pixel size")); }
     let row = width
-        .checked_mul(4)
+        .checked_mul(bytes_per_pixel)
         .ok_or_else(|| ProbeFailure::at("vulkan_import_size", "row size overflow"))?;
     let end = height
         .checked_sub(1)
@@ -323,13 +331,13 @@ fn validate_plane(width: u64, height: u64, stride: u64, offset: u64, length: u64
         .and_then(|value| value.checked_add(row));
     if width == 0
         || stride < row
-        || stride % 4 != 0
-        || offset % 4 != 0
+        || stride % bytes_per_pixel != 0
+        || offset % bytes_per_pixel != 0
         || end.is_none_or(|end| end > length)
     {
         return Err(ProbeFailure::at(
             "vulkan_import_size",
-            "invalid ARGB8888 layout or plane outside the backing allocation",
+            "Invalid color-buffer layout or plane outside the backing allocation",
         ));
     }
     Ok(())
@@ -340,9 +348,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn exporting_color_buffers_preserves_precision_and_channel_order_without_reinterpreting_unsupported_formats() {
+        for (source, texture, vk_format, code) in [
+            (wgpu::TextureFormat::Bgra8UnormSrgb, wgpu::TextureFormat::Bgra8Unorm, vk::Format::B8G8R8A8_UNORM, Fourcc::Argb8888),
+            (wgpu::TextureFormat::Rgba8UnormSrgb, wgpu::TextureFormat::Rgba8Unorm, vk::Format::R8G8B8A8_UNORM, Fourcc::Abgr8888),
+            (wgpu::TextureFormat::Rgba16Float, wgpu::TextureFormat::Rgba16Float, vk::Format::R16G16B16A16_SFLOAT, Fourcc::Abgr16161616f),
+            (wgpu::TextureFormat::Rgb10a2Unorm, wgpu::TextureFormat::Rgb10a2Unorm, vk::Format::A2B10G10R10_UNORM_PACK32, Fourcc::Abgr2101010),
+        ] {
+            assert_eq!(shared_format(source).unwrap(), (texture, vk_format, code));
+        }
+        assert!(shared_format(wgpu::TextureFormat::Rgba32Float).is_err());
+        assert!(shared_format(wgpu::TextureFormat::Depth32Float).is_err());
+    }
+
+    #[test]
     fn importing_a_plane_checks_the_entire_backing_range_and_alignment() {
-        assert!(validate_plane(64, 32, 256, 0, 8192).is_ok());
-        assert!(validate_plane(63, 32, 256, 4, 8192).is_ok());
+        assert!(validate_plane(64, 32, 256, 0, 8192, 4).is_ok());
+        assert!(validate_plane(63, 32, 256, 4, 8192, 4).is_ok());
         for (width, height, stride, offset, length) in [
             (64, 32, 252, 0, 8192),
             (64, 32, 256, 4, 8192),
@@ -351,7 +373,86 @@ mod tests {
             (64, u64::MAX, 256, 0, u64::MAX),
             (64, 32, 256, u64::MAX - 3, u64::MAX),
         ] {
-            assert!(validate_plane(width, height, stride, offset, length).is_err());
+            assert!(validate_plane(width, height, stride, offset, length, 4).is_err());
         }
+    }
+
+    #[test]
+    fn high_precision_planes_require_eight_byte_pixels_and_reject_truncation_or_misaligned_offsets() {
+        assert!(validate_plane(64, 32, 512, 0, 16384, 8).is_ok());
+        assert!(validate_plane(63, 32, 512, 8, 16384, 8).is_ok());
+        for (stride, offset, length) in [(256, 0, 16384), (512, 0, 16383), (512, 4, 32768), (516, 0, 32768)] {
+            assert!(validate_plane(64, 32, stride, offset, length, 8).is_err());
+        }
+        assert!(validate_plane(1, 1, 8, 0, 8, 3).is_err());
+    }
+
+    #[test]
+    #[ignore = "requires hardware Vulkan and linear RGBA16F DMA-BUF support"]
+    fn half_float_export_and_reimport_preserve_values_above_sdr_white() {
+        let renderer = VulkanRenderer::new().unwrap();
+        let image = renderer.create_shared_image_format(4, 4, wgpu::TextureFormat::Rgba16Float).unwrap();
+        let exported = renderer.clear(image, wgpu::Color { r: 2.0, g: 0.5, b: 0.25, a: 1.0 }).unwrap();
+        exported.wait_for_probe().unwrap();
+        assert_eq!(exported.dmabuf.format().code, Fourcc::Abgr16161616f);
+        let imported = renderer.import_dmabuf(&exported.dmabuf).unwrap();
+        assert_eq!(imported.format(), wgpu::TextureFormat::Rgba16Float);
+        let buffer = renderer.device.create_buffer(&wgpu::BufferDescriptor { label: Some("park-hdr-precision-readback"),
+            size: 1024, usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ, mapped_at_creation: false });
+        let mut encoder = renderer.device.create_command_encoder(&Default::default());
+        encoder.copy_texture_to_buffer(imported.as_image_copy(), wgpu::TexelCopyBufferInfo {
+            buffer: &buffer, layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(256), rows_per_image: Some(4) },
+        }, imported.size());
+        renderer.queue.submit([encoder.finish()]);
+        let slice = buffer.slice(..);
+        let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+        slice.map_async(wgpu::MapMode::Read, move |result| { let _ = sender.send(result); });
+        renderer.device.poll(wgpu::PollType::Wait { submission_index: None, timeout: Some(std::time::Duration::from_secs(5)) }).unwrap();
+        receiver.recv_timeout(std::time::Duration::from_secs(1)).unwrap().unwrap();
+        let pixels = slice.get_mapped_range();
+        for y in 0..4 {
+            for x in 0..4 {
+                let offset = y * 256 + x * 8;
+                let values = std::array::from_fn::<_, 4, _>(|channel| {
+                    let offset = offset + channel * 2;
+                    u16::from_le_bytes([pixels[offset], pixels[offset + 1]])
+                });
+                assert_eq!(values, [0x4000, 0x3800, 0x3400, 0x3c00]);
+            }
+        }
+        drop(pixels); buffer.unmap();
+    }
+
+    #[test]
+    #[ignore = "requires hardware Vulkan and linear RGB10A2 DMA-BUF support"]
+    fn packed_ten_bit_export_and_reimport_preserve_channel_positions_and_all_precision() {
+        let renderer = VulkanRenderer::new().unwrap();
+        let image = renderer.create_shared_image_format(4, 4, wgpu::TextureFormat::Rgb10a2Unorm).unwrap();
+        let exported = renderer.clear(image, wgpu::Color { r: 256.0 / 1023.0, g: 513.0 / 1023.0, b: 767.0 / 1023.0, a: 1.0 }).unwrap();
+        exported.wait_for_probe().unwrap();
+        assert_eq!(exported.dmabuf.format().code, Fourcc::Abgr2101010);
+        let imported = renderer.import_dmabuf(&exported.dmabuf).unwrap();
+        assert_eq!(imported.format(), wgpu::TextureFormat::Rgb10a2Unorm);
+        let buffer = renderer.device.create_buffer(&wgpu::BufferDescriptor { label: Some("park-ten-bit-precision-readback"),
+            size: 1024, usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ, mapped_at_creation: false });
+        let mut encoder = renderer.device.create_command_encoder(&Default::default());
+        encoder.copy_texture_to_buffer(imported.as_image_copy(), wgpu::TexelCopyBufferInfo {
+            buffer: &buffer, layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(256), rows_per_image: Some(4) },
+        }, imported.size());
+        renderer.queue.submit([encoder.finish()]);
+        let slice = buffer.slice(..);
+        let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+        slice.map_async(wgpu::MapMode::Read, move |result| { let _ = sender.send(result); });
+        renderer.device.poll(wgpu::PollType::Wait { submission_index: None, timeout: Some(std::time::Duration::from_secs(5)) }).unwrap();
+        receiver.recv_timeout(std::time::Duration::from_secs(1)).unwrap().unwrap();
+        let pixels = slice.get_mapped_range();
+        for y in 0..4 {
+            for x in 0..4 {
+                let offset = y * 256 + x * 4;
+                let pixel = u32::from_le_bytes(pixels[offset..offset + 4].try_into().unwrap());
+                assert_eq!([pixel & 1023, (pixel >> 10) & 1023, (pixel >> 20) & 1023, pixel >> 30], [256, 513, 767, 3]);
+            }
+        }
+        drop(pixels); buffer.unmap();
     }
 }

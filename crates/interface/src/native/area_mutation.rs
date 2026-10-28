@@ -761,7 +761,9 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         BTreeMap::<(Entity, u64, String, Option<String>), Vec<(Entity, bool, RecordChanges)>>::new(
         );
     for (entity, grant) in &mut state.grants {
-        if crate::native::laboratory::blocked(world, *entity) { continue; }
+        if crate::native::laboratory::blocked(world, *entity) {
+            continue;
+        }
         grant
             .visits
             .retain(|uid, _| record_keys.contains(&(grant.root, grant.workspace, uid.as_str())));
@@ -1053,14 +1055,14 @@ fn activate_configured(world: &mut World) {
         .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
         .iter(world)
         .filter(|(entity, area, parent, member)| {
-            !crate::native::laboratory::blocked(world, *entity) &&
-            crate::native::influence_report::activity(
-                world,
-                *entity,
-                area,
-                parent.parent(),
-                member.0,
-            ) == crate::native::influence_report::Outcome::Active
+            !crate::native::laboratory::blocked(world, *entity)
+                && crate::native::influence_report::activity(
+                    world,
+                    *entity,
+                    area,
+                    parent.parent(),
+                    member.0,
+                ) == crate::native::influence_report::Outcome::Active
                 && area.changes_enabled
                 && crate::native::practice_cells::sender(world, *entity).is_some()
                 && !area.changes.is_empty()

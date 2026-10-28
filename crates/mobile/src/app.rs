@@ -180,7 +180,7 @@ pub(crate) struct Shell;
 pub(crate) struct Modal;
 
 #[derive(Component)]
-struct Status;
+pub(crate) struct Status;
 
 #[derive(Component)]
 struct PasswordMask(Entity);
@@ -192,6 +192,7 @@ pub struct ButtonIntent(pub Intent);
 pub enum Intent {
     Workflow(crate::workflows::Intent),
     Map(crate::map::Intent),
+    Transport(crate::transport::Intent),
     MapRecords(Vec<String>),
     OpenLocationInvitation(String),
     ViewLocationMap(nucleus::location::Invitation),
@@ -301,6 +302,7 @@ impl Plugin for MobilePlugin {
                     flush_on_suspend,
                     apply,
                     crate::workflows::ensure_scope,
+                    crate::transport::restore,
                     crate::map::maintain,
                     persist,
                     render,
@@ -616,6 +618,10 @@ pub(crate) fn subscriptions(world: &mut World) -> Result<(), String> {
     let page = state.navigation.current.clone();
     let previous = state.active_record.clone();
     let desired: &[&str] = match &page {
+        Page::Transfers if crate::transport::active(world) => &["transport", "transfer_context"],
+        Page::Transfer(_) if crate::transport::active(world) => {
+            &["transport", "transfer", "transfer_context"]
+        }
         Page::Transfers => &["records", "transfer_context"],
         Page::Transfer(_) => &["transfer"],
         Page::Trust(_, _) | Page::Map => &[],
@@ -670,6 +676,17 @@ pub(crate) fn subscriptions(world: &mut World) -> Result<(), String> {
             let uid = key.split('/').next().unwrap_or(key);
             selected.as_deref() == Some(uid) || protected.iter().any(|value| value == uid)
         });
+    }
+    if crate::transport::active(world) {
+        let mut query = source_query(protein::Source::Transfer);
+        query.limit = None;
+        subscribe(world, "transport", query)?;
+        if let Page::Transfer(uid) = &page {
+            let mut query = source_query(protein::Source::Transfer);
+            query.filter.push(protein::Predicate::UidEq(uid.clone()));
+            subscribe(world, "transfer", query)?;
+        }
+        return Ok(());
     }
     let state = world.resource::<Mobile>();
     match page {
@@ -1838,6 +1855,7 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
         Intent::CancelDelete => world.resource_mut::<Mobile>().deleting = None,
         Intent::Workflow(intent) => crate::workflows::apply(world, intent)?,
         Intent::Map(intent) => crate::map::apply(world, intent)?,
+        Intent::Transport(intent) => crate::transport::apply(world, intent)?,
         Intent::MapRecords(records) => {
             crate::map::open(world, records);
             world.resource_mut::<Mobile>().navigation.open(Page::Map);
@@ -1955,6 +1973,12 @@ pub(crate) fn queue_back(world: &mut World) {
 }
 
 pub fn back(world: &mut World) {
+    if crate::transport::active(world) {
+        if let Err(error) = crate::transport::apply(world, crate::transport::Intent::Back) {
+            world.resource_mut::<Mobile>().status = error;
+        }
+        return;
+    }
     if world.resource::<Mobile>().picker.is_some() {
         if let Err(error) = crate::picker::close(world) {
             world.resource_mut::<Mobile>().status = error;
@@ -2006,7 +2030,9 @@ fn render(world: &mut World) {
         .map(|position| position.0);
     let page_key = {
         let state = world.resource::<Mobile>();
-        if state.navigation.menu_open {
+        if crate::transport::active(world) {
+            crate::transport::page_key(world)
+        } else if state.navigation.menu_open {
             "menu".into()
         } else if state.deleting.is_some() {
             "confirmation".into()
@@ -2027,13 +2053,16 @@ fn render(world: &mut World) {
         state.scrolls.get(&page_key).copied().unwrap_or_default()
     };
     controls::clear(world, root);
-    let header = controls::row(world, root);
-    button(world, header, "Pages", Intent::Menu);
-    button(world, header, "Back", Intent::Back);
-    let title = world.resource::<Mobile>().navigation.current.title();
-    label(world, header, title, 24.0);
-    let status = label(world, root, &message, 14.0);
-    world.entity_mut(status).insert(Status);
+    let transport = crate::transport::active(world);
+    if !transport {
+        let header = controls::row(world, root);
+        button(world, header, "Pages", Intent::Menu);
+        button(world, header, "Back", Intent::Back);
+        let title = world.resource::<Mobile>().navigation.current.title();
+        label(world, header, title, 24.0);
+        let status = label(world, root, &message, 14.0);
+        world.entity_mut(status).insert(Status);
+    }
     if world.resource::<Mobile>().save_error {
         button(world, root, "Retry saving drafts", Intent::RetryDrafts);
     }
@@ -2047,7 +2076,11 @@ fn render(world: &mut World) {
             flex_grow: 1.0,
             min_height: px(0),
             row_gap: px(10),
-            overflow: Overflow::scroll_y(),
+            overflow: if transport {
+                Overflow::clip()
+            } else {
+                Overflow::scroll_y()
+            },
             ..default()
         },
     ));

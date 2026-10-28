@@ -71,9 +71,14 @@ impl Engine {
         &self,
         tx: &mut Transaction<'_, Sqlite>,
     ) -> Result<Preview, EngineError> {
-        let records = crate::instinct::records().map_err(|error| failure(error.to_string()))?;
+        let records = tokio::task::spawn_blocking(crate::instinct::records)
+            .await
+            .map_err(|error| failure(error.to_string()))?
+            .map_err(|error| failure(error.to_string()))?;
         if records.is_empty() {
-            return Err(failure("Instinct is not enabled in this build."));
+            return Err(failure(
+                "Open an external Instinct publication or place content beside Lince.",
+            ));
         }
         let vocabulary = canonical_uid("g", "vocabulary");
         let mut names = BTreeSet::new();
@@ -163,7 +168,9 @@ impl Engine {
                 || canonical.is_some()
                     && (members != [vocabulary.clone()]
                         || !parents.is_empty()
-                        || !aliases.is_empty()
+                        || aliases
+                            .iter()
+                            .any(|(language, term)| language != "en" || term != name)
                         || definition.is_some())
             {
                 conflicts.push(format!(

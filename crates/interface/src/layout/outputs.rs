@@ -7,6 +7,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub struct Preference {
     pub workspace: u64,
     pub output: String,
+    #[serde(default)]
+    pub active: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -23,6 +25,7 @@ pub struct Assignments {
     preferences: Vec<Preference>,
     current: BTreeMap<u64, OutputId>,
     focused: Option<OutputId>,
+    pending: BTreeMap<OutputId, u64>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -36,10 +39,12 @@ pub enum AssignmentError {
 impl Assignments {
     pub fn restore(preferences: Vec<Preference>) -> Result<Self, AssignmentError> {
         let mut seen = BTreeSet::new();
-        if preferences.iter().any(|preference| {
+        let mut active = BTreeSet::new();
+        if preferences.len() > 4096 || preferences.iter().any(|preference| {
             preference.workspace == 0
                 || !seen.insert(preference.workspace)
                 || preference.output.len() > 512
+                || preference.active && (preference.output.is_empty() || !active.insert(preference.output.clone()))
         }) {
             return Err(AssignmentError::InvalidWorkspace);
         }
@@ -58,6 +63,7 @@ impl Assignments {
             .retain(|preference| workspaces.contains(&preference.workspace));
         self.current
             .retain(|workspace, _| workspaces.contains(workspace));
+        self.pending.retain(|_, workspace| workspaces.contains(workspace));
         let mut visible: BTreeSet<_> = self
             .outputs
             .iter()
@@ -89,6 +95,7 @@ impl Assignments {
 
     pub fn register_workspace(&mut self, workspace: u64) -> Result<(), AssignmentError> {
         if workspace == 0
+            || self.preferences.len() >= 4096
             || self
                 .preferences
                 .iter()
@@ -102,6 +109,7 @@ impl Assignments {
         self.preferences.push(Preference {
             workspace,
             output: output.map_or(String::new(), |output| output.name.clone()),
+            active: false,
         });
         if let Some(output) = output {
             self.current.insert(workspace, output.id);
@@ -130,9 +138,11 @@ impl Assignments {
             .filter(|preference| preference.output == name)
             .map(|preference| preference.workspace)
             .collect();
-        let active = preferred
-            .first()
-            .copied()
+        let desired = self.preferences.iter().find(|preference| preference.output == name && preference.active)
+            .map(|preference| preference.workspace).or_else(|| preferred.first().copied());
+        let protected = self.outputs.iter().find(|output| Some(output.id) == self.focused).map(|output| output.active);
+        let active = desired.filter(|workspace| Some(*workspace) != protected)
+            .or_else(|| preferred.iter().find(|workspace| Some(**workspace) != protected).copied())
             .or_else(|| {
                 self.preferences
                     .iter()
@@ -153,11 +163,13 @@ impl Assignments {
             active,
         });
         for workspace in preferred {
-            trial.current.insert(workspace, id);
+            if Some(workspace) != protected {
+                trial.current.insert(workspace, id);
+            }
         }
         trial.current.insert(active, id);
         for preference in &mut trial.preferences {
-            if preference.output.is_empty() {
+            if preference.workspace == active && preference.output.is_empty() {
                 preference.output = name.clone();
             }
             trial.current.entry(preference.workspace).or_insert(id);
@@ -168,15 +180,11 @@ impl Assignments {
                 continue;
             }
             if trial.current.get(&output.active) == Some(&id) {
-                let previous = output.active;
                 output.active = trial
                     .preferences
                     .iter()
                     .find(|preference| {
-                        (trial.current.get(&preference.workspace) == Some(&output.id)
-                            || preference.workspace == previous
-                            || !occupied.contains(&preference.workspace))
-                            && preference.workspace != active
+                        !occupied.contains(&preference.workspace)
                     })
                     .map(|preference| preference.workspace)
                     .ok_or(AssignmentError::NeedWorkspace)?;
@@ -185,6 +193,11 @@ impl Assignments {
             }
         }
         trial.focused = trial.focused.or(Some(id));
+        if let Some(desired) = desired.filter(|desired| *desired != active) {
+            trial.pending.insert(id, desired);
+        } else {
+            trial.remember_active(id);
+        }
         *self = trial;
         Ok(())
     }
@@ -194,6 +207,7 @@ impl Assignments {
             return false;
         };
         let removed = self.outputs.remove(index);
+        self.pending.remove(&id);
         let replacement = self
             .outputs
             .iter()
@@ -250,8 +264,12 @@ impl Assignments {
             .iter()
             .find(|candidate| candidate.active == workspace)
         {
-            self.focused = Some(visible.id);
-            return Ok(visible.id);
+            let selected = visible.id;
+            self.focused = Some(selected);
+            self.pending.remove(&selected);
+            self.remember_active(selected);
+            self.restore_pending();
+            return Ok(selected);
         }
         let selected = self
             .outputs
@@ -261,6 +279,9 @@ impl Assignments {
         selected.active = workspace;
         self.current.insert(workspace, output);
         self.focused = Some(output);
+        self.pending.remove(&output);
+        self.remember_active(output);
+        self.restore_pending();
         Ok(output)
     }
 
@@ -282,6 +303,8 @@ impl Assignments {
             .find(|preference| preference.workspace == workspace)
             .ok_or(AssignmentError::InvalidWorkspace)?;
         preference.output = target_name;
+        preference.active = false;
+        self.pending.retain(|output, pending| *output != target && *pending != workspace);
         let previous = self
             .outputs
             .iter()
@@ -308,6 +331,65 @@ impl Assignments {
             .active = workspace;
         self.current.insert(workspace, target);
         self.focused = Some(target);
+        self.remember_active(target);
+        if let Some(previous) = previous.filter(|previous| *previous != target) {
+            self.remember_active(previous);
+        }
+        Ok(())
+    }
+
+    fn remember_active(&mut self, output: OutputId) {
+        let Some(head) = self.outputs.iter().find(|head| head.id == output) else { return; };
+        if !self.preferences.iter().any(|preference| preference.workspace == head.active && preference.output == head.name) {
+            return;
+        }
+        for preference in &mut self.preferences {
+            if preference.output == head.name {
+                preference.active = preference.workspace == head.active;
+            }
+        }
+    }
+
+    fn restore_pending(&mut self) {
+        let pending = std::mem::take(&mut self.pending);
+        for (target, workspace) in pending {
+            let Some(head) = self.outputs.iter().find(|head| head.id == target) else { continue; };
+            if !self.preferences.iter().any(|preference| preference.workspace == workspace && preference.output == head.name) {
+                continue;
+            }
+            if self.focused == Some(target) || self.outputs.iter().any(|output| Some(output.id) == self.focused && output.active == workspace) {
+                self.pending.insert(target, workspace);
+                continue;
+            }
+            let focused = self.focused;
+            let preferences = self.preferences.clone();
+            if self.move_workspace(workspace, target).is_ok() {
+                self.focused = focused;
+                self.preferences = preferences;
+            }
+        }
+    }
+
+    pub fn pending_restorations(&self) -> impl Iterator<Item = (OutputId, u64)> + '_ {
+        self.pending.iter().map(|(output, workspace)| (*output, *workspace))
+    }
+
+    pub fn restore_initial(&mut self, workspace: u64) -> Result<(), AssignmentError> {
+        if !self.preferences.iter().any(|preference| preference.workspace == workspace) {
+            return Err(AssignmentError::InvalidWorkspace);
+        }
+        let mut trial = self.clone();
+        let previous = trial.focused;
+        trial.focused = None;
+        trial.restore_pending();
+        let output = trial.outputs.iter().find(|output| output.active == workspace)
+            .map(|output| output.id)
+            .or_else(|| trial.current.get(&workspace).copied())
+            .or(previous)
+            .or_else(|| trial.outputs.first().map(|output| output.id))
+            .ok_or(AssignmentError::MissingOutput)?;
+        trial.select(output, workspace)?;
+        *self = trial;
         Ok(())
     }
 
@@ -332,17 +414,13 @@ impl Assignments {
             .filter(|output| output.id != current.id)
             .filter_map(|output| {
                 let primary = (center(output, axis) - center(current, axis)) * sign;
-                (primary > 0.0).then_some((
-                    output.id,
-                    primary,
-                    (center(output, 1 - axis) - center(current, 1 - axis)).abs(),
-                ))
+                if primary <= 0.0 {
+                    return None;
+                }
+                let cross = (center(output, 1 - axis) - center(current, 1 - axis)).abs();
+                Some((output.id, primary.hypot(cross) * (1.0 + cross / primary)))
             })
-            .min_by(|a, b| {
-                a.1.total_cmp(&b.1)
-                    .then_with(|| a.2.total_cmp(&b.2))
-                    .then_with(|| a.0.cmp(&b.0))
-            })
+            .min_by(|a, b| a.1.total_cmp(&b.1).then_with(|| a.0.cmp(&b.0)))
             .map(|candidate| candidate.0)
     }
 
@@ -351,6 +429,9 @@ impl Assignments {
             return Err(AssignmentError::MissingOutput);
         }
         self.focused = Some(output);
+        self.pending.remove(&output);
+        self.remember_active(output);
+        self.restore_pending();
         Ok(())
     }
 }
@@ -368,14 +449,17 @@ mod tests {
             Preference {
                 workspace: 1,
                 output: "eDP-1".into(),
+                active: false,
             },
             Preference {
                 workspace: 2,
                 output: "DP-1".into(),
+                active: false,
             },
             Preference {
                 workspace: 3,
                 output: "DP-1".into(),
+                active: false,
             },
         ])
         .unwrap();
@@ -401,6 +485,51 @@ mod tests {
     }
 
     #[test]
+    fn directional_navigation_uses_geometry_and_deterministic_ties_in_every_direction() {
+        let output = |id, origin| Output {
+            id: OutputId(id),
+            name: format!("Display-{id}"),
+            bounds: Rectangle::new(origin, [800.0, 600.0]).unwrap(),
+            active: id,
+        };
+        let mut assignments = Assignments {
+            outputs: vec![
+                output(50, [0.0, 0.0]),
+                output(9, [10.0, 10_000.0]),
+                output(7, [900.0, 0.0]),
+                output(3, [900.0, 0.0]),
+                output(5, [-1000.0, 0.0]),
+                output(6, [0.0, -700.0]),
+                output(8, [0.0, 700.0]),
+            ],
+            focused: Some(OutputId(50)),
+            ..Default::default()
+        };
+        for _ in 0..2 {
+            for (direction, expected) in [
+                (Direction::Left, 5),
+                (Direction::Down, 8),
+                (Direction::Up, 6),
+                (Direction::Right, 3),
+            ] {
+                assert_eq!(assignments.directional(direction), Some(OutputId(expected)));
+            }
+            assignments.outputs.reverse();
+        }
+        assignments
+            .outputs
+            .retain(|output| output.id == OutputId(50));
+        for direction in [
+            Direction::Left,
+            Direction::Down,
+            Direction::Up,
+            Direction::Right,
+        ] {
+            assert_eq!(assignments.directional(direction), None);
+        }
+    }
+
+    #[test]
     fn unplug_and_reconnect_preserve_preferred_monitor_and_focus() {
         let mut assignments = setup();
         assignments.select(OutputId(2), 2).unwrap();
@@ -414,6 +543,33 @@ mod tests {
         assert_eq!(assignments.outputs[1].active, 2);
         assert_eq!(assignments.current.get(&3), Some(&OutputId(8)));
         assert_eq!(assignments.preferences[1].output, "DP-1");
+    }
+
+    #[test]
+    fn initial_workspace_homes_follow_their_assigned_monitor_instead_of_the_first_connection() {
+        let mut assignments = Assignments::default();
+        for workspace in 1..=3 {
+            assignments.register_workspace(workspace).unwrap();
+        }
+        assignments
+            .connect(OutputId(1), "Display-A".into(), bounds(0.0))
+            .unwrap();
+        assert_eq!(assignments.preferences[0].output, "Display-A");
+        assert!(assignments.preferences[1].output.is_empty());
+        assignments
+            .connect(OutputId(2), "Display-B".into(), bounds(1000.0))
+            .unwrap();
+        assert_eq!(assignments.preferences[1].output, "Display-B");
+        let preferences = assignments.preferences.clone();
+        assignments.focus(OutputId(2)).unwrap();
+        assignments.disconnect(OutputId(2));
+        assert_eq!(assignments.outputs[0].active, 2);
+        assignments
+            .connect(OutputId(8), "Display-B".into(), bounds(1000.0))
+            .unwrap();
+        assert_eq!(assignments.outputs[0].active, 1);
+        assert_eq!(assignments.outputs[1].active, 2);
+        assert_eq!(assignments.preferences, preferences);
     }
 
     #[test]
@@ -458,10 +614,12 @@ mod tests {
             Preference {
                 workspace: 1,
                 output: "DP-1".into(),
+                active: false,
             },
             Preference {
                 workspace: 2,
                 output: "DP-1".into(),
+                active: false,
             },
         ])
         .unwrap();
@@ -471,9 +629,85 @@ mod tests {
         assignments
             .connect(OutputId(2), "DP-1".into(), bounds(1000.0))
             .unwrap();
+        assert_eq!(assignments.outputs[0].active, 1);
+        assert_eq!(assignments.outputs[1].active, 2);
+        assert_eq!(assignments.current.get(&1), Some(&OutputId(1)));
+        assert_eq!(assignments.pending_restorations().collect::<Vec<_>>(), vec![(OutputId(2), 1)]);
+        assert_eq!(assignments.preferences[0].output, "DP-1");
+    }
+
+    #[test]
+    fn returning_head_waits_for_the_input_workspace_then_restores_without_stealing_focus() {
+        let mut assignments = setup();
+        assignments.focus(OutputId(2)).unwrap();
+        assignments.disconnect(OutputId(2));
+        assignments.connect(OutputId(3), "DP-1".into(), bounds(1000.0)).unwrap();
+        assert_eq!(assignments.focused(), Some(OutputId(1)));
+        assert_eq!(assignments.outputs[0].active, 2);
+        assert_eq!(assignments.outputs[1].active, 3);
+        assert_eq!(assignments.pending_restorations().count(), 1);
+        assignments.select(OutputId(1), 1).unwrap();
+        assert_eq!(assignments.outputs[0].active, 1);
+        assert_eq!(assignments.outputs[1].active, 2);
+        assert_eq!(assignments.focused(), Some(OutputId(1)));
+        assert_eq!(assignments.pending_restorations().count(), 0);
+        assert_eq!(assignments.preferences.iter().find(|preference| preference.workspace == 2).unwrap().output, "DP-1");
+    }
+
+    #[test]
+    fn an_explicit_home_move_while_the_old_head_is_absent_survives_its_return() {
+        let mut assignments = setup();
+        assignments.focus(OutputId(1)).unwrap();
+        assignments.disconnect(OutputId(2));
+        assignments.move_workspace(2, OutputId(1)).unwrap();
+        assert_eq!(assignments.preferences.iter().find(|preference| preference.workspace == 2).unwrap().output, "eDP-1");
+        assignments.connect(OutputId(3), "DP-1".into(), bounds(1000.0)).unwrap();
+        assert_eq!(assignments.outputs.iter().find(|output| output.id == OutputId(1)).unwrap().active, 2);
+        assert_ne!(assignments.outputs.iter().find(|output| output.id == OutputId(3)).unwrap().active, 2);
+        assert_eq!(assignments.current.get(&2), Some(&OutputId(1)));
+        assert_eq!(assignments.focused(), Some(OutputId(1)));
+        assert_eq!(assignments.pending_restorations().count(), 0);
+    }
+
+    #[test]
+    fn explicit_home_change_retires_an_older_return_request() {
+        let mut assignments = setup();
+        assignments.focus(OutputId(2)).unwrap();
+        assignments.disconnect(OutputId(2));
+        assignments.connect(OutputId(3), "DP-1".into(), bounds(1000.0)).unwrap();
+        assert_eq!(assignments.pending_restorations().count(), 1);
+        assignments.move_workspace(2, OutputId(1)).unwrap();
+        assert_eq!(assignments.pending_restorations().count(), 0);
+        assignments.disconnect(OutputId(3));
+        assignments.connect(OutputId(4), "DP-1".into(), bounds(1000.0)).unwrap();
+        assert_eq!(assignments.outputs[0].active, 2);
+        assert_eq!(assignments.outputs[1].active, 3);
+        assert_eq!(assignments.preferences.iter().find(|preference| preference.workspace == 2).unwrap().output, "eDP-1");
+    }
+
+    #[test]
+    fn initial_restore_resolves_provisional_assignments_before_selecting_the_saved_workspace() {
+        let preferences = vec![
+            Preference { workspace: 1, output: "DP-1".into(), active: true },
+            Preference { workspace: 2, output: "DP-1".into(), active: false },
+        ];
+        let mut assignments = Assignments::restore(preferences.clone()).unwrap();
+        assignments.connect(OutputId(1), "eDP-1".into(), bounds(0.0)).unwrap();
+        assignments.connect(OutputId(2), "DP-1".into(), bounds(1000.0)).unwrap();
+        assignments.restore_initial(1).unwrap();
         assert_eq!(assignments.outputs[0].active, 2);
         assert_eq!(assignments.outputs[1].active, 1);
-        assert_eq!(assignments.current.get(&2), Some(&OutputId(1)));
-        assert_eq!(assignments.preferences[0].output, "DP-1");
+        assert_eq!(assignments.focused(), Some(OutputId(2)));
+        assert_eq!(assignments.preferences(), preferences);
+        assert_eq!(assignments.pending_restorations().count(), 0);
+    }
+
+    #[test]
+    fn active_preferences_reject_ambiguous_or_unnamed_homes() {
+        assert!(Assignments::restore(vec![Preference { workspace: 1, output: String::new(), active: true }]).is_err());
+        assert!(Assignments::restore(vec![
+            Preference { workspace: 1, output: "DP-1".into(), active: true },
+            Preference { workspace: 2, output: "DP-1".into(), active: true },
+        ]).is_err());
     }
 }

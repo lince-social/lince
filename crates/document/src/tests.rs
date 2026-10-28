@@ -5,6 +5,10 @@ use std::{
 };
 
 fn pdf() -> Vec<u8> {
+    pdf_fixture(0)
+}
+
+fn pdf_fixture(padding: usize) -> Vec<u8> {
     let stream =
         "0.1 0.3 0.7 rg 32 300 296 140 re f BT /F1 24 Tf 32 260 Td (Lince PDF reader) Tj ET";
     let objects = [
@@ -13,14 +17,19 @@ fn pdf() -> Vec<u8> {
         "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 360 480] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>".into(),
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
         format!("<< /Length {} >>\nstream\n{stream}\nendstream", stream.len()),
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 360 480] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>".into(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 360 480] /Resources << /Font << /F1 4 0 R >> >> /Contents 7 0 R >>".into(),
+        format!("<< /Length {} >>\nstream\n{stream}\nendstream", stream.len()),
     ];
     let mut bytes = b"%PDF-1.4\n".to_vec();
     let mut offsets = Vec::new();
     for (index, object) in objects.iter().enumerate() {
+        if index == 6 {
+            bytes.resize(bytes.len() + padding / 2, b' ');
+        }
         offsets.push(bytes.len());
         write!(bytes, "{} 0 obj\n{object}\nendobj\n", index + 1).unwrap();
     }
+    bytes.resize(bytes.len() + padding - padding / 2, b' ');
     let xref = bytes.len();
     write!(
         bytes,
@@ -41,10 +50,14 @@ fn pdf() -> Vec<u8> {
 }
 
 fn epub(encrypted: bool) -> Vec<u8> {
+    epub_fixture(encrypted, 0)
+}
+
+fn epub_fixture(encrypted: bool, padding: usize) -> Vec<u8> {
     let mut zip = zip::ZipWriter::new(Cursor::new(Vec::new()));
     let paragraphs = "<p>A native reader remembers your place. <em>Italic text</em>, <strong>bold text</strong>, and EPUB styles travel with the book.</p>".repeat(24);
     let chapter = format!(
-        r#"<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Lince EPUB</title><link rel="stylesheet" href="style.css"/></head><body><h1>Lince EPUB reader</h1><img src="art.svg"/><p class="accent">Publisher styles, images and flowing text.</p>{paragraphs}<table><tr><td>First</td><td>Second</td></tr></table></body></html>"#
+        r#"<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Lince EPUB</title><link rel="stylesheet" href="style.css"/></head><body><h1>Lince EPUB reader</h1><img src="art.svg"/><p class="accent">Publisher styles, images and flowing text.</p>{paragraphs}<p id="argument">A particular argument near the end.</p><table><tr><td>First</td><td>Second</td></tr></table></body></html>"#
     );
     let entries = [
         ("mimetype", "application/epub+zip"),
@@ -75,6 +88,22 @@ fn epub(encrypted: bool) -> Vec<u8> {
         zip.start_file(name, zip::write::SimpleFileOptions::default())
             .unwrap();
         zip.write_all(content.as_bytes()).unwrap();
+    }
+    let mut image = Cursor::new(Vec::new());
+    image::RgbaImage::from_pixel(80, 40, image::Rgba([20, 30, 200, 255]))
+        .write_to(&mut image, image::ImageFormat::Png)
+        .unwrap();
+    zip.start_file("EPUB/picture.png", zip::write::SimpleFileOptions::default())
+        .unwrap();
+    zip.write_all(image.get_ref()).unwrap();
+    if padding > 0 {
+        zip.start_file(
+            "EPUB/unused.bin",
+            zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Stored),
+        )
+        .unwrap();
+        zip.write_all(&vec![0; padding]).unwrap();
     }
     if encrypted {
         zip.start_file(
@@ -239,5 +268,231 @@ fn export_visual_fixtures_when_requested() {
             image::ColorType::Rgba8,
         )
         .unwrap();
+    }
+}
+
+#[test]
+fn chapter_passage_image_and_page_region_references_use_shared_locators() {
+    let mut reader = Reader::from_bytes(epub(false), "test.epub").unwrap();
+    let locator = Locator {
+        href: "EPUB/one.xhtml".into(),
+        fragment: "argument".into(),
+        ..Default::default()
+    };
+    for width in [400, 720] {
+        let position = reader.locate(&locator, width).unwrap();
+        assert_eq!(position.section, 0);
+        assert!(position.fraction > 0.5);
+        assert!(!reader.excerpt(&locator, width).unwrap().rgba.is_empty());
+    }
+    let quote = Locator {
+        href: "EPUB/one.xhtml".into(),
+        quote: "A particular argument near the end.".into(),
+        ..Default::default()
+    };
+    assert!(reader.locate(&quote, 720).unwrap().fraction > 0.5);
+    assert!(
+        reader
+            .locate(
+                &Locator {
+                    fragment: "absent".into(),
+                    ..locator
+                },
+                720
+            )
+            .is_err()
+    );
+    let image = reader
+        .excerpt(
+            &Locator {
+                image: "EPUB/picture.png".into(),
+                region: Some([0.25, 0.25, 0.5, 0.5]),
+                ..Default::default()
+            },
+            80,
+        )
+        .unwrap();
+    assert_eq!((image.width, image.height), (40, 20));
+    assert!(
+        image
+            .rgba
+            .chunks_exact(4)
+            .all(|pixel| pixel == [20, 30, 200, 255])
+    );
+    let mut reader = Reader::from_bytes(pdf(), "test.pdf").unwrap();
+    let locator = Locator {
+        page: Some(2),
+        end_page: Some(2),
+        region: Some([0.25, 0.25, 0.5, 0.5]),
+        ..Default::default()
+    };
+    assert_eq!(reader.locate(&locator, 720).unwrap().section, 1);
+    let region = reader.excerpt(&locator, 720).unwrap();
+    assert_eq!((region.width, region.height), (360, 480));
+    assert!(
+        reader
+            .locate(
+                &Locator {
+                    end_page: Some(3),
+                    ..locator
+                },
+                720
+            )
+            .is_err()
+    );
+    assert!(
+        crop(
+            Tile {
+                width: 1,
+                height: 1,
+                rgba: vec![0; 4]
+            },
+            [0.8, 0.0, 0.5, 1.0]
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn local_pdf_uses_the_seekable_backend_when_pdfium_is_available() {
+    if std::env::var_os("LINCE_PDFIUM_LIBRARY").is_none() {
+        return;
+    }
+    let temporary = tempfile::NamedTempFile::new().unwrap();
+    std::fs::write(temporary.path(), pdf()).unwrap();
+    let mut reader = Reader::open(temporary.path()).unwrap();
+    assert!(matches!(&reader.content, Content::PdfOnline(_)));
+    assert_eq!(reader.info.sections.len(), 2);
+    assert!(
+        reader
+            .tile(1, 720, 0)
+            .unwrap()
+            .rgba
+            .chunks_exact(4)
+            .any(|pixel| pixel[2] > 100 && pixel[0] < 50)
+    );
+}
+
+struct OnlineSource {
+    resource: Resource,
+    sent: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    server: Option<std::thread::JoinHandle<()>>,
+}
+
+impl OnlineSource {
+    fn new(bytes: Vec<u8>, media_type: &str) -> Self {
+        use std::{
+            net::TcpListener,
+            sync::{
+                Arc,
+                atomic::{AtomicBool, AtomicUsize, Ordering},
+            },
+        };
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let resource = Resource {
+            uri: format!("http://{}/book", listener.local_addr().unwrap()),
+            media_type: media_type.into(),
+            ..Default::default()
+        };
+        listener.set_nonblocking(true).unwrap();
+        let stop = Arc::new(AtomicBool::new(false));
+        let sent = Arc::new(AtomicUsize::new(0));
+        let stopped = stop.clone();
+        let transferred = sent.clone();
+        let server = std::thread::spawn(move || {
+            while !stopped.load(Ordering::Relaxed) {
+                let (mut stream, _) = match listener.accept() {
+                    Ok(pair) => pair,
+                    Err(_) => {
+                        std::thread::sleep(std::time::Duration::from_millis(2));
+                        continue;
+                    }
+                };
+                stream
+                    .set_read_timeout(Some(std::time::Duration::from_secs(2)))
+                    .unwrap();
+                let mut request = Vec::new();
+                while !request.ends_with(b"\r\n\r\n") && request.len() < 16_384 {
+                    let mut byte = [0];
+                    if stream.read_exact(&mut byte).is_err() {
+                        break;
+                    }
+                    request.push(byte[0]);
+                }
+                let request = String::from_utf8(request).unwrap().to_ascii_lowercase();
+                let range = request
+                    .lines()
+                    .find_map(|line| line.strip_prefix("range: bytes="))
+                    .expect("The reader must request source ranges");
+                let (start, end) = range.split_once('-').unwrap();
+                let start: usize = start.parse().unwrap();
+                let end: usize = end.parse().unwrap();
+                let content = &bytes[start..=end];
+                let header = format!(
+                    "HTTP/1.1 206 Partial Content\r\nContent-Length: {}\r\nContent-Range: bytes {start}-{end}/{}\r\nETag: \"edition-1\"\r\nConnection: close\r\n\r\n",
+                    content.len(),
+                    bytes.len()
+                );
+                if stream.write_all(header.as_bytes()).is_ok() {
+                    let _ = stream.write_all(content);
+                }
+                transferred.fetch_add(content.len(), Ordering::Relaxed);
+            }
+        });
+        Self {
+            resource,
+            sent,
+            stop,
+            server: Some(server),
+        }
+    }
+
+    fn stop(&mut self) {
+        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        if let Some(server) = self.server.take() {
+            server.join().unwrap();
+        }
+    }
+}
+
+impl Drop for OnlineSource {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
+#[test]
+fn online_books_render_from_ranges_and_reopen_seen_content_without_the_server() {
+    use std::sync::atomic::Ordering;
+    let mut books = vec![(
+        epub_fixture(false, 20 * 1024 * 1024),
+        "application/epub+zip",
+    )];
+    if std::env::var_os("LINCE_PDFIUM_LIBRARY").is_some() {
+        books.push((pdf_fixture(20 * 1024 * 1024), "application/pdf"));
+    }
+    for (bytes, media_type) in books {
+        let mut source = OnlineSource::new(bytes, media_type);
+        let temporary = tempfile::tempdir().unwrap();
+        let library = Library::new(temporary.path());
+        let mut reader = Reader::open_resource(library.clone(), &source.resource).unwrap();
+        if media_type == "application/pdf" {
+            assert!(matches!(&reader.content, Content::PdfOnline(_)));
+        }
+        let tile = reader.tile(0, 720, 0).unwrap();
+        assert!(!tile.rgba.is_empty());
+        assert!(
+            source.sent.load(Ordering::Relaxed) < 4 * 1024 * 1024,
+            "Reading one page fetched the complete source"
+        );
+        assert!(library.find(&source.resource).unwrap().is_none());
+        source.stop();
+        drop(reader);
+        let mut offline = Reader::open_resource(library, &source.resource).unwrap();
+        assert_eq!(offline.tile(0, 720, 0).unwrap().rgba, tile.rgba);
+        if media_type == "application/pdf" {
+            assert!(offline.tile(1, 720, 0).is_err());
+        }
     }
 }

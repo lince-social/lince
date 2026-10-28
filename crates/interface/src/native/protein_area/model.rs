@@ -13,6 +13,8 @@ pub enum SpawnPlacement {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
+    pub window_record: Option<crate::native::full_record::window::WindowRecord>,
+    #[serde(default)]
     pub listen_record_selection: bool,
     #[serde(default)]
     pub presentation: Option<lince_interface::presentation::Presentation>,
@@ -61,6 +63,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            window_record: None,
             listen_record_selection: false,
             presentation: None,
             hide_filled: false,
@@ -95,6 +98,12 @@ impl Default for Config {
 }
 
 impl Config {
+    pub(crate) fn creating(&self) -> bool {
+        self.window_record
+            .as_ref()
+            .is_some_and(|window| window.creating)
+    }
+
     pub(super) fn same_template(&self, other: &Self) -> bool {
         self.fiote == other.fiote
             && self.shader_effects == other.shader_effects
@@ -127,7 +136,10 @@ impl Config {
     }
 
     pub fn valid(&self) -> bool {
-        self.shader_placement.valid()
+        self.window_record
+            .as_ref()
+            .is_none_or(|window| window.valid(self))
+            && self.shader_placement.valid()
             && self
                 .presentation
                 .as_ref()

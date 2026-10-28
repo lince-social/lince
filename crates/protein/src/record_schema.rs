@@ -169,7 +169,7 @@ pub(crate) async fn attach(
                     }
                 }
                 if wants("assertions") {
-                    row["assertions"].as_array_mut().unwrap().push(json!({"uid":assertion.uid,"role":assertion.role,"predicate":concept_names.get(&assertion.predicate_uid).unwrap_or(&assertion.predicate),"predicate_uid":assertion.predicate_uid,"object":assertion.object_uid,"quantity":assertion.quantity.map(|q| q.to_string()),"unit":assertion.unit_uid}));
+                    row["assertions"].as_array_mut().unwrap().push(json!({"uid":assertion.uid,"role":assertion.role,"predicate":concept_names.get(&assertion.predicate_uid).unwrap_or(&assertion.predicate),"predicate_uid":assertion.predicate_uid,"object":assertion.object_uid,"uri":assertion.object_uri,"resolved_object":assertion.resolved_object_uid,"quantity":assertion.quantity.map(|q| q.to_string()),"unit":assertion.unit_uid}));
                 }
             }
         }

@@ -63,10 +63,22 @@ pub(super) fn spawn(world: &mut World, parent: Entity, reference: &str, context:
     let path = ancestors(world, parent);
     if count >= MAX_VIEWS
         || path.len() >= MAX_DEPTH
-        || reference.len() > 256
+        || reference.len() > 8192
         || reference.is_empty()
     {
         crate::native::edit_mode::label(world, parent, "Transclusion limit reached.", 14.0);
+        if reference.len() <= 8192 && !reference.is_empty() {
+            super::button(
+                world,
+                parent,
+                context.owner,
+                "Open linked source",
+                Link {
+                    reference: reference.into(),
+                    context: context.clone(),
+                },
+            );
+        }
         return;
     }
     let entity = world
@@ -90,7 +102,28 @@ pub(super) fn spawn(world: &mut World, parent: Entity, reference: &str, context:
         ))
         .id();
     crate::native::edit_mode::label(world, entity, "Loading transclusion…", 14.0);
-    super::live::watch(world, entity, reference, context.source.clone());
+    let mut cursor = Some(context.owner);
+    let mut scoped = false;
+    while let Some(owner) = cursor {
+        scoped |= world
+            .get::<crate::native::source_view::ReferenceBase>(owner)
+            .is_some()
+            || world
+                .get::<crate::native::protein_area::RecordBinding>(owner)
+                .is_some();
+        cursor = world.get::<ChildOf>(owner).map(ChildOf::parent);
+    }
+    if scoped
+        || lince_resources::reference::record_uid(reference.trim_start_matches('@'))
+        || lince_resources::reference::is_uri(reference)
+        || reference.contains('/')
+        || reference.contains(".lingua")
+        || reference.starts_with('#')
+    {
+        crate::native::source_view::embed_reference(world, entity, reference, context);
+    } else {
+        super::live::watch(world, entity, reference, context.source.clone());
+    }
 }
 
 pub(super) fn received(world: &mut World, entity: Entity, row: Option<&serde_json::Value>) {
@@ -100,7 +133,8 @@ pub(super) fn received(world: &mut World, entity: Entity, row: Option<&serde_jso
     if view.row.as_ref() == row && row.is_some() {
         return;
     }
-    let context = view.context.clone();
+    let mut context = view.context.clone();
+    context.owner = entity;
     world.get_mut::<Transclusion>(entity).unwrap().row = row.cloned();
     if let Some(children) = world.get::<Children>(entity) {
         let children = children.to_vec();
@@ -117,6 +151,11 @@ pub(super) fn received(world: &mut World, entity: Entity, row: Option<&serde_jso
         );
         return;
     };
+    if let Some(base) = row["base"].as_str() {
+        world
+            .entity_mut(entity)
+            .insert(crate::native::source_view::ReferenceBase(base.into()));
+    }
     let uid = row["uid"].as_str().unwrap_or_default();
     let parent = world.get::<ChildOf>(entity).unwrap().parent();
     if ancestors(world, parent)
@@ -124,6 +163,16 @@ pub(super) fn received(world: &mut World, entity: Entity, row: Option<&serde_jso
         .any(|ancestor| ancestor == uid)
     {
         crate::native::edit_mode::label(world, entity, "Transclusion cycle stopped.", 14.0);
+        super::button(
+            world,
+            entity,
+            entity,
+            "Open linked source",
+            Link {
+                reference: row["uri"].as_str().unwrap_or(uid).into(),
+                context,
+            },
+        );
         return;
     }
     let Some(body) = row["body"].as_str() else {
@@ -145,6 +194,7 @@ pub(super) fn received(world: &mut World, entity: Entity, row: Option<&serde_jso
     }
     let title = row["head"]
         .as_str()
+        .or_else(|| row["title"].as_str())
         .unwrap_or(uid)
         .chars()
         .take(256)
@@ -155,11 +205,27 @@ pub(super) fn received(world: &mut World, entity: Entity, row: Option<&serde_jso
         entity,
         &format!("{title} · Open Record"),
         Link {
-            reference: uid.into(),
+            reference: row["uri"].as_str().unwrap_or(uid).into(),
             context: context.clone(),
         },
     );
     super::spawn(world, entity, body, context);
+    if row["base"].is_null() {
+        crate::native::source_view::attach(world, entity, uid, view_source(world, entity));
+    } else if let Ok(resource) =
+        serde_json::from_value::<lince_resources::Resource>(row["resource"].clone())
+    {
+        crate::native::source_view::embedded_media(world, entity, &resource);
+    }
+}
+
+fn view_source(world: &World, entity: Entity) -> Source {
+    world
+        .get::<Transclusion>(entity)
+        .unwrap()
+        .context
+        .source
+        .clone()
 }
 
 #[cfg(test)]
@@ -280,6 +346,33 @@ mod tests {
         assert_eq!(
             world.query::<&Transclusion>().iter(&world).count(),
             MAX_VIEWS
+        );
+    }
+}
+
+pub(super) fn external(world: &mut World, entity: Entity, data: &serde_json::Value) {
+    let fragment = data["fragment"].as_str();
+    let row = data["records"].as_array().and_then(|records| {
+        if let Some(fragment) = fragment {
+            records.iter().find(|record| record["uid"] == fragment)
+        } else if records.len() == 1 {
+            records.first()
+        } else {
+            None
+        }
+    });
+    received(world, entity, row);
+    if row.is_none()
+        && let Some(view) = world.get::<Transclusion>(entity)
+    {
+        let reference = view.reference.clone();
+        let context = view.context.clone();
+        super::button(
+            world,
+            entity,
+            entity,
+            "Open linked document",
+            Link { reference, context },
         );
     }
 }

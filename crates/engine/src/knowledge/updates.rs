@@ -44,9 +44,6 @@ impl Engine {
         let summary = json!({"source_revision":incoming.revision,"saved_revision":item.revision,"source_changed":json!({"title":baseline["title"]!=incoming.title,"content":baseline["content"]!=incoming.content,"claims":baseline["claims"]!=json!(incoming.claims),"attribution":baseline["credits"]!=json!(incoming.credits)||baseline["license"]!=json!(incoming.license),"assets":baseline["assets"]!=json!(incoming.assets)}),"local_changed":json!({"title":metadata["head"]!=saved["local_baseline"]["head"],"annotations":metadata["body"]!=saved["local_baseline"]["body"],"content":saved["item"]["content"]!=baseline["content"],"claims":saved["item"]["claims"]!=baseline["claims"]}),"local_record":metadata,"saved_item":item,"source_item":incoming});
         let review = nucleus::new_uid("ku");
         let content = json!({"record_uid":record,"record":metadata,"saved_hash":store::knowledge::fingerprint(saved.to_string().as_bytes()),"incoming":incoming,"summary":summary});
-        if content.to_string().len() > store::knowledge::BUNDLE_LIMIT {
-            return Err(invalid("This source update exceeds the review size limit"));
-        }
         store::knowledge::check_review_capacity_on(&mut tx, owner, content.to_string().len())
             .await?;
         store::sqlx::query("INSERT INTO knowledge_review(uid,owner_key,kind,content,created_at) VALUES(?,?,'update',?,?)").bind(&review).bind(owner).bind(content.to_string()).bind(nucleus::execution::now().to_rfc3339()).execute(&mut *tx).await?;

@@ -1,14 +1,34 @@
 use super::{Editor, allowed, text_state};
-use bevy::{asset::AssetId, prelude::*, text::{EditableText, TextEdit}};
-use lince_interface::{host::{HostRequest, OutputId}, native};
-use std::{collections::VecDeque, sync::{Arc, atomic::{AtomicBool, Ordering}}};
+use bevy::{
+    asset::AssetId,
+    prelude::*,
+    text::{EditableText, TextEdit},
+};
+use lince_interface::{
+    host::{HostRequest, OutputId},
+    native,
+};
+use std::{
+    collections::VecDeque,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 pub const MAX_TRANSFER: usize = 1024 * 1024;
 pub const MAX_VALUE: usize = 16 * 1024;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Destination {
-    Editor { context: Editor, point: [f32; 2], transform: [f32; 6], size: [f32; 2], scale: f32 },
+    Editor {
+        context: Editor,
+        point: [f32; 2],
+        transform: [f32; 6],
+        size: [f32; 2],
+        scale: f32,
+        content_origin: [f32; 2],
+    },
     Canvas(native::external_drop::NativeTarget),
 }
 
@@ -16,23 +36,51 @@ pub enum Destination {
 pub struct Target {
     pub window: u64,
     pub output: OutputId,
+    pub mapping_revision: Option<u64>,
     pub pointer: [f64; 2],
     pub destination: Destination,
 }
 
 impl Target {
     pub fn same_owner(&self, other: &Self) -> bool {
-        self.window == other.window && self.output == other.output && match (&self.destination, &other.destination) {
-            (Destination::Canvas(a), Destination::Canvas(b)) => a.same_owner(b),
-            (Destination::Editor { context: a, transform: at, size: az, scale: ac, .. },
-                Destination::Editor { context: b, transform: bt, size: bz, scale: bc, .. }) => a == b && at == bt && az == bz && ac == bc,
-            _ => false,
-        }
+        self.window == other.window
+            && self.output == other.output
+            && self.mapping_revision == other.mapping_revision
+            && match (&self.destination, &other.destination) {
+                (Destination::Canvas(a), Destination::Canvas(b)) => a.same_owner(b),
+                (
+                    Destination::Editor {
+                        context: a,
+                        transform: at,
+                        size: az,
+                        scale: ac,
+                        content_origin: ao,
+                        ..
+                    },
+                    Destination::Editor {
+                        context: b,
+                        transform: bt,
+                        size: bz,
+                        scale: bc,
+                        content_origin: bo,
+                        ..
+                    },
+                ) => a == b && at == bt && az == bz && ac == bc && ao == bo,
+                _ => false,
+            }
     }
 }
 
+fn mapping_revision(world: &World, output: OutputId) -> Option<Option<u64>> {
+    let snapshot = world.get_resource::<lince_interface::host::mapping::Snapshot>().filter(|snapshot| !snapshot.outputs().is_empty());
+    match snapshot { Some(snapshot) => Some(Some(snapshot.get(output)?.revision())), None => Some(None) }
+}
+
 #[derive(Clone, Debug, PartialEq)]
-pub enum Payload { Text(String), Uri(String) }
+pub enum Payload {
+    Text(String),
+    Uri(String),
+}
 
 #[derive(Clone)]
 pub struct Request {
@@ -43,35 +91,65 @@ pub struct Request {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Kind { Text, Uri }
+pub enum Kind {
+    Text,
+    Uri,
+}
 
 pub fn mime_kind(mime: &str) -> Option<Kind> {
-    if mime.len() > 256 { return None; }
+    if mime.len() > 256 {
+        return None;
+    }
     let mut parts = mime.split(';').map(str::trim);
     let base = parts.next()?;
-    let kind = if base.eq_ignore_ascii_case("text/plain") { Kind::Text }
-        else if base.eq_ignore_ascii_case("text/uri-list") { Kind::Uri } else { return None };
+    let kind = if base.eq_ignore_ascii_case("text/plain") {
+        Kind::Text
+    } else if base.eq_ignore_ascii_case("text/uri-list") {
+        Kind::Uri
+    } else {
+        return None;
+    };
     for part in parts {
         let (name, value) = part.split_once('=')?;
-        if !name.trim().eq_ignore_ascii_case("charset") || !value.trim().trim_matches('"').eq_ignore_ascii_case("utf-8") { return None; }
+        if !name.trim().eq_ignore_ascii_case("charset")
+            || !value.trim().trim_matches('"').eq_ignore_ascii_case("utf-8")
+        {
+            return None;
+        }
     }
     Some(kind)
 }
 
 pub fn decode(mime: &str, bytes: Vec<u8>) -> Result<Payload, String> {
-    if bytes.is_empty() || bytes.len() > MAX_TRANSFER { return Err("The dropped data exceeds its supported bounds.".into()); }
+    if bytes.is_empty() || bytes.len() > MAX_TRANSFER {
+        return Err("The dropped data exceeds its supported bounds.".into());
+    }
     let kind = mime_kind(mime).ok_or("This drop type is unsupported.")?;
     let text = String::from_utf8(bytes).map_err(|_| "Dropped text must use UTF-8.")?;
-    if text.contains('\0') { return Err("Dropped text contains an embedded NUL.".into()); }
+    if text.contains('\0') {
+        return Err("Dropped text contains an embedded NUL.".into());
+    }
     if kind == Kind::Text {
-        if text.len() > MAX_VALUE { return Err("Drop text of at most 16 KiB.".into()); }
+        if text.len() > MAX_VALUE {
+            return Err("Drop text of at most 16 KiB.".into());
+        }
         return Ok(Payload::Text(text));
     }
-    let mut uris = text.lines().map(|line| line.trim_end_matches('\r')).filter(|line| !line.is_empty() && !line.starts_with('#'));
+    let mut uris = text
+        .lines()
+        .map(|line| line.trim_end_matches('\r'))
+        .filter(|line| !line.is_empty() && !line.starts_with('#'));
     let uri = uris.next().ok_or("The drop contains no URI.")?;
-    if uri.len() > MAX_VALUE || uri.chars().any(char::is_whitespace) { return Err("The dropped URI is invalid or too large.".into()); }
-    if uris.next().is_some() { return Err("Drop one file or link at a time.".into()); }
-    if !["file://", "http://", "https://"].iter().any(|scheme| uri.starts_with(scheme)) {
+    if uri.len() > MAX_VALUE || uri.chars().any(char::is_whitespace) {
+        return Err("The dropped URI is invalid or too large.".into());
+    }
+    if uris.next().is_some() {
+        return Err("Drop one file or link at a time.".into());
+    }
+    if !["file://", "http://", "https://"]
+        .iter()
+        .any(|scheme| uri.starts_with(scheme))
+    {
         return Err("Drop a local file or an HTTP(S) link.".into());
     }
     Ok(Payload::Uri(uri.into()))
@@ -85,81 +163,210 @@ struct Transfers {
 }
 
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<Transfers>().add_systems(PostUpdate, (
-        prepare.after(super::apply).before(bevy::text::EditableTextSystems),
-        finish.after(super::finish).before(native::record_binding::SyncBindings),
-    ));
+    app.init_resource::<Transfers>().add_systems(
+        PostUpdate,
+        (
+            prepare
+                .after(super::apply)
+                .before(bevy::text::EditableTextSystems),
+            finish
+                .after(super::finish)
+                .before(native::record_binding::SyncBindings),
+        ),
+    );
 }
 
 pub(crate) fn enqueue(world: &mut World, request: Request) {
     let mut transfers = world.resource_mut::<Transfers>();
-    if transfers.pending.len() + transfers.checking.len() + transfers.replies.len() < 8 { transfers.pending.push_back(request); }
-    else { request.cancelled.store(true, Ordering::Release); }
+    if transfers.pending.len() + transfers.checking.len() + transfers.replies.len() < 8 {
+        transfers.pending.push_back(request);
+    } else {
+        request.cancelled.store(true, Ordering::Release);
+    }
 }
 
-pub(crate) fn capture(world: &mut World, window: Entity, image: AssetId<Image>, output: OutputId, offset: [f64; 2]) -> Option<Target> {
-    let point = world.get::<Window>(window)?.cursor_position()?;
-    let focused = world.get_resource::<bevy::input_focus::InputFocus>().and_then(|focus| focus.get());
+pub(crate) fn capture(
+    world: &mut World,
+    window: Entity,
+    image: AssetId<Image>,
+    output: OutputId,
+    mapping: lince_interface::host::raster::RasterMapping,
+) -> Option<Target> {
+    let point = world.get::<Window>(window)?.physical_cursor_position()?;
+    let focused = world
+        .get_resource::<bevy::input_focus::InputFocus>()
+        .and_then(|focus| focus.get());
     let editor = focused.and_then(|entity| {
-        let camera = world.get::<bevy::ui::ComputedUiTargetCamera>(entity)?.get()?;
-        let bevy::camera::RenderTarget::Image(target) = world.get::<bevy::camera::RenderTarget>(camera)? else { return None };
-        if target.handle.id() != image { return None; }
+        let camera = world
+            .get::<bevy::ui::ComputedUiTargetCamera>(entity)?
+            .get()?;
+        let bevy::camera::RenderTarget::Image(target) =
+            world.get::<bevy::camera::RenderTarget>(camera)?
+        else {
+            return None;
+        };
+        if target.handle.id() != image {
+            return None;
+        }
         let node = world.get::<ComputedNode>(entity)?;
         let transform = world.get::<UiGlobalTransform>(entity)?;
         let local = transform.try_inverse()?.transform_point2(point) + node.size() * 0.5;
-        if !local.is_finite() || !local.cmpge(Vec2::ZERO).all() || !local.cmplt(node.size()).all()
-            || world.get::<bevy::ui::CalculatedClip>(entity).is_some_and(|clip| !clip.clip.contains(point)) { return None; }
+        if !local.is_finite()
+            || !local.cmpge(Vec2::ZERO).all()
+            || !local.cmplt(node.size()).all()
+            || world
+                .get::<bevy::ui::CalculatedClip>(entity)
+                .is_some_and(|clip| !clip.clip.contains(point))
+        {
+            return None;
+        }
         let scale = node.inverse_scale_factor();
-        if !scale.is_finite() || scale <= 0.0 { return None; }
-        Some(Destination::Editor { context: text_state(world, entity, [0, 0, 1, 1])?,
-            point: (local / scale).to_array(), transform: transform.to_cols_array(), size: node.size().to_array(), scale })
+        if !scale.is_finite() || scale <= 0.0 {
+            return None;
+        }
+        let content_origin = node.content_box().min
+            - world
+                .get::<bevy::ui::widget::TextScroll>(entity)
+                .map_or(Vec2::ZERO, |scroll| scroll.0);
+        Some(Destination::Editor {
+            context: text_state(world, entity, [0, 0, 1, 1])?,
+            point: (local - node.size() * 0.5 - content_origin).to_array(),
+            transform: transform.to_cols_array(),
+            size: node.size().to_array(),
+            scale,
+            content_origin: content_origin.to_array(),
+        })
     });
-    let destination = editor.or_else(|| native::external_drop::capture_native_target(world, window).map(Destination::Canvas))?;
-    Some(Target { window: window.to_bits(), output, pointer: [f64::from(point.x) + offset[0], f64::from(point.y) + offset[1]], destination })
+    let destination = editor.or_else(|| {
+        native::external_drop::capture_native_target(world, window).map(Destination::Canvas)
+    })?;
+    Some(Target {
+        window: window.to_bits(),
+        output,
+        mapping_revision: mapping_revision(world, output)?,
+        pointer: mapping.logical_point(point.as_dvec2().to_array()),
+        destination,
+    })
 }
 
 fn prepare(world: &mut World) {
     let requests = std::mem::take(&mut world.resource_mut::<Transfers>().pending);
     for request in requests {
-        if request.cancelled.load(Ordering::Acquire) { continue; }
-        let Request { token, target, payload, cancelled } = request;
-        let window = world.query::<(Entity, &Window)>().iter(world).any(|(entity, _)| entity.to_bits() == target.window);
-        let active_output = world.get_resource::<native::output_views::OutputViews>()
-            .is_none_or(|views| views.focused == target.output && views.outputs.iter().any(|output| output.id == target.output && output.usable.is_some()));
-        if !window || !active_output {
-            world.resource_mut::<Transfers>().replies.push_back((token, false));
+        if request.cancelled.load(Ordering::Acquire) {
+            continue;
+        }
+        let Request {
+            token,
+            target,
+            payload,
+            cancelled,
+        } = request;
+        let window = world
+            .query::<(Entity, &Window)>()
+            .iter(world)
+            .any(|(entity, _)| entity.to_bits() == target.window);
+        let active_output = world
+            .get_resource::<native::output_views::OutputViews>()
+            .is_none_or(|views| {
+                views.focused == target.output
+                    && views
+                        .outputs
+                        .iter()
+                        .any(|output| output.id == target.output && output.usable.is_some())
+            });
+        if !window || !active_output || mapping_revision(world, target.output) != Some(target.mapping_revision) {
+            world
+                .resource_mut::<Transfers>()
+                .replies
+                .push_back((token, false));
             continue;
         }
         match target.destination {
             Destination::Canvas(target) => {
                 let result = match payload {
-                    Payload::Uri(uri) => native::external_drop::receive_native_uri(world, &target, &uri),
+                    Payload::Uri(uri) => {
+                        native::external_drop::receive_native_uri(world, &target, &uri)
+                    }
                     Payload::Text(text) => {
                         let value = text.trim();
-                        if ["file://", "http://", "https://"].iter().any(|prefix| value.starts_with(prefix)) && !value.chars().any(char::is_whitespace) {
+                        if ["file://", "http://", "https://"]
+                            .iter()
+                            .any(|prefix| value.starts_with(prefix))
+                            && !value.chars().any(char::is_whitespace)
+                        {
                             native::external_drop::receive_native_uri(world, &target, value)
-                        } else { native::external_drop::receive_native_text(world, &target, &text) }
+                        } else {
+                            native::external_drop::receive_native_text(world, &target, &text)
+                        }
                     }
                 };
-                if let Err(message) = &result { native::notifications::report(world, "Drop", message); }
-                world.resource_mut::<Transfers>().replies.push_back((token, result.is_ok()));
+                if let Err(message) = &result {
+                    native::notifications::report(world, "Drop", message);
+                }
+                world
+                    .resource_mut::<Transfers>()
+                    .replies
+                    .push_back((token, result.is_ok()));
             }
-            Destination::Editor { context, point, transform, size, scale } => {
-                let entity = world.query::<(Entity, &EditableText)>().iter(world)
+            Destination::Editor {
+                context,
+                point,
+                transform,
+                size,
+                scale,
+                content_origin,
+            } => {
+                let entity = world
+                    .query::<(Entity, &EditableText)>()
+                    .iter(world)
                     .find_map(|(entity, _)| (entity.to_bits() == context.owner).then_some(entity));
-                let value = match payload { Payload::Text(value) | Payload::Uri(value) => value };
-                let Some(entity) = entity.filter(|entity| allowed(world, *entity)
-                    && world.get_resource::<bevy::input_focus::InputFocus>().and_then(|focus| focus.get()) == Some(*entity)
-                    && text_state(world, *entity, context.caret).as_ref() == Some(&context)
-                    && world.get::<UiGlobalTransform>(*entity).is_some_and(|current| current.to_cols_array() == transform)
-                    && world.get::<ComputedNode>(*entity).is_some_and(|node| node.size().to_array() == size && node.inverse_scale_factor() == scale)) else {
-                    world.resource_mut::<Transfers>().replies.push_back((token, false)); continue;
+                let value = match payload {
+                    Payload::Text(value) | Payload::Uri(value) => value,
+                };
+                let Some(entity) = entity.filter(|entity| {
+                    allowed(world, *entity)
+                        && world
+                            .get_resource::<bevy::input_focus::InputFocus>()
+                            .and_then(|focus| focus.get())
+                            == Some(*entity)
+                        && text_state(world, *entity, context.caret).as_ref() == Some(&context)
+                        && world
+                            .get::<UiGlobalTransform>(*entity)
+                            .is_some_and(|current| current.to_cols_array() == transform)
+                        && world.get::<ComputedNode>(*entity).is_some_and(|node| {
+                            node.size().to_array() == size
+                                && node.inverse_scale_factor() == scale
+                                && (node.content_box().min
+                                    - world
+                                        .get::<bevy::ui::widget::TextScroll>(*entity)
+                                        .map_or(Vec2::ZERO, |scroll| scroll.0))
+                                .to_array()
+                                    == content_origin
+                        })
+                }) else {
+                    world
+                        .resource_mut::<Transfers>()
+                        .replies
+                        .push_back((token, false));
+                    continue;
                 };
                 let input = world.get::<EditableText>(entity).unwrap();
-                if value.is_empty() || value.len() > MAX_VALUE || value.contains('\0')
-                    || !point.iter().all(|value| value.is_finite()) || !input.pending_edits.is_empty() || input.pending_paste.is_some()
-                    || value.chars().any(|character| character.is_control() && !(input.allow_newlines && matches!(character, '\n' | '\t'))) {
-                    world.resource_mut::<Transfers>().replies.push_back((token, false)); continue;
+                if value.is_empty()
+                    || value.len() > MAX_VALUE
+                    || value.contains('\0')
+                    || !point.iter().all(|value| value.is_finite())
+                    || !input.pending_edits.is_empty()
+                    || input.pending_paste.is_some()
+                    || value.chars().any(|character| {
+                        character.is_control()
+                            && !(input.allow_newlines && matches!(character, '\n' | '\t'))
+                    })
+                {
+                    world
+                        .resource_mut::<Transfers>()
+                        .replies
+                        .push_back((token, false));
+                    continue;
                 }
                 let before = input.value().into_iter().map(str::len).sum();
                 let bytes = value.len();
@@ -167,8 +374,13 @@ fn prepare(world: &mut World) {
                 input.queue_edit(TextEdit::clear_ime_compose());
                 input.queue_edit(TextEdit::MoveToPoint(Vec2::from_array(point)));
                 input.queue_edit(TextEdit::Insert(value.into()));
-                world.resource_mut::<bevy::input_focus::InputFocus>().set(entity, bevy::input_focus::FocusCause::Navigated);
-                world.resource_mut::<Transfers>().checking.push((token, entity, before, bytes, cancelled));
+                world
+                    .resource_mut::<bevy::input_focus::InputFocus>()
+                    .set(entity, bevy::input_focus::FocusCause::Navigated);
+                world
+                    .resource_mut::<Transfers>()
+                    .checking
+                    .push((token, entity, before, bytes, cancelled));
             }
         }
     }
@@ -177,19 +389,37 @@ fn prepare(world: &mut World) {
 fn finish(world: &mut World) {
     let checking = std::mem::take(&mut world.resource_mut::<Transfers>().checking);
     for (token, entity, before, bytes, cancelled) in checking {
-        let accepted = !cancelled.load(Ordering::Acquire) && world.get::<EditableText>(entity)
-            .is_some_and(|input| input.value().into_iter().map(str::len).sum::<usize>() == before.saturating_add(bytes));
-        world.resource_mut::<Transfers>().replies.push_back((token, accepted));
+        let accepted = !cancelled.load(Ordering::Acquire)
+            && world.get::<EditableText>(entity).is_some_and(|input| {
+                input.value().into_iter().map(str::len).sum::<usize>()
+                    == before.saturating_add(bytes)
+            });
+        world
+            .resource_mut::<Transfers>()
+            .replies
+            .push_back((token, accepted));
     }
-    let Some(sender) = world.get_resource::<native::layout::desktop::HostRequests>().map(|requests| requests.0.clone()) else { return };
+    let Some(sender) = world
+        .get_resource::<native::layout::desktop::HostRequests>()
+        .map(|requests| requests.0.clone())
+    else {
+        return;
+    };
     loop {
         let reply = world.resource_mut::<Transfers>().replies.pop_front();
-        let Some((token, accepted)) = reply else { break };
+        let Some((token, accepted)) = reply else {
+            break;
+        };
         match sender.try_send(HostRequest::DropFinished { token, accepted }) {
             Ok(()) => {}
             Err(std::sync::mpsc::TrySendError::Full(_)) => {
-                world.resource_mut::<Transfers>().replies.push_front((token, accepted));
-                if let Some(wake) = world.get_resource::<native::wake::WakeSignal>() { wake.ring(); }
+                world
+                    .resource_mut::<Transfers>()
+                    .replies
+                    .push_front((token, accepted));
+                if let Some(wake) = world.get_resource::<native::wake::WakeSignal>() {
+                    wake.ring();
+                }
                 break;
             }
             Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
@@ -207,17 +437,31 @@ mod tests {
 
     fn editor_request(world: &mut World, owner: Entity, value: &str) -> Request {
         let window = world.spawn(Window::default()).id();
-        world.entity_mut(owner).insert((ComputedNode::default(), UiGlobalTransform::default()));
+        world
+            .entity_mut(owner)
+            .insert((ComputedNode::default(), UiGlobalTransform::default()));
         let node = world.get::<ComputedNode>(owner).unwrap();
         Request {
             token: 7,
-            target: Target { window: window.to_bits(), output: OutputId(1), pointer: [0.0; 2],
+            target: Target {
+                window: window.to_bits(),
+                output: OutputId(1),
+                mapping_revision: None,
+                pointer: [0.0; 2],
                 destination: Destination::Editor {
-                    context: text_state(world, owner, [0, 0, 1, 1]).unwrap(), point: [0.0; 2],
-                    transform: world.get::<UiGlobalTransform>(owner).unwrap().to_cols_array(),
-                    size: node.size().to_array(), scale: node.inverse_scale_factor(),
-                } },
-            payload: Payload::Text(value.into()), cancelled: Arc::new(AtomicBool::new(false)),
+                    context: text_state(world, owner, [0, 0, 1, 1]).unwrap(),
+                    point: [0.0; 2],
+                    transform: world
+                        .get::<UiGlobalTransform>(owner)
+                        .unwrap()
+                        .to_cols_array(),
+                    size: node.size().to_array(),
+                    scale: node.inverse_scale_factor(),
+                    content_origin: node.content_box().min.to_array(),
+                },
+            },
+            payload: Payload::Text(value.into()),
+            cancelled: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -225,7 +469,11 @@ mod tests {
         prepare(world);
         world.run_system_once(bevy::text::apply_text_edits).unwrap();
         finish(world);
-        world.resource_mut::<Transfers>().replies.pop_front().unwrap()
+        world
+            .resource_mut::<Transfers>()
+            .replies
+            .pop_front()
+            .unwrap()
     }
 
     #[test]
@@ -236,7 +484,66 @@ mod tests {
         enqueue(&mut world, request);
         assert!(world.resource::<Transfers>().replies.is_empty());
         assert_eq!(process(&mut world), (7, true));
-        assert_eq!(world.get::<EditableText>(owner).unwrap().value().to_string(), "é世old");
+        assert_eq!(
+            world
+                .get::<EditableText>(owner)
+                .unwrap()
+                .value()
+                .to_string(),
+            "é世old"
+        );
+    }
+
+    #[test]
+    fn queued_drop_uses_its_output_mapping_and_rejects_a_replaced_lens_without_mutating_text() {
+        use lince_interface::host::{OutputViewport, Rectangle, mapping::{Mapping, QuarterTurn, Snapshot}, raster::RasterMapping};
+        let (mut world, owner) = super::super::tests::editing_world("unchanged");
+        world.init_resource::<Transfers>();
+        let mut request = editor_request(&mut world, owner, "rejected");
+        let bounds = Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap();
+        let output = OutputViewport { rotation: Default::default(), id: OutputId(1), bounds, usable: Some(bounds), physical_size: [800, 600],
+            raster: RasterMapping { origin: [0.0; 2], scale: [1.0; 2] }, workspace: 1 };
+        let old = Mapping::new(&output, QuarterTurn::Normal, 2.0, [400.0, 300.0], 1).unwrap();
+        let mut companion = output.clone(); companion.id = OutputId(2);
+        companion.bounds = Rectangle::new([800.0, 0.0], bounds.size()).unwrap();
+        companion.usable = Some(companion.bounds); companion.raster.origin = companion.bounds.origin();
+        let other = Mapping::new(&companion, QuarterTurn::Normal, 1.0, [1200.0, 300.0], 2).unwrap();
+        world.insert_resource(Snapshot::new(2, [old.clone(), other]).unwrap());
+        request.target.mapping_revision = Some(1);
+        assert_eq!(mapping_revision(&world, OutputId(1)), Some(Some(1)));
+        let unchanged_owner = request.target.clone();
+        let replacement = Mapping::new(&output, QuarterTurn::Normal, 4.0, [400.0, 300.0], 3).unwrap();
+        world.insert_resource(Snapshot::new(3, [replacement]).unwrap());
+        assert!(!unchanged_owner.same_owner(&Target { mapping_revision: Some(3), ..unchanged_owner.clone() }));
+        enqueue(&mut world, request);
+        assert_eq!(process(&mut world), (7, false));
+        assert_eq!(world.get::<EditableText>(owner).unwrap().value(), "unchanged");
+        assert_eq!(mapping_revision(&world, OutputId(2)), None);
+        let mut accepted = editor_request(&mut world, owner, "accepted");
+        accepted.target.mapping_revision = Some(3);
+        enqueue(&mut world, accepted);
+        assert_eq!(process(&mut world), (7, true));
+        assert_eq!(world.get::<EditableText>(owner).unwrap().value(), "acceptedunchanged");
+    }
+
+    #[test]
+    fn a_drop_cannot_reuse_editor_coordinates_after_the_text_scrolls() {
+        let (mut world, owner) = super::super::tests::editing_world("unchanged");
+        world.init_resource::<Transfers>();
+        let request = editor_request(&mut world, owner, "rejected");
+        world
+            .entity_mut(owner)
+            .insert(bevy::ui::widget::TextScroll(Vec2::X));
+        enqueue(&mut world, request);
+        assert_eq!(process(&mut world), (7, false));
+        assert_eq!(
+            world
+                .get::<EditableText>(owner)
+                .unwrap()
+                .value()
+                .to_string(),
+            "unchanged"
+        );
     }
 
     #[test]
@@ -247,12 +554,23 @@ mod tests {
             if limited {
                 world.get_mut::<EditableText>(owner).unwrap().max_characters = Some(2);
             } else {
-                world.entity_mut(owner).insert(bevy::text::EditableTextFilter::new(|character| character.is_ascii_digit()));
+                world
+                    .entity_mut(owner)
+                    .insert(bevy::text::EditableTextFilter::new(|character| {
+                        character.is_ascii_digit()
+                    }));
             }
             let request = editor_request(&mut world, owner, "letters");
             enqueue(&mut world, request);
             assert_eq!(process(&mut world), (7, false));
-            assert_eq!(world.get::<EditableText>(owner).unwrap().value().to_string(), "12");
+            assert_eq!(
+                world
+                    .get::<EditableText>(owner)
+                    .unwrap()
+                    .value()
+                    .to_string(),
+                "12"
+            );
         }
     }
 
@@ -263,14 +581,35 @@ mod tests {
             world.init_resource::<Transfers>();
             let request = editor_request(&mut world, owner, "wrong");
             match change {
-                0 => { world.resource_mut::<bevy::input_focus::InputFocus>().clear(); }
-                1 => { world.get_mut::<EditableText>(owner).unwrap().editor.set_text("changed"); }
-                2 => { world.entity_mut(owner).remove::<UiGlobalTransform>(); }
-                _ => { world.despawn(Entity::from_bits(request.target.window)); }
+                0 => {
+                    world
+                        .resource_mut::<bevy::input_focus::InputFocus>()
+                        .clear();
+                }
+                1 => {
+                    world
+                        .get_mut::<EditableText>(owner)
+                        .unwrap()
+                        .editor
+                        .set_text("changed");
+                }
+                2 => {
+                    world.entity_mut(owner).remove::<UiGlobalTransform>();
+                }
+                _ => {
+                    world.despawn(Entity::from_bits(request.target.window));
+                }
             }
             enqueue(&mut world, request);
             assert_eq!(process(&mut world), (7, false));
-            assert!(!world.get::<EditableText>(owner).unwrap().value().to_string().contains("wrong"));
+            assert!(
+                !world
+                    .get::<EditableText>(owner)
+                    .unwrap()
+                    .value()
+                    .to_string()
+                    .contains("wrong")
+            );
         }
     }
 
@@ -283,7 +622,14 @@ mod tests {
         enqueue(&mut world, request);
         prepare(&mut world);
         assert!(world.resource::<Transfers>().checking.is_empty());
-        assert_eq!(world.get::<EditableText>(owner).unwrap().value().to_string(), "old");
+        assert_eq!(
+            world
+                .get::<EditableText>(owner)
+                .unwrap()
+                .value()
+                .to_string(),
+            "old"
+        );
         for _ in 0..8 {
             let request = editor_request(&mut world, owner, "text");
             enqueue(&mut world, request);
@@ -297,9 +643,28 @@ mod tests {
 
     #[test]
     fn payloads_preserve_utf8_and_reject_ambiguous_uri_lists() {
-        assert_eq!(decode("text/plain; charset=\"UTF-8\"", "Olá 世界".as_bytes().to_vec()).unwrap(), Payload::Text("Olá 世界".into()));
-        assert_eq!(decode("text/uri-list", b"# files\r\nfile:///tmp/a%20b.txt\r\n".to_vec()).unwrap(), Payload::Uri("file:///tmp/a%20b.txt".into()));
-        for bytes in [b"file:///tmp/a\nfile:///tmp/b".as_slice(), b"file:///tmp/a b", b"javascript:alert(1)", b"\0"] {
+        assert_eq!(
+            decode(
+                "text/plain; charset=\"UTF-8\"",
+                "Olá 世界".as_bytes().to_vec()
+            )
+            .unwrap(),
+            Payload::Text("Olá 世界".into())
+        );
+        assert_eq!(
+            decode(
+                "text/uri-list",
+                b"# files\r\nfile:///tmp/a%20b.txt\r\n".to_vec()
+            )
+            .unwrap(),
+            Payload::Uri("file:///tmp/a%20b.txt".into())
+        );
+        for bytes in [
+            b"file:///tmp/a\nfile:///tmp/b".as_slice(),
+            b"file:///tmp/a b",
+            b"javascript:alert(1)",
+            b"\0",
+        ] {
             assert!(decode("text/uri-list", bytes.to_vec()).is_err());
         }
         assert!(decode("text/plain", vec![0xff]).is_err());

@@ -97,8 +97,31 @@ pub async fn pending(pool: &SqlitePool) -> Result<Vec<Offer>, StoreError> {
     }
 
     for moving in crate::record_move::offers::list(pool).await? {
-        if !matches!(moving.state.as_str(), "offered" | "accepted" | "transferring" | "changed") { continue; }
-        out.push(Offer {kind: OfferKind::RecordMove, direction: if moving.direction == "incoming" {Direction::Incoming} else {Direction::Outgoing}, subject_uid: moving.uid, title: moving.preview.records.iter().find(|r|r.uid==moving.root).map(|r|r.title.clone()).unwrap_or_default(), other_party: moving.peer, created_at: moving.created_at, previously_refused:false});
+        if !matches!(
+            moving.state.as_str(),
+            "offered" | "accepted" | "transferring" | "changed"
+        ) {
+            continue;
+        }
+        out.push(Offer {
+            kind: OfferKind::RecordMove,
+            direction: if moving.direction == "incoming" {
+                Direction::Incoming
+            } else {
+                Direction::Outgoing
+            },
+            subject_uid: moving.uid,
+            title: moving
+                .preview
+                .records
+                .iter()
+                .find(|r| r.uid == moving.root)
+                .map(|r| r.title.clone())
+                .unwrap_or_default(),
+            other_party: moving.peer,
+            created_at: moving.created_at,
+            previously_refused: false,
+        });
     }
 
     let transfers = sqlx::query(
@@ -250,7 +273,13 @@ pub async fn forget_refusal(
     Ok(())
 }
 
-pub async fn remember_outcome(pool: &SqlitePool, kind: OfferKind, subject: &str, party: &str, outcome: &str) -> Result<(), StoreError> {
+pub async fn remember_outcome(
+    pool: &SqlitePool,
+    kind: OfferKind,
+    subject: &str,
+    party: &str,
+    outcome: &str,
+) -> Result<(), StoreError> {
     sqlx::query("INSERT INTO offer_local_outcome(kind,subject_uid,other_party,outcome,at) VALUES (?,?,?,?,?) ON CONFLICT(kind,subject_uid,other_party) DO UPDATE SET outcome=excluded.outcome,at=excluded.at")
         .bind(kind.as_str()).bind(subject).bind(party).bind(outcome).bind(nucleus::execution::now().to_rfc3339()).execute(pool).await?;
     Ok(())

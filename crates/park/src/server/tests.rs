@@ -1,7 +1,7 @@
 use super::*;
 use std::{os::fd::AsFd, time::Duration};
 use wayland_client::{
-    Connection, Dispatch, EventQueue, QueueHandle, delegate_noop,
+    Connection, Dispatch, EventQueue, Proxy, QueueHandle, delegate_noop,
     protocol::{
         wl_buffer, wl_callback, wl_compositor, wl_data_device, wl_data_device_manager, wl_data_offer, wl_data_source, wl_keyboard, wl_output, wl_pointer, wl_region,
         wl_registry, wl_seat, wl_shm, wl_shm_pool, wl_subcompositor, wl_subsurface, wl_surface,
@@ -14,6 +14,7 @@ use wayland_protocols::ext::foreign_toplevel_list::v1::client::{
     ext_foreign_toplevel_list_v1, ext_foreign_toplevel_handle_v1,
 };
 use wayland_protocols::wp::fractional_scale::v1::client::{wp_fractional_scale_manager_v1, wp_fractional_scale_v1};
+use wayland_protocols::wp::viewporter::client::{wp_viewporter, wp_viewport};
 use wayland_protocols::ext::idle_notify::v1::client::{ext_idle_notifier_v1, ext_idle_notification_v1};
 use wayland_protocols::ext::workspace::v1::client::{ext_workspace_manager_v1, ext_workspace_handle_v1, ext_workspace_group_handle_v1};
 use wayland_protocols::wp::idle_inhibit::zv1::client::{zwp_idle_inhibit_manager_v1, zwp_idle_inhibitor_v1};
@@ -32,24 +33,77 @@ use wayland_protocols_misc::zwp_virtual_keyboard_v1::client::{zwp_virtual_keyboa
 
 #[path = "tests/output_control.rs"]
 mod output_control_tests;
+#[path = "tests/text_input.rs"]
+mod text_input_tests;
+#[path = "tests/power.rs"]
+mod power_tests;
+#[path = "tests/touch.rs"]
+mod touch_tests;
+#[path = "tests/tablet.rs"]
+mod tablet_tests;
+#[path = "tests/displays.rs"]
+mod display_tests;
+#[path = "tests/color.rs"]
+mod color_tests;
+#[path = "tests/dmabuf.rs"]
+mod dmabuf_tests;
 #[path = "tests/capture.rs"]
 mod capture_tests;
 #[path = "tests/popup_output.rs"]
 mod popup_output_tests;
 #[path = "tests/input_controls.rs"]
 mod input_control_tests;
+#[path = "tests/gestures.rs"]
+mod gesture_tests;
+#[path = "tests/activation.rs"]
+mod activation_tests;
+#[path = "tests/control.rs"]
+mod control_tests;
+#[cfg(feature = "nested")]
+#[path = "tests/manipulation.rs"]
+mod manipulation_tests;
+#[cfg(feature = "nested")]
+#[path = "tests/keyboard.rs"]
+mod keyboard_tests;
+#[cfg(feature = "nested")]
+#[path = "tests/native_ime.rs"]
+mod native_ime_tests;
+#[cfg(feature = "nested")]
+#[path = "tests/configuration.rs"]
+mod configuration_tests;
+#[cfg(feature = "nested")]
+#[path = "tests/file_hover.rs"]
+mod file_hover_tests;
 #[path = "tests/idle_output.rs"]
 mod idle_output_tests;
+#[cfg(feature = "native-presentation")]
+#[path = "tests/focus.rs"]
+mod focus_tests;
+#[cfg(feature = "native-presentation")]
+#[path = "tests/transfers.rs"]
+mod transfers_tests;
+#[cfg(feature = "native-presentation")]
+#[path = "tests/raster.rs"]
+mod raster_tests;
 
 #[derive(Default)]
 struct Client {
+    tablet: tablet_tests::Capture,
+    touch: touch_tests::Capture,
+    color: color_tests::Capture,
+    dmabuf: dmabuf_tests::Capture,
+    control: control_tests::Capture,
+    viewporter: Option<wp_viewporter::WpViewporter>,
     controls: input_control_tests::Controls,
+    gestures: gesture_tests::Capture,
     capture: capture_tests::Capture,
     foreign_handles: Vec<ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1>,
+    foreign_names: std::collections::HashMap<wayland_client::backend::ObjectId, String>,
     output_control: output_control_tests::Capture,
     workspace_manager: Option<ext_workspace_manager_v1::ExtWorkspaceManagerV1>,
     workspaces: Vec<ext_workspace_handle_v1::ExtWorkspaceHandleV1>,
     workspace_names: Vec<String>,
+    workspace_coordinates: Vec<(ext_workspace_handle_v1::ExtWorkspaceHandleV1, Vec<u32>)>,
     workspace_done: usize,
     workspace_removed: usize,
     workspace_groups: Vec<ext_workspace_group_handle_v1::ExtWorkspaceGroupHandleV1>,
@@ -65,11 +119,17 @@ struct Client {
     drop_payload: Vec<u8>,
     drop_finished: usize,
     drop_performed: usize,
+    drop_cancelled: usize,
     drop_send_failed: bool,
+    drop_hold: bool,
+    drop_held: Vec<OwnedFd>,
     input_method: Option<zwp_input_method_manager_v2::ZwpInputMethodManagerV2>,
+    text_input: text_input_tests::Capture,
+    input_unavailable: Vec<wayland_client::backend::ObjectId>,
     virtual_keyboard: Option<zwp_virtual_keyboard_manager_v1::ZwpVirtualKeyboardManagerV1>,
     input_keymap: Option<(OwnedFd, u32)>,
     input_keys: Vec<(u32, bool)>,
+    input_modifiers: Vec<[u32; 4]>,
     input_serial: u32,
     input_surrounding: Vec<(String, u32, u32)>,
     input_causes: Vec<u32>,
@@ -77,6 +137,7 @@ struct Client {
     idle: Option<ext_idle_notifier_v1::ExtIdleNotifierV1>,
     idle_inhibit: Option<zwp_idle_inhibit_manager_v1::ZwpIdleInhibitManagerV1>,
     idle_events: Vec<bool>,
+    power: power_tests::Capture,
     globals: Vec<String>,
     foreign: Option<ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1>,
     foreign_titles: Vec<String>,
@@ -90,21 +151,34 @@ struct Client {
     layer_shell: Option<zwlr_layer_shell_v1::ZwlrLayerShellV1>,
     layer_configures: Vec<[u32; 2]>,
     configures: Vec<[i32; 2]>,
+    window_configurations: std::collections::HashMap<wayland_client::backend::ObjectId, ([i32; 2], Vec<u32>)>,
+    window_configure_sizes: std::collections::HashMap<wayland_client::backend::ObjectId, Vec<[i32; 2]>>,
     output: Option<wl_output::WlOutput>,
     outputs: Option<zxdg_output_manager_v1::ZxdgOutputManagerV1>,
     output_name: String,
     output_size: [i32; 2],
     window_states: Vec<Vec<u32>>,
     serials: usize,
+    surface_serials: std::collections::HashMap<wayland_client::backend::ObjectId, u32>,
     releases: usize,
     closed: bool,
     ignore_configure: bool,
     decorations: Option<zxdg_decoration_manager_v1::ZxdgDecorationManagerV1>,
     decoration_modes: Vec<zxdg_toplevel_decoration_v1::Mode>,
     keys: Vec<(u32, bool)>,
+    keyboard_focus: Option<wl_surface::WlSurface>,
+    key_recipients: Vec<(Option<wayland_client::backend::ObjectId>, u32, bool)>,
+    modifiers: Vec<[u32; 4]>,
+    keymaps: Vec<String>,
+    repeat_info: Vec<(i32, i32)>,
     seat: Option<wl_seat::WlSeat>,
     key_serial: u32,
     pointer_serial: u32,
+    pointer_enter_serial: u32,
+    pointer_buttons: Vec<(u32, bool)>,
+    pointer_focus: Option<wl_surface::WlSurface>,
+    button_recipients: Vec<(Option<wayland_client::backend::ObjectId>, u32, bool)>,
+    pointer_positions: Vec<[f64; 2]>,
     popup_configures: Vec<[i32; 4]>,
     popup_repositions: Vec<u32>,
     popup_done: usize,
@@ -112,6 +186,7 @@ struct Client {
     tokens: Vec<String>,
     lock_manager: Option<ext_session_lock_manager_v1::ExtSessionLockManagerV1>,
     lock_replies: Vec<bool>,
+    lock_sizes: Vec<[u32; 2]>,
 }
 
 struct Harness {
@@ -152,6 +227,7 @@ impl Harness {
             queue,
             client: Client::default(),
         };
+        harness.sync();
         harness.sync();
         harness
     }
@@ -289,18 +365,26 @@ impl Dispatch<wl_registry::WlRegistry, ()> for Client {
         {
             state.globals.push(interface.clone());
             match interface.as_str() {
+                "lince_park_control_v1" => state.control.manager = Some(registry.bind(name, version.min(1), qh, ())),
+                "zwp_pointer_gestures_v1" => gesture_tests::bind(state, registry, name, version, qh),
                 "zwp_pointer_constraints_v1" | "zwp_relative_pointer_manager_v1" | "zwp_keyboard_shortcuts_inhibit_manager_v1" =>
                     input_control_tests::bind(state, registry, name, &interface, qh),
                 "ext_output_image_capture_source_manager_v1" | "ext_foreign_toplevel_image_capture_source_manager_v1" | "ext_image_copy_capture_manager_v1" => capture_tests::bind(state, registry, name, &interface, qh),
                 "zwlr_output_manager_v1" => output_control_tests::bind(state, registry, name, version, qh),
+                "zwlr_output_power_manager_v1" => power_tests::bind(state, registry, name, version, qh),
+                "zwp_tablet_manager_v2" => tablet_tests::bind(state, registry, name, version, qh),
+                "wp_color_manager_v1" => color_tests::bind(state, registry, name, version, qh),
+                "zwp_linux_dmabuf_v1" => dmabuf_tests::bind(state, registry, name, version, qh),
                 "ext_workspace_manager_v1" => state.workspace_manager = Some(registry.bind(name, 1, qh, ())),
                 "zwlr_foreign_toplevel_manager_v1" => state.management = Some(registry.bind(name, version.min(3), qh, ())),
                 "wl_data_device_manager" => state.data_manager = Some(registry.bind(name, version.min(3), qh, ())),
                 "zwp_input_method_manager_v2" => state.input_method = Some(registry.bind(name, 1, qh, ())),
+                "zwp_text_input_manager_v3" => text_input_tests::bind(state, registry, name, qh),
                 "zwp_virtual_keyboard_manager_v1" => state.virtual_keyboard = Some(registry.bind(name, 1, qh, ())),
                 "ext_idle_notifier_v1" => state.idle = Some(registry.bind(name, version.min(2), qh, ())),
                 "zwp_idle_inhibit_manager_v1" => state.idle_inhibit = Some(registry.bind(name, 1, qh, ())),
                 "wp_fractional_scale_manager_v1" => state.fractional = Some(registry.bind(name, 1, qh, ())),
+                "wp_viewporter" => state.viewporter = Some(registry.bind(name, 1, qh, ())),
                 "ext_foreign_toplevel_list_v1" => state.foreign = Some(registry.bind(name, 1, qh, ())),
                 "wl_compositor" => {
                     state.compositor = Some(registry.bind(name, version.min(4), qh, ()))
@@ -349,11 +433,14 @@ impl Dispatch<ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1, ()> for Cl
 
 impl Dispatch<ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1, ()> for Client {
     fn event(
-        state: &mut Self, _: &ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1,
+        state: &mut Self, handle: &ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1,
         event: ext_foreign_toplevel_handle_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>,
     ) {
         match event {
-            ext_foreign_toplevel_handle_v1::Event::Title { title } => state.foreign_titles.push(title),
+            ext_foreign_toplevel_handle_v1::Event::Title { title } => {
+                state.foreign_names.insert(handle.id(), title.clone());
+                state.foreign_titles.push(title);
+            }
             ext_foreign_toplevel_handle_v1::Event::Closed => state.foreign_closed += 1,
             _ => {}
         }
@@ -377,10 +464,15 @@ impl Dispatch<ext_workspace_manager_v1::ExtWorkspaceManagerV1, ()> for Client {
 }
 
 impl Dispatch<ext_workspace_handle_v1::ExtWorkspaceHandleV1, ()> for Client {
-    fn event(state: &mut Self, _: &ext_workspace_handle_v1::ExtWorkspaceHandleV1,
+    fn event(state: &mut Self, proxy: &ext_workspace_handle_v1::ExtWorkspaceHandleV1,
         event: ext_workspace_handle_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
         match event {
             ext_workspace_handle_v1::Event::Name { name } => state.workspace_names.push(name),
+            ext_workspace_handle_v1::Event::Coordinates { coordinates } => {
+                let coordinates = coordinates.chunks_exact(4)
+                    .map(|value| u32::from_ne_bytes(value.try_into().unwrap())).collect();
+                state.workspace_coordinates.push((proxy.clone(), coordinates));
+            }
             ext_workspace_handle_v1::Event::Removed => state.workspace_removed += 1,
             ext_workspace_handle_v1::Event::State { state: wayland_client::WEnum::Value(flags) } => state.workspace_active.push(flags.contains(ext_workspace_handle_v1::State::Active)),
             _ => {}
@@ -505,6 +597,35 @@ fn workspace_names_active_state_and_output_membership_update_without_reannouncem
     harness.client.workspace_groups[0].destroy();
     for _ in 0..4 { harness.sync(); }
     assert_eq!(harness.client.workspace_groups.len(), 1);
+}
+
+#[test]
+fn reordered_workspaces_publish_coordinates_without_recreating_handles_or_redirecting_activation() {
+    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowList, crate::launch::Capability::WindowControl]));
+    let mut snapshot = workspace_snapshot(41);
+    harness.server.workspaces(snapshot.clone());
+    harness.sync();
+    let handles = harness.client.workspaces.clone();
+    assert_eq!(handles.len(), 2);
+    assert_eq!(harness.client.workspace_coordinates, vec![(handles[0].clone(), vec![0]), (handles[1].clone(), vec![1])]);
+    let done = harness.client.workspace_done;
+    snapshot.entries.swap(0, 1);
+    harness.server.workspaces(snapshot.clone());
+    harness.sync();
+    assert_eq!(harness.client.workspaces, handles);
+    assert_eq!(harness.client.workspace_removed, 0);
+    assert_eq!(harness.client.workspace_names.len(), 2);
+    assert_eq!(harness.client.workspace_done, done + 1);
+    assert_eq!(&harness.client.workspace_coordinates[2..], &[(handles[1].clone(), vec![0]), (handles[0].clone(), vec![1])]);
+    harness.server.workspaces(snapshot);
+    harness.sync();
+    assert_eq!(harness.client.workspace_done, done + 1);
+    assert_eq!(harness.client.workspace_coordinates.len(), 4);
+    handles[0].activate();
+    harness.client.workspace_manager.as_ref().unwrap().commit();
+    harness.sync();
+    assert_eq!(harness.server.workspace_activations(), vec![(41, 11)]);
 }
 
 #[test]
@@ -767,6 +888,8 @@ fn damage_history_survives_skipped_commits_and_snapshots_remain_immutable() {
 
 delegate_noop!(Client: ignore ext_session_lock_manager_v1::ExtSessionLockManagerV1);
 delegate_noop!(Client: ignore wp_fractional_scale_manager_v1::WpFractionalScaleManagerV1);
+delegate_noop!(Client: ignore wp_viewporter::WpViewporter);
+delegate_noop!(Client: ignore wp_viewport::WpViewport);
 delegate_noop!(Client: ignore zwp_input_method_manager_v2::ZwpInputMethodManagerV2);
 delegate_noop!(Client: ignore zwp_input_popup_surface_v2::ZwpInputPopupSurfaceV2);
 delegate_noop!(Client: ignore zwp_virtual_keyboard_manager_v1::ZwpVirtualKeyboardManagerV1);
@@ -780,13 +903,16 @@ impl Dispatch<zwp_input_method_keyboard_grab_v2::ZwpInputMethodKeyboardGrabV2, (
             zwp_input_method_keyboard_grab_v2::Event::Key { key, state: wayland_client::WEnum::Value(value), .. } => {
                 state.input_keys.push((key, value == wl_keyboard::KeyState::Pressed));
             }
+            zwp_input_method_keyboard_grab_v2::Event::Modifiers { mods_depressed, mods_latched, mods_locked, group, .. } => {
+                state.input_modifiers.push([mods_depressed, mods_latched, mods_locked, group]);
+            }
             _ => {}
         }
     }
 }
 
 impl Dispatch<zwp_input_method_v2::ZwpInputMethodV2, ()> for Client {
-    fn event(state: &mut Self, _: &zwp_input_method_v2::ZwpInputMethodV2,
+    fn event(state: &mut Self, proxy: &zwp_input_method_v2::ZwpInputMethodV2,
         event: zwp_input_method_v2::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
         match event {
             zwp_input_method_v2::Event::Done => state.input_serial = state.input_serial.wrapping_add(1),
@@ -794,6 +920,7 @@ impl Dispatch<zwp_input_method_v2::ZwpInputMethodV2, ()> for Client {
             zwp_input_method_v2::Event::TextChangeCause { cause: wayland_client::WEnum::Value(cause) } => state.input_causes.push(cause as u32),
             zwp_input_method_v2::Event::Activate => state.input_active = true,
             zwp_input_method_v2::Event::Deactivate => state.input_active = false,
+            zwp_input_method_v2::Event::Unavailable => state.input_unavailable.push(proxy.id()),
             _ => {}
         }
     }
@@ -826,7 +953,7 @@ fn native_text_input_transports_unicode_preedit_deletion_and_secret_context_with
     );
     for _ in 0..8 { harness.sync(); }
     assert!(harness.server.native_ready());
-    let context = crate::native_input::Editor { owner: 1, revision: 1, from_ime: false, selection: [2, 2], surrounding: "é世".into(),
+    let context = crate::native_input::Editor { owner: 1, revision: 1, projection: 0, from_ime: false, selection: [2, 2], surrounding: "é世".into(),
         cursor: 2, anchor: 2, sensitive: false, multiline: false, caret: [20, 20, 2, 20] };
     harness.server.native_editor(Some(context.clone()));
     harness.server.native_focus();
@@ -854,9 +981,9 @@ fn native_text_input_transports_unicode_preedit_deletion_and_secret_context_with
     harness.server.native_editor(Some(popup_context));
     let bounds = lince_interface::host::Rectangle::new([0.0; 2], [640.0, 480.0]).unwrap();
     harness.server.state.presented_geometry = Some(lince_interface::host::GeometrySnapshot {
-        revision: 1, items: Vec::new(), focused: None, outputs: vec![lince_interface::host::OutputViewport {
+        revision: 1, items: Vec::new(), focused: None, outputs: vec![lince_interface::host::OutputViewport { rotation: Default::default(),
             id: OutputId(1), bounds, usable: lince_interface::host::Rectangle::new([0.0, 30.0], [640.0, 450.0]),
-            physical_size: [640, 480], workspace: 1,
+            physical_size: [640, 480], raster: lince_interface::host::raster::RasterMapping { origin: (bounds).origin(), scale: [1.0; 2] }, workspace: 1,
         }],
     });
     for _ in 0..8 { harness.sync(); }
@@ -1106,14 +1233,15 @@ impl Dispatch<ext_session_lock_v1::ExtSessionLockV1, ()> for Client {
 
 impl Dispatch<ext_session_lock_surface_v1::ExtSessionLockSurfaceV1, ()> for Client {
     fn event(
-        _: &mut Self,
+        state: &mut Self,
         proxy: &ext_session_lock_surface_v1::ExtSessionLockSurfaceV1,
         event: ext_session_lock_surface_v1::Event,
         _: &(),
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        if let ext_session_lock_surface_v1::Event::Configure { serial, .. } = event {
+        if let ext_session_lock_surface_v1::Event::Configure { serial, width, height, .. } = event {
+            state.lock_sizes.push([width, height]);
             proxy.ack_configure(serial);
         }
     }
@@ -1326,6 +1454,7 @@ impl Dispatch<xdg_surface::XdgSurface, ()> for Client {
     ) {
         if let xdg_surface::Event::Configure { serial } = event {
             state.serials += 1;
+            state.surface_serials.insert(proxy.id(), serial);
             if !state.ignore_configure {
                 proxy.ack_configure(serial);
             }
@@ -1336,7 +1465,7 @@ impl Dispatch<xdg_surface::XdgSurface, ()> for Client {
 impl Dispatch<xdg_toplevel::XdgToplevel, ()> for Client {
     fn event(
         state: &mut Self,
-        _: &xdg_toplevel::XdgToplevel,
+        proxy: &xdg_toplevel::XdgToplevel,
         event: xdg_toplevel::Event,
         _: &(),
         _: &Connection,
@@ -1349,12 +1478,13 @@ impl Dispatch<xdg_toplevel::XdgToplevel, ()> for Client {
                 states,
             } => {
                 state.configures.push([width, height]);
-                state.window_states.push(
-                    states
-                        .chunks_exact(4)
-                        .map(|value| u32::from_ne_bytes(value.try_into().unwrap()))
-                        .collect(),
-                );
+                state.window_configure_sizes.entry(proxy.id()).or_default().push([width, height]);
+                let states: Vec<_> = states
+                    .chunks_exact(4)
+                    .map(|value| u32::from_ne_bytes(value.try_into().unwrap()))
+                    .collect();
+                state.window_states.push(states.clone());
+                state.window_configurations.insert(proxy.id(), ([width, height], states));
             }
             xdg_toplevel::Event::Close => state.closed = true,
             _ => {}
@@ -1396,6 +1526,8 @@ fn client_window_state_requests_are_coalesced_until_map_and_confirmed_by_policy(
                 minimized: false,
                 maximized: true,
                 fullscreen: false,
+                windowed_fullscreen: false,
+                resizing: false,
             },
         )
         .unwrap();
@@ -1427,6 +1559,8 @@ fn client_window_state_requests_are_coalesced_until_map_and_confirmed_by_policy(
                 minimized: false,
                 maximized: true,
                 fullscreen: false,
+                windowed_fullscreen: false,
+                resizing: false,
             },
         )
         .unwrap();
@@ -1444,6 +1578,8 @@ fn client_window_state_requests_are_coalesced_until_map_and_confirmed_by_policy(
                 minimized: false,
                 maximized: true,
                 fullscreen: false,
+                windowed_fullscreen: false,
+                resizing: false,
             },
         )
         .unwrap();
@@ -1471,6 +1607,8 @@ fn client_window_state_requests_are_coalesced_until_map_and_confirmed_by_policy(
                 minimized: false,
                 maximized: false,
                 fullscreen: true,
+                windowed_fullscreen: false,
+                resizing: false,
             },
         )
         .unwrap();
@@ -1727,7 +1865,24 @@ impl Dispatch<wl_keyboard::WlKeyboard, ()> for Client {
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        if let wl_keyboard::Event::Key {
+        if let wl_keyboard::Event::Keymap { fd, size, .. } = event {
+            use std::io::{Read, Seek, SeekFrom};
+            assert!(size <= 1024 * 1024);
+            let mut keymap = String::new();
+            let mut file = std::fs::File::from(fd);
+            file.seek(SeekFrom::Start(0)).unwrap();
+            let bytes = file.take(u64::from(size)).read_to_string(&mut keymap).unwrap();
+            assert_eq!(bytes, size as usize);
+            state.keymaps.push(keymap.trim_end_matches('\0').to_owned());
+        } else if let wl_keyboard::Event::RepeatInfo { rate, delay } = event {
+            state.repeat_info.push((rate, delay));
+        } else if let wl_keyboard::Event::Modifiers { mods_depressed, mods_latched, mods_locked, group, .. } = event {
+            state.modifiers.push([mods_depressed, mods_latched, mods_locked, group]);
+        } else if let wl_keyboard::Event::Enter { surface, .. } = event {
+            state.keyboard_focus = Some(surface);
+        } else if let wl_keyboard::Event::Leave { surface, .. } = event {
+            if state.keyboard_focus.as_ref() == Some(&surface) { state.keyboard_focus = None; }
+        } else if let wl_keyboard::Event::Key {
             key,
             serial,
             state: key_state,
@@ -1739,6 +1894,8 @@ impl Dispatch<wl_keyboard::WlKeyboard, ()> for Client {
                 key,
                 key_state == wayland_client::WEnum::Value(wl_keyboard::KeyState::Pressed),
             ));
+            state.key_recipients.push((state.keyboard_focus.as_ref().map(|surface| surface.id()), key,
+                key_state == wayland_client::WEnum::Value(wl_keyboard::KeyState::Pressed)));
         }
     }
 }
@@ -2130,10 +2287,12 @@ impl Dispatch<wl_data_source::WlDataSource, ()> for Client {
         match event {
             wl_data_source::Event::Send { fd, .. } => {
                 use std::io::Write;
-                state.drop_send_failed = std::fs::File::from(fd).write_all(&state.drop_payload).is_err();
+                if state.drop_hold { state.drop_held.push(fd); assert!(state.drop_held.len() <= 8); }
+                else { state.drop_send_failed = std::fs::File::from(fd).write_all(&state.drop_payload).is_err(); }
             }
             wl_data_source::Event::DndDropPerformed => state.drop_performed += 1,
             wl_data_source::Event::DndFinished => state.drop_finished += 1,
+            wl_data_source::Event::Cancelled => state.drop_cancelled += 1,
             _ => {}
         }
     }
@@ -2171,22 +2330,37 @@ fn native_drop_cancellation_invalidates_queued_frontend_payload() {
 #[cfg(feature = "nested")]
 #[test]
 fn native_drop_output_change_invalidates_queued_frontend_payload() {
-    native_drop_completion_for(None, Some(true));
+    native_drop_completion_for(None, NativeDropChange::Output);
 }
 
 #[cfg(feature = "nested")]
 #[test]
 fn native_drop_target_removal_invalidates_queued_frontend_payload() {
-    native_drop_completion_for(None, Some(false));
+    native_drop_completion_for(None, NativeDropChange::Target);
+}
+
+#[cfg(feature = "nested")]
+#[test]
+fn native_drop_keyboard_focus_change_invalidates_queued_frontend_payload() {
+    native_drop_completion_for(None, NativeDropChange::Focus);
+}
+
+#[cfg(feature = "nested")]
+enum NativeDropChange { Suspend, Output, Target, Focus, Cancel }
+
+#[cfg(feature = "nested")]
+#[test]
+fn cancelling_an_accepted_pointer_drag_cannot_perform_its_drop_and_retires_once() {
+    native_drop_completion_for(None, NativeDropChange::Cancel);
 }
 
 #[cfg(feature = "nested")]
 fn native_drop_completion(accept: Option<bool>) {
-    native_drop_completion_for(accept, None);
+    native_drop_completion_for(accept, NativeDropChange::Suspend);
 }
 
 #[cfg(feature = "nested")]
-fn native_drop_completion_for(accept: Option<bool>, changed_output: Option<bool>) {
+fn native_drop_completion_for(accept: Option<bool>, change: NativeDropChange) {
     use crate::native_input::{Editor, client::Event, transfer::{Destination, Payload, Target}};
     let mut harness = Harness::new();
     let window = harness.window();
@@ -2206,16 +2380,34 @@ fn native_drop_completion_for(accept: Option<bool>, changed_output: Option<bool>
     harness.client.drop_payload = "Olá 世界".as_bytes().to_vec();
     device.start_drag(Some(&source), &window.surface, None, harness.client.pointer_serial);
     for _ in 0..4 { harness.sync(); }
-    let target = Target { window: 1, output: lince_interface::host::OutputId(1), pointer: [100.0, 100.0],
+    let target = Target { window: 1, output: lince_interface::host::OutputId(1), mapping_revision: None, pointer: [100.0, 100.0],
         destination: Destination::Editor {
-            context: Editor { owner: 1, revision: 1, from_ime: false, selection: [0, 0], surrounding: String::new(),
+            context: Editor { owner: 1, revision: 1, projection: 0, from_ime: false, selection: [0, 0], surrounding: String::new(),
                 cursor: 0, anchor: 0, sensitive: false, multiline: false, caret: [0, 0, 1, 20] },
             point: [10.0, 10.0], transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], size: [100.0; 2], scale: 1.0,
+            content_origin: [-50.0; 2],
         } };
     harness.server.native_drop_target(Some(target.clone()));
     let native = harness.server.native_surface().unwrap();
     harness.server.pointer_motion(Some((native, [100.0, 100.0])), 3).unwrap();
     for _ in 0..8 { harness.sync(); }
+    if matches!(change, NativeDropChange::Cancel) {
+        assert!(harness.server.pointer_dragging());
+        assert_eq!(harness.server.cancel_pointer_drag(4), vec![272]);
+        assert!(harness.server.cancel_pointer_drag(5).is_empty());
+        for _ in 0..8 { harness.sync(); }
+        assert!(!harness.server.dragging());
+        assert!(harness.server.native_file_drag().is_none());
+        assert!(!harness.server.native_events().iter().any(|event| matches!(event, Event::Drop(_))));
+        assert_eq!(harness.client.drop_cancelled, 1);
+        assert_eq!(harness.client.drop_performed, 0);
+        assert_eq!(harness.client.drop_finished, 0);
+        source.destroy();
+        device.release();
+        harness.sync();
+        assert_eq!(harness.client.drop_cancelled, 1);
+        return;
+    }
     harness.server.pointer_button(272, false, 4);
     let deadline = std::time::Instant::now() + Duration::from_secs(2);
     let request = loop {
@@ -2234,14 +2426,16 @@ fn native_drop_completion_for(accept: Option<bool>, changed_output: Option<bool>
     if let Some(accepted) = accept {
         harness.server.finish_native_drop(request.token, accepted);
     } else {
-        match changed_output {
-            Some(true) => {
+        match change {
+            NativeDropChange::Output => {
                 let mut replacement = target.clone();
                 replacement.output = lince_interface::host::OutputId(2);
                 harness.server.native_drop_target(Some(replacement));
             }
-            Some(false) => harness.server.native_drop_target(None),
-            None => harness.server.suspend_native_drop(),
+            NativeDropChange::Target => harness.server.native_drop_target(None),
+            NativeDropChange::Suspend => harness.server.suspend_native_drop(),
+            NativeDropChange::Focus => harness.server.native_focus(),
+            NativeDropChange::Cancel => unreachable!("A cancelled drag must return before receiving a drop"),
         }
         assert!(request.cancelled.load(std::sync::atomic::Ordering::Acquire));
         harness.server.finish_native_drop(request.token, true);
@@ -2263,8 +2457,23 @@ impl Dispatch<wl_pointer::WlPointer, ()> for Client {
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        if let wl_pointer::Event::Button { serial, .. } = event {
-            state.pointer_serial = serial;
+        match event {
+            wl_pointer::Event::Button { serial, button, state: button_state, .. } => {
+                state.pointer_serial = serial;
+                state.pointer_buttons.push((button, button_state == wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed)));
+                state.button_recipients.push((state.pointer_focus.as_ref().map(|surface| surface.id()), button,
+                    button_state == wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed)));
+            }
+            wl_pointer::Event::Enter { serial, surface, surface_x, surface_y, .. } => {
+                state.pointer_enter_serial = serial;
+                state.pointer_focus = Some(surface);
+                state.pointer_positions.push([surface_x, surface_y]);
+            }
+            wl_pointer::Event::Leave { surface, .. } => {
+                if state.pointer_focus.as_ref() == Some(&surface) { state.pointer_focus = None; }
+            }
+            wl_pointer::Event::Motion { surface_x, surface_y, .. } => state.pointer_positions.push([surface_x, surface_y]),
+            _ => {}
         }
     }
 }

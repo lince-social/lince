@@ -332,18 +332,33 @@ async fn search_scoped(
         let mut bytes = 0;
         for _ in 0..100 {
             let rows = Box::pin(search_scoped(pool, &page, now, host)).await?;
-            let last = rows.last().and_then(|row| row["document"]["id"].as_str()).map(str::to_owned);
+            let last = rows
+                .last()
+                .and_then(|row| row["document"]["id"].as_str())
+                .map(str::to_owned);
             let exhausted = rows.len() < 50;
             for row in rows {
-                let announcement = serde_json::from_value::<nucleus::social::transport::Announcement>(row["document"]["transport"].clone()).ok();
+                let announcement =
+                    serde_json::from_value::<nucleus::social::transport::Announcement>(
+                        row["document"]["transport"].clone(),
+                    )
+                    .ok();
                 if filter.matches(announcement.as_ref()) {
-                    bytes += serde_json::to_vec(&row).map_err(|error| StoreError::Protocol(error.to_string()))?.len();
-                    if bytes > nucleus::social::MAX_FRAME_BYTES - 1024 { return Ok(result); }
+                    bytes += serde_json::to_vec(&row)
+                        .map_err(|error| StoreError::Protocol(error.to_string()))?
+                        .len();
+                    if bytes > nucleus::social::MAX_FRAME_BYTES - 1024 {
+                        return Ok(result);
+                    }
                     result.push(row);
-                    if result.len() == 50 { return Ok(result); }
+                    if result.len() == 50 {
+                        return Ok(result);
+                    }
                 }
             }
-            if exhausted || last.is_none() || last == page.after { return Ok(result); }
+            if exhausted || last.is_none() || last == page.after {
+                return Ok(result);
+            }
             page.after = last;
         }
         return Err(StoreError::Protocol("Narrow the transport search by area, words or time; its 5000-announcement scan limit was reached".into()));

@@ -63,13 +63,14 @@ pub fn synchronize(world: &mut World) {
     else {
         return;
     };
-    let Some(camera) = world
+    if world
         .query_filtered::<Entity, With<WorldCamera>>()
         .iter(world)
         .next()
-    else {
+        .is_none()
+    {
         return;
-    };
+    }
     if world.get::<View>(root).is_none() {
         world.entity_mut(root).insert(View {
             position: [canvas.center.x, 500.0, canvas.center.y + 500.0],
@@ -77,6 +78,7 @@ pub fn synchronize(world: &mut World) {
         });
     }
     let mut view = *world.get::<View>(root).unwrap();
+    crate::native::layout::desktop::focus::observe_camera(world, root);
     let spatial = spatial(world, root);
     let before = DVec3::from_array(view.position);
     if spatial && !crate::native::shortcuts::editing_text(world) {
@@ -124,12 +126,14 @@ pub fn synchronize(world: &mut World) {
                 .into_iter()
                 .any(|shortcut| pressed(world, shortcut, keys))
         {
+            crate::native::layout::desktop::focus::release(world, root);
             if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
                 wake.ring();
             }
         }
     }
     if spatial
+        && !crate::native::layout::desktop::focus::following(world, root)
         && !world
             .get::<crate::native::edit_mode::EditMode>(root)
             .is_some_and(|m| m.enabled)
@@ -187,7 +191,7 @@ pub fn synchronize(world: &mut World) {
         }
     }
     world.get_mut::<View>(root).unwrap().set_if_neq(view);
-    if spatial {
+    if spatial && !crate::native::layout::desktop::focus::following(world, root) {
         let position = DVec3::from_array(view.position);
         if (position - origin(world, root)).length() > 10_000.0 {
             world
@@ -196,18 +200,64 @@ pub fn synchronize(world: &mut World) {
                 .center = bevy::math::DVec2::new(position.x, position.z);
         }
     }
+}
+
+pub fn present(world: &mut World) {
+    let Some((root, canvas)) = world
+        .query::<(Entity, &crate::native::canvas::CanvasView)>()
+        .iter(world)
+        .find(|(root, _)| {
+            world
+                .get::<crate::native::workspace::Workspaces>(*root)
+                .is_some()
+        })
+        .map(|(root, canvas)| (root, *canvas))
+    else {
+        return;
+    };
+    let Some(camera) = world
+        .query_filtered::<Entity, With<WorldCamera>>()
+        .iter(world)
+        .next()
+    else {
+        return;
+    };
+    let Some(view) = world.get::<View>(root).copied() else {
+        return;
+    };
+    let spatial = spatial(world, root);
+    let inset = world
+        .get::<crate::native::layout::desktop::HostViewport>(root)
+        .map(|viewport| {
+            (
+                Vec2::from_array(viewport.0.bounds.size().map(|value| value as f32)),
+                Vec2::from_array(viewport.0.raster.origin.map(|value| value as f32)),
+            )
+        })
+        .zip(
+            world
+                .query::<&Window>()
+                .iter(world)
+                .next()
+                .map(|window| window.resolution.size()),
+        )
+        .map_or(Vec2::ZERO, |((logical, origin), native)| {
+            ((native - logical) * 0.5 + origin) / canvas.zoom as f32
+        });
     let transform = if spatial {
         Transform::from_translation(
             (DVec3::from_array(view.position) - origin(world, root)).as_vec3(),
         )
         .with_rotation(Quat::from_euler(EulerRot::YXZ, view.yaw, view.pitch, 0.0))
     } else {
-        Transform::from_xyz(0.0, 10000.0, 0.0).looking_at(Vec3::ZERO, -Vec3::Z)
+        let center = Vec3::new(inset.x, 0.0, inset.y);
+        Transform::from_translation(center + Vec3::Y * 10000.0).looking_at(center, -Vec3::Z)
     };
     world
         .get_mut::<Transform>(camera)
         .unwrap()
         .set_if_neq(transform);
+    super::stacking::camera(world, camera);
     let update_projection = match world.get::<Projection>(camera) {
         Some(Projection::Perspective(projection)) => {
             !spatial || projection.near != 0.5 || projection.far != 1_000_000.0
@@ -238,6 +288,26 @@ pub fn synchronize(world: &mut World) {
         })
     };
     world.entity_mut(camera).insert(projection);
+}
+
+pub(crate) fn current_transform(world: &World, mut entity: Entity) -> Option<GlobalTransform> {
+    let mut chain = Vec::new();
+    for _ in 0..crate::native::layout::MAX_DEPTH {
+        chain.push(*world.get::<Transform>(entity)?);
+        if let Some(parent) = world.get::<ChildOf>(entity) {
+            entity = parent.parent();
+        } else {
+            return Some(
+                chain
+                    .into_iter()
+                    .rev()
+                    .fold(GlobalTransform::IDENTITY, |global, transform| {
+                        global.mul_transform(transform)
+                    }),
+            );
+        }
+    }
+    None
 }
 
 #[derive(Component, Default)]
@@ -330,6 +400,42 @@ fn collide(
 mod tests {
     use super::*;
     use avian3d::prelude::*;
+
+    #[test]
+    fn projection_reads_current_parent_transforms_before_global_propagation_and_bounds_depth() {
+        let mut world = World::new();
+        let parent = world
+            .spawn((
+                Transform::from_xyz(100.0, 0.0, 20.0),
+                GlobalTransform::IDENTITY,
+            ))
+            .id();
+        let camera = world
+            .spawn((
+                Transform::from_xyz(10.0, 30.0, 0.0),
+                GlobalTransform::IDENTITY,
+                ChildOf(parent),
+            ))
+            .id();
+        assert_eq!(
+            current_transform(&world, camera).unwrap().translation(),
+            Vec3::new(110.0, 30.0, 20.0)
+        );
+        world.get_mut::<Transform>(parent).unwrap().translation.x = 250.0;
+        assert_eq!(
+            world.get::<GlobalTransform>(camera).unwrap().translation(),
+            Vec3::ZERO
+        );
+        assert_eq!(
+            current_transform(&world, camera).unwrap().translation(),
+            Vec3::new(260.0, 30.0, 20.0)
+        );
+        let mut deepest = camera;
+        for _ in 0..crate::native::layout::MAX_DEPTH {
+            deepest = world.spawn((Transform::default(), ChildOf(deepest))).id();
+        }
+        assert!(current_transform(&world, deepest).is_none());
+    }
 
     #[test]
     fn flight_stops_at_triangles_and_preserves_open_space() {

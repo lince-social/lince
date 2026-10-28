@@ -10,6 +10,8 @@ pub(crate) struct SavedKarmaCastle {
     tokens: crate::native::tokens::TokenOverrides,
 }
 
+crate::native::sand_placement::scratch::saved!(SavedKarmaCastle);
+
 impl SavedKarmaCastle {
     pub(crate) fn valid(&self) -> bool {
         self.castle.edits.len() <= 1000

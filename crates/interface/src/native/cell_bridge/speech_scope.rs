@@ -19,7 +19,11 @@ impl Work {
                 generation: 0,
             },
             Self::Job(job) => Request::Cancel { job: job.clone() },
-            Self::Voice(job) => Request::Voice { request: cell::fiote_communication::speech::voice::Request::Cancel { job: job.clone() } },
+            Self::Voice(job) => Request::Voice {
+                request: cell::fiote_communication::speech::voice::Request::Cancel {
+                    job: job.clone(),
+                },
+            },
         }
     }
 }
@@ -56,8 +60,14 @@ impl Scope {
 
     pub(super) fn begin(&self, request: &Request) -> Result<Option<Pending>, String> {
         let work = match request {
-            Request::StartListening { owner, .. } | Request::ResumeListening { owner, .. } => Work::Listening(owner.clone()),
-            Request::Voice { request: cell::fiote_communication::speech::voice::Request::Install { job, .. } | cell::fiote_communication::speech::voice::Request::Speak { job, .. } } => Work::Voice(job.clone()),
+            Request::StartListening { owner, .. } | Request::ResumeListening { owner, .. } => {
+                Work::Listening(owner.clone())
+            }
+            Request::Voice {
+                request:
+                    cell::fiote_communication::speech::voice::Request::Install { job, .. }
+                    | cell::fiote_communication::speech::voice::Request::Speak { job, .. },
+            } => Work::Voice(job.clone()),
             Request::StartLocal { job, .. }
             | Request::StartEndpoint { job, .. }
             | Request::InstallLocal { job, .. }
@@ -100,7 +110,13 @@ impl Pending {
                     {
                         state.job = Some(self.work.clone());
                     }
-                    Work::Voice(job) if status.voice.job.as_ref().is_some_and(|result| &result.id == job) => {
+                    Work::Voice(job)
+                        if status
+                            .voice
+                            .job
+                            .as_ref()
+                            .is_some_and(|result| &result.id == job) =>
+                    {
                         state.voice = Some(self.work.clone());
                     }
                     _ => {}

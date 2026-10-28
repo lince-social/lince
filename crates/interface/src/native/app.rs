@@ -13,8 +13,50 @@ use bevy::{
 #[derive(Resource, Clone)]
 pub struct CellHandle(pub cell::CellRuntime);
 
+pub async fn initialize_language(runtime: &cell::CellRuntime) -> std::io::Result<()> {
+    let language = store::config::get(&runtime.store.pool)
+        .await
+        .map_err(std::io::Error::other)?
+        .and_then(|configuration| crate::i18n::Language::from_tag(&configuration.language))
+        .unwrap_or_default();
+    crate::i18n::initialize(language).map_err(std::io::Error::other)
+}
+
 #[derive(Resource, Clone)]
 pub struct OutputTarget(pub bevy::camera::RenderTarget);
+
+#[derive(Resource)]
+pub struct LinearOutput;
+
+pub fn configure_output_color(world: &mut World, camera: Entity, target: &Handle<Image>) {
+    if !world.contains_resource::<LinearOutput>()
+        || world
+            .resource::<Assets<Image>>()
+            .get(target)
+            .is_none_or(|image| {
+                image.texture_descriptor.format
+                    != bevy::render::render_resource::TextureFormat::Rgba16Float
+            })
+    {
+        return;
+    }
+    if world.get::<bevy::camera::Hdr>(camera).is_none() {
+        world.entity_mut(camera).insert(bevy::camera::Hdr);
+    }
+    if world.get::<bevy::camera::CompositingSpace>(camera)
+        != Some(&bevy::camera::CompositingSpace::Linear)
+    {
+        world
+            .entity_mut(camera)
+            .insert(bevy::camera::CompositingSpace::Linear);
+    }
+    if world.get::<Tonemapping>(camera) != Some(&Tonemapping::None) {
+        world.entity_mut(camera).insert(Tonemapping::None);
+    }
+    if world.get::<DebandDither>(camera) != Some(&DebandDither::Disabled) {
+        world.entity_mut(camera).insert(DebandDither::Disabled);
+    }
+}
 
 pub fn text_ready_to_close(world: &mut World) -> bool {
     if world
@@ -54,6 +96,7 @@ pub fn presentation_app(directory: std::path::PathBuf, plugins: impl PluginGroup
     app.insert_resource(crate::native::topology::assets::AssetDirectory(directory));
     app.add_plugins(plugins);
     app.add_plugins(crate::native::topology::splats::SplatPlugin)
+        .add_plugins(crate::controls::editing::TextEditingPlugin)
         .add_plugins((
             TabNavigationPlugin,
             ThemePlugin,
@@ -104,6 +147,8 @@ pub fn presentation_app(directory: std::path::PathBuf, plugins: impl PluginGroup
         .add_plugins(crate::native::sound_area::SoundAreaPlugin)
         .add_plugins(crate::native::recorder_castle::RecorderCastlePlugin)
         .add_plugins(crate::native::document_viewer::DocumentViewerPlugin)
+        .add_plugins(crate::native::source_view::SourceViewPlugin)
+        .add_plugins(crate::native::demeter_castle::DemeterCastlePlugin)
         .add_plugins(crate::native::media_sand::MediaSandPlugin)
         .add_plugins(crate::native::drawing::DrawingPlugin)
         .add_plugins(crate::native::record_extensions::ExtensionPlugin)
@@ -141,7 +186,11 @@ pub fn canvas(mut commands: Commands) {
     ));
 }
 
-fn camera(mut commands: Commands, target: Option<Res<OutputTarget>>) {
+fn camera(
+    mut commands: Commands,
+    target: Option<Res<OutputTarget>>,
+    linear: Option<Res<LinearOutput>>,
+) {
     let target = target.map(|target| target.0.clone()).unwrap_or_default();
     let camera = commands
         .spawn((
@@ -151,7 +200,9 @@ fn camera(mut commands: Commands, target: Option<Res<OutputTarget>>) {
             Camera {
                 clear_color: ClearColorConfig::Custom(Color::NONE),
                 output_mode: bevy::camera::CameraOutputMode::Write {
-                    blend_state: Some(bevy::render::render_resource::BlendState::ALPHA_BLENDING),
+                    blend_state: Some(
+                        bevy::render::render_resource::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+                    ),
                     clear_color: ClearColorConfig::None,
                 },
                 ..default()
@@ -177,13 +228,27 @@ fn camera(mut commands: Commands, target: Option<Res<OutputTarget>>) {
     commands.insert_resource(crate::native::topology::presentation::BackgroundCamera(
         background,
     ));
+    if linear.is_some() {
+        commands
+            .entity(camera)
+            .insert((bevy::camera::Hdr, bevy::camera::CompositingSpace::Linear));
+        commands.entity(background).insert((
+            bevy::camera::Hdr,
+            bevy::camera::CompositingSpace::Linear,
+            Tonemapping::None,
+            DebandDither::Disabled,
+        ));
+    }
     commands.spawn((
         DirectionalLight {
             illuminance: 250.0,
             ..default()
         },
         bevy::camera::visibility::RenderLayers::from_layers(
-            &std::iter::once(0).chain(32..48).collect::<Vec<_>>(),
+            &std::iter::once(0)
+                .chain(crate::native::render_layers::OUTPUTS.indices())
+                .chain(crate::native::render_layers::OVERVIEW.indices())
+                .collect::<Vec<_>>(),
         ),
         Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.8, 0.4, 0.0)),
     ));

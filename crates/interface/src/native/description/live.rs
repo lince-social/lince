@@ -45,6 +45,8 @@ pub(super) fn sender(
 }
 
 pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessage) {
+    crate::native::source_view::receive(world, source, message);
+    crate::native::demeter_castle::receive(world, source, message);
     if matches!(message, ServerMessage::Error { id, code, .. } if id == "connection" || id == crate::native::cell_bridge::CONNECTION || code.as_deref() == Some("session_expired"))
     {
         let targets = world

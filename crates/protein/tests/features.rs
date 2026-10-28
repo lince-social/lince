@@ -40,6 +40,115 @@ fn base(source: Source, filter: Vec<Predicate>) -> Protein {
 }
 
 #[tokio::test]
+async fn named_relation_paths_keep_terminal_records_and_isolate_shared_branches() {
+    let e = engine().await;
+    e.act(
+        Action::CreateConcept {
+            lingua: "g_local".into(),
+            name: "philosophy".into(),
+            parents: vec![],
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    let family = store::concepts::resolve(&e.store.pool, "philosophy")
+        .await
+        .unwrap()
+        .unwrap();
+    for name in ["greek-study", "medieval-study"] {
+        e.act(
+            Action::CreateConcept {
+                lingua: "g_local".into(),
+                name: name.into(),
+                parents: vec![family.clone()],
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    }
+    e.act(Action::CreateConcept {
+        lingua: "g_local".into(), name: "geographical-context".into(), parents: vec![],
+    }, None).await.unwrap();
+    let root = make(&e, "philosophy-root", RecordKind::Plain, 0.0).await;
+    let greek = make(&e, "greek-reading", RecordKind::Plain, 0.0).await;
+    let last = make(&e, "greek-terminal", RecordKind::Plain, 0.0).await;
+    let medieval = make(&e, "medieval-reading", RecordKind::Plain, 0.0).await;
+    let geography = make(&e, "geographical-context", RecordKind::Plain, 0.0).await;
+    for (from, predicate, to) in [
+        (&root, "greek-study", &greek),
+        (&greek, "greek-study", &last),
+        (&root, "medieval-study", &medieval),
+        (&greek, "geographical-context", &geography),
+    ] {
+        e.act(
+            Action::AssertRecord {
+                subject: from.clone(),
+                predicate: predicate.into(),
+                object: Some(to.clone()),
+                quantity: None,
+                unit: None,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    }
+    let mut query = base(
+        Source::Record,
+        vec![Predicate::Relation {
+            kind: "greek-study".into(),
+            direction: LinkDirection::Both,
+            other: None,
+        }],
+    );
+    query.include.links = Some(LinksInclude {
+        kinds: vec!["greek-study".into()],
+        direction: LinkDirection::Both,
+        depth: 1,
+    });
+    let rows = protein::execute(&e.store, &query).await.unwrap();
+    assert_eq!(rows.len(), 3);
+    assert!(rows.iter().any(|row| row["uid"] == root));
+    assert!(rows.iter().any(|row| row["uid"] == last));
+    assert!(
+        rows.iter()
+            .all(|row| row["uid"] != medieval && row["uid"] != geography)
+    );
+    assert!(
+        rows.iter()
+            .flat_map(|row| row["links"].as_array().unwrap())
+            .all(|link| link["kind"] == "greek-study")
+    );
+    assert!(
+        rows.iter().find(|row| row["uid"] == last).unwrap()["links"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|link| link["from"] == greek && link["direction"] == "in")
+    );
+    query.filter = vec![Predicate::Relation {
+        kind: "philosophy".into(),
+        direction: LinkDirection::Both,
+        other: None,
+    }];
+    query.include.links.as_mut().unwrap().kinds = vec!["philosophy".into()];
+    let rows = protein::execute(&e.store, &query).await.unwrap();
+    assert_eq!(rows.len(), 4);
+    assert!(rows.iter().any(|row| row["uid"] == medieval));
+    assert!(
+        rows.iter()
+            .all(|row| !row["links"].as_array().unwrap().is_empty())
+    );
+    assert!(
+        rows.iter()
+            .flat_map(|row| row["links"].as_array().unwrap())
+            .all(|link| link["kind"] != "geographical-context")
+    );
+}
+
+#[tokio::test]
 async fn aggregate_sums_by_group() {
     let e = engine().await;
     make(&e, "checking", RecordKind::Plain, 500.0).await;

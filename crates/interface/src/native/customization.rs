@@ -651,6 +651,9 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             );
         }
         crate::native::sand_settings::render(world, root, panel, entity);
+        crate::native::capture::item_panel(world, root, panel, entity);
+        crate::native::layout::desktop::compact::item_panel(world, root, panel, entity);
+        crate::native::layout::desktop::scratch::item_panel(world, root, panel, entity);
     }
     if crate::native::protein_area::presentation::panel(world, root, panel) {
         return;

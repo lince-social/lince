@@ -127,6 +127,7 @@ impl Presentation {
                     .world_mut()
                     .entity_mut(entity)
                     .insert(native::layout::desktop::TransientParent(parent));
+                self.app.world_mut().entity_mut(entity).remove::<native::layout::desktop::opening::Decision>();
             } else {
                 self.app
                     .world_mut()
@@ -306,7 +307,13 @@ fn place(
     if world.get::<ZIndex>(view.entity) != Some(&order) {
         world.entity_mut(view.entity).insert(order);
     }
+    let color = if world.contains_resource::<native::app::LinearOutput>() { source.color.native_uniforms() } else { source.color.uniforms() };
+    let [color_red, color_green, color_blue, color_curve] = color.map(Vec4::from_array);
     let mapping = Mapping {
+        color_red,
+        color_green,
+        color_blue,
+        color_curve,
         u: Vec4::new(
             source.layout.uv_origin[0],
             source.layout.uv_x[0],

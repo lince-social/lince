@@ -112,6 +112,7 @@ impl Plugin for InstinctPlugin {
             .add_systems(
                 PreUpdate,
                 practice::emergency
+                    .after(crate::native::shortcuts::CaptureInput)
                     .after(bevy::input::InputSystems)
                     .before(bevy::input_focus::InputFocusSystems::Dispatch)
                     .run_if(practice::active),
@@ -171,7 +172,7 @@ impl Default for Book {
         };
         let mut pages = Vec::new();
         let mut entries = Vec::new();
-        for descriptor in lince_interface::handbook::PAGES {
+        for descriptor in lince_interface::handbook::pages() {
             if let Some(record) = records
                 .iter()
                 .find(|record| record.slug.as_deref() == Some(descriptor.slug))
@@ -203,7 +204,7 @@ impl Default for Book {
             }
         }
         for record in records.iter().filter(|record| {
-            !lince_interface::handbook::PAGES
+            !lince_interface::handbook::pages()
                 .iter()
                 .any(|page| record.slug.as_deref() == Some(page.slug))
                 && !record

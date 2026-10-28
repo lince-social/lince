@@ -361,7 +361,15 @@ impl Engine {
         for frequency in &automation.frequencies {
             let definition = frequency_definition(frequency)?;
             let handle = frequencies::get_handle(&self.store.pool, &frequency.uid).await?;
-            self.require_permission(actor, if handle.is_some() { "frequency:update" } else { "frequency:create" }).await?;
+            self.require_permission(
+                actor,
+                if handle.is_some() {
+                    "frequency:update"
+                } else {
+                    "frequency:create"
+                },
+            )
+            .await?;
             let before = handle.clone();
             let now = nucleus::execution::now();
             if let Some(handle) = handle {
@@ -482,16 +490,26 @@ impl Engine {
                 .resolve_consequences(consequences.as_slice().to_vec())
                 .await?;
             match self.transfer_rule_anchor(&consequences, actor).await? {
-                Some(anchor) if anchor != *target => return Err(invalid("Transfer Rule target does not match its anchor")),
+                Some(anchor) if anchor != *target => {
+                    return Err(invalid("Transfer Rule target does not match its anchor"));
+                }
                 Some(_) => {}
                 None => self.authorize_rule_target(target, actor).await?,
             }
             let mut condition = rule_condition(rule)?;
             let current = store::recurrence::get(&self.store.pool, &rule.uid).await?;
-            self.require_permission(actor, if current.is_some() { "frequency:update" } else { "frequency:create" }).await?;
+            self.require_permission(
+                actor,
+                if current.is_some() {
+                    "frequency:update"
+                } else {
+                    "frequency:create"
+                },
+            )
+            .await?;
             if let Some(condition) = &mut condition {
                 condition.source = self
-                    .canonical_condition_for(Some(condition.source.clone()),actor)
+                    .canonical_condition_for(Some(condition.source.clone()), actor)
                     .await?
                     .ok_or_else(|| invalid("Empty condition"))?;
                 condition.bindings = store::karma_bindings::resolve(
@@ -504,7 +522,8 @@ impl Engine {
                 )
                 .await?;
             }
-            Box::pin(self.validate_automatic_rule(&consequences, condition.as_ref(), actor)).await?;
+            Box::pin(self.validate_automatic_rule(&consequences, condition.as_ref(), actor))
+                .await?;
             let before = current.clone();
             if let Some(current) = current {
                 if current.record_uid != *target {

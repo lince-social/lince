@@ -31,6 +31,75 @@ fn empty_floor_does_not_evaluate_formulas() {
 }
 
 #[test]
+fn inactive_overview_terrain_has_real_heights_without_physics_activation_and_releases_meshes() {
+    let (mut world, root) = fixture();
+    world.init_resource::<Assets<Mesh>>();
+    world.init_resource::<Assets<drawing::GroundMaterial>>();
+    let mut other = world.get::<Workspaces>(root).unwrap().entries[0].clone();
+    other.id = 2;
+    world
+        .get_mut::<Workspaces>(root)
+        .unwrap()
+        .entries
+        .push(other);
+    spawn(&mut world, root, 2, DVec2::ZERO, TopologyEffect::default()).unwrap();
+    prepare(&mut world);
+    assert!(world.resource::<Terrain>().fields.is_empty());
+    let view = world.spawn_empty().id();
+    world.insert_resource(super::super::previews::Previews(vec![
+        super::super::previews::Preview {
+            id: view,
+            root,
+            workspace: 2,
+            view: CanvasView::default(),
+            pixels: UVec2::new(320, 180),
+            image: Handle::default(),
+        },
+    ]));
+    drawing::draw(&mut world);
+    assert_eq!(world.get::<Workspaces>(root).unwrap().active, 1);
+    assert!(world.resource::<Terrain>().fields.is_empty());
+    assert!(world.resource::<Terrain>().tiles.is_empty());
+    assert_eq!(
+        world
+            .query_filtered::<Entity, With<Collider>>()
+            .iter(&world)
+            .count(),
+        0
+    );
+    let layers = bevy::camera::visibility::RenderLayers::none()
+        .with(crate::native::render_layers::OVERVIEW.get(0).unwrap());
+    let meshes: Vec<_> = world
+        .query::<(&Mesh3d, &bevy::camera::visibility::RenderLayers)>()
+        .iter(&world)
+        .filter(|(_, rendered)| rendered.intersects(&layers))
+        .map(|(mesh, _)| mesh.0.clone())
+        .collect();
+    assert!(!meshes.is_empty());
+    assert!(meshes.iter().any(|mesh| {
+        let mesh = world.resource::<Assets<Mesh>>().get(mesh).unwrap();
+        let Some(bevy::mesh::VertexAttributeValues::Float32x3(vertices)) =
+            mesh.attribute(Mesh::ATTRIBUTE_POSITION)
+        else {
+            return false;
+        };
+        vertices.iter().any(|position| position[1] > 50.0)
+    }));
+    world
+        .resource_mut::<super::super::previews::Previews>()
+        .0
+        .clear();
+    drawing::draw(&mut world);
+    assert!(world.resource::<Assets<Mesh>>().is_empty());
+    assert!(
+        world
+            .resource::<Assets<drawing::GroundMaterial>>()
+            .is_empty()
+    );
+    assert!(world.resource::<Terrain>().render_tiles.is_empty());
+}
+
+#[test]
 fn tiles_are_cached_and_moving_an_effect_restores_its_old_location() {
     let (mut world, root) = fixture();
     let entity = spawn(&mut world, root, 1, DVec2::ZERO, TopologyEffect::default()).unwrap();

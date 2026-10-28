@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 mod drawing;
+mod overview;
 pub use drawing::install;
 pub mod editor;
 

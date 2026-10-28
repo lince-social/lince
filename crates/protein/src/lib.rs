@@ -2172,7 +2172,7 @@ async fn resolve_link_kind_uids(
     }
     let mut out = Vec::new();
     for kind in requested {
-        if let Some(uid) = store::vocabulary::resolve(&store.pool, &kind, subject).await? {
+        for uid in store::vocabulary::meaning_family(&store.pool, &kind, subject).await? {
             if !out.iter().any(|existing| existing == &uid) {
                 out.push(uid);
             }
@@ -4009,6 +4009,8 @@ async fn execute_assertions(
             "predicate_revision": assertion.predicate_revision,
             "predicate_name": concept_names.get(&assertion.predicate_uid),
             "object": assertion.object_uid,
+            "uri": assertion.object_uri,
+            "resolved_object": assertion.resolved_object_uid,
             "role": assertion.role,
             "quantity": assertion.quantity.map(|value| value.to_string()),
             "unit": assertion.unit_uid,

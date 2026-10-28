@@ -155,6 +155,36 @@ pub(super) fn submit(world: &mut World, owner: Entity) {
     }
 }
 
+pub(super) fn stop_location(world: &mut World, owner: Entity, record: String, person: String) {
+    if world.get::<View>(owner).unwrap().pending.is_some() {
+        status(world, owner, "Wait for the current action to finish");
+        return;
+    }
+    let action = engine::actions::Action::Location {
+        request: nucleus::location::Command::Stop {
+            person: person.clone(),
+            record_uid: record,
+        },
+    };
+    let id = nucleus::new_uid("transfer-action");
+    let mut form = Form::action("Stop my sharing", json!({"action":"location"}));
+    form.actor = Some(person);
+    match send(
+        world,
+        owner,
+        ClientMessage::Act {
+            id: id.clone(),
+            action,
+        },
+    ) {
+        Ok(()) => {
+            world.get_mut::<View>(owner).unwrap().pending = Some(Pending { id, form });
+            status(world, owner, "Stopping my location sharing…");
+        }
+        Err(error) => status(world, owner, error),
+    }
+}
+
 pub(super) fn receive(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>,

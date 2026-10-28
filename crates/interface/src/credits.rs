@@ -55,6 +55,8 @@ pub const ICU: Attribution = Attribution {
 };
 
 pub const ATTRIBUTIONS: &[Attribution] = &[
+    TNIL,
+    ITHKUIL_BASIC,
     Attribution {
         name: "image",
         author: "The image-rs Developers",
@@ -102,3 +104,15 @@ pub const ATTRIBUTIONS: &[Attribution] = &[
         license: LATO_LICENSE,
     },
 ];
+
+pub const TNIL: Attribution = Attribution {
+    name: "tnil — New Ithkuil",
+    author: "Zachary Sakowitz and contributors; language created by John Quijada",
+    license: crate::i18n::TNIL_LICENSE,
+};
+
+pub const ITHKUIL_BASIC: Attribution = Attribution {
+    name: "IthkuilBasic",
+    author: "Shankar Sivarajan; glyphs by Kevin McCurdy and Zachary Sakowitz; numbers by Pan Kamil",
+    license: lince_ithkuil::FONT_NOTICE,
+};

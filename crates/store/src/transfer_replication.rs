@@ -223,7 +223,9 @@ pub async fn pending(
             }
         }
         if ids.len() > MAX_CHANGES {
-            return Err(invalid("Transfer transaction exceeds the replication Fact budget"));
+            return Err(invalid(
+                "Transfer transaction exceeds the replication Fact budget",
+            ));
         }
         let mut facts = Vec::new();
         for uid in ids {

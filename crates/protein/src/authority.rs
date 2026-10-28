@@ -49,6 +49,7 @@ pub enum AssertionRole {
 pub enum AssertionTarget {
     Unary,
     Record(String),
+    Uri(String),
     AnyReadableRecord,
 }
 
@@ -118,6 +119,7 @@ pub struct AssertionState {
     pub subject_uid: String,
     pub predicate_uid: String,
     pub object_uid: Option<String>,
+    pub object_uri: Option<String>,
     pub role: AssertionRole,
     pub quantity: Option<DecimalValue>,
     pub unit_uid: Option<String>,
@@ -128,6 +130,7 @@ pub struct GraphSnapshot {
     pub records: Vec<RecordState>,
     pub concepts: Vec<ConceptState>,
     pub assertions: Vec<AssertionState>,
+    pub resolved_links: BTreeMap<String, String>,
     pub places: BTreeSet<String>,
 }
 
@@ -328,6 +331,13 @@ struct Graph<'a> {
 }
 
 impl<'a> Graph<'a> {
+    fn object(&self, assertion: &'a AssertionState) -> Option<&'a String> {
+        assertion
+            .object_uid
+            .as_ref()
+            .or_else(|| self.source.resolved_links.get(&assertion.uid))
+    }
+
     fn prepare(source: &'a GraphSnapshot, budget: &mut Budget<'_>) -> Result<Self, AuthorityError> {
         within(source.records.len(), budget.limits.records)?;
         within(source.concepts.len(), budget.limits.concepts)?;
@@ -413,6 +423,7 @@ impl<'a> Graph<'a> {
                 &assertion.subject_uid,
                 &assertion.predicate_uid,
                 &assertion.object_uid,
+                &assertion.object_uri,
             )) || assertion.role == AssertionRole::Identity
                 && !identity_subjects.insert(&assertion.subject_uid)
             {
@@ -423,11 +434,22 @@ impl<'a> Graph<'a> {
             if let Some(uid) = &assertion.object_uid {
                 graph.record(uid)?;
             }
+            if let Some(uri) = &assertion.object_uri {
+                budget.text(uri)?;
+                if assertion.object_uid.is_some()
+                    || uri.is_empty()
+                    || uri.len() > 8192
+                    || uri.chars().any(char::is_control)
+                {
+                    return Err(AuthorityError::InvalidGraph);
+                }
+            }
             if let Some(uid) = &assertion.unit_uid {
                 graph.concept(uid)?;
             }
             if assertion.role == AssertionRole::Identity
                 && (assertion.object_uid.is_some()
+                    || assertion.object_uri.is_some()
                     || assertion.quantity.is_some()
                     || assertion.unit_uid.is_some())
             {
@@ -438,6 +460,24 @@ impl<'a> Graph<'a> {
                 .entry(&assertion.subject_uid)
                 .or_default()
                 .insert(&assertion.uid, assertion);
+        }
+        within(source.resolved_links.len(), budget.limits.assertions)?;
+        for (uid, target) in &source.resolved_links {
+            budget.step()?;
+            budget.text(uid)?;
+            budget.text(target)?;
+            let assertion = graph
+                .assertions
+                .get(uid.as_str())
+                .ok_or(AuthorityError::InvalidGraph)?;
+            let object = graph.record(target)?;
+            let subject = graph.record(&assertion.subject_uid)?;
+            if assertion.object_uri.is_none()
+                || assertion.object_uid.is_some()
+                || object.organ_uid != subject.organ_uid
+            {
+                return Err(AuthorityError::InvalidGraph);
+            }
         }
         Ok(graph)
     }
@@ -481,8 +521,13 @@ impl<'a> Graph<'a> {
         uid: &str,
         budget: &mut Budget<'_>,
     ) -> Result<BTreeSet<String>, AuthorityError> {
-        if let Some(concepts)=nucleus::vocabulary::parse_meaning_set(uid).map_err(|_|AuthorityError::InvalidGraph)? {
-            for concept in &concepts {budget.step()?;self.concept(concept)?;}
+        if let Some(concepts) =
+            nucleus::vocabulary::parse_meaning_set(uid).map_err(|_| AuthorityError::InvalidGraph)?
+        {
+            for concept in &concepts {
+                budget.step()?;
+                self.concept(concept)?;
+            }
             return Ok(concepts.into_iter().collect());
         }
         self.concept(uid)?;
@@ -590,16 +635,32 @@ impl Selector {
             Self::Members(members) => members.contains(&record.uid),
             Self::Kind(kind) => kind == record.kind.as_str(),
             Self::Content(predicate) => {
-                let content = record.content.as_ref().ok_or(AuthorityError::IncompleteRecord)?;
+                let content = record
+                    .content
+                    .as_ref()
+                    .ok_or(AuthorityError::IncompleteRecord)?;
                 match predicate {
-                    Predicate::QuantityLt(value) => content.quantity.exact_numeric_cmp(*value).is_lt(),
-                    Predicate::QuantityLte(value) => !content.quantity.exact_numeric_cmp(*value).is_gt(),
-                    Predicate::QuantityGt(value) => content.quantity.exact_numeric_cmp(*value).is_gt(),
-                    Predicate::QuantityGte(value) => !content.quantity.exact_numeric_cmp(*value).is_lt(),
-                    Predicate::QuantityEq(value) => content.quantity.exact_numeric_cmp(*value).is_eq(),
+                    Predicate::QuantityLt(value) => {
+                        content.quantity.exact_numeric_cmp(*value).is_lt()
+                    }
+                    Predicate::QuantityLte(value) => {
+                        !content.quantity.exact_numeric_cmp(*value).is_gt()
+                    }
+                    Predicate::QuantityGt(value) => {
+                        content.quantity.exact_numeric_cmp(*value).is_gt()
+                    }
+                    Predicate::QuantityGte(value) => {
+                        !content.quantity.exact_numeric_cmp(*value).is_lt()
+                    }
+                    Predicate::QuantityEq(value) => {
+                        content.quantity.exact_numeric_cmp(*value).is_eq()
+                    }
                     Predicate::SlugEq(value) => content.slug.as_ref() == Some(value),
                     Predicate::UnitEq(value) => content.unit_uid.as_ref() == Some(value),
-                    Predicate::TextContains(value) => content.head.to_lowercase().contains(&value.to_lowercase()) || content.body.to_lowercase().contains(&value.to_lowercase()),
+                    Predicate::TextContains(value) => {
+                        content.head.to_lowercase().contains(&value.to_lowercase())
+                            || content.body.to_lowercase().contains(&value.to_lowercase())
+                    }
                     _ => return Err(AuthorityError::UnsupportedPredicate),
                 }
             }
@@ -617,9 +678,20 @@ impl Selector {
         within(depth, budget.limits.predicate_depth)?;
         within(budget.predicates, budget.limits.predicate_nodes)?;
         match predicate {
-            Predicate::QuantityLt(_) | Predicate::QuantityLte(_) | Predicate::QuantityGt(_) | Predicate::QuantityGte(_) | Predicate::QuantityEq(_) => Ok(Self::Content(predicate.clone())),
-            Predicate::SlugEq(value) | Predicate::TextContains(value) => { budget.text(value)?; Ok(Self::Content(predicate.clone())) }
-            Predicate::UnitEq(value) => { budget.text(value)?; graph.concept(value)?; Ok(Self::Content(predicate.clone())) }
+            Predicate::QuantityLt(_)
+            | Predicate::QuantityLte(_)
+            | Predicate::QuantityGt(_)
+            | Predicate::QuantityGte(_)
+            | Predicate::QuantityEq(_) => Ok(Self::Content(predicate.clone())),
+            Predicate::SlugEq(value) | Predicate::TextContains(value) => {
+                budget.text(value)?;
+                Ok(Self::Content(predicate.clone()))
+            }
+            Predicate::UnitEq(value) => {
+                budget.text(value)?;
+                graph.concept(value)?;
+                Ok(Self::Content(predicate.clone()))
+            }
             Predicate::All(children) | Predicate::Any(children) => {
                 within(
                     children.len(),
@@ -682,7 +754,7 @@ impl Selector {
                 let mut members = BTreeSet::new();
                 for assertion in &graph.source.assertions {
                     budget.step()?;
-                    let Some(object) = &assertion.object_uid else {
+                    let Some(object) = graph.object(assertion) else {
                         continue;
                     };
                     if !family.contains(&assertion.predicate_uid) {
@@ -715,7 +787,7 @@ impl Selector {
                 let mut edges: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
                 for assertion in &graph.source.assertions {
                     budget.step()?;
-                    if let Some(object) = &assertion.object_uid
+                    if let Some(object) = graph.object(assertion)
                         && family.contains(&assertion.predicate_uid)
                     {
                         edges
@@ -812,6 +884,18 @@ impl<'a> Evaluation<'a> {
                 graph.concept(&assertion.predicate_uid)?;
                 if let AssertionTarget::Record(uid) = &assertion.target {
                     graph.record(uid)?;
+                }
+                if let AssertionTarget::Uri(uri) = &assertion.target {
+                    budget.text(uri)?;
+                    if uri.is_empty()
+                        || uri.len() > 8192
+                        || uri.chars().any(char::is_control)
+                        || !uri
+                            .split_once(':')
+                            .is_some_and(|(scheme, _)| matches!(scheme, "http" | "https" | "file"))
+                    {
+                        return Err(AuthorityError::InvalidGraph);
+                    }
                 }
                 if assertion.role == AssertionRole::Identity
                     && (!matches!(assertion.target, AssertionTarget::Unary)
@@ -1061,11 +1145,12 @@ struct CheckedAssertionIntent<'a> {
     before_is_current: bool,
 }
 
-fn assertion_tuple(assertion: &AssertionState) -> (&str, &str, Option<&str>) {
+fn assertion_tuple(assertion: &AssertionState) -> (&str, &str, Option<&str>, Option<&str>) {
     (
         &assertion.subject_uid,
         &assertion.predicate_uid,
         assertion.object_uid.as_deref(),
+        assertion.object_uri.as_deref(),
     )
 }
 
@@ -1088,6 +1173,16 @@ fn validate_intent_state(
         budget.edge()?;
         evaluation.graph.record(uid)?;
     }
+    if let Some(uri) = &assertion.object_uri {
+        budget.text(uri)?;
+        if assertion.object_uid.is_some()
+            || uri.is_empty()
+            || uri.len() > 8192
+            || uri.chars().any(char::is_control)
+        {
+            return Err(AuthorityError::InvalidGraph);
+        }
+    }
     if let Some(uid) = &assertion.unit_uid {
         budget.text(uid)?;
         budget.edge()?;
@@ -1095,6 +1190,7 @@ fn validate_intent_state(
     }
     if assertion.role == AssertionRole::Identity
         && (assertion.object_uid.is_some()
+            || assertion.object_uri.is_some()
             || assertion.quantity.is_some()
             || assertion.unit_uid.is_some())
     {
@@ -1351,24 +1447,53 @@ fn authorize_prepared_record_change(
         }
     }
     let mut first = None;
-    let mut combined = MutationGrant { operation, selector: Predicate::All(vec![]), properties: BTreeSet::new(), assertions_add: vec![], assertions_remove: vec![] };
+    let mut combined = MutationGrant {
+        operation,
+        selector: Predicate::All(vec![]),
+        properties: BTreeSet::new(),
+        assertions_add: vec![],
+        assertions_remove: vec![],
+    };
     for (index, grant) in policy.grants.iter().enumerate() {
         budget.step()?;
-        if grant.operation != operation || operation != Operation::Delete && !proposed.grants[index].matches(after, budget)? { continue; }
-        if let Some(before) = before && !current.grants[index].matches(before, budget)? { continue; }
+        if grant.operation != operation
+            || operation != Operation::Delete && !proposed.grants[index].matches(after, budget)?
+        {
+            continue;
+        }
+        if let Some(before) = before
+            && !current.grants[index].matches(before, budget)?
+        {
+            continue;
+        }
         first.get_or_insert(index);
         combined.properties.extend(grant.properties.iter().cloned());
-        combined.assertions_add.extend(grant.assertions_add.iter().cloned());
-        combined.assertions_remove.extend(grant.assertions_remove.iter().cloned());
+        combined
+            .assertions_add
+            .extend(grant.assertions_add.iter().cloned());
+        combined
+            .assertions_remove
+            .extend(grant.assertions_remove.iter().cloned());
     }
     if let Some(index) = first {
         if properties.is_subset(&combined.properties)
             && assertions_allowed(&added, &combined.assertions_add, proposed, budget)?
             && assertions_allowed(&removed, &combined.assertions_remove, current, budget)?
-            && assertion_intents_allowed(intents, &combined, current, proposed, budget)? {
-            return Ok(RecordDecision { operation, grant_index: index, properties,
-                assertions_added: added.iter().map(|assertion| assertion.uid.clone()).collect(),
-                assertions_removed: removed.iter().map(|assertion| assertion.uid.clone()).collect() });
+            && assertion_intents_allowed(intents, &combined, current, proposed, budget)?
+        {
+            return Ok(RecordDecision {
+                operation,
+                grant_index: index,
+                properties,
+                assertions_added: added
+                    .iter()
+                    .map(|assertion| assertion.uid.clone())
+                    .collect(),
+                assertions_removed: removed
+                    .iter()
+                    .map(|assertion| assertion.uid.clone())
+                    .collect(),
+            });
         }
     }
     Err(AuthorityError::Denied)
@@ -1400,8 +1525,13 @@ fn assertion_intents_allowed(
             ),
         ] {
             if let Some(state) = state {
-                let Some(properties) = assertion_properties(state, rules, evaluation, budget)? else { return Ok(false); };
-                if state.role != AssertionRole::Identity && !checked.intent.touched_properties.is_subset(&properties) {
+                let Some(properties) = assertion_properties(state, rules, evaluation, budget)?
+                else {
+                    return Ok(false);
+                };
+                if state.role != AssertionRole::Identity
+                    && !checked.intent.touched_properties.is_subset(&properties)
+                {
                     return Ok(false);
                 }
             }
@@ -1440,21 +1570,33 @@ fn assertion_properties(
     evaluation: &Evaluation<'_>,
     budget: &mut Budget<'_>,
 ) -> Result<Option<BTreeSet<AssertionProperty>>, AuthorityError> {
-    if !evaluation.ceiling.concepts.contains(&assertion.predicate_uid)
-        || assertion.unit_uid.as_ref().is_some_and(|uid| !evaluation.ceiling.concepts.contains(uid))
+    if !evaluation
+        .ceiling
+        .concepts
+        .contains(&assertion.predicate_uid)
+        || assertion
+            .unit_uid
+            .as_ref()
+            .is_some_and(|uid| !evaluation.ceiling.concepts.contains(uid))
     {
         return Ok(None);
     }
-    if let Some(uid) = &assertion.object_uid {
-        if !evaluation.reference_readable(uid, budget)? { return Ok(None); }
+    if let Some(uid) = evaluation.graph.object(assertion) {
+        if !evaluation.reference_readable(uid, budget)? {
+            return Ok(None);
+        }
     }
     let mut matched = false;
     let mut properties = BTreeSet::new();
     for grant in grants {
         budget.step()?;
-        if grant.predicate_uid == assertion.predicate_uid && grant.role == assertion.role
+        if grant.predicate_uid == assertion.predicate_uid
+            && grant.role == assertion.role
             && match (&grant.target, &assertion.object_uid) {
-                (AssertionTarget::Unary, None) => true,
+                (AssertionTarget::Unary, None) => assertion.object_uri.is_none(),
+                (AssertionTarget::Uri(expected), None) => {
+                    assertion.object_uri.as_ref() == Some(expected)
+                }
                 (AssertionTarget::Record(expected), Some(actual)) => expected == actual,
                 (AssertionTarget::AnyReadableRecord, Some(_)) => true,
                 _ => false,
@@ -1464,8 +1606,10 @@ fn assertion_properties(
             properties.extend(grant.properties.iter().copied());
         }
     }
-    Ok((matched && (assertion.quantity.is_none() || properties.contains(&AssertionProperty::Quantity))
-        && (assertion.unit_uid.is_none() || properties.contains(&AssertionProperty::Unit))).then_some(properties))
+    Ok((matched
+        && (assertion.quantity.is_none() || properties.contains(&AssertionProperty::Quantity))
+        && (assertion.unit_uid.is_none() || properties.contains(&AssertionProperty::Unit)))
+    .then_some(properties))
 }
 
 fn changed_properties(

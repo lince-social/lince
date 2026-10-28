@@ -2,7 +2,7 @@ mod native;
 mod server;
 
 use lince_interface::tokens::{
-    css, document::ThemeDocument, ColorScheme, SandStyleKind, ThemeSettings, TokenOverrides,
+    ColorScheme, SandStyleKind, ThemeSettings, TokenOverrides, css, document::ThemeDocument,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -470,9 +470,11 @@ mod tests {
         assert!(create(&path, "study", "style").is_err());
         assert_eq!(fs::read(path.join("study.json")).unwrap(), original);
         study.alternatives[0].placements.remove("secondary-task");
-        assert!(validate(&path, &study)
-            .unwrap_err()
-            .contains("every retained capability"));
+        assert!(
+            validate(&path, &study)
+                .unwrap_err()
+                .contains("every retained capability")
+        );
     }
 
     #[test]
@@ -502,17 +504,19 @@ mod tests {
 
     #[test]
     fn malformed_studies_and_duplicate_arguments_are_rejected() {
-        assert!(options(
-            &[
-                "--focus".into(),
-                "structure".into(),
-                "--focus".into(),
-                "style".into()
-            ],
-            &["--focus"],
-            &[]
-        )
-        .is_err());
+        assert!(
+            options(
+                &[
+                    "--focus".into(),
+                    "structure".into(),
+                    "--focus".into(),
+                    "style".into()
+                ],
+                &["--focus"],
+                &[]
+            )
+            .is_err()
+        );
         let temp = Directory::new();
         assert!(create(&temp.0.join("invalid"), "invalid", "structure,style").is_err());
         create(&temp.0.join("motion"), "motion", "motion").unwrap();
@@ -523,8 +527,10 @@ mod tests {
         assert!(validate(&path, &study).is_err());
         let study = load(&path).unwrap();
         fs::write(path.join("fixtures.json"), "{}").unwrap();
-        assert!(validate(&path, &study)
-            .unwrap_err()
-            .contains("nonempty object"));
+        assert!(
+            validate(&path, &study)
+                .unwrap_err()
+                .contains("nonempty object")
+        );
     }
 }

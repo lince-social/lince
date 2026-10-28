@@ -68,6 +68,15 @@ pub enum Action {
     Knowledge {
         request: nucleus::knowledge::Command,
     },
+    Sources {
+        request: crate::sources::Command,
+    },
+    Demeter {
+        request: crate::demeter::Command,
+    },
+    Optimize {
+        request: crate::optimization::Command,
+    },
     SavedLocation {
         request: nucleus::vocabulary::SavedLocationCommand,
     },
@@ -4393,6 +4402,9 @@ impl Engine {
             Action::TrustAnalysis { request, .. } => request.permission(),
             Action::TransferReceipt { request, .. } => request.permission(),
             Action::SignalEndpoints { .. } => "permission:assign",
+            Action::Sources { request } => request.permission(),
+            Action::Demeter { request } => request.permission(),
+            Action::Optimize { request } => request.permission(),
             Action::Vocabulary { .. } | Action::SavedLocation { .. } | Action::Knowledge { .. } => {
                 "record:read"
             }
@@ -4837,6 +4849,22 @@ impl Engine {
                 .await;
         }
         match func {
+            nucleus::expr::HAS_ASSERTION => {
+                let references = slug.split('|').collect::<Vec<_>>();
+                if !(2..=3).contains(&references.len()) {
+                    return Err(EngineError::Consequence("Invalid assertion reading".into()));
+                }
+                let subject = self.resolve(references[0]).await?;
+                let predicate = self.resolve_concept(references[1]).await?;
+                let object = if let Some(object) = references.get(2) {
+                    Some(self.resolve(object).await?)
+                } else {
+                    None
+                };
+                let present:bool=store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_assertion_link WHERE subject_uid=? AND predicate_uid=? AND retracted_at IS NULL AND (? IS NULL OR target_uid=?))")
+                    .bind(subject).bind(predicate).bind(&object).bind(&object).fetch_one(&self.store.pool).await?;
+                Ok(if present { store::exact::one() } else { zero })
+            }
             "query_command" => self.query_command_reading(slug).await,
             "signal" => self.saved_signal_reading(slug).await,
             "quantity" => {

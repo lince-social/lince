@@ -63,7 +63,7 @@ pub(crate) async fn attach(
             .map(|(family, _)| family.clone())
             .collect();
         let value = json!({
-            "uid": assertion.uid, "from": assertion.subject_uid, "to": assertion.object_uid,
+            "uid": assertion.uid, "from": assertion.subject_uid, "to": assertion.object_uid.as_ref().or(assertion.resolved_object_uid.as_ref()),"uri":assertion.object_uri,
             "predicate_uid": assertion.predicate_uid, "predicate": names.get(&assertion.predicate_uid),
             "role": assertion.role, "quantity": assertion.quantity.map(|quantity| quantity.to_string()),
             "unit": assertion.unit_uid, "families": matched,
@@ -72,7 +72,11 @@ pub(crate) async fn attach(
         if let Some(rows) = context.get_mut(&assertion.subject_uid) {
             rows.push(value.clone());
         }
-        if let Some(to) = &assertion.object_uid {
+        if let Some(to) = assertion
+            .object_uid
+            .as_ref()
+            .or(assertion.resolved_object_uid.as_ref())
+        {
             if to != &assertion.subject_uid {
                 if let Some(rows) = context.get_mut(to) {
                     rows.push(value);

@@ -20,6 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  transfers:
+    uses: ./.github/workflows/transfers.yml
   apk:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -134,18 +136,7 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 crates/mobile/android/app/build/outputs/apk/release/app-release.apk
           cd crates/mobile/android/app/build/outputs/apk/release
           sha256sum app-release.apk > app-release.apk.sha256
-          python3 - <<'PY'
-          import json, os
-          from pathlib import Path
-          Path('build-info.json').write_text(json.dumps({
-              'package': 'social.lince.mobile',
-              'apk': 'app-release.apk',
-              'commit': os.environ['GITHUB_SHA'],
-              'version_code': int(os.environ['LINCE_ANDROID_VERSION_CODE']),
-              'workflow_run': os.environ['GITHUB_RUN_ID'],
-              'install': 'Open app-release.apk on the phone to install or update Lince.',
-          }, indent=2) + '\n')
-          PY
+          jq -n --arg commit "$GITHUB_SHA" --argjson version_code "$LINCE_ANDROID_VERSION_CODE" --arg workflow_run "$GITHUB_RUN_ID" '{package: "social.lince.mobile", apk: "app-release.apk", commit: $commit, version_code: $version_code, workflow_run: $workflow_run, install: "Open app-release.apk on the phone to install or update Lince."}' > build-info.json
       - uses: actions/upload-artifact@v4
         if: github.ref == 'refs/heads/main' && !matrix.smoke && inputs.signed_release
         with:

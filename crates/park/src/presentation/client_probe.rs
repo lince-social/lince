@@ -41,7 +41,7 @@ pub fn client_probe() -> Result<(), ProbeFailure> {
         for _ in 0..8 {
             frame = Some(canvas.probe_frame()?);
         }
-        let pixels = probe_pixels(frame.as_ref().unwrap().dmabuf())?;
+        let pixels = probe_pixels(frame.as_ref().unwrap().dmabuf().ok_or_else(|| input_failure("The probe output image is unavailable"))?)?;
         let geometry = canvas
             .geometry()
             .ok_or_else(|| input_failure("no published application geometry"))?;

@@ -1,7 +1,7 @@
 use super::LayoutBox;
 use crate::{
     host::{
-        ContentMapping, DesktopAction, GeometrySnapshot, ItemGeometry, ItemId, OutputId,
+        ContentMapping, DesktopAction, Direction, GeometrySnapshot, ItemGeometry, ItemId, OutputId,
         OutputViewport, Rectangle, SurfaceId, WorkspaceLayout,
     },
     layout::desktop::{Geometry, Item, ItemKind, PlacementId},
@@ -14,8 +14,59 @@ use bevy::prelude::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 mod commands;
+pub(crate) mod compact;
+pub(crate) mod scratch;
+pub mod control;
+pub(crate) mod external_settings;
+pub mod focus;
+pub mod gestures;
+pub(crate) mod input_settings;
+pub(crate) mod magnification;
+mod inspection;
+pub mod lifecycle;
+mod logout;
+pub mod manipulation;
+pub(crate) mod monitors;
+pub mod overview;
+pub(crate) mod pointer_settings;
+pub(crate) mod absolute_settings;
+mod preferences;
+pub mod opening;
+pub mod recent;
+mod tiling;
+pub mod transfers;
 mod transients;
-pub use commands::COMMANDS;
+mod ui;
+mod widths;
+pub(crate) mod windowed_fullscreen;
+pub(crate) use commands::CommandContext;
+pub(crate) use ui::{create_controls, label_controls, panel as controls};
+
+pub fn apply_compact_action(world: &mut World, root: Entity, action: DesktopAction) -> Option<Result<(), &'static str>> {
+    matches!(action, DesktopAction::CreateCompactGroup | DesktopAction::AddCompactMembers | DesktopAction::NextCompactMember
+        | DesktopAction::PreviousCompactMember | DesktopAction::MoveCompactMember(_) | DesktopAction::DetachCompactMember
+        | DesktopAction::DissolveCompactGroup).then(|| compact::checked(world, root, action))
+}
+
+pub fn activate_compact_member(world: &mut World, root: Entity, entity: Entity) -> Result<(), &'static str> {
+    compact::activate(world, root, entity)
+}
+
+pub fn apply_scratch_action(world: &mut World, root: Entity, action: DesktopAction) -> Option<Result<bool, String>> {
+    matches!(action, DesktopAction::MarkScratch | DesktopAction::ShowScratch | DesktopAction::HideScratch | DesktopAction::UnmarkScratch)
+        .then(|| scratch::checked(world, root, action))
+}
+
+pub fn cancel_scratch_interactions(world: &mut World) {
+    scratch::cancel(world);
+}
+
+pub(crate) fn visible_item(world: &World, root: Entity, entity: Entity) -> bool {
+    if world.get::<RestoredTransient>(entity).is_some() { return false; }
+    let Some(workspace) = world.get::<WorkspaceMember>(entity) else { return true; };
+    world.get::<Workspaces>(root).and_then(|spaces| spaces.entries.iter().find(|space| space.id == workspace.0))
+        .is_none_or(|space| !transients::minimized(world, entity, &space.desktop))
+}
 
 #[derive(Resource)]
 pub struct DefaultLayout(pub WorkspaceLayout);
@@ -29,14 +80,30 @@ pub struct Managed {
 #[derive(Component)]
 pub struct Suppressed;
 
+#[derive(Component, Clone, Copy, PartialEq)]
+pub(crate) struct CompactViewport(pub Vec2);
+
+#[derive(Component, Clone, Copy, PartialEq)]
+pub(crate) struct CompactViewportPreview(pub Option<Vec2>);
+
+pub(crate) fn compact_extent(world: &World, entity: Entity) -> Option<Vec2> {
+    world.get::<CompactViewportPreview>(entity).map_or_else(|| world.get::<CompactViewport>(entity).map(|clip| clip.0), |preview| preview.0)
+}
+
 #[derive(Component, Clone, Copy)]
 pub struct ApplicationWindow {
     pub surface: SurfaceId,
     pub content_size: [u32; 2],
 }
 
+#[derive(Component)]
+pub struct ApplicationOpeningPending;
+
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TransientParent(pub Entity);
+
+#[derive(Component)]
+pub(crate) struct RestoredTransient(pub [u8; 16]);
 
 #[derive(Component, Clone, Copy)]
 pub struct Output(pub OutputId);
@@ -58,7 +125,7 @@ pub fn request_close(world: &World, entity: Entity) -> bool {
     true
 }
 
-fn host_request(world: &World, request: crate::host::HostRequest) {
+fn host_request(world: &World, request: crate::host::HostRequest) -> bool {
     let sent = world
         .get_resource::<HostRequests>()
         .is_some_and(|requests| requests.0.try_send(request).is_ok());
@@ -72,15 +139,27 @@ fn host_request(world: &World, request: crate::host::HostRequest) {
     if let Some(wake) = world.get_resource::<crate::host::WakeSignal>() {
         wake.ring();
     }
+    sent
+}
+
+#[derive(Clone, Copy)]
+struct FullscreenView {
+    mode: WorkspaceLayout,
+    canvas: CanvasView,
+    scroll: [f64; 2],
+    size: [f64; 2],
 }
 
 #[derive(Resource, Default)]
 struct Runtime {
+    enabled: BTreeSet<(Entity, u64)>,
     seen: HashMap<(Entity, u64), BTreeSet<PlacementId>>,
     views: HashMap<(Entity, u64), (WorkspaceLayout, [f64; 2], [f64; 2])>,
     geometry: HashMap<Entity, Geometry>,
-    fullscreen_views: HashMap<(Entity, u64), CanvasView>,
+    fullscreen_views: HashMap<(Entity, u64), FullscreenView>,
     influences: HashMap<(Entity, u64), InfluenceStamp>,
+    entering: HashMap<(Entity, u64), tiling::InitialFocus>,
+    restoring_free: BTreeSet<(Entity, u64)>,
 }
 
 #[derive(PartialEq)]
@@ -175,6 +254,7 @@ pub fn focus_item(world: &mut World, entity: Entity) {
     let Some(bounds) = usable(world, root) else {
         return;
     };
+    focus::ensure(world, root);
     let Some(id) = world.get::<Managed>(entity).map(|managed| managed.id) else {
         return;
     };
@@ -216,6 +296,9 @@ pub fn focus_item(world: &mut World, entity: Entity) {
             );
         }
     }
+    drop(spaces);
+    focus::resume_pointer(world, root);
+    recent::observe(world, root);
 }
 
 pub(super) fn clicked(
@@ -230,7 +313,11 @@ pub(super) fn clicked(
     let mut entity = event.entity;
     for _ in 0..super::MAX_DEPTH {
         if managed.contains(entity) {
-            commands.queue(move |world: &mut World| focus_item(world, entity));
+            commands.queue(move |world: &mut World| {
+                if focus::policy(world).click {
+                    focus_item(world, entity);
+                }
+            });
             return;
         }
         let Ok(parent) = parents.get(entity) else {
@@ -255,7 +342,7 @@ fn usable(world: &World, root: Entity) -> Option<Rectangle> {
         .map_or_else(|| viewport(world, root), |viewport| viewport.0.usable)
 }
 
-fn root(world: &World, mut entity: Entity) -> Option<Entity> {
+pub(crate) fn root(world: &World, mut entity: Entity) -> Option<Entity> {
     for _ in 0..super::MAX_DEPTH {
         if world.get::<Workspaces>(entity).is_some() {
             return Some(entity);
@@ -266,9 +353,10 @@ fn root(world: &World, mut entity: Entity) -> Option<Entity> {
 }
 
 fn candidate(world: &World, entity: Entity) -> bool {
-    world
-        .get::<crate::native::area::InfluenceArea>(entity)
-        .is_none()
+    !crate::native::inspection::excluded(world, entity)
+        && world
+            .get::<crate::native::area::InfluenceArea>(entity)
+            .is_none()
         && world
             .get::<crate::native::topology::assets::ImportedAsset>(entity)
             .is_none()
@@ -285,7 +373,7 @@ fn candidate(world: &World, entity: Entity) -> bool {
             .get::<crate::native::topology::terrain::Effect>(entity)
             .is_none()
         && world
-            .get::<crate::native::external_drop::Preview>(entity)
+            .get::<crate::native::canvas_item::Ephemeral>(entity)
             .is_none()
         && world
             .get::<LayoutBox>(entity)
@@ -296,6 +384,7 @@ pub(crate) fn resolve(world: &mut World) {
     transients::inherit(world);
     world.init_resource::<Runtime>();
     world.init_resource::<PublishedGeometry>();
+    let layout_settings = preferences::synchronize(world);
     let roots: Vec<_> = world
         .query::<(Entity, &Workspaces)>()
         .iter(world)
@@ -345,6 +434,10 @@ pub(crate) fn resolve(world: &mut World) {
     let mut focused = None;
     for (root, active, bounds, usable, output) in roots {
         let focused_view = world.get::<Workspaces>(root).unwrap().active == active;
+        let restoring_free = world
+            .resource_mut::<Runtime>()
+            .restoring_free
+            .remove(&(root, active));
         let mode = world
             .get::<Workspaces>(root)
             .unwrap()
@@ -355,6 +448,10 @@ pub(crate) fn resolve(world: &mut World) {
             .unwrap_or(WorkspaceLayout::Free);
         if mode == WorkspaceLayout::Free
             && !world.contains_resource::<DefaultLayout>()
+            && !world
+                .resource::<Runtime>()
+                .enabled
+                .contains(&(root, active))
             && world
                 .get::<Workspaces>(root)
                 .unwrap()
@@ -410,10 +507,15 @@ pub(crate) fn resolve(world: &mut World) {
         let mut inserted = false;
         let previous = world.resource_mut::<Runtime>().seen.remove(&(root, active));
         if previous.is_none() {
+            let live: BTreeSet<_> = rows
+                .iter()
+                .filter_map(|(entity, _)| world.get::<LayoutBox>(*entity))
+                .map(|layout| PlacementId(layout.id))
+                .collect();
             let stale: Vec<_> = model
                 .items()
                 .iter()
-                .filter(|item| item.kind == ItemKind::Application)
+                .filter(|item| item.kind == ItemKind::Application && !live.contains(&item.id))
                 .map(|item| item.id)
                 .collect();
             for id in stale {
@@ -422,7 +524,11 @@ pub(crate) fn resolve(world: &mut World) {
         }
         for (entity, item) in rows {
             if world.get::<LayoutBox>(entity).is_none() {
-                world.entity_mut(entity).insert(LayoutBox::new(item.size));
+                let mut layout = LayoutBox::new(item.size);
+                if crate::native::protein_area::uses_content_height(world, entity) {
+                    layout.rules.axes[1].sizing = crate::native::layout::Sizing::Fit;
+                }
+                world.entity_mut(entity).insert(layout);
             }
             let layout = *world.get::<LayoutBox>(entity).unwrap();
             let id = PlacementId(layout.id);
@@ -445,7 +551,7 @@ pub(crate) fn resolve(world: &mut World) {
             }
             let origin = item.position
                 - item.size.as_dvec2() * 0.5
-                - if floating {
+                - if floating && mode != WorkspaceLayout::Free {
                     bevy::math::DVec2::from_array(model.scroll())
                 } else {
                     bevy::math::DVec2::ZERO
@@ -459,9 +565,18 @@ pub(crate) fn resolve(world: &mut World) {
                 origin: (item.position - item.size.as_dvec2() * 0.5).to_array(),
                 size: item.size.as_dvec2().to_array(),
             };
-            if model.items().iter().any(|item| item.id == id) {
+            if let Some(current) = model
+                .items()
+                .iter()
+                .find(|item| item.id == id)
+                .map(|item| item.free)
+            {
+                world
+                    .entity_mut(entity)
+                    .remove::<ApplicationOpeningPending>();
                 let _ = model.configure(id, layout.rules);
-                if (floating || mode == WorkspaceLayout::Free)
+                if !restoring_free
+                    && (floating || mode == WorkspaceLayout::Free)
                     && model.fullscreen() != Some(id)
                     && !model.maximized(id)
                     && world
@@ -469,32 +584,75 @@ pub(crate) fn resolve(world: &mut World) {
                         .is_none_or(|managed| managed.floating)
                     && previous_geometry != Some(raw_geometry)
                 {
-                    let _ = model.set_free_geometry(id, geometry);
+                    let mut observed = geometry;
+                    if let Some(previous) = previous_geometry {
+                        for axis in 0..2 {
+                            if raw_geometry.size[axis] == previous.size[axis] {
+                                observed.origin[axis] +=
+                                    (observed.size[axis] - current.size[axis]) * 0.5;
+                                observed.size[axis] = current.size[axis];
+                            }
+                        }
+                    }
+                    let _ = model.set_free_geometry(id, observed);
                 }
             } else {
-                inserted |= model
-                    .insert(Item {
+                let application = world.get::<ApplicationWindow>(entity).is_some();
+                let item = Item {
+                    id,
+                    kind: if application {
+                        ItemKind::Application
+                    } else {
+                        ItemKind::Native
+                    },
+                    rules: layout.rules,
+                    free: geometry,
+                    free_width: None,
+                    floating: world.get::<TransientParent>(entity).is_some(),
+                };
+                let added = if application {
+                    model.insert_inactive(item)
+                } else {
+                    model.insert(item)
+                }
+                .is_ok();
+                inserted |= added && !application;
+                if added {
+                    if model.item_width(id).is_some() {
+                        let ratio = layout_settings.default_width;
+                        let _ = model.set_item_width(
+                            id,
+                            crate::layout::desktop::Width::Fraction(ratio[0], ratio[1]),
+                        );
+                    }
+                    preferences::opening(
+                        world,
+                        root,
+                        active,
+                        entity,
                         id,
-                        kind: if world.get::<ApplicationWindow>(entity).is_some() {
-                            ItemKind::Application
-                        } else {
-                            ItemKind::Native
-                        },
-                        rules: layout.rules,
-                        free: geometry,
-                        floating: world.get::<TransientParent>(entity).is_some(),
-                    })
-                    .is_ok();
+                        &mut model,
+                        &layout_settings,
+                    );
+                }
             }
         }
         if inserted && let Some(id) = model.focused() {
             let fullscreen = model.fullscreen();
             let transient = fullscreen.is_some_and(|fullscreen| {
-                entities.get(&id).zip(entities.get(&fullscreen)).is_some_and(|(entity, parent)| {
-                    transients::descendant(world, *entity, *parent)
-                })
+                entities
+                    .get(&id)
+                    .zip(entities.get(&fullscreen))
+                    .is_some_and(|(entity, parent)| transients::descendant(world, *entity, *parent))
             });
-            let _ = model.focus(if transient { id } else { fullscreen.unwrap_or(id) }, usable);
+            let _ = model.focus(
+                if transient {
+                    id
+                } else {
+                    fullscreen.unwrap_or(id)
+                },
+                usable,
+            );
             if let Some(id) = fullscreen {
                 model.request_state(
                     id,
@@ -560,6 +718,7 @@ pub(crate) fn resolve(world: &mut World) {
                 .influences
                 .insert((root, active), stamp);
         }
+        tiling::resolve_focus(world, root, active, &mut model, &entities, usable);
         match model.solve(usable, bounds) {
             Ok(mut solution) => {
                 transients::place(world, &entities, &mut model, &mut solution, usable);
@@ -587,6 +746,11 @@ pub(crate) fn resolve(world: &mut World) {
                     .map(|(entity, _, _)| entity)
                     .collect();
                 for entity in members {
+                    let compact = world.get::<LayoutBox>(entity).and_then(|layout| model.compact_viewport(PlacementId(layout.id), usable, &solution))
+                        .map(|size| CompactViewport(bevy::math::DVec2::from_array(size).as_vec2()));
+                    if let Some(compact) = compact {
+                        if world.get::<CompactViewport>(entity) != Some(&compact) { world.entity_mut(entity).insert(compact); }
+                    } else if world.get::<CompactViewport>(entity).is_some() { world.entity_mut(entity).remove::<CompactViewport>(); }
                     if transients::minimized(world, entity, &model)
                         || fullscreen.is_some_and(|focused| {
                             focused != entity && !transients::descendant(world, entity, focused)
@@ -604,26 +768,42 @@ pub(crate) fn resolve(world: &mut World) {
                     world.resource::<Runtime>().views.get(&(root, active)) != Some(&view);
                 let mut canvas = crate::native::output_views::canvas(world, root, active);
                 let normalized = model.fullscreen().is_some()
-                    || mode == WorkspaceLayout::Free && model.items().iter().any(|item| model.maximized(item.id) && !model.minimized(item.id));
+                    || mode == WorkspaceLayout::Free
+                        && model
+                            .items()
+                            .iter()
+                            .any(|item| model.maximized(item.id) && !model.minimized(item.id));
+                let mut restored_view_changed = false;
                 if normalized {
                     if !world
                         .resource::<Runtime>()
                         .fullscreen_views
                         .contains_key(&(root, active))
                     {
-                        world
-                            .resource_mut::<Runtime>()
-                            .fullscreen_views
-                            .insert((root, active), canvas);
+                        world.resource_mut::<Runtime>().fullscreen_views.insert(
+                            (root, active),
+                            FullscreenView {
+                                mode,
+                                canvas,
+                                scroll: solution.scroll,
+                                size: bounds.size(),
+                            },
+                        );
                     }
-                } else if let Some(view) = world
+                } else if let Some(saved) = world
                     .resource_mut::<Runtime>()
                     .fullscreen_views
                     .remove(&(root, active))
                 {
-                    canvas = view;
+                    canvas = saved.canvas;
+                    restored_view_changed = saved.mode != mode
+                        || saved.scroll != solution.scroll
+                        || saved.size != bounds.size();
                 }
-                if normalized || changed_view && mode != WorkspaceLayout::Free {
+                let previous_center = canvas.center;
+                if normalized
+                    || (changed_view || restored_view_changed) && mode != WorkspaceLayout::Free
+                {
                     canvas.center = bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
                         bounds.size()[axis] * 0.5 + solution.scroll[axis]
                     }));
@@ -632,6 +812,9 @@ pub(crate) fn resolve(world: &mut World) {
                         .resource_mut::<Runtime>()
                         .views
                         .insert((root, active), view);
+                }
+                if !normalized && mode != WorkspaceLayout::Free {
+                    tiling::shift_camera(world, root, active, previous_center, canvas.center);
                 }
                 if focused_view {
                     if let Some(mut current) = world.get_mut::<CanvasView>(root) {
@@ -651,13 +834,28 @@ pub(crate) fn resolve(world: &mut World) {
                         space.zoom = canvas.zoom;
                     }
                 }
-                outputs.push(OutputViewport {
+                outputs.push(OutputViewport { rotation: Default::default(),
                     id: output,
                     bounds,
                     usable: Some(usable),
                     physical_size: bounds.size().map(|size| size.round() as u32),
+                    raster: crate::host::raster::RasterMapping {
+                        origin: (bounds).origin(),
+                        scale: [1.0; 2],
+                    },
                     workspace: active,
                 });
+                let free_widths: BTreeSet<_> = model
+                    .items()
+                    .iter()
+                    .filter(|item| {
+                        item.free_width.is_some()
+                            && (mode == WorkspaceLayout::Free || item.floating)
+                            && !model.maximized(item.id)
+                            && model.fullscreen() != Some(item.id)
+                    })
+                    .map(|item| item.id)
+                    .collect();
                 for item in &solution.items {
                     let Some(entity) = entities.get(&item.id).copied() else {
                         continue;
@@ -668,6 +866,15 @@ pub(crate) fn resolve(world: &mut World) {
                             + item.rectangle.size()[axis] * 0.5
                     }));
                     let size = bevy::math::DVec2::from_array(item.rectangle.size()).as_vec2();
+                    if free_widths.contains(&item.id)
+                        && let Some(mut layout) = world.get_mut::<LayoutBox>(entity)
+                    {
+                        let axis = &mut layout.rules.axes[0];
+                        if axis.size != size.x || axis.sizing != crate::layout::Sizing::Fixed {
+                            axis.size = size.x;
+                            axis.sizing = crate::layout::Sizing::Fixed;
+                        }
+                    }
                     let mut canvas_item = world.get_mut::<CanvasItem>(entity).unwrap();
                     if canvas_item.position != position || canvas_item.size != size {
                         canvas_item.position = position;
@@ -739,7 +946,7 @@ pub(crate) fn resolve(world: &mut World) {
                                 surface,
                             },
                             floating: managed.floating,
-                            clip: None,
+                            clip: compact_polygon(world, entity, canvas),
                         });
                         if focused_view && solution.focused == Some(item.id) {
                             focused = Some(id);
@@ -783,48 +990,188 @@ pub(crate) fn resolve(world: &mut World) {
     }
 }
 
+pub(super) fn publish(world: &mut World) {
+    let Some(mut snapshot) = world
+        .get_resource::<PublishedGeometry>()
+        .and_then(|geometry| geometry.0.clone())
+    else {
+        return;
+    };
+    let entities: BTreeMap<_, _> = world
+        .query::<(
+            Entity,
+            &Managed,
+            &ChildOf,
+            &WorkspaceMember,
+            Option<&ApplicationWindow>,
+        )>()
+        .iter(world)
+        .map(|(entity, managed, parent, member, application)| {
+            (
+                application.map_or(ItemId::Native(managed.id.0), |application| {
+                    ItemId::Application(application.surface)
+                }),
+                (entity, parent.parent(), member.0),
+            )
+        })
+        .collect();
+    for geometry in &mut snapshot.items {
+        let Some((entity, root, workspace)) = entities.get(&geometry.id).copied() else {
+            continue;
+        };
+        let Some(output) = snapshot
+            .outputs
+            .iter()
+            .find(|output| output.id == geometry.output && output.workspace == workspace)
+        else {
+            continue;
+        };
+        let Some(item) = crate::native::canvas::presented(world, entity) else {
+            continue;
+        };
+        let view = crate::native::output_views::canvas(world, root, workspace);
+        let (offset, _) = super::viewport::clip(world, entity);
+        let scale = if world
+            .get::<Managed>(entity)
+            .is_some_and(|managed| managed.floating)
+        {
+            f64::from(
+                world
+                    .get::<crate::native::area_effects::AreaScale>(entity)
+                    .map_or(1.0, |scale| scale.0),
+            )
+        } else {
+            1.0
+        };
+        let size = item.size.as_dvec2() * scale;
+        if let Some(rectangle) = Rectangle::new(
+            ((item.position - offset.as_dvec2() - view.center - size * 0.5) * view.zoom
+                + bevy::math::DVec2::from_array(output.bounds.size()) * 0.5)
+                .to_array(),
+            (size * view.zoom).to_array(),
+        ) {
+            geometry.mapping.canvas = rectangle;
+            if world.get::<CompactViewport>(entity).is_some() || world.get::<CompactViewportPreview>(entity).is_some() { geometry.clip = compact_polygon(world, entity, rectangle); }
+        }
+        if matches!(geometry.id, ItemId::Native(_))
+            && let Some(surface) = Rectangle::new([0.0; 2], item.size.as_dvec2().to_array())
+        {
+            geometry.mapping.surface = surface;
+        }
+    }
+    let previous = world.resource::<PublishedGeometry>().0.as_ref().unwrap();
+    if previous.items != snapshot.items {
+        snapshot.revision = previous.revision.saturating_add(1);
+        world.resource_mut::<PublishedGeometry>().0 = Some(snapshot);
+    }
+}
+
+fn compact_polygon(world: &World, entity: Entity, canvas: Rectangle) -> Option<Vec<Vec<[f64; 2]>>> {
+    let viewport = compact_extent(world, entity)?;
+    let item = crate::native::canvas::presented(world, entity)?;
+    let extent = viewport.min(item.size) / item.size;
+    let origin = canvas.origin();
+    let size = std::array::from_fn::<_, 2, _>(|axis| canvas.size()[axis] * f64::from(extent[axis]));
+    Some(vec![vec![origin, [origin[0] + size[0], origin[1]], [origin[0] + size[0], origin[1] + size[1]], [origin[0], origin[1] + size[1]]]])
+}
+
 impl crate::native::actions::Action for DesktopAction {
     fn apply(&self, world: &mut World, target: Entity) {
         let Some(root) = root(world, target) else {
             return;
         };
+        if manipulation::active(world)
+            && !matches!(self, Self::External(action) if action.lockable())
+        {
+            manipulation::pointer::cancel(world);
+        }
+        if self.is_recent() {
+            recent::cycle(world, root, *self == Self::RecentPrevious);
+            return;
+        }
+        if let Self::CommitRecent { request } = *self {
+            if world.contains_resource::<HostRequests>() {
+                if !host_request(world, crate::host::HostRequest::Action(*self)) {
+                    recent::acknowledge(world, root, request, false);
+                }
+            } else {
+                recent::activate(world, root, request);
+            }
+            return;
+        }
+        if matches!(self, Self::ToggleOverview) {
+            overview::toggle(world, root);
+            return;
+        }
+        if let Self::SelectPlacement { workspace, item } = *self {
+            if world.contains_resource::<HostRequests>() {
+                host_request(world, crate::host::HostRequest::Action(*self));
+            } else {
+                overview::activate(world, root, workspace, item);
+            }
+            return;
+        }
+        if *self == Self::ToggleEdit {
+            crate::native::edit_mode::EditAction::Toggle.apply(world, root);
+            return;
+        }
         if *self == Self::OpenOperation {
             crate::native::operation::OpenOperation.apply(world, root);
             return;
         }
-        if matches!(
-            self,
-            Self::FocusOutput(_)
-                | Self::MoveToOutput(_)
-                | Self::MoveWorkspaceToOutput(_)
-                | Self::InspectWindowRecord
-                | Self::OpenTerminal
-                | Self::OpenLauncher
-                | Self::Lock
-                | Self::Logout
-        ) {
+        if *self == Self::Logout {
+            logout::request(world, root);
+            return;
+        }
+        if *self == Self::InspectWindowRecord {
+            inspection::request(world, root);
+            return;
+        }
+        if *self == Self::ReapplyOpeningRules {
+            match inspection::capture(world, root) {
+                Ok(inspection::Target::Application(target)) => match opening::request(world, root, target) {
+                    Ok(request) => { host_request(world, crate::host::HostRequest::ReapplyOpening(request)); }
+                    Err(error) => crate::native::notifications::report(world, "Opening rules", &error),
+                },
+                _ => crate::native::notifications::report(world, "Opening rules", "Focus an application window to reapply its opening rules."),
+            }
+            return;
+        }
+        if *self == Self::ToggleWindowedFullscreen {
+            windowed_fullscreen::focused(world, root);
+            return;
+        }
+        if matches!(self, Self::CreateCompactGroup | Self::AddCompactMembers | Self::NextCompactMember
+            | Self::PreviousCompactMember | Self::MoveCompactMember(_) | Self::DetachCompactMember | Self::DissolveCompactGroup)
+        {
+            compact::command(world, root, *self);
+            return;
+        }
+        if matches!(self, Self::MarkScratch | Self::ShowScratch | Self::HideScratch | Self::UnmarkScratch) {
+            scratch::command(world, root, *self);
+            return;
+        }
+        if self.requires_host() {
+            if let Self::Magnify(adjustment) = *self {
+                magnification::adjust(world, root, adjustment);
+                return;
+            }
             host_request(world, crate::host::HostRequest::Action(*self));
             return;
         }
-        if let Self::Workspace(index) | Self::MoveToWorkspace(index) = *self {
-            let Some(target_workspace) = index.checked_sub(1).and_then(|index| {
-                world
-                    .get::<Workspaces>(root)?
-                    .entries
-                    .get(index as usize)
-                    .map(|entry| entry.id)
-            }) else {
-                return;
-            };
-            if matches!(self, Self::Workspace(_)) {
-                crate::native::workspace::switch(world, root, target_workspace);
-            } else if let Some(entity) = focused_entity(world, root) {
-                world
-                    .entity_mut(entity)
-                    .insert(WorkspaceMember(target_workspace));
-            }
-            if let Some(wake) = world.get_resource::<crate::host::WakeSignal>() {
-                wake.ring();
+        if matches!(
+            *self,
+            Self::Workspace(_)
+                | Self::MoveToWorkspace(_)
+                | Self::PreviousWorkspace
+                | Self::NextWorkspace
+                | Self::MoveWorkspaceEarlier
+                | Self::MoveWorkspaceLater
+        ) {
+            if world.contains_resource::<HostRequests>() {
+                host_request(world, crate::host::HostRequest::Action(*self));
+            } else if let Err(error) = transfers::workspace_action(world, root, *self) {
+                crate::native::notifications::report(world, "Park", &error);
             }
             return;
         }
@@ -839,6 +1186,13 @@ impl crate::native::actions::Action for DesktopAction {
         let Some(bounds) = usable(world, root) else {
             return;
         };
+        if focus::apply(world, root, *self) {
+            recent::observe(world, root);
+            return;
+        }
+        if tiling::transition(world, root, *self) || widths::apply(world, root, *self, bounds) {
+            return;
+        }
         let output_bounds = viewport(world, root).unwrap_or(bounds);
         let Some(mut spaces) = world.get_mut::<Workspaces>(root) else {
             return;
@@ -852,14 +1206,14 @@ impl crate::native::actions::Action for DesktopAction {
             return;
         };
         let model = &mut workspace.desktop;
+        let previous_focus = model.focused();
         match *self {
-            Self::Unfocus => model.clear_focus(),
             Self::SetLayout(mode) => model.set_mode(mode),
             Self::Focus(direction) => {
                 let _ = model.focus_direction(direction, bounds);
             }
             Self::Move(direction) => {
-                model.move_focused(direction);
+                model.move_focused(direction, bounds);
             }
             Self::Stack(direction) => {
                 model.stack_focused(direction);
@@ -878,6 +1232,15 @@ impl crate::native::actions::Action for DesktopAction {
             }
             Self::ToggleFullscreen => model.toggle_fullscreen(),
             Self::ToggleFloating => {
+                if model.mode() == WorkspaceLayout::Free {
+                    drop(spaces);
+                    crate::native::notifications::report(
+                        world,
+                        "Park",
+                        "Individual floating is available while the workspace is tiled.",
+                    );
+                    return;
+                }
                 if let Ok(solution) = model.solve(bounds, output_bounds)
                     && let Some(item) = solution
                         .items
@@ -894,7 +1257,7 @@ impl crate::native::actions::Action for DesktopAction {
         {
             let _ = model.focus(id, bounds);
         }
-        let resized = matches!(self, Self::ResizeItem(_))
+        let resized = matches!(self, Self::ResizeItem(_) | Self::ToggleFloating)
             .then(|| {
                 model.focused().and_then(|id| {
                     model
@@ -906,23 +1269,8 @@ impl crate::native::actions::Action for DesktopAction {
             })
             .flatten();
         let navigation = matches!(self, Self::Focus(_) | Self::Move(_) | Self::Stack(_));
-        let free_focus = (navigation && model.mode() == WorkspaceLayout::Free)
-            .then(|| {
-                model.focused().and_then(|id| {
-                    model
-                        .items()
-                        .iter()
-                        .find(|item| item.id == id)
-                        .map(|item| item.free)
-                })
-            })
-            .flatten();
+        let focus_changed = model.focused() != previous_focus;
         drop(spaces);
-        if *self == Self::Unfocus {
-            world
-                .resource_mut::<bevy::input_focus::InputFocus>()
-                .clear();
-        }
         if !matches!(
             self,
             Self::Focus(_) | Self::ToggleFullscreen | Self::OpenOperation
@@ -933,26 +1281,10 @@ impl crate::native::actions::Action for DesktopAction {
         if navigation && let Some(mut runtime) = world.get_resource_mut::<Runtime>() {
             runtime.views.remove(&(root, active));
         }
-        if let Some(geometry) = free_focus
-            && let Some(mut view) = world.get_mut::<CanvasView>(root)
-        {
-            view.zoom = 1.0;
-            for axis in 0..2 {
-                let padding = 8.0_f64.min(bounds.size()[axis] / 4.0);
-                let low = view.center[axis] - bounds.size()[axis] * 0.5 + padding;
-                let high = view.center[axis] + bounds.size()[axis] * 0.5 - padding;
-                let origin = geometry.origin[axis];
-                let end = origin + geometry.size[axis];
-                if origin < low {
-                    view.center[axis] += origin - low;
-                } else if end > high {
-                    view.center[axis] += (end - high).min((origin - low).max(0.0));
-                }
-            }
-        }
         if let Some((id, rules)) = resized {
-            for mut layout in world.query::<&mut LayoutBox>().iter_mut(world) {
-                if layout.id == id.0 {
+            for (mut layout, parent) in world.query::<(&mut LayoutBox, &ChildOf)>().iter_mut(world)
+            {
+                if layout.id == id.0 && parent.parent() == root {
                     layout.rules = rules;
                 }
             }
@@ -960,13 +1292,20 @@ impl crate::native::actions::Action for DesktopAction {
         if matches!(self, Self::SetLayout(_)) {
             crate::native::edit_mode::render_panel(world, root);
         }
+        if matches!(self, Self::Focus(_))
+            && focus_changed
+            && let Some(entity) = focused_entity(world, root)
+        {
+            focus::keyboard_focus(world, entity);
+        }
+        recent::observe(world, root);
         if let Some(wake) = world.get_resource::<crate::host::WakeSignal>() {
             wake.ring();
         }
     }
 }
 
-fn focused_entity(world: &mut World, root: Entity) -> Option<Entity> {
+pub(crate) fn focused_entity(world: &mut World, root: Entity) -> Option<Entity> {
     let spaces = world.get::<Workspaces>(root)?;
     let id = spaces
         .entries
@@ -1001,10 +1340,13 @@ pub(crate) mod tests {
         let before = *world.get::<CanvasItem>(model).unwrap();
         for mode in [
             WorkspaceLayout::Free,
+            WorkspaceLayout::Tiled,
             WorkspaceLayout::Grid,
             WorkspaceLayout::ScrollingColumns,
         ] {
-            world.get_mut::<Workspaces>(root).unwrap().entries[0].desktop.set_mode(mode);
+            world.get_mut::<Workspaces>(root).unwrap().entries[0]
+                .desktop
+                .set_mode(mode);
             for _ in 0..3 {
                 super::super::engine::resolve(&mut world);
             }
@@ -1161,11 +1503,15 @@ pub(crate) mod tests {
         world.entity_mut(application).insert(WorkspaceMember(2));
         let viewport = |id, workspace, width| {
             let bounds = Rectangle::new([0.0; 2], [width, 600.0]).unwrap();
-            OutputViewport {
+            OutputViewport { rotation: Default::default(),
                 id: OutputId(id),
                 bounds,
                 usable: Some(bounds),
                 physical_size: [width as u32, 600],
+                raster: crate::host::raster::RasterMapping {
+                    origin: (bounds).origin(),
+                    scale: [1.0; 2],
+                },
                 workspace,
             }
         };
@@ -1240,11 +1586,15 @@ pub(crate) mod tests {
         let (mut world, root, _, application) = fixture();
         let bounds = Rectangle::new([0.0; 2], [1000.0, 700.0]).unwrap();
         let usable = Rectangle::new([0.0, 32.0], [1000.0, 640.0]).unwrap();
-        world.entity_mut(root).insert(HostViewport(OutputViewport {
+        world.entity_mut(root).insert(HostViewport(OutputViewport { rotation: Default::default(),
             id: OutputId(1),
             bounds,
             usable: Some(usable),
             physical_size: [1000, 700],
+            raster: crate::host::raster::RasterMapping {
+                origin: (bounds).origin(),
+                scale: [1.0; 2],
+            },
             workspace: 1,
         }));
         resolve(&mut world);
@@ -1292,31 +1642,65 @@ pub(crate) mod tests {
         world.insert_resource(DefaultLayout(WorkspaceLayout::Free));
         let bounds = Rectangle::new([0.0; 2], [1000.0, 700.0]).unwrap();
         let usable = Rectangle::new([0.0, 34.0], [1000.0, 666.0]).unwrap();
-        world.get_mut::<Workspaces>(root).unwrap().entries[0].desktop.set_mode(WorkspaceLayout::Free);
-        let view = CanvasView { center: bevy::math::DVec2::new(120.0, 180.0), zoom: 0.65 };
-        world.entity_mut(root).insert((view, HostViewport(OutputViewport {
-            id: OutputId(1), bounds, usable: Some(usable), physical_size: [1000, 700], workspace: 1,
-        })));
+        world.get_mut::<Workspaces>(root).unwrap().entries[0]
+            .desktop
+            .set_mode(WorkspaceLayout::Free);
+        let view = CanvasView {
+            center: bevy::math::DVec2::new(120.0, 180.0),
+            zoom: 0.65,
+        };
+        world.entity_mut(root).insert((
+            view,
+            HostViewport(OutputViewport { rotation: Default::default(),
+                id: OutputId(1),
+                bounds,
+                usable: Some(usable),
+                physical_size: [1000, 700],
+                raster: crate::host::raster::RasterMapping {
+                    origin: (bounds).origin(),
+                    scale: [1.0; 2],
+                },
+                workspace: 1,
+            }),
+        ));
         resolve(&mut world);
         focus_item(&mut world, application);
         let before = *world.get::<CanvasItem>(application).unwrap();
         DesktopAction::ToggleMaximized.apply(&mut world, root);
-        for _ in 0..3 { resolve(&mut world); }
+        for _ in 0..3 {
+            resolve(&mut world);
+        }
         assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 1.0);
-        assert_eq!(world.get::<CanvasItem>(application).unwrap().size, Vec2::new(984.0, 650.0));
+        assert_eq!(
+            world.get::<CanvasItem>(application).unwrap().size,
+            Vec2::new(984.0, 650.0)
+        );
         assert!(!world.get::<Managed>(application).unwrap().floating);
         world.get_mut::<HostViewport>(root).unwrap().0.usable = Some(bounds);
-        for _ in 0..3 { resolve(&mut world); }
-        assert_eq!(world.get::<CanvasItem>(application).unwrap().size, Vec2::new(984.0, 684.0));
+        for _ in 0..3 {
+            resolve(&mut world);
+        }
+        assert_eq!(
+            world.get::<CanvasItem>(application).unwrap().size,
+            Vec2::new(984.0, 684.0)
+        );
         DesktopAction::ToggleMaximized.apply(&mut world, root);
-        for _ in 0..3 { resolve(&mut world); }
-        assert_eq!(world.get::<CanvasItem>(application).unwrap().position, before.position);
-        assert_eq!(world.get::<CanvasItem>(application).unwrap().size, before.size);
+        for _ in 0..3 {
+            resolve(&mut world);
+        }
+        assert_eq!(
+            world.get::<CanvasItem>(application).unwrap().position,
+            before.position
+        );
+        assert_eq!(
+            world.get::<CanvasItem>(application).unwrap().size,
+            before.size
+        );
         assert_eq!(world.get::<CanvasView>(root).unwrap().center, view.center);
         assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, view.zoom);
     }
 
-    fn fixture() -> (World, Entity, Entity, Entity) {
+    pub(super) fn fixture() -> (World, Entity, Entity, Entity) {
         let mut world = World::new();
         let mut spaces = Workspaces::default();
         spaces.entries[0]
@@ -1500,27 +1884,48 @@ pub(crate) mod tests {
     fn mapping_an_unrelated_window_preserves_fullscreen_and_restores_every_window() {
         let (mut world, root, _, application) = fixture();
         world.insert_resource(DefaultLayout(WorkspaceLayout::Free));
-        world.get_mut::<Workspaces>(root).unwrap().entries[0].desktop.set_mode(WorkspaceLayout::Free);
+        world.get_mut::<Workspaces>(root).unwrap().entries[0]
+            .desktop
+            .set_mode(WorkspaceLayout::Free);
         resolve(&mut world);
         let original = *world.get::<CanvasItem>(application).unwrap();
         focus_item(&mut world, application);
         DesktopAction::ToggleFullscreen.apply(&mut world, root);
         resolve(&mut world);
         let fullscreen = world.get::<Managed>(application).unwrap().id;
-        let other = world.spawn((
-            CanvasItem { position: bevy::math::DVec2::ZERO, size: Vec2::new(640.0, 480.0) },
-            ApplicationWindow { surface: SurfaceId(8), content_size: [640, 480] },
-            WorkspaceMember(1),
-            ChildOf(root),
-        )).id();
+        let other = world
+            .spawn((
+                CanvasItem {
+                    position: bevy::math::DVec2::ZERO,
+                    size: Vec2::new(640.0, 480.0),
+                },
+                ApplicationWindow {
+                    surface: SurfaceId(8),
+                    content_size: [640, 480],
+                },
+                WorkspaceMember(1),
+                ChildOf(root),
+            ))
+            .id();
         resolve(&mut world);
-        assert_eq!(world.get::<Workspaces>(root).unwrap().entries[0].desktop.fullscreen(), Some(fullscreen));
+        assert_eq!(
+            world.get::<Workspaces>(root).unwrap().entries[0]
+                .desktop
+                .fullscreen(),
+            Some(fullscreen)
+        );
         assert!(world.get::<Suppressed>(application).is_none());
         assert!(world.get::<Suppressed>(other).is_some());
         DesktopAction::ToggleFullscreen.apply(&mut world, root);
         resolve(&mut world);
-        assert_eq!(world.get::<CanvasItem>(application).unwrap().position, original.position);
-        assert_eq!(world.get::<CanvasItem>(application).unwrap().size, original.size);
+        assert_eq!(
+            world.get::<CanvasItem>(application).unwrap().position,
+            original.position
+        );
+        assert_eq!(
+            world.get::<CanvasItem>(application).unwrap().size,
+            original.size
+        );
         assert!(world.get::<Suppressed>(other).is_none());
     }
 
@@ -1543,7 +1948,12 @@ pub(crate) mod tests {
             ))
             .id();
         resolve(&mut world);
-        world.get_mut::<CanvasView>(root).unwrap().zoom = 0.5;
+        focus_item(&mut world, application);
+        let saved = CanvasView {
+            center: bevy::math::DVec2::new(1337.0, -280.0),
+            zoom: 0.5,
+        };
+        *world.get_mut::<CanvasView>(root).unwrap() = saved;
         DesktopAction::ToggleFullscreen.apply(&mut world, root);
         super::super::engine::resolve(&mut world);
         assert!(world.get::<Suppressed>(native).is_some());
@@ -1558,7 +1968,8 @@ pub(crate) mod tests {
         resolve(&mut world);
         assert!(world.get::<Suppressed>(native).is_none());
         assert!(world.get::<Suppressed>(area).is_none());
-        assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, 0.5);
+        assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, saved.zoom);
+        assert_eq!(world.get::<CanvasView>(root).unwrap().center, saved.center);
     }
 
     #[test]
@@ -1610,40 +2021,5 @@ pub(crate) mod tests {
         dialog_stays_above_its_parent_and_preserves_parent_fullscreen,
         fullscreen_restore_keeps_free_geometry_despite_presentation_changes,
         mapping_an_unrelated_window_preserves_fullscreen_and_restores_every_window,
-    }
-}
-
-pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {
-    let Some(spaces) = world.get::<Workspaces>(root) else {
-        return;
-    };
-    let Some(workspace) = spaces
-        .entries
-        .iter()
-        .find(|workspace| workspace.id == spaces.active)
-    else {
-        return;
-    };
-    let active = workspace.desktop.mode();
-    crate::native::edit_mode::label(world, panel, "Workspace layout", 18.0);
-    for (mode, name) in [
-        (WorkspaceLayout::Free, "Free"),
-        (WorkspaceLayout::Row, "Row"),
-        (WorkspaceLayout::Column, "Column"),
-        (WorkspaceLayout::Grid, "Grid"),
-        (WorkspaceLayout::ScrollingColumns, "Scrolling columns"),
-    ] {
-        let name = if mode == active {
-            format!("{name} (selected)")
-        } else {
-            name.into()
-        };
-        crate::native::sand_panel::button(
-            world,
-            panel,
-            root,
-            &name,
-            DesktopAction::SetLayout(mode),
-        );
     }
 }

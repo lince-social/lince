@@ -3,6 +3,7 @@ pub mod blob_sync;
 pub mod canvas;
 pub mod component;
 pub mod description_asset;
+pub mod demeter;
 pub mod drawing;
 pub mod error;
 pub mod execution;
@@ -22,6 +23,7 @@ pub mod place;
 pub mod physical_workspace;
 pub mod plugins;
 pub mod projection;
+pub mod property_rule;
 pub mod promise;
 pub mod record;
 pub mod record_extension;
@@ -37,6 +39,7 @@ pub mod transfer;
 pub mod transfer_delivery;
 pub mod trust_analysis;
 pub mod visibility;
+pub mod window_opening;
 pub mod vocabulary;
 
 pub use error::NucleusError;
@@ -49,6 +52,7 @@ pub use promise::PromiseState;
 pub use record::{MessageDraftTiming, MessageState, RecordKind};
 
 pub mod operation;
+pub mod optimization;
 
 pub mod question;
 

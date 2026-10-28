@@ -64,80 +64,7 @@ pub enum AttractionTarget {
     Point([f64; 2]),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Property {
-    Title,
-    Slug,
-    Kind,
-    Quantity,
-    Identity,
-}
-
-impl Property {
-    pub const ALL: [Self; 5] = [
-        Self::Title,
-        Self::Slug,
-        Self::Kind,
-        Self::Quantity,
-        Self::Identity,
-    ];
-
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Title => "Title",
-            Self::Slug => "Slug",
-            Self::Kind => "Kind",
-            Self::Quantity => "Quantity",
-            Self::Identity => "Record identity",
-        }
-    }
-
-    fn key(self) -> &'static str {
-        match self {
-            Self::Title => "head",
-            Self::Slug => "slug",
-            Self::Kind => "kind",
-            Self::Quantity => "quantity",
-            Self::Identity => "uid",
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct PropertyRule {
-    pub property: Property,
-    pub value: String,
-}
-
-impl PropertyRule {
-    pub fn validate(&self) -> bool {
-        self.value.len() <= 4096
-            && !self.value.trim().is_empty()
-            && (self.property != Property::Quantity
-                || nucleus::DecimalValue::parse_inferred(&self.value).is_ok())
-    }
-
-    pub fn matches(&self, record: &RecordProperties) -> bool {
-        if !self.validate() {
-            return false;
-        }
-        let Some(value) = record.0.get(self.property.key()) else {
-            return false;
-        };
-        if self.property == Property::Quantity {
-            let actual = value
-                .as_str()
-                .map(str::to_owned)
-                .unwrap_or_else(|| value.to_string());
-            nucleus::DecimalValue::parse_inferred(&actual)
-                .ok()
-                .zip(nucleus::DecimalValue::parse_inferred(&self.value).ok())
-                .is_some_and(|(actual, expected)| actual.exact_numeric_cmp(expected).is_eq())
-        } else {
-            value.as_str() == Some(self.value.as_str())
-        }
-    }
-}
+pub use nucleus::property_rule::{Property, PropertyRule};
 
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct InfluenceArea {
@@ -415,9 +342,9 @@ impl InfluenceArea {
     pub fn matches(&self, record: &RecordProperties) -> bool {
         !self.rules.is_empty()
             && if self.match_all {
-                self.rules.iter().all(|rule| rule.matches(record))
+                self.rules.iter().all(|rule| rule.matches(&record.0))
             } else {
-                self.rules.iter().any(|rule| rule.matches(record))
+                self.rules.iter().any(|rule| rule.matches(&record.0))
             }
     }
 

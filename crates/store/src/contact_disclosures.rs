@@ -144,7 +144,10 @@ pub async fn current_candidates(
     current_candidates_on(&mut *pool.acquire().await?, person).await
 }
 
-pub async fn current_candidates_on(connection: &mut SqliteConnection, person: &str) -> Result<Vec<String>, StoreError> {
+pub async fn current_candidates_on(
+    connection: &mut SqliteConnection,
+    person: &str,
+) -> Result<Vec<String>, StoreError> {
     sqlx::query_scalar(
         "SELECT c.record_uid FROM contact_disclosure_record c WHERE c.owner_person_uid=? AND c.revision=(SELECT MAX(n.revision) FROM contact_disclosure_record n WHERE n.owner_person_uid=c.owner_person_uid AND n.relation_hash=c.relation_hash AND n.issuer_kind=c.issuer_kind AND n.issuer_uid=c.issuer_uid) ORDER BY c.relation_hash,c.issuer_kind,c.issuer_uid,c.document_hash LIMIT 5001",
     ).bind(person).fetch_all(connection).await

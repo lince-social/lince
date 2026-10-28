@@ -1,10 +1,10 @@
 use super::*;
 
-fn id(value: u8) -> PlacementId {
+pub(super) fn id(value: u8) -> PlacementId {
     PlacementId([value; 16])
 }
 
-fn item(value: u8) -> Item {
+pub(super) fn item(value: u8) -> Item {
     Item {
         id: id(value),
         kind: ItemKind::Native,
@@ -13,17 +13,68 @@ fn item(value: u8) -> Item {
             origin: [20.0, 30.0],
             size: [300.0, 200.0],
         },
+        free_width: None,
         floating: false,
     }
 }
 
-fn viewport() -> Rectangle {
+pub(super) fn viewport() -> Rectangle {
     Rectangle::new([0.0, 24.0], [1000.0, 700.0]).unwrap()
 }
 
 #[test]
+fn inactive_insertion_preserves_focus_scroll_and_neighbor_size_intent() {
+    for mode in [
+        WorkspaceLayout::Free,
+        WorkspaceLayout::Tiled,
+        WorkspaceLayout::ScrollingColumns,
+    ] {
+        for unfocused in [false, true] {
+            let mut model = workspace(3);
+            model.set_mode(mode);
+            model.focus(id(2), viewport()).unwrap();
+            if unfocused {
+                model.clear_focus();
+            }
+            let before = model.clone();
+            model.insert_inactive(item(4)).unwrap();
+            assert_eq!(model.focused, before.focused);
+            assert_eq!(model.scroll, before.scroll);
+            for previous in before.items() {
+                assert_eq!(model.item(previous.id), Some(previous));
+                assert_eq!(
+                    model.item_width(previous.id),
+                    before.item_width(previous.id)
+                );
+            }
+            assert!(model.valid());
+            let inserted = model.clone();
+            assert_eq!(
+                model.insert_inactive(item(4)),
+                Err(LayoutError::DuplicateItem)
+            );
+            assert_eq!(model, inserted);
+            assert_eq!(
+                model.insert_inactive(item(0)),
+                Err(LayoutError::InvalidItem)
+            );
+            assert_eq!(model, inserted);
+            model.insert(item(5)).unwrap();
+            assert_eq!(model.focused(), Some(id(5)));
+        }
+    }
+}
+
+#[test]
 fn minimizing_preserves_placement_and_removes_items_from_every_layout_solution() {
-    for mode in [WorkspaceLayout::Free, WorkspaceLayout::Row, WorkspaceLayout::Column, WorkspaceLayout::Grid, WorkspaceLayout::ScrollingColumns] {
+    for mode in [
+        WorkspaceLayout::Tiled,
+        WorkspaceLayout::Free,
+        WorkspaceLayout::Row,
+        WorkspaceLayout::Column,
+        WorkspaceLayout::Grid,
+        WorkspaceLayout::ScrollingColumns,
+    ] {
         let mut workspace = workspace(3);
         workspace.set_mode(mode);
         workspace.focus(id(1), viewport()).unwrap();
@@ -37,7 +88,10 @@ fn minimizing_preserves_placement_and_removes_items_from_every_layout_solution()
         assert_eq!(workspace.columns, columns);
         assert_eq!(workspace.item(id(2)).unwrap().free, free);
         assert!(workspace.set_minimized(id(2), false));
-        assert_eq!(workspace.solve(viewport(), viewport()).unwrap().items.len(), 3);
+        assert_eq!(
+            workspace.solve(viewport(), viewport()).unwrap().items.len(),
+            3
+        );
         assert_eq!(workspace.columns, columns);
         assert!(workspace.valid());
     }
@@ -48,14 +102,25 @@ fn navigation_and_movement_skip_minimized_columns_and_rows() {
     let mut workspace = workspace(3);
     workspace.set_minimized(id(2), true);
     workspace.focus(id(1), viewport()).unwrap();
-    assert!(workspace.focus_direction(Direction::Right, viewport()).unwrap());
+    assert!(
+        workspace
+            .focus_direction(Direction::Right, viewport())
+            .unwrap()
+    );
     assert_eq!(workspace.focused(), Some(id(3)));
-    assert!(workspace.move_focused(Direction::Left));
-    assert_eq!(workspace.columns.iter().map(|column| column.items[0]).collect::<Vec<_>>(), vec![id(3), id(2), id(1)]);
+    assert!(workspace.move_focused(Direction::Left, viewport()));
+    assert_eq!(
+        workspace
+            .columns
+            .iter()
+            .map(|column| column.items[0])
+            .collect::<Vec<_>>(),
+        vec![id(3), id(2), id(1)]
+    );
     assert!(workspace.stack_focused(Direction::Right));
     assert_eq!(workspace.columns.last().unwrap().items, vec![id(1), id(3)]);
     workspace.set_minimized(id(1), true);
-    assert!(!workspace.move_focused(Direction::Up));
+    assert!(!workspace.move_focused(Direction::Up, viewport()));
     assert!(!workspace.stack_focused(Direction::Left));
     assert!(workspace.valid());
 }
@@ -85,12 +150,35 @@ fn all_minimized_items_allow_empty_layouts_and_explicit_restore_keeps_focus() {
     workspace.set_minimized(id(1), true);
     workspace.set_minimized(id(2), true);
     assert_eq!(workspace.focused(), None);
-    assert!(workspace.solve(viewport(), viewport()).unwrap().items.is_empty());
-    assert!(!workspace.focus_direction(Direction::Right, viewport()).unwrap());
-    workspace.request_state(id(2), crate::host::WindowRequest { minimized: Some(false), ..Default::default() });
+    assert!(
+        workspace
+            .solve(viewport(), viewport())
+            .unwrap()
+            .items
+            .is_empty()
+    );
+    assert!(
+        !workspace
+            .focus_direction(Direction::Right, viewport())
+            .unwrap()
+    );
+    workspace.request_state(
+        id(2),
+        crate::host::WindowRequest {
+            minimized: Some(false),
+            ..Default::default()
+        },
+    );
     assert_eq!(workspace.focused(), None);
-    assert_eq!(workspace.solve(viewport(), viewport()).unwrap().items.len(), 1);
-    assert!(workspace.focus_direction(Direction::Right, viewport()).unwrap());
+    assert_eq!(
+        workspace.solve(viewport(), viewport()).unwrap().items.len(),
+        1
+    );
+    assert!(
+        workspace
+            .focus_direction(Direction::Right, viewport())
+            .unwrap()
+    );
     assert_eq!(workspace.focused(), Some(id(2)));
     assert!(workspace.valid());
 }
@@ -144,14 +232,14 @@ fn moving_in_grid_follows_visible_rows_and_columns_without_wrapping() {
     let mut workspace = workspace(5);
     workspace.set_mode(WorkspaceLayout::Grid);
     workspace.focus(id(1), viewport()).unwrap();
-    assert!(!workspace.move_focused(Direction::Left));
-    assert!(!workspace.move_focused(Direction::Up));
-    assert!(workspace.move_focused(Direction::Down));
+    assert!(!workspace.move_focused(Direction::Left, viewport()));
+    assert!(!workspace.move_focused(Direction::Up, viewport()));
+    assert!(workspace.move_focused(Direction::Down, viewport()));
     assert_eq!(workspace.columns[3].items, [id(1)]);
-    assert!(workspace.move_focused(Direction::Right));
+    assert!(workspace.move_focused(Direction::Right, viewport()));
     assert_eq!(workspace.columns[4].items, [id(1)]);
-    assert!(!workspace.move_focused(Direction::Right));
-    assert!(workspace.move_focused(Direction::Up));
+    assert!(!workspace.move_focused(Direction::Right, viewport()));
+    assert!(workspace.move_focused(Direction::Up, viewport()));
     assert_eq!(workspace.columns[1].items, [id(1)]);
     assert_eq!(workspace.focused(), Some(id(1)));
     assert!(workspace.valid());
@@ -162,12 +250,12 @@ fn moving_in_single_column_and_row_uses_their_visible_axis() {
     let mut workspace = workspace(3);
     workspace.set_mode(WorkspaceLayout::Column);
     workspace.focus(id(1), viewport()).unwrap();
-    assert!(workspace.move_focused(Direction::Down));
+    assert!(workspace.move_focused(Direction::Down, viewport()));
     assert_eq!(workspace.columns[1].items, [id(1)]);
-    assert!(!workspace.move_focused(Direction::Right));
+    assert!(!workspace.move_focused(Direction::Right, viewport()));
     workspace.set_mode(WorkspaceLayout::Row);
-    assert!(!workspace.move_focused(Direction::Down));
-    assert!(workspace.move_focused(Direction::Right));
+    assert!(!workspace.move_focused(Direction::Down, viewport()));
+    assert!(workspace.move_focused(Direction::Right, viewport()));
     assert_eq!(workspace.columns[2].items, [id(1)]);
     assert!(workspace.valid());
 }
@@ -268,7 +356,7 @@ fn stacks_share_height_respect_maxima_and_have_directional_focus() {
             .focus_direction(Direction::Up, viewport())
             .unwrap()
     );
-    assert!(workspace.move_focused(Direction::Down));
+    assert!(workspace.move_focused(Direction::Down, viewport()));
     assert_eq!(workspace.columns[0].items, vec![id(2), id(1)]);
 }
 
@@ -330,23 +418,43 @@ fn maximize_respects_bars_and_fullscreen_uses_the_output() {
 
 #[test]
 fn maximizing_free_and_floating_items_tracks_usable_space_and_restores_geometry() {
-    for mode in [WorkspaceLayout::Free, WorkspaceLayout::Row, WorkspaceLayout::Column, WorkspaceLayout::Grid, WorkspaceLayout::ScrollingColumns] {
+    for mode in [
+        WorkspaceLayout::Tiled,
+        WorkspaceLayout::Free,
+        WorkspaceLayout::Row,
+        WorkspaceLayout::Column,
+        WorkspaceLayout::Grid,
+        WorkspaceLayout::ScrollingColumns,
+    ] {
         for floating in [false, true] {
             let mut workspace = workspace(1);
             workspace.set_mode(mode);
-            if floating { workspace.toggle_floating(id(1), item(1).free.rectangle().unwrap()).unwrap(); }
+            if floating {
+                workspace
+                    .toggle_floating(id(1), item(1).free.rectangle().unwrap())
+                    .unwrap();
+            }
             let before = workspace.solve(viewport(), viewport()).unwrap().items[0].rectangle;
             let free = workspace.item(id(1)).unwrap().free;
             assert!(workspace.toggle_maximized());
             assert!(workspace.maximized(id(1)));
             let with_bar = workspace.solve(viewport(), viewport()).unwrap().items[0];
-            assert_eq!(with_bar.rectangle, Rectangle::new([8.0, 32.0], [984.0, 684.0]).unwrap());
+            assert_eq!(
+                with_bar.rectangle,
+                Rectangle::new([8.0, 32.0], [984.0, 684.0]).unwrap()
+            );
             assert!(!with_bar.floating);
             let expanded = Rectangle::new([0.0; 2], [1000.0, 748.0]).unwrap();
-            assert_eq!(workspace.solve(expanded, expanded).unwrap().items[0].rectangle, Rectangle::new([8.0; 2], [984.0, 732.0]).unwrap());
+            assert_eq!(
+                workspace.solve(expanded, expanded).unwrap().items[0].rectangle,
+                Rectangle::new([8.0; 2], [984.0, 732.0]).unwrap()
+            );
             assert!(workspace.toggle_maximized());
             assert!(!workspace.maximized(id(1)));
-            assert_eq!(workspace.solve(viewport(), viewport()).unwrap().items[0].rectangle, before);
+            assert_eq!(
+                workspace.solve(viewport(), viewport()).unwrap().items[0].rectangle,
+                before
+            );
             assert_eq!(workspace.item(id(1)).unwrap().free, free);
             assert!(workspace.valid());
             workspace.remove(id(1));

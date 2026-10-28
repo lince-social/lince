@@ -1,4 +1,5 @@
 mod credits;
+pub(crate) use credits::CREDITS;
 mod persistence;
 mod runtime;
 #[cfg(test)]
@@ -16,6 +17,8 @@ use std::collections::{BTreeMap, BTreeSet};
 #[derive(Component, Clone, Serialize, Deserialize)]
 pub struct DocumentViewer {
     pub path: String,
+    #[serde(default)]
+    pub resource: Option<lince_resources::Resource>,
     pub positions: BTreeMap<String, Position>,
     pub zoom: f32,
 }
@@ -24,6 +27,7 @@ impl Default for DocumentViewer {
     fn default() -> Self {
         Self {
             path: String::new(),
+            resource: None,
             positions: BTreeMap::new(),
             zoom: 1.0,
         }
@@ -31,6 +35,13 @@ impl Default for DocumentViewer {
 }
 
 impl DocumentViewer {
+    pub fn with_resource(resource: lince_resources::Resource) -> Self {
+        Self {
+            path: resource.uri.clone(),
+            resource: Some(resource),
+            ..default()
+        }
+    }
     pub fn with_path(path: impl Into<String>) -> Self {
         Self {
             path: path.into(),
@@ -44,6 +55,10 @@ impl DocumentViewer {
 
     pub fn valid(&self) -> bool {
         valid_path(&self.path)
+            && self
+                .resource
+                .as_ref()
+                .is_none_or(|resource| resource.validate().is_ok())
             && self.positions.len() <= 128
             && self
                 .positions
@@ -62,7 +77,7 @@ impl DocumentViewer {
 }
 
 fn valid_path(path: &str) -> bool {
-    path.len() <= 4096 && !path.contains('\0')
+    path.len() <= 8192 && !path.contains('\0')
 }
 
 #[derive(Component)]
@@ -84,6 +99,7 @@ struct View {
     requested: BTreeSet<u32>,
     viewport_size: Vec2,
     picking: bool,
+    retention: Option<String>,
 }
 
 pub struct DocumentViewerPlugin;
@@ -148,6 +164,7 @@ pub fn spawn(
     world.get_mut::<Node>(input).unwrap().flex_grow = 1.0;
     ui::button(world, row, owner, "Open", ui::Control::Open);
     ui::button(world, row, owner, "Browse…", ui::Control::Browse);
+    ui::button(world, row, owner, "Keep offline", ui::Control::KeepOffline);
     let controls = ui::row(world, owner);
     ui::button(world, controls, owner, "Previous", ui::Control::Previous);
     ui::button(world, controls, owner, "Next", ui::Control::Next);
@@ -203,6 +220,7 @@ pub fn spawn(
         mode_label,
         section_input,
         info: None,
+        retention: None,
         layout: None,
         key: None,
         busy: false,

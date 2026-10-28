@@ -102,9 +102,10 @@ pub(crate) async fn execute(
             match predicate {
                 Predicate::UidEq(uid) if uid != &rule.uid => allowed = false,
                 Predicate::RecordEq(uid)
-                    if uid != target && store::records::resolve(&store.pool, uid)
-                        .await?
-                        .is_none_or(|record| record.uid != target) =>
+                    if uid != target
+                        && store::records::resolve(&store.pool, uid)
+                            .await?
+                            .is_none_or(|record| record.uid != target) =>
                 {
                     allowed = false
                 }
@@ -171,7 +172,9 @@ async fn readable(
     visible: Option<&HashSet<String>>,
     token: &str,
 ) -> Result<bool, ProteinError> {
-    if visible.is_none() { return Ok(true); }
+    if visible.is_none() {
+        return Ok(true);
+    }
     Ok(store::records::resolve(&store.pool, token)
         .await?
         .is_some_and(|record| visible.is_none_or(|visible| visible.contains(&record.uid))))

@@ -32,7 +32,10 @@ pub(super) fn preview(world: &mut World, camera: Entity, enabled: bool) {
 
 pub(super) fn world_views(world: &mut World) {
     let cameras: Vec<_> = world
-        .query_filtered::<Entity, With<crate::native::topology::presentation::WorldCamera>>()
+        .query_filtered::<Entity, Or<(
+            With<crate::native::topology::presentation::WorldCamera>,
+            With<crate::native::topology::output_views::WorldView>,
+        )>>()
         .iter(world)
         .collect();
     for camera in cameras {
@@ -64,7 +67,10 @@ pub(super) fn prune(world: &mut World) {
         let cameras: Vec<_> = world
             .query_filtered::<Entity, (
                 With<VolumeDepth>,
-                With<crate::native::topology::presentation::WorldCamera>,
+                Or<(
+                    With<crate::native::topology::presentation::WorldCamera>,
+                    With<crate::native::topology::output_views::WorldView>,
+                )>,
             )>()
             .iter(world)
             .collect();

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Retarded potentials, near fields and radiation zone (@em-retardation: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Electric-magnetic-dipole-radiation-and-angular-power.lingua#r_4BPSV3J0C046ZSABN6VE17JE7B") { r_021CHNJF2T7759JNHH4AZ0GG09
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), complete radiation introduction and retarded potentials; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), retarded solutions and localized radiation.
+
+The retarded potential evaluates source contributions at earlier times determined by propagation distance. Derive it as a solution of the wave equation with causal/outgoing conditions, then recover fields including the source-time derivatives. Replacing a static charge/current by its instantaneous value in Coulomb/Biot–Savart formulas generally omits necessary time-dependent terms.
+
+For a localized harmonic source, distinguish terms decaying as inverse cube, inverse square and inverse distance where the source/model produces them. The radiative far field has transverse structure and finite power through spheres of increasing radius. A near field can store and exchange energy without satisfying a local outgoing plane-wave relation.
+
+Compare observation distance with both source size and wavelength; a single universal near/far boundary is not adequate for every extended aperture. Retain the source continuity equation when choosing charge/current functions. Evaluate energy through a surrounding surface and verify independence of the chosen far radius after the model conditions hold. Numerical absorbing boundaries and finite-domain measurements must be far enough away or explicitly account for the near-field components.
+
+**Continue:** [Electric/magnetic dipole radiation and angular power](Electric-magnetic-dipole-radiation-and-angular-power.lingua#r_4BPSV3J0C046ZSABN6VE17JE7B).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_021CHNJF2T7759JNHH4AZ0GG09

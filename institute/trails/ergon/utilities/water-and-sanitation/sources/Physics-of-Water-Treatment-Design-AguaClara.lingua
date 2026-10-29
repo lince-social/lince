@@ -1,0 +1,11 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+The Physics of Water Treatment Design — AguaClara (@wu-aguaclara: 0, is #reference, #part-of @wu-sources) { r_1V2KMP22J5KMQF65K8Q7ZXXBAR
+AguaClara contributors, including Monroe Weber-Shirk. [Current textbook](https://aguaclara-reach.github.io/Textbook/) · [Maintained source repository](https://github.com/AguaClara-Reach/Textbook).
+
+Work the complete twelve-chapter design argument and its derivations and challenges. Chapters 2–4 develop hydraulics, deformation and treatment chemistry; 5–9 connect measurement, mixing, flocculation, clarification and filtration. Chapters 10–12 address implementation, dissolved gas and operation. Attempt independent designs before reading the posted solutions. Compare the treatment-specific assumptions with the broader fluid and chemical sources.
+
+The earlier aguaclara.github.io address redirects to AguaClara-Reach. The inspected web build displays a generic 0.0.0 documentation label; do not treat it as a reliable release identifier. Record a repository revision for reproducible numerical study. The public repository did not establish a blanket licence for all text and figures during this review; free reading is verified, unrestricted adaptation is not. Its software dependencies remain separate external works.
+
+**Return:** [Water and sanitation sources — complete books, methods and operating evidence](../Sources.lingua#r_7AMRJFFR11FF35KJM7Y7M05B3M).
+} r_1V2KMP22J5KMQF65K8Q7ZXXBAR

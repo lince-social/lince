@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Organize silicates by connectivity while preserving composition and site differences (@mp-silicates: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #source "../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH", #mineralogy-and-petrology "Quartz-feldspars-feldspathoids-and-frameworks.lingua#r_6R635CVNT9MZ33T0EYRAYAH8XQ") { r_736317PHP4KMSCR801YWR3M20H
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full silicate classification and isolated/ring/related mineral sections; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected species entries and their references; [Mineral names and classification reports — IMA-CNMNC](../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH), the full relevant group report when definitions matter.
+
+Silicate groups use tetrahedral connectivity as a powerful organizing idea, with cations and other components occupying associated sites. Isolated, paired, ring, chain, sheet, and framework arrangements connect structure with composition and properties. The ideal silicate ratio is a starting account, not a complete formula for every mineral in a group.
+
+Study olivine, garnet, aluminosilicates, epidote-group minerals, and ring silicates such as tourmaline or beryl through complete descriptions. Compare site multiplicities, substitutions, oxidation states, and structural conditions. A common structural motif does not make a chemical analysis or stability field interchangeable between species.
+
+Relate physical and optical observations to candidate identities, then seek independent support where properties overlap. Different composition, orientation, inclusions, damage, or alteration can change appearance. An ideal endmember formula should not silently replace the measured specimen's chemistry.
+
+**Work:** construct a structure–formula–property account for one mineral from three different connectivity groups, using full book treatment and authoritative entries. Calculate an ideal site/charge balance and identify plausible compositional variation. Explain which observation would distinguish a similar-looking candidate and which would support a particular geological use of the identification.
+
+Read the complete relevant silicate sections and their figures/exercises. The following framework, chain, and sheet studies develop major rock-forming families in more detail rather than treating a memorized list as practical mineralogy.
+
+**Continue:** [Distinguish framework mineral structures, substitutions, and histories](Quartz-feldspars-feldspathoids-and-frameworks.lingua#r_6R635CVNT9MZ33T0EYRAYAH8XQ).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_736317PHP4KMSCR801YWR3M20H

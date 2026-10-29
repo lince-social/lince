@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Carrier distributions, Boltzmann transport and the diffusive limit (@th-kinetic-transport: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "Interface-conductance-ballistic-transport-and-size-dependent-response.lingua#r_263NEZC8KR6RHTPERH8AZ8NATX", #thermodynamics-and-heat-transfer "../research/From-Boltzmann-or-carrier-transmission-to-a-thermal-device-model.lingua#r_5KM133WBJ8D6KSRXCHDEZW1270") { r_56YMTX9EKB6BF03EA8HR0ED9EQ
+**Read:** [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), the complete carrier-statistics, transport-equation and diffusion-limit sequence; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), the entire review and selected primary derivations.
+
+At sufficiently small lengths or short times, a local conductivity may no longer describe the heat flux. Develop carrier energy, velocity, occupancy, scattering and boundary interactions. Distinguish the equation governing a distribution from the energy moment obtained by integrating it.
+
+Derive a diffusive approximation from a stated kinetic model and compare relevant mean free paths and relaxation times with device scales. A single relaxation time can be a useful approximation but does not represent every scattering process. Boundary conditions on incoming carrier populations carry different information from a continuum wall temperature alone.
+
+Work the full microscopic transport progression in [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), including its statistical and quantum preparation. Compare an analytical kinetic limit with a continuum solution for the same simple geometry, then explain the discrepancy through the assumptions. Leave detailed independent statistical and quantum physics to their own full subjects while following every derivation required here.
+
+**Continue:** [Interface conductance, ballistic transport and size-dependent response](Interface-conductance-ballistic-transport-and-size-dependent-response.lingua#r_263NEZC8KR6RHTPERH8AZ8NATX) · [Advanced study: kinetic transport and a thermal device model](../research/From-Boltzmann-or-carrier-transmission-to-a-thermal-device-model.lingua#r_5KM133WBJ8D6KSRXCHDEZW1270).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_56YMTX9EKB6BF03EA8HR0ED9EQ

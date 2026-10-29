@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Electric force, fixed charge and fixed voltage (@em-electric-force: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "../matter/Dipoles-polarization-and-bound-charge.lingua#r_0ZFQN93KF28Y07MHTSCDABZ443") { r_7YTRY0KDDMSFETKKTKYXBQ2615
+**Read:** [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), electric energy, coenergy and mechanical force; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), electrostatic energy and force.
+
+Mechanical force follows a change in the energy of the complete system under stated constraints. At fixed capacitor charge, U = Q²/(2C). At fixed voltage, the field energy is CV²/2, but the voltage source exchanges charge and energy as geometry changes. Differentiating the field energy alone at fixed V with a fixed-Q formula reverses the physical conclusion.
+
+For an ideal parallel-plate vacuum capacitor, derive attractive pressure ε₀E²/2. Recover the force both from a correct energy account and from the vacuum Maxwell stress at the plate. Explicitly identify which conductor displacement and area are held fixed. Include fringing or finite-size corrections only through a model that actually resolves them.
+
+Develop a movable dielectric example and track source work, stored field energy and mechanical work separately. A nonlinear or hysteretic material requires more than substituting a constant ε into the linear energy expression. Compare force predictions against a measured displacement, geometry and uncertainty; a capacitance measurement alone does not identify every mechanical support or material response. The later stress and electromechanical Records generalize this bookkeeping.
+
+**Continue:** [Dipoles, polarization and bound charge](../matter/Dipoles-polarization-and-bound-charge.lingua#r_0ZFQN93KF28Y07MHTSCDABZ443).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_7YTRY0KDDMSFETKKTKYXBQ2615

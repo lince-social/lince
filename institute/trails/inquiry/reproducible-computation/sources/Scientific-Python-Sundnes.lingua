@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+Introduction to Scientific Programming with Python — Sundnes (@rc-sundnes: 0, is #book, #part-of @rc-sources) { r_1V7KWH76GSD7XMA9TQVSTEQSWB
+Joakim Sundnes. Introduction to Scientific Programming with Python. Simula SpringerBriefs on Computing 6. Springer, 2020. ISBN 978-3-030-50356-7, electronic edition. English.
+
+[Publisher’s open-access book, contents, and authorized PDF](https://link.springer.com/book/10.1007/978-3-030-50356-7).
+
+Read all nine chapters and work the exercises: Getting Started with Python; Computing with Formulas; Loops and Lists; Functions and Branching; User Input and Error Handling; Arrays and Plotting; Dictionaries and Strings; Classes; Object-Oriented Programming. The first formula and function chapters support an easy beginning; arrays, files, errors, and program organization deepen the work later. The book is about 150 printed pages, not a short web tutorial.
+
+The publisher identifies the full book as open access and supplies the PDF. Preserve the actual edition’s licence and third-party notices before adapting it; this Record links the authorized edition rather than reproducing it. Publisher metadata, contents, and availability checked on 29 October 2026. Examples here are independently authored teaching material; the book stays external.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_1V7KWH76GSD7XMA9TQVSTEQSWB

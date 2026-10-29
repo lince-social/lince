@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Reconstruct ammonia production as a reaction, separation and circulating-gas system (@ic-ammonia: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Urea-carbamate-recycle-finishing-and-nutrient-product.lingua#r_067VCQSBX1VN3KDR6GAZGBF0SG") { r_09GK01EQW7RQJEYZ325VRHWNV0
+**Read:** [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the complete ammonia manufacturing sequence; [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the entire ammonia chapter and related feed/utility/environment material; [Haber–Bosch ammonia in an energy landscape — Smith, Hill and Torrente-Murciano](../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ), the full paper and supporting information; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete relevant ammonia/nonisothermal reactor examples.
+
+Ammonia synthesis couples N₂+3H₂⇌2NH₃ with catalyst-mediated kinetics, heat transfer and product separation. Temperature and pressure affect equilibrium and rate differently. A catalyst enables a useful pathway but does not change the equilibrium of the specified thermodynamic system.
+
+Fresh feed, reactor-inlet gas, outlet gas, recovered ammonia, recycle and purge are distinct streams. Product removal can support high overall utilization while finite single-pass conversion and inerts create substantial circulation and duties. Catalyst lifetime and gas quality connect the loop with upstream hydrogen/air separation and purification.
+
+Reconstruct the heat, compression, condensation/recovery and changing-inventory accounts, including utilities outside the synthesis reactor. A new catalyst or hydrogen source needs evaluation on accepted ammonia output over time, with complete supporting infrastructure. A favorable laboratory rate or steady-state model does not alone establish a plant's variable operating performance.
+
+**Work:** derive the full public synthesis-loop account and reproduce its central quantitative results independently. Compare a conventional and a justified alternative feed/operation arrangement using the same product and boundary. Explain equilibrium, kinetic, separation, impurity, thermal and time-dependent limits, and distinguish measured behavior from projections requiring further evidence.
+
+**Continue:** [Follow urea from ammonia and carbon dioxide through recycle and finished product](Urea-carbamate-recycle-finishing-and-nutrient-product.lingua#r_067VCQSBX1VN3KDR6GAZGBF0SG).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_09GK01EQW7RQJEYZ325VRHWNV0

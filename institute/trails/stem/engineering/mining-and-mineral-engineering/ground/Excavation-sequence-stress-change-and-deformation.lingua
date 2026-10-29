@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Explain how excavation and sequence change the ground problem (@mine-excavation-response: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #mining-and-mineral-engineering "Pit-slopes-dumps-water-and-observational-evidence.lingua#r_16M6WNFSJ46K3B04RDAQCJ8D9V") { r_7NRWRVWG3C4HBBDX238JQQX3XE
+**Read:** [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the complete in-situ/induced stress, underground, weak-rock, and brittle-response sequence; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full ground-control/rockburst and sequence context; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the full relevant excavation/geomechanical chapters.
+
+Excavation changes boundaries, stress distribution, confinement, water pathways, support interaction, and the geometry available for later work. The initial ground model and the changing sequence both matter. A final opening shape alone may omit a controlling transient or nearby excavation effect.
+
+Elastic redistribution, brittle fracture/spalling, discontinuity movement, yielding, creep, and dynamic/seismic response involve different mechanisms. Select the model from evidence and scale, and state constitutive/boundary assumptions. A stable-looking numerical solution does not prove that all plausible ground mechanisms were represented.
+
+Distinguish calculated displacement/stress, observed convergence/damage, and a performance criterion. Parameter fitting to one response period can leave other predictions weakly constrained. Instruments and inspections observe selected locations/modes with resolution and failure/availability limits.
+
+**Work:** reconstruct a complete excavation-sequence case with initial conditions, geometry, model, support timing, observations, and uncertainty. Reproduce one bounded analytical/numerical result and independently check units, limits, mesh/resolution where relevant, and an observed response not used for fitting. Compare a plausible alternative mechanism or boundary.
+
+Read the full stress, weak-rock, large-excavation, and brittle-response chapters. Later specialist computational mechanics deepens the methods; the mine-specific interpretation should already explain what changed, what was observed, and what would revise the design basis.
+
+**Continue:** [Evaluate slope systems through geometry, structures, material behavior, and water](Pit-slopes-dumps-water-and-observational-evidence.lingua#r_16M6WNFSJ46K3B04RDAQCJ8D9V).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_7NRWRVWG3C4HBBDX238JQQX3XE

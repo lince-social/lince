@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Force, pressure, and torque calibration — EURAMET (@met-mechanical: 0, is #reference, #part-of @met-sources) { r_5VJQR5MWS25V13ZAQZ03TVH3PH
+EURAMET, Technical Committee for Mass and Related Quantities. [Official calibration-guide catalogue and downloads](https://www.euramet.org/publications-media-centre/calibration-guidelines).
+
+Study guide 4, Guidelines on the Uncertainty of Force Measurements, version 3.0, February 2022, in full for the mechanical comparison. Compare guide 17, Calibration of Electromechanical and Mechanical Manometers, version 4.1, September 2022, and guide 14, Calibration of Static Torque Measuring Devices, version 2.0, March 2011. Use guide 3, Calibration of Pressure Balances, version 2.1, February 2025, for the pressure-standard continuation.
+
+Read at least the full force and manometer guides, then the complete guide for the family selected in advanced study. Preserve the different measurands, mounting conditions, directions, load histories, and reference systems.
+
+These exact catalogue identities were checked on 28 October 2026. Guide-specific copyright and reproduction terms remain in force; freely available downloads do not imply an unrestricted adaptation licence. No technical guide is bundled here.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_5VJQR5MWS25V13ZAQZ03TVH3PH

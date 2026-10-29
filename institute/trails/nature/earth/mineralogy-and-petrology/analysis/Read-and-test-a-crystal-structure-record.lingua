@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Read a CIF as a traceable model and compare it with its original evidence (@mp-cif: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #source "../sources/GSAS-II-Refinement-Tutorials.lingua#r_14B5VSDN6YR5MQJVNTKYJXF3XB", #mineralogy-and-petrology "Raman-spectra-processing-and-mineral-identification.lingua#r_74ZXVR1CEKVKVG97CK96KZ2SKT") { r_1SVFJVQWKZM86VHF3Z5Y2XWVX1
+**Read:** [Crystallography Open Database — structures, citations, and CIF records](../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG), one complete selected record with its original publication; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete structure/analysis explanation; [Crystallographic teaching pamphlets — IUCr](../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the relevant complete structure/symmetry method; [GSAS-II — diffraction analysis and refinement tutorials](../sources/GSAS-II-Refinement-Tutorials.lingua#r_14B5VSDN6YR5MQJVNTKYJXF3XB), the full CIF/publication exercise where applicable.
+
+A crystallographic information file carries a representation of composition, cell, symmetry, atomic sites, occupancies, displacement information, refinement, and provenance where supplied. Missing, uncertain, constrained, and measured fields have different meanings. A syntactically readable file is not proof that every model parameter is physically established.
+
+Check units, setting/origin, multiplicities, occupancy conventions, constraints, formula content, and measurement conditions. Fractional occupancy and displacement can be correlated with other parameters or reflect averaged disorder. A structure drawing can conceal these qualifications.
+
+Use an identified COD record and original paper, preserving revision and original authors. Calculate cell contents and an independent density/distance/spacing check. Compare reported uncertainty and residual/validation information with what the model claims. Several deposited structures for one species can reflect different composition, conditions, data quality, or revision.
+
+**Work:** reconstruct one structural claim from its complete paper and CIF. Check chemical/site/charge consistency and a geometric prediction independently. Compare an alternative setting or plausible model and identify an observable distinction rather than choosing the prettier visualization. Document what the available data cannot resolve.
+
+Read the full relevant crystallographic and refinement treatment. No bulk database ingestion or custom parser is required to study a chosen record; ordinary source links preserve access to the evidence and the original attribution.
+
+**Continue:** [Use Raman spectra with calibration, specimen context, and controlled processing](Raman-spectra-processing-and-mineral-identification.lingua#r_74ZXVR1CEKVKVG97CK96KZ2SKT).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_1SVFJVQWKZM86VHF3Z5Y2XWVX1

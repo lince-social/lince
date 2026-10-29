@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Pipe resistance, roughness and Darcy versus Fanning (@fd-friction: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #fluid-dynamics "Fittings-bends-junctions-and-what-a-loss-coefficient-means.lingua#r_44H4W4CTXATB85WBAMMY1BN8WK") { r_4428A6CTA9J8GD9VSXPVJTHKBD
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), turbulent internal resistance and friction-factor conventions; [Introduction to Fluid Mechanics and Fluid Engineering — Suman Chakraborty](../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2), pipe-flow losses and friction lectures; [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), wall-bounded flow and roughness interpretation.
+
+For a straight pipe, define the Darcy loss relation h_f=f_D(L/D)U²/(2g). Its friction factor depends on regime and, in turbulent flow, relative roughness and the roughness representation. For developed laminar circular Newtonian flow use the derived 64/Re result. A smooth interpolation through transition is a modelling choice, not an exact physical law.
+
+For the conventional turbulent Colebrook relation, solve 1/√f_D=−2 log₁₀[ε/(3.7D)+2.51/(Re√f_D)] within its applicable regime. Explain the roles of viscous and roughness terms and distinguish equivalent sand roughness from a simple surface-height measurement. Check the smooth and fully rough limits and compare with the cited friction chart or relation used by the source.
+
+For specified flow, compute pressure loss, pumping power and sensitivity to diameter, viscosity and roughness. For specified driving pressure, flow is the unknown and must be solved consistently with Reynolds number. Preserve the factor definition, property temperature, geometry and empirical correlation version so another reader can reconstruct the result.
+
+**Continue:** [Fittings, bends, junctions and what a loss coefficient means](Fittings-bends-junctions-and-what-a-loss-coefficient-means.lingua#r_44H4W4CTXATB85WBAMMY1BN8WK).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4428A6CTA9J8GD9VSXPVJTHKBD

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Mesh geometry, resolution and spatial convergence (@fd-mesh: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #fluid-dynamics "Time-steps-CFL-stability-and-temporal-accuracy.lingua#r_60M0VT0DEYA3P6E9DC371K6PQT") { r_7A7VK8TFZMZ370MVT6QZGPT08C
+**Read:** [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), spatial-convergence and consistency sections; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), geometry, Gmsh and mesh investigations; [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), mesh quality and discretization.
+
+Geometry and mesh define part of the physical problem being solved. Check units, closed surfaces, normals, cell volumes and boundary classification before running a flow solver. Resolution should follow relevant gradients and outputs; a large cell count far from the important region does not guarantee an accurate force or wall flux.
+
+Create a systematic sequence that preserves geometry and model assumptions while refining appropriate directions. Track the actual observable, not only residual norms. Estimate observed order only where the differences and refinement ratios support an asymptotic interpretation; shock position, singular corners, mixed models and changing wall treatments can defeat a simple extrapolation.
+
+Separate geometry approximation from solution discretization and assess mesh nonorthogonality/skewness through the method's documented corrections. Compare a refined solution with an analytical or independent benchmark where available. Record the mesh-generation parameters and checks so a second reader can reproduce the intended domain.
+
+**Continue:** [Time steps, CFL stability and temporal accuracy](Time-steps-CFL-stability-and-temporal-accuracy.lingua#r_60M0VT0DEYA3P6E9DC371K6PQT).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7A7VK8TFZMZ370MVT6QZGPT08C

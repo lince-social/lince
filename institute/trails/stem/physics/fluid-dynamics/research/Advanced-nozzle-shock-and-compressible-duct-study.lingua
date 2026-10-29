@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced nozzle, shock and compressible-duct study (@fd-advanced-compressible: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Gas-Dynamics-Kulkarni.lingua#r_34YGDV61X77JFYZH8X8NGDBS9W", #source "../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Advanced-free-surface-wave-and-hydraulic-transition-study.lingua#r_7D92P33JB08JEJ18AW6GX5H46J") { r_71ATSDF27111JJ8AAM358JS35K
+**Read:** [Gas Dynamics — Vinayak Kulkarni](../sources/Gas-Dynamics-Kulkarni.lingua#r_34YGDV61X77JFYZH8X8NGDBS9W), complete course and the chosen experimental/characteristic development; [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM), complete applicable relations and tables; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), one- and two-dimensional compressible flow.
+
+Derive the isentropic area relation and shock jump conditions from the conservation laws and thermodynamic model. Reconstruct [An inspectable nozzle with an internal normal shock](../computation/An-inspectable-nozzle-with-an-internal-normal-shock.lingua#r_1759XXT97JP6XN6H6HS5DMHRSW) with an independent method, then map nozzle operating regimes as back pressure changes. Relate shock area to a specified monotone geometry and explain which external-flow features the internal model cannot determine.
+
+Add a carefully bounded extension such as friction, heat transfer, variable heat capacity, an oblique shock system or a shock-tube initial-value problem. Recover the simpler result as a limit and compare with NACA relations where their assumptions apply. Check all conserved fluxes, entropy selection and the relevant characteristic directions.
+
+Use an independent primary experiment or validated benchmark with complete conditions to assess the prediction. Include measurement response and boundary-layer effects in interpreting disagreement. Deliver a regime-aware physical account, not merely a Mach-number field or a solver residual, and identify the additional kinetic/chemical physics needed outside the equilibrium continuum range.
+
+**Continue:** [Advanced free-surface wave and hydraulic-transition study](Advanced-free-surface-wave-and-hydraulic-transition-study.lingua#r_7D92P33JB08JEJ18AW6GX5H46J).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_71ATSDF27111JJ8AAM358JS35K

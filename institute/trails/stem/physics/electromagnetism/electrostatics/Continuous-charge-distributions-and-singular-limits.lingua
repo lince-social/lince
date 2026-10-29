@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Continuous charge distributions and singular limits (@em-distributions: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Gauss-law-symmetry-and-what-flux-does-not-determine.lingua#r_6EEA738C5T368TVSQ82K6J5QBY") { r_2S56H6ATVPBXX4R70VY99HFAGP
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), continuous charge distributions; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), electrostatic source integrals and singular sources.
+
+Replace a set of charges by a line, surface or volume density only after stating the spatial scale and the element of integration. A line density λ has C/m units, surface density σ C/m² and volume density ρ C/m³. The field integral uses the vector from each source element to the observation point; treating all elements as equally distant usually changes the problem.
+
+Derive the axial field of a uniformly charged ring of radius a: E_z = Qz/[4π ε₀(a²+z²)^(3/2)]. At z = 0 it vanishes by symmetry. At |z| much larger than a it approaches the field of total charge Q; expanding the next correction quantifies the point approximation. A uniform infinite line gives a different distance dependence because its geometry never becomes a localized source.
+
+Compute a finite line, disk and shell, compare direct integration with symmetry, and examine what happens at an ideal surface. One-sided field values can differ even where potential remains continuous. Regularize a sharp edge or finite-thickness layer and test convergence away from the idealized singularity before using a divergent local field as a physical prediction.
+
+**Continue:** [Gauss law, symmetry and what flux does not determine](Gauss-law-symmetry-and-what-flux-does-not-determine.lingua#r_6EEA738C5T368TVSQ82K6J5QBY).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_2S56H6ATVPBXX4R70VY99HFAGP

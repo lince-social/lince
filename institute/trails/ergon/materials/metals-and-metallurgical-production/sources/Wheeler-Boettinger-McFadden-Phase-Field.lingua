@@ -1,0 +1,11 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+A Phase-Field Model for Isothermal Phase Transitions in Binary Alloys — NISTIR 4662 (@metal-phasefield: 0, is #reference, #part-of @metal-sources) { r_32N0NAN7NS30RXD9H2ZSJB81QA
+A. A. Wheeler, W. J. Boettinger, and G. B. McFadden. A Phase-Field Model for Isothermal Phase Transitions in Binary Alloys, NISTIR 4662, August 1991. [Complete primary report](https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir4662.pdf) · [NIST context on solidification and thermodynamics](https://www.msed.nist.gov/phase/papers/applic_sol.html).
+
+Read the full report, governing equations, asymptotic argument, parameter meanings, numerical methods/results, and references. Compare diffuse- and sharp-interface descriptions, conservation, interface thickness, and convergence. A visually plausible microstructure is not enough to demonstrate that a calculation has the intended physical limit.
+
+Report identity, authors, date, and official full-text source were verified on 29 October 2026. Distinguish this 1991 report from later journal versions and later phase-field developments. Preserve actual agency/component notices. No paper PDF, figures, simulation data, or external implementation is copied here.
+
+**Return:** [Metals and metallurgical production sources — books, courses, methods, and cases](../Sources.lingua#r_03Z21BSG78ZRQSAVCCD6FJVNRY).
+} r_32N0NAN7NS30RXD9H2ZSJB81QA

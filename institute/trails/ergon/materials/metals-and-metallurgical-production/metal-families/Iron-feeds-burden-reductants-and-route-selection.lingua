@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Compare ironmaking routes with the burden and final steel requirement explicit (@metal-iron-feed: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #metals-and-metallurgical-production "Blast-furnace-reduction-heat-gas-flow-and-burden.lingua#r_4KZ0TXMQ2WAT83FCPAEVVTMEV6") { r_2XFN71HW1HPVHZWH0135TJERBG
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), the complete first five weeks and the full direct/smelting-reduction sequence; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), whole raw-material, agglomeration, and ironmaking chapters; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), all ironmaking material/heat and RIST exercises.
+
+An iron-bearing feed is characterized by phase chemistry, iron/impurity content, gangue, size/form, porosity, mechanical/thermal/reduction behavior, and variability. The target is a usable intermediate for the selected steel or casting route, with its actual carbon, impurity, physical, and thermal requirements.
+
+Reuse sampling, beneficiation, agglomeration, reduction, slag, and balance principles instead of treating ironmaking as an unrelated collection of equipment. Burden permeability, strength/reactivity, reducing-gas access, heat, softening/melting, and slag quantities interact. A feed with a favorable bulk iron grade may have a consequential physical or impurity limitation.
+
+Compare blast-furnace, direct-reduction, smelting-reduction, and secondary-metal routes on matched material/output boundaries. Include the actual reductant, gas/electricity, agglomeration, equipment, water, product handling, and supporting work. A route's claimed benefit depends on those conditions and on the later steelmaking quality account.
+
+**Work:** reconstruct two complete iron-feed/route cases from primary teaching and technical material. Independently calculate iron and gangue/impurity flows and a defensible energy basis. Compare alternative feed qualities and test a changed utility or availability condition. Explain which observations support the preferred route and what remains unproven about scale, product quality, or downstream compatibility.
+
+**Continue:** [Reconstruct a blast furnace through coupled reduction, heat, flow, and material behavior](Blast-furnace-reduction-heat-gas-flow-and-burden.lingua#r_4KZ0TXMQ2WAT83FCPAEVVTMEV6).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_2XFN71HW1HPVHZWH0135TJERBG

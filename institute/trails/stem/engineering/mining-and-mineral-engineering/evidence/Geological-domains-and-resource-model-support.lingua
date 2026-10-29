@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Build domains from geological evidence and the property being modeled (@mine-domains: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE", #source "../sources/Resource-and-Reserve-Reporting-CRIRSCO-CBRR.lingua#r_2CZZ64T1W8VC542VCNCH2E6DSR", #mining-and-mineral-engineering "Spatial-continuity-declustering-and-geological-assumptions.lingua#r_10MVCKPNDF22PMZ7CT6MGP87N4") { r_7VHF7KCE47W8X9N53M7W07C0RY
+**Read:** [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full exploration geology/resource and drilling sections; [Engineering Geology Field Manual — U.S. Bureau of Reclamation](../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE), the complete drilling, core logging, discontinuity, and documentation methods; [Resources, reserves, and technical-study definitions — CRIRSCO and CBRR](../sources/Resource-and-Reserve-Reporting-CRIRSCO-CBRR.lingua#r_2CZZ64T1W8VC542VCNCH2E6DSR), the full resource evidence and assessment criteria.
+
+A resource model connects geological interpretation with sampled properties over a defined support and spatial domain. Lithology, structure, alteration, mineral association, weathering, and process behavior can constrain domains, but a convenient boundary is a hypothesis needing evidence and uncertainty.
+
+Drill intervals, composites, point samples, and blocks have different supports. Along-hole length, true thickness, volume, density, grade, and contained constituent require separate definitions. A block's drawn dimensions do not imply that every part was directly sampled or its grade measured independently.
+
+Domains influence statistical populations, continuity, interpolation, and uncertainty. A geological boundary may be hard, transitional, or ambiguous for a particular property. Defining it solely to improve a fit can hide a different source or process population and overstate confidence.
+
+**Work:** reconstruct a published/teaching domain model from maps, logs, sample support, and interpretation. Compare two plausible boundaries or continuity accounts and explain the effect on quantities and planned investigation. Independently check a composite/volume/density calculation, identifying assumptions about missing core, geometry, and representativeness.
+
+Read the complete exploration/resource handbook treatment and field/log methods. The following geostatistical work should inherit this geological account rather than replacing it with a smooth interpolation or an arbitrary cell size.
+
+**Continue:** [Model spatial continuity without mistaking sampling patterns for geology](Spatial-continuity-declustering-and-geological-assumptions.lingua#r_10MVCKPNDF22PMZ7CT6MGP87N4).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_7VHF7KCE47W8X9N53M7W07C0RY

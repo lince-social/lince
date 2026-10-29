@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: mixture equilibrium, separation work and reaction affinity (@th-study-mixtures: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_5RSM1M9GBB0RDR0F9WJB5H4K9R
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), all mixture, reaction and multicomponent-equilibrium chapters; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), complete separation, affinity, stability and electrochemical lectures; [CoolProp — thermophysical property models and methods](../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1), relevant mixture model and limitations.
+
+Study the complete mixture, electrolyte, reaction and phase-rule developments in DeVoe and the multicomponent MIT 2.43 sequence. Choose a mixture for which both the thermodynamic model and independent evidence are available. State composition variables, standard states and the model's actual domain.
+
+Derive chemical potentials from a consistent potential, verify Gibbs–Duhem compatibility and solve phase or reaction equilibrium under the specified constraints. Compare local stability with a global free-energy comparison. Include a limiting ideal case that can be solved independently.
+
+Calculate a reversible separation or mixing-work bound and explain its relation to a real finite-rate process. Report property uncertainty, multiple solutions, model inadequacy and the physical evidence supporting the selected state. Connect the result with shared chemistry without requiring an entire process-engineering curriculum before the thermodynamic question can be followed.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5RSM1M9GBB0RDR0F9WJB5H4K9R

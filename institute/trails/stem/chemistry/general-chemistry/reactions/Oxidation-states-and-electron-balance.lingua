@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Balance redox changes while keeping oxidation state and charge distinct (@gc-redox-balance: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../practice/Laboratory-work-and-risk.lingua#r_4Y0FHN8SXCYEVEYAZYF7SRGCN7") { r_6V448SEZNVP40ASEQXC59PDTV9
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 4’s redox classification and chapter 17’s balancing treatment; [Nomenclature of Inorganic Chemistry — IUPAC Red Book and brief guide](../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J), oxidation-state and nomenclature conventions; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), oxidation-reduction foundations.
+
+Oxidation states assign electrons according to formal rules to track changes; they are not generally measured partial charges or a literal account of ionic species in a covalent molecule. Oxidation increases an assigned oxidation state and reduction decreases it under this bookkeeping. An oxidizing agent is reduced while accepting the corresponding electron account.
+
+The half-reaction method conserves atoms and charge while separating the electron-transfer bookkeeping. The aqueous acidic or basic medium determines which balancing species are appropriate. Electrons cancel when consistent half reactions are combined. The balanced equation still needs thermodynamic and kinetic information before it predicts an actual transformation.
+
+Distinguish a redox reaction from transfer of a proton or ligand with no change in the relevant oxidation-state account. Disproportionation and comproportionation can involve several oxidation states of the same element. A mixture's average composition may conceal that speciation, so an elemental assay alone cannot determine every redox property.
+
+**Work:** balance selected textbook equations in specified media by half reactions and independently verify atoms and charge. Identify the oxidation-state changes, electron amount per reaction extent, and the species actually present under the chosen model. Explain one case where an oxidation-state label does not specify local electronic charge.
+
+This foundation later supports cells, electrolysis, corrosion, metallurgy, and biological electron transfer. For now focus on an inspectable equation and its assumptions; electrode potential, free energy, polarization, and rate will enter at the point of use.
+
+**Continue:** [Make experimental competence part of the chemical method](../practice/Laboratory-work-and-risk.lingua#r_4Y0FHN8SXCYEVEYAZYF7SRGCN7).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_6V448SEZNVP40ASEQXC59PDTV9

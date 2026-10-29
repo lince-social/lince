@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Active, reactive, apparent and waveform power (@pe-complex-power: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #electrical-power-engineering "Power-factor-correction-geometry-loss-and-resonance.lingua#r_7PF3WW4CWYA2BBF4FPZ1YZTJ4M") { r_7ME7DSWC0ZMS4V97BTQGC5C323
+**Read:** [AC Electrical Circuit Analysis — James M. Fiore](../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK), complete AC power and power-factor chapters; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), chapter 2 in full.
+
+For a single sinusoidal port using the declared RMS/passive convention, S = VI*, P = Re S, Q = Im S and |S| = V_rms I_rms. Derive the average and twice-frequency terms of instantaneous power. Reactive power describes reversible exchange within this sinusoidal model; it is not a separately consumed net energy analogous to resistive heat.
+
+For P = 8 kW and Q = 6 kvar, apparent power is 10 kVA and displacement power factor 0.8. At fixed voltage, reducing unnecessary reactive current can reduce current-related losses and release capacity, but the resulting equipment/network interaction must be studied. A capacitor's presence alone does not prove acceptable voltage or harmonic behavior.
+
+For distorted waveforms, active power remains the time average of v(t)i(t), while apparent power uses total RMS values. Fundamental displacement factor and true power factor then differ; a single fundamental Q does not summarize every distortion effect. Measure the waveform/bandwidth and use the actual applicable power definitions. Later harmonic and metrology Records connect those definitions to transformer heating, neutral current and instrument evidence.
+
+**Continue:** [Power-factor correction, loss and resonance](Power-factor-correction-geometry-loss-and-resonance.lingua#r_7PF3WW4CWYA2BBF4FPZ1YZTJ4M).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7ME7DSWC0ZMS4V97BTQGC5C323

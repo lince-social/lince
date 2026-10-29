@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Distinguish the present composition from the equilibrium relation (@gc-qk: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Perturbations-and-new-constraints.lingua#r_4MX92N6C2F162E3V3YFYB1B30N") { r_2E5AXFZWT12G4Y2BGG89YHSG4G
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 13 in full; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), All about chemical equilibrium completely; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), activities and equilibrium constants.
+
+The reaction quotient Q describes the current activity combination for an identified balanced reaction. At thermodynamic equilibrium under the appropriate conditions it equals K for that reaction, temperature, and standard-state convention. A concentration-form expression can approximate that account under explicit conditions; its numerical units and conventions need examination.
+
+Stoichiometric coefficients become exponents in the activity relation for the defined reaction. Pure condensed phases commonly have activity approximated as one while that phase is present under the chosen convention. A missing phase cannot be silently treated as an unlimited reservoir. Changing or reversing the reaction equation changes the corresponding equilibrium constant.
+
+For hypothetical ideal A ⇌ B with K = a_B/a_A = 4 and initial amounts 1.00 mol A and no B in a closed model where the activity ratio is the amount ratio, equilibrium gives 0.20 mol A and 0.80 mol B. Conservation and the equilibrium relation jointly determine the answer. K by itself supplies no approach time or mechanism.
+
+**Work:** write Q for selected reactions with explicit phases and activities, evaluate a stated initial composition, and derive a simple equilibrium using an extent/balance table. Check all species amounts and substitute the result independently. Reverse and scale the reaction equation and derive the corresponding constants.
+
+Read the complete equilibrium chapter and Chem1 unit, including the distinction between Q and K and the systematic calculations. Later free-energy and activity Records derive the thermodynamic meaning and limits of concentration shortcuts. Keep the empirical first entrance usable while those deeper explanations develop.
+
+**Continue:** [Predict a changed equilibrium by changing Q and the constraints](Perturbations-and-new-constraints.lingua#r_4MX92N6C2F162E3V3YFYB1B30N).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_2E5AXFZWT12G4Y2BGG89YHSG4G

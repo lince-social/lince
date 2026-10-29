@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Count components, phases, and freedoms under explicit constraints (@mp-phase-rule: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR", #mineralogy-and-petrology "Binary-ternary-and-projected-phase-diagrams.lingua#r_57K2PVW70VR7BPDBWHVRDYSJEX") { r_250V4TCJ0KF4TXQ2SXM6VK77S8
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), all thermodynamic and phase-rule notes; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the complete introductory phase-diagram lectures/problems; [O uso de pseudosseções em Petrologia Metamórfica — Gengo and colleagues](../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR), the full basic phase-diagram and component-system discussion.
+
+Components are a sufficient independent chemical basis for describing the chosen system under its constraints; they need not equal the number of reported oxides or mineral species. Reactions and imposed conditions affect independence. Explain the basis before counting degrees of freedom.
+
+For the conventional nonreactive component representation of equilibrium, F = C−P+2 describes intensive freedoms with temperature and pressure variable under the standard assumptions. Fixing temperature or pressure changes the count appropriately. A diagram's appearance also depends on projected or externally constrained variables and whether phase composition varies.
+
+Distinguish total phase amounts from intensive freedoms. An invariant equilibrium condition does not imply a unique bulk composition or amount of every phase. Natural texture or a metastable phase assemblage does not automatically obey an equilibrium phase-rule interpretation without a suitable domain and history account.
+
+**Work:** derive the phase-rule reasoning for a simple pure-component and binary example, then count freedoms for a specified petrological component system. Explain what changes when pressure is fixed or a fluid chemical potential is imposed. Compare a real assemblage with alternative component/domain choices and identify evidence needed to justify each.
+
+Read the full thermodynamics and phase-diagram treatment rather than treating the formula as a naming exercise. Later pseudosections, tie lines, and reaction boundaries will use the count to examine whether a proposed equilibrium account is internally consistent.
+
+**Continue:** [Read phase diagrams with their basis, variables, and projection assumptions](Binary-ternary-and-projected-phase-diagrams.lingua#r_57K2PVW70VR7BPDBWHVRDYSJEX).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_250V4TCJ0KF4TXQ2SXM6VK77S8

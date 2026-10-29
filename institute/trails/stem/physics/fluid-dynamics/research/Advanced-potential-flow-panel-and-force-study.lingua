@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced potential-flow, panel and force study (@fd-advanced-potential: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #fluid-dynamics "Advanced-boundary-layer-similarity-separation-and-drag-study.lingua#r_3HJ4ZSH1RBJCTQ98VZ4VE3QEYX") { r_3Z6H3AEH79V2ABNYJF4PZE11Y6
+**Read:** [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), complete potential and panel chapters; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), potential-flow and aerodynamic derivations; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), potential and force problems.
+
+Derive a complete analytical potential-flow case and reproduce it independently with a boundary-panel method. Specify singularity strengths, normals, circulation and far-field conditions. Check no penetration, global flux and pressure-integrated force, refining both boundary panels and near-boundary evaluation.
+
+Extend to a different geometry and investigate circulation selection, an unsteady added-mass response or finite-domain influence. Compare with a physical pressure/force dataset under conditions where the outer-flow model is plausible. Explain the expected disagreement in drag or separated regions rather than using a fitted circulation to conceal it.
+
+Deliver analytical and numerical derivations, convergence evidence and a physical applicability argument. Distinguish mathematical accuracy of the ideal boundary-value solution from accuracy of its prediction for a viscous body. Identify the boundary-layer, wake or compressible extension that the evidence would justify next.
+
+**Continue:** [Advanced boundary-layer similarity, separation and drag study](Advanced-boundary-layer-similarity-separation-and-drag-study.lingua#r_3HJ4ZSH1RBJCTQ98VZ4VE3QEYX).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3Z6H3AEH79V2ABNYJF4PZE11Y6

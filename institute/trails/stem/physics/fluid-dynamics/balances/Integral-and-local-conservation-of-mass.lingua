@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Integral and local conservation of mass (@fd-continuity: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #fluid-dynamics "Linear-momentum-pressure-and-support-reactions.lingua#r_7FY6ME92TRJG5C9SAHKGNYTMEH") { r_788QM37A7NFT52RQGTMS01Q89Q
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 7 mass balance and chapter 8 local continuity; [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), integral and differential mass conservation.
+
+For a fixed control volume, d/dt∫ρ dV+∮ρu·n dA=0 when there is no mass source. Localizing the balance gives ∂ρ/∂t+∇·(ρu)=0. A steady single-inlet/single-outlet reduction gives equal mass flows only after accounting for all ports and accumulation.
+
+Volume flow is not generally conserved when density changes. In a heated gas duct, the same mass flow can accompany different volume flows and speeds. For a constant-density incompressible fluid, the local equation reduces to ∇·u=0 and the net volume flux through a closed stationary surface vanishes.
+
+Use a filling tank to connect level change with inflow and outflow. Then repeat for a moving piston and for a gas whose density changes. Identify whether an apparent residual is storage, an omitted port, measurement error or a failed model assumption before calling it a numerical defect.
+
+**Continue:** [Linear momentum, pressure and support reactions](Linear-momentum-pressure-and-support-reactions.lingua#r_7FY6ME92TRJG5C9SAHKGNYTMEH).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_788QM37A7NFT52RQGTMS01Q89Q

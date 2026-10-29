@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Demand profiles, coincidence and time resolution (@pe-load-time: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G", #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #electrical-power-engineering "Source-equivalents-strength-and-boundary-conditions.lingua#r_1Y39223NHJKG5R37K1FESAWZZY") { r_0911DFKSXS6804RHVTWBR11DQX
+**Read:** [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G), entire report and chronological/dependence reasoning; [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), complete time-series, storage and uncertainty formulation.
+
+A peak rating, an observed maximum demand and a chronological load profile answer different questions. Sum power on a consistent time basis; a short startup current can constrain voltage or protection even when it barely changes hourly energy. Conversely, a prolonged moderate load can dominate heating and energy supply.
+
+Construct a small original schedule of motors, lighting, process heaters and electronics. Compare the sum of individual nameplates with simultaneous demand, energy, reactive flow and critical service. State which diversity/coincidence assumption is measured and which is a planning scenario. An average curve suppresses rare extremes and can misrepresent an energy-limited storage resource.
+
+Choose time resolution from the phenomenon: subcycle interruption, seconds of motor acceleration, minutes of thermal response and hours/seasons of dispatch need different models. Preserve correlation between weather, demand, renewable output and equipment availability instead of independently sampling quantities that share a cause. The chronological scheduling and adequacy studies deepen this accounting, while the separate full electricity-infrastructure subject follows the wider institutional/geographic system.
+
+**Continue:** [Source equivalents, strength and boundaries](Source-equivalents-strength-and-boundary-conditions.lingua#r_1Y39223NHJKG5R37K1FESAWZZY).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_0911DFKSXS6804RHVTWBR11DQX

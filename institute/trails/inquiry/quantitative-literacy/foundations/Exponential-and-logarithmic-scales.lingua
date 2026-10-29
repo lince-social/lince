@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Exponential change and logarithmic scales (@ql-logarithms: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-algebra, #quantitative-literacy "Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW") { r_0NQPY7MA3SJ3TR97ZJRTW7ZQPG
+**Read:** Algebra and Trigonometry 2e chapter 6 completely. Revisit exponential models, logarithm properties, and the distinction between linear, exponential, and logarithmic relationships. Use the graph exercises before taking a fitted line as evidence of a mechanism.
+
+For a constant fractional change per interval, x_n = x₀a^n. The exponent n is dimensionless and the interval must be stated. Multiplying by 0.98 at each of ten stages leaves 0.98^10, about 0.8171, of the original. A repeated loss is not the same as subtracting ten times 2% of a changing denominator.
+
+The argument of a physical logarithm must be a dimensionless ratio, such as ln(x/x_ref). A plot labelled log pressure needs a reference unit or pressure and a stated base. On a log-log plot a power law y = Cx^p becomes a straight line with slope p after choosing consistent references. On a semilog plot an exponential can become straight. Neither straight appearance establishes causation or validity outside the measured interval.
+
+**Work:** compare additive loss, proportional loss, and a fixed loss plus proportional loss for twenty steps. Recover the multiplier from two known values and state what time interval it describes. Plot hypothetical size-and-energy data on ordinary and log axes, derive a candidate exponent, and test its predictions on a point withheld from fitting. Explain why a logarithmic axis cannot display zero and how excluding zeros can conceal a meaningful population.
+
+Revisit these distinctions when a material specification uses orders of magnitude or a later electronics reading uses decibels; the physical definition of each logarithmic quantity still has to be learned.
+
+**Continue:** [Length, area, volume, density, and scaling a shape](Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_0NQPY7MA3SJ3TR97ZJRTW7ZQPG

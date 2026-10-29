@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Arcing, interruption and exposure models (@pe-arc: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8", #source "../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4", #source "../sources/NR-10-and-the-2026-Revision.lingua#r_4C6VMVCTGT5WCFYHEHC9TJ2W4X", #source "../sources/Electrical-Standards-Edition-and-Jurisdiction.lingua#r_169QEF26N0C345MKSRWQY6KD90", #electrical-power-engineering "Breakers-fuses-isolation-and-interruption.lingua#r_1KEKT04CMTHQ3DYQVX03DEXYDR") { r_2X1S107GHDD6M7GBHX5HZTT43R
+**Read:** [Mechanical and Electrical Design of Hydroelectric Power Plants — USACE](../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8), complete arc-flash and coordination chapter; [Maintenance of Power Circuit Breakers — FIST 3-16](../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4), complete relevant interruption/control treatment; [NR-10 — applicable text, revisions and dates](../sources/NR-10-and-the-2026-Revision.lingua#r_4C6VMVCTGT5WCFYHEHC9TJ2W4X), the complete applicable occupational text; [Electrical standards, edition and jurisdiction](../sources/Electrical-Standards-Edition-and-Jurisdiction.lingua#r_169QEF26N0C345MKSRWQY6KD90), actual complete applicable arc-flash method and limits.
+
+An arc is a conducting, heated plasma path with geometry, time dependence and interaction with the source/protective system. Its current need not equal the bolted-fault current. Lower arcing current can produce a longer clearing time, so a larger bolted-fault number is not automatically the worst energy/exposure case.
+
+Separate arc initiation/sustaining physics, equipment containment/interruption, calculated incident energy and actual work controls. A model requires its stated voltage, current, enclosure, electrode geometry, distance and time domain. Do not extrapolate empirical formulas outside their validated range or convert one calculation into a universal protective-clothing or approach rule.
+
+For a complete documented engineering case, identify the applicable method/edition, actual settings and equipment test data. Vary current and clearing time, trace uncertainties and compare a proposed design change with independent evidence. Physical energized work is not a required unsupervised exercise; appropriate professional methods/facilities and actual occupational requirements govern it. The educational aim is to understand why fault calculation, relay timing, apparatus and task conditions must be joined before an exposure claim is meaningful.
+
+**Continue:** [Breakers, fuses, isolation and interruption](Breakers-fuses-isolation-and-interruption.lingua#r_1KEKT04CMTHQ3DYQVX03DEXYDR).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_2X1S107GHDD6M7GBHX5HZTT43R

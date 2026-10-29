@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Explain leaching through mineral reactions, solution chemistry, and the whole feed (@metal-leaching: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Hidrometalurgia-Ciminelli.lingua#r_6G9611F0V3GQXWW0C108RDQB9B", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7", #metals-and-metallurgical-production "Leach-kinetics-porous-particles-and-reactor-history.lingua#r_0VDM051E40BGDKQDTK9H13KCVX") { r_2PXCEXY9HNAWMYA9HSZBF4JNH2
+**Read:** [Hidrometalurgia — Virgínia Sampaio T. Ciminelli](../sources/Hidrometalurgia-Ciminelli.lingua#r_6G9611F0V3GQXWW0C108RDQB9B), the complete Portuguese chapter; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the entire hydrometallurgy sequence; [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), full hydrometallurgical principles and relevant metal cases; [Extractive Metallurgy of Copper — Schlesinger, Sole, Davenport, and Alvear Flores](../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7), complete chapters 14–16 as an additional comparison, when available.
+
+Leaching transfers constituents into a solution through defined chemical and transport processes. Feed phases, mineral associations, liberation, surface state, particle size, redox, ligands, acid/base behavior, temperature, and solution composition can control response. Dissolved target concentration alone does not specify recovery or selectivity.
+
+Write element, charge, solution, and relevant reaction balances with a defined liquid/solid and analytical basis. Complexation, hydrolysis, oxidation/reduction, precipitation, adsorption, and gas exchange can alter apparent solubility or reagent consumption. The solution may be nonideal and contain many constituents beyond the target metal.
+
+Distinguish equilibrium potential/speciation models, kinetic conversion, reagent use, liquid/solid separation, and final recovery. A selective laboratory dissolution can still create a difficult solution-purification or residue problem. Recycled liquor changes the chemical environment and may accumulate impurities.
+
+**Work:** reconstruct a full leaching study or industrial case with feed characterization, preparation, methods, time/solution observations, and residues. Independently check target and impurity balances, compare a speciation/equilibrium prediction with actual rate/selectivity, and investigate an alternative explanation involving surface or transport behavior. Defend the next experiment and purification step from the evidence rather than assuming dissolution is already usable metal production.
+
+**Continue:** [Test leaching rate models against changing material and solution conditions](Leach-kinetics-porous-particles-and-reactor-history.lingua#r_0VDM051E40BGDKQDTK9H13KCVX).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_2PXCEXY9HNAWMYA9HSZBF4JNH2

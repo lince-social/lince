@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Translate quantities into values, types, and expressions (@rc-values: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Functions-control-and-state.lingua#r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF") { r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V
+**Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), chapters 1–2 in full, including exercises; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), the tutorial introduction and numerical types.
+
+A variable name connects a value with a role in a calculation. Choose names that reveal quantities and basis, such as wet_kg and water_fraction. Assignment stores a result under a name; it is not an algebraic equation to be solved. An expression is evaluated using the language's operator precedence and the types of its operands.
+
+An integer, binary floating-point value, decimal text, string identifier, Boolean, and missing value have different contracts. A lot identifier such as 0012 is usually text: converting it to an integer erases a potentially meaningful distinction. The text 0.1 and a binary approximation of one tenth also have different representations. Later numerical study will examine their consequences rather than pretending every printed decimal is exact.
+
+Start with short formulas and show their units on paper. For dry_kg = wet_kg × (1 − water_fraction), the mass fraction is dimensionless and the result has the wet mass's unit. A fraction expressed as 10 percent must be converted to 0.10 before this formula. A runtime type cannot by itself establish whether an input is a percentage, a wet-basis fraction, or a dry-basis fraction.
+
+**Work:** complete the beginner book's formula exercises, then calculate dry mass, input component mass, and recovered component mass for one hypothetical lot. Change only a variable name and then change only a unit scale; explain which change affects the result. Try adding a text identifier to a number and inspect the error. State which conversions are deliberate and which should be rejected.
+
+Use [Functions, tables, domains, and inverse questions](../../quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2) where the relationship between input and output is unfamiliar. The immediate goal is readable translation of a known calculation. Learning more syntax comes with the operations that the analysis actually requires.
+
+**Continue:** [Functions, branching, repetition, and visible state](Functions-control-and-state.lingua#r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+A sustained fluid experimental programme (@fd-experimental-programme: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #source "../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "../research/A-complete-fluid-service-investigation.lingua#r_688VD7S50KPEC6CY2Y8KY3K0F5") { r_44MEVXT1S9AQTHW3NM4R6WET66
+**Read:** [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), the complete course; [Water-flow calibration — NIST SP 250-98](../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05), complete calibration model; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), complete uncertainty review and the method selected for field measurements.
+
+Complete a sequence of performed investigations that spans a static pressure/force balance, a steady viscous or internal flow, a time-dependent response, and a spatial or field measurement. Use equipment appropriate to the scale and setting, with the required skilled supervision where applicable. Combine the sequence with the complete experimental-methods course and the shared metrology work.
+
+For every investigation preserve the prediction, actual apparatus, calibration, operating conditions, unmodified observations, processing and uncertainty. Repeat a condition after changing another factor to expose drift or hysteresis. Include a comparison that fails initially and document the reasoned revision rather than reporting only selected successes.
+
+Present one integrated experimental argument connecting several measurements to a physical model. Demonstrate that another person can reconstruct both the setup and the conclusion from the account. Documentary and simulation investigations can prepare or complement this work; they should remain identified separately from performed physical measurements.
+
+**Continue:** [A complete fluid-service investigation](../research/A-complete-fluid-service-investigation.lingua#r_688VD7S50KPEC6CY2Y8KY3K0F5).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_44MEVXT1S9AQTHW3NM4R6WET66

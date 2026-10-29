@@ -1,0 +1,11 @@
+Import "../Electromagnetism.lingua"
+
+CODATA 2022 recommended constants — NIST (@em-codata: 0, is #reference, #part-of @em-sources) { r_2KX7CCRRKXXRS1Q0F5KYRRKNA5
+NIST. [CODATA 2022 constants and database](https://physics.nist.gov/cuu/Constants/index.html) · [Complete 2022 constants table](https://physics.nist.gov/cuu/pdf/all.pdf) · [Published wall chart](https://physics.nist.gov/cuu/pdf/wall_2022.pdf).
+
+Use the actual 2022 adjustment, published in 2024, and retain values, units, standard uncertainties and correlations needed by a calculation. In the post-2019 SI, c and e are exact defining constants; vacuum permeability and permittivity are measured/derived quantities rather than their formerly exact values.
+
+The primary table was checked on 29 October 2026: μ₀ = 1.25663706127(20) × 10⁻⁶ N A⁻². The approximate value 4π × 10⁻⁷ is useful for teaching but must not be called exact under the current SI. An uncertainty-free mathematical example may use declared normalized units. Government tables and third-party components retain their actual notices; data files are not bundled.
+
+**Return:** [Electromagnetic sources — complete books, courses, methods and research](../Sources.lingua#r_6XW0N80NM6WSDWED10N8N7WX3P).
+} r_2KX7CCRRKXXRS1Q0F5KYRRKNA5

@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Guide to Operational Technology Security — NIST SP 800-82r3 (@pe-ot-security: 0, is #reference, #part-of @pe-sources) { r_760JSBVFVK2NXS6RE3HQJKK8P5
+Keith Stouffer and colleagues. Guide to Operational Technology (OT) Security, NIST SP 800-82 Revision 3, September 2023. [Primary publication, authors, final text and updates](https://csrc.nist.gov/pubs/sp/800/82/r3/final) · [Complete report](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-82r3.pdf).
+
+Read the complete applicable OT architecture, risk, controls and operational/physical-dependency material. Connect cybersecurity choices to timing, availability, protection, process state and recovery. Develop a power-facility case with authorized public architecture or a local educational model, distinguishing supervisory access from autonomous local protection.
+
+The primary page was checked on 29 October 2026: Revision 3 is the final September 2023 publication, while a September 2026 planning note points to an initial public draft of Revision 4. A draft is not a final replacement. Preserve the specific version and component notices; public federal access is distinct from a universal compliance mandate. No report, network configuration, exploit material or operational data is bundled.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_760JSBVFVK2NXS6RE3HQJKK8P5

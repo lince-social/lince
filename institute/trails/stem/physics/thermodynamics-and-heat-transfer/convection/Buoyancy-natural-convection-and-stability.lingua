@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Buoyancy, natural convection and stability (@th-natural-convection: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #thermodynamics-and-heat-transfer "Mixed-convection-compressibility-and-viscous-heating.lingua#r_4TGCDBZ3W29YPPGE535ECRQJAD") { r_152K4KYHQ9DP0V0CNJTDJAFKCE
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete natural-convection chapters; [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), natural convection and Rayleigh–Bénard development; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), governing and integral natural-convection methods.
+
+Temperature-dependent density can couple momentum and thermal transport through gravity. Derive the conditions of a Boussinesq approximation and identify the reference properties. A large temperature or density variation may require a different model.
+
+Geometry and orientation matter: heated vertical walls, horizontal layers and enclosures do not share one universal coefficient. Rayleigh and Prandtl numbers organize particular problems, while stability and boundary conditions determine whether a conductive state persists or convective motion develops.
+
+Work a complete natural-convection derivation and a Rayleigh–Bénard stability comparison from the assigned course. Compare an open surface with a closed enclosure and include radiation if relevant. Verify that the assumed ambient state and available flow path actually exist in the assembly.
+
+**Continue:** [Mixed convection, compressibility and viscous heating](Mixed-convection-compressibility-and-viscous-heating.lingua#r_4TGCDBZ3W29YPPGE535ECRQJAD).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_152K4KYHQ9DP0V0CNJTDJAFKCE

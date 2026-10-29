@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Uniqueness, energy and the maximum principle (@em-uniqueness: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Eletromagnetismo-Classico-Volume-I-IFRN.lingua#r_612RCJJJDNWD62YYPE9410HHVQ", #electromagnetism "Image-charges-and-induced-surface-charge.lingua#r_79N7V2J0YH01CA68KG24NVEE36") { r_7RFDH08A5XYW98SEA2E7YSC5C7
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), uniqueness and electrostatic boundary methods; [Eletromagnetismo Clássico, Volume I — Tibério Magno de Lima Alves](../sources/Eletromagnetismo-Classico-Volume-I-IFRN.lingua#r_612RCJJJDNWD62YYPE9410HHVQ), boundary-value and potential development.
+
+A valid solution is powerful only if the specified problem makes it unique. For two Dirichlet solutions with the same sources, subtract them, multiply the homogeneous equation by their difference and integrate by parts. With positive ε and zero difference on the boundary, the volume integral of ε|∇difference|² vanishes. The two fields coincide; the boundary fixes the remaining constant.
+
+State the material and domain assumptions used in that proof. Nonlinear or sign-indefinite constitutive laws need a separate argument. The maximum principle for a harmonic potential constrains interior extrema and helps detect invalid numerical or analytic results. It does not mean every component of every electromagnetic field has the same extremum property.
+
+Use uniqueness to justify an image-charge construction: match the field equation and all boundary conditions, rather than arguing that the fictitious charges are physically present. Check a proposed solution with zero-source limits and boundary perturbations. Explain which data establish uniqueness for isolated conductors with specified charge and which establish it for grounded conductors. This logical step connects physical setup, mathematical proof and numerical verification.
+
+**Continue:** [Image charges and induced surface charge](Image-charges-and-induced-surface-charge.lingua#r_79N7V2J0YH01CA68KG24NVEE36).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_7RFDH08A5XYW98SEA2E7YSC5C7

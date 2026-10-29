@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Polarization, complex vectors and Stokes parameters (@em-polarization-wave: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "Wave-impedance-energy-and-power-normalization.lingua#r_3TRN08JNAE4ZS68AHEMQDXR661") { r_35HQG1V7NGMHF15D31PM6T4P1P
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), plane-wave polarization; [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), polarization and optical-wave applications.
+
+Resolve a transverse harmonic electric field onto two perpendicular axes. Relative amplitude and phase produce linear, elliptical or circular polarization. Fix propagation direction, viewing convention and the sign of exp(−iωt) before naming handedness; different disciplines name the same physical rotation differently.
+
+For equal real-axis amplitudes with a quarter-cycle phase difference, reconstruct the real vector through a full cycle. For zero phase difference, find the line direction. Normalize a Jones vector and distinguish an irrelevant common phase from a relative phase that changes polarization. A Jones description represents a coherent fully polarized field; partially polarized radiation requires a coherency/Stokes account.
+
+Derive Stokes parameters under an explicit sign convention and verify the fully polarized relation between total intensity and the polarization vector length. Compare a coherent superposition with an incoherent mixture having similar component intensities. Calculate ideal polarizer transmission and identify actual extinction, detector and alignment limitations. The field geometry later determines Fresnel coefficients, antenna coupling and scattering; polarization is not a decorative property attached after those calculations.
+
+**Continue:** [Wave impedance, energy and power normalization](Wave-impedance-energy-and-power-normalization.lingua#r_3TRN08JNAE4ZS68AHEMQDXR661).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_35HQG1V7NGMHF15D31PM6T4P1P

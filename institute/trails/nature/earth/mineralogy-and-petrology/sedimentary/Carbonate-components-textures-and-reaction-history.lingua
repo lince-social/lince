@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Separate carbonate deposition, fabric, and later chemical change (@mp-carbonate: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM", #source "../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #mineralogy-and-petrology "Diagenesis-compaction-cement-and-porosity-history.lingua#r_4RF28CK89JY6YNRYSP4E0PW79Y") { r_2TV14853GT8HPXDBZ11G5TD26G
+**Read:** [Sedimentary Geology — John Southard, MIT 12.110](../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM), the complete carbonate sediments/rocks and diagenesis notes; [Rock Classification Scheme — British Geological Survey](../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH), the complete applicable carbonate/sedimentary criteria; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full carbonate-mineral sections.
+
+Carbonate rocks combine skeletal and non-skeletal components, mud, cement, pores, and altered/replaced material. Mineralogy, grain/fabric relationships, fossils, structures, and regional context provide evidence of production, transport, deposition, and later change. A carbonate percentage alone cannot determine environment or history.
+
+Use the named textural classification with its actual criteria and uncertainty. Distinguish depositional support/fabric from later recrystallization, dissolution, cementation, dolomitization, compaction, and deformation. An apparently crystalline texture may have obscured much of the original sedimentary evidence.
+
+Carbonate reactions and fluid exchange connect chemistry with texture. Temperature, fluid composition, pressure, redox, biological mediation, kinetics, and openness can influence products. A simple equilibrium calculation or isotopic value needs its reference/model and cannot independently reconstruct every fluid or burial event.
+
+**Work:** complete the carbonate notes and describe a documented section with observed components and inferred alteration stages separated. Build two possible depositional/diagenetic histories and identify a discriminating textural, mineralogical, chemical, or chronological observation. Connect one reaction to an explicit mass/fluid account and explain what was added, removed, or merely redistributed.
+
+Read the entire carbonate and carbonate-diagenesis sequence. Later hydrogeology, cement/materials, and geochemistry studies reuse these minerals and reactions with different system boundaries and practical questions.
+
+**Continue:** [Reconstruct diagenesis through textures, reactions, fluids, and burial constraints](Diagenesis-compaction-cement-and-porosity-history.lingua#r_4RF28CK89JY6YNRYSP4E0PW79Y).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_2TV14853GT8HPXDBZ11G5TD26G

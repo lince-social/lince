@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Give every input a meaning and a checkable schema (@rc-schema: 0, is #chapter, #part-of @reproducible-computation, #source "../../quantitative-literacy/sources/Data-Organization.lingua#r_6AXFG9QT0X74W3DRDE58RP470M", #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #reproducible-computation "Formats-types-and-encoding.lingua#r_2AZM46HQS8E07JMXXSE3WC93RM") { r_6R0FJMACN4F6T6R0ETDCQHF6NH
+**Read:** [Data Organization in Spreadsheets — Broman and Woo](../../quantitative-literacy/sources/Data-Organization.lingua#r_6AXFG9QT0X74W3DRDE58RP470M), the whole article, applying its organization advice; [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), data management and programming sections.
+
+A schema makes assumptions about structure and meaning explicit. For the worked calculation, a row represents one hypothetical nonreacting material lot. Required fields are lot_id, wet_kg, water_fraction, component_fraction_dry, product_kg, and product_component_fraction. Masses are kilograms. Water fraction refers to wet feed mass, while the input component fraction refers to dry feed mass. Product mass and its component fraction use the dry product basis.
+
+The field names alone cannot preserve all of that information. Write a data dictionary containing meaning, unit, basis, allowed range, missingness rule, and provenance. Specify a unique lot identifier and whether two rows may refer to separate portions of the same lot. The toy schema rejects duplicates rather than guessing how to combine them. Its narrow model excludes chemical reactions, accumulation, and unrecorded material flows.
+
+Validation has layers: bytes/encoding, table structure, lexical value forms, numerical ranges, relational constraints, and scientific adequacy. A component fraction of 0.03 is structurally ordinary but may be wrong if its source meant 0.03 percent. A perfectly shaped table cannot establish that a specimen represents the intended material population.
+
+**Work:** write the data dictionary before loading the example CSV. Translate one row into a sentence. Design an input that passes a simple numeric parser but violates a mass balance, and another that passes all toy checks but has an unjustified sampling interpretation. Explain the evidence needed to detect each.
+
+Use [Concentrations, moisture, and changing the basis](../../quantitative-literacy/practice/Concentrations-and-bases.lingua#r_0XCSBEG82Y6TYKX1Z28R693AY5) and [Mass and component balances — account for every stream](../../quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H) for the shared mathematical meanings rather than duplicating their teaching. In a later specialist analysis, change the schema and model deliberately; never quietly reinterpret the same column halfway through a study.
+
+**Continue:** [Choose a format without losing values or structure](Formats-types-and-encoding.lingua#r_2AZM46HQS8E07JMXXSE3WC93RM).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_6R0FJMACN4F6T6R0ETDCQHF6NH

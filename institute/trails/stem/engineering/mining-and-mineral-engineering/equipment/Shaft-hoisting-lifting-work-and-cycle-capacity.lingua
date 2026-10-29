@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Account for hoisting through energy, cycles, equipment, and supporting systems (@mine-hoisting: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #mining-and-mineral-engineering "../operation/Queues-bottlenecks-and-stochastic-system-capacity.lingua#r_7VKF3F1X78T6E5NJNV4SQYWBZX") { r_5JABCJMXDCKAA6EHTJQWH7SZQ2
+**Read:** [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete shaft, hoisting, and duty/capacity chapters; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the full relevant hoisting/design/operation chapters; [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the complete applicable current lifting/access/operating context.
+
+Hoisting connects shaft geometry, loads, conveyances/ropes, drives, controls, loading/unloading, people/material duties, maintenance, and work sequence. Payload, lifting distance, acceleration, cycle time, availability, and service requirements define different aspects of capacity.
+
+For invented payload 20 t lifted 100 m in 60 s, gravity work is mgh = 19.62 MJ using g = 9.81 m s⁻². The average payload-only mechanical power is 327 kW; at an assumed 0.8 conversion efficiency, the corresponding input is 408.75 kW. Rope/conveyance mass, dynamics, return duties, losses, limits, and the full cycle are not included in this teaching account.
+
+A motor rating or energy calculation does not establish system performance. Loading/unloading, travel profiles, inspection, other shaft users, power quality, controls, and actual operating condition can constrain delivered capacity or readiness.
+
+**Work:** derive/check the example and reconstruct a complete hoisting case with explicit mass, geometry, timing, duties, instrumentation, and uncertainty. Compare a changed duty or cycle constraint and identify data needed to evaluate it. Explain why a payload-energy check and a professional mechanical/control/structural design answer different questions.
+
+Read the complete shaft/hoisting and relevant current equipment guidance. Later machinery, drives, control, structures, and inspection studies deepen their unique methods while reusing the mine duty/account.
+
+**Continue:** [Explain waiting and bottlenecks through events, variation, and system boundaries](../operation/Queues-bottlenecks-and-stochastic-system-capacity.lingua#r_7VKF3F1X78T6E5NJNV4SQYWBZX).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_5JABCJMXDCKAA6EHTJQWH7SZQ2

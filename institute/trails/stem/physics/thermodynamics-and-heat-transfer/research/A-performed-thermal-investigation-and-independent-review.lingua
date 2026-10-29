@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: a performed thermal investigation (@th-study-physical: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/Heat-Transfer-in-Fins-and-Bars-UFSC.lingua#r_3HAWSMZM80J3ZMZK362ED9E3C1", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Heat-Flux-Sensor-Calibration-NIST.lingua#r_6RP9VC0545310FNGXY9B50PN16", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_1CSKEWRQ0E4Y7DPRWPXP424RN3
+**Read:** [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), complete experimental and uncertainty method; [Transferência de calor em barras — UFSC LABOPE](../sources/Heat-Transfer-in-Fins-and-Bars-UFSC.lingua#r_3HAWSMZM80J3ZMZK362ED9E3C1), institutional apparatus context; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete applicable analytical development; [Heat-flux sensor calibration — NIST SP 250-65](../sources/Heat-Flux-Sensor-Calibration-NIST.lingua#r_6RP9VC0545310FNGXY9B50PN16), complete method where flux sensing is used.
+
+Extend [Build, measure and revise a bounded thermal apparatus](../practice/Build-measure-and-revise-a-bounded-thermal-apparatus.lingua#r_3JS9RWTNYGKVFJ0ZZG8RKQN6M0) into a sustained physical investigation using an appropriate facility and complete operating/measurement procedures. State an answerable question, design discriminating runs, prepare the apparatus and calibration evidence, and make a prediction before fitting the final data.
+
+Preserve raw observations, environmental conditions, specimen and assembly history, response times, failed runs and changes. Independently check energy closure and the measurements that dominate uncertainty. Modify one physical condition to test the proposed mechanism, then repeat or revise after external criticism.
+
+Deliver a report that another qualified reader can reproduce with the specified equipment and procedures. Distinguish construction skill, measurement competence, model support and an unresolved anomaly. A published-data reconstruction is a valuable separate achievement, but it does not count as having built or operated the apparatus.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1CSKEWRQ0E4Y7DPRWPXP424RN3

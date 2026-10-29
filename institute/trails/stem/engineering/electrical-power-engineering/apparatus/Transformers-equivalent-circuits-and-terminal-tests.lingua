@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Transformers, equivalent circuits and terminal tests (@pe-transformers: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #source "../sources/Transformer-Maintenance-and-Diagnostics-FIST.lingua#r_5Y3NB9GQFCVNJ8QVR9BC53JS32", #electrical-power-engineering "Transformer-vector-groups-taps-and-zero-sequence.lingua#r_7WW7P8NTHFDPGZ3D3VVT1GXV48") { r_5CFB3YRV16NZYCS9WN4JSACBFR
+**Read:** [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), magnetic-circuit and machine/transformer-related notes; [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete transformer models; [Transformer maintenance and diagnostics — FIST 3-30 and 3-31](../sources/Transformer-Maintenance-and-Diagnostics-FIST.lingua#r_5Y3NB9GQFCVNJ8QVR9BC53JS32), both complete applicable manuals.
+
+An ideal transformer links terminal voltages and currents through turns ratio, polarity and connection while conserving power. Derive the current relation from ampere-turn balance or energy, keeping reference directions explicit. Actual transformers add magnetizing response, leakage, winding resistance, core loss, capacitance and thermal/insulation limits.
+
+Refer impedances across a declared turns ratio and recover the ratio-squared relation. Build an equivalent circuit from appropriate no-load and short-circuit tests under their stated voltage/frequency/temperature conditions. Those tests do not identify every high-frequency, zero-sequence or transient parameter. Separate measured loss, excitation current and percent impedance from a fitted complete model.
+
+Compare loaded voltage regulation and efficiency at different power factors and duties. Track field energy and loss through the shared inductance/material concepts. A transformer can isolate or create a neutral only through its actual physical winding/earthing arrangement; an ideal two-port drawing alone does not establish those properties. Later vector-group, inrush, fault, thermal, diagnostic and protection Records develop the parts needed for a useful maintained device.
+
+**Continue:** [Transformer vector groups, taps and zero sequence](Transformer-vector-groups-taps-and-zero-sequence.lingua#r_7WW7P8NTHFDPGZ3D3VVT1GXV48).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5CFB3YRV16NZYCS9WN4JSACBFR

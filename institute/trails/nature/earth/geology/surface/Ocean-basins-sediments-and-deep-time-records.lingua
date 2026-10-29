@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Connect ocean-floor processes with sediments and a changing geological record (@geo-oceans: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J", #geology "Arid-landscapes-wind-and-episodic-water.lingua#r_3ZTA4T8X78Y6M415TA3BPH8TA0") { r_2EJ3CP09GCFYPWCM2KZK7H2QHK
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 18 in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete marine-sedimentary and proxy/history sections used; [International Stratigraphic Guide, abridged version — ICS](../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J), correlation and unit relationships for the chosen record.
+
+Ocean basins connect tectonic creation/destruction, water circulation, biological production, chemical conditions, and sediment transport. Bathymetry records several processes and changing histories; it is not explained by water depth alone. Oceanic crustal age, cooling, sediment cover, ridges, trenches, and margins provide different constraints.
+
+Marine sediment includes terrigenous, biological, chemical, and volcanic components whose production, transport, dissolution, dilution, and preservation vary. A percentage change in one component can reflect another component's input. An accumulation rate needs an age model, density/compaction account, and an identified interval.
+
+Cores provide samples of a record with possible gaps, disturbance, mixing, reworking, and uncertain correlation. A proxy is a measurement linked to a target through a physical/chemical/biological model; more precise instrumental measurement does not remove all environmental ambiguity.
+
+**Work:** read a published core/section interpretation with its methods and age model. Separate observations, derived quantities, calibration, and environmental inference. Compare two explanations for a component/proxy change and identify an independent constraint. Explain how missing time or changing sedimentation would alter a claimed rate or sequence.
+
+Read the whole sea-floor chapter and the relevant historical record treatment. This prepares climate and Earth-history reasoning as well as subsea infrastructure/resource questions. The later ocean, paleoclimate, and geochemistry subjects deepen sampling, circulation, proxy calibration, and quantitative reconstruction.
+
+**Continue:** [Read arid landscapes through wind, water, weathering, and preservation](Arid-landscapes-wind-and-episodic-water.lingua#r_3ZTA4T8X78Y6M415TA3BPH8TA0).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_2EJ3CP09GCFYPWCM2KZK7H2QHK

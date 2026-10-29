@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Losses, cooling, duty, aging and machine evidence (@pe-machine-thermal: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR", #source "../sources/Motor-Rewind-Study-and-Good-Practice-EASA-AEMT.lingua#r_3K38XSH8DWC79G20NF55ATKEJP", #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #electrical-power-engineering "../conversion/Power-devices-switching-loss-and-operating-area.lingua#r_4KQJVPTWE8CATNA6D9VW39QVC3") { r_7D0QCE0F820GS8CHEGWW99RNKT
+**Read:** [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR), entire sourcebook; [Motor rewind studies and good practice — EASA/AEMT](../sources/Motor-Rewind-Study-and-Good-Practice-EASA-AEMT.lingua#r_3K38XSH8DWC79G20NF55ATKEJP), both entire studies, test methods and limitations; [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), complete loss and design-synthesis chapters.
+
+A machine's usable output is constrained by how loss becomes temperature and how temperature affects materials and life. Separate winding, core, rotor, stray, bearing/windage and cooling-system contributions using the actual test/model definitions. A thermal network requires physical storage and heat-transfer paths, ambient and operating duty.
+
+Compare steady and transient temperature for a load schedule. Include reduced cooling at low speed, harmonic/converter excitation, repeated starts, voltage unbalance and environmental contamination where relevant. An insulation class or nominal temperature rise is not a complete lifetime guarantee. Distinguish a measured hot spot, an inferred average winding temperature and a predicted internal state.
+
+Read the entire [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR) and both [Motor rewind studies and good practice — EASA/AEMT](../sources/Motor-Rewind-Study-and-Good-Practice-EASA-AEMT.lingua#r_3K38XSH8DWC79G20NF55ATKEJP) studies, including potential error sources and loss separation. Compare before/after repair or alternative designs on the same service/test basis. Trace core preparation, winding resistance, air gap, bearings and cooling changes to evidence rather than assuming any rewind preserves or destroys efficiency. Suitable physical test/workshop experience is necessary for demonstrated practical competence; a complete documentary study remains valuable but different evidence.
+
+**Continue:** [Power devices, switching loss and operating area](../conversion/Power-devices-switching-loss-and-operating-area.lingua#r_4KQJVPTWE8CATNA6D9VW39QVC3).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7D0QCE0F820GS8CHEGWW99RNKT

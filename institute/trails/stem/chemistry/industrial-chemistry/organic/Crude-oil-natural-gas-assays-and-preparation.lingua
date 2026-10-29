@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect crude and gas characterization with the actual chemical processing route (@ic-crude-gas: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74", #industrial-chemistry "Refining-conversion-hydrogen-sulfur-and-product-slates.lingua#r_59Y67VS2PHN9MW3CK4M8CPAAMZ") { r_20QTCCSMNX870QFEKSP7A83Z3B
+**Read:** [Refining of Mineral Oil and Gas, BREF REF](../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6), the complete general feed, assay/preparation and primary fractionation chapters; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the whole petroleum/refinery-products and characteristics sequence; [Chemical Technology I — Indra Deo Mall, NPTEL](../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74), the full petroleum/feed and associated industrial-process teaching where available.
+
+Crude oil and natural gas are mixtures whose composition and properties vary with source and treatment history. A bulk name or density cannot specify all boiling fractions, sulfur/nitrogen compounds, metals, water, salts, reactive constituents or phase behavior needed for process decisions.
+
+An assay and a set of cuts are models supported by particular measurements. Pseudocomponents can make a complex mixture tractable, but their grouping and property assignments influence subsequent calculations. Distinguish laboratory characterization, an assumed blend and the feed actually delivered over time.
+
+Preparation and fractionation create streams with different chemical roles. Removing water/salt or conditioning a gas can protect downstream equipment/catalysts and alter residual/utility accounts. A physical separation does not create every desired molecular product; chemical conversion may be required later.
+
+**Work:** reconstruct a complete public feed assay/preparation account with its sampling and measurement methods. Compare two feeds or blends at a defined product slate, independently checking material, impurity and energy consequences. Explain which property-model and assay uncertainties most influence the result and what observations would test a consequential pseudocomponent assumption.
+
+**Continue:** [Reconstruct refining as connected molecular conversion, separation and utility systems](Refining-conversion-hydrogen-sulfur-and-product-slates.lingua#r_59Y67VS2PHN9MW3CK4M8CPAAMZ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_20QTCCSMNX870QFEKSP7A83Z3B

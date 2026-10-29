@@ -1,0 +1,32 @@
+Import "../Reproducible-computation.lingua"
+
+Run a small dependency graph and check its freshness assumptions (@rc-makework: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Make-Workflows.lingua#r_6Y907BH3SMATGCHV3C7ZC2CVMF", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #reproducible-computation "Notebooks-and-hidden-state.lingua#r_1BQXFAENRWVF3P7FZHW7NBSBQS") { r_169Z4XQW39YQTHGVHHE68GYVNM
+**Read:** [GNU Make and executable dependency workflows](../sources/Make-Workflows.lingua#r_6Y907BH3SMATGCHV3C7ZC2CVMF), rules, prerequisites, recipes, variables, phony targets, errors, and parallel execution; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), chapter 9 completely and its exercises.
+
+Save this original Makefile beside analyze.py, inputs.csv, and check_pipeline.py. Recipe indentation is a literal tab. PYTHON identifies one executable path; this example does not use that variable to carry additional shell options. The file names inside the project are deliberately simple even if the project directory itself contains spaces.
+
+```makefile file=Makefile
+PYTHON ?= python3
+
+.PHONY: all check
+.DELETE_ON_ERROR:
+
+all: report.json
+
+report.json: inputs.csv analyze.py
+	"$(PYTHON)" analyze.py inputs.csv "$@"
+
+check: report.json check_pipeline.py
+	"$(PYTHON)" check_pipeline.py
+```
+
+Run make and then make check in the exercise directory. Inspect make -n before a rerun to see the planned commands. A subsequent make may report that no work is needed according to its timestamp/dependency rules. That is a freshness inference, not an independent verification of report contents. The original script also publishes through a temporary file; .DELETE_ON_ERROR is an additional engine behavior, not a replacement for a well-defined output contract.
+
+**Work:** change the CSV, remove only the generated report, and change the analysis code in separate experiments. Record which recipe runs and why. Change a scientific parameter supplied only through an undeclared environment variable and explain why the graph may miss it. Add an explicit parameter artifact or another justified dependency and test the correction.
+
+Compare a normal incremental run with a fresh reconstruction containing no generated outputs. Make's ordinary freshness model can be defeated by copied or manipulated timestamps, undeclared inputs, and artifacts produced by another method. If the project requires content-based reuse or stronger provenance, state that requirement and implement or select it explicitly rather than assuming it from the tool's name.
+
+**Continue:** [Make a notebook reconstructible from a fresh kernel](Notebooks-and-hidden-state.lingua#r_1BQXFAENRWVF3P7FZHW7NBSBQS).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_169Z4XQW39YQTHGVHHE68GYVNM

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Defend a multistep fine-chemical process through mechanism, isolation and scale evidence (@ic-fine-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #source "../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_5R7Z7TWPTBCAAHM6A95SY6W9AZ
+**Read:** [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the entire technical reference and complete pertinent public case/methods; [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the whole reaction-development, thermal and scale guide; [The E factor 25 years on — Roger A. Sheldon](../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT), the complete metric discussion and relevant full process examples; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full applicable reaction/parameter and energy methods.
+
+Choose an authorized complete primary process-development case with its methods and supporting data. Read the full fine-organic technical reference and relevant thermal guide. Reconstruct the route from actual starting-material definition through competing chemistry, isolation, solvent/catalyst recovery, physical form and accepted product.
+
+Independently derive material, impurity, solvent and energy quantities across every consequential step. Compare chemical conversion, selectivity, isolated yield, complete-route yield and accepted output. Reproduce a central kinetic, thermal, separation or analytical result with an independent check.
+
+Compare a documented alternative reaction sequence or process change at the same useful product and cycle boundary. Test mixing, addition, heat removal, contamination and repeated-campaign assumptions where they influence the claim. Preserve proprietary or missing information as an unresolved limit rather than filling it with an untested procedure.
+
+**Work:** deliver a substantial technical/scholarly study with complete primary bibliography/methods, derivations, inspectable calculations, uncertainty, alternatives and independent challenge. Explain one consequential discrepancy and identify the observation most likely to discriminate its chemical, physical or measurement causes. Report the actual practical setting and achievements without inferring manufacturing competence from literature alone.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_5R7Z7TWPTBCAAHM6A95SY6W9AZ

@@ -1,0 +1,23 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Distinguish a best estimate from possible realizations and a reporting category (@mine-estimation: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Geostatistical-Declustering-and-Variograms.lingua#r_1MDWJYNM88E34YCM4918C7DEEQ", #source "../sources/Resource-and-Reserve-Reporting-CRIRSCO-CBRR.lingua#r_2CZZ64T1W8VC542VCNCH2E6DSR", #source "../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS", #mining-and-mineral-engineering "Resources-reserves-and-technical-study-evidence.lingua#r_752AR316YAX12F1XBWQ5E6B0B8") { r_76YQYSAEDVHX9K3MRFYXAMKG9D
+**Read:** [Geostatistical sampling, continuity, estimation, and simulation — Deutsch and contributors](../sources/Geostatistical-Declustering-and-Variograms.lingua#r_1MDWJYNM88E34YCM4918C7DEEQ), all five named lessons in full, including constrained estimation and conditional-simulation derivations; [Resources, reserves, and technical-study definitions — CRIRSCO and CBRR](../sources/Resource-and-Reserve-Reporting-CRIRSCO-CBRR.lingua#r_2CZZ64T1W8VC542VCNCH2E6DSR), the full resource/reserve evidence and accuracy discussion; [A Review of Operations Research in Mine Planning — Newman and colleagues](../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS), the complete uncertainty/planning context and primary papers used.
+
+An estimate under a spatial/model account and a conditional simulation have different purposes and properties. Smoothing, support, data conditioning, uncertainty representation, and parameter/domain choices affect comparisons. A simulation's variability is model-conditioned and not a guarantee that the true deposit lies inside every reported interval.
+
+Derive ordinary-kriging weights from minimum estimation variance with the constraint that their sum is one: Cλ + μ1 = c, 1ᵀλ = 1, with data covariance C and data-to-target covariance c. A block target needs support-averaged covariances and its own target variance; averaging point predictions does not automatically supply block uncertainty. Compare with the known-mean and conditional-Gaussian assumptions in the named complete lessons.
+
+For an invented finite covariance example, C = ((1, 0.5), (0.5, 1)), c = (0.6, 0.4), and target variance 1 give weights (0.7, 0.3). Scalar observations 2 and 4 give estimate 2.6 and model estimation variance 1 − 2λᵀc + λᵀCλ = 0.71. Check the constraints, positive-definite joint covariance, and invariance to a common shift of the observations. This finite example does not establish a validated spatial model or real grade uncertainty.
+
+Separate uncertainty in observations, sampling, density/geometry, domains, continuity, interpolation, processing behavior, and future conditions. Several realizations sharing one geological model may omit an important structural alternative. More Monte Carlo runs cannot remove an unexamined wrong domain or biased sampling.
+
+Validation must match the quantity and intended use. A model can reproduce sample statistics yet predict poorly at mine-block support or near an uncertain boundary. Data leakage through compositing, domain selection, parameter tuning, or nearby dependent samples can overstate an apparently independent check.
+
+**Work:** reconstruct a complete resource-model case with explicit methods and versions. Compare a deterministic estimate, a stated model-conditioned uncertainty account, and an alternative geological model. Independently check a bounded mass/contained-constituent total and assess how support or density treatment changes it.
+
+Read the full relevant methods and reporting criteria. Explain which additional observation could reduce the uncertainty controlling the next engineering question. Classification and reserve conversion require further evidence and modifying factors, not merely a smooth model or a favorable simulation percentile.
+
+**Continue:** [Use resource and reserve categories through their complete definitions and evidence](Resources-reserves-and-technical-study-evidence.lingua#r_752AR316YAX12F1XBWQ5E6B0B8).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_76YQYSAEDVHX9K3MRFYXAMKG9D

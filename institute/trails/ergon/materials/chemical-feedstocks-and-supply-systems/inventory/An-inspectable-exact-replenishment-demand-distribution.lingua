@@ -1,0 +1,71 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Calculate an exact finite replenishment-demand distribution and test it independently (@cs-lead-example: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #chemical-supply-systems "Inventory-pooling-echelons-and-qualified-location.lingua#r_77Y5FHTM1GC958YEAYT4MR0KHN") { r_6EXE7DWBBK7BSDWM5675JY6X4H
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the complete stochastic-inventory derivations and exercises; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), the full probability and stochastic lead-demand teaching.
+
+The original program combines independent identically distributed integer daily demand with an independent finite integer replenishment time. It builds each convolution by exact rational arithmetic, mixes over the lead-time probabilities, returns the smallest demand quantile reaching the target, and calculates service and expected shortage at a separately supplied stock threshold. This is a deliberately finite model; it does not fit probabilities, simulate a complete order policy or claim a long-run fill rate.
+
+With the defaults, replenishment demand is zero with probability 5/32, two with 18/32 and four with 9/32. The 0.90 target selects four. At stock two, the no-shortage probability is 23/32 and expected shortage is 9/16 units. Explain why the same distribution gives both numbers and why they describe different things.
+
+```python file=exact_replenishment_demand.py
+from fractions import Fraction as F
+
+
+def distribution(rows, maximum):
+    if type(rows) not in (tuple, list) or not 1 <= len(rows) <= 8:
+        raise ValueError("one to eight outcome rows required")
+    values = {}
+    for row in rows:
+        if type(row) not in (tuple, list) or len(row) != 2:
+            raise ValueError("outcome and probability required")
+        value, probability = row
+        if type(value) is not int or not 0 <= value <= maximum:
+            raise ValueError("bounded nonnegative integer outcome required")
+        if type(probability) is not F or not 0 <= probability <= 1:
+            raise ValueError("exact probability required")
+        values[value] = values.get(value, F(0)) + probability
+    if sum(values.values(), F(0)) != 1:
+        raise ValueError("probabilities must sum exactly to one")
+    return {value: probability for value, probability in values.items() if probability}
+
+
+def solve(daily=((0, F(1, 4)), (2, F(3, 4))), lead=((1, F(1, 2)), (2, F(1, 2))), target=F(9, 10), stock=2):
+    daily = distribution(daily, 20)
+    lead = distribution(lead, 12)
+    if type(target) is not F or not 0 < target <= 1:
+        raise ValueError("exact target in (0, 1] required")
+    if type(stock) is not int or not 0 <= stock <= 1000000:
+        raise ValueError("bounded nonnegative stock required")
+    current = {0: F(1)}
+    combined = {}
+    for length in range(max(lead) + 1):
+        weight = lead.get(length, F(0))
+        if weight:
+            for quantity, probability in current.items():
+                combined[quantity] = combined.get(quantity, F(0)) + weight * probability
+        if length != max(lead):
+            following = {}
+            for subtotal, probability in current.items():
+                for demand, daily_probability in daily.items():
+                    total = subtotal + demand
+                    following[total] = following.get(total, F(0)) + probability * daily_probability
+            current = following
+    cumulative = F(0)
+    for quantity, probability in sorted(combined.items()):
+        cumulative += probability
+        if cumulative >= target:
+            reorder = quantity
+            break
+    return dict(distribution=tuple(sorted(combined.items())), reorder=reorder, service=sum((probability for quantity, probability in combined.items() if quantity <= stock), F(0)), expected_shortage=sum((max(0, quantity - stock) * probability for quantity, probability in combined.items()), F(0)))
+
+
+if __name__ == "__main__":
+    print(solve())
+```
+
+Independently enumerate daily-demand sequences for short lead times, multiply their probabilities and compare the whole distribution. Verify normalization, zero lead/demand, degenerate distributions, duplicate outcome rows, rescaling of demand/stock, quantile minimality and monotonicity of service/shortage. Derive the mixture mean/variance separately. Then construct dependent demand/lead scenarios that violate the program's assumptions and explain why its exact answer is not the correct model for that system.
+
+**Continue:** [Place stock where it can actually serve the intended users](Inventory-pooling-echelons-and-qualified-location.lingua#r_77Y5FHTM1GC958YEAYT4MR0KHN).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_6EXE7DWBBK7BSDWM5675JY6X4H

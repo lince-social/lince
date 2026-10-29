@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Causal response, Kramers–Kronig and finite-band limits (@em-causality: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #electromagnetism "Drude-Lorentz-relaxation-and-macroscopic-response.lingua#r_084K320NPDJ1J0AX7D3K207X50") { r_7Q2917ZCYG5ERX5WJDW3RXX8GY
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), frequency-dependent matter and causal response; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), dispersion, constitutive assumptions and material interpretation.
+
+A causal linear response has a convolution kernel that vanishes before excitation. Under suitable regularity and high-frequency conditions, its Fourier transform has analytic properties relating real and imaginary response through Kramers–Kronig relations. State the transform convention, asymptotic terms and any required subtractions before writing an integral formula.
+
+Derive a simple damped oscillator response from a time-domain equation and locate its poles for the exp(−iωt) convention. Compare positive damping with a sign error that makes a nominally passive system unstable or amplifying. Causality, passivity and thermodynamic equilibrium are related but distinct conditions; one should not be used as a substitute for proving another.
+
+A finite-band dataset does not determine the response at all frequencies without assumptions. Investigate how unmeasured tails change a Hilbert-transform reconstruction and a sum-rule estimate. Use several physically constrained models and report the uncertainty associated with extrapolation. A smooth curve passing through measurements can violate causality or energy conservation outside the fitted interval. This is why the later material and inverse studies require complete methods and independent tests, not merely a plausible complex constant.
+
+**Continue:** [Drude, Lorentz and relaxation models](Drude-Lorentz-relaxation-and-macroscopic-response.lingua#r_084K320NPDJ1J0AX7D3K207X50).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_7Q2917ZCYG5ERX5WJDW3RXX8GY

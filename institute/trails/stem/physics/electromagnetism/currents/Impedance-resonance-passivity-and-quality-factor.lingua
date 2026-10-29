@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Impedance, resonance, passivity and quality factor (@em-impedance: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #electromagnetism "../magnetostatics/Magnetic-force-orbits-and-energy-transfer.lingua#r_34G06XMD2AYC7EC9ADQQNQFA0R", #electrical-power-engineering "../../../engineering/electrical-power-engineering/networks/Active-reactive-apparent-and-distorted-waveform-power.lingua#r_7ME7DSWC0ZMS4V97BTQGC5C323") { r_7ATZTVDYNEVH4RS80RSV55W07Y
+**Read:** [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), resonance and impedance applications; [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), transmission-line and impedance preliminaries.
+
+Impedance is a port relation Ṽ/Ĩ for a stated frequency, amplitude regime and reference plane. A positive real part corresponds to passive average absorption under the chosen passive-current direction. Reactive signs depend on the phasor convention. A negative imaginary part with exp(−iωt) is inductive, not automatically a sign of gain.
+
+Derive series RLC impedance and ω₀ = 1/sqrt(LC), then distinguish zero reactance, maximal current, stored-energy exchange and a measured resonant peak in a more complicated lossy system. The quality factor relates stored energy to loss per cycle under a specified resonance model. It need not equal every linewidth ratio once multiple modes, loading or strong dispersion matter.
+
+Fit a frequency sweep with complex data rather than magnitude alone. Include cables, calibration plane, uncertainty and parameter correlation. An excellent fit over a narrow band can hide an unphysical extrapolation. Check DC/high-frequency limits and passivity; identify when distributed field effects require transmission lines or full Maxwell analysis. This makes the transition from introductory circuits to later wave and material inverse problems explicit.
+
+**Continue:** [Magnetic force, orbits and energy transfer](../magnetostatics/Magnetic-force-orbits-and-energy-transfer.lingua#r_34G06XMD2AYC7EC9ADQQNQFA0R).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in electrical power engineering:** [Active, reactive, apparent and waveform power](../../../engineering/electrical-power-engineering/networks/Active-reactive-apparent-and-distorted-waveform-power.lingua#r_7ME7DSWC0ZMS4V97BTQGC5C323).
+} r_7ATZTVDYNEVH4RS80RSV55W07Y

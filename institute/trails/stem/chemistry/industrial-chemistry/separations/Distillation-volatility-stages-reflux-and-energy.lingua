@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect distillation with phase behavior, finite stages, recovery and heat duties (@ic-distillation: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Industria-Alcooleira-Castro.lingua#r_1CNHDZJD6MQ66YERF52Q0PTPPE", #source "../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT", #industrial-chemistry "Gas-absorption-stripping-and-reactive-contact.lingua#r_69KHFNVHF37DSKEHW5DNJKKA78") { r_03PTYEGR2X76HT9RBYBK813RVS
+**Read:** [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), all relevant distillation, VLE, feed-condition and energy modules; [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the complete separation/heat account of the selected organic process; [Indústria alcooleira — Heizir F. de Castro](../sources/Industria-Alcooleira-Castro.lingua#r_1CNHDZJD6MQ66YERF52Q0PTPPE), the whole distillation/product-recovery discussion in its full process context; [Graduate Chemical Engineering Thermodynamics — MIT 10.40](../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT), the full mixture equilibrium and stability work used.
+
+Distillation exploits vapor/liquid composition differences under a defined pressure and thermodynamic model. Relative volatility is a useful approximation only when its composition/temperature domain is justified. An azeotrope or strongly nonideal mixture can invalidate a simple separation expectation even when component boiling points differ.
+
+Material balances determine product amounts from specifications and recoveries; phase relations and contact/flow models determine what separation is achievable. Equilibrium stages are idealizations, while an actual tray or packing also has finite mass transfer, hydraulic limits and pressure loss. Reflux and boilup change both separation and utility requirements.
+
+Include condenser/reboiler, feed thermal state, pressure, heat integration, control, startup and off-specification material. A minimum-energy or minimum-stage construction is a bound under stated assumptions, not an actual design. Trace/reactive or thermally unstable constituents can alter the suitable route and product quality.
+
+**Work:** derive a complete binary benchmark independently, then reconstruct one full multicomponent industrial distillation case with actual property evidence. Compare a different pressure or separation arrangement on the same accepted products. Explain uncertainty, conditioning and the observed limits of the equilibrium/contact models rather than reporting a converged stage count as sufficient evidence.
+
+**Continue:** [Explain gas absorption and stripping through equilibrium, transfer and solvent fate](Gas-absorption-stripping-and-reactive-contact.lingua#r_69KHFNVHF37DSKEHW5DNJKKA78).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_03PTYEGR2X76HT9RBYBK813RVS

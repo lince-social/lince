@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Internal flow, bulk temperature and developed transport (@th-internal-flow: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #thermodynamics-and-heat-transfer "Thermal-entrance-regions-and-developing-flow.lingua#r_2KZYT693T9F7TPRA1TYJZ9FFFV") { r_1ZXV5J2YPTWKRRWF1PPZCDT0TP
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete internal-flow convection chapters; [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), all developed duct cases; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), pipe-flow temperature profiles and solutions.
+
+Define a bulk or mixing-cup temperature through the flow's transported enthalpy under the stated property assumptions, rather than by an unweighted average of point temperatures. A wall-to-bulk difference then supports a meaningful transfer coefficient for the chosen balance.
+
+Hydrodynamically developed and thermally developed are distinct conditions. A thermally developed dimensionless profile can coexist with an increasing bulk temperature. Constant wall temperature and constant wall heat flux lead to different solutions and limiting Nusselt numbers.
+
+Derive a simple duct energy balance and its developed temperature profile. Check the relation between wall heat input and outlet enthalpy flow. Compare circular and noncircular geometry and explain why hydraulic-diameter substitution does not guarantee identical heat-transfer behavior in every regime.
+
+**Continue:** [Thermal entrance regions and developing flow](Thermal-entrance-regions-and-developing-flow.lingua#r_2KZYT693T9F7TPRA1TYJZ9FFFV).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1ZXV5J2YPTWKRRWF1PPZCDT0TP

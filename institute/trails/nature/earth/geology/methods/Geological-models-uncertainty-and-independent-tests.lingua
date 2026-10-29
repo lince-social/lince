@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Test a geological interpretation beyond goodness of fit (@geo-uncertainty: 0, is #chapter, #part-of @geology, #source "../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #source "../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #source "../sources/IsoplotR-Vermeesch.lingua#r_6H156FG6EJ2M5AJ1A9GV0NV3S4", #geology "../research/A-sustained-geology-course-and-laboratory-study.lingua#r_36X2B2GGAC1WH16DR834M974J0") { r_5CM8MEVHEFDCX3H9YZ0S60FRPR
+**Read:** [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), the full relevant sampling, correlation, uncertainty, and model-validation readings; [Reproducible computational work](../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), the complete numerical/conditioning/convergence and reproducibility studies used; [IsoplotR: A free and open toolbox for geochronology — Vermeesch](../sources/IsoplotR-Vermeesch.lingua#r_6H156FG6EJ2M5AJ1A9GV0NV3S4), the full article’s covariance, regression, and scatter discussion.
+
+Separate uncertainty in position, measurement, sampling, classification, correlation, age, parameters, and model structure. A precise analytical result can belong to an unrepresentative sample, and a well-fitted inversion can retain geological ambiguity. Describe which uncertainty matters to the question and what evidence constrains it.
+
+Data reused in model construction are not automatically independent validation. Spatially adjacent samples, shared calibrations, common age models, and copied source interpretations can create dependence. Holdout design should match the intended prediction, such as a new depth, area, time, or material domain.
+
+Sensitivity analysis asks how outputs respond to assumptions/parameters; uncertainty analysis asks what range/distribution is supported under an account. They need not answer the same question. Competing geological models can produce distinct consequences even when their best fits are similar. Test observable predictions rather than selecting an account only for visual simplicity.
+
+**Work:** take the three-point, groundwater, age, or cross-section model and develop a clearly bounded extension. State an observation/error model, identify correlated inputs, and compare at least two plausible geological accounts. Check units, limiting cases, numerical convergence, and independent observations. Explain where more computation cannot remove nonidentifiability and propose a measurement that could help.
+
+Read the shared sampling/measurement and numerical-validation Records as needed. The later research projects require this distinction between a correct calculation under assumptions and evidence that the assumptions adequately represent the geological system.
+
+**Continue:** [Complete the substantial book, course, and laboratory programme](../research/A-sustained-geology-course-and-laboratory-study.lingua#r_36X2B2GGAC1WH16DR834M974J0).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_5CM8MEVHEFDCX3H9YZ0S60FRPR

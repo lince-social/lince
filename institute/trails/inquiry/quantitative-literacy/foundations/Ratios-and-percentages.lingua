@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Ratios, proportions, percentages, and denominators (@ql-ratios: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-1, #source @ql-source-prealgebra, #quantitative-literacy "Powers-and-scale.lingua#r_55FCWM0V49GJXKV3YN0KYGE006") { r_2VBAHXE0WMP7E6WA0NNKV1N31S
+**Read:** Math for Trades, Volume 1, Percentages in full; Prealgebra 2e chapter 6 for another sustained treatment. Include percent change and proportion problems, not only conversions of fractions into percent.
+
+A percentage is a ratio expressed per hundred. State the denominator: mass of water divided by wet mass, defective items divided by tested items, or recovered metal divided by metal entering the process. A change from 80% to 90% is ten percentage points and a 12.5% increase relative to 80%. It is not an increase of ten percent under that reference.
+
+Successive proportional changes multiply. A 10% decrease followed by a 10% increase leaves 99% of the initial value. Averaging percentages without their denominators can reverse a conclusion: a batch with 1 rejection out of 10 and a batch with 9 out of 990 together have 10/1000 = 1% rejections, not the unweighted mean of their two percentages.
+
+**Work:** a material has 12% moisture on a wet-mass basis. Derive the dry-solid mass in a 500 kg delivery and the moisture on a dry-solid basis. The answers are 440 kg dry solids and 60/440, about 13.64%, on the dry basis. Explain why both percentages describe the same shipment.
+
+Then compare two production routes with different tested populations. Preserve numerator and denominator in a table before calculating a rate. A proportional model is justified only if the relation being used is proportional; fixed losses or a capacity limit can break that assumption. Show a case where doubling the input does not double usable output.
+
+**Continue:** [Exponents, scientific notation, and orders of magnitude](Powers-and-scale.lingua#r_55FCWM0V49GJXKV3YN0KYGE006).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_2VBAHXE0WMP7E6WA0NNKV1N31S

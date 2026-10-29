@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Distinguish a buoyancy model from a complete explanation of elevation (@geo-isostasy: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "../tectonics/Evidence-for-plate-tectonics.lingua#r_5PDGPW5ZKX5SWW948R663G4V3F") { r_5Z4DP3BN9EEQEZW8R86704E3FY
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 9’s complete isostasy treatment and relevant tectonic examples; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), mountain building and Earth-system context; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), interior and tectonic notes.
+
+Isostatic models relate mass distribution and support under specified assumptions. A simple local Airy model represents a low-density crustal column supported by denser material, with extra topography balanced by a root. The reference columns, densities, boundaries, and compensation assumption define the calculation.
+
+For hypothetical crustal density 2700 kg m⁻³, mantle density 3300 kg m⁻³, and mountain height 5 km, the simple root extension is r = ρ_c h/(ρ_m−ρ_c) = 22.5 km. Derive this through a column mass comparison. It is an idealized root extension relative to the reference crust, not a uniquely measured total crustal thickness.
+
+Flexural support, lateral density variation, dynamic processes, erosion/deposition, temperature, and transient adjustment can change real elevation and gravity relationships. A model matching one height does not by itself establish its mechanism. Compare independent structural, gravity, and temporal evidence before selecting an account.
+
+**Work:** derive the teaching relation, check density/length units, and vary the density contrast to examine sensitivity. Compare local compensation with a qualitatively different support model for an identified textbook case. Explain the observations needed to discriminate them and how erosion or sediment loading changes the boundary/account.
+
+Read the full textbook isostasy section and connect it with plate processes, basins, and landscape evolution. The geophysics and geodynamics specialties will deepen the mechanical and inverse problems, using the same shared discipline of stated models and independent evidence.
+
+**Continue:** [Reconstruct the evidence and limits of plate tectonics](../tectonics/Evidence-for-plate-tectonics.lingua#r_5PDGPW5ZKX5SWW948R663G4V3F).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_5Z4DP3BN9EEQEZW8R86704E3FY

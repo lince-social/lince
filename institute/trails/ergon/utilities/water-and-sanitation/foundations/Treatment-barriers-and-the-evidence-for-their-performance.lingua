@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Treatment barriers and the evidence for their performance (@wu-barriers: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F", #source "../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD", #source "../sources/Introduction-to-Drinking-Water-Treatment-TU-Delft.lingua#r_0XXF9PBVKKD6FWSJRVDTCKQXP4", #water-and-sanitation "Read-health-environmental-and-equipment-requirements.lingua#r_20CZ4H0Z5Z92MH7VM5ED5K54J5") { r_4KN934MCH4BZF0JMKMYN0VYRRB
+**Read:** [Guidelines for drinking-water quality — WHO, 2026 consolidated edition](../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F), water safety planning, microbial aspects and treatment annexes; [Water safety plan manual — WHO and IWA, second edition](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD), validation, operational monitoring and verification; [Introduction to Drinking Water Treatment — TU Delft](../sources/Introduction-to-Drinking-Water-Treatment-TU-Delft.lingua#r_0XXF9PBVKKD6FWSJRVDTCKQXP4), complete treatment-train comparisons.
+
+A treatment train combines processes with different functions: separate particles, alter dissolved constituents, inactivate organisms, stabilize water or prepare it for a specific use. Describe the function before naming the equipment. Filtration, disinfection and preventing recontamination answer connected but distinct questions.
+
+For a stated organism or constituent, a log reduction is log₁₀(C_in/C_out), subject to comparable bases and valid sampling. Adding stage log reductions requires justified stage performance and no unaccounted bypass, mixing or reintroduction. A 99% reduction is two logs; it does not by itself specify the remaining concentration or acceptable exposure.
+
+Distinguish validation of a control measure, routine operational monitoring and verification that the service meets its requirements. Use actual operating ranges and failure states. Trace a process upset through subsequent barriers and identify which observations would reveal it before assuming the downstream process can compensate.
+
+**Continue:** [Read health, environmental and equipment requirements](Read-health-environmental-and-equipment-requirements.lingua#r_20CZ4H0Z5Z92MH7VM5ED5K54J5).
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+} r_4KN934MCH4BZF0JMKMYN0VYRRB

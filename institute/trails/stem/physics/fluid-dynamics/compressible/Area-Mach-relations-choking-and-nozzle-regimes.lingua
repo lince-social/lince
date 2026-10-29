@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Area–Mach relations, choking and nozzle regimes (@fd-nozzles: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #fluid-dynamics "Normal-shocks-conservation-and-entropy-selection.lingua#r_3MN97APMW4SJQJ4G5GZF4JSSFX") { r_3K6DQDVFKBHGSE3XNF57J8C04N
+**Read:** [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM), area, mass-flux and isentropic relations; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), Laval nozzle and its operating regimes; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 compressible conservation laws.
+
+For steady quasi-one-dimensional isentropic flow, mass and momentum give dA/A=(M²−1)dU/U. A converging passage accelerates a subsonic stream, while a diverging passage can accelerate a supersonic stream. A throat does not guarantee sonic flow: upstream state, downstream pressure and the complete solution select the regime.
+
+For a calorically perfect gas, A/A*=M⁻¹{[2/(γ+1)][1+(γ−1)M²/2]}^[(γ+1)/(2(γ−1))]. For an area ratio above one, subsonic and supersonic branches exist. A* is the sonic area for that particular mass flow and stagnation state; across an irreversible shock the applicable stagnation pressure and hence A* change.
+
+Vary back pressure for a defined converging–diverging nozzle. Distinguish unchoked flow, a choked throat with an internal shock, a shock at the exit, and external adjustment of an over- or underexpanded jet. Match mass flow and downstream pressure consistently. A one-dimensional internal solution cannot predict all external shock cells, separated regions or boundary-layer interaction.
+
+**Continue:** [Normal shocks, conservation and entropy selection](Normal-shocks-conservation-and-entropy-selection.lingua#r_3MN97APMW4SJQJ4G5GZF4JSSFX).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3K6DQDVFKBHGSE3XNF57J8C04N

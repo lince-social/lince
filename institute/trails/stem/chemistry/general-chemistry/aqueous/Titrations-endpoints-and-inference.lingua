@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Treat a titration as chemical inference from a controlled addition (@gc-titration: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "Polyprotic-systems-and-distribution-fractions.lingua#r_0JQ4ZQSNJF0HR3JB3SWZ5X0DGC") { r_0K70T8KMZHSEXC6SDCJ0JSCG2V
+**Read:** [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 9 in full; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the complete standardization and titration/equilibrium activities; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 14’s titration section; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), the acid/base titration lectures and problems.
+
+A titration connects a controlled addition with a stoichiometric/equilibrium model and an observed signal. Equivalence concerns the chosen reaction amount relation; an endpoint is an observation or decision rule used to estimate it. Indicator behavior, electrode response, mixing, kinetics, blank consumption, and competing reactions can separate the two.
+
+For a weak monoprotic acid titrated by a strong base, dilution, counterion accumulation, acid balance, water autoprotolysis, and acid equilibrium describe the full ideal curve. Common regional approximations are useful when their conditions hold, but they should connect consistently through the curve. Half-equivalence pH approximating pK_a also has conditions; exact charge balance can show the correction.
+
+Standardization identifies the titrant's usable concentration under a method and reference account. Glassware calibration, reagent stability, purity, sampling, and endpoint model contribute to the inferred analyte amount. A well-resolved displayed pH does not alone determine accurate composition.
+
+**Work:** derive the complete model for 25.00 mL of a hypothetical 0.01000 mol L⁻¹ HA titrated by 0.01000 mol L⁻¹ base, using the stated teaching acid/water constants. Predict the equivalence volume and qualitative pH regions before examining the later solver. Compare an approximate indicator endpoint with a fitted or derivative-based endpoint and identify their assumptions.
+
+Read Harvey's entire titrimetric chapter and the laboratory manual's standardization/titration material. Practical performance requires the actual supervised laboratory and procedure-specific preparation; curve analysis and published-data reconstruction develop the conceptual and numerical account first.
+
+**Continue:** [Describe several protonation states with balances and distribution fractions](Polyprotic-systems-and-distribution-fractions.lingua#r_0JQ4ZQSNJF0HR3JB3SWZ5X0DGC).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_0K70T8KMZHSEXC6SDCJ0JSCG2V

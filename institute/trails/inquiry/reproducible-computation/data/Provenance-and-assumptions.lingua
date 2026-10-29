@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Connect each result to its inputs, activity, and responsibility (@rc-provenance: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Computational-Provenance.lingua#r_41T4TPCSCESX7SDK9BY4YQZX15", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #reproducible-computation "A-complete-small-analysis.lingua#r_7CVD48GN8M8X71MHQCRPGMTBN7") { r_3SY3NX6PMTJVV8AKSKEC9YHFQB
+**Read:** [PROV — entities, activities, and responsibility — W3C](../sources/Computational-Provenance.lingua#r_41T4TPCSCESX7SDK9BY4YQZX15), the complete overview and primer; [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), the whole paper, especially the record of every step.
+
+Start provenance with a plain account: these identified inputs were transformed by this method under these conditions to produce this output, with these people or processes responsible for the acquisition, interpretation, and execution. W3C PROV offers a deeper conceptual treatment of entities, activities, agents, derivation, use, and attribution. A particular serialization is unnecessary for understanding the relationships.
+
+Write down assumptions next to the relationship they support. In the two-lot study the feed's water is excluded before applying the dry-basis component fraction. Product component mass is subtracted from input component mass under a nonreacting balance with no unrecorded loss or accumulation. That model is the reason the residual is called a tail stream; the CSV syntax alone supplies no such meaning.
+
+Execution provenance includes the input identities, code revision or content identity, explicit parameters, relevant environment, invocation, outcome, and produced artifacts. Methodological provenance also includes why a transformation or population was chosen. A complete terminal log can still omit an undocumented decision to reject a specimen before the file existed.
+
+**Work:** trace the total recovered-component result through both lot rows, formulas, aggregation, and interpretation. Draw or write each relationship and identify what evidence supports it. Then ask what a future reader would need to reconstruct the same answer without you. Distinguish recorded facts about a run from assertions that would need independent verification.
+
+Read the PROV overview and primer, then express the same small analysis in its concepts. Use the exercise to expose missing relationships. Avoid adding a tool or metadata field merely because it exists: its value is whether it preserves information that another reader actually needs to understand or repeat the work.
+
+**Continue:** [A complete small analysis — two lots, one inspectable result](A-complete-small-analysis.lingua#r_7CVD48GN8M8X71MHQCRPGMTBN7).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_3SY3NX6PMTJVV8AKSKEC9YHFQB

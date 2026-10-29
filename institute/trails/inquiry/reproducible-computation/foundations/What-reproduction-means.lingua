@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Specify the kind of agreement being claimed (@rc-definitions: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Reproducibility-and-Replication.lingua#r_32SK41ZP8P04Z0PMZX5NN6C2T9", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Files-paths-and-processes.lingua#r_2AEWQC548X1MYJGK7RSQKDD96K") { r_7GX7RDN4ECAVTT6GZTXK8TCF4R
+**Read:** [Reproducible Research in Computational Science — Peng](../sources/Reproducibility-and-Replication.lingua#r_32SK41ZP8P04Z0PMZX5NN6C2T9), the complete article; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Overview, Definitions, and the linked reproducibility discussions.
+
+Several useful claims are often hidden inside the word reproducible. State the one you actually test. A byte comparison asks whether two artifacts contain exactly the same bytes. Numerical reproduction asks whether specified quantities agree under a stated rule. Independent implementation asks whether another expression of the method yields the expected result. Scientific replication asks what happens with new observations or a new experiment. Terminology varies between communities; preserve the operational definition in a report.
+
+A JSON file with a different timestamp fails a byte comparison even if its scientific quantities agree. Two programs can print identical numbers because both use the same erroneous formula. Conversely, two correctly implemented floating-point algorithms can differ in their last digits without changing a supported conclusion. These are different findings, each needing its own evidence.
+
+For each project name inputs, method, environment, expected outputs, and comparison criterion. Decide whether row order, whitespace, metadata, rounding, or a stochastic interval belongs in that criterion. Explain the scale of numerical tolerance in the units and use of the result. Choose it before seeing a disappointing discrepancy.
+
+**Work:** define acceptance for the two-lot calculation at three levels: identical input/code bytes producing identical report bytes; reordered input rows producing the same scientific totals; an independent spreadsheet obtaining the same exact fractions. Explain why the first claim should include input identity while the second intentionally changes it. Later add an uncertain-input simulation and specify a statistical comparison instead of demanding equal sample means from different random streams.
+
+Preserve failures as evidence about the claim's limits. “It ran on my machine” establishes one execution under partly observed conditions. A reconstruction experiment changes that evidence only when the other inputs, environment, procedure, and comparison are actually inspected.
+
+**Continue:** [Files, paths, processes, and the working directory](Files-paths-and-processes.lingua#r_2AEWQC548X1MYJGK7RSQKDD96K).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_7GX7RDN4ECAVTT6GZTXK8TCF4R

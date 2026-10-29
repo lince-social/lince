@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Build and measure a bounded fluid system (@fd-performed-study: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #source "../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #fluid-dynamics "Fluid-services-connect-machines-materials-energy-and-people.lingua#r_14C278NFN0ZBZ903RME1NGZGBS") { r_0QRH0SSZEVW15WY3H5YEDXQB4T
+**Read:** [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), complete methods relevant to the selected apparatus; [Water-flow calibration — NIST SP 250-98](../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05), flow-calibration reasoning; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), independent physical modelling and analysis.
+
+Choose an accessible experiment with a clear model and a feasible measurement, such as a gravity-fed water line, a low-speed channel, a gentle oscillatory wall demonstration or a calibrated viscous-flow apparatus. Select actual materials, dimensions, collection and sensing methods, and appropriate equipment limits. A source photograph or simulation is preparation, not evidence of having realized the experiment.
+
+Before operation, predict flow, force, power and the expected signal range, including uncertainty and a meaningful limiting case. Record assembly, fluid state, calibration, operating procedure and observed deviations. Collect repeated data across several conditions, retain unsuccessful trials, and compare with the initial prediction without erasing discrepancies.
+
+Revise the physical model or apparatus for a documented reason and repeat a discriminating measurement. Produce a reproducible account that another person can use to reconstruct both the apparatus and the argument. Extend to more demanding facilities only with the appropriate equipment and expertise; the required depth is the quality of demonstrated reasoning and evidence, not an uncontrolled increase in pressure, speed or scale.
+
+**Continue:** [Fluid services connect machines, materials, energy and people](Fluid-services-connect-machines-materials-energy-and-people.lingua#r_14C278NFN0ZBZ903RME1NGZGBS).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0QRH0SSZEVW15WY3H5YEDXQB4T

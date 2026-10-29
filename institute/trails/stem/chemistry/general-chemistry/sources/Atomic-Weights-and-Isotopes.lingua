@@ -1,0 +1,11 @@
+Import "../General-chemistry.lingua"
+
+Atomic weights, isotopes, and the periodic table — CIAAW and IUPAC (@gc-weights: 0, is #reference, #part-of @gc-sources) { r_1HF97SGP3GF6YJDRH0D81PQ3S3
+IUPAC Commission on Isotopic Abundances and Atomic Weights. [Standard Atomic Weights 2024, definitions, and notes](https://ciaaw.org/atomic-weights.htm) · [IUPAC periodic-table edition and isotope references](https://iupac.org/what-we-do/periodic-table-of-elements/).
+
+Read the table's definitions and notes, then the element-specific entries needed in a calculation. Distinguish atomic number, isotope mass number, relative isotopic mass, a standard atomic-weight interval, a conventional abridged value, and a sample-specific value. The CIAAW page currently identifies the 2024 table, while IUPAC's displayed downloadable periodic-table page describes a 2022 release based on 2021 values. Preserve the actual edition rather than treating the two as identical updates.
+
+Record uncertainty/interval meaning, source, and appropriate precision in a molar-mass calculation. The elementary examples here deliberately use labelled rounded teaching molar masses. Read the supplied use/copyright notices before redistributing a table or graphic. Official table identities, definitions, and differing edition dates checked on 29 October 2026. No table collection is copied into the repository.
+
+**Return:** [General chemistry sources — books, courses, data, and research](../Sources.lingua#r_37CHT3QSMD33JDMXE59S6M2ME3).
+} r_1HF97SGP3GF6YJDRH0D81PQ3S3

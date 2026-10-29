@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Separation of variables and spatial spectra (@em-separation: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5", #electromagnetism "Green-functions-reciprocity-and-source-response.lingua#r_1H8R91AG0Q7EHDWGPKNG6E7JAQ") { r_1PFCS2PR7DECWKE9567FPJS6R0
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), Legendre functions, spherical harmonics and separated potentials; [Vector Calculus — David Tong](../sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5), Laplace equation and separation methods.
+
+Separate Laplace's equation in a geometry adapted to its boundaries. In a rectangle, sine/cosine spatial modes and exponential or hyperbolic variation satisfy different boundary choices. In a sphere, Legendre functions and spherical harmonics express angular structure. Orthogonality determines coefficients; it does not remove the need to check convergence and singular points.
+
+For an upper half-plane with boundary V(x,0) = V₀ cos(kx), a bounded solution is V = V₀ cos(kx) exp(−|k|z). Fine spatial structure decays rapidly away from the boundary. This simple result explains why recovering small-scale source detail from a distant field is poorly conditioned. It also distinguishes a spatial evanescent component from a propagating radiation mode.
+
+Derive the separated equations, identify admissible solutions by boundary/regularity conditions and project actual boundary data. Compare truncated series at smooth points and near a discontinuity; report field convergence separately from potential convergence. Work a cylindrical or spherical case in full. Avoid fitting coefficients to a few points and presenting the fit as a verified solution of the complete boundary problem.
+
+**Continue:** [Green functions, reciprocity and source response](Green-functions-reciprocity-and-source-response.lingua#r_1H8R91AG0Q7EHDWGPKNG6E7JAQ).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_1PFCS2PR7DECWKE9567FPJS6R0

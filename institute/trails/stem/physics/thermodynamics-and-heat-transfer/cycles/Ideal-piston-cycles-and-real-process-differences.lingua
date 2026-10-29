@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Ideal piston cycles and real process differences (@th-piston-cycles: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Refrigerators-heat-pumps-and-real-fluid-states.lingua#r_1T8MW3VM9XZ6B9B53QWK6VRKG1") { r_1VQ06AYPVCJK33QSF33J1NHGVP
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), the full piston-engine cycle treatment and exercises; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), reaction energy and equilibrium where used.
+
+Derive ideal Otto and Diesel cycle state changes under their declared air-standard assumptions. Compression ratio, heat-addition path and heat-capacity model determine the result. Their usefulness is comparative reasoning, not a claim that combustion follows the ideal path.
+
+Compare cycle-integrated work with an indicator diagram, mechanical friction, gas exchange, cooling and accessory loads. Heat release, knock, finite-rate chemistry and emissions require additional evidence beyond equilibrium thermodynamics. Specify whether the reported efficiency is indicated, brake, electrical or whole-system.
+
+Work complete cycle problems and then analyse a documented measured case, identifying which assumptions explain disagreement. Mechanical design, combustion technology and fuel supply develop separately; this Record provides the common thermal accounting needed to understand them.
+
+**Continue:** [Refrigerators, heat pumps and real-fluid states](Refrigerators-heat-pumps-and-real-fluid-states.lingua#r_1T8MW3VM9XZ6B9B53QWK6VRKG1).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1VQ06AYPVCJK33QSF33J1NHGVP

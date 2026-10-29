@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Follow electrorefining through both electrodes, solution, and impurity products (@metal-electrorefining: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7", #metals-and-metallurgical-production "Molten-salt-extraction-chemistry-heat-and-containment.lingua#r_5J4EF5HRK4TAPTCT56SCND2SRY") { r_22B7PD8BX58G92NXZE1A5F0FQD
+**Read:** [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), the full refining and electrochemical extraction material; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), complete applicable electrorefining and impurity/byproduct cases; [Extractive Metallurgy of Copper — Schlesinger, Sole, Davenport, and Alvear Flores](../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7), chapters 12–13 in full and the complete relevant side-stream account, when available.
+
+Electrorefining joins dissolution of an impure metal electrode with deposition of the desired metal under controlled solution and electrical conditions. Different impurities may dissolve, remain in anode-derived material, accumulate in electrolyte, or contaminate a deposit. A simple ranking of standard potentials does not alone determine all of their actual pathways.
+
+Connect anode composition/structure, passivation or surface behavior, electrolyte speciation, transport, current distribution, physical particles, and cathode morphology. Distinguish electrochemical selectivity from mechanical entrainment and solution retention. Recovered slimes or side streams may require further treatment and have their own valuable/toxic constituent account.
+
+Compare complete anode-to-accepted-cathode balances, electrolyte inventory/bleeds, byproducts, energy, electrode handling, maintenance, and uncertainty. Product purity is supported by representative trace analysis with a defined method and detection/quantification basis, not simply by a low apparent cell voltage.
+
+**Work:** reconstruct a complete public electrorefining study or industrial case. Independently close the target element and at least two impurities across anode, cathode, electrolyte, and residual streams. Derive a stated electrochemical/transport relation and compare predicted pathways with measured product evidence. Investigate an alternative contamination explanation and explain the purification or operating evidence needed to resolve it.
+
+**Continue:** [Explain molten-salt production through coupled chemistry, current, heat, and material evidence](Molten-salt-extraction-chemistry-heat-and-containment.lingua#r_5J4EF5HRK4TAPTCT56SCND2SRY).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_22B7PD8BX58G92NXZE1A5F0FQD

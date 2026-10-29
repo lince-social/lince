@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow carbon-monoxide chemistry through catalysis, selectivity and product isolation (@ic-carbonylation: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #industrial-chemistry "Phenol-cumene-intermediates-and-co-product-quality.lingua#r_1HRR8N9RMAQ8D1AMEDKAEZE5JY") { r_46RMBXHYJAH3VE7X901J2WJD9G
+**Read:** [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the complete synthesis-gas and oxo-process units; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the whole hydroformylation and acetic-acid industrial examples if chosen; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete relevant carbonyl-containing intermediate manufacturing sequence.
+
+Carbonylation and hydroformylation add carbon monoxide into useful molecular frameworks through defined catalytic pathways. Hydroformylation also uses hydrogen to form aldehyde products from an alkene; the resulting positional/structural distribution matters to downstream use. A balanced carbon account does not by itself determine selectivity or catalyst performance.
+
+Track catalyst form, ligands or other promoters, gas/liquid contact, phase behavior and possible deactivation. A rate measured in one solvent or composition region can change when transport or catalyst speciation changes. Reagent recycling, catalyst retention and impurity accumulation join the reaction with isolation.
+
+For an acid or aldehyde product, identify the complete downstream separation and any further reaction. Gas recovery, solvent/catalyst loss, corrosion/contact materials and residual handling influence accepted output. A process may depend on proprietary preparation or operating details that the public account does not establish.
+
+**Work:** reconstruct one complete authorized carbonylation/hydroformylation route and a justified alternative. Derive carbon/hydrogen/oxygen and catalyst/carrier inventories, test selectivity and isolation assumptions and compare full utility/product boundaries. Explain which primary kinetic, phase, analytical or service-history observation would distinguish competing process explanations.
+
+**Continue:** [Connect aromatic oxygenated products with intermediate chemistry and co-product accounts](Phenol-cumene-intermediates-and-co-product-quality.lingua#r_1HRR8N9RMAQ8D1AMEDKAEZE5JY).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_46RMBXHYJAH3VE7X901J2WJD9G

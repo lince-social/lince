@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Guarded-hot-plate evidence — NIST SP 260-201 (@th-ghp: 0, is #reference, #part-of @th-sources) { r_1PP28H0Y6N7RVY89W9HSQY18E4
+Robert R. Zarr and Nathanael A. Heckert. Certification of Standard Reference Material 1450e Fibrous Glass Board. NIST SP 260-201, 2020, DOI 10.6028/NIST.SP.260-201. [Publication and download](https://www.nist.gov/publications/certification-standard-reference-materialr-1450e-fibrous-glass-board) · [Full report](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.260-201.pdf).
+
+Read the complete method, apparatus, experimental design, specimen variation, regression and uncertainty treatment. Reconstruct how conductivity evidence depends on density, temperature, pressure, edge/guard control and the reference material. Compare instrument calibration with an unknown sample's own representativeness and conditioning.
+
+The catalogue dates publication 17 April 2020 and describes measurements over 280–360 K; those bounds belong to this particular certification, not all insulating materials. Direct automated PDF retrieval timed out, so every page has not been inspected here. Consult the actual certificate and its validity for any physical reference unit. Public federal method material and separately credited components remain external.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_1PP28H0Y6N7RVY89W9HSQY18E4

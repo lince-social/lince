@@ -1,0 +1,11 @@
+Import "../Industrial-chemistry.lingua"
+
+Graduate Numerical Methods Applied to Chemical Engineering — MIT 10.34 (@ic-mit-numerics: 0, is #reference, #part-of @ic-sources) { r_1NTDP6EFQGR8HWP34VT9ZJ98DV
+William H. Green, Jr. and James W. Swan. Numerical Methods Applied to Chemical Engineering, MIT 10.34, Fall 2015, graduate level. [Public course](https://ocw.mit.edu/courses/10-34-numerical-methods-applied-to-chemical-engineering-fall-2015/) · [Lecture notes](https://ocw.mit.edu/courses/10-34-numerical-methods-applied-to-chemical-engineering-fall-2015/pages/lecture-notes/) · [Programming work](https://ocw.mit.edu/courses/10-34-numerical-methods-applied-to-chemical-engineering-fall-2015/pages/assignments/).
+
+Complete the published numerical/programming progression: linear/nonlinear systems, differential equations, transport/reaction computations and molecular-model problems. Reimplement central results independently and use the shared reproducible-computing methods to test conditioning, convergence, conservation, uncertainty and changed environments. Programming preparation is followed through the relevant shared material where needed.
+
+Course identity, instructors, graduate level, topic coverage and published resource types were checked on 29 October 2026. OCW's CC BY-NC-SA and component terms apply; dated software examples require an explicitly recorded environment. The external course code/media are referenced rather than installed, mirrored, or claimed to have been run.
+
+**Return:** [Industrial chemistry sources — whole books, courses, technical methods and primary evidence](../Sources.lingua#r_3084780FHMK499ZDAW07TYA3TQ).
+} r_1NTDP6EFQGR8HWP34VT9ZJ98DV

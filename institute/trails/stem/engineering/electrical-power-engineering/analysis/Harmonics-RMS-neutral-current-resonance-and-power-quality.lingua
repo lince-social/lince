@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Harmonics, RMS current, resonance and power quality (@pe-harmonics: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #source "../sources/OpenDSS-Distribution-Modeling-Manual.lingua#r_1192RYEP2NRARXYCHHJDZGXNGN", #electrical-power-engineering "../../../../inquiry/metrology/applications/Electrical-measurements.lingua#r_7FD2XHWZZG0VF0Z4BHJT43NYK1") { r_0FX1YMFYJBNA78QNS5ZRKSGPE6
+**Read:** [AC Electrical Circuit Analysis — James M. Fiore](../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK), Fourier, power and frequency-response developments; [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), complete harmonic/power-quality guidance; [OpenDSS — distribution modelling and reference manual](../sources/OpenDSS-Distribution-Modeling-Manual.lingua#r_1192RYEP2NRARXYCHHJDZGXNGN), complete applicable harmonic modelling/documentation.
+
+A distorted waveform contains multiple frequency components, and nonlinear/time-varying loads can couple them. Distinguish harmonic spectra, total RMS, distortion measures, unbalance, flicker, interruptions and fast transients. They describe different phenomena and measurement windows. One fundamental-frequency power-flow result cannot establish all power-quality claims.
+
+Derive RMS and active power from an explicit periodic waveform, then compare fundamental displacement factor with true power factor. Examine a balanced set of nonlinear single-phase loads whose triplen harmonic currents add in the neutral. Include skin/proximity and core/stray losses where waveform changes heating. A capacitor can create a harmonic resonance rather than simply improve current.
+
+Choose an appropriate harmonic or time-domain network/load model and calibrated measurement bandwidth. Compare propagation, damping, filter alternatives and the actual source of distortion. Read the complete applicable primary standard/measurement definition before a compliance claim; no fixed universal harmonic limit is asserted here. The advanced study must connect waveform evidence, model assumptions, thermal/control effects and a change that predicts an independent observation.
+
+**Continue:** [Electrical quantities — references, connections, loading, and frequency](../../../../inquiry/metrology/applications/Electrical-measurements.lingua#r_7FD2XHWZZG0VF0Z4BHJT43NYK1).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_0FX1YMFYJBNA78QNS5ZRKSGPE6

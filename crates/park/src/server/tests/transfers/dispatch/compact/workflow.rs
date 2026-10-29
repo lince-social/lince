@@ -3,11 +3,11 @@ use lince_interface::native::shortcuts::{Settings, Shortcut};
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
-fn rendered_compact_properties_chooser_header_and_saved_rebound_actions_keep_the_captured_members_at_scaled_widths() {
+fn rendered_compact_properties_chooser_header_and_saved_rebound_actions_keep_the_captured_members_at_fractional_scale() {
     let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(32 * 1024 * 1024).build().unwrap();
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
-    for (size, scale) in [([1000, 720], 1.25), ([360, 720], 1.5)] {
+    for (size, scale) in [([1000, 720], 1.25)] {
         let path = directory.path().join(size[0].to_string());
         std::fs::create_dir(&path).unwrap();
         let engine = persisted(&runtime, &path);

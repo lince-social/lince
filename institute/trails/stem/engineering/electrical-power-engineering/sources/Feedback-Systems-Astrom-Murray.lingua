@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Feedback Systems — Åström and Murray (@pe-feedback: 0, is #reference, #part-of @pe-sources) { r_7N4SZEXCRGZZFW2EV9X86G7833
+Karl J. Åström and Richard M. Murray. Feedback Systems: An Introduction for Scientists and Engineers, second edition, Princeton University Press, 2021. [Author's second-edition page and complete download route](https://www.cds.caltech.edu/~murray/FBS/Second_Edition.html) · [Caltech teaching reference](https://murray.cds.caltech.edu/CDS_110/ChE_130%2C_Spring_2024).
+
+Read the complete available author text as the control foundation for regulators, converter loops, modes and robust stability reasoning. Derive state-space and input/output models, feedback effects, stability, frequency response and limitations, then apply them to a specified power component.
+
+The Caltech course identifies the 2021 second edition and free download. The author index separately lists version 3.1.5 posted 24 July 2020; retain the actual downloaded draft/version rather than equating its date with the final publication. The indexed author/teaching descriptions were checked on 29 October 2026; direct author-page retrieval timed out. No blanket CC licence or complete-page inspection is claimed. This remains an authorized external reading route.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_7N4SZEXCRGZZFW2EV9X86G7833

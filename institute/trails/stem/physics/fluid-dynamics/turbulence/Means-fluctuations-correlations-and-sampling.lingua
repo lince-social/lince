@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Means, fluctuations, correlations and sampling (@fd-turbulent-statistics: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE", #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #fluid-dynamics "Reynolds-averaging-stress-transport-and-the-closure-problem.lingua#r_2WR3KYF31R7RJSN20P6PKS0PM0") { r_28QSWBMS4143WE5A6NHQQJXZEY
+**Read:** [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), statistical descriptions of turbulence; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 6 averages and correlations; [Johns Hopkins Turbulence Databases — numerical flow evidence](../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE), selected dataset metadata and published statistical definitions; [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), response and statistical measurement sections.
+
+Choose an averaging operation before writing u=U+u′. Ensemble, time, phase and spatial averages answer different questions and require different assumptions to interchange. A time record is not automatically stationary, and closely spaced samples are not independent. Report the measured component, location, bandwidth, acquisition duration and conditioning on events.
+
+Define variance, covariance, correlation and spectra with their normalizations. Relate the velocity covariance tensor to turbulent kinetic energy k=⟨u′·u′⟩/2. Check tensor symmetry and nonnegative variance in any direction. Spatial or temporal filtering changes the resolved variance; unresolved motion and instrumental noise cannot be separated merely by drawing a spectrum.
+
+Estimate a mean and stress using successively longer record segments, inspect drift and integral correlation times, and state the uncertainty method. For a numerical database, preserve forcing, grid, interpolation and averaging choices. Distinguish a statistical uncertainty due to finite sampling from a biased physical or numerical model.
+
+**Continue:** [Reynolds averaging, stress transport and the closure problem](Reynolds-averaging-stress-transport-and-the-closure-problem.lingua#r_2WR3KYF31R7RJSN20P6PKS0PM0).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_28QSWBMS4143WE5A6NHQQJXZEY

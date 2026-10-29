@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+What completing measurement and metrology means (@met-completion: 0, is #chapter, #part-of @metrology) { r_53S7BF9JY2ZA1VT8820RXYR72Z
+Completion means you can define a measurement question, connect its result to suitable references, design and evaluate a comparison, produce and defend an uncertainty statement, and explain when the method or result is inadequate for its proposed use. Mathematical calculation, physical judgement, experimental evidence, and the work of maintaining references all belong to that achievement.
+
+**Foundations and sustained reading:** complete Bell’s beginner guide, the dimensional guide, Metrology — in Short with historical details corrected through current sources, the relevant SI/VIM material, the complete NIST measurement-process chapter, TN 1297, and TN 1900. Study the main GUM with the 2026 amendment and annexes, GUM-6, JCGM 101, 102, and 106, and GUM-5:2026 in full through successive readings. Use the quantitative preparation where needed rather than treating unfamiliar statistics or derivatives as knowledge acquired elsewhere by assumption.
+
+**Breadth and practical depth:** explain the measurement model, references, dominant influences, and use limits across the application families. Complete the specified family-guide and Eurachem readings. Reconstruct substantive calculations in at least two contrasting families and one complete advanced calibration or validation project, including the relevant full realization or reference document. A simulated or published-data project must remain identified as such.
+
+**Evidence:** retain the first measurement study; a calibrated and validated response with uncertainty and independent checks; exact and simulated nonlinear benchmarks; a correlated vector result with a valid joint uncertainty description; a sampling/validation/comparison study; a conformity analysis with an explicit risk definition; and the independent scholarly investigation. These can be integrated into fewer sustained projects when each kind of evidence is actually demonstrated.
+
+Be able to distinguish quantity definition from instrument display, calibration from adjustment, tolerance from uncertainty, repeated-reading spread from all uncertainty, an exact unit definition from a physical realization, and traceability from a complete fitness-for-purpose claim. Explain dependence, nonlinear estimate shifts, coverage assumptions, model discrepancy, sampling targets, and the limits of a comparison score.
+
+Have another technically informed reader reconstruct key calculations and challenge an assumption that could change a conclusion. Correct the weak result or defend it with evidence, preserving the revision. A finished report should communicate what is known, how it is known, and which conditions support reuse.
+
+This is a substantial programme of practical and academic study, not a short introductory survey. Detailed physical disciplines and specialized instrumentation can reuse this foundation. Actual industrial or accredited capabilities require their corresponding facilities and demonstrated practice; the learning record should accurately describe the evidence it contains.
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_53S7BF9JY2ZA1VT8820RXYR72Z

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Mesh refinement, singularities and error budgets (@em-mesh: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX", #source "../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM", #electromagnetism "Yee-staggering-discrete-curls-and-Maxwell-constraints.lingua#r_31SEC4XD55TPNETRM5967E15VZ") { r_5N82GRJY13QV6JSR5C8S35PPWV
+**Read:** [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX), convergence and discretization guidance; [Understanding the Finite-Difference Time-Domain Method — John B. Schneider](../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM), numerical dispersion and verification development.
+
+Convergence concerns a specified quantity as an approximation is refined. Compare potential, peak field, total charge, force and energy separately; a singular ideal edge can make peak field diverge while integrated quantities converge. Report the geometry and regularization rather than hiding the singularity with plotting limits.
+
+For the one-dimensional Poisson example with ε = 1 and sinusoidal source, derive the discrete eigenvalue λ_h = 4sin²(πh/2)/h². The discrete nodal amplitude is π²/λ_h times the sine mode. This gives an exact discrete benchmark and predicts second-order continuous error for small h. Use three or more refinements and check that the measured regime is asymptotic before estimating order.
+
+Vary mesh, computational domain, source representation and algebraic tolerance independently. An error budget should identify which approximation each change probes. A manufactured solution validates an implementation for the chosen mathematical problem, not the constitutive law for a specimen. State numerical accuracy relative to the decision or physical uncertainty: many digits in an output file do not establish equally accurate material or geometric input. Reuse the computational-validation Record for independent oracles and reproducible reporting.
+
+**Continue:** [Yee staggering, discrete curls and Maxwell constraints](Yee-staggering-discrete-curls-and-Maxwell-constraints.lingua#r_31SEC4XD55TPNETRM5967E15VZ).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_5N82GRJY13QV6JSR5C8S35PPWV

@@ -1,0 +1,13 @@
+Import "../Quantitative-literacy.lingua"
+
+The International System of Units — BIPM and Inmetro (@ql-source-si: 0, is #reference, #part-of @ql-sources) { r_0QS0FQDWGM0BE9ZM4099FGRXED
+Bureau International des Poids et Mesures. The International System of Units (SI), ninth edition, 2019, with subsequent updates. English and French. [Official edition and revision page](https://www.bipm.org/en/publications/si-brochure/) · [Edition DOI](https://doi.org/10.59161/AUEZ1291).
+
+Use chapter 2 for quantities and units, chapter 3 for prefixes, chapter 4 for accepted non-SI units, and chapter 5 for quantity and unit writing. Read these together; the introduction and definition tables make more sense than an isolated conversion list. Consult appendix 2 later for practical realizations.
+
+[Inmetro's Portuguese edition](https://www.gov.br/inmetro/pt-br/assuntos/metrologia-cientifica/documentos-tecnicos-em-metrologia/si_versao_final.pdf/view) identifies the second luso-Brazilian translation of the ninth edition, 2025. It is useful for grandeza, valor numérico, unidade, and symbols in Portuguese. Translations and the English page can incorporate updates at different times; record the version used in a technical report.
+
+The BIPM publication page states CC BY 4.0. Preserve BIPM attribution, edition, and revision date. Check the Portuguese edition's own publication notice for reuse. The official page and Inmetro metadata were checked on 28 October 2026; the page then identified an updated 2026 English/French brochure. No PDF is stored here.
+
+**Return:** [Quantitative literacy sources — books, standards, and articles](../Sources.lingua#r_7MMXWNA1B4YGA271KMHPPJEK9Q).
+} r_0QS0FQDWGM0BE9ZM4099FGRXED

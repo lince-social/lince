@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: forced and natural convection (@th-study-convection: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_5HAYB9P01TV1WEW6QC6SAH1Z47
+**Read:** [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), the complete four-week course; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), the full convection and instability progression; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete applicable convection chapters; [Convecção e métodos numéricos — Maliska, UFSC](../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7), available complete convection course.
+
+Complete the NPTEL convective sequence and the relevant full analytical heat-transfer lectures. Derive a boundary-layer or internal-flow solution, stating the ordering arguments and boundary conditions. Compare imposed wall temperature with imposed wall heat flux and distinguish local from average results.
+
+Investigate one forced and one buoyancy-driven configuration over documented parameter ranges. Test correlation selection, property evaluation, developing-flow effects and uncertainty. Where transition or turbulence enters, identify the closure and the evidence supporting it instead of extrapolating a laminar result.
+
+Deliver derivations, dimensionless maps, energy/pressure accounts and a comparison with a complete published experiment or performed measurement. Include pumping or ventilation cost and evaluate a changed geometry. Explain which disagreement arises from implementation, uncertain conditions or an inappropriate physical approximation.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5HAYB9P01TV1WEW6QC6SAH1Z47

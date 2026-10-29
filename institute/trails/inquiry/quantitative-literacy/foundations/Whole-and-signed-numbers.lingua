@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Counting, arithmetic, signs, and exact values (@ql-arithmetic: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-1, #source @ql-source-prealgebra, #quantitative-literacy "Fractions-and-decimals.lingua#r_0JEY0Y348N7B9FCFRMW0PQGDTD") { r_0SJY2JGRVTKNRYW2N2QV64WXJ7
+**Read:** Math for Trades, Volume 1, the complete Whole Numbers part and its quiz. Use Prealgebra 2e chapters 1–3 and 7 for order of operations, integer arithmetic, variables, and real-number properties. Complete these chapters if signs or the distinction between an expression and an equation are unfamiliar.
+
+Addition and subtraction combine changes only after their basis agrees. A stock of 120 pieces, receipt of 35, and issue of 48 leaves 107 pieces. A negative stock result may expose an accounting discrepancy rather than establish that a shelf contains negative objects. A sign represents a chosen direction or reference; record that convention before applying it to flows or coordinates.
+
+Multiplication and division are inverse operations where the divisor is nonzero. Parentheses define the intended grouping. For a package count N and pieces per package p, Np is a count of pieces; N/p usually answers a different question. Distinguish an exact defined conversion, an exact count within a stated counting process, a rounded display, and a measured estimate.
+
+**Work:** create a ten-event inventory ledger with both receipts and withdrawals. Recalculate the final balance by two groupings, then reverse the events to recover the opening balance. Evaluate 18 − 3 × 4 and (18 − 3) × 4 and explain why the values differ. Introduce a wrong sign and find it using the physical meaning of the events.
+
+**Check:** explain zero, negative values, division by zero, and why equal units do not make every operation sensible. Multiplying the temperature of a room by an item count can be formally calculable yet irrelevant to the question.
+
+**Continue:** [Fractions, decimals, rounding, and equivalent values](Fractions-and-decimals.lingua#r_0JEY0Y348N7B9FCFRMW0PQGDTD).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_0SJY2JGRVTKNRYW2N2QV64WXJ7

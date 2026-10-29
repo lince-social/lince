@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Protection zones, selectivity, sensitivity and reliability (@pe-protection-principles: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6", #electrical-power-engineering "Overcurrent-directional-and-earth-fault-coordination.lingua#r_7ZZ68HEEKWJ5CVTBMS31GQ3FES") { r_4CE1D8PKEJ964HMZBHQB85PTT6
+**Read:** [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), complete fundamentals and apparatus/system-protection modules; [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6), whole settings-management document and work examples.
+
+Protection detects abnormal conditions and initiates an appropriate response within constraints on damage, stability and personnel exposure. Define protected zones, measurements, fault scenarios and the intended response. Dependability concerns action when required; security concerns avoiding unwanted action. Increasing one setting margin can improve one attribute while degrading another.
+
+Separate primary and backup protection, local and remote failure cases, sensor/relay/breaker/communication dependencies and the required clearing sequence. Selectivity means the intended device isolates the relevant part under the specified cases; it is not a universal property of a pair of catalogue current ratings. Minimum faults, overloads, inrush, motor starts and power swings test different boundaries.
+
+Construct a small scenario/response matrix tied to actual network states and equipment. Derive the measurable signatures and timing constraints, then compare at least two schemes. The full [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE) progression supplies apparatus and numerical-relaying depth; [Protective relay operation, maintenance and tests — FIST 3-8](../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD) and [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6) join the calculations to tests and maintained settings. A protection study remains conditional on source models, topology, settings and the physical system matching those assumptions.
+
+**Continue:** [Overcurrent, directional and earth-fault coordination](Overcurrent-directional-and-earth-fault-coordination.lingua#r_7ZZ68HEEKWJ5CVTBMS31GQ3FES).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4CE1D8PKEJ964HMZBHQB85PTT6

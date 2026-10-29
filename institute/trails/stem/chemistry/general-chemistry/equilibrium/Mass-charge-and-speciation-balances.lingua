@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Solve equilibrium with enough independent balances and species definitions (@gc-balances-equilibrium: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #general-chemistry "../aqueous/Acid-base-concepts-and-reactions.lingua#r_0EB1497NTKFZENB6Q1XQ3DQZGQ", #water-and-sanitation "Activities-ionic-strength-and-conditional-constants.lingua#r_7CCX4WJ7S62EAWJWFH2RHP7GXD") { r_1PWQSP02CDTPRX1N5NPXTVJJAR
+**Read:** [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 6’s systematic equilibrium treatment completely; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), equilibrium calculations and exact numerical acid/base solutions; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapters 13–15 as the aqueous topics develop.
+
+An equilibrium relation is only part of a chemical-system model. List species, reactions, total-component balances, charge balance, phase constraints, and the assumptions linking activities to composition. Identify independent equations and unknowns before asking a numerical solver to supply an answer.
+
+For a simple monoprotic acid HA in water under an ideal concentration model, define C_T = [HA]+[A⁻], the concentration-form K_a,c = [H⁺][A⁻]/[HA], K_w,c = [H⁺][OH⁻], and the appropriate charge balance. These concentration-form constants carry compatible concentration units; distinguish them from dimensionless thermodynamic activity constants. Additional counterions, acid/base additions, complexes, or open-gas constraints change the system. A guessed pH alone cannot determine every species without those constraints.
+
+Check a proposed result for nonnegative concentrations, component closure, electroneutrality, phase consistency, and substitution into the equilibrium equations. Several algebraic roots may be mathematically present while only some satisfy the physical domain. A small residual is useful evidence about equations under a chosen scale, not proof that the equations describe the real specimen.
+
+**Work:** write a complete unknown/equation account for a weak acid, a salt solution, and a hypothetical sparingly soluble solid. Determine which totals and conditions must be specified. Introduce a redundant or missing equation deliberately and explain the resulting identifiability problem. Solve a small case analytically before using software.
+
+Read the entire systematic-equilibrium treatment. The following aqueous Records apply this same structure to several chemical questions and return to a shared computational-validation Record before the original numerical solver. This keeps the mathematical and chemical meanings connected.
+
+**Continue:** [Choose an acid/base description that answers the actual question](../aqueous/Acid-base-concepts-and-reactions.lingua#r_0EB1497NTKFZENB6Q1XQ3DQZGQ).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in water and sanitation:** [State when concentrations approximate activities and when they do not](Activities-ionic-strength-and-conditional-constants.lingua#r_7CCX4WJ7S62EAWJWFH2RHP7GXD).
+} r_1PWQSP02CDTPRX1N5NPXTVJJAR

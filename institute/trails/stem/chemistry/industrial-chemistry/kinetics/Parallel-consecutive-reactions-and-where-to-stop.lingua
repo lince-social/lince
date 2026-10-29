@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect competing reaction pathways with residence history and product isolation (@ic-competing: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #industrial-chemistry "An-inspectable-consecutive-reaction-cascade.lingua#r_6PCPV66ZAVPT85HWCSPVED46HY") { r_499NJSB210KGRFY8AFS5PE131S
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete multiple-reaction, selectivity and reactor-material-balance work; [Chemical and Biological Reaction Engineering — MIT 10.37](../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ), the full series/parallel reaction and reactor-comparison problem material; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), one complete synthesis/isolation case where competing reactions matter.
+
+For consecutive irreversible first-order A→B→C at constant volume and temperature, dn_A/dt=−k₁n_A and dn_B/dt=k₁n_A−k₂n_B. Desired B is formed and subsequently consumed, so maximizing A conversion does not generally maximize B yield. Parallel pathways add further dependence on concentrations, temperature and catalyst state.
+
+For initially pure A with k₁≠k₂, its batch or ideal plug-flow B fraction is k₁(e^(−k₁t)−e^(−k₂t))/(k₂−k₁). The equal-rate limit is k₁t e^(−k₁t); use that limit rather than a numerically unstable division. With k₁=1 and k₂=1/2 in consistent inverse-time units, the ideal B maximum occurs at t=2 ln2 and equals 1/2.
+
+An actual process includes mixing/residence distributions, heating/cooling, separation and possible recycle. Removing B can change its exposure to further reaction, but the separation consumes resources and may return contaminants. Compare the complete accepted-product account rather than the reactor's best instantaneous sample.
+
+**Work:** derive the ideal solution, its limiting cases and optimum independently. Contrast a parallel mechanism, a well-mixed reactor and finite isolation time. Use complete published kinetic/isolation evidence to explain a process choice and identify where the ideal first-order picture stops being a justified description.
+
+**Continue:** [Verify consecutive-reaction yield in a series of well-mixed reactors](An-inspectable-consecutive-reaction-cascade.lingua#r_6PCPV66ZAVPT85HWCSPVED46HY).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_499NJSB210KGRFY8AFS5PE131S

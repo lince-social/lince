@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Fins, efficiency, effectiveness and competing losses (@th-fins: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Heat-Transfer-in-Fins-and-Bars-UFSC.lingua#r_3HAWSMZM80J3ZMZK362ED9E3C1", #thermodynamics-and-heat-transfer "Multidimensional-conduction-spreading-and-shape.lingua#r_59BM6KNFGCMJGXA3QZWGQS39C6") { r_13R9CGJVQMY3Q9XC3EEC2030M0
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the full fin analysis; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), fin dimensions and optimization; [Transferência de calor em barras — UFSC LABOPE](../sources/Heat-Transfer-in-Fins-and-Bars-UFSC.lingua#r_3HAWSMZM80J3ZMZK362ED9E3C1), the complete apparatus description and associated analysis.
+
+Derive a fin equation from axial conduction and distributed surface transfer. The usual one-dimensional model assumes suitable cross-sectional temperature uniformity and specified conductivity, geometry, external coefficient and tip condition. Radiation or variable properties change the equation.
+
+Fin efficiency compares actual transfer with an ideal fin held at base temperature; effectiveness compares the fin's transfer with an appropriate bare-base reference. They answer different questions. More surface area can carry mass, contact and flow penalties, and closer fins can alter convection.
+
+Solve complete constant-section cases and compare with a geometry or coefficient variation. Use [Transferência de calor em barras — UFSC LABOPE](../sources/Heat-Transfer-in-Fins-and-Bars-UFSC.lingua#r_3HAWSMZM80J3ZMZK362ED9E3C1) to plan a measurable temperature-profile comparison, including contact, optical measurement and ambient conditions. Infer a coefficient only after identifying what the experiment can separate from material conductivity and heat loss.
+
+**Continue:** [Multidimensional conduction, spreading and shape](Multidimensional-conduction-spreading-and-shape.lingua#r_59BM6KNFGCMJGXA3QZWGQS39C6).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_13R9CGJVQMY3Q9XC3EEC2030M0

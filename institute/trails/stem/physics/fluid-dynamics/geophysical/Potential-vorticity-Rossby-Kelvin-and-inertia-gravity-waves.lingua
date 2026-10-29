@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Potential vorticity, Rossby, Kelvin and inertia–gravity waves (@fd-potential-vorticity: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "../study/Compare-wave-models-with-the-same-physical-observations.lingua#r_7TT23QCCMNDSDZHPCBT4TNHM4D") { r_1MDK0YBKQ7V8JBHGPYPFZ8KX6Y
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 geostrophic, Poincaré, Kelvin and Rossby waves; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), complete coastal-geophysical notes for the selected cases.
+
+For ideal rotating shallow water with suitable conservative forces, material conservation of potential vorticity relates absolute vertical vorticity to layer depth: D[(ζ+f)/h]/Dt=0. Derive it by combining vorticity and mass conservation, including spatial variation of the Coriolis parameter where relevant.
+
+Linearize about a declared resting or moving state. Compare inertia–gravity waves, a boundary-trapped Kelvin mode and Rossby waves supported by a potential-vorticity gradient. Identify which restoring mechanism, boundary condition and scale produce each dispersion relation. A mathematical branch without the correct boundary behavior is not a physical mode of the chosen domain.
+
+Work a simple coast or channel problem, tracking energy and propagation direction. Explain where planetary curvature, stratified layers, bathymetry, forcing and dissipation change the model. These shared dynamics support later oceanic and atmospheric study, which also requires its own observations, thermodynamics, chemistry and geographic context.
+
+**Continue:** [Compare wave models with the same physical observations](../study/Compare-wave-models-with-the-same-physical-observations.lingua#r_7TT23QCCMNDSDZHPCBT4TNHM4D).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1MDK0YBKQ7V8JBHGPYPFZ8KX6Y

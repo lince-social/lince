@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Follow metal production through connected transformations and transfers of work (@metal-system: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #metals-and-metallurgical-production "Metal-alloy-feed-phase-and-process-language.lingua#r_6CS9CNJZZGHDSPVNSBZH1E0V92") { r_2KMY68943DER2DD2A75DC4AHY7
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete initial process-route sequence; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the introductory/shared-process chapters and one whole chosen metal-family account; [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1), the complete introductory system and process context.
+
+Separate geological extraction and beneficiation, chemical extraction/refining, alloy production, shaping, heat/surface treatment, inspection, use, and recovery. A plant can combine several duties, and one stage's product becomes another stage's feed. Changing a boundary changes which losses, inventories, utilities, and responsibilities appear in an account.
+
+Track the desired elements, accompanying elements, phases, physical form, and information through each transfer. A concentrate is not necessarily metallic; a metal is not necessarily a qualified alloy product; a chemically correct alloy can still have an unsuitable microstructure, defect population, surface, or dimensional state.
+
+Follow time as well as material. Startup, interruptions, transitions between grades, storage, maintenance, and shutdown can alter both quality and delivered capacity. A nominal flowsheet omitting these histories can describe a chemically possible process while missing what sustains actual production.
+
+**Work:** reconstruct a complete published route from feed to one specified metal product and its residual streams. Name each transformation, the evidence transferred with material, and the utilities/skills required. Explain an alternative route from recycled feed on the same product-quality basis. Identify where the comparison needs chemistry, material structure, machinery, or measurement knowledge. The shared foundations are followed where needed rather than making completion of every surrounding field an entry condition.
+
+**Continue:** [Use metallurgical vocabulary with a defined material, basis, and purpose](Metal-alloy-feed-phase-and-process-language.lingua#r_6CS9CNJZZGHDSPVNSBZH1E0V92).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_2KMY68943DER2DD2A75DC4AHY7

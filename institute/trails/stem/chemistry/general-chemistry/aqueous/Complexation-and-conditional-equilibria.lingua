@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Track free species and complexes without losing the component total (@gc-complexes: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "Carbonate-water-and-open-boundaries.lingua#r_0WTZ0V8V2K18X7XJZQFAQ4KB07") { r_2GGA9G5GPPJ46R3D8ZMR8FHNMK
+**Read:** [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 6’s complexation and conditional-equilibrium material; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 15’s coupled equilibria and chapter 19’s coordination introduction; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), the coordination and ligand lectures.
+
+Complex formation combines a central species with ligands under an identified reaction and equilibrium convention. Distinguish stepwise from cumulative constants, free ligand from analytical ligand total, and free metal from total dissolved metal. Oxidation state, protonation, competing ligands, and medium conditions can change the speciation account.
+
+For a hypothetical single complex M²⁺ + L ⇌ ML²⁺ under an ideal concentration-form β_c = 100 L mol⁻¹, an imposed free ligand concentration of 0.100 mol L⁻¹ gives a free-metal fraction 1/(1+β_c[L]) = 1/11 if those are the only metal-containing species. A finite ligand total requires its own balance; it cannot always be replaced by an imposed free concentration.
+
+Complexation can change solubility and electrode response because those may depend on free-ion activity while an assay reports the total. A ligand's protonation equilibria can make a conditional complexation strength depend on pH. These coupled effects are part of the model rather than exceptions to conservation.
+
+**Work:** derive the teaching fraction and compare it with a finite-ligand calculation. Combine a hypothetical complexation equilibrium with a solubility relation, identifying all new unknowns and balances. Explain an observation that a total-metal measurement alone cannot distinguish.
+
+Read the full complexation treatment in Harvey and the corresponding coordination introduction. Later inorganic, biological, extraction, and analytical trails deepen their unique ligands and methods; this Record provides the reusable accounting and conditional-equilibrium foundation.
+
+**Continue:** [Use carbonate chemistry to connect gas, acid/base, and mineral equilibria](Carbonate-water-and-open-boundaries.lingua#r_0WTZ0V8V2K18X7XJZQFAQ4KB07).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_2GGA9G5GPPJ46R3D8ZMR8FHNMK

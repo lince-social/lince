@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Excitation, reactive control, limiters and measurement (@pe-excitation: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Excitation-Systems-Hydroelectric-FIST-2026.lingua#r_725R40RX14YMRTQNWKGHY12JCN", #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #electrical-power-engineering "Prime-movers-governors-inertia-and-energy-source.lingua#r_6YV9SD6REY3CDQ5RSFE9K3S06D") { r_0GBD1BSCV5NBEGWRAX56BQ9WN3
+**Read:** [Excitation Systems for Hydroelectric Units — FIST 3-14](../sources/Excitation-Systems-Hydroelectric-FIST-2026.lingua#r_725R40RX14YMRTQNWKGHY12JCN), complete applicable manual; [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), all excitation and controller modelling; [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), complete synchronous dynamic models.
+
+Generator excitation changes internal electromagnetic state and influences terminal voltage/reactive exchange under the network and machine conditions. Model sensor/transducer, regulator, exciter/field, machine, limiters and relevant stabilizing functions rather than treating excitation as a direct unlimited voltage command.
+
+Derive a simple response around a declared operating point and compare with the complete machine and network model. Include field/stator current, under/overexcitation, saturation and other actual capability constraints. A limiter entering can change the control structure and voltage-stability margin; a model without it may predict an unattainable equilibrium or response.
+
+Read the entire applicable [Excitation Systems for Hydroelectric Units — FIST 3-14](../sources/Excitation-Systems-Hydroelectric-FIST-2026.lingua#r_725R40RX14YMRTQNWKGHY12JCN) manual and the full excitation/prime-mover parts of [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ). Reconstruct initialization, parameter/test meaning and a documented disturbance. Compare measured or published terminal response with an independently predicted changed condition. Diagnose discrepancy in sensors, network, machine or limits before merely retuning the regulator. The advanced control study must connect mathematical stability with the physical installed sensing, auxiliary power, protection and maintained settings.
+
+**Continue:** [Prime movers, governors, inertia and energy source](Prime-movers-governors-inertia-and-energy-source.lingua#r_6YV9SD6REY3CDQ5RSFE9K3S06D).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_0GBD1BSCV5NBEGWRAX56BQ9WN3

@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Build the measurement model before filling the uncertainty budget (@met-budget: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #metrology "Type-A-evaluation.lingua#r_4R6T465PVRV8EYK0145W6MBMR4") { r_0QB7F1RTYH2F2P1VDT1AW3TY7R
+**Read:** [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the formulation, input, and combined-uncertainty clauses; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 5–10; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), sections 4–7.
+
+An uncertainty budget is a structured consequence of a model and available evidence. Define the output quantity, input quantities, corrections, relationships, and conditions before collecting convenient ± numbers. Decide whether the model estimates a particular object, a target average, a calibration relation, or a future result under changed use conditions.
+
+For each input retain estimate, unit, evaluation source, distribution or other uncertainty description, standard uncertainty where appropriate, sensitivity, dependence, and validity conditions. A budget may combine reference information, repeat observations, validation evidence, physical corrections, and model approximations. A table alone cannot establish that the important effects are included or counted once.
+
+For a hypothetical additive length result, x = I + C + δ, let I = 20.012 mm, C = −0.008 mm, and δ = 0.000 mm. With independent standard uncertainties 0.003, 0.004, and 0.002 mm, x = 20.004 mm and u_c = √(0.003² + 0.004² + 0.002²), about 0.00539 mm. This is a teaching model with supplied uncertainty evaluations, not a real calibrated result.
+
+**Work:** recreate the budget, justify each sensitivity coefficient, and identify what physical information would support the supplied uncertainties. Then introduce a common reference affecting I and C and explain why the independent calculation may fail. Add a use-temperature correction and check whether it duplicates information already contained in the certificate term.
+
+Compare bottom-up evaluation with an approach using broader validation or comparison data. Each can be defensible when its statistical and physical scope is clear. A realistic model should remain open to revision when residuals, check measurements, or a new purpose expose an omitted effect.
+
+**Continue:** [Type A evaluation — statistical information and its conditions](Type-A-evaluation.lingua#r_4R6T465PVRV8EYK0145W6MBMR4).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_0QB7F1RTYH2F2P1VDT1AW3TY7R

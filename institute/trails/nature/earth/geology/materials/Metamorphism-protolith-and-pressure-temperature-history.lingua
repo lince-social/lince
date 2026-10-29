@@ -1,0 +1,21 @@
+Import "../Geology.lingua"
+
+Infer metamorphic history from reactions, fabrics, and context (@geo-metamorphic: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "../time/Relative-ordering-and-geological-events.lingua#r_0KXVTSWTTJQ9GASZX3Y90Z5YNN", #mineralogy-and-petrology "../../mineralogy-and-petrology/metamorphic/Assemblages-textures-and-equilibrium-domains.lingua#r_329FT3EHXC5DZT6P5THMYDCREY") { r_3P42J3NDC118QXFD1G1ME5SGTG
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 7 in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), metamorphism, mountain building, and the corresponding historical examples; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the metamorphic identification and structure material.
+
+Metamorphism connects changes in mineral assemblage, chemistry, texture, and fabric with pressure, temperature, fluids, deformation, time, and protolith. Distinguish an observed assemblage from an inferred equilibrium condition or complete path. A rock may preserve reactions and structures from more than one event.
+
+Foliation, lineation, porphyroblasts, reaction textures, and relations with intrusions or faults can constrain a sequence. Grade and facies are useful frameworks whose compositional and equilibrium assumptions matter. An index mineral's occurrence alone cannot specify one exact pressure, temperature, or age for every protolith.
+
+Fluids and open-system transfer can alter composition, while kinetic limits and retrogression can change or preserve evidence. A mapped metamorphic pattern needs a connection between specimens, analytical methods, structural context, and time information. Several paths may be consistent with an incomplete record.
+
+**Work:** reconstruct an identified textbook metamorphic case from description through competing pressure/temperature/deformation histories. Distinguish a protolith inference from a measured composition and from a time constraint. Propose observations and analyses needed to test a claimed path, preserving assumptions and uncertainty.
+
+Read the entire metamorphic chapter and historical examples, then connect them with the later structural and geochronological sequence. The specialist mineralogy/petrology and geochemistry scopes will deepen thermobarometry, reaction models, and analytical research; general geology should already support a coherent, evidence-based interpretation.
+
+**Continue:** [Order events from relationships before assigning numerical ages](../time/Relative-ordering-and-geological-events.lingua#r_0KXVTSWTTJQ9GASZX3Y90Z5YNN).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+
+**Continue in mineralogy and petrology:** [Define a metamorphic assemblage through spatial and temporal relationships](../../mineralogy-and-petrology/metamorphic/Assemblages-textures-and-equilibrium-domains.lingua#r_329FT3EHXC5DZT6P5THMYDCREY).
+} r_3P42J3NDC118QXFD1G1ME5SGTG

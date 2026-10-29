@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Plane Couette, Poiseuille and combined flow (@fd-couette: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #fluid-dynamics "Circular-pipe-flow-wall-stress-and-the-fourth-power.lingua#r_2YEKAMXH5749FPWMEQDTZGBGFN") { r_6PPBMTFDM4X0DXRTFRMG2VPA9B
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 3 Couette and Poiseuille flow; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 8 plane laminar solutions; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), viscous-flow derivation problems.
+
+Consider steady, fully developed flow between fixed parallel planes y=0 and y=h, with the upper wall moving at U. For a Newtonian liquid of constant viscosity, the streamwise equation reduces to μu″=dp/dx. With G=−dp/dx, the solution is u(y)=Uy/h+G y(h−y)/(2μ). The volume flux per unit width is Uh/2+G h³/(12μ). The transverse pressure balance still includes any retained gravity.
+
+Derive the equation by cancelling terms under the stated geometry, not by assuming that all laminar flows have a parabolic profile. Recover pure shear and pure pressure-driven motion, calculate both wall tractions, and integrate viscous dissipation. A pressure gradient opposing the moving wall can produce a region of reverse flow even while net flux is positive. Find its boundary from the solution.
+
+Compare pressure work plus wall work with the integrated dissipation over a finite length. Then ask which effects an actual experiment adds: entrance development, sidewalls, temperature-dependent viscosity, moving-wall mechanics and measurement resolution. The exact ideal solution is a powerful check precisely because its assumptions are explicit.
+
+**Continue:** [Circular pipe flow, wall stress and the fourth power](Circular-pipe-flow-wall-stress-and-the-fourth-power.lingua#r_2YEKAMXH5749FPWMEQDTZGBGFN).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_6PPBMTFDM4X0DXRTFRMG2VPA9B

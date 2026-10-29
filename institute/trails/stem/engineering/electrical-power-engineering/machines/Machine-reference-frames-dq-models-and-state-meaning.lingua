@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Machine reference frames, dq models and state meaning (@pe-machine-dynamics: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #source "../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ", #electrical-power-engineering "Induction-machines-slip-torque-and-rotor-loss.lingua#r_5MZTZPZAN2H30QEHNC16H3PV0W") { r_0MCY79PS4MZSW8CK4V2MER26NP
+**Read:** [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), chapter 9 in full and its supporting winding models; [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), complete synchronous-machine modelling sequence; [ANDES — dynamic modelling and analysis manual](../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ), complete applicable model equations, bases and initialization.
+
+A rotating-reference transformation organizes phase quantities into components tied to a selected angular frame. Specify phase order, angle origin, q/d orientation, scaling and signs. Reconstruct the inverse transform and power relation; power-invariant and amplitude-invariant conventions carry different factors. A transform changes representation, not the physical winding.
+
+Derive synchronous-machine flux/voltage/torque equations and identify rotor-field/damper states, mechanical motion and saturation assumptions. Compare subtransient, transient and classical reductions with the observable and disturbance time scale. Parameter names in two software models need not denote identical equations or bases.
+
+Work a small steady state and a disturbance, transform between phase and dq descriptions and close power/energy balances. Check initialization against the same load-flow state and actual controller limits. Read the whole dynamic machine development in [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH) and [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), then inspect the actual equations used by [ANDES — dynamic modelling and analysis manual](../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ). The graduate study requires reconstructible state meaning and reductions rather than merely selecting a machine model from a menu.
+
+**Continue:** [Induction machines, slip, torque and rotor loss](Induction-machines-slip-torque-and-rotor-loss.lingua#r_5MZTZPZAN2H30QEHNC16H3PV0W).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_0MCY79PS4MZSW8CK4V2MER26NP

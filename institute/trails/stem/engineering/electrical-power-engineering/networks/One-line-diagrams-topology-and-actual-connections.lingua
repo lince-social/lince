@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+One-line diagrams, topology and actual connections (@pe-one-line: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #source "../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8", #electrical-power-engineering "Load-models-constant-power-impedance-and-dynamics.lingua#r_490N9DZXVK6YZC3MCTJJ8H6HGZ") { r_413DWSGDZ7840QHZTC4CQ81RB3
+**Read:** [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), complete architecture, diagram and equipment guidance; [Mechanical and Electrical Design of Hydroelectric Power Plants — USACE](../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8), applicable complete electrical-layout and interface context.
+
+A one-line diagram is a compact representation whose symbols assume additional phase, winding, neutral, earthing, protection and equipment information. It is useful for topology and system boundaries but is not by itself a wiring or construction drawing. A model can be perfectly solved while representing the wrong switch state or connection.
+
+For a small source-transformer-feeder-load system, draw the one-line, corresponding phase circuit, winding/neutral paths and a table of normally open/closed devices. Identify voltage regions, bus references, metering points, current-transformer polarity, trip circuits and auxiliary supplies. Distinguish a physical switch position from a modelled connection and from evidence that a circuit is isolated.
+
+Build a consistent equipment/model identifier map, then compare design drawings, as-built information and actual inspection/test evidence. Trace what changes when a normally open tie closes or a transformer connection differs from the assumed vector group. The later commissioning and state-estimation Records revisit these mismatches.
+
+**Continue:** [Load models, constant power, impedance and dynamics](Load-models-constant-power-impedance-and-dynamics.lingua#r_490N9DZXVK6YZC3MCTJJ8H6HGZ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_413DWSGDZ7840QHZTC4CQ81RB3

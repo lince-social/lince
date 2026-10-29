@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+View factors, reciprocity and enclosure geometry (@th-view-factors: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "Diffuse-grey-radiosity-and-multiple-reflections.lingua#r_7K7NSA9SC8SRD152XYZGSQ4M07") { r_6R7DAPAD6KRCX3JMS0APKE0CKY
+**Read:** [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), view-factor and enclosure lectures; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete geometric-factor development.
+
+A diffuse geometric view factor is the fraction of radiation leaving one surface that directly reaches another under the stated ray-transport model. Define surfaces, occlusion, normals and the enclosure before calculating it. A concave surface can view itself; a planar unobstructed surface does not directly view itself.
+
+For a closed enclosure, the row sum is one and reciprocity gives A_iF_ij = A_jF_ji. These are powerful checks, but a nonnegative matrix satisfying them is not automatically proof of a realizable geometry. Openings or ambient surfaces must be represented explicitly in an enclosure balance.
+
+Derive one simple analytic factor and compare a numerical surface integration or ray calculation with it. Refine the geometry and quadrature independently of the subsequent thermal solution. A physically incorrect factor matrix can conserve energy while predicting the wrong exchange distribution.
+
+**Continue:** [Diffuse-grey radiosity and multiple reflections](Diffuse-grey-radiosity-and-multiple-reflections.lingua#r_7K7NSA9SC8SRD152XYZGSQ4M07).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6R7DAPAD6KRCX3JMS0APKE0CKY

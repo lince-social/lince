@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow urea from ammonia and carbon dioxide through recycle and finished product (@ic-urea: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #industrial-chemistry "Nitric-acid-oxidation-absorption-and-NOx-accounts.lingua#r_5T20YCXZ7SSKJPZCF4HH795M02") { r_067VCQSBX1VN3KDR6GAZGBF0SG
+**Read:** [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the entire urea/nitrogen-fertiliser manufacturing treatment; [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the complete urea and connected ammonia/utility/product chapters; [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the full feedstock, route and technical-account context.
+
+The net relation 2NH₃+CO₂→CO(NH₂)₂+H₂O links urea to ammonia and carbon dioxide, but the actual process includes intermediate chemistry, equilibrium and recovery of unconverted material. Distinguish a balanced overall equation from the reactions and phases through which a production route proceeds.
+
+Reaction/separation, returned ammonia/carbon dioxide, water management, heat and equipment materials form a coupled system. A high reactor conversion does not determine the final nutrient product: concentration, finishing, particle properties, moisture and consequential byproducts can affect storage, handling and use.
+
+Preserve the nitrogen and carbon accounts through co-products, emissions, wastewater and changing inventories. Compare product grades and downstream functions on an actual nutrient and quality basis. A circulating material returned to synthesis is not new feed or an additional saleable product.
+
+**Work:** reconstruct a complete urea route using the full primary technical chapter, independently closing nitrogen, carbon and water/energy accounts. Compare two documented recovery/finishing arrangements at equal accepted product output. Identify the reaction, phase, corrosion, physical-form and measurement evidence needed to distinguish their consequential differences.
+
+**Continue:** [Connect nitric-acid chemistry with gas oxidation, absorption and nitrogen recovery](Nitric-acid-oxidation-absorption-and-NOx-accounts.lingua#r_5T20YCXZ7SSKJPZCF4HH795M02).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_067VCQSBX1VN3KDR6GAZGBF0SG

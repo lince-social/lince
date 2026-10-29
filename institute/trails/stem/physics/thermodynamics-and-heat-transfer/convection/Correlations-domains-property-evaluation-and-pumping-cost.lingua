@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Correlations, domains, property evaluation and pumping cost (@th-correlations: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #thermodynamics-and-heat-transfer "Conjugate-heat-transfer-solids-fluids-and-interfaces.lingua#r_3ZZVC37HDSQKWS93WMDW22PRF3", #thermodynamics-and-heat-transfer "../research/Forced-and-natural-convection-from-equations-to-evidence.lingua#r_5HAYB9P01TV1WEW6QC6SAH1Z47") { r_2NTN9Z1N354JB42CDF3N02W01K
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), whole relevant correlation chapters and their derivations; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), turbulator performance and regime assumptions; [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), the complete corresponding example/tutorial.
+
+A heat-transfer correlation includes geometry, regime, boundary condition, property evaluation and fitted range. Record these before calculating a coefficient. A formula copied without its experimental definition or uncertainty can produce a precise-looking result outside its evidence.
+
+Compare local versus mean Nusselt numbers, inlet versus bulk versus film property temperatures and the stated roughness/development assumptions. Evaluate a nearby second correlation only if it describes a comparable problem. Disagreement may reveal different evidence or assumptions rather than a rounding error.
+
+Enhancement can increase transfer while also increasing pressure loss, fan/pump power, fouling or manufacturing difficulty. Compare equal area, equal pumping power and equal useful service as different design questions. Carry material/temperature limits and uncertainty into the final choice instead of selecting the largest coefficient alone.
+
+**Continue:** [Conjugate heat transfer through solids, fluids and interfaces](Conjugate-heat-transfer-solids-fluids-and-interfaces.lingua#r_3ZZVC37HDSQKWS93WMDW22PRF3) · [Advanced study: forced and natural convection](../research/Forced-and-natural-convection-from-equations-to-evidence.lingua#r_5HAYB9P01TV1WEW6QC6SAH1Z47).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_2NTN9Z1N354JB42CDF3N02W01K

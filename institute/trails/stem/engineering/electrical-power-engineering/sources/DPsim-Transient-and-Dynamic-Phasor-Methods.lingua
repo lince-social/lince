@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+DPsim — electromagnetic-transient and dynamic-phasor methods (@pe-dpsim: 0, is #reference, #part-of @pe-sources) { r_6Y8PGZBGJHGV3JHZ1Q8XC77RR3
+The SOGNO/DPsim contributors. [Complete documentation](https://dpsim.fein-aachen.org/docs/) · [Concepts](https://dpsim.fein-aachen.org/docs/concepts/) · [Official source and licence](https://github.com/sogno-platform/dpsim).
+
+Read the complete applicable user, concept, model, initialization and solver documentation, then compare static phasor, dynamic-phasor and electromagnetic-transient representations of one well-defined network. Reconstruct a component stamp and its time update, and validate an independently available analytical/physical limit before a more complex switching case.
+
+The official project identifies MPL 2.0 and the supported domains; checked on 29 October 2026. Dependencies, co-simulation interfaces and data have separate terms. Pin a release/commit and preserve exact model/solver settings. A real-time-capable framework does not establish that a chosen model meets real-time deadlines or physical accuracy on arbitrary hardware. No solver, library, environment or external case is installed or bundled here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_6Y8PGZBGJHGV3JHZ1Q8XC77RR3

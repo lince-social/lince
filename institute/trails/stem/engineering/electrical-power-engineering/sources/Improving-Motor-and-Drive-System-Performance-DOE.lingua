@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Improving Motor and Drive System Performance — DOE (@pe-motors-sourcebook: 0, is #reference, #part-of @pe-sources) { r_71MGTGWBE9B62SJ1GS6Y3W8MKR
+U.S. Department of Energy. Improving Motor and Drive System Performance: A Sourcebook for Industry, second edition, February 2014. [Official complete sourcebook](https://www.energy.gov/sites/default/files/2014/04/f15/amo_motors_sourcebook_web.pdf) · [DOE motor-system resources](https://www.energy.gov/cmei/ito/motor-systems).
+
+Read the whole sourcebook: system basics, performance opportunities, operating conditions, selection, adjustable-speed drives, distribution/power quality, maintenance/service-centre evaluation and system economics. Relate motor efficiency to the actual driven load and operating schedule rather than comparing only nameplate peak efficiency.
+
+The source explicitly describes practical opportunities rather than a comprehensive machine-theory textbook. Edition/date and full scope were checked through primary publisher material on 29 October 2026. Its NEMA table excerpts and historical minimum-efficiency references retain their own dates/rights; they are not current compliance tables for every jurisdiction. Use the graduate machine reading for design theory and actual current manufacturer/authority data for an application. No book, tables or software are copied here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_71MGTGWBE9B62SJ1GS6Y3W8MKR

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Pressure reference, stress and a pressure measurement (@fd-pressure: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Hydrostatic-balance-gravity-and-density-variation.lingua#r_0BMK5JN8XP72JR1WQG5B52PFMS") { r_5KKK4Q5KPBS1CCXVZ72RYBJMKK
+**Read:** [University Physics Volume 1 — OpenStax](../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), pressure and pressure-measurement sections; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 4, surface forces and pressure.
+
+In a fluid at rest under ordinary isotropic conditions, the traction on a small surface is normal to it and its compressive part is described by pressure. Choose a unit outward normal n for a control surface: the pressure force on its enclosed material is −p n per unit area. A moving viscous fluid also transmits deviatoric stress.
+
+Absolute pressure uses a vacuum reference; gauge pressure uses a stated reference pressure; differential pressure compares two locations. Record which quantity an instrument actually gives, and account for the elevation and fluid in connecting tubes. A dynamic pressure port may alter the local flow and its reading.
+
+Draw the fluid, sensing element and reference side of a measurement. Explain how the reported number becomes a force on the chosen surface. A zero gauge reading is not zero absolute pressure. When assessing phase change or gas density, convert to the required absolute state and investigate the physical conditions at the relevant location.
+
+**Continue:** [Hydrostatic balance, gravity and density variation](Hydrostatic-balance-gravity-and-density-variation.lingua#r_0BMK5JN8XP72JR1WQG5B52PFMS).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5KKK4Q5KPBS1CCXVZ72RYBJMKK

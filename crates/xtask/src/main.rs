@@ -18,6 +18,40 @@ mod workspace;
 
 type Result<T> = std::result::Result<T, String>;
 
+#[cfg(target_os = "linux")]
+fn file_sha256(path: &std::path::Path) -> Result<String> {
+    use sha2::{Digest, Sha256};
+    use std::io::Read;
+    if fs::metadata(path).map_err(|error| error.to_string())?.len() >= 8 * 1024 * 1024 {
+        match Command::new(env::var_os("LINCE_SHA256SUM").unwrap_or_else(|| "sha256sum".into())).arg("--").arg(path).output() {
+            Ok(output) => {
+                let hash = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
+                let hash = hash.split_whitespace().next().unwrap_or("").trim_start_matches('\\');
+                if output.status.success() && hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+                    return Ok(hash.to_ascii_lowercase());
+                }
+                return Err(format!("Cannot hash {}: {}", path.display(), String::from_utf8_lossy(&output.stderr)));
+            }
+            Err(failure) if failure.kind() == std::io::ErrorKind::NotFound => {}
+            Err(failure) => return Err(failure.to_string()),
+        }
+    }
+    let mut file = fs::File::open(path).map_err(|error| error.to_string())?;
+    let mut hash = Sha256::new();
+    let mut buffer = [0; 65536];
+    loop {
+        let count = file.read(&mut buffer).map_err(|error| error.to_string())?;
+        if count == 0 {
+            return Ok(hash
+                .finalize()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect());
+        }
+        hash.update(&buffer[..count]);
+    }
+}
+
 fn main() {
     if let Err(error) = dispatch() {
         eprintln!("{error}");
@@ -30,11 +64,14 @@ fn dispatch() -> Result<()> {
     let mut args = env::args_os().skip(1);
     let task = args.next().unwrap_or_default();
     let extra: Vec<_> = args.collect();
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|parent| parent.parent())
-        .ok_or("cannot find workspace root")?
-        .to_path_buf();
+    let root = caller_directory.ancestors()
+        .find(|directory| directory.join("crates/xtask/Cargo.toml").is_file())
+        .map(std::path::Path::to_path_buf)
+        .or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent().and_then(|parent| parent.parent())
+            .filter(|directory| directory.join("crates/xtask/Cargo.toml").is_file())
+            .map(std::path::Path::to_path_buf))
+        .ok_or("cannot find workspace root")?;
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
 
     match task.to_str() {
@@ -469,6 +506,9 @@ fn dev(extra: &[std::ffi::OsString]) -> Result<()> {
 }
 
 fn cargo_command() -> Command {
+    if std::env::var_os("LINCE_BUILD_ENVIRONMENT").is_some() {
+        return Command::new("cargo");
+    }
     if Command::new("nix")
         .arg("--version")
         .stdout(Stdio::null())

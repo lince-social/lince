@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Schedule production with explicit precedence, capacities, and objective meaning (@mine-scheduling: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS", #source "../sources/MineLib-Benchmarks-and-Methods.lingua#r_3KXVJNVZ2FSQ8CZJMJG2JDQYR8", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #mining-and-mineral-engineering "../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8") { r_1H23PH3C97H8PE2M8T9AYA0S7C
+**Read:** [A Review of Operations Research in Mine Planning — Newman and colleagues](../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS), the complete planning/scheduling review and primary method selected; [MineLib — Espinoza, Goycoolea, Moreno, and Newman](../sources/MineLib-Benchmarks-and-Methods.lingua#r_3KXVJNVZ2FSQ8CZJMJG2JDQYR8), the complete selected formulation and data specification; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full planning/capacity context.
+
+A production schedule allocates extraction, development, processing, handling, and other activities over time under constraints. Define period length, event timing, material supports, capacities, destinations, inventories, and objective before interpreting the result. A throughput total or value does not establish every necessary operating condition.
+
+An objective can represent discounted contribution, recovered material, production target, or another stated measure. Net present value needs a consistent cash-flow timing/account and assumptions; benchmark or invented numbers are mathematical inputs, not current prices or investment advice. Physical and organizational feasibility remains separate.
+
+Equipment, plant, access, development, ground, water, ventilation, blending, maintenance, and workforce can constrain different parts of the schedule. Aggregating them into one rate can hide the limiting process. A long-term plan may need shorter-term feasibility checks rather than direct execution.
+
+**Work:** formulate a small schedule with named activities/blocks and independently check precedence and per-period balances. Compare a greedy immediate-value choice with an integrated schedule, explaining why they can differ. Identify a physically consequential omitted constraint and show how adding it changes the feasible set.
+
+Read the complete review/benchmark specifications and relevant course planning material. Follow [Build a numerical validation argument across several kinds of evidence](../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8) for shared numerical-validation principles before the original exhaustively checkable example; the later project scales to complete primary methods and independently verified benchmark bounds.
+
+**Continue:** [Build a numerical validation argument across several kinds of evidence](../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1H23PH3C97H8PE2M8T9AYA0S7C

@@ -1,0 +1,184 @@
+Import "../Reproducible-computation.lingua"
+
+A complete small analysis — two lots, one inspectable result (@rc-pipeline: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #reproducible-computation "../software/Functions-modules-and-boundaries.lingua#r_78TTB7C486WRJJGY0W3GR7H1WQ") { r_7CVD48GN8M8X71MHQCRPGMTBN7
+**Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), the exact-version references for csv, fractions, hashlib, json, pathlib, tempfile, and os.replace; [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), decoupled code, project organization, and testing.
+
+This original example connects the preceding ideas. Save the two blocks as inputs.csv and analyze.py in a personal exercise directory. All values are invented. The model accounts for nonreacting dry mass and one component, with no unrecorded flows or accumulation. Product mass and product assay are on the dry basis. The arithmetic is exact for these teaching inputs; real observations would need their own uncertainty and sampling analysis.
+
+```csv file=inputs.csv
+lot_id,wet_kg,water_fraction,component_fraction_dry,product_kg,product_component_fraction
+A,800,0.1,0.02,100,0.1
+B,500,0.2,0.03,80,0.12
+```
+
+```python file=analyze.py
+import argparse
+import csv
+import hashlib
+import io
+import json
+import os
+from pathlib import Path
+import re
+import tempfile
+from fractions import Fraction
+
+FIELDS = (
+    "lot_id", "wet_kg", "water_fraction", "component_fraction_dry",
+    "product_kg", "product_component_fraction",
+)
+DECIMAL = re.compile(r"(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,12})?")
+IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+MASS_FIELDS = (
+    "dry_kg", "input_component_kg", "product_kg",
+    "recovered_component_kg", "tail_kg", "tail_component_kg",
+)
+
+def ratio(numerator, denominator):
+    return numerator / denominator if denominator else None
+
+def calculate(values):
+    wet, water, component, product, product_component = values
+    if any(value < 0 for value in values):
+        raise ValueError("negative input")
+    if any(value > 1 for value in (water, component, product_component)):
+        raise ValueError("fraction exceeds one")
+    dry = wet * (1 - water)
+    incoming = dry * component
+    recovered = product * product_component
+    tail = dry - product
+    tail_component = incoming - recovered
+    if tail < 0 or tail_component < 0 or tail_component > tail:
+        raise ValueError("inconsistent nonreacting dry-mass balance")
+    return {
+        "dry_kg": dry,
+        "input_component_kg": incoming,
+        "product_kg": product,
+        "recovered_component_kg": recovered,
+        "tail_kg": tail,
+        "tail_component_kg": tail_component,
+        "mass_yield": ratio(product, dry),
+        "component_recovery": ratio(recovered, incoming),
+    }
+
+def load_rows(raw):
+    text = raw.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(text, newline=""), strict=True)
+    if reader.fieldnames != list(FIELDS):
+        raise ValueError("unexpected columns or column order")
+    seen = set()
+    rows = []
+    for line, row in enumerate(reader, start=2):
+        if len(rows) >= 10000:
+            raise ValueError("more than 10000 lots")
+        if None in row or any(value is None for value in row.values()):
+            raise ValueError(f"wrong field count near record {line}")
+        lot = row["lot_id"]
+        if not IDENTIFIER.fullmatch(lot) or lot in seen:
+            raise ValueError(f"invalid or duplicate lot near record {line}")
+        values = []
+        for field in FIELDS[1:]:
+            token = row[field]
+            if not DECIMAL.fullmatch(token):
+                raise ValueError(f"invalid decimal in {field} for {lot}")
+            values.append(Fraction(token))
+        try:
+            result = calculate(values)
+        except ValueError as error:
+            raise ValueError(f"{lot}: {error}") from error
+        seen.add(lot)
+        rows.append({"lot_id": lot, **result})
+    if not rows:
+        raise ValueError("no data rows")
+    return sorted(rows, key=lambda row: row["lot_id"])
+
+def build_report(rows, input_sha256, code_sha256):
+    totals = {
+        field: sum((row[field] for row in rows), Fraction(0))
+        for field in MASS_FIELDS
+    }
+    totals["mass_yield"] = ratio(totals["product_kg"], totals["dry_kg"])
+    totals["component_recovery"] = ratio(
+        totals["recovered_component_kg"], totals["input_component_kg"]
+    )
+    encoded_rows = [
+        {
+            key: value if key == "lot_id" or value is None else str(value)
+            for key, value in row.items()
+        }
+        for row in rows
+    ]
+    return {
+        "format_version": 1,
+        "method": "nonreacting-dry-balance-v1",
+        "input_sha256": input_sha256,
+        "code_sha256": code_sha256,
+        "units": {"mass": "kg", "fractions": "1"},
+        "rows": encoded_rows,
+        "totals": {
+            key: None if value is None else str(value)
+            for key, value in totals.items()
+        },
+    }
+
+def run(input_path, output_path):
+    input_path = Path(input_path).resolve()
+    output_path = Path(output_path).resolve()
+    script_path = Path(__file__).resolve()
+    if output_path in (input_path, script_path):
+        raise ValueError("output would overwrite an input or the script")
+    if output_path.exists() and (
+        output_path.samefile(input_path) or output_path.samefile(script_path)
+    ):
+        raise ValueError("output aliases an input or the script")
+    with input_path.open("rb") as stream:
+        raw = stream.read(1000001)
+    if len(raw) > 1000000:
+        raise ValueError("input exceeds 1000000 bytes")
+    rows = load_rows(raw)
+    report = build_report(
+        rows,
+        hashlib.sha256(raw).hexdigest(),
+        hashlib.sha256(script_path.read_bytes()).hexdigest(),
+    )
+    encoded = json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + "\n"
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", newline="\n",
+            dir=output_path.parent, prefix=".balance-", delete=False,
+        ) as stream:
+            temporary = Path(stream.name)
+            stream.write(encoded)
+        os.replace(temporary, output_path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    return report
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", type=Path)
+    parser.add_argument("output", type=Path)
+    arguments = parser.parse_args()
+    try:
+        run(arguments.input, arguments.output)
+    except (OSError, UnicodeError, ValueError, csv.Error) as error:
+        parser.exit(2, f"analysis failed: {error}\n")
+
+if __name__ == "__main__":
+    main()
+```
+
+Run python3 analyze.py inputs.csv report.json. The program validates before publishing, reads at most 1,000,001 bytes to enforce its small-file bound, accepts at most 10,000 lots, and limits each decimal's length. It rejects exponent notation, negatives, NaN, missing fields, duplicate identities, and impossible balances under this model. These are explicit teaching contracts, not a universal scientific-data grammar. CSV record numbers in diagnostics identify parsed records; quoted multiline fields can occupy more physical lines.
+
+The report contains rational strings and null for undefined ratios. It records input/code identities, sorts lots by identifier, and excludes timestamps and absolute paths from the deterministic artifact. Run/environment observations belong in a separate execution account. Replacing a fully written temporary file prevents an ordinary failed calculation from truncating a prior report. This is not a guarantee against concurrent hostile filesystem modification, power loss, or every storage failure; use a private exercise area and inspect the later recovery discussion.
+
+**Independent expectations:** A has dry mass 720 kg, input component 72/5 kg, recovered component 10 kg, recovery 25/36, and tail component 22/5 kg. B has 400 kg, 12 kg, 48/5 kg, recovery 4/5, and tail component 12/5 kg. Totals are 1120 kg dry feed, 180 kg product, 132/5 kg input component, 98/5 kg recovered component, 940 kg tails, and 34/5 kg tail component. Total recovery is 49/66; mass yield is 9/56. Derive them from the equations in [Mass and component balances — account for every stream](../../quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H) before comparing the JSON. The unweighted mean of the two recoveries answers a different question.
+
+**Work:** run the script, explain every boundary between reading/calculation/writing, and compare each expectation with the report. Reorder the CSV rows: scientific totals and sorted results should agree, but the input digest should change. Copy unchanged code/input into another directory and rerun from another working directory: the report bytes should agree under the documented runtime. Later Records add automated independent checks, environment perturbations, failure tests, and a larger research project around this same calculation.
+
+**Continue:** [Separate scientific transformations from their surroundings](../software/Functions-modules-and-boundaries.lingua#r_78TTB7C486WRJJGY0W3GR7H1WQ).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_7CVD48GN8M8X71MHQCRPGMTBN7

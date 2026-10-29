@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Investigate a complete chlor-alkali system with charge, quality and co-product evidence (@ic-chlor-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9", #source "../sources/Chemical-Sector-Waste-Gas-BREF.lingua#r_1TCVADXXV40HYCGK8NTERRSSYA", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_57D0RWFC4BPYFG6Z2BP7DK5NAH
+**Read:** [Production of Chlor-alkali, BREF CAK](../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the entire 2014 technical reference and full relevant primary methods; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the complete corresponding inorganic/electrochemical production sequence; [Common Waste Water and Waste Gas Treatment/Management Systems in the Chemical Sector, BREF CWW](../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9), the whole applicable water/residual account; [Common Waste Gas Management and Treatment Systems in the Chemical Sector, BREF WGC](../sources/Chemical-Sector-Waste-Gas-BREF.lingua#r_1TCVADXXV40HYCGK8NTERRSSYA), the complete pertinent air-inventory and treatment methods.
+
+Read the whole chlor-alkali reference and reconstruct a complete brine-to-qualified-products system. Join feed purification, electrochemical reactions, cell/separator materials, current/voltage, caustic concentration, chlorine/hydrogen conditioning, utilities, product transfers and residual or legacy material.
+
+Independently close sodium, chlorine, hydrogen, water, charge, energy and changing inventories. Reproduce a consequential cell/system calculation by an independent approach and explain where reversible bounds, current efficiency and measured accepted output differ. Include actual sampling, analytical and uncertainty evidence.
+
+Compare a documented material, purification or operating change across the whole service interval. Test how feed contaminants, product requirements, co-product demand, maintenance or utility conditions change the conclusion. Avoid treating one co-product's favorable boundary as the entire production system.
+
+**Work:** produce a substantial technical/research study with complete primary bibliography/methods, original calculations, competing explanations, uncertainty and independent criticism. Explain a measured or reported discrepancy with at least two plausible mechanisms, identify a discriminating observation and revise the account from evidence. Distinguish literature/model results from actual cell or plant work demonstrated.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_57D0RWFC4BPYFG6Z2BP7DK5NAH

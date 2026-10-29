@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Duality, convex relaxations and physical recovery (@pe-duality: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Convex-Relaxation-of-OPF-Low.lingua#r_75K2XQST5PGBNZ7RJ41S3QW08B", #source "../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA", #source "../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H", #electrical-power-engineering "Unit-commitment-reserve-ramping-and-chronological-state.lingua#r_0QFNTTAR35VZZ8WSRF0ZNBGKBC") { r_7H8HRFCFJM8FJ3YYMSNJ6E2X38
+**Read:** [Convex relaxation of optimal power flow — Steven H. Low](../sources/Convex-Relaxation-of-OPF-Low.lingua#r_75K2XQST5PGBNZ7RJ41S3QW08B), both complete papers with reconstructed proofs/examples; [Convex Optimization — Boyd and Vandenberghe](../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA), entire book and substantial exercises; [PowerModels.jl — formulations, methods and primary paper](../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H), complete applicable relaxation and recovery/formulation documentation.
+
+A relaxation enlarges or otherwise simplifies a feasible model to obtain a bound under stated conditions. Derive the relationship to the original problem before interpreting the result. A relaxed matrix or conic variable can satisfy its constraints while failing to represent physical bus voltages; recovery and exactness require their actual mathematical conditions.
+
+Read both complete [Convex relaxation of optimal power flow — Steven H. Low](../sources/Convex-Relaxation-of-OPF-Low.lingua#r_75K2XQST5PGBNZ7RJ41S3QW08B) papers and all of [Convex Optimization — Boyd and Vandenberghe](../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA). Reconstruct the bus-injection/branch-flow equivalences, rank or angle conditions and sufficient exactness results used in a chosen case. Compare a feasible AC solution's cost with a valid bound and quantify the gap. A small objective gap alone does not prove every engineering variable or constraint was recovered correctly.
+
+Use a versioned benchmark and compare independent formulations with explicit tolerances and assumptions. Investigate a case where exactness fails, or demonstrate which perturbation invalidates a sufficient condition. Interpret dual/marginal values only within the model, active set and regularity needed for the claim. The scholarly aim is to explain what is proven, approximated and physically demonstrated rather than treating a solver's numerical certificate as broader evidence than its equations support.
+
+**Continue:** [Unit commitment, reserves, ramping and chronological state](Unit-commitment-reserve-ramping-and-chronological-state.lingua#r_0QFNTTAR35VZZ8WSRF0ZNBGKBC).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7H8HRFCFJM8FJ3YYMSNJ6E2X38

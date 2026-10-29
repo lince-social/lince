@@ -1,0 +1,11 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Perple_X — Connolly, phase-equilibrium methods and examples (@mp-perplex: 0, is #reference, #part-of @mp-sources) { r_39E8B7CK16VF55MXWKSXMNN4Z6
+James A. D. Connolly and contributors. [Official Perple_X site](https://www.perplex.ethz.ch/) · [Documentation and tutorials](https://perplex.ethz.ch/perplex_documentation.html) · [Thermodynamic-data format and content](https://www.perplex.ethz.ch/perplex_thermodynamic_data_file_body.html).
+
+Read the complete tutorial and the method, data/model, numerical-strategy, limitations, and benchmark discussions needed to reproduce a study. Record program, data, solution-model, options, and tutorial revisions independently. The documentation warns that some technical/older examples are outdated; it also identifies incompatibilities among some dataset/model combinations.
+
+Free public documentation/access is established; consult actual software, data, and article terms separately. Official purpose, current update route, documentation status, and source locations checked on 29 October 2026. No program or external dataset is bundled or integrated as a new Lince feature.
+
+**Return:** [Mineralogy and petrology sources — books, laboratories, analytical methods, and research](../Sources.lingua#r_38Q6Z3J7ER2G1B441JXJ14NV5A).
+} r_39E8B7CK16VF55MXWKSXMNN4Z6

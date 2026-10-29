@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Euler motion, Bernoulli and the assumptions behind a head (@fd-euler: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Streamline-curvature-pressure-gradients-and-fluid-acceleration.lingua#r_3DBWSSFEFA8V9KBFFAYXHYZW9G") { r_2JK0RXSRKF2STTY52STQFQCHPS
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 2 Euler and Bernoulli equations; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter III in full; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 7 Bernoulli and energy balance.
+
+Neglecting viscous stress in a justified region gives the Euler momentum equation. For steady motion of constant-density fluid under gravity, its projection along a streamline yields p/ρ+|u|²/2+gz constant along that streamline. This statement does not automatically give the same constant on every streamline.
+
+Irrotational motion permits a stronger spatial statement under appropriate connected-domain conditions. Unsteady potential motion includes a time derivative of the velocity potential. Barotropic variable-density motion instead involves an integral of dp/ρ. These are related results with different assumptions.
+
+Apply Bernoulli to a reservoir and a jet only after defining the actual endpoints and checking losses, motion and pressure conditions. Compare the result with an independent energy balance. Explain why substituting static pressure for total pressure, or crossing a dissipative shock without accounting for it, changes the physical question.
+
+**Continue:** [Streamline curvature, pressure gradients and fluid acceleration](Streamline-curvature-pressure-gradients-and-fluid-acceleration.lingua#r_3DBWSSFEFA8V9KBFFAYXHYZW9G).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2JK0RXSRKF2STTY52STQFQCHPS

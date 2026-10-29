@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Compare propylene-derived routes through reaction selectivity, isolation and co-products (@ic-propylene: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #industrial-chemistry "Carbonylation-hydroformylation-and-complete-carrier-accounts.lingua#r_46RMBXHYJAH3VE7X901J2WJD9G") { r_6X7N9HWSBN8V1H8GNHC598TVGT
+**Read:** [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the full relevant propylene-derivative manufacturing teaching; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the complete propylene-oxide and related industrial examples if using the commercial edition; [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the complete applicable generic organic-process and oxygenated-product methods.
+
+Propylene feeds several important transformations, including routes to oxygenated products and other intermediates. Oxidation, hydration and alternative reaction families require different reagents, catalysts, phase conditions and recovery systems. A common carbon feed does not make their processes chemically or physically interchangeable.
+
+For a chosen oxide, alcohol or related product, reconstruct the actual reaction network and the species/element basis of selectivity. Some routes depend on co-products or intermediate carrier chemistry whose recovery and market destination influence the complete account. Avoid crediting a co-product without a usable specification and realistic destination.
+
+Product isolation, solvent/reactant recycle, water/salt handling and catalyst service can dominate differences between routes. Temperature and transport influence local competing chemistry; the measured bulk composition may not reveal the cause. Compare actual observed domains and distinguish projections from established operating evidence.
+
+**Work:** reconstruct two complete documented routes to the same propylene-derived useful product. Independently close carbon/hydrogen/oxygen and consequential carrier/co-product accounts, with utilities and residuals. Explain the kinetic, phase, thermal and analytical evidence supporting each comparison and identify a new observation that could reverse the conclusion.
+
+**Continue:** [Follow carbon-monoxide chemistry through catalysis, selectivity and product isolation](Carbonylation-hydroformylation-and-complete-carrier-accounts.lingua#r_46RMBXHYJAH3VE7X901J2WJD9G).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6X7N9HWSBN8V1H8GNHC598TVGT

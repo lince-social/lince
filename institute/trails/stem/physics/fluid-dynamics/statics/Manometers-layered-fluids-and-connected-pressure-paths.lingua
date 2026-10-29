@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Manometers, layered fluids and connected pressure paths (@fd-manometers: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #fluid-dynamics "Pressure-forces-moments-and-the-centre-of-pressure.lingua#r_3ZK38BANREQ9K4KZ4YZ3NZQCYX") { r_5C2HW614FRPGT2H6QD3RY30G0J
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 4 pressure and hydrostatic problems; [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), pressure and low-pressure measurement lessons.
+
+Follow a connected static pressure path through each fluid segment. Moving downward by Δh in a constant-density segment adds ρgΔh; moving upward subtracts it. At a stationary, flat interface with negligible capillary pressure, pressure is continuous. At a curved interface, include the surface-tension jump when it is significant.
+
+A differential manometer compares the pressures at its taps after accounting for every elevation and fluid density. Its visible height difference is not automatically the head difference of the process fluid. The sensing liquid, process liquid, trapped gas and temperature can all matter.
+
+Construct a pressure-loop equation from a drawing before substituting numbers. Reverse the path and obtain the same result. Investigate whether a narrow meniscus, wetting hysteresis, trapped gas or a moving tap invalidates the static interpretation. A measured zero offset must be understood as part of the measurement model, not erased without explanation.
+
+**Continue:** [Pressure forces, moments and the centre of pressure](Pressure-forces-moments-and-the-centre-of-pressure.lingua#r_3ZK38BANREQ9K4KZ4YZ3NZQCYX).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5C2HW614FRPGT2H6QD3RY30G0J

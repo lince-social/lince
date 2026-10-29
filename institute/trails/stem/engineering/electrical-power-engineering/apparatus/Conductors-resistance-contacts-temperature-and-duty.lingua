@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Conductors, contacts, temperature and duty (@pe-conductors: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #source "../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2", #electrical-power-engineering "Cables-screens-terminations-and-insulation.lingua#r_45MNDE4BPX26N004X8583RBAW1") { r_6ZD2CSVVP595WFY53DFRB6T4JR
+**Read:** [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), complete conductor selection, loss and installation-condition treatment; [Medium Voltage Technical Guide — Schneider Electric](../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2), complete relevant service-condition and thermal guidance.
+
+The material relation R = ρℓ/A describes an ideal uniform conductor under specified state, not the complete permissible current of a cable assembly. Temperature-dependent resistance, skin/proximity effects, terminations, installation environment and cooling affect actual performance. Contact resistance can concentrate heating at a connection that is invisible in a simple length/area calculation.
+
+Connect the shared conduction/quasistatic models with a documented power conductor. Calculate DC resistance and a load-related loss, then compare with AC resistance and manufacturer/test data over frequency and temperature. Derive a thermal balance with an explicit heat-transfer boundary; do not infer ampacity from conductivity alone.
+
+State continuous, intermittent, overload and fault duties separately. Mechanical forces, supports and thermal expansion also matter. A physical selection must use the actual installation conditions, cable/equipment data and applicable requirements. Compare predicted loss, measured temperature and uncertainty in a suitable case. The later cable, fault, harmonics and maintenance Records show why a sufficiently low nominal resistance alone does not prove a conductor system is fit for service.
+
+**Continue:** [Cables, screens, terminations and insulation](Cables-screens-terminations-and-insulation.lingua#r_45MNDE4BPX26N004X8583RBAW1).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6ZD2CSVVP595WFY53DFRB6T4JR

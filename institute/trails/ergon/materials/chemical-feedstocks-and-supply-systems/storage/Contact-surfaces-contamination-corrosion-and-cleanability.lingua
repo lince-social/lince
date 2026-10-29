@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Treat packaging and delivery components as part of the chemical system (@cs-contact-materials: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME", #source "../sources/Hydrogen-Peroxide-Safety-and-Handling-Solvay.lingua#r_4HBTDKE1JB2QCDMN29A4XHX3BQ", #source "../sources/High-Purity-Polymer-Delivery-Components-SEMI.lingua#r_4CJR70PGX15X3VQENBZ0S1RA25", #chemical-supply-systems "Packages-IBCs-drums-bags-and-the-return-system.lingua#r_751D7AQJ8V8K3CGTJDPFX953R3") { r_2CWXX7AEHB88MT4RB9YF29DDXH
+**Read:** [Caustic Soda Handbook — OxyChem](../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME), the full equipment, physical-property and relevant analytical sections; [Hydrogen Peroxide: Safety & Handling — Solvay](../sources/Hydrogen-Peroxide-Safety-and-Handling-Solvay.lingua#r_4HBTDKE1JB2QCDMN29A4XHX3BQ), the complete handling and materials-of-construction methods; [High-purity polymer materials and chemical-delivery components — SEMI F57](../sources/High-Purity-Polymer-Delivery-Components-SEMI.lingua#r_4CJR70PGX15X3VQENBZ0S1RA25), the complete authorized component specification and referenced qualification methods.
+
+After the shared equipment-materials Record, trace every wetted or contacting surface from producer to point of use. The material can interact with container walls, linings, seals, hoses, valves, filters, instruments and residual contents. Compatibility has a concentration, temperature, time and mechanical domain; a polymer or alloy name is not a complete service qualification.
+
+Choose a caustic, peroxide and high-purity case. Read the complete applicable material/contact methods, not just a summary list. Explain the evidence for chemical resistance, contamination contribution, cleaning and retained physical integrity. A part can resist gross corrosion yet contribute impurities unacceptable for a particular process. A cleanable construction can still have a history that invalidates the assumed condition.
+
+Develop a contact-path table with component identity, material, surface/preparation history, service conditions, evidence and unresolved tests. Compare dedicated and shared equipment on quality, changeover and continuing work. Include replacement parts and maintenance: changing a seal or lining can alter the accepted interface. For electronic-chemical work use the authorized complete standards and actual test domain, while retaining open documentary alternatives for the foundational reasoning.
+
+**Continue:** [Follow the package through filling, delivery, use and return](Packages-IBCs-drums-bags-and-the-return-system.lingua#r_751D7AQJ8V8K3CGTJDPFX953R3).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_2CWXX7AEHB88MT4RB9YF29DDXH

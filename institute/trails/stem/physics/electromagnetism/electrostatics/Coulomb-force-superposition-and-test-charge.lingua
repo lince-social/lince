@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Coulomb force, superposition and a test charge (@em-coulomb: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electricity-and-Magnetism-MIT-8-02T.lingua#r_00CWY37VDJSBRF5D6A8BCD7SXT", #electromagnetism "Continuous-charge-distributions-and-singular-limits.lingua#r_2S56H6ATVPBXX4R70VY99HFAGP") { r_4BCJ9YGVJSTWDV9S67V2RDR1YD
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 5 in full; [Electricity and Magnetism — MIT 8.02T and TEAL notes](../sources/Electricity-and-Magnetism-MIT-8-02T.lingua#r_00CWY37VDJSBRF5D6A8BCD7SXT), Coulomb law and electric-field chapters.
+
+For static point charges in vacuum, the field of q at displacement r is q r/(4π ε₀ |r|³). Force on a sufficiently small test charge is q_test E. The test-charge idea separates a source property from the particular probe, while reminding us that a real probe can disturb the distribution.
+
+Place two equal positive charges symmetrically about the origin. The field at the midpoint cancels, although the potential there does not vanish with the usual reference at infinity. Move a positive probe slightly along the line and then perpendicular to it; the force directions differ. Cancellation at one point is not a stable three-dimensional trap in a charge-free electrostatic region.
+
+Build vector sums before substituting magnitudes. Check signs, symmetry, the far-field limit and the near-source singularity. The point-charge model applies outside a source whose size is negligible for the requested accuracy. It does not explain atomic stability or authorize extrapolating classical point charges to arbitrarily small distances. Separate the tested range of a law from the idealization used to calculate with it.
+
+**Continue:** [Continuous charge distributions and singular limits](Continuous-charge-distributions-and-singular-limits.lingua#r_2S56H6ATVPBXX4R70VY99HFAGP).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_4BCJ9YGVJSTWDV9S67V2RDR1YD

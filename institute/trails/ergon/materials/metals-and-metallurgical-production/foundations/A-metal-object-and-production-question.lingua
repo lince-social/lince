@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Begin with a metal object, its useful behavior, and how that behavior was produced (@metal-question: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "From-feed-to-alloy-product-and-recovery.lingua#r_2KMY68943DER2DD2A75DC4AHY7") { r_3HAAEK6MJJGDHPR5BNYP5KV596
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the opening overview of metals, uses, extraction, and refining; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the introduction and complete first reading as concepts arise; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the introductory metals/alloys and fabrication material.
+
+Choose an ordinary object: copper wire, an aluminium can, a steel spring, a cooking vessel, or a bearing. Describe what it must do, its environment, and the observations behind those statements. Electrical conduction, stiffness, resistance to permanent deformation, toughness, mass, surface behavior, and shape are different properties; the most familiar metal name does not determine them all.
+
+Ask how the object acquired its composition, structure, form, and surface. Ore or scrap must be characterized, separated, chemically transformed/refined where needed, alloyed, shaped, treated, and inspected. These stages use equipment, energy, water, gases, consumables, maintenance, workers, measurements, and transport. Recovered metal has a further production history rather than appearing as a perfectly interchangeable raw material.
+
+Begin with what can actually be observed or documented. A magnet, color, or manufacturer's label supplies limited evidence about composition, heat treatment, hidden defects, or fitness for use. Preserve the distinction between a proposed explanation and a measured property.
+
+**Work:** produce an object-to-process account with the required function, the important properties and units, known material/design evidence, likely production stages, and unresolved questions. Compare two plausible material/process routes and explain what measurement would distinguish them. Revisit this account after the later studies; the same visible object should then reveal much more of its supporting material and working system.
+
+**Continue:** [Follow metal production through connected transformations and transfers of work](From-feed-to-alloy-product-and-recovery.lingua#r_2KMY68943DER2DD2A75DC4AHY7).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_3HAAEK6MJJGDHPR5BNYP5KV596

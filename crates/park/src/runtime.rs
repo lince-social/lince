@@ -640,6 +640,9 @@ fn run(
                     pointer_stamp = Some(stamp);
                 }
                 Input::CapturedButton(button, pressed, position, stamp, target) => {
+                    if pressed {
+                        canvas.world_mut().remove_resource::<lince_interface::native::output_views::HandFocusRequest>();
+                    }
                     if canvas.native_pointer_current(&target) {
                         canvas.pointer(position)?;
                         canvas.button(button, pressed)?;

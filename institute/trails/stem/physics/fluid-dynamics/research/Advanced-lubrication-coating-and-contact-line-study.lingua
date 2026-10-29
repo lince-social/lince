@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced lubrication, coating and contact-line study (@fd-advanced-film: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #fluid-dynamics "Advanced-fluid-network-and-machine-operating-study.lingua#r_1721PJY51WQF9T9JVXT0E3VX7S") { r_513PA04VA1YKK29DVXBJM363VB
+**Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), complete lubrication and thin-film notes; [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), coating, wetting and spreading; [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), selected complex-fluid constitutive and strong-flow development.
+
+Choose a wedge film, squeeze film or coating flow and derive its reduced equation from the full stress and mass balances. State the small parameters, wall/interface conditions and pressure convention. Obtain load or selected film thickness and independently check mass, wall work and dissipation where the model permits.
+
+Investigate one limitation systematically: temperature-dependent viscosity, slip, pressure-induced cavitation, roughness or non-Newtonian stress. Match the additional model to a physical observation and identify any new parameter that needs independent measurement. Do not introduce an arbitrary pressure cutoff or contact-angle fit without accounting for its physical and conservation consequences.
+
+Compare an analytical limit, a converged numerical solution and measured or primary published evidence. Present the region of validity and a counterexample in which the thin-film reduction fails. Explain which further solid-contact or surface-chemistry knowledge belongs to the corresponding specialist investigation.
+
+**Continue:** [Advanced fluid-network and machine-operating study](Advanced-fluid-network-and-machine-operating-study.lingua#r_1721PJY51WQF9T9JVXT0E3VX7S).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_513PA04VA1YKK29DVXBJM363VB

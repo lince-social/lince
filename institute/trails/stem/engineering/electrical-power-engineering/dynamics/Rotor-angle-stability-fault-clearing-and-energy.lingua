@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Rotor-angle stability, clearing and energy (@pe-rotor-stability: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #source "../sources/Power-System-Stability-and-Control-Kundur-Malik.lingua#r_5Y16A8DP62RPS6C0N6QXSWN1SB", #source "../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ", #electrical-power-engineering "../computation/An-inspectable-fault-clearing-swing-model.lingua#r_33KE9HBQFMC4GZJ7817WVHX21C") { r_4AC2ECYZT3VXFCNPKQB9V0THJ0
+**Read:** [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), complete single/multimachine large-disturbance work; [Power System Stability and Control — Kundur and Malik](../sources/Power-System-Stability-and-Control-Kundur-Malik.lingua#r_5Y16A8DP62RPS6C0N6QXSWN1SB), complete applicable graduate rotor-angle chapters if using this optional companion; [ANDES — dynamic modelling and analysis manual](../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ), complete time-domain and initialization methods.
+
+A classical synchronous-machine model balances rotor acceleration against mechanical input and electrical transfer, with the actual angle/speed bases. In a restricted single-machine/infinite-bus lossless case, electrical power can be approximated by P_max sinδ. Pre-fault, fault-on and post-fault networks can have different transfer curves and initial conditions.
+
+Derive the swing equation and equal-area/energy reasoning for the simple undamped model. A critical clearing time depends on fault location, network after clearing, operating point and inertia; it is not a universal device setting. Equal-area results require their specific model assumptions and do not replace multimachine/control/voltage/converter analysis.
+
+Compare the original normalized teaching example with an independently integrated trajectory and its energy limit. Then use a complete [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ) or authorized [Power System Stability and Control — Kundur and Malik](../sources/Power-System-Stability-and-Control-Kundur-Malik.lingua#r_5Y16A8DP62RPS6C0N6QXSWN1SB) case to add realistic machines, excitation/governor limits and network constraints. Distinguish first-swing rotor-angle behavior, local modes, voltage recovery and frequency response. A fault can be cleared without restoring an acceptable operating state, and a stable rotor trajectory does not prove all equipment/protection requirements were met.
+
+**Continue:** [An inspectable fault-clearing swing model](../computation/An-inspectable-fault-clearing-swing-model.lingua#r_33KE9HBQFMC4GZJ7817WVHX21C).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4AC2ECYZT3VXFCNPKQB9V0THJ0

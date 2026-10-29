@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect reduction with phase chemistry, rates, product separation, and total work (@metal-reduction: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #metals-and-metallurgical-production "Smelting-matte-metal-slag-and-multiphase-separation.lingua#r_4XPTBQS5K69GFK94HP2B1RM6Y1") { r_28QXJBHB45E3AFBD9A8H3EBDZ7
+**Read:** [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), the full carbon-reduction, oxide-extraction, and refining material; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete reduction/smelting sequence; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), all reduction-smelting and ironmaking exercises.
+
+Reducing an oxide or another compound requires an appropriate chemical potential and a physically workable reaction/separation path. The reducing agent can become a gas, dissolve, form a slag constituent, or remain as an impurity. A balanced overall reaction is a necessary account, not a complete extraction process.
+
+Combine activities, gas conditions, temperature, intermediate phases, kinetics, heat, and transport. An overall thermodynamically favorable route can slow through a dense product layer, inadequate contact, changed porosity, heat shortage, or a reaction that contaminates the metal. Removal of a product can change equilibrium and operating behavior.
+
+Distinguish conversion of a feed phase, recovery of an element, metallic state, separation from associated phases, and final qualified purity. Different metal families need different reduction and refining arrangements because of their chemical stability, volatility, impurity affinities, and product requirements.
+
+**Work:** reconstruct two complete reduction routes for a common feed/product question. Derive compatible equilibrium and material/heat accounts, reproduce a representative kinetic or transport result, and validate against independent observations. Compare impurity fate, separation, utility demands, residuals, and scale-up. Explain which apparently promising reaction fails to satisfy one consequential engineering condition and what evidence would be needed to resolve it.
+
+**Continue:** [Read smelting as chemical transformation and separation among interacting phases](Smelting-matte-metal-slag-and-multiphase-separation.lingua#r_4XPTBQS5K69GFK94HP2B1RM6Y1).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_28QXJBHB45E3AFBD9A8H3EBDZ7

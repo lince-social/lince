@@ -1,0 +1,11 @@
+Import "../Geology.lingua"
+
+GPlates — geological reconstructions, manuals, and methods (@geo-gplates: 0, is #reference, #part-of @geo-sources) { r_6C7H7HA2X7FPJF6EZKK6NRQDBT
+GPlates/EarthByte contributors. [Official user/data manuals, tutorials, and scientific Python documentation](https://www.gplates.org/docs/). R. Dietmar Müller and colleagues, “GPlates: Building a Virtual Earth Through Deep Time,” Geochemistry, Geophysics, Geosystems, 2018, DOI [10.1029/2018GC007584](https://doi.org/10.1029/2018GC007584).
+
+Read the full introductory tutorials and the relevant user/data-model material before a reconstruction study. Identify reference frames, rotation models, plate identities, time, geometry, observations, and assumptions. Compare a reconstruction's fit and geological evidence rather than treating animated motion as proof of a unique history.
+
+The official documentation and indexed paper identity were accessible; the publisher's full article returned automated-access denial. Read an authorized full version if available for the research case and preserve actual content/software/data licences and revisions. Access/source identity checked on 29 October 2026. External tool/model studies do not introduce a new feature or bundled data collection in Lince.
+
+**Return:** [Geology sources — complete books, field methods, maps, and research](../Sources.lingua#r_3H47FYGCEYFZPW2VK77PMR0ECB).
+} r_6C7H7HA2X7FPJF6EZKK6NRQDBT

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Variable properties, relaxation and rarefied flow (@fd-real-gas: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../../thermodynamics-and-heat-transfer/properties/Fundamental-property-models-derivatives-and-verification.lingua#r_764YPYD3A83WPVMG0N594Y9W71", #fluid-dynamics "../waves/Free-surface-kinematic-and-dynamic-conditions.lingua#r_4WNYCBSPDTH0TQ2J47HWMS2C91") { r_7Y5K4F9AE60ZFKJFJXHYE4F5A8
+**Read:** [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), dimensionless limits and gas/small-scale discussion; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), equations of state and compressible modelling assumptions; [Fundamental property models, derivatives and verification](../../thermodynamics-and-heat-transfer/properties/Fundamental-property-models-derivatives-and-verification.lingua#r_764YPYD3A83WPVMG0N594Y9W71), property models and thermodynamic validity.
+
+Two different assumptions can fail in a high-speed or small-scale gas flow: the thermodynamic model may be too simple, or the continuum description itself may fail. A real-gas equation of state with variable heat capacity can still support continuum balances when local equilibrium and scale separation hold. A short collision length compared with the resolved scale is a different question from ideal-gas accuracy.
+
+Define Knudsen number using a stated mean free path and physical length or gradient scale. As rarefaction becomes relevant, slip and temperature jump can alter wall conditions, and stronger departure requires a kinetic description. Relaxation times compared with flow or acoustic time can determine whether internal modes or composition follow equilibrium.
+
+Estimate these comparisons for a gas delivery line, a narrow passage and a low-pressure chamber, using independently documented properties. Explain which field equations, transport coefficients and boundary conditions would need replacement. This connects fluid dynamics to vacuum and semiconductor services while leaving their full kinetic, surface, contamination and equipment knowledge to dedicated study.
+
+**Continue:** [Free-surface kinematic and dynamic conditions](../waves/Free-surface-kinematic-and-dynamic-conditions.lingua#r_4WNYCBSPDTH0TQ2J47HWMS2C91).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7Y5K4F9AE60ZFKJFJXHYE4F5A8

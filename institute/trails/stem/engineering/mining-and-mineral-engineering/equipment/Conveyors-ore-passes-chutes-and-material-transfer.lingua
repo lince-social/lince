@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect continuous handling with material state, interfaces, and measured throughput (@mine-conveyors: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #mining-and-mineral-engineering "Shaft-hoisting-lifting-work-and-cycle-capacity.lingua#r_5JABCJMXDCKAA6EHTJQWH7SZQ2") { r_6R5CD3BM18V50ZZS01EPWY9EXK
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete bulk-material storage/handling and relevant characterization chapters; [Introduction to Mineral Processing — Arun Kumar Majumder, NPTEL](../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD), the complete storage, handling, and transport lectures; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full relevant handling/ore-pass and operating sections.
+
+Conveyors, feeders, chutes, bins, ore passes, and transfer points connect equipment and storage with material flow. Particle distribution, shape, moisture, cohesion, abrasivity, density, and segregation affect behavior. A successful steady flow for one material does not establish the same performance for a changed feed.
+
+For a simple fully specified belt-flow model, throughput is area times velocity times bulk density on compatible units. Invented loaded area 0.05 m², speed 2 m s⁻¹, and bulk density 1.6 t m⁻³ give 576 t h⁻¹. This uses actual loaded cross-section and conditions, not a universal nominal belt capacity.
+
+Transfer bottlenecks, surges, blockages, spillage, wear, dust, inspection, drive/structure condition, and availability affect delivered output. Storage can decouple processes temporarily, but only with an inventory/quality/time account. A receiving plant or upstream loader can limit the system despite higher belt rating.
+
+**Work:** derive/check the example and reconstruct a complete handling/transfer case with observed material, geometry, drives, storage, measurement, and delays. Compare changed moisture/gradation or a constrained transfer point, identifying a discriminating test and downstream quality/capacity effects.
+
+Read the full bulk handling and relevant engineering chapters. Later machinery/material-flow trails deepen component design, while the mining account keeps duty, evidence, and interfaces explicit.
+
+**Continue:** [Account for hoisting through energy, cycles, equipment, and supporting systems](Shaft-hoisting-lifting-work-and-cycle-capacity.lingua#r_5JABCJMXDCKAA6EHTJQWH7SZQ2).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_6R5CD3BM18V50ZZS01EPWY9EXK

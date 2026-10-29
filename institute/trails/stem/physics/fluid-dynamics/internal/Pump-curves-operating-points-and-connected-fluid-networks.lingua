@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Pump curves, operating points and connected fluid networks (@fd-networks: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #fluid-dynamics "Pipe-transients-wave-speed-and-rapid-flow-changes.lingua#r_64ZR22XA5Z4K5JXRRM1XHQMRVY") { r_38PV7C2PG9F67V9SENTE32AD5Y
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), pipe networks and pumping applications; [Introduction to Fluid Mechanics and Fluid Engineering — Suman Chakraborty](../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2), hydraulic system characteristics; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), energy and momentum applications.
+
+A steady operating point balances the head delivered by a pump with the system's elevation, pressure and flow-dependent losses. A pump curve belongs to a stated speed, geometry and fluid. A throttling change modifies the system relation; a speed change modifies the machine relation. Electrical input also involves hydraulic efficiency, drive efficiency and their operating dependence.
+
+For a network, write mass balance at each junction and a pressure/head relation for every branch with a consistent flow sign. Series branches share flow; parallel branches share endpoint head difference. Solve the nonlinear coupled system rather than assigning every branch the same flow. Distinguish a mathematical intersection from its dynamic stability and from a permissible machine operating region.
+
+Inspect a complete manufacturer's curve and state what data are missing before extrapolating. Compare predicted operating flow with a measurement and uncertainty account. Examine a changed reservoir level, dirty filter or isolated branch, including the possibility of reversed flow. Keep the physical machine's cavitation, thermal, mechanical and control constraints visible as separate conditions to investigate in the specialist engineering study.
+
+**Continue:** [Pipe transients, wave speed and rapid flow changes](Pipe-transients-wave-speed-and-rapid-flow-changes.lingua#r_64ZR22XA5Z4K5JXRRM1XHQMRVY).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_38PV7C2PG9F67V9SENTE32AD5Y

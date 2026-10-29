@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Three-phase unbalanced networks — Biswarup Das (@pe-nptel-unbalanced: 0, is #reference, #part-of @pe-sources) { r_4J5TZVPWY0FYP8WY7AGZM8NQ4B
+Biswarup Das, IIT Roorkee. Modeling, Analysis and Estimation of Three Phase Unbalanced Power Network. [NPTEL 108107477](https://nptel.ac.in/courses/108107477) · [Complete official syllabus](https://archive.nptel.ac.in/content/syllabus_pdf/108107477.pdf).
+
+Follow the entire twelve-week programme: component/network modelling, unbalanced power-flow formulations, detailed Newton Jacobians and three-phase weighted-least-squares state estimation. Work the examples and reconstruct at least one unfamiliar network. Compare with a balanced approximation and quantify what it misses.
+
+Official instructor, scope, sequence and expected prior power-analysis knowledge were checked on 29 October 2026. The syllabus is a guide to substantial study, not a claim that the reader must already have a degree or that a course certificate establishes practical competence. Public learning materials and their component rights are distinct from paid certification or commercial references. Keep neutral/ground paths, phase connectivity and the actual measurement model explicit. No course files or example networks are copied here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_4J5TZVPWY0FYP8WY7AGZM8NQ4B

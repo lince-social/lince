@@ -1,0 +1,17 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Develop and test a chemical inventory policy against actual time and material states (@cs-inventory-project: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #chemical-supply-systems "A-complete-qualified-chemical-supply-system.lingua#r_44MR9J6NH9MF50YCHKGAT4GMK3") { r_39C3V5HCC1HQQGCE7ZZ35QW13D
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the entire book with derivations and computational work; [Warehouse & Distribution Science — Bartholdi and Hackman](../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10), the whole book, including flow/capacity reasoning; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), the complete graduate inventory and forecasting work; [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the full relevant placement and coordination studies.
+
+Read Rossi's entire book, the whole warehouse book and the complete relevant MIT graduate teaching. Define an actual or well-documented chemical user's demand, receipt, quarantine/release, expiry and usable-storage states. Preserve raw data meaning, dates, missing/censored demand and any change in grade or concentration basis.
+
+Derive deterministic and stochastic baselines. Reproduce the original lot and lead-demand examples independently, then extend the model to the actual question: capacity, variable release, forecast updates, aging, multiple grades or uncertain delivery. Use complete primary methods and explain assumptions about dependence, stationarity, service and backlogging/lost demand.
+
+Compare policies by rolling historical or explicitly synthetic scenarios without future-data leakage. Evaluate service, expiry/loss, average/peak stock, work and total cost. Test exact small cases, conservation, limits, numerical sensitivity and independent algorithms before a large simulation or optimizer. Quantify parameter uncertainty separately from simulation or numerical error.
+
+Produce a substantial reproducible report with alternative hypotheses, failure cases and independent review, then revise the model/policy. Distinguish a finite illustrative computation from demonstrated field performance; identify what observations or controlled implementation would test the recommendation. A later scholarly extension should derive a genuinely unresolved result or empirical finding, not merely retune a default parameter until a desired service figure appears.
+
+**Continue:** [Defend one complete chemical supply from origin to use and recovery](A-complete-qualified-chemical-supply-system.lingua#r_44MR9J6NH9MF50YCHKGAT4GMK3).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_39C3V5HCC1HQQGCE7ZZ35QW13D

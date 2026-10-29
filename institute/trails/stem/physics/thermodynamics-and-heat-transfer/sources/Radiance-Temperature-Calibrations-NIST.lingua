@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Radiance temperature calibrations — NIST SP 250-43 (@th-radiance: 0, is #reference, #part-of @th-sources) { r_1ZZFTRWTTE4RBKGANZJMEYQ0WE
+Charles E. Gibson, Benjamin K. Tsai and Albert C. Parr. Radiance Temperature Calibrations, NIST SP 250-43, 1998, DOI 10.6028/NIST.SP.250-43. [Publication](https://www.nist.gov/publications/radiance-temperature-calibrations) · [Complete report](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication250-43.pdf) · [Current laboratory context](https://www.nist.gov/programs-projects/radiation-thermometry).
+
+Read the full calibration method, including source geometry, wavelength response, detector linearity, size-of-source effects and uncertainty. Compare radiance temperature with thermodynamic/surface temperature and investigate emissivity and reflected background. Pair it with the shared optical and temperature metrology Records.
+
+This is a dated 1998 method, distinct from the earlier NBS SP 250-7 and from current service conditions or later SI realization methods. Publication-page update dates do not change its edition. Verify current applicability through the laboratory and BIPM rather than treating historic reference temperatures or uncertainty claims as universal.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_1ZZFTRWTTE4RBKGANZJMEYQ0WE

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Wetting, contact lines, hysteresis and coating (@fd-wetting: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "Capillary-gravitational-and-shear-driven-instabilities.lingua#r_7TRXVRKVKPRGWSQ6XHPCTY0CMG") { r_0QBZZTX53DYHBPJTHRAH7YTK1D
+**Read:** [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), wetting, hysteresis, forced wetting, coating and spreading notes; [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), strong-flow and free-surface effects when the liquid is complex; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), interfacial scales.
+
+An equilibrium contact-angle relation balances interfacial energies for a specified smooth ideal substrate and phases. An observed advancing or receding contact angle on a real surface can differ because of roughness, chemical variation, pinning and motion. Contact-angle hysteresis therefore carries information about a physical surface and its history.
+
+Derive capillary rise in a simple narrow tube under the declared equilibrium assumptions. Then examine a moving contact line: combining ideal no slip with a sharp interface can create a singular continuum description. Slip, diffuse interfaces, precursor films or microscopic physics introduce additional assumptions that must be identified and tested.
+
+Compare spreading and withdrawal/coating as distinct dynamic problems. Read the complete scaling argument for film selection and determine where inertia, gravity, surfactants or non-Newtonian response become relevant. Document preparation, contamination, temperature and the measured angle convention before attributing a coating difference to one fluid property.
+
+**Continue:** [Capillary, gravitational and shear-driven instabilities](Capillary-gravitational-and-shear-driven-instabilities.lingua#r_7TRXVRKVKPRGWSQ6XHPCTY0CMG).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0QBZZTX53DYHBPJTHRAH7YTK1D

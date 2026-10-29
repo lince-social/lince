@@ -1,0 +1,72 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Calculate an oxygen-basis formula and expose the retained analytical total (@mp-formula-example: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #source "../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #mineralogy-and-petrology "Compositional-maps-domains-and-image-analysis.lingua#r_5393SVPBBX49ZR6Z1P58HX1GEP") { r_45M80VFVGPQ0ZX888J14RQENMC
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete normalization examples; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), the full relevant quantitative/error discussion; [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), correlated-input and nonlinear uncertainty as needed.
+
+This original exercise accepts a small anhydrous oxide table on a weight-percent basis and an explicitly selected oxygen basis. Adopted molar masses are rounded teaching values in g mol⁻¹, not an uncertainty-free reference standard. Ferrous and ferric iron remain separate assumed inputs.
+
+```python file=mineral_formula.py
+import json
+import math
+
+OXIDES = {
+    "SiO2": (60.083, 1, 2, "Si4+", 4),
+    "TiO2": (79.865, 1, 2, "Ti4+", 4),
+    "Al2O3": (101.961, 2, 3, "Al3+", 3),
+    "FeO": (71.844, 1, 1, "Fe2+", 2),
+    "Fe2O3": (159.687, 2, 3, "Fe3+", 3),
+    "MgO": (40.304, 1, 1, "Mg2+", 2),
+    "CaO": (56.077, 1, 1, "Ca2+", 2),
+    "Na2O": (61.978, 2, 1, "Na+", 1),
+    "K2O": (94.195, 2, 1, "K+", 1),
+    "MnO": (70.937, 1, 1, "Mn2+", 2),
+    "Cr2O3": (151.989, 2, 3, "Cr3+", 3),
+    "NiO": (74.692, 1, 1, "Ni2+", 2),
+}
+
+def normalize(oxides, oxygen_basis):
+    if not isinstance(oxides, dict) or not 1 <= len(oxides) <= len(OXIDES):
+        raise ValueError("supply a nonempty supported oxide table")
+    if isinstance(oxygen_basis, bool) or not isinstance(oxygen_basis, int):
+        raise ValueError("oxygen basis must be an integer")
+    if not 1 <= oxygen_basis <= 100:
+        raise ValueError("oxygen basis outside exercise bounds")
+    oxygen_terms, values, amounts = [], [], {}
+    for oxide, raw in oxides.items():
+        if not isinstance(oxide, str) or oxide not in OXIDES or isinstance(raw, bool):
+            raise ValueError("unsupported oxide or value")
+        try:
+            value = float(raw)
+        except (TypeError, ValueError, OverflowError) as error:
+            raise ValueError("oxide values must be finite numbers") from error
+        if not math.isfinite(value) or not 0 <= value <= 100:
+            raise ValueError("oxide value outside weight-percent bounds")
+        mass, cations, oxygens, ion, charge = OXIDES[oxide]
+        moles = value / mass
+        values.append(value)
+        oxygen_terms.append(moles * oxygens)
+        amounts[ion] = (moles * cations, charge)
+    total = math.fsum(values)
+    if not 0.01 <= total <= 105:
+        raise ValueError("analytical total outside exercise bounds")
+    factor = oxygen_basis / math.fsum(oxygen_terms)
+    formula = {ion: amount * factor for ion, (amount, _) in amounts.items()}
+    charge = math.fsum(formula[ion] * valence for ion, (_, valence) in amounts.items())
+    return {"oxygen_basis": oxygen_basis, "analytical_total_wt_percent": total,
+            "cations_per_formula_unit": formula, "assigned_positive_charge": charge}
+
+if __name__ == "__main__":
+    mass = 2 * OXIDES["MgO"][0] + OXIDES["SiO2"][0]
+    result = normalize({"MgO": 100 * 2 * OXIDES["MgO"][0] / mass,
+                        "SiO2": 100 * OXIDES["SiO2"][0] / mass}, 4)
+    print(json.dumps(result, sort_keys=True, allow_nan=False))
+```
+
+The ideal example returns approximately Mg₂SiO₄ with assigned positive charge 8 and retains the original total. Bounds make this a finite teaching domain, not universal acceptance criteria for real analyses. Water, halogens, site allocation, mixed analyses, and redox inference are outside its model.
+
+**Work:** reproduce the result by exact/Decimal mole accounting, then test ideal feldspar, ferrous/ferric inputs, a changed oxygen basis, zero-valued constituents, table ordering, and invalid/nonfinite/unsupported inputs. Scale all reported oxides together within bounds: the normalized formula stays the same while the exposed total changes. Explain why that invariance can conceal missing information if the total is discarded. Propagate a stated analytical/correlation model only after deciding whether the chosen normalization is geologically appropriate.
+
+**Continue:** [Interpret compositional maps with calibration and geological domain identity](Compositional-maps-domains-and-image-analysis.lingua#r_5393SVPBBX49ZR6Z1P58HX1GEP).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_45M80VFVGPQ0ZX888J14RQENMC

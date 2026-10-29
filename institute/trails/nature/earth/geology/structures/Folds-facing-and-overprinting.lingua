@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Interpret fold geometry, stratigraphic facing, and overprinting together (@geo-folds: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #geology "Faults-fractures-and-slip-evidence.lingua#r_7GZYF6WKSDK43K38TBXHVNZ1YC") { r_4YNWT9JHWFDN11HKFQW6XJN998
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), Folds, Primary Structures, Fabrics, and Labs 4–5 in full; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 12’s folding discussion; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), structural relationships in regional histories.
+
+Describe a fold's limbs, hinge line, axial surface, wavelength, amplitude, and geometry before proposing a mechanism. Antiform and synform describe shape; anticline and syncline require the stratigraphic age relations. Overturned or refolded successions make those distinctions consequential rather than merely terminological.
+
+Younging or facing indicators constrain which way the original succession becomes younger, subject to their preservation and interpretation. Repetition of a unit can result from folding, faulting, an incorrect correlation, or combinations. An apparently symmetric two-dimensional outcrop may cut an asymmetric three-dimensional structure obliquely.
+
+Cleavage/bedding relationships, lineations, thickness changes, unconformities, and cross-cutting fabrics can constrain the sequence of deformation. An axial-planar fabric is a hypothesis tied to an identified fold generation; several events can leave superficially similar orientations. Preserve observations that contradict a single-event explanation.
+
+**Work:** complete both fold-analysis labs and their geometrical constructions. Use independent facing indicators to interpret a selected published section. Draw two admissible three-dimensional geometries for incomplete exposure, then identify which observation would distinguish them. Reconstruct a minimum event sequence for one overprinting example without assigning unsupported numerical ages.
+
+Read the entire folds discussion with the primary-structure and fabrics sections. Later sections and restoration will require the same habit: make the observed relationships inspectable before judging whether a geometric model and its proposed mechanical history are mutually compatible.
+
+**Continue:** [Infer fault displacement and sequence without equating separation with slip](Faults-fractures-and-slip-evidence.lingua#r_7GZYF6WKSDK43K38TBXHVNZ1YC).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4YNWT9JHWFDN11HKFQW6XJN998

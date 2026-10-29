@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Put chemical supply quantities on a declared basis (@cs-quantity: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME", #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #chemical-supply-systems "Identity-performance-and-hazard-documents-answer-different-questions.lingua#r_67HK15SE94N6ASED8YKGMHNZP4") { r_4QY1REC3FW148J2J3HFR7XR7RR
+**Read:** [Caustic Soda Handbook — OxyChem](../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME), Technical Data, Dilution Calculations and Billing for liquid caustic soda in full; [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), Inventory Systems, with the units assigned to demand and stock.
+
+An order for twenty tonnes of a solution at mass fraction 0.50 contains ten tonnes of the named solute, before any specified impurity or assay correction. The same twenty tonnes at 0.32 contains 6.4 tonnes. If the operation needs ten tonnes of solute, a 0.32 solution would require 31.25 tonnes, provided that this product and its other properties are actually acceptable. Price per tonne delivered and price per usable tonne therefore answer different questions.
+
+Write every concentration with its basis: mass/mass, mass/volume, amount/amount or a specified assay convention. A gas “normal cubic metre” needs reference pressure, temperature and the treatment of water/compressibility. Volume in a tank is not mass until density at the measured conditions is known. Gross vehicle weight, package tare and net material should close separately.
+
+Reconstruct one producer's billing example using the actual temperature, units and assay method. Then perturb concentration, density and weighing uncertainty individually. Keep the conserved chemical quantity separate from a calculated commercial basis. Read the tables in their complete heading/context; a number detached from its grade and temperature can make a precise-looking supply account wrong.
+
+**Continue:** [Distinguish identity, performance, hazard and movement evidence](Identity-performance-and-hazard-documents-answer-different-questions.lingua#r_67HK15SE94N6ASED8YKGMHNZP4).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_4QY1REC3FW148J2J3HFR7XR7RR

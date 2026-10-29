@@ -1,0 +1,11 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Quantitative Phase-Field Model of Alloy Solidification — Echebarria and colleagues (@metal-quantitative-phasefield: 0, is #reference, #part-of @metal-sources) { r_20GWASGRYTPEAN3V8S54VRZ3GS
+Blas Echebarria, Roger Folch, Alain Karma, and Mathis Plapp. Quantitative Phase-Field Model of Alloy Solidification, Physical Review E 70, 061604, 2004. DOI 10.1103/PhysRevE.70.061604. [Publisher paper](https://doi.org/10.1103/PhysRevE.70.061604) · [Author-deposited full preprint](https://arxiv.org/abs/cond-mat/0404164).
+
+Read the complete paper/preprint, derivation, thin-interface analysis, conservation/numerical account, validation results, and original references. Compare with the earlier NIST report; explain which model/numerical effects the later method addresses and under what physical assumptions. Test the intended sharp-interface/continuum limit independently rather than trusting visual pattern similarity.
+
+Authors, journal/identifier, date, and public author-preprint route verified on 29 October 2026. Preserve actual version and publisher/preprint rights; public reading does not imply a blanket CC licence for all versions or implementations. No paper PDF, simulation output, or external program is bundled.
+
+**Return:** [Metals and metallurgical production sources — books, courses, methods, and cases](../Sources.lingua#r_03Z21BSG78ZRQSAVCCD6FJVNRY).
+} r_20GWASGRYTPEAN3V8S54VRZ3GS

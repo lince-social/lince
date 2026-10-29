@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Fresnel reflection, refraction and Brewster angle (@em-fresnel: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #source "../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ", #electromagnetism "Total-internal-reflection-evanescent-fields-and-tunnelling.lingua#r_3YG5N7Q50Y4JJ9J7AAHZYRJBCD", #thermodynamics-and-heat-transfer "../../thermodynamics-and-heat-transfer/radiation/Spectral-directional-and-material-radiative-properties.lingua#r_1T6NWNQHCCRB4G30A1NGQ7C33E") { r_5X8JFEWJNR27PDCQQX5CG9WWA9
+**Read:** [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), complete planar reflection and transmission chapters; [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ), dielectric interfaces and layered waves.
+
+For normal incidence between nonmagnetic lossless media, electric-field coefficients are r = (n₀−n_s)/(n₀+n_s) and t = 2n₀/(n₀+n_s). Power fractions are R = |r|² and T = (n_s/n₀)|t|². At n₀ = 1 and n_s = 1.5, r = −0.2, t = 0.8, R = 0.04 and T = 0.96. The negative reflected amplitude describes a phase reversal, not negative reflected power.
+
+Derive oblique-incidence TE and TM coefficients with an unambiguous field basis and angle convention. Recover Snell's law from tangential phase matching, then derive the TM Brewster condition for ordinary nonmagnetic lossless dielectrics. Explain why magnetic response, absorption and a differently normalized amplitude can alter the familiar formulas.
+
+Plot amplitude and power separately and recover identical-medium and normal-incidence limits. Evaluate the boundary fields directly to verify signs. A measured reflectance minimum can have several causes; it is not by itself proof of a particular refractive index or a single uniform layer. The original multilayer computation and material-inversion study later make those ambiguities explicit.
+
+**Continue:** [Total internal reflection, evanescent fields and tunnelling](Total-internal-reflection-evanescent-fields-and-tunnelling.lingua#r_3YG5N7Q50Y4JJ9J7AAHZYRJBCD).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in thermodynamics and heat transfer:** [Spectral, directional and material radiative properties](../../thermodynamics-and-heat-transfer/radiation/Spectral-directional-and-material-radiative-properties.lingua#r_1T6NWNQHCCRB4G30A1NGQ7C33E).
+} r_5X8JFEWJNR27PDCQQX5CG9WWA9

@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Advanced unbalanced networks and state estimation (@pe-unbalanced-study: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B", #source "../sources/OpenDSS-Distribution-Modeling-Manual.lingua#r_1192RYEP2NRARXYCHHJDZGXNGN", #source "../sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW", #electrical-power-engineering "../study/An-integrated-electrical-power-system-investigation.lingua#r_06BN864FF9C0AN3EWZJE78Y6Y3") { r_238NR8GPE1THHSFQ786XJ02D8N
+**Read:** [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B), entire programme and substantial derivations/examples; [OpenDSS — distribution modelling and reference manual](../sources/OpenDSS-Distribution-Modeling-Manual.lingua#r_1192RYEP2NRARXYCHHJDZGXNGN), complete applicable manual/model and control documentation; [Introduction to Applied Linear Algebra — Boyd and Vandenberghe](../sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW), entire relevant least-squares/rank and conditioning development.
+
+Complete all twelve weeks of [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B) and the complete applicable [OpenDSS — distribution modelling and reference manual](../sources/OpenDSS-Distribution-Modeling-Manual.lingua#r_1192RYEP2NRARXYCHHJDZGXNGN) or alternative phase-model manual. Choose a feeder/network with explicit phase/neutral connections, line mutual terms, transformer vector group and load/control models. Begin with a small independently solvable phase-domain case.
+
+Derive Newton/measurement Jacobians and compare them with independent perturbation checks. Analyze unbalanced flow, neutral current, voltage and losses, then compare balanced and sequence reductions and quantify what each loses. Model the actual sensor/CT/VT/time chain for an estimation problem rather than adding ideal measurements after the network calculation.
+
+Demonstrate observability limits, correlated uncertainty, a topology error and a held-out prediction. Distinguish a uniquely identified state from one regularized or selected by model assumptions. Use authorized public data or suitable supervised measurements and preserve provenance without copying external case files into this repository. The final study should explain the physical phase connections and information content behind the computed result, with independent numerical verification and a clear account of unresolved parameters/model discrepancy.
+
+**Continue:** [An integrated electrical-power-system investigation](../study/An-integrated-electrical-power-system-investigation.lingua#r_06BN864FF9C0AN3EWZJE78Y6Y3).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_238NR8GPE1THHSFQ786XJ02D8N

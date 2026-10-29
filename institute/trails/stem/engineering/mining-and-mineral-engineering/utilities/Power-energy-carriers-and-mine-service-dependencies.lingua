@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Account for power and service dependencies across the operating mine (@mine-power: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY", #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #mining-and-mineral-engineering "../../../../nature/earth/geology/water/Groundwater-head-conductivity-and-flow.lingua#r_104ZRDJ685JFSD9E3RDJVN8NQB") { r_4M4H1HKKB12X8XTAVE6Q8EM4SJ
+**Read:** [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete power, compressed-air, pumping, and supporting-service sections; [Subsurface Ventilation Engineering — Malcolm J. McPherson](../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY), the full relevant energy/environment interactions; [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the complete applicable current equipment/electrical/service context.
+
+Mining uses electricity, fuels, compressed air, water/hydraulic power, heat removal, communications, and other services. Trace source, conversion, distribution, storage, controls, demand, losses, maintenance, and dependent equipment. Installed power, peak demand, average energy, and useful work are distinct.
+
+Duty cycles, simultaneous loads, starting/transient behavior, interruptions, power quality, battery/fuel logistics, cooling, and environment affect performance. Replacing one energy carrier can change ventilation, infrastructure, maintenance, and operating constraints rather than simply replacing an energy-cost line.
+
+Separate local equipment efficiency from system efficiency and service availability. A reliable machine still cannot operate without its required power, water, air, data, access, and work readiness. A mine energy balance needs boundaries, measurement, timing, and consistent output basis.
+
+**Work:** build a checked energy/service account for a complete teaching mine/plant case, distinguishing nominal ratings and measured duties. Compare a changed supply or electrification assumption and trace its consequences through equipment, heat, ventilation, logistics, and maintenance. Identify an independent measurement and a remaining specialist design question.
+
+Read full handbook utility chapters and the relevant current operating context. Continue through [Derive a groundwater-flow account from head, properties, and boundaries](../../../../nature/earth/geology/water/Groundwater-head-conductivity-and-flow.lingua#r_104ZRDJ685JFSD9E3RDJVN8NQB) for the shared groundwater-flow foundation before mine dewatering, process-water integration, and quality management.
+
+**Continue:** [Derive a groundwater-flow account from head, properties, and boundaries](../../../../nature/earth/geology/water/Groundwater-head-conductivity-and-flow.lingua#r_104ZRDJ685JFSD9E3RDJVN8NQB).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_4M4H1HKKB12X8XTAVE6Q8EM4SJ

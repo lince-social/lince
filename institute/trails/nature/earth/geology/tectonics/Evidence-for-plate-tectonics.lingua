@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Reconstruct the evidence and limits of plate tectonics (@geo-plate-evidence: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "Relative-motion-rotations-and-reference-frames.lingua#r_2SGRRPAKREKTZGW3ATZFR4RFGS") { r_5PDGPW5ZKX5SWW948R663G4V3F
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 10 in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete plate-tectonic and historical-development treatment; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete plate-boundary exercise and relevant lectures.
+
+Plate tectonics brings the relative movement of lithospheric plates into an explanation of ocean floors, mountain belts, magmatism, earthquakes, and geological distributions. Reconstruct its evidential development rather than using a modern boundary map as its own proof. Continental fit is one observation; matching histories, paleomagnetism, seafloor ages, bathymetry, earthquake patterns, and measured motion constrain different aspects.
+
+Distinguish continental drift, seafloor spreading, and the kinematics and dynamics of plates. A successful geometric reconstruction does not uniquely identify the forces producing motion. A rigid-plate approximation also leaves diffuse boundaries and internal deformation requiring additional treatment.
+
+Evaluate an observation in its original reference frame, age range, location, resolution, and interpretation. Paleomagnetic directions require attention to magnetization history and later deformation. A present motion estimate and a long-term geological average need not describe the same interval.
+
+**Work:** reconstruct three independent lines of evidence using the complete chapter and MIT plate exercise. For each, state what was measured, which competing account it constrained, and an uncertainty. Explain one case where fitting present outlines alone would mislead a reconstruction. Compare the historical reasoning with a modern measured-motion account.
+
+Read the full tectonic chapter and historical development before the more technical reconstructions. The aim is an explanatory framework whose success and approximations can be examined, leaving space for the later regional observations to refine it.
+
+**Continue:** [Describe relative plate motion with vectors, rotations, and reference frames](Relative-motion-rotations-and-reference-frames.lingua#r_2SGRRPAKREKTZGW3ATZFR4RFGS).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_5PDGPW5ZKX5SWW948R663G4V3F

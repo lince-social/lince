@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+An experiment that can distinguish two fluid explanations (@fd-experiment-design: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #source "../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "../../../../inquiry/quantitative-literacy/models/Observation-and-identifiability.lingua#r_5J7K2N4XB97BQSJBCXCMCJVC5W") { r_15XFDRGDYQY3VKWT8X5V9SXNN9
+**Read:** [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), complete experimental-methods course; [Water-flow calibration — NIST SP 250-98](../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05), measurement-model and repeatability reasoning; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), uncertainty and validation of a derived observable.
+
+State two physically distinct explanations and predict an observable that separates them over a feasible parameter range. Examples include viscosity change versus a local obstruction, wall slip versus shear thinning, or unresolved sensor dynamics versus a real flow oscillation. Avoid an experiment in which both models can fit every observation by changing an unconstrained coefficient.
+
+Choose controlled variables, repetitions, independent checks and a measurement order that can reveal drift or hysteresis. Estimate expected effect size and uncertainty before construction. Preserve the conditions needed for comparison: geometry, fluid preparation, state, inlet, sensor position and timing. A quiet-looking run is not evidence that these influences are negligible.
+
+Carry out the study when apparatus and appropriate supervision are available, retaining unsuccessful runs and protocol changes. Compare predictions with measured quantities on the same basis, revise the explanation and specify what remains unresolved. An analysis of an existing dataset is valuable but should be identified as such; it does not document having built or operated the apparatus.
+
+**Continue:** [What do the observations actually determine?](../../../../inquiry/quantitative-literacy/models/Observation-and-identifiability.lingua#r_5J7K2N4XB97BQSJBCXCMCJVC5W).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_15XFDRGDYQY3VKWT8X5V9SXNN9

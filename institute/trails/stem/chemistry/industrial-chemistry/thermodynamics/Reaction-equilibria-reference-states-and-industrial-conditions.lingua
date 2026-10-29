@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Use reaction equilibrium with explicit activities, phases and industrial conditions (@ic-reaction-equilibrium: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT", #source "../../general-chemistry/sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44", #industrial-chemistry "../../general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S") { r_2XXQE3QHDAXNBB258QPPVSAKRV
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete chemical-equilibrium chapter, multiple-reaction and optimization treatments; [Graduate Chemical Engineering Thermodynamics — MIT 10.40](../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT), the full phase/reaction-equilibrium and stability progression; [NIST-JANAF Thermochemical Tables — fourth-edition reference data](../../general-chemistry/sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44), the actual data entries, reference states and temperature domains used.
+
+For a reaction written with signed stoichiometric coefficients ν_i, Δ_rG=Δ_rG°+RT ln Q and Q=∏a_i^ν_i. At equilibrium, Q=K=exp(−Δ_rG°/RT). Every activity is dimensionless relative to its specified standard state; substituting a bare dimensional pressure or concentration changes the meaning of the equation.
+
+An ideal-gas approximation uses a_i=y_iP/P°. A real mixture needs fugacity coefficients and compatible thermochemical/reference data. Condensed phases, dissolved species and nonideal mixtures require their corresponding models. Changing pressure, temperature, feed ratio or product removal can change the equilibrium state without changing the elemental inventory.
+
+A catalyst changes accessible rates and selectivity, not the equilibrium of the same thermodynamic system. A finite industrial reactor may approach equilibrium slowly, remain transport-limited or be deliberately stopped at another state. An equilibrium calculation is therefore a constrained prediction, not a production-rate or equipment model.
+
+**Work:** derive a complete synthesis equilibrium from element balances and activities. Compare an ideal approximation with an assessed real-mixture model and independently check a limiting case. Track how uncertainty in thermochemical data changes the predicted result, then explain the additional kinetic, transport and separation evidence needed to judge a complete process route.
+
+**Continue:** [Interpret vapor pressure, phase change, and a phase diagram](../../general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_2XXQE3QHDAXNBB258QPPVSAKRV

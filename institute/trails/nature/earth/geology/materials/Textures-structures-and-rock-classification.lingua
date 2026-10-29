@@ -1,0 +1,21 @@
+Import "../Geology.lingua"
+
+Read a rock’s texture, structure, composition, and alteration together (@geo-rock-texture: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #source "../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z", #geology "Melting-crystallization-and-igneous-bodies.lingua#r_7QWRZH8D2EVJR6F20Z77Y4QXR7", #mineralogy-and-petrology "../../mineralogy-and-petrology/optics/Modal-analysis-sampling-and-rock-description.lingua#r_0MQXK1WERQ99N1S861GKH7N8NF") { r_6YHWHD1G11JAT700N6FVMHVP5N
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapters 3, 6, and 7 with the complete rock review; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete Rock Identification lab and charts; [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z), the complete corresponding rock labs.
+
+A rock classification organizes observations for a purpose. Record grain/mineral relationships, texture, composition, structures, weathering/alteration, and field context before assigning a name. A hand specimen, thin section, outcrop, and mapped body provide different kinds and scales of information.
+
+Texture can constrain crystallization, deposition, deformation, or recrystallization, but several processes can overprint one specimen. A coarse texture alone does not supply a unique cooling rate or depth; layering can be sedimentary, igneous, metamorphic, or composite. Use specific relationships and independent evidence to support a history.
+
+The rock cycle describes possible transfers and transformations rather than a mandatory loop every specimen completes. Preserve protolith, transport, reaction, melting/crystallization, deformation, and exposure as separately testable parts of a proposed path. A specimen's present classification need not reveal every earlier event.
+
+**Work:** make original descriptions of igneous, sedimentary, and metamorphic teaching examples using the full lab charts. Explain the classification and identify one historical inference requiring field evidence beyond the specimen. Compare a fresh and an altered description, noting which features support each conclusion.
+
+Read the complete rock chapters and their review before the deeper process sequence. This general foundation should support field mapping and source criticism, while specialist petrology will develop quantitative phase/texture methods and their physical/chemical models.
+
+**Continue:** [Explain igneous materials through melting, crystallization, and field relations](Melting-crystallization-and-igneous-bodies.lingua#r_7QWRZH8D2EVJR6F20Z77Y4QXR7).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+
+**Continue in mineralogy and petrology:** [Estimate mineral proportions with an explicit observation and sampling design](../../mineralogy-and-petrology/optics/Modal-analysis-sampling-and-rock-description.lingua#r_0MQXK1WERQ99N1S861GKH7N8NF).
+} r_6YHWHD1G11JAT700N6FVMHVP5N

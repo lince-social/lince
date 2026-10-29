@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Read mineral zoning as a record modified by growth, transport, and later events (@mp-zoning: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #mineralogy-and-petrology "Metasomatism-reaction-fronts-and-fluid-rock-transfer.lingua#r_1PEG58WB7ZFB3G5AZ8K91F0J4X") { r_0HQFK46WKVZYYG564EAZ05BTFJ
+**Read:** [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the full domain/history discussion and relevant original references; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the complete zoning, inclusion, and deformation-feature treatment; [Introduction to Geochronology — Pieter Vermeesch](../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the full relevant thermal/history and uncertainty methods.
+
+Zoning can preserve changing growth conditions, source composition, fractionation, diffusion, resorption, replacement, or several processes together. An element map is not automatically a chronological sequence from core to rim. Textural relations and three-dimensional section geometry matter.
+
+Diffusion coefficients and boundary/initial conditions depend on species, structure, direction, temperature, pressure, redox, defects, and composition. For an invented constant-D scale, L = 100 μm and D = 10⁻²⁰ m² s⁻¹ give L²/D = 10¹² s, about 31,700 Julian years. This scale is not an age inversion or a calibrated natural mineral time.
+
+Growth fractionation can change the effective bulk composition available later, while diffusion can change measured core/rim compositions without destroying every textural relationship. Several thermal histories can fit one profile. Analytical resolution, mixed pixels, and sectioning can alter the apparent shape.
+
+**Work:** reconstruct a complete zoning argument from mapped domains and analytical methods through a proposed history. Compare growth and diffusion/replacement alternatives and identify independent evidence. Derive the scale estimate, then explain the additional calibration, geometry, boundary conditions, and uncertainty needed for a quantitative model.
+
+Read the complete texture/domain and original kinetic methods relevant to the case. The later advanced project requires a tested alternative, not assigning elapsed time from a single characteristic length alone.
+
+**Continue:** [Explain metasomatism with reaction, transport, and material balance](Metasomatism-reaction-fronts-and-fluid-rock-transfer.lingua#r_1PEG58WB7ZFB3G5AZ8K91F0J4X).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_0HQFK46WKVZYYG564EAZ05BTFJ

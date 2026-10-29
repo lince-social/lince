@@ -59,6 +59,8 @@ pub(super) fn focus(fixture: &mut Fixture, caption: &str) -> Entity {
 }
 
 pub(super) fn focus_entity(fixture: &mut Fixture, entity: Entity, caption: &str) -> Entity {
+    eprintln!("Tabbing to control: {caption} ({entity:?})");
+    let deadline = Instant::now() + Duration::from_secs(120);
     for _ in 0..256 {
         if fixture.inspect(move |canvas| canvas.world_mut().resource::<bevy::input_focus::InputFocus>().get()) == Some(entity) {
             let (output, points) = fixture.inspect(move |canvas| canvas.native_test_points(entity))
@@ -71,14 +73,18 @@ pub(super) fn focus_entity(fixture: &mut Fixture, entity: Entity, caption: &str)
             let visible = mapping.visible_rectangle(bounds).expect("Keyboard focus must reveal the control through the actual lens");
             assert!(visible.size().iter().all(|size| *size >= 1.0));
             let physical = mapping.map_rectangle(bounds).unwrap();
+            let size = mapping.physical_size();
             for axis in 0..2 {
-                if physical.size()[axis] <= f64::from(mapping.physical_size()[axis]) * 0.9 {
-                    assert!(physical.origin()[axis] >= -1.0, "{caption} begins outside the lens");
-                    assert!(physical.origin()[axis] + physical.size()[axis] <= f64::from(mapping.physical_size()[axis]) + 1.0, "{caption} ends outside the lens");
+                if physical.size()[axis] <= f64::from(size[axis]) * 0.9
+                    && (physical.origin()[axis] < -1.0 || physical.origin()[axis] + physical.size()[axis] > f64::from(size[axis]) + 1.0)
+                {
+                    capture(fixture, "focus-clipped");
+                    panic!("{caption} is outside the lens: axis={axis}, physical={physical:?}, output={size:?}, points={points:?}");
                 }
             }
             return entity;
         }
+        if Instant::now() >= deadline { break; }
         tap(fixture, 15);
     }
     let observed = fixture.inspect(|canvas| {
@@ -87,6 +93,7 @@ pub(super) fn focus_entity(fixture: &mut Fixture, entity: Entity, caption: &str)
         let label = focus.and_then(|entity| world.get::<bevy::a11y::AccessibilityNode>(entity)).and_then(|node| node.label()).map(str::to_owned);
         (focus, label, native::shortcuts::keyboard_owner(world))
     });
+    capture(fixture, "focus-unreachable");
     panic!("The ordinary Tab sequence cannot reach {caption} ({entity:?}): focus={observed:?}, native_keyboard={}, input_pending={}, native_ready={}",
         fixture.desktop.native_keyboard, fixture.desktop.input_pending(), fixture.desktop.server.native_ready())
 }

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Reconstruct aluminium electrolysis as a coupled material, electrical, and thermal system (@metal-aluminium-cell: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #metals-and-metallurgical-production "Aluminium-cast-wrought-and-recycled-product-pathways.lingua#r_4E4KG131W9P8N9AS7SS3JBTTNX") { r_03JS3JSTHRVNN500EZ8JQ11FG0
+**Read:** [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), all aluminium extraction and molten-salt model material; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete electrometallurgical and furnace/energy sequence; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the full aluminium, anode/electrode, gas, utility, and residual chapters.
+
+Alumina dissolution and reduction in a salt bath join metal/electrolyte interfaces, carbon or other electrode behavior, gas generation, current distribution, heat, containment, and product handling. The bath's composition and properties, feed quality, geometry, and operating history affect performance together.
+
+For a deliberately simplified carbon-anode overall reaction, 2Al₂O₃ + 3C → 4Al + 3CO₂. Check atom and electron accounts before comparing charge, carbon, gas, and energy quantities. Actual side reactions, nonuniform conditions, current efficiency, electrode loss, bath constituents, and captured/recycled material require their own evidence.
+
+Distinguish reversible electrical work, thermoneutral heat, measured cell input, broader smelter utilities, and accepted-metal output. An electrode or voltage improvement can alter thermal balance, lifetime, feed response, or maintenance. Claims about alternative electrodes require actual materials, reaction, product, and scale evidence.
+
+**Work:** reconstruct a complete published cell/smelter account from full technical methods. Independently calculate target/impurity, charge, electrode/gas, and energy/heat balances with uncertainty. Compare a documented alternative or changed feed/electrical condition, retaining containment, capture, maintenance, and quality consequences. Explain the independent observations needed to distinguish a true process improvement from a shifted system boundary or unmeasured loss.
+
+**Continue:** [Connect aluminium quality with alloy constitution, fabrication, and scrap history](Aluminium-cast-wrought-and-recycled-product-pathways.lingua#r_4E4KG131W9P8N9AS7SS3JBTTNX).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_03JS3JSTHRVNN500EZ8JQ11FG0

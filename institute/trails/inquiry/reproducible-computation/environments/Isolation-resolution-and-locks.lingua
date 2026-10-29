@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Distinguish isolation, dependency resolution, pins, and available artifacts (@rc-locking: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Environments-and-Packaging.lingua#r_5VVAF04TH8R3DRY9Z36308BH88", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "System-libraries-and-hardware.lingua#r_6MEK7DSTADH24AV1NAQBG5SR61") { r_5BEV7Q4J6K3CGCFRHANDW6JXRY
+**Read:** [Environments, dependency records, and packaging — PyPA](../sources/Python-Environments-and-Packaging.lingua#r_5VVAF04TH8R3DRY9Z36308BH88), all dependency/environment tutorials and the relevant lock-file specification; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Capturing Computational Environments and environment-management material.
+
+An isolated environment separates installed packages from another environment. Dependency resolution selects versions and artifacts satisfying constraints for a platform. A pin fixes a chosen version or identity. A lock records a resolved choice under a tool's contract. None of these terms alone says that every required artifact is still obtainable or that rebuilding it yields the same behavior.
+
+Inspect direct and transitive dependencies, interpreter constraints, optional extras, platform markers, source locations, artifact hashes, and resolver/tool versions. A list of top-level package names is weaker than a complete resolved environment. Conversely, a platform-specific wheel collection may reconstruct one target well while saying little about another operating system or architecture.
+
+Use the official packaging tutorials and the current specifications supported by your selected tool. Do not assume a filename convention makes a file a portable lock, or that every tool supports every current specification. Preserve the declaration, resolved information, and reconstruction command, then test a new environment rather than modifying an old one until it happens to work.
+
+**Work:** reconstruct the worked standard-library program under an explicitly selected interpreter. For a second project using NumPy, distinguish declared requirements from the resolved artifacts actually installed. Change the interpreter or platform in a disposable environment and explain how resolution differs. Identify which necessary inputs would be unavailable during an offline reconstruction.
+
+The report should state the environment claim's boundary: one identified environment, a tested family of environments, or a bounded numerical result across them. Availability, isolation, deterministic artifact identity, and scientific validity remain separate findings. Later container and declarative-environment readings supply two concrete approaches for broader system dependencies.
+
+**Continue:** [Native libraries, operating systems, and hardware can change a computation](System-libraries-and-hardware.lingua#r_6MEK7DSTADH24AV1NAQBG5SR61).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_5BEV7Q4J6K3CGCFRHANDW6JXRY

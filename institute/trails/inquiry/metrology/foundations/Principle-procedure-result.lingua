@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Principle, method, procedure, indication, and result (@met-principle: 0, is #chapter, #part-of @metrology, #source "../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH", #source "../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1", #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #metrology "../../quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_2PT30AZGBV9V63Z3T0G7W8FSP6
+**Read:** [International vocabulary of metrology — JCGM and Inmetro](../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH), the relevant measurement, calibration, adjustment, and verification definitions; [A Beginner’s Guide to Uncertainty of Measurement — Bell](../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1), the explanation of a result and its uncertainty; [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), the complete report and checklist.
+
+A measurement principle describes the physical or chemical phenomenon used. A method organizes an approach to it; a procedure specifies the operations sufficiently for the intended use. An instrument’s indication is an input to interpretation. The measurement result includes the estimated quantity value and the information needed to understand its uncertainty and conditions.
+
+For a mass inferred from a balance indication, the result may depend on reference weights, sensitivity, air buoyancy, zero behavior, and handling. Writing the display value alone silently assumes all relevant corrections and their uncertainties are negligible. That assumption should be examined rather than automatically rejected or accepted.
+
+Separate a correction from an adjustment. A correction changes the interpretation of observations to account for an estimated effect; adjustment changes the measuring system’s behavior. Calibration establishes a relation with references under conditions. Verification examines whether specified requirements are fulfilled. None is a synonym for all the others.
+
+**Work:** diagram a simple length comparison from object and reference through contact, instrument response, reading, correction, and report. For each stage state what is physically happening and which information is recorded. Give a teaching example in which a zero adjustment improves the indication but leaves scale error untested. Give another in which a correction is appropriate without physically altering the instrument.
+
+Read a published calibration example and distinguish its operations from its equations. A complete formula does not tell a technician how the specimen was positioned, when readings were taken, or which invalid observations were retained. Conversely, a procedure without a measurement model can obscure how influences contribute to the final result.
+
+**Continue:** [Units, dimensions, and equations that can make sense](../../quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_2PT30AZGBV9V63Z3T0G7W8FSP6

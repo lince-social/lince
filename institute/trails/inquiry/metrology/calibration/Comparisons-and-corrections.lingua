@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Calibration as a comparison with corrections and conditions (@met-calibration-comparison: 0, is #chapter, #part-of @metrology, #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R", #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #metrology "Design-and-sequence.lingua#r_1DM0C485A4H25DSVDR611QZPXC") { r_1A4VTANENM6ME5PE8BPRWFN7ME
+**Read:** [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), the complete comparison and traceability discussion; [Calibration of digital multimeters — EURAMET cg-15](../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R), all sections on sequence and measurement operations; [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 2.3, Calibration.
+
+A calibration compares indications with reference values under specified conditions and makes the resulting relation usable for later results. State the reference and its uncertainty, the instrument state, range, sequence, accessories, and conditions. A functional check at one point is not evidence for every range and mode of an instrument.
+
+For a simple additive relation, corrected value x = I + C + δ_use can combine indication I, calibration correction C, and additional use-condition effects δ_use. The terms need definitions and uncertainty. A known estimated correction is not replaced by assigning a symmetric uncertainty large enough to hide it without explaining the decision and consequences.
+
+Use substitutions, reversals, and comparison sequences to expose relevant effects. Comparing an unknown with a reference before and after the unknown can reduce sensitivity to some drift under a suitable model; it does not remove arbitrary drift or reference instability. The design determines which effects can be estimated separately.
+
+**Work:** construct a teaching table with three reference values, corresponding indications, and signed errors. Derive correction values and verify the sign by recovering the references. Include uncertainty in the reference values and discuss an additional offset introduced during subsequent use. State whether an adjustment was made between the comparisons; never combine as-found and as-left observations as though the instrument were unchanged.
+
+Compare a certificate’s calibration conditions with a proposed use. Identify what is supported by interpolation and what would be an untested extension. Preserve the link between correction and uncertainty when exporting a result to another organization. The next study designs the observations so that a calibrated relation can be checked rather than merely fitted.
+
+**Continue:** [Design a calibration that can reveal its own weaknesses](Design-and-sequence.lingua#r_1DM0C485A4H25DSVDR611QZPXC).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_1A4VTANENM6ME5PE8BPRWFN7ME

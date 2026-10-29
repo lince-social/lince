@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Build a mineralogical handoff from geological material to a production requirement (@mp-chain-project: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../../geology/sources/Mineral-Commodity-Summaries-USGS.lingua#r_47FJ4GZC4CS4KJX8WXNDB418CX", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #source "../sources/Raman-Mineral-Identification-Practical-Guide.lingua#r_3TQHZH1T2CDCQPTVVXSKJ5DCED", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #mineralogy-and-petrology "Independent-mineralogical-and-petrological-scholarship.lingua#r_2RWA3AAGE5KFVA8P379Q76X8XQ") { r_0DWP2N35XZ7YJN6DEXCGMA5T0X
+**Read:** [Mineral Commodity Summaries 2026 — USGS](../../geology/sources/Mineral-Commodity-Summaries-USGS.lingua#r_47FJ4GZC4CS4KJX8WXNDB418CX), the full report overview/definitions and selected complete commodity chapters; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), the complete relevant quantitative method; [Raman Spectroscopy for Mineral Identification — Bartholomew and Post](../sources/Raman-Mineral-Identification-Practical-Guide.lingua#r_3TQHZH1T2CDCQPTVVXSKJ5DCED), the full relevant method/identification treatment; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected mineral entries and their primary studies.
+
+Choose a bounded material chain, such as silica-bearing material for glass/silicon, a copper-bearing assemblage, a feldspar/clay ceramic input, or a mineral-controlled recovery/waste problem. Identify a documented product/process requirement and the measurements needed to connect it with the actual geological material.
+
+Characterize host phases, structure/composition, associations, grain/domain scale, impurities, inclusions, alteration, variability, and sampling support. Compare bulk chemistry with modes and microanalytical/structural evidence. Distinguish quantified values, detection limits, inferred properties, and information not available through open sources.
+
+Build a checked component/material account on explicit mass/mole/volume bases. Compare two plausible feedstock/settings or characterization interpretations and explain consequences for separation, transformation, purification, or waste reactions. Geological abundance, mineral identity, process recovery, and finished specification remain distinct claims.
+
+**Work:** produce a substantive characterization and handoff report with complete primary references, independently checked calculations, uncertainty, alternative material account, and feasible additional investigation. Explain the information that a mining/beneficiation, refining, materials, or manufacturing study would need next; do not claim those process designs were completed by a mineral description.
+
+Connect with [Ergon](../../../../ergon/Ergon.lingua#r_00000000000000000000002001), [Geology — Earth materials, processes, history, and investigation](../../geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06), and [Chemistry — substances, transformations, and evidence](../../../../stem/chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0) through ordinary references. The shared mineral/rock knowledge should serve many production questions without creating a duplicate introductory mineralogy route for every commodity.
+
+**Continue:** [Conduct an independent mineralogical or petrological investigation](Independent-mineralogical-and-petrological-scholarship.lingua#r_2RWA3AAGE5KFVA8P379Q76X8XQ).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_0DWP2N35XZ7YJN6DEXCGMA5T0X

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Jets, wakes, entrainment and free shear layers (@fd-jets-wakes: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "../instability/Perturbations-normal-modes-and-what-linear-stability-proves.lingua#r_48XANNJ6W3VYE8XSV9358W16AW") { r_50ENQJKN158A435N37YDR84562
+**Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 3 laminar jet and chapter 4 buoyant plume; [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), free shear flows and turbulent transport; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), jets, wakes and flow visualization.
+
+A jet transfers momentum to surrounding fluid; a wake carries a momentum deficit relative to an outer stream. Start from the correct integral balance, distinguishing a plane flow per unit span from an axisymmetric flow. In an ideal unconfined jet, increased volume flux downstream can coexist with approximately conserved momentum flux because surrounding fluid is entrained.
+
+Derive a laminar plane-jet similarity scaling from momentum conservation and transverse momentum diffusion. Contrast its spreading mechanism with a turbulent jet, where fluctuation transport changes the mean profile and scaling constants. A buoyant plume has an additional buoyancy flux; a confined jet interacts with return flow and walls.
+
+Compare profiles only after specifying the velocity and width scales, virtual origin, ambient motion and measurement range. Test whether both the profile collapse and the integral balance hold. Use wake momentum to compare with independently measured drag, retaining pressure and transverse-flow contributions where the selected control surface requires them.
+
+**Continue:** [Perturbations, normal modes and what linear stability proves](../instability/Perturbations-normal-modes-and-what-linear-stability-proves.lingua#r_48XANNJ6W3VYE8XSV9358W16AW).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_50ENQJKN158A435N37YDR84562

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced magnetic materials, circuits and coupling (@em-magnetic-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_3YQ7495PSE5THZV9FVQ9FR18F6
+**Read:** [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), entire magnetic, energy and electromechanical sections; [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), complete magnetic-material and field-force chapters.
+
+Choose a coupled-coil or magnetic-actuator geometry with a specified current-return arrangement. Read the complete magnetic, induction, energy and material developments in [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA) and [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), then compare with the physical treatment in [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1). Derive the simplified magnetic-circuit model and a field-based alternative.
+
+Estimate inductance and mutual coupling, test matrix symmetry/energy positivity and separate leakage from useful linked flux. Introduce a measured nonlinear B–H response, saturation or frequency-dependent loss only with the actual state/history and method. Demonstrate where a constant permeability model becomes inaccurate. For conductive cores or surrounding metal, account for eddy currents and skin/proximity effects.
+
+Compare analytical limits, a converged field calculation and either suitable supervised measurements or a complete documented physical case. Track winding heating, core loss, force and source work. Change gap or excitation and predict an independent observable before seeing it. Explain uncertainty from geometry/material history separately from solver error. The output should make the electromagnetic behavior and model limits reconstructible while identifying the thermal, mechanical and construction knowledge needed by a separate full device design.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3YQ7495PSE5THZV9FVQ9FR18F6

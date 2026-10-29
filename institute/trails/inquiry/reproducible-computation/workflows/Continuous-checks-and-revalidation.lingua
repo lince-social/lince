@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Keep the computation checkable as its surroundings change (@rc-ci: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #reproducible-computation "../numerics/Floating-point-and-rounding.lingua#r_0001BNCJBQDFTK1SAVASYCRZAR") { r_43P1VCG8ZN9VCRKEWYZBFVB00M
+**Read:** [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Continuous integration, its linked practical sections, and the Code Testing chapter; [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), the complete paper reviewed against the ongoing project.
+
+A successful reconstruction is evidence about a particular method and environment at a particular time. Later code changes, dependency resolution, external input revisions, or execution settings can invalidate an earlier inference. Continuous integration supports frequent shared changes by running selected checks in a declared execution context. The checks still need independently justified expectations and an explained scientific scope.
+
+Read the complete [Continuous integration chapter and its linked practical sections](https://book.the-turing-way.org/reproducible-research/ci/). Apply the concepts to the existing personal project rather than adding an unrelated demonstration. Specify which event or deliberate request runs which checks, what revision and input identities are tested, how the environment is created, and what evidence survives a failure. A badge without the actual tested revision, procedure, and results is weak evidence for a published analysis.
+
+Separate fast independently checkable cases from substantial numerical and reconstruction studies according to what each can establish. Every relevant scientific change should receive the checks it needs; an expensive simulation need not run on every editorial change. Record what was omitted from a particular run. If a check uses a cache, verify that stale material cannot conceal a changed method or unavailable input.
+
+**Work:** make the personal teaching project run its independent balance tests and clean workflow without interactive state under an automated runner or an explicitly invoked fresh-process procedure. Introduce a formula error, a missing dependency, and a changed input separately; inspect how each failure is exposed. Verify that a failed attempt cannot be presented as the newly produced correct report. Then restore a known revision and reproduce its result from the recorded inputs.
+
+Design a revalidation experiment for a changed interpreter or numerical-library version. Compare against independent benchmarks before accepting changed outputs or relaxing tolerance. Preserve the reason for any revised method, and distinguish a maintained current project from the exact historical revision underlying a prior claim. Automated execution makes repeated checking practical; the researcher still decides what the evidence supports.
+
+**Continue:** [Understand representation, rounding, and the order of operations](../numerics/Floating-point-and-rounding.lingua#r_0001BNCJBQDFTK1SAVASYCRZAR).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_43P1VCG8ZN9VCRKEWYZBFVB00M

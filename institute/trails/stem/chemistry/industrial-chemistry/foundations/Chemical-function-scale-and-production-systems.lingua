@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect chemical function, production scale and the system supplying it (@ic-purpose: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #industrial-chemistry "Reaction-operation-feed-intermediate-and-product-language.lingua#r_64314EV3Y9ZKDEEWWSZXQFP5AB") { r_3GGA5VJ72KKBC36T9JQ1TWDM7F
+**Read:** [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the complete technical/economic principles and product-route unit; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the introductory classification and process-flow treatment; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the full general description of multipurpose and batch manufacture.
+
+Industrial chemistry joins a molecular transformation with a useful product and a continuing production system. A laboratory reaction may demonstrate a possible pathway; production also requires consistent feed, separation, heat removal, equipment materials, measurement, maintenance and enough accepted output over time.
+
+Bulk, fine and specialty describe useful industrial patterns, not absolute scientific boundaries. A bulk intermediate can feed many other syntheses. A specialty product may be specified by application performance rather than one pure molecular identity. A high-value small-volume product can still consume substantial solvent or purification effort per unit of output.
+
+Connect the stated scale to its basis: reaction volume, batch mass, hourly flow, annual nameplate capacity and actual accepted product are different quantities. Operating time, changeovers, off-specification material, maintenance and feed constraints alter their relation. A larger reactor does not automatically reproduce the laboratory's mixing, temperature or selectivity.
+
+**Work:** compare one bulk and one specialty chain serving a similar function or downstream industry. Define product, boundary, quantity and time, then explain the chemical and physical reasons for their different process arrangements. Identify the missing information needed to compare useful output, resource demand and continuing work fairly.
+
+**Continue:** [Use industrial chemical language with an explicit substance, operation and basis](Reaction-operation-feed-intermediate-and-product-language.lingua#r_64314EV3Y9ZKDEEWWSZXQFP5AB).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_3GGA5VJ72KKBC36T9JQ1TWDM7F

@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Evaluate dense-media concentration with the medium and particle populations explicit (@mine-dense-media: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #mining-and-mineral-engineering "Magnetic-separation-material-response-and-field-geometry.lingua#r_5E1CZ1RK5DXVQR4QH20X2FM3H1") { r_5JP09XGADZNJ6YZ5QTY6Y5E9RN
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete dense-media/gravity and medium-circuit sections; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the full relevant density/float-sink and process-test methods; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), a complete applicable case.
+
+Dense-media separation uses a controlled medium and particle response under a defined apparatus/duty. Medium density, stability, viscosity/rheology, contamination, recovery/losses, size, shape, mineral association, and water interact. A single medium-density reading cannot establish every particle's effective separation condition.
+
+Sink/float laboratory characterization and an operating separator have different support, flow, residence, crowding, and medium-control conditions. Washability or an ideal density split is not automatically an achieved plant recovery. Near-density material and composite particles can make performance sensitive to small changes.
+
+The medium circuit adds storage, cleaning/recovery, make-up, losses, water, and instrumentation to the flowsheet. Product contamination and medium inventory affect both mass accounting and operating costs. Preserve the basis of density/partition measurements and uncertainty.
+
+**Work:** reconstruct a complete dense-media lab/plant study, comparing ideal characterization and observed partitions. Independently close feed/products, medium, and water quantities where data permit. Test an alternative involving medium condition, feed population, or sampling and identify a discriminating measurement.
+
+Read full gravity/dense-media and relevant laboratory treatment. The integrated process project should show how medium control and material variability affect the whole circuit rather than treat the separator as a fixed efficiency.
+
+**Continue:** [Relate magnetic separation to measured mineral response and field conditions](Magnetic-separation-material-response-and-field-geometry.lingua#r_5E1CZ1RK5DXVQR4QH20X2FM3H1).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_5JP09XGADZNJ6YZ5QTY6Y5E9RN

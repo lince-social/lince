@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Describe the particle population that a processing operation actually receives (@mine-particles: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD", #mining-and-mineral-engineering "Stream-sampling-testwork-and-representative-feed.lingua#r_4KANS0CV3GVR7DNZFAATMRZR1X") { r_5XN7B68YWV82QYGWDQ02F3X7RN
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete particle/mineral-characterization and sampling chapters; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the full size, density, preparation, and characterization procedures; [Introduction to Mineral Processing — Arun Kumar Majumder, NPTEL](../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD), the complete particle-characterization sequence.
+
+Particle size, shape, density, composition, mineral association, surface state, moisture, and distribution affect processing and handling. A rock specimen, crushed particle, mineral grain, coherent crystal domain, and agglomerate describe different objects and scales.
+
+Size distributions depend on the measurement method and weighting: number, area, volume, mass, sieve aperture, equivalent diameter, and image-derived dimensions are not interchangeable. Fines, segregation, sampling, drying/dispersal, and unresolved mixtures can bias a comparison.
+
+Liberation and surface exposure matter to selective separation, while hardness/abrasivity, breakage behavior, and surface chemistry influence upstream/downstream response. Similar bulk grade or nominal size can hide different mineral-host populations and process behavior.
+
+**Work:** read the full characterization chapters and reconstruct a complete laboratory particle study. Compare two size/weighting methods, independently check a distribution or density/volume-to-mass conversion, and explain uncertainty/support. Identify a consequential association or fine-particle feature requiring an additional method.
+
+Use the shared mineralogy/process-mineralogy explanation where needed. The next sampling and comminution studies should preserve the population and preparation account rather than assume one average size or grade describes the entire circuit feed.
+
+**Continue:** [Sample processing streams and test feeds for the intended performance question](Stream-sampling-testwork-and-representative-feed.lingua#r_4KANS0CV3GVR7DNZFAATMRZR1X).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_5XN7B68YWV82QYGWDQ02F3X7RN

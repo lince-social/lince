@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Boundary-layer scaling, displacement and wall shear (@fd-boundary-layer: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "The-Blasius-similarity-solution-and-its-normalization.lingua#r_2WRXBS1GA1GTV3S24SCF5PBQTM") { r_1K0S71RQ25E0PJBAXKXW7GNPDW
+**Read:** [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter VIII in full; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 3 boundary layers; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 3 high-Reynolds-number scaling.
+
+For a high-Reynolds-number attached flow over a smooth surface, a thin viscous layer can satisfy no slip while matching an outer velocity U_e(x). Balancing streamwise inertia and transverse viscous diffusion gives a characteristic thickness proportional to L/√Re_L for the simple laminar case. The transverse pressure variation is smaller in the leading approximation, so the outer pressure gradient enters the layer.
+
+Derive the steady two-dimensional boundary-layer equations with continuity and the outer Euler pressure relation. Define displacement thickness δ*=∫(1−u/U_e)dy and momentum thickness θ=∫(u/U_e)(1−u/U_e)dy. They measure integrated deficits, not an arbitrarily chosen visible edge. Wall shear follows μ(∂u/∂y)_wall; a profile can have a thin edge yet a substantial displacement effect.
+
+Compare a boundary-layer prediction with an outer-flow geometry and check where the approximation ceases to be self-consistent. Account for pressure gradient, transition, curvature and wall condition. Use the complete matched-flow argument to explain why setting viscosity to zero everywhere cannot recover surface stress or the momentum deficit.
+
+**Continue:** [The Blasius similarity solution and its normalization](The-Blasius-similarity-solution-and-its-normalization.lingua#r_2WRXBS1GA1GTV3S24SCF5PBQTM).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1K0S71RQ25E0PJBAXKXW7GNPDW

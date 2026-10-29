@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect sources and transport with measured conditions and effective controls (@mine-contaminants: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/NIOSH-Dust-Control-in-Mining.lingua#r_12DGN33X5RSS7664BNT1QM5C52", #source "../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY", #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #mining-and-mineral-engineering "../operation/Human-work-exposure-skills-and-organizational-interfaces.lingua#r_01XGCN1DDMC661CP6V2PQM8T4P") { r_6GA2GJ59H9XBYGTFCS9NZGXQ9N
+**Read:** [Handbook for Dust Control in Mining — NIOSH](../sources/NIOSH-Dust-Control-in-Mining.lingua#r_12DGN33X5RSS7664BNT1QM5C52), the complete relevant handbook sequence and methods; [Subsurface Ventilation Engineering — Malcolm J. McPherson](../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY), the full pollutant/source, transport, and control chapters; [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the complete applicable current dust/gas/exposure and measurement context.
+
+Airborne conditions depend on source generation, transport, dilution, mixing, capture/suppression, deposition/reaction, work, and changing system state. Dust fractions, gases, diesel-related constituents, and other measurements have different measurands and methods. One ambient reading does not describe every worker or location.
+
+For an invented inert tracer in a steady well-mixed model, C_out = C_in + G/Q on consistent mass/volume units. Generation 10 mg s⁻¹ and airflow 20 m³ s⁻¹ give an increment 0.5 mg m⁻³. This is a transport example, not a contaminant-specific exposure or ventilation criterion.
+
+Real sources, local capture, nonuniform mixing, recirculation, leakage, transient work, particles, and instrument support can change the account. Controls need evidence of actual performance under duty and maintenance conditions. A nominal removal efficiency or extra flow does not independently establish exposure reduction.
+
+**Work:** derive/check the tracer account, then reconstruct a complete dust/ventilation control case with sources, instruments, tasks, measured results, uncertainty, and independent comparison. Test an alternative involving source change, sampling location, or maintenance rather than assuming the observed difference proves one mechanism.
+
+Read full NIOSH technical methods and the current applicable NR-22 provisions and referenced methods. Preserve the distinction between dated control research, current requirements, and the measured operating/work conditions.
+
+**Continue:** [Account for the people and coordinated work required by the mine system](../operation/Human-work-exposure-skills-and-organizational-interfaces.lingua#r_01XGCN1DDMC661CP6V2PQM8T4P).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_6GA2GJ59H9XBYGTFCS9NZGXQ9N

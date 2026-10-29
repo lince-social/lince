@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Investigate a chemical process through calorimetry, coupled dynamics and scale evidence (@ic-thermal-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_6560D2K9AJPWM9YTN4H74E479G
+**Read:** [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the entire guide including experimental assessment, accumulation, scale and operating basis; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the whole energy-balance and relevant nonlinear/transient reactor work; [Graduate Numerical Methods Applied to Chemical Engineering — MIT 10.34](../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV), the complete relevant nonlinear-system, stability and differential-equation verification programme; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the full pertinent batch thermal/process-development case.
+
+Read the whole HSE reaction-process guide, the complete relevant reactor energy/dynamics treatment and full primary experimental methods for one nonisothermal process. Reconstruct actual inventory, addition, mixing, reaction/side reactions, heat capacity, transfer and measurement histories.
+
+Independently derive the coupled species/energy model and reproduce a substantial primary result. Find relevant steady states and analyze the full dynamics/stability with verified numerical methods. Test the effect of a consequential changed feed, cooling, mixing or accumulation condition under the actual model domains.
+
+Compare predicted thermal quantities with calibrated observations and uncertainty. Distinguish total enthalpy, instantaneous release, accumulated reactant/energy and the instrument's response. Scale or operating claims require the appropriate primary practical methods and setting; a toy model or a single scan does not establish them.
+
+**Work:** produce a complete technical/research account with primary methods, full bibliography, derivations, inspectable original calculations, alternatives and independent challenge. Explain a consequential discrepancy and the observation that would discriminate its chemistry, transport or measurement cause. State the exact laboratory/pilot/operation achievement demonstrated and the remaining evidence needed for broader process claims.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6560D2K9AJPWM9YTN4H74E479G

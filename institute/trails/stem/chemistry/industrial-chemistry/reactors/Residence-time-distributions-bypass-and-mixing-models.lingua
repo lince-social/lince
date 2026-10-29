@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Infer residence histories and test whether an ideal reactor model fits the evidence (@ic-residence: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ", #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #industrial-chemistry "Nonisothermal-steady-states-stability-and-transients.lingua#r_20YMRWMPPJ12WQBT3M9ZSBKAZK") { r_54MXGD8AKQ76G6PEC1MC2WPWY1
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete nonideal-reactor and residence-time-distribution chapter; [Chemical and Biological Reaction Engineering — MIT 10.37](../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ), all nonideal-flow, tracer and mixing lecture/problem material; [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), the complete relevant reactor/residence teaching modules.
+
+Residence-time distribution describes how long sampled material spends in a system under a specified tracer/flow experiment. A normalized exit-age density E(t) integrates to one; its mean and variance summarize part of the distribution. Injection duration, detector dynamics, sampling, tracer interactions and changing flow can distort the inferred result.
+
+Different internal flow patterns can produce similar distributions, and the same residence distribution can lead to different outcomes for nonlinear reactions when micromixing differs. Separate a tracer-flow inference from a complete reacting/thermal model. Dead volumes, bypass, recirculation and catalyst or phase residence can require additional observations.
+
+For n equal ideal stirred tanks with total mean residence τ, the ideal distribution has variance τ²/n. Increasing n narrows that distribution toward ideal plug flow, but does not magically correct heat transfer or establish the right reaction mechanism. The original consecutive-reaction cascade demonstrates one limited effect of changing residence history.
+
+**Work:** analyze a complete primary tracer study with the actual injection and measurement method. Independently check normalization, mean/variance and recovery, compare competing flow models and propagate uncertainty into product predictions. Explain which further observation could discriminate models that the tracer curve alone cannot distinguish.
+
+**Continue:** [Distinguish a thermal steady state, its stability and the trajectory reaching it](Nonisothermal-steady-states-stability-and-transients.lingua#r_20YMRWMPPJ12WQBT3M9ZSBKAZK).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_54MXGD8AKQ76G6PEC1MC2WPWY1

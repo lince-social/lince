@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Capacitance matrices, energy and coupled conductors (@em-capacitance: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Electric-forces-fixed-charge-fixed-voltage-and-source-work.lingua#r_7YTRY0KDDMSFETKKTKYXBQ2615") { r_5YD0CB4H4ZCG21KKZKWERD77YK
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), capacitance and electric-field energy; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), multi-conductor electrostatics and energy.
+
+For two conductors with a specified surrounding geometry and reference, capacitance relates separated charge to potential difference. The familiar parallel-plate C = εA/d neglects fringing and assumes a linear dielectric with the stated field geometry. Scale thickness and area separately and explain the resulting field and stored energy.
+
+Several conductors require a coefficient matrix Q_i = Σ C_ij V_j relative to a reference or a charge-neutral formulation with its gauge constraint. Symmetry and energy provide checks. Off-diagonal mutual coefficients are commonly negative in the Maxwell-capacitance convention; an engineering network's positive pair capacitances use a different convention. State which matrix is being reported.
+
+For a linear reciprocal system U = (1/2)ΣQ_iV_i = (1/2)∫E·D dV. Derive the series capacitance of layered dielectrics using continuous normal D when there is no free interfacial charge. Explain why the effective normal permittivity is harmonic-weighted rather than a simple arithmetic average. Recover the homogeneous and vanishing-layer limits before the original layered electrostatic computation.
+
+**Continue:** [Electric force, fixed charge and fixed voltage](Electric-forces-fixed-charge-fixed-voltage-and-source-work.lingua#r_7YTRY0KDDMSFETKKTKYXBQ2615).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_5YD0CB4H4ZCG21KKZKWERD77YK

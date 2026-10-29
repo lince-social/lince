@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Uncertainty quantification in particle image velocimetry — Sciacchitano (@fd-piv: 0, is #reference, #part-of @fd-sources) { r_4PHTCFRTAGSCNV1TK192VZHGQ6
+Andrea Sciacchitano. Uncertainty quantification in particle image velocimetry. Measurement Science and Technology 30(9), 092001, 2019. DOI 10.1088/1361-6501/ab1db8. [TU Delft publication record and full article](https://research.tudelft.nl/en/publications/uncertainty-quantification-in-particle-image-velocimetry/).
+
+Read the complete review and the primary method used in the chosen experiment. Relate illumination, image formation, calibration, particle motion, correlation and timing to uncertainty in velocity. Propagate that uncertainty to gradients, vorticity, statistics or inferred pressure where those are the actual conclusions.
+
+The institutional record identifies a 31-page published version and CC BY access. Preserve its component credits and the terms of separate datasets. A technique that produces a dense velocity picture still needs an uncertainty model and evidence that tracers follow the relevant motion. The article and images remain external.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_4PHTCFRTAGSCNV1TK192VZHGQ6

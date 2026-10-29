@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+OT security, physical consequences and recovery (@pe-ot: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Operational-Technology-Security-NIST-800-82.lingua#r_760JSBVFVK2NXS6RE3HQJKK8P5", #source "../sources/Industrial-Control-and-SCADA-O-and-M-FIST.lingua#r_1REAMQSK7H73C2DY277VJW2ZTB", #source "../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6", #electrical-power-engineering "Skilled-work-spares-test-equipment-and-knowledge-transfer.lingua#r_2SMDFJH4MR8R5GAWKN9CYX8Y2P") { r_4FYWTTY77657GYNWGGAVEM0F26
+**Read:** [Guide to Operational Technology Security — NIST SP 800-82r3](../sources/Operational-Technology-Security-NIST-800-82.lingua#r_760JSBVFVK2NXS6RE3HQJKK8P5), complete applicable final report and version distinction; [Industrial control and SCADA operation/maintenance — FIST 3-33](../sources/Industrial-Control-and-SCADA-O-and-M-FIST.lingua#r_1REAMQSK7H73C2DY277VJW2ZTB), entire relevant operational/maintenance context; [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6), complete consequential-setting/change evidence.
+
+Power-control security concerns a cyber/physical system with timing, reliability and safety constraints. Asset boundaries, trust, remote access, identities, configuration, monitoring, recovery and physical process state must be modelled together. A generic office-network control can be unsuitable if it disrupts required autonomous or time-critical behavior.
+
+Read the complete applicable [Guide to Operational Technology Security — NIST SP 800-82r3](../sources/Operational-Technology-Security-NIST-800-82.lingua#r_760JSBVFVK2NXS6RE3HQJKK8P5) methods and use an authorized public/local educational architecture. Identify what a corrupted measurement, stale command, unavailable time source, changed setting or failed remote service could do to the physical system. Distinguish prevention, detection, containment and recovery; do not equate a network control with proof that equipment remains in an acceptable state.
+
+Compare a design alternative and a recovery exercise with explicit model/evidence boundaries. Preserve tested configuration, role, time, physical state and dependencies. The source's 2026 Revision 4 draft is distinct from the final Revision 3 reading. This is defensive engineering and critical interpretation of authorized systems, with no need for access to live infrastructure. The separate cybersecurity/computing subjects provide generic depth; this study must explain the power-specific timing, protection and restoration consequences.
+
+**Continue:** [Skilled work, spares, test equipment and knowledge transfer](Skilled-work-spares-test-equipment-and-knowledge-transfer.lingua#r_2SMDFJH4MR8R5GAWKN9CYX8Y2P).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4FYWTTY77657GYNWGGAVEM0F26

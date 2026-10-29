@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Read a timescale as a versioned synthesis of definitions and evidence (@geo-timescale: 0, is #chapter, #part-of @geology, #source "../sources/International-Chronostratigraphic-Chart.lingua#r_6RWJCRCKJD7BZS5RRKVKGE8MT3", #source "../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #geology "../earth/Interior-structure-and-indirect-evidence.lingua#r_2YEXGGAP9CA97F2N19K6CKXKF6") { r_70936GPH4DD8G6YNN6HM6TBJTC
+**Read:** [International Chronostratigraphic Chart — ICS and IUGS](../sources/International-Chronostratigraphic-Chart.lingua#r_6RWJCRCKJD7BZS5RRKVKGE8MT3), legend, hierarchy, edition notes, and selected boundary information; [International Stratigraphic Guide, abridged version — ICS](../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J), stratotypes, chronostratigraphy, and unit relationships in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete geological-time material.
+
+A geological timescale connects named units, boundary definitions, correlations, and numerical-age information. Distinguish time units from the corresponding rock units and a boundary definition from its current numerical calibration. A later age revision need not mean that the defining stratigraphic relationship has been replaced.
+
+Read the chart's edition, hierarchy, symbols, notes, and uncertainty conventions. Use the official stratigraphic guide to understand stratotypes and the evidence defining different unit types. A printed color chart is a compact synthesis; it does not supply every measurement, correlation, or interpretive argument supporting it.
+
+Translations and dynamic/static editions can lag one another. The consulted ICS supplementary page identifies a 2026/06 English static chart and a 2024/12 Brazilian Portuguese translation while retaining some older update text. Cite the actual version used in a comparison and check the underlying definitions rather than silently combining boundary numbers from different editions.
+
+**Work:** locate a selected interval and boundary in an identified chart, trace its definition and numerical-age evidence through authoritative references, and explain what would change under a new calibration. Reconcile one historical textbook date with a later official edition without treating all old geological reasoning as invalid.
+
+Read the full chart notes and guide, then use them throughout the Earth-history sequence. Precise terminology supports communication across field geology, paleontology, geochemistry, and planetary science without replacing the evidence-specific work of each.
+
+**Continue:** [Infer Earth’s interior from several kinds of evidence](../earth/Interior-structure-and-indirect-evidence.lingua#r_2YEXGGAP9CA97F2N19K6CKXKF6).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_70936GPH4DD8G6YNN6HM6TBJTC

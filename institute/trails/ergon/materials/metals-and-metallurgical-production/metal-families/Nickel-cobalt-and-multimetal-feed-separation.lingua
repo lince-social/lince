@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Compare nickel and cobalt routes through feed chemistry and multimetal recovery (@metal-nickel-cobalt: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Metais-Nao-Ferrosos-e-Suas-Ligas-Barbosa.lingua#r_0FJ1378X0JMVHYVBFAXGK2399D", #metals-and-metallurgical-production "Zinc-lead-tin-volatility-solution-routes-and-impurities.lingua#r_5PVAQSH9FNEZM9BP783GRKGQDR") { r_1GQF94K58HKQ23PKPYK2XT94CH
+**Read:** [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), the complete applicable nonferrous-feed and extraction/refining material; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the entire nickel/cobalt chapter and shared process/utility context; [Metais Não Ferrosos e suas Ligas — Cassio Barbosa](../sources/Metais-Nao-Ferrosos-e-Suas-Ligas-Barbosa.lingua#r_0FJ1378X0JMVHYVBFAXGK2399D), the full nickel/cobalt and applicable alloy discussions, when available.
+
+Sulfide, lateritic, intermediate, and recycled nickel/cobalt feeds contain different phases, associated metals, impurities, and physical forms. Mineral identity and association affect whether concentration, thermal conversion, leaching, separation, or combined routes are suitable. A shared target-metal percentage does not establish similar response.
+
+Compare pyro-, hydro-, and electrochemical duties using the common thermodynamic, kinetic, transport, and balance framework. Multimetal recovery involves tradeoffs in selectivity, recycles, purity, byproducts, and residuals. A favorable recovery for one metal can move another into a difficult stream or contaminate a required product.
+
+Connect the actual final material requirement: a metallic alloy feed, a purified compound, an intermediate, and a high-purity metal can have different composition, phase, and handling needs. Feed and product evidence must match that requirement and the next production stage.
+
+**Work:** reconstruct two complete routes from different feed families using full primary technical cases. Independently close nickel, cobalt, and a consequential associated element, and reproduce a significant equilibrium/kinetic/separation account. Compare product purity, water/reagents/energy, residuals, recycles, maintenance, and uncertainty. Explain the observation that most affects route choice and how the resulting product connects with later alloy or electrochemical-material knowledge.
+
+**Continue:** [Use zinc, lead, and tin to compare volatility, smelting, solution refining, and recovery](Zinc-lead-tin-volatility-solution-routes-and-impurities.lingua#r_5PVAQSH9FNEZM9BP783GRKGQDR).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_1GQF94K58HKQ23PKPYK2XT94CH

@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+FAIR Guiding Principles — Wilkinson and colleagues (@rc-fair: 0, is #article, #part-of @rc-sources) { r_1DJWX0MM8DMEK300ZF8PHGQVB9
+Mark D. Wilkinson and colleagues. “The FAIR Guiding Principles for scientific data management and stewardship.” Scientific Data 3, 160018, 2016. [Official article](https://www.nature.com/articles/sdata201618).
+
+Read the complete paper and the publisher’s linked updates, then assess the data, code, documentation, identifiers, licences, and access procedure of one actual study. Distinguish findability, accessibility, interoperability, and reusability from a claim that every resource must be unrestricted or that every analysis is scientifically valid.
+
+Compare the article’s principles with the practical reconstruction evidence from the trail. A persistent identifier and a rich metadata record help another reader locate and interpret material, but the actual files, dependencies, method, and use rights still need examination.
+
+The publisher provides the article and its own open-publication and component notices; preserve the actual licence when reusing it. Citation, publication identity, and access checked on 29 October 2026. The paper is an external reference rather than a collection to ingest.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_1DJWX0MM8DMEK300ZF8PHGQVB9

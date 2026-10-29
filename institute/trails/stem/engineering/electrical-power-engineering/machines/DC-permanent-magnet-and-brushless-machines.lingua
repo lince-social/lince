@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+DC, permanent-magnet and brushless machines (@pe-pm-machines: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #electrical-power-engineering "Losses-cooling-duty-aging-and-machine-evidence.lingua#r_7D0QCE0F820GS8CHEGWW99RNKT") { r_3PWCP058T256NJ9X2SPGHXQP52
+**Read:** [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), chapters 6–7 in full; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), complete DC and brushless-machine notes; [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), complete applicable motion-control and power-stage development.
+
+Derive back-emf and torque from winding flux linkage and electromechanical energy with one consistent sign convention. A DC commutator and an electronic commutation system organize currents differently while relying on the same field/energy principles. Brushless naming alone does not identify a unique waveform, rotor or control model.
+
+Compare separately excited, permanent-magnet and reluctance-based behavior where the full source treats it. Include winding resistance/inductance, commutation, speed limits, saturation, demagnetization/temperature and mechanical load. A simple k_t I torque relation has stated geometry/material/current assumptions; its coefficient cannot be freely combined with a back-emf coefficient quoted on a different RMS/peak/phase/speed basis.
+
+Read the complete relevant [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH) chapters, derive a winding/drive example and verify energy through a changed speed/current condition. Connect magnet and winding material evidence to the design and repair study. A complete operating system also needs sensing, drive switching/control, cooling, bearings, protection and testing. Those interfaces belong in the case rather than being omitted because an ideal motor block already rotates in a simulation.
+
+**Continue:** [Losses, cooling, duty, aging and machine evidence](Losses-cooling-duty-aging-and-machine-evidence.lingua#r_7D0QCE0F820GS8CHEGWW99RNKT).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3PWCP058T256NJ9X2SPGHXQP52

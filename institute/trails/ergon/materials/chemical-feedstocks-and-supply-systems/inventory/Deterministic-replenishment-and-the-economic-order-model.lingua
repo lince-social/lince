@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Derive a simple replenishment model before applying it to chemicals (@cs-deterministic: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #chemical-supply-systems "Working-capacity-shipment-sizes-and-receiving-windows.lingua#r_0GBGVZ3PMK40GFB457GW0MWQAK") { r_35550DET1TPPY9M2R2CD8V0VR2
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the complete Deterministic Inventory Control chapter and its examples; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), the complete EOQ, sensitivity and extension sequence.
+
+Assume a single usable item, constant demand rate d, immediate replenishment, no shortage, no quantity discount and no aging/capacity effects. Ordering q units costs a fixed amount K each time and holding costs h per unit per time. Average cycle stock is q/2 and the relevant long-run cost rate is Kd/q + hq/2. Differentiating gives q*=√(2Kd/h), for positive K, d and h.
+
+Use d=100 units/day, K=50 cost units/order and h=0.1 cost units/(unit·day). Then q*=√100000≈316.228 units and the implied cycle is about 3.16228 days. Explain the dimensions and the sensitivity of cost near the minimum. With a fixed lead time L and these simple assumptions, the reorder point is dL; it is a timing condition separate from the order size.
+
+Now identify which assumptions fail for the chosen chemical: release delay, package size, a tank limit, shared delivery equipment, required reserve, expiry or demand variability. Read the complete deterministic-control chapter and develop the appropriate constrained comparison. A formula-derived optimum is useful only for the specified model; the later lot, network and continuity cases add the actual physical and evidential constraints.
+
+**Continue:** [Reconcile inventory policy with storage and transfer capacity](Working-capacity-shipment-sizes-and-receiving-windows.lingua#r_0GBGVZ3PMK40GFB457GW0MWQAK).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_35550DET1TPPY9M2R2CD8V0VR2

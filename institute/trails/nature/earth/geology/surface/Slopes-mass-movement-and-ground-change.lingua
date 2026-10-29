@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Explain slope movement through geometry, materials, water, and time (@geo-slopes: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #source "../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N", #geology "Glaciers-ice-flow-and-preserved-landscapes.lingua#r_225C44HK39XZQQ4D7T70V84HSF") { r_0EQ7KNWABCS4RHYP8WAA4YM0K0
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 15 in full; [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), the complete ground-process and hazard-related chapter used; [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N), regional relief, materials, and ground-process interpretations.
+
+Mass movement includes falls, slides, flows, creep, and combinations with different materials and mechanisms. Describe geometry, displaced material, structures, drainage, evidence of motion, and history before assigning a process. A steep slope or scar by itself does not determine current stability or a future failure time.
+
+Gravity provides driving forces, while friction, cohesion, discontinuities, material behavior, roots, and other influences contribute to resistance under a model. Water can affect pore pressure, loading, erosion, and chemical/physical properties. Distinguish a possible mechanism, a trigger, and the longer evolution that made a slope susceptible.
+
+A simple force-balance or factor-of-safety calculation depends on chosen geometry, material parameters, pore conditions, and failure surface. A precise number obtained from invented or weakly constrained parameters does not establish actual stability. Sensitivity and alternative mechanisms matter as much as arithmetic.
+
+**Work:** compare two documented slope processes with different materials and water conditions. Draw conceptual force and water pathways, distinguishing observations from assumed surfaces/properties. Analyze how a cut, added load, drainage change, or erosion would enter the model. Identify the field/subsurface/time observations needed to test it rather than designing a real intervention from this exercise.
+
+Read the entire mass-wasting chapter and the regional ground-process discussion. Later geotechnical and engineering-geology trails deepen investigation, strength, seepage, deformation, design, and monitoring; the shared geological foundation keeps the site's history and material structure visible.
+
+**Continue:** [Infer glacial history from ice processes, deposits, and landforms](Glaciers-ice-flow-and-preserved-landscapes.lingua#r_225C44HK39XZQQ4D7T70V84HSF).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_0EQ7KNWABCS4RHYP8WAA4YM0K0

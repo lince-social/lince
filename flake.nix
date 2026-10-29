@@ -240,6 +240,9 @@
             ];
             after = if isDesktop then [ "graphical-session.target" ] else [ "network.target" ];
             partOf = lib.optional isDesktop "graphical-session.target";
+            unitConfig = lib.optionalAttrs isDesktop {
+              ConditionEnvironment = "!XDG_CURRENT_DESKTOP=Lince";
+            };
             path = cfg.extraPath;
             restartIfChanged = true;
             restartTriggers = [ package ];
@@ -910,6 +913,23 @@
           lib = pkgs.lib;
           cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
           version = cargoToml.workspace.package.version;
+          localBuildHook = ''
+            export LINCE_BUILD_ENVIRONMENT=1
+            export RUSTUP_TOOLCHAIN="''${RUSTUP_TOOLCHAIN:-${(builtins.fromTOML (builtins.readFile ./rust-toolchain.toml)).toolchain.channel}}"
+            export RUSTC_WRAPPER="''${RUSTC_WRAPPER-${pkgs.sccache}/bin/sccache}"
+            export SCCACHE_CACHE_SIZE="''${SCCACHE_CACHE_SIZE:-100G}"
+            export SCCACHE_IDLE_TIMEOUT="''${SCCACHE_IDLE_TIMEOUT:-0}"
+            lince_build_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+            export SCCACHE_DIR="''${SCCACHE_DIR:-$lince_build_root/target/sccache}"
+            mkdir -p "$SCCACHE_DIR"
+            export SCCACHE_ERROR_LOG="''${SCCACHE_ERROR_LOG:-$SCCACHE_DIR/server.log}"
+            export LINCE_SHA256SUM="''${LINCE_SHA256SUM-${pkgs.coreutils-full}/bin/sha256sum}"
+          '' + lib.optionalString (system == "x86_64-linux") ''
+            if [ -z "''${RUSTFLAGS+x}" ] && [ -z "''${CARGO_ENCODED_RUSTFLAGS+x}" ]; then
+              export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="''${CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER-${pkgs.clang}/bin/clang}"
+              export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS="''${CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS--C link-arg=-fuse-ld=${pkgs.wild-unwrapped}/bin/wild -C target-cpu=native}"
+            fi
+          '';
           cleanSrc = lib.cleanSourceWith {
             src = ./.;
             filter =
@@ -918,13 +938,11 @@
                 name = baseNameOf path;
                 rel = lib.removePrefix (toString ./. + "/") (toString path);
               in
-              !(
-                name == ".direnv"
-                || name == ".devenv"
-                || name == ".git"
-                || name == "mprocs.log"
-                || name == "target"
-                || lib.hasPrefix "target/" rel
+              !(builtins.elem name [ ".git" "target" ".direnv" ".devenv" ])
+              && (
+                builtins.elem rel [ "Cargo.toml" "Cargo.lock" "rust-toolchain.toml" "LICENSE" "institute" ]
+                || builtins.any (root: rel == root || lib.hasPrefix (root + "/") rel)
+                  [ ".cargo" "crates" "institute/assets" "institute/packaging" ]
               );
           };
           interfaceLinuxNativeBuildInputs =
@@ -1380,11 +1398,13 @@
                 clang
                 libclang
                 python3
+                sccache
               ])
+              ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.mold ]
               ++ interfaceLinuxNativeBuildInputs
               ++ interfaceLinuxBuildInputs;
 
-            shellHook = captureGraphicsEnvironment pkgs + ''
+            shellHook = localBuildHook + captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
               export LINCE_CONTENT="''${LINCE_CONTENT:-$PWD/institute/trails}"
             ''
@@ -1473,6 +1493,7 @@
                   clang
                   libclang
                   python3
+                  sccache
                   ffmpeg
                   (pdfiumPackage pkgs)
                 ]
@@ -1480,12 +1501,13 @@
                   at-spi2-core
                   jq
                   orca
+                  mold
                 ]
               )
               ++ interfaceLinuxNativeBuildInputs
               ++ interfaceLinuxBuildInputs;
 
-            shellHook = captureGraphicsEnvironment pkgs + ''
+            shellHook = localBuildHook + captureGraphicsEnvironment pkgs + ''
               export LINCE_MIGRATION_PREFLIGHT=1
               export LINCE_CONTENT="''${LINCE_CONTENT:-$PWD/institute/trails}"
             ''

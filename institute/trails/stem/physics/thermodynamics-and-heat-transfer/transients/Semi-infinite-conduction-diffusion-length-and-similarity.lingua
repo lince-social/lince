@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Semi-infinite conduction, diffusion length and similarity (@th-semi-infinite: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #thermodynamics-and-heat-transfer "Finite-bodies-eigenmodes-and-transient-superposition.lingua#r_1322FT380D62ASTAD04KKTC8G8") { r_3H9JEH6W8JEQXVRSM8Q4JMX7YW
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), semi-infinite and similarity solutions; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), transient analytical methods; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), diffusive and non-diffusive transport limits.
+
+For a step boundary change in a homogeneous initially uniform semi-infinite body, the solution depends on x/√(αt). Derive the similarity reduction and error-function profile, then check initial and boundary limits. The diffusion length is a scale, not a sharp front beyond which Fourier's solution is exactly unchanged.
+
+Compare specimen thickness with the penetrated region over the observation time before treating the domain as semi-infinite. A finite pulse, surface resistance, layered material or temperature-dependent property changes the response.
+
+Recover the integrated heat uptake and surface-flux time dependence from the same solution. Use it to test a transient numerical model and to understand why an early-time thermal measurement emphasizes a different region from a late-time measurement. Explain the nonphysical infinite propagation feature of Fourier diffusion and when a more detailed model is needed.
+
+**Continue:** [Finite bodies, eigenmodes and transient superposition](Finite-bodies-eigenmodes-and-transient-superposition.lingua#r_1322FT380D62ASTAD04KKTC8G8).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3H9JEH6W8JEQXVRSM8Q4JMX7YW

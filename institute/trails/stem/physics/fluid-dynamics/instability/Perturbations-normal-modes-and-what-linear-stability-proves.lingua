@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Perturbations, normal modes and what linear stability proves (@fd-stability: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #fluid-dynamics "Transition-disturbance-amplitude-and-transient-growth.lingua#r_3YVWXR0JBV81JE1W6E58FB6F6A") { r_48XANNJ6W3VYE8XSV9358W16AW
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 5 shear-flow stability and necessary conditions; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 5 inviscid and viscous parallel-flow instability; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), consistency and convergence methods.
+
+Specify a base flow that satisfies its own equations and boundary conditions, then introduce a small perturbation. Linearization retains terms first order in its amplitude. A modal ansatz converts an initial-value question into an eigenvalue problem only under the stated temporal and spatial structure. A positive growth rate proves growth of that linear mode, not the amplitude or statistics of the later nonlinear state.
+
+Distinguish temporal growth at real wavenumber from spatial amplification at real frequency, and convective from absolute instability. In a parallel inviscid shear flow, derive the Rayleigh equation and its inflection-point necessary condition under its assumptions. For viscous parallel flow, follow the Orr–Sommerfeld formulation, including all boundary conditions and nondimensionalization.
+
+Check a computed eigenmode against residual, grid/order changes and an independent time evolution of a small disturbance. Boundary truncation and spurious eigenvalues can create convincing false growth. A necessary condition is not sufficient, and decay of every individual mode does not rule out transient amplification in a non-normal linear system.
+
+**Continue:** [Transition, disturbance amplitude and transient growth](Transition-disturbance-amplitude-and-transient-growth.lingua#r_3YVWXR0JBV81JE1W6E58FB6F6A).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_48XANNJ6W3VYE8XSV9358W16AW

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Carnot limits and thermodynamic temperature (@th-carnot: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../../../chemistry/general-chemistry/energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB") { r_6R2GGRMXKFWVNTD3STTQ272GNC
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), chapter 7 in full; [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), Carnot cycles and second-law statements; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), thermodynamic temperature and reversible cycles.
+
+For a reversible engine exchanging heat only with reservoirs at absolute temperatures T_h and T_c, efficiency is 1−T_c/T_h. Its usefulness lies in the declared reservoir and reversible conditions. A finite stream, multiple heat levels or an installation with other exchanges needs a corresponding entropy/exergy calculation.
+
+With reservoirs at 600 K and 300 K, the limiting engine efficiency is 0.5. A reversible refrigerator between those same temperatures has COP_R = 1; the corresponding heat-pump COP is 2. These statements do not describe a real 50%-efficient plant or its achievable transfer rate.
+
+Derive the result from a reversible cycle and explain why using Celsius would fail. Compare the upper work limit with finite heat-transfer area and temperature differences. The maximum-efficiency limit and maximum-power operating point are different optimization questions.
+
+**Continue:** [Use entropy changes with a defined system and a valid thermodynamic argument](../../../chemistry/general-chemistry/energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6R2GGRMXKFWVNTD3STTQ272GNC

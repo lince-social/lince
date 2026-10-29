@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Incompressible pressure–velocity coupling and the nullspace (@fd-pressure-coupling: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #source "../sources/OpenFOAM-Foundation-Methods-and-User-Guide.lingua#r_6RVWPNB9VWAA4JDXH1HCXFDGQY", #fluid-dynamics "Computational-inlets-outlets-walls-and-open-domains.lingua#r_1KEP8G46P15AT3CZZRJJJVHKCJ") { r_3DYC1KZFBT3WBPFKTWEZAT0MRN
+**Read:** [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), pressure–velocity algorithms, interpolation and boundary conditions; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), incompressible numerical methods; [OpenFOAM Foundation — versioned methods and user guide](../sources/OpenFOAM-Foundation-Methods-and-User-Guide.lingua#r_6RVWPNB9VWAA4JDXH1HCXFDGQY), matching version documentation and implemented algorithms.
+
+For incompressible flow, pressure helps enforce the velocity field's divergence constraint. A projection method constructs an intermediate velocity and solves a pressure or pressure-correction problem to restore that constraint under compatible boundaries. Derive the correction equation and boundary conditions from the selected time-discrete momentum equation.
+
+In a closed or periodic domain, pressure can be determined only up to an additive constant unless a reference is supplied. Compatibility of the pressure right-hand side and boundary fluxes matters. Staggered and collocated variable arrangements have different coupling issues; a collocated scheme needs a consistent face-flux construction to avoid nonphysical pressure patterns.
+
+Compare cellwise continuity error with global boundary-flux closure and momentum residuals. Tightening a linear-solver tolerance does not fix an inconsistent discrete boundary condition. Inspect the chosen SIMPLE, PISO, projection or coupled algorithm through its actual equations, corrections and stopping criteria, then recover a known viscous solution before using it for a complex geometry.
+
+**Continue:** [Computational inlets, outlets, walls and open domains](Computational-inlets-outlets-walls-and-open-domains.lingua#r_1KEP8G46P15AT3CZZRJJJVHKCJ).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3DYC1KZFBT3WBPFKTWEZAT0MRN

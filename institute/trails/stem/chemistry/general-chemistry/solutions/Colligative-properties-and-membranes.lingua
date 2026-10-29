@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Use colligative relations with a specified particle and solution model (@gc-colligative: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Gas-solubility-and-Henry-conventions.lingua#r_72CFKEPYR9QEVHN4KETB2Q220N") { r_0988XHVEHBKG1WHB3MKRYNHRQH
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 11’s colligative-property treatment and exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), Raoult’s law, colligative properties, and osmosis; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), solution composition and osmotic quantities.
+
+Dilute-solution colligative relations connect solvent chemical behavior with solute composition under assumptions. Vapor-pressure lowering, boiling/freezing changes, and osmotic pressure require defined variables and standard states. A simple particle-count explanation is an entrance; activities provide the more general thermodynamic account later.
+
+For an ideal dilute model, freezing-point depression can be written ΔT_f = iK_f b, where b is solute molality and i summarizes the chosen dissociation/association account. For invented teaching assumptions K_f = 1.86 K kg mol⁻¹, b = 0.100 mol kg⁻¹, and i = 2, the predicted depression is 0.372 K. This is not an assertion that a real 0.100 molal electrolyte behaves ideally or has exactly that effective particle factor.
+
+Osmotic-pressure relations additionally depend on membrane selectivity and the species that can cross it. A dissolved molecule's chemical identity, ion pairing, association, and reactions can alter the relation between analytical composition and effective osmotic behavior. Interpret an apparent molar mass within that model.
+
+**Work:** derive a simple dilute relation from the textbook assumptions and check the example's units. Compare nonelectrolyte, dissociating, and associating cases. State what additional measurements distinguish nonideality from a wrong composition or membrane assumption.
+
+Read the complete colligative section, including exercises and its limitations. Connect the result with chemical potential and activity when they appear. Biological membranes, water treatment, and industrial separations deepen the relevant material-specific mechanisms separately.
+
+**Continue:** [Use Henry’s law only after identifying its convention and scope](Gas-solubility-and-Henry-conventions.lingua#r_72CFKEPYR9QEVHN4KETB2Q220N).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_0988XHVEHBKG1WHB3MKRYNHRQH

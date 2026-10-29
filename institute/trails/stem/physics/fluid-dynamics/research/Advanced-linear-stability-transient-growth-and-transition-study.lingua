@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced linear stability, transient growth and transition study (@fd-advanced-instability: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #fluid-dynamics "Advanced-turbulent-statistics-spectra-and-energy-budget-study.lingua#r_0460VC6BHC9TM4E3HRAS38M2XH") { r_0WHDHE2BSBQ7ZMTW2EXS3D2MBN
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), complete instabilities chapter; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), inviscid and viscous instability notes; [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), transition and statistical context.
+
+Choose a parallel shear, interfacial or convective base state and derive its linear perturbation equations and all boundary conditions. Recover an analytical limiting condition, then compute a growth-rate or eigenvalue spectrum using a reproducible numerical discretization. Identify symmetries, spurious modes and resolution/domain sensitivity.
+
+Compare modal predictions with direct small-disturbance evolution. For a non-normal problem, evaluate transient energy growth for a declared initial disturbance or optimization norm. Test amplitude dependence until the linear description fails, then separate the nonlinear observation from a claimed linear instability threshold.
+
+Relate the result to controlled or published physical evidence with the disturbance environment specified. Deliver a complete mathematical argument, numerical checks and an explanation of what the stability result does and does not prove about sustained transition. A graph of eigenvalues without a defensible base state and boundary model is incomplete.
+
+**Continue:** [Advanced turbulent statistics, spectra and energy-budget study](Advanced-turbulent-statistics-spectra-and-energy-budget-study.lingua#r_0460VC6BHC9TM4E3HRAS38M2XH).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0WHDHE2BSBQ7ZMTW2EXS3D2MBN

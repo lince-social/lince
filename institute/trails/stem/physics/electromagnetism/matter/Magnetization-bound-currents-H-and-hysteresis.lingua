@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Magnetization, bound currents, H and hysteresis (@em-magnetic-matter: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #electromagnetism "../currents/Hall-effect-conductivity-tensors-and-carrier-inference.lingua#r_4HGZYF44KNT5Y68SWNWZ8Q0WV6", #electrical-power-engineering "../../../engineering/electrical-power-engineering/machines/Magnetic-circuits-materials-loss-and-machine-geometry.lingua#r_26T1DAYPG9F1H903T8GS499Q25") { r_1H8D8KMFTHN04KYDW84T64CQ2J
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), magnetic fields in matter; [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), magnetic materials and force applications.
+
+Magnetization M describes magnetic moment per volume after averaging. Bound volume current is ∇×M and bound surface current M×n in the usual convention. Define H = B/μ₀ − M so that macroscopic Ampère's law separates free current from the represented magnetization. B and H are related quantities, not interchangeable names for one field.
+
+For a linear isotropic material B = μH is a model with a stated range. Diamagnetism, paramagnetism, ferromagnetic domains, saturation, remanence and hysteresis require different physical explanations. A high-permeability core can concentrate flux but has geometry-dependent demagnetizing fields, finite response and losses. A closed magnetic circuit approximation should be checked against leakage and fringing.
+
+Draw a B–H loop with its excitation history, temperature, frequency and units. The cycle area represents loss per volume only under the appropriate thermodynamic/electromagnetic account. Separate hysteresis, eddy-current and other dynamic losses rather than attributing a measured total to one mechanism. Microscopic spin and band physics belong to connected quantum/material subjects; the macroscopic model must still satisfy fields, boundaries and measured response.
+
+**Continue:** [Hall effect, conductivity tensors and carrier inference](../currents/Hall-effect-conductivity-tensors-and-carrier-inference.lingua#r_4HGZYF44KNT5Y68SWNWZ8Q0WV6).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in electrical power engineering:** [Magnetic circuits, materials, loss and machine geometry](../../../engineering/electrical-power-engineering/machines/Magnetic-circuits-materials-loss-and-machine-geometry.lingua#r_26T1DAYPG9F1H903T8GS499Q25).
+} r_1H8D8KMFTHN04KYDW84T64CQ2J

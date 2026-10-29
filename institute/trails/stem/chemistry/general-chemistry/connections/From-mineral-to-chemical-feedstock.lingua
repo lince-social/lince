@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Explain what changes between a mineral resource and a useful chemical feedstock (@gc-minerals: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Mineral-Commodities-USGS.lingua#r_1MSRN5WRD5DQT6Y6B7SDYZ8KWW", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #general-chemistry "Silicon-structure-purity-and-manufacture.lingua#r_6CYS8V4BW9720F3X8134GYZR3Y") { r_4CZJW2BPR1WBMPVKS6J2PFH733
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 18 and relevant thermodynamic/equilibrium sections; [Mineral Commodity Summaries 2026 and silicon information — USGS](../sources/Mineral-Commodities-USGS.lingua#r_1MSRN5WRD5DQT6Y6B7SDYZ8KWW), the introduction and selected material/commodity sections; [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP), identified property records needed for the model.
+
+A geological resource, a mineral species, a bulk ore, an assay, and a purified feedstock describe different material questions. Elemental abundance alone does not establish accessibility, chemical form, recoverability, purity, or suitability for a process. Use the shared concepts to identify what each stage changes and what evidence supports the account.
+
+Connect mineral structure and phase, component balance, chemical conversion, dissolution/precipitation, redox, separation, and energy. A complete material pathway also needs water, reagents, gases, power, transport, equipment, labor/skills, monitoring, maintenance, and waste/recovery arrangements. Chemistry explains important constraints without making those physical systems disappear.
+
+For a selected simple material, sketch a high-level resource-to-product chain and identify the reactions or phase transfers that require chemical understanding. Distinguish a balanced equation from a demonstrated industrial mechanism or operating procedure. Include impurities and side streams; a desired element's recovery can conceal much larger flows of accompanying matter.
+
+**Work:** use identified textbook principles, evaluated property information, and a dated USGS commodity account to trace one material. Derive a small hypothetical mass/stoichiometric/energy study, identify required assays and reference conditions, and mark where specialized geology, mining, metallurgy, separation, or engineering knowledge is required. Criticize one apparently simple shortcut using conservation, equilibrium, rate, or measurement evidence.
+
+This is an integrative general-chemistry study that points toward the later full specialist trails. It should let a reader explain meaningful constraints and ask informed practical questions while preserving the much deeper work needed to design and operate the chain.
+
+**Continue:** [Connect silicon chemistry with the difference between a material and a device](Silicon-structure-purity-and-manufacture.lingua#r_6CYS8V4BW9720F3X8134GYZR3Y).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_4CZJW2BPR1WBMPVKS6J2PFH733

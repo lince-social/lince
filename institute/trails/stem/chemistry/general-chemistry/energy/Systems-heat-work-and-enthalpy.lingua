@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Choose a system and track heat, work, and enthalpy (@gc-energy: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Calorimetry-and-thermal-models.lingua#r_55B9CZ9RST5E8CANA6GZ0SNPEY", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/foundations/Heat-and-work-signs-across-physics-and-chemistry.lingua#r_3Z4G73ZME2A7M1A63NGX177SQN") { r_545JZM2734935DFWXBV90WM5PE
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 5 in full; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), Chemical Energetics completely; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), energy, work, heat, and thermodynamic quantities.
+
+Define the system, surroundings, boundary, initial/final states, and allowed exchanges before applying an energy equation. Under the chemistry sign convention, ΔU = q + w, with energy transferred into the system counted positively. Pressure-volume work for expansion against an external pressure is w = −∫p_ext dV. Other kinds of work need their own terms.
+
+Internal energy is a state quantity; heat and work describe transfers associated with a process. Temperature is another quantity with a different role. A large body and a small body at the same temperature need not contain the same energy or undergo the same temperature change after receiving the same heat.
+
+Enthalpy H = U + pV is useful for chemical changes under specified pressure conditions. For a closed system at constant pressure with only pressure-volume work, heat transfer is ΔH. State these conditions instead of applying q = ΔH to any vessel. A reaction enthalpy also specifies reaction equation, species, phases, temperature, and reference conditions.
+
+**Work:** assign signs for heating, expansion, electrical work, and cooling under one consistent convention. Derive the constant-pressure relation from the first law and H definition. Compare a constant-volume calorimetric interpretation with a constant-pressure one and identify the additional information needed to relate them.
+
+Read the complete thermochemistry chapter and the Chem1 energetics unit, including exercises. Later entropy and free energy explain direction under constraints; a favorable enthalpy alone is insufficient to determine equilibrium or reaction speed. Keep energy transfer, available work, and chemical conversion distinguishable throughout the later industrial studies.
+
+**Continue:** [Interpret a temperature change through a calibrated thermal model](Calorimetry-and-thermal-models.lingua#r_55B9CZ9RST5E8CANA6GZ0SNPEY).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in thermodynamics and heat transfer:** [Heat and work signs across physics and chemistry](../../../physics/thermodynamics-and-heat-transfer/foundations/Heat-and-work-signs-across-physics-and-chemistry.lingua#r_3Z4G73ZME2A7M1A63NGX177SQN).
+} r_545JZM2734935DFWXBV90WM5PE

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect electronic manufacturing chemicals with molecular identity and trace-quality evidence (@ic-electronic-chemicals: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "High-purity-isolation-contact-materials-and-contamination.lingua#r_0A8DYYGK7WSS534DBYFKFT5HPT") { r_7A21PGPZYQM3YMF8TM796QMZNB
+**Read:** [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the complete relevant silicon/phosphorus/specialty-chemical and quality context; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the entire relevant silicon, high-purity and industrial-process examples if using the commercial edition; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete chemical-vapor-deposition example and corresponding reaction/transport reasoning.
+
+Electronic fabrication uses chemicals as reactants, precursors, etchants, cleaning agents, gases, solvents, dopant sources and other process materials. Their suitability depends on chemical form, impurity panel, moisture/particles, delivery state and compatibility with the actual fabrication process. A nominal purity grade does not identify all relevant contaminants or their limits.
+
+Follow a precursor or chemical from synthesis through purification, characterization, filling, storage and point of use. Materials of contact, seals, atmosphere, pressure/temperature history and sampling can change the delivered state. A specification measured at a supplier is different evidence from the material reaching a sensitive reaction surface.
+
+Link the chemical's role to the substrate/material reaction and its byproducts, but keep the full semiconductor, vacuum, deposition, device and clean-manufacturing subjects available for their own deeper studies. A general public chemical route does not demonstrate proprietary semiconductor-grade preparation or a validated fabrication recipe.
+
+**Work:** reconstruct one complete public electronic-chemical interface with actual molecular, analytical, phase and reaction evidence. Trace consequential impurities through preparation and transfer, compare a documented purification/source alternative and explain which measurement or process observation would establish the claimed suitability for the downstream use.
+
+**Continue:** [Explain high-purity chemicals through traceability, purification and contamination control](High-purity-isolation-contact-materials-and-contamination.lingua#r_0A8DYYGK7WSS534DBYFKFT5HPT).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_7A21PGPZYQM3YMF8TM796QMZNB

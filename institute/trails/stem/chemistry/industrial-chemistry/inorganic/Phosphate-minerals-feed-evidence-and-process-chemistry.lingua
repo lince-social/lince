@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect phosphate resources and feed characterization with chemical production (@ic-phosphate-feed: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4", #industrial-chemistry "Phosphoric-acid-reaction-calcium-sulfate-and-purification.lingua#r_3W1VQB0X8GTV0RJH1PVWX34J3N") { r_6K8V29YMR4FWDRKEGWGHWAQZH0
+**Read:** [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the complete phosphate-feed and phosphoric-acid process treatment; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the whole phosphorus/phosphate manufacturing sequence; [Large Volume Inorganic Chemicals — Solids and Others Industry, BREF LVIC-S](../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4), the complete relevant inorganic-phosphate product chapters.
+
+Phosphate feed is a mineral/chemical assemblage rather than a pure label. Phosphorus-bearing phases, carbonate, silica, fluoride, metals, moisture and physical state can affect acid consumption, separation, product quality and residuals. Reuse [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../../../../nature/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN) and [Mining and mineral engineering — extraction, processing, and continuing work](../../../engineering/mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA) for the actual mineral, sampling and preparation knowledge.
+
+Distinguish elemental phosphorus, phosphate compounds and the conventional P₂O₅-equivalent nutrient basis. Reporting phosphorus as an oxide equivalent does not imply that the actual feed or fertiliser contains free P₂O₅. A chemical balance uses the real species/phases, while a commercial grade may use a conventional reporting transformation.
+
+A useful feed account joins resource variability, beneficiation, representative assays, reaction response and downstream purification. Gross phosphorus content alone cannot determine whether two feeds are interchangeable for a specified acid or salt. Trace impurities and the physical character of the separated residue can change a route comparison.
+
+**Work:** characterize two documented phosphate feeds on compatible dry/wet and chemical/nutrient bases. Reconstruct the consequential phase/element accounts through preparation and reaction, then compare acid, utility, quality and residual duties. Identify the primary observations that most affect the preferred route and distinguish actual assays from inferred mineral composition.
+
+**Continue:** [Follow phosphoric acid through mineral reaction, solid separation and impurity control](Phosphoric-acid-reaction-calcium-sulfate-and-purification.lingua#r_3W1VQB0X8GTV0RJH1PVWX34J3N).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6K8V29YMR4FWDRKEGWGHWAQZH0

@@ -1,0 +1,21 @@
+Import "../Geology.lingua"
+
+Explain igneous materials through melting, crystallization, and field relations (@geo-igneous: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "Sediment-deposition-and-diagenesis.lingua#r_4116Y9BEZTG63XA8QKJT6FWK0X", #mineralogy-and-petrology "../../mineralogy-and-petrology/igneous/Magmas-melts-crystals-and-material-balance.lingua#r_2MNYJC6NDNW704DEW47KJGR76V") { r_7QWRZH8D2EVJR6F20Z77Y4QXR7
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 3 in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete igneous-rock and magma/history material; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the igneous/mantle notes and exercises.
+
+Igneous interpretations connect source material, pressure/temperature/composition, partial melting, melt transport, crystallization, and emplacement. A magma can contain liquid, crystals, and volatile components. Distinguish source composition from the composition of a partial melt and the final rock; material transfer and reaction can change each.
+
+Cooling and crystallization are governed by phase relations and kinetics under conditions. Textures, mineral relationships, inclusions, cross-cutting contacts, chilled margins, and other field evidence can constrain a history. A simplified crystallization sequence is a useful model whose assumptions and scope need explanation.
+
+Fractional crystallization, mixing, assimilation, and later alteration can produce overlapping compositional patterns. A single elemental plot or rock name does not uniquely select a process. Read how field context, mineral chemistry, isotopic evidence, and quantitative balances can distinguish candidate accounts.
+
+**Work:** interpret an identified textbook intrusive-body example from observations to competing histories. Draw the material/energy and relative-time account, then explain a simple hypothetical partial-melting or crystal-separation balance. Identify what data would test its assumptions rather than claiming the calculation establishes the real history.
+
+Read the entire intrusive-igneous chapter and relevant historical/lecture material. Volcanic processes follow in the tectonic sequence; the more detailed mineralogy/petrology and geochemistry studies will deepen phase equilibria, analysis, and research without treating these basic relationships as unrelated new knowledge.
+
+**Continue:** [Connect sedimentary rocks with production, transport, deposition, and later change](Sediment-deposition-and-diagenesis.lingua#r_4116Y9BEZTG63XA8QKJT6FWK0X).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+
+**Continue in mineralogy and petrology:** [Distinguish magma, melt, crystals, and the system being sampled](../../mineralogy-and-petrology/igneous/Magmas-melts-crystals-and-material-balance.lingua#r_2MNYJC6NDNW704DEW47KJGR76V).
+} r_7QWRZH8D2EVJR6F20Z77Y4QXR7

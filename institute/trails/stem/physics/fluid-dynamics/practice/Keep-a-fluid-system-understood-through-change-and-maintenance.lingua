@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Keep a fluid system understood through change and maintenance (@fd-continuing-service: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05", #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #fluid-dynamics "../computation/An-inspectable-pump-and-pipe-operating-point.lingua#r_0C8QS68GNNJFF403GENEXJARPC") { r_0VA875G7B5W9ZKP27DG3ZGPXTY
+**Read:** [Water-flow calibration — NIST SP 250-98](../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05), calibration history and installed performance; [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), operation and transient modelling limitations; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), continued evidence and applicability of a model.
+
+Operating conditions drift as surfaces foul, filters load, fluids change, sensors age and users alter demand. Preserve an interpretable baseline of flow, pressure, temperature, power and relevant quality measurements. A change in one signal should lead to competing physical explanations and a discriminating check rather than an automatic diagnosis.
+
+Evaluate an intervention with the same mass, momentum and energy accounts used during design. Document isolation and return-to-service conditions, calibration changes, replacement-part geometry/materials and updated operating limits. Verify actual restored performance; a successful restart alone does not establish that the intended service has returned.
+
+Make the rationale transferable: retain why a coefficient, procedure or setting was chosen, what evidence supports it and when to reassess it. Connect material supply, skilled work, spare parts and measurement access to technical continuity. A complete advanced investigation should explain both how the system works initially and how another person can keep understanding it as conditions change.
+
+**Continue:** [An inspectable pump-and-pipe operating point](../computation/An-inspectable-pump-and-pipe-operating-point.lingua#r_0C8QS68GNNJFF403GENEXJARPC).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0VA875G7B5W9ZKP27DG3ZGPXTY

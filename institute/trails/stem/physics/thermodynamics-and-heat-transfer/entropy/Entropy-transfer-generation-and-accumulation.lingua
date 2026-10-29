@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Entropy transfer, generation and accumulation (@th-entropy-balance: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "Entropy-properties-integration-and-reference-paths.lingua#r_5PBN5Q06X2XF6SN21MCCWR8VJY") { r_0FC03677A8H7RVJCY8WKQRRTTP
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), the complete second-law treatment; [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), closed and open entropy balances; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), entropy and nonequilibrium accounting.
+
+For a closed system, entropy change equals boundary heat-transfer contributions evaluated with the relevant boundary temperatures, plus generated entropy. For an open control volume, add entropy carried by incoming and outgoing matter. Use a consistent convention and define where the boundary temperature is evaluated.
+
+Entropy generation is nonnegative for the macroscopic processes under the stated thermodynamic model. A system's entropy can decrease while exporting entropy; an isolated system cannot be analysed by ignoring a hot source that supplies it. For irreversible evolution, calculate the state change using any valid reversible reference path, not by declaring the actual process reversible.
+
+For a steady 100 W transferred from 400 K to 300 K, the total entropy-generation rate of the two-reservoir transfer is 100(1/300−1/400) = 1/12 W/K. Assigning generation to a wall or contact depends on where the boundary is drawn, while the combined account must agree.
+
+**Continue:** [Entropy properties, integration and reference paths](Entropy-properties-integration-and-reference-paths.lingua#r_5PBN5Q06X2XF6SN21MCCWR8VJY).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_0FC03677A8H7RVJCY8WKQRRTTP

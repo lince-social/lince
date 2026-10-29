@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced rheometry, constitutive inference and processing-flow study (@fd-advanced-rheology: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #fluid-dynamics "Advanced-advection-diffusion-dispersion-and-mixing-study.lingua#r_2MZ7ZF2GP6SNSGEV4H9BEC9WKD") { r_49DVK2ND92ZB7EN3P0V4R1BJ71
+**Read:** [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), the complete lecture sequence; [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), all available notes and independent homework/practice problems; [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), free-surface or coating conditions when relevant.
+
+Use a complete complex-fluid reading to connect molecular or structural reasoning with measured stress response. Derive at least one generalized Newtonian and one viscoelastic model's predictions for shear, relaxation or extension. Check objectivity and physical limiting behavior, explaining which material functions can distinguish the models.
+
+Fit only independently identifiable parameters using a documented rheometric dataset or performed experiment. Compare multiple protocols and reserve an unfit response for prediction. Account for temperature, sample history, wall slip, instrument response and geometric corrections before interpreting a disagreement as a new material effect.
+
+Predict a separate pressure-driven, coating or extensional flow and compare with independent evidence. Examine an instability or high-deformation limit without confusing numerical failure with physical growth. Deliver the complete constitutive argument and its limitations, including why one shear-viscosity curve cannot specify all processing behavior.
+
+**Continue:** [Advanced advection, diffusion, dispersion and mixing study](Advanced-advection-diffusion-dispersion-and-mixing-study.lingua#r_2MZ7ZF2GP6SNSGEV4H9BEC9WKD).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_49DVK2ND92ZB7EN3P0V4R1BJ71

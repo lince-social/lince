@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Explain how replenishment decisions change the information seen upstream (@cs-information: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Information-Distortion-and-the-Bullwhip-Effect.lingua#r_5ZF9C4P38W8ZDJTP9HWVD0HYM6", #chemical-supply-systems "Source-terminal-user-networks-with-quality-and-time-constraints.lingua#r_39DS70JJPGT1WYXBF98RQG8D6Q") { r_7Q48XAW5X86H5DGJ3QW9XV6CAR
+**Read:** [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the complete information-sharing and coordination programme; [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the complete forecasting and multi-echelon material; [Information Distortion in a Supply Chain: The Bullwhip Effect — Lee, Padmanabhan and Whang](../sources/Information-Distortion-and-the-Bullwhip-Effect.lingua#r_5ZF9C4P38W8ZDJTP9HWVD0HYM6), the complete authorized article and relevant subsequent comments.
+
+Write separate time series for a user's consumption, request, order, a distributor's replenishment and a producer's campaign. Describe the decision rule connecting each pair. Batching, forecast updates, lead times, allocations and changing commitments can make orders vary more than underlying use. A plot alone does not identify which mechanism is responsible.
+
+Work the complete relevant graduate assignments, then read the Lee–Padmanabhan–Whang article and subsequent scholarly comments through authorized access. Derive one mechanism in a small explicit model. Compare full visibility, delayed reporting and only orders visible upstream under the same physical demand and capacity assumptions.
+
+Add chemical-specific information: active-content demand, grade, remaining usable life, pending release, shared co-products and a quality failure. Determine what information can be shared and acted upon before it becomes stale. Compare the information benefit with the actual operational ability to respond; knowing a shortage earlier does not manufacture capacity or an acceptable alternate source. Preserve the study's data, rules and assumptions through ordinary references and links. The advanced coordination study should test alternatives and distinguish a causal model from a merely correlated observed pattern.
+
+**Continue:** [Model a chemical network as feasible material paths and dated decisions](Source-terminal-user-networks-with-quality-and-time-constraints.lingua#r_39DS70JJPGT1WYXBF98RQG8D6Q).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_7Q48XAW5X86H5DGJ3QW9XV6CAR

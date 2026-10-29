@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Multidimensional conduction, spreading and shape (@th-multidimensional: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../../electromagnetism/sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5", #thermodynamics-and-heat-transfer "Anisotropic-and-effective-thermal-conductivity.lingua#r_1XZTF53M6A8RRVB1NRK5AKEJHH") { r_59BM6KNFGCMJGXA3QZWGQS39C6
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete multidimensional conduction sections; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), two-dimensional and source/sink methods; [Vector Calculus — David Tong](../../electromagnetism/sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5), the needed complete vector-calculus development.
+
+Heat spreading from a small source into a larger body is not one-dimensional conduction through the source area. Define the actual source footprint, thickness, boundaries and anisotropy before selecting a shape factor, series solution or numerical model.
+
+Study separation of variables, eigenfunction expansions and appropriate Green-function or source/sink representations. Derive an elementary two-dimensional solution and verify boundary values and integrated energy. Corner singularities or ideal point sources require careful interpretation of local maxima.
+
+Compare a reduced resistance network with a resolved field calculation and state the quantity each predicts accurately. Package cooling, furnace walls and measurement guards often depend on small bypass paths that a serial-layer model omits. A refined mesh alone does not justify the assumed source shape or boundary condition.
+
+**Continue:** [Anisotropic and effective thermal conductivity](Anisotropic-and-effective-thermal-conductivity.lingua#r_1XZTF53M6A8RRVB1NRK5AKEJHH).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_59BM6KNFGCMJGXA3QZWGQS39C6

@@ -1,0 +1,13 @@
+Import "../Industrial-chemistry.lingua"
+
+Production of Speciality Inorganic Chemicals, BREF SIC (@ic-specialty-inorganic: 0, is #reference, #part-of @ic-sources) { r_04G7NFYXE76QCB3DXCRJC1FSCP
+European Commission, Joint Research Centre. Production of Speciality Inorganic Chemicals, BREF SIC. adopted August 2007. [Official reference and full-text access](https://bureau-industrial-transformation.jrc.ec.europa.eu/reference/production-speciality-inorganic-chemicals).
+
+This reference develops specialty inorganic products and process families, including pigments, silicones, phosphorus compounds and soluble inorganic metal salts, with generic production and environmental systems.
+
+Read the complete general treatment and all parts of the product family used in the specialty study. Reconstruct reactions, impurity pathways, purification, physical specification, packaging/contact materials and residuals. Distinguish a broad public process account from a verified high-purity recipe or plant-specific operating procedure.
+
+Identity, stated scope, date and official access were checked on 29 October 2026. This is a dated technical reference, not a claim that every described plant, technology or legal reference is current everywhere. Preserve its attribution, actual reuse notice and third-party exceptions; public access is not described as a blanket CC licence. Full-text or automated inspection limits are distinguished where relevant. No book, figure, industrial data or associated media is bundled.
+
+**Return:** [Industrial chemistry sources — whole books, courses, technical methods and primary evidence](../Sources.lingua#r_3084780FHMK499ZDAW07TYA3TQ).
+} r_04G7NFYXE76QCB3DXCRJC1FSCP

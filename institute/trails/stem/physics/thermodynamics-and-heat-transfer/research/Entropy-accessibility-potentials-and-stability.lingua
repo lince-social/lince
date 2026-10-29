@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: entropy, accessibility, potentials and stability (@th-study-postulates: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_4KJSTP1MRKPDX5P908Q10XE8S0
+**Read:** [The physics and mathematics of the second law — Lieb and Yngvason](../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ), the entire long paper, with the short note as orientation; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), complete potentials, stability and phase-equilibrium developments; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), the full relevant lecture and explanatory-examination sequence.
+
+Read the complete long Lieb–Yngvason paper alongside the whole classical development in DeVoe and the available MIT 2.43 lectures. Reconstruct the assumptions about adiabatic accessibility, scaling, composition and comparison that permit an entropy representation. Identify the distinction between a theorem's premises and experimental support for applying them to a system.
+
+Derive the appropriate equilibrium extremum for an isolated, thermostatted or pressure-controlled example. Obtain response coefficients and stability inequalities from a fundamental relation, then examine a metastable branch and a coexistence construction. Do not apply a homogeneous-state criterion as a substitute for comparing competing phases globally.
+
+Submit explicit derivations, a worked counterexample to a misused criterion and a comparison of the sources' formulations. Explain where equilibrium entropy does not settle the behavior of a far-from-equilibrium state. Defend the result against an alternative choice of constraints.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_4KJSTP1MRKPDX5P908Q10XE8S0

@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Measure computation time and locate the work that matters (@rc-profiling: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #reproducible-computation "Scaling-parallelism-and-order.lingua#r_5VWTDE6CWEGWHPNQPKYKAC6PMR") { r_4YB1P59S34RAHN5YHNDTSDZH8Q
+**Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), timeit, profiling, and the timing APIs used; [Numerical arrays and reproducible random streams — NumPy documentation](../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY), the selected operation’s performance and threading documentation; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), performance and code-quality discussions.
+
+Performance evidence starts with a defined workload, environment, and measurement procedure. Distinguish elapsed time, CPU time, memory, input/output, setup, and repeated execution. A faster second run can reflect cached data or compiled code rather than an improved algorithm. Compare like conditions and preserve enough information to explain the variation.
+
+Use the selected runtime's official timeit and profiling references. A profiler helps locate where work occurs; its instrumentation can alter timing. A microbenchmark can clarify one operation but may not predict the complete pipeline. Include data size, shape, numeric type, thread count, and warm/cold conditions relevant to the comparison.
+
+Optimization must retain the scientific contract. Replacing exact arithmetic with floating point, changing a reduction order, or using approximate lookup can affect values as well as time. Reapply the independent numerical-validation evidence with an acceptance rule justified before the speed comparison. A fast consistently wrong calculation fails the project's purpose.
+
+**Work:** generate original larger teaching inputs in your personal exercise area with unique lot identities and known aggregate expectations. Measure reading, calculation, and writing separately. Repeat runs and report variation rather than one favorable timing. Profile the slow part, make one explained change, and compare correctness plus time on the same workload family.
+
+Use [Measurement and metrology](../../metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5) to question the timing measurement's resolution and environmental influences. State what the benchmark excludes, including data acquisition or external-service latency if omitted. The later resource study connects performance with practical reconstruction cost and infrastructure requirements rather than treating speed as an isolated score.
+
+**Continue:** [Understand scaling limits and the consequences of parallel execution](Scaling-parallelism-and-order.lingua#r_5VWTDE6CWEGWHPNQPKYKAC6PMR).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_4YB1P59S34RAHN5YHNDTSDZH8Q

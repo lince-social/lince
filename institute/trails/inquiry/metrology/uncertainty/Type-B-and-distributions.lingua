@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Type B evaluation — use other information without inventing a distribution (@met-type-b: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4", #source "../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1", #metrology "../../quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52") { r_0Z1BHCHATX6CS017685KDY4FTT
+**Read:** [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the Type B evaluation clauses and annexes; [Propagation of distributions using Monte Carlo — JCGM 101](../sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4), clause 6 on input distributions; [A Beginner’s Guide to Uncertainty of Measurement — Bell](../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1), the worked conversion of uncertainty information.
+
+Type B evaluation uses information other than statistical analysis of the current repeated values, such as calibration statements, specifications, physical knowledge, prior measurements, and reference data. Type A and Type B describe evaluation routes, not a division into random versus systematic effects or good versus bad evidence.
+
+If an input error is supported as uniform over −a to +a, its standard uncertainty is a/√3. A symmetric triangular distribution over the same bounds has a/√6. A stated expanded uncertainty U can be converted to a standard uncertainty by U/k only when the certificate’s interpretation and factor k support that step. A maximum permissible error is not automatically a standard uncertainty or a probability distribution.
+
+Represent what is actually known. A bounded range does not prove a normal distribution, and a normal model permits values outside any finite interval. Physical nonnegativity, detection thresholds, asymmetry, or uncertain bounds can require a different formulation. A choice made for convenience should be labelled and tested for its effect on the conclusion.
+
+**Work:** compare standard uncertainties for hypothetical ±0.06-unit bounds under rectangular and triangular assumptions. The values are about 0.0346 and 0.0245 units. Explain what additional evidence would favor one. Read three manufacturer or certificate statements and classify what each supplies without silently converting every number to “one sigma.”
+
+Document the distribution parameters and shared information used across inputs. Two uncertainties derived from the same reference data may be dependent even if their numerical values were copied from different tables. The advanced study compares plausible distributions and identifies which assumptions matter to the decision.
+
+**Continue:** [Small changes, derivatives, and first-order approximations](../../quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_0Z1BHCHATX6CS017685KDY4FTT

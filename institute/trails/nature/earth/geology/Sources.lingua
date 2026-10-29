@@ -1,0 +1,30 @@
+Import "Geology.lingua"
+
+Geology sources — complete books, field methods, maps, and research (@geo-sources: 0, is #chapter, #part-of @geology) { r_3H47FYGCEYFZPW2VK77PMR0ECB
+The books are the sustained reading spine; the Records provide original connecting explanations, exact assignments, calculations, and increasingly demanding work. Open licences, free consultation, and restricted or partially inspected material are identified separately. Source links and discovery imports do not add a Record to the geology learning selection.
+
+- [Physical Geology, second edition — Steven Earle](sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX)
+- [Introduction to Historical Geology — Estrada and contributing authors](sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD)
+- [Geological Structures: a Practical Introduction — Waldron and Snyder](sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW)
+- [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z)
+- [Introduction to Geology — Perron and Jagoutz, MIT 12.001](sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N)
+- [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682)
+- [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N)
+- [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK)
+- [International Chronostratigraphic Chart — ICS and IUGS](sources/International-Chronostratigraphic-Chart.lingua#r_6RWJCRCKJD7BZS5RRKVKGE8MT3)
+- [International Stratigraphic Guide, abridged version — ICS](sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J)
+- [Digital Cartographic Standard for Geologic Map Symbolization — FGDC/USGS](sources/Geologic-Map-Symbolization.lingua#r_7DHXSTN5K3KF1EPTPG18RM5K1K)
+- [GeMS — Geologic Map Schema — USGS](sources/GeMS-Map-Schema.lingua#r_6JP32YH79HZAV8JYYKVV1WER0J)
+- [QGIS Training Manual — QGIS project](sources/QGIS-Training-Manual.lingua#r_65XJEHNY3P1ESW5KF5V0871SFQ)
+- [Introduction to Geochronology — Pieter Vermeesch](sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J)
+- [IsoplotR: A free and open toolbox for geochronology — Vermeesch](sources/IsoplotR-Vermeesch.lingua#r_6H156FG6EJ2M5AJ1A9GV0NV3S4)
+- [GPlates — geological reconstructions, manuals, and methods](sources/GPlates-Reconstruction.lingua#r_6C7H7HA2X7FPJF6EZKK6NRQDBT)
+- [Groundwater — Freeze and Cherry, preserved authorized edition](sources/Groundwater-Freeze-Cherry.lingua#r_6P2FK74P9MC2672X94GE1S0NZB)
+- [Discovering Geology — British Geological Survey](sources/Discovering-Geology-BGS.lingua#r_5ZRRQ0YYJEH16ZR7172P1PE4VC)
+- [Extending full-plate tectonic models into deep time — Merdith and colleagues](sources/Full-plate-reconstruction-Merdith.lingua#r_6MDP42ENB5YVNBM6WF7V3WRNB6)
+- [Mineral Commodity Summaries 2026 — USGS](sources/Mineral-Commodity-Summaries-USGS.lingua#r_47FJ4GZC4CS4KJX8WXNDB418CX)
+
+Access and source metadata were checked on 29 October 2026 where hosts permitted. Later requests can fail even when metadata or an earlier edition was accessible; the structural-book landing page returned 403 on a later direct check. Preserve the actual edition, chapter/component notices, and revision used. Books, articles, maps, datasets, exercise media, and external software are links, not repository copies. Download authorized material into your own local reading/study storage when useful.
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_3H47FYGCEYFZPW2VK77PMR0ECB

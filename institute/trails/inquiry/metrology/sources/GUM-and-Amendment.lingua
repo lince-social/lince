@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+GUM — JCGM 100:2008 and the 2026 nonlinearity amendment (@met-gum: 0, is #book, #part-of @met-sources) { r_3KA76CK3QAA3M470TC3XHP19MQ
+Joint Committee for Guides in Metrology. Evaluation of measurement data — Guide to the expression of uncertainty in measurement, JCGM 100:2008. [Official catalogue](https://www.bipm.org/en/committees/jc/jcgm/publications) · [English edition DOI](https://doi.org/10.59161/JCGM100-2008E).
+
+Read the complete guide in stages: main clauses for formulation, evaluation, combination, coverage, and reporting; annexes for mathematical and practical depth. The advanced reading includes the worked examples and explanatory annexes, not only the first-order formula.
+
+Read JCGM 100:2008/Amd.1:2026, Nonlinearity in measurement models, with the affected passages. [Amendment DOI](https://doi.org/10.59161/PPDI3267). It belongs alongside the base edition in later nonlinear work; citing the unamended text alone would omit an inspected update.
+
+JCGM supplies authorized free access while retaining copyright and reproduction/translation rights. These are references, not copied standards or adaptations. The current official catalogue, the base identity, and amendment text were checked on 28 October 2026. Use the exact edition and amendment when reporting a calculation.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_3KA76CK3QAA3M470TC3XHP19MQ

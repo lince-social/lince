@@ -13,7 +13,7 @@ impl Readiness {
             None => None,
             Some(program) => {
                 let program = PathBuf::from(program);
-                if !program.is_absolute() || std::env::var_os("NOTIFY_SOCKET").is_none() {
+                if !program.is_absolute() || std::env::var_os("NOTIFY_SOCKET").is_none_or(|value| value.is_empty()) {
                     return Err(io::Error::other("The UWSM Park session needs an absolute manager executable and its notification socket"));
                 }
                 Some(program)
@@ -27,7 +27,10 @@ impl Readiness {
         if self.child.is_none() {
             if !interactive { return Ok(()); }
             let Some(program) = &self.program else { self.finished = true; return Ok(()); };
-            self.child = Some(Command::new(program).arg("finalize").spawn()?);
+            let mut command = Command::new(program);
+            command.args(["finalize", "XDG_CURRENT_DESKTOP"]);
+            crate::launch::restore_graphics_environment(&mut command, |name| std::env::var_os(name))?;
+            self.child = Some(command.spawn()?);
             self.started = Some(Instant::now());
         }
         let child = self.child.as_mut().ok_or_else(|| io::Error::other("Missing UWSM readiness process"))?;

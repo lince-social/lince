@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Pressure forces, moments and the centre of pressure (@fd-hydrostatic-forces: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Buoyancy-floating-equilibrium-and-small-displacements.lingua#r_4BR14XK13BE96AV41F3P76D8GK") { r_3ZK38BANREQ9K4KZ4YZ3NZQCYX
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), hydrostatic forces and moments; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), hydrostatic and buoyancy derivations.
+
+Obtain the resultant by integrating the pressure traction over the actual surface. Determine its line of action from the moment integral, not by automatically applying it at the geometric centroid. Uniform background pressure cancels only when the pressure on the opposite side is included consistently.
+
+For a vertical rectangular gate 1 m wide and 2 m deep with its top at a free surface, liquid density 1,000 kg/m³ and equal atmospheric pressure on the dry side, the net force is 19,620 N. The pressure increases linearly, so the resultant acts 4/3 m below the top. Recover both numbers by integrating pressure and its moment.
+
+For a curved wall, resolve the traction into components before summing it. Draw the support reactions needed to hold the wall. Compare a pressure-force calculation with the load capacity and deformation model of the solid as a separate question; the fluid integral alone does not size a structure.
+
+**Continue:** [Buoyancy, floating equilibrium and small displacements](Buoyancy-floating-equilibrium-and-small-displacements.lingua#r_4BR14XK13BE96AV41F3P76D8GK).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3ZK38BANREQ9K4KZ4YZ3NZQCYX

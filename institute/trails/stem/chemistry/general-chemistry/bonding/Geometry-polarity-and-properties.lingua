@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Connect three-dimensional shape with polarity and behavior (@gc-shape: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/PhET-Chemistry.lingua#r_15P1XV6BQDZJM260GWM3VXHN6J", #general-chemistry "Valence-bond-and-hybrid-orbital-models.lingua#r_3GQ3A9GZAMRV47GHHDVDPRNZCT") { r_1ESH4EFVR6399WYBN1405EJ38F
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 7’s molecular geometry and polarity sections; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), Lecture 12 and related Unit II material; [Chemical models and interactive experiments — PhET, University of Colorado](../sources/PhET-Chemistry.lingua#r_15P1XV6BQDZJM260GWM3VXHN6J), an optional molecule-shape or polarity activity with its model assumptions.
+
+A molecular geometry describes nuclear positions under a specified structure and state. Electron-domain repulsion models offer a useful first prediction of many main-group shapes. Distinguish electron-domain arrangement, molecular geometry, lone-pair effects, and the multiple structural possibilities allowed by a formula.
+
+Bond polarity and molecular dipole are related but different. The molecular dipole depends on a vector account of the full distribution and geometry; equal polar bonds can cancel under symmetry. A label such as polar does not alone determine solubility or a reaction outcome, which also involve interactions, entropy, and conditions.
+
+Use models as tools for checking a spatial argument. A rotatable molecular picture helps identify geometry but should be connected to evidence such as spectroscopy or diffraction and to the model's limitations. A static diagram may represent a minimum-energy geometry, an average, or one conformation; specify which matters.
+
+**Work:** predict and draw selected textbook geometries, explain their electron-domain basis, and compare molecular dipoles by symmetry. Reconcile one prediction with a reported deviation or a structure outside the model's useful range. If using an optional PhET simulation, predict each result before interacting and state what the simulation assumes.
+
+Complete the chapter's exercises before the more advanced bonding theories. These spatial explanations connect directly with ligand binding, polymers, biological structure, crystal formation, and semiconductor chemistry, but their unique mechanisms and evidence will be developed in the corresponding specialist material.
+
+**Continue:** [Use valence-bond and hybrid-orbital models with an explicit purpose](Valence-bond-and-hybrid-orbital-models.lingua#r_3GQ3A9GZAMRV47GHHDVDPRNZCT).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_1ESH4EFVR6399WYBN1405EJ38F

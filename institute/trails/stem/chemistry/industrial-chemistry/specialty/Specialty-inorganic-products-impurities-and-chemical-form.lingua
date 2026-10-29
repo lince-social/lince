@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow specialty inorganic products through chemical form, purification and function (@ic-specialty-products: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #source "../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #industrial-chemistry "Electronic-chemicals-precursors-purity-and-process-interfaces.lingua#r_7A21PGPZYQM3YMF8TM796QMZNB") { r_6AAF6TGKJFYW9M4PVZ49M9FDKK
+**Read:** [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the whole generic reference and complete relevant specialty-product chapter; [Large Volume Inorganic Chemicals — Solids and Others Industry, BREF LVIC-S](../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4), the entire pertinent comparison family and process methods; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the full associated inorganic transformation and product teaching.
+
+Specialty inorganic production can involve salts, pigments, phosphorus/silicon compounds and other materials whose usefulness depends on more than the dominant element. Oxidation state, hydration, phase/structure, counterions, trace constituents, particles and contact history can influence a downstream chemical or material function.
+
+Follow the actual route through feed preparation, reaction, purification, physical product formation and finishing. Solubility, volatility, selective precipitation, complexation or other properties can provide separation, but every operation carries finite recovery and impurity pathways. A very pure bulk element basis can conceal the wrong chemical form.
+
+Equipment, containment, atmosphere, water, packaging and storage can alter the product state. Public technical knowledge should preserve the distinction between a broad route, primary method evidence and omitted plant-specific preparation. The complete process comparison includes reagent/utility demand, co-products, residues and maintenance.
+
+**Work:** reconstruct a whole public specialty-family chapter and a primary process case with actual chemical/analytical evidence. Independently balance the target and at least one consequential impurity, compare a justified alternative at equal useful specification and identify the observation that would most strongly challenge the proposed route or quality explanation.
+
+**Continue:** [Connect electronic manufacturing chemicals with molecular identity and trace-quality evidence](Electronic-chemicals-precursors-purity-and-process-interfaces.lingua#r_7A21PGPZYQM3YMF8TM796QMZNB).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6AAF6TGKJFYW9M4PVZ49M9FDKK

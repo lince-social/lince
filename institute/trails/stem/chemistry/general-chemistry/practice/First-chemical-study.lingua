@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+First study — connect identity, amount, observation, and a balance (@gc-firststudy: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "../energy/Systems-heat-work-and-enthalpy.lingua#r_545JZM2734935DFWXBV90WM5PE") { r_6AD48R8HSNCS1QWP1YGRGDAAVC
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapters 1–4 in full with substantial exercises; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), one complete corresponding activity, including its interpretation questions; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), the early concept questions appropriate to the study.
+
+Bring the opening foundations together in one original small study. Choose an authorized textbook/laboratory problem or a supervised introductory activity involving solution preparation, a reaction balance, or a composition measurement. A published-data or virtual study can develop the calculation and interpretation first; state clearly which evidence was actually obtained.
+
+Specify the material, species, phase, units/basis, reaction or transfer model, input identities, and target quantity. Draw the boundary and derive the quantitative account before entering numbers. Include a labelled hypothetical example small enough to check by hand, including an impure input or a limiting reactant. Do not claim an observed chemical result from invented inputs.
+
+Report the actual observations separately from derived amounts and explanatory claims. Preserve the equation, input references, conversion factors, intermediate precision, and an independent arithmetic check. Identify at least one alternative explanation for a discrepancy and the observation needed to distinguish it. A balanced equation and a collected mass do not by themselves establish a unique reaction mechanism or complete material recovery.
+
+**Work:** explain the study to another reader beginning from the original record, without relying on an earlier conversation. They should be able to reproduce the arithmetic and ask what a percentage means. Correct a deliberately introduced formula/unit/basis error and preserve the reasoning behind the correction.
+
+Continue the whole-book reading and problem work; this first study is preparation rather than completion. Later projects add structure, energy, rates, equilibria, activity, chemical measurement, reproducible computation, and independent investigation. Keep the approachable initial problem available as a reference when a later sophisticated method obscures a basic conservation or meaning error.
+
+**Continue:** [Choose a system and track heat, work, and enthalpy](../energy/Systems-heat-work-and-enthalpy.lingua#r_545JZM2734935DFWXBV90WM5PE).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_6AD48R8HSNCS1QWP1YGRGDAAVC

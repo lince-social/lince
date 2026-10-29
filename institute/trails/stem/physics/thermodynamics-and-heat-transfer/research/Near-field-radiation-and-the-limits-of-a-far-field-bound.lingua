@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: near-field radiation (@th-study-nearfield: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_21HG1TEETQVTC8NSEG3RMMMHJD
+**Read:** [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), complete fluctuation–dissipation and near-field lectures; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), relevant full wave/statistical transport sequence; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), complete review and a primary near-field study.
+
+Reconstruct the electromagnetic/statistical assumptions behind a near-field thermal-transfer model using the complete relevant MIT lectures and primary research. Specify materials, optical response, separation, temperatures and the meaning of the measured or calculated flux.
+
+Compare with the far-field limit of the same configuration. Explain why a blackbody far-field bound is not the same statement as a near-field bound, and identify the roles of evanescent fields and dissipation. Test numerical integration, response-function conventions and small-gap material-model limits.
+
+Deliver a reproducible theoretical comparison and a critical reading of a complete experiment. Examine spacing uncertainty, roughness, parasitic conduction and temperature inference. Do not equate a theoretical enhancement with a demonstrated useful device; assess the actual geometry, supported operating interval and unresolved loss mechanisms.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_21HG1TEETQVTC8NSEG3RMMMHJD

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Infer chemical rates from a defined experiment and test competing mechanisms (@ic-rates: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ", #source "../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV", #industrial-chemistry "../../general-chemistry/kinetics/Catalysis-and-competing-pathways.lingua#r_4Z85MENW43NS707PTCHNTDTDME") { r_0YJBZ45WHB3M0N4ZA64MKE4KAE
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete reaction-rate and parameter-estimation chapters with substantial problems; [Chemical and Biological Reaction Engineering — MIT 10.37](../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ), the whole mechanism/rate-law teaching and assignments; [Graduate Numerical Methods Applied to Chemical Engineering — MIT 10.34](../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV), the full relevant least-squares, nonlinear-system and error-analysis work.
+
+A rate law relates a specified chemical production/consumption rate to state variables and parameters. Its basis matters: amount per reactor volume, mass of catalyst, accessible area or active sites are different quantities. An empirical power law is not automatically an elementary reaction or a mechanism.
+
+Derive the connection between the observed signal and the species balance. Sampling/quenching, detector calibration, finite mixing, changing density and temperature histories can influence the inferred rate. Differentiating noisy concentrations can amplify error; fitting an integrated model introduces its own assumptions and numerical questions.
+
+Compare alternative mechanisms, parameter correlations and the experimental domain. A small fitting residual does not prove identifiability or predictive ability. Arrhenius parameters can compensate for one another over a narrow temperature interval, while a changed phase or transport regime can alter apparent activation behavior.
+
+**Work:** reconstruct a complete primary kinetic study with its method and data provenance. Fit or independently reproduce the central parameters, test residuals/uncertainty and hold out a meaningful changed condition. Explain which experiment would discriminate a competing mechanism and whether the published measurements can identify the claimed parameters. Preserve failures as evidence for revising the model.
+
+**Continue:** [Relate catalysis to pathways, selectivity, and equilibrium constraints](../../general-chemistry/kinetics/Catalysis-and-competing-pathways.lingua#r_4Z85MENW43NS707PTCHNTDTDME).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_0YJBZ45WHB3M0N4ZA64MKE4KAE

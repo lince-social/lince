@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Oblique shocks, expansion fans and flow turning (@fd-oblique-expansion: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Friction-heat-addition-and-compressible-duct-limits.lingua#r_1R8Q2YYRFR7SFY4KXJ84MA52R5") { r_5WCHS2S4QN94C8N89S54YH0478
+**Read:** [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM), oblique shocks and Prandtl–Meyer relations; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), two-dimensional compressible flow in full.
+
+At an oblique shock, resolve velocity normal and tangential to the front. The normal component obeys the appropriate jump relations, while the inviscid tangential component is continuous. Relate upstream Mach number, shock angle and flow deflection; several mathematical branches can exist, and beyond a maximum attached deflection the assumed attached-shock geometry fails.
+
+A smooth supersonic expansion around a convex corner is described by a Prandtl–Meyer fan under ideal-gas isentropic assumptions. Characteristics carry the continuous change of flow angle and Mach number through the fan. Compression and expansion therefore cannot be exchanged by merely changing a sign in an isentropic corner formula.
+
+Work a compression followed by expansion, tracking local and stagnation states and the resulting force. Compare weak and strong shock branches and explain the downstream condition used to select a solution. Identify where a two-dimensional inviscid construction loses accuracy because of viscosity, finite-span effects, shock interaction or real-gas response.
+
+**Continue:** [Friction, heat addition and compressible duct limits](Friction-heat-addition-and-compressible-duct-limits.lingua#r_1R8Q2YYRFR7SFY4KXJ84MA52R5).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5WCHS2S4QN94C8N89S54YH0478

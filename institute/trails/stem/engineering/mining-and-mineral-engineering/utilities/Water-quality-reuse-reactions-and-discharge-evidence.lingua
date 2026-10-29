@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Join water quantities with constituents, reactions, and intended use (@mine-water-quality: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM", #source "../sources/Preventing-Acid-and-Metalliferous-Drainage.lingua#r_7SDBPF4TAZV9GKDCTW9BTYJ43R", #source "../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #mining-and-mineral-engineering "../ventilation/Airflow-system-boundaries-and-environmental-purpose.lingua#r_4E51NRPHRS5164Q2AXBTEDRQP2") { r_0EW72C79PC40WD3VNQKSYM5PSN
+**Read:** [Water stewardship — Australian leading-practice handbook](../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM), the complete handbook; [Preventing acid and metalliferous drainage — leading-practice handbook](../sources/Preventing-Acid-and-Metalliferous-Drainage.lingua#r_7SDBPF4TAZV9GKDCTW9BTYJ43R), the full characterization/reaction and monitoring account; [General chemistry](../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), the complete relevant aqueous, kinetic, equilibrium, and open-boundary studies.
+
+Water quality depends on sources, mineral/fluid reactions, process additions, particle/suspended phases, biological effects, mixing, treatment, and storage. A volume balance can close while a constituent balance or use requirement remains unresolved. Dissolved, total, suspended, and species-specific measurements have different meanings.
+
+Reuse can change salinity, ions, fine particles, reagents, pH/redox, scaling, corrosion, and process response. A stream suitable for one equipment duty may not suit another process or receiving environment. Define the actual specification, method, boundary, and current applicable source before judging suitability.
+
+Sampling timing/support, filtration/preservation, analytical method, detection, uncertainty, and changing flow affect interpretation. Concentration multiplied by an independently averaged flow is not generally the correct average mass flux when they covary. Chemical transformations and storage can complicate a simple input/output account.
+
+**Work:** reconstruct a full mine/process-water case with quantities, constituent measurements, reactions, treatment/reuse, uncertainty, and observation support. Independently check a bounded constituent balance and compare an alternative mixing/reaction explanation. Identify which new measurement or trial would distinguish it and change the proposed water use.
+
+Read complete water-stewardship, drainage, and relevant chemical methods. Later hydrogeology, water treatment, hydrometallurgy, and environmental trails deepen the unique models; the mine account should make their required material and measurement interfaces explicit.
+
+**Continue:** [Describe ventilation through mass, pressure, environment, and work](../ventilation/Airflow-system-boundaries-and-environmental-purpose.lingua#r_4E51NRPHRS5164Q2AXBTEDRQP2).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0EW72C79PC40WD3VNQKSYM5PSN

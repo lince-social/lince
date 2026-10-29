@@ -1,0 +1,102 @@
+Import "../Fluid-dynamics.lingua"
+
+An inspectable conservative wet shallow-water solver (@fd-shallow-example: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #source "../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT", #fluid-dynamics "../study/A-sustained-book-and-graduate-course-programme.lingua#r_4P4AF2QKRVED55XXYWDRFD47B3") { r_0WT5RWX37GNCS5RSRFAKTFHYBV
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 shallow-water and conservation-law development; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), finite-volume and numerical-verification methods; [Advanced Hydraulics — Suresh A. Kartha](../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT), surges and hydraulic-jump interpretation.
+
+This original standard-library program evolves the one-dimensional flat-bed shallow-water equations for cell-average depth h and momentum per density hu in a periodic channel. It uses a first-order finite-volume Rusanov flux and forward Euler time advancement. Each internal face flux is used by both neighboring cells with opposite signs, including the periodic seam. There is no friction, bed slope, dry-bed algorithm or external inflow/outflow.
+
+Depth is in metres, hu in m²/s, length in metres, g in m/s² and duration in seconds. The CFL step uses |u|+√(gh), with a chosen factor at most 0.45. The public evolve function accepts 8–2,048 cells and bounded finite positive wet initial depths; other explicit bounds and a maximum step count keep this teaching computation finite. It rejects lost positive depth or nonfinite values rather than silently clipping and changing mass. These computational bounds do not establish the physical shallow-water approximation.
+
+The default is a periodic two-depth release with two oppositely oriented initial discontinuities. A comparison with a single exact wet-bed Riemann solution must use a region and time before waves from the other discontinuity arrive. Monitor integrated depth and momentum over the entire periodic domain; compare mechanical energy with its entropy behavior, and examine shock/rarefaction locations and L1 error during mesh refinement.
+
+Copy and run the file. Verify one update independently with exact rational arithmetic in a case whose wave speeds are rational, recover a uniform moving state, and compare a wet dam-break solution with an independently constructed exact Riemann solution. Test small smooth waves separately for phase and diffusion. Conservative first-order dissipation makes this an inspectable reference, not a high-resolution hydraulic design solver. [Depth-averaged mass and momentum in shallow water](../waves/Depth-averaged-mass-and-momentum-in-shallow-water.lingua#r_719NEXPHYB8DCJPKVZ3QKNSCXX) and [Advection schemes, boundedness, diffusion and shock capture](Advection-schemes-boundedness-diffusion-and-shock-capture.lingua#r_0XH17KPCTVWEZATGC9DTC9PGFN) explain what a more capable method must preserve.
+
+
+```python file=shallow_water.py
+import json
+import math
+
+
+def finite(value, name, low, high):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(name)
+    if not math.isfinite(value) or not low <= value <= high:
+        raise ValueError(name)
+    return float(value)
+
+
+def _advance(depth, momentum, dx, gravity, dt):
+    n = len(depth)
+    flux = []
+    for i in range(n):
+        j = (i + 1) % n
+        hl, hr = depth[i], depth[j]
+        ml, mr = momentum[i], momentum[j]
+        ul, ur = ml / hl, mr / hr
+        speed = max(abs(ul) + math.sqrt(gravity * hl), abs(ur) + math.sqrt(gravity * hr))
+        mass_flux = 0.5 * (ml + mr - speed * (hr - hl))
+        force_flux = 0.5 * (ml * ul + mr * ur + 0.5 * gravity * (hl * hl + hr * hr)
+                            - speed * (mr - ml))
+        flux.append((mass_flux, force_flux))
+    scale = dt / dx
+    return (
+        [depth[i] - scale * (flux[i][0] - flux[i - 1][0]) for i in range(n)],
+        [momentum[i] - scale * (flux[i][1] - flux[i - 1][1]) for i in range(n)],
+    )
+
+
+def evolve(depth, momentum, length=1.0, gravity=9.81, duration=0.03, cfl=0.4):
+    if not isinstance(depth, (list, tuple)) or not isinstance(momentum, (list, tuple)):
+        raise ValueError("state arrays")
+    n = len(depth)
+    if not 8 <= n <= 2048 or len(momentum) != n:
+        raise ValueError("array lengths")
+    h = [finite(value, "depth", 1e-6, 1e3) for value in depth]
+    m = [finite(value, "momentum", -1e6, 1e6) for value in momentum]
+    if any(abs(value / height) > 1e3 for height, value in zip(h, m)):
+        raise ValueError("initial velocity")
+    length = finite(length, "length", 0.01, 1e4)
+    gravity = finite(gravity, "gravity", 0.1, 100.0)
+    duration = finite(duration, "duration", 0.0, 10.0)
+    cfl = finite(cfl, "CFL", 0.01, 0.45)
+    dx = length / n
+    time = 0.0
+    steps = 0
+    while time < duration:
+        if steps >= 200000:
+            raise ValueError("step budget exceeded")
+        speed = max(abs(value / height) + math.sqrt(gravity * height)
+                    for height, value in zip(h, m))
+        dt = min(duration - time, cfl * dx / speed)
+        if time + dt == time:
+            raise ValueError("time step cannot advance")
+        h, m = _advance(h, m, dx, gravity, dt)
+        if any(not math.isfinite(value) or value <= 0.0 for value in h):
+            raise ValueError("positive wet depth was lost")
+        if any(not math.isfinite(value) for value in m):
+            raise ValueError("nonfinite momentum")
+        time += dt
+        steps += 1
+    return {
+        "depth": h,
+        "momentum": m,
+        "time": time,
+        "steps": steps,
+        "mass_per_density": math.fsum(h) * dx,
+        "momentum_per_density": math.fsum(m) * dx,
+        "energy_per_density": math.fsum(value * value / (2.0 * height) + 0.5 * gravity * height * height
+                                        for height, value in zip(h, m)) * dx,
+    }
+
+
+if __name__ == "__main__":
+    n = 128
+    result = evolve([1.4 if i < n // 2 else 1.0 for i in range(n)], [0.0] * n)
+    print(json.dumps({key: value for key, value in result.items() if key not in ("depth", "momentum")},
+                     sort_keys=True))
+```
+
+**Continue:** [A sustained book and graduate-course programme](../study/A-sustained-book-and-graduate-course-programme.lingua#r_4P4AF2QKRVED55XXYWDRFD47B3).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0WT5RWX37GNCS5RSRFAKTFHYBV

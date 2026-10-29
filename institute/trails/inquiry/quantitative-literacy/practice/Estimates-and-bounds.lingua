@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Estimation, bounds, and the cost of a wrong assumption (@ql-estimates: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #source @ql-source-street, #quantitative-literacy "../models/Scaling-and-similarity.lingua#r_5XVMAPM10GAFS130TFV3RH2YDK") { r_5YGGH6Z676MZJNTQXTWQ8AJE4J
+**Read:** The Art of Insight, Divide and conquer, Abstraction, Proportional reasoning, and Easy cases. Work the chapter problems before comparing a solution. Use Street-Fighting Mathematics, Dimensions and Easy cases, as a second perspective after the first estimate.
+
+Break a question into factors with units and independently understandable ranges. For stored material, mass may be estimated from occupied volume, packing fraction, and material density. Each factor has a different origin and uncertainty. Explain whether an interval is a hard bound, a plausible range, or a statistical statement.
+
+If a hypothetical pile occupies 12–15 m³, packing fraction is assumed between 0.55 and 0.65, and solid density between 2500 and 2700 kg/m³, monotone multiplication gives bounds 16,500–26,325 kg under those assumptions. Correlations, hidden voids, or a wrong material identification can invalidate the assumed ranges; the arithmetic itself cannot validate them.
+
+Check extreme cases: zero feed, perfect recovery, vanishing wall thickness, and a capacity approached from below. A model that predicts negative inventory or finite flow through a closed boundary reveals a problem in assumptions, domain, or implementation.
+
+**Work:** estimate the number of packed components in a container by two independent decompositions, one geometric and one from mass. Clearly separate observed inputs from assumed values. Identify which additional observation would most reduce the decision-relevant uncertainty. Compare a factor-of-two estimate suitable for initial exploration with a much tighter requirement at an acceptance boundary. The effort needed depends on the decision and the consequences of error, not on a universal target number of decimal places.
+
+**Continue:** [Scaling — what changes when a process becomes larger?](../models/Scaling-and-similarity.lingua#r_5XVMAPM10GAFS130TFV3RH2YDK).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_5YGGH6Z676MZJNTQXTWQ8AJE4J

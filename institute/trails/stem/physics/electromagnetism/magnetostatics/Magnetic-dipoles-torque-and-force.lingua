@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Magnetic dipoles, torque and force (@em-magnetic-dipole: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #electromagnetism "../matter/Magnetization-bound-currents-H-and-hysteresis.lingua#r_1H8D8KMFTHN04KYDW84T64CQ2J") { r_3VPZ9386PMT2WEKQDKBM56AEZ5
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), magnetic dipoles and current-loop torque; [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), magnetic forces and energy.
+
+A small planar current loop has moment m = I A n in the localized-source approximation. Derive its far field and compare with the electrostatic dipole, retaining the different source structures and units. In a uniform external field the torque is m×B; a translating net force requires a spatial gradient or a more detailed extended-source interaction.
+
+For a permanent localized dipole with an appropriate fixed moment, interaction energy is −m·B_external. A moment induced by the field or a powered current loop can exchange energy with material response or its supply; applying the permanent-dipole energy formula without that account can give the wrong factor or force.
+
+Calculate torque as the loop rotates and recover it from a valid energy derivative. Then analyze a weakly nonuniform field and compare the dipole prediction with a finite-loop force integral. Identify the field-gradient scale over which the small-loop approximation holds. Earth's field, a coil field and a magnetized material can share an external dipolar pattern while having different microscopic mechanisms and internal fields.
+
+**Continue:** [Magnetization, bound currents, H and hysteresis](../matter/Magnetization-bound-currents-H-and-hysteresis.lingua#r_1H8D8KMFTHN04KYDW84T64CQ2J).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3VPZ9386PMT2WEKQDKBM56AEZ5

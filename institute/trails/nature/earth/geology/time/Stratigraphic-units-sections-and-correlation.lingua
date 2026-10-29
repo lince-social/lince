@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Correlate sections without confusing rock units with time units (@geo-strata: 0, is #chapter, #part-of @geology, #source "../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #geology "Fossil-evidence-and-correlation.lingua#r_0YNZERMMTK6T3TCC0X2XTHMV49") { r_5EQD05WT0076BC486SGXW7B7X5
+**Read:** [International Stratigraphic Guide, abridged version — ICS](../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J), the complete abridged guide; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete sequence, correlation, and time-unit material; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapters 6 and 8’s stratigraphic relationships.
+
+A stratigraphic unit organizes a particular kind of evidence. Lithostratigraphic units describe bodies defined through lithological properties/relations; biostratigraphic and other units use other criteria; chronostratigraphic units organize the rock record by time relationships. Learn the definitions and how the units relate rather than treating every formation boundary as a global time boundary.
+
+Measured sections preserve thickness, lithology, structures, fossils, contacts, gaps, and observations supporting interpretation. Correlation between sections requires explicit evidence, uncertainty, and possible lateral facies changes or missing intervals. A similar-looking bed can be diachronous, reworked, or unrelated; a widespread marker also needs identification and context.
+
+Distinguish a physical boundary, the observation used to recognize it, and its inferred temporal significance. Use the official stratigraphic guide for terminology, stratotypes, and relationships, and compare with the actual map/report convention. A regional schematic cannot supply every local contact or duration.
+
+**Work:** construct an original small hypothetical pair of measured sections with one erosion surface and a lateral change. Propose correlations supported by different evidence and show where ambiguity remains. Explain how one independent chronological or fossil constraint changes the interpretation without forcing every lithological contact into a synchronous surface.
+
+Read the entire abridged guide and the corresponding historical chapters. The later basin and sequence work deepens geometry/process interpretation, while the paleontology and Earth-history specialties retain their own fuller methods and research.
+
+**Continue:** [Use fossils as evidence of organisms, environments, and time](Fossil-evidence-and-correlation.lingua#r_0YNZERMMTK6T3TCC0X2XTHMV49).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_5EQD05WT0076BC486SGXW7B7X5

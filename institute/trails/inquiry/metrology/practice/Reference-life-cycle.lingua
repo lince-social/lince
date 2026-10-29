@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Produce, preserve, transfer, and replace the references (@met-reference-life: 0, is #chapter, #part-of @metrology, #source "../sources/Reference-Materials.lingua#r_6M66GJE1X11ZY0R3517A3VEYM3", #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1", #metrology "Interlaboratory-comparisons.lingua#r_4B3WR8EBCNJRGVMR6HCG66Y1S9") { r_1ZS7B98GYPWX6S7BFZ5S6CY6YR
+**Read:** [Reference materials, certificates, and their scope — NIST](../sources/Reference-Materials.lingua#r_6M66GJE1X11ZY0R3517A3VEYM3), one complete actual certificate and linked technical background; [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), the complete report; [CIPM MRA, CMCs, and key comparisons — BIPM](../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1), one relevant published comparison.
+
+Reference standards and materials are maintained physical and informational systems. They need characterization, comparison, handling, storage, stability evidence, identification, and replacement. A primary definition does not keep a transfer artefact clean, a reference material homogeneous, or a calibration service operational.
+
+For an artefact, record material and geometry, assigned value and uncertainty, comparison history, transport and storage conditions, inspection, and evidence of change. For a reference material, include matrix, lot, certified properties, characterization, homogeneity, stability, minimum subsample, preparation, and valid use conditions. A reference used outside its supported state can transfer a plausible number with an invalid basis.
+
+Reference production itself depends on measurements. Compare property characterization with homogeneity and stability studies: a batch average alone does not establish that every small subsample is suitable. A certificate can distinguish certified and informational values and place conditions on use. Preserve these distinctions rather than treating the document as a general quality badge.
+
+**Work:** follow one actual reference certificate from production or characterization through a hypothetical transfer and use. Build a history containing transport, storage, opening or cleaning, comparisons, and retirement criteria. Identify the supporting evidence for each state change and a missing observation that could matter. Keep a classroom history labelled hypothetical.
+
+Explain what happens when the reference is damaged, depleted, expired under its stated terms, or found inconsistent with an independent check. Review affected results and establish a new supported path rather than silently replacing the old numerical value. Reliable industrial knowledge includes the work of sustaining references, not only the calculation made when everything is new.
+
+**Continue:** [Compare laboratories, reference values, and degrees of agreement](Interlaboratory-comparisons.lingua#r_4B3WR8EBCNJRGVMR6HCG66Y1S9).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_1ZS7B98GYPWX6S7BFZ5S6CY6YR

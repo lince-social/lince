@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Open thermophysical property evaluation — Bell and colleagues (@th-coolprop-paper: 0, is #reference, #part-of @th-sources) { r_33XEMZDJ2BMYZ0GDFGWDTV1C95
+Ian H. Bell, Jorrit Wronski, Sylvain Quoilin and Vincent Lemort. Pure and Pseudo-pure Fluid Thermophysical Property Evaluation and the Open-Source Thermophysical Property Library CoolProp. Industrial & Engineering Chemistry Research 53(6), 2498–2508 (2014), DOI 10.1021/ie4033999. [Authors' citation and open full-text route](https://coolprop.org/citation.html) · [Publisher](https://pubs.acs.org/doi/10.1021/ie4033999).
+
+Read the complete method and its validation, not only the library's API examples. Explain fundamental equations, property transformations, model/data provenance, numerical implementation and the meaning of comparisons. Reproduce selected checks and identify which depend on the same underlying equation of state.
+
+The authors identify an open-access article. Its 2014 implementation description and present software documentation are distinct versions; consult the actual article's reuse notice and later corrections. No claim is made that every current backend or fluid was tested in that original paper or in this repository.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_33XEMZDJ2BMYZ0GDFGWDTV1C95

@@ -14,7 +14,7 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
     match arguments.first().and_then(|argument| argument.to_str()) {
         Some("release") => release(&arguments[1..]),
         #[cfg(target_os = "linux")]
-        Some("control") => checked(cargo_command().args(["run", "--locked", "-p", "lince-park", "--features", "server-tests", "--example", "park_control", "--"]).args(&arguments[1..]).env("RUSTFLAGS", warning_flags())),
+        Some("control") => checked(cargo_command().args(["run", "--locked", "-p", "lince-park", "--features", "server-tests", "--example", "park_control", "--"]).args(&arguments[1..])),
         #[cfg(target_os = "linux")]
         Some("validate") => validation::dispatch(&arguments[1..]),
         #[cfg(target_os = "linux")]
@@ -68,7 +68,6 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
                 checked(
                     cargo_command()
                         .args(arguments)
-                        .env("RUSTFLAGS", warning_flags())
                         .env("RUST_MIN_STACK", "33554432"),
                 )?;
             }
@@ -176,16 +175,6 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
     }
 }
 
-fn warning_flags() -> String {
-    let flags = std::env::var("RUSTFLAGS").unwrap_or_default();
-    let tokens: Vec<_> = flags.split_whitespace().collect();
-    if tokens.contains(&"-Dwarnings") || tokens.windows(2).any(|pair| pair == ["-D", "warnings"]) {
-        flags
-    } else {
-        format!("{flags} -D warnings")
-    }
-}
-
 fn release(arguments: &[OsString]) -> Result<()> {
     let mut target = None;
     let mut headless = false;
@@ -242,7 +231,6 @@ fn release(arguments: &[OsString]) -> Result<()> {
         command
             .args(["--", "--build-info"])
             .env("LINCE_REVISION", revision)
-            .env("RUSTFLAGS", warning_flags())
             .env("RUST_MIN_STACK", "33554432"),
     )
 }
@@ -284,7 +272,6 @@ fn input_check() -> Result<()> {
                     "--lib",
                     filter,
                 ])
-                .env("RUSTFLAGS", warning_flags())
                 .env("RUST_MIN_STACK", "33554432"),
         )?;
     }

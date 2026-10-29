@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Scholarly study — investigate and improve a computational method (@rc-independent: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Computational-Provenance.lingua#r_41T4TPCSCESX7SDK9BY4YQZX15", #source "../sources/FAIR-Principles.lingua#r_1DJWX0MM8DMEK300ZF8PHGQVB9", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Completion.lingua#r_7VYT5A5V6ZS9K32WJQK6786NZT") { r_0R6HJY4ASPRC83B80MVSXH310Z
+**Read:** [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), the whole handbook, reconsidered against the research study; [PROV — entities, activities, and responsibility — W3C](../sources/Computational-Provenance.lingua#r_41T4TPCSCESX7SDK9BY4YQZX15), the model/constraints needed for the actual provenance analysis; [FAIR Guiding Principles — Wilkinson and colleagues](../sources/FAIR-Principles.lingua#r_1DJWX0MM8DMEK300ZF8PHGQVB9), the complete paper and relevant updates; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), reproducible research, project design, collaboration, and ethical research guides as used.
+
+Formulate a specific research question about reproducible computation and its scientific use. Examples include sensitivity of a conclusion to an algorithm or environment, reliability of an input-validation contract, reproducibility of a stochastic parallel study, or a demonstrable weakness in a published computational workflow. Read the relevant research literature and primary specifications in depth, including work that challenges the preferred approach.
+
+State what is already known, what your study will test, and what evidence could contradict your expectation. Design a comparison that separates confounded influences rather than changing software, data, model, and hardware simultaneously without a way to interpret the result. Use analytic benchmarks and small independent implementations to support the larger experiment.
+
+Develop an auditable research account: mathematical specification, actual artifacts/versions, validated inputs, declared environment, execution procedure, failure handling, meaningful tests, numerical-control evidence, resource measurements, and a report whose claims match what was observed. Preserve relevant negative results and explain access or preservation limits. Keep original research media in authorized storage and cite them from the ordinary Records.
+
+Seek substantive technical criticism, respond with evidence, and revise the study. The discussion should address method and interpretation as well as whether a reviewer could launch the code. If a defect changes the conclusion, preserve the reason and the relationship between the earlier result and correction. A revised readable argument is part of the scholarly work.
+
+**Completion evidence:** a substantial written investigation and reproducible artifacts; independent verification of its central numerical or computational claims; an explained reconstruction by another reader or a clearly bounded alternative; a response to criticism; and a defensible account of what remains uncertain. No software badge or automatic gate in Lince substitutes for that evidence. The final Record brings the full progression together.
+
+**Continue:** [What completing reproducible computational work means](Completion.lingua#r_7VYT5A5V6ZS9K32WJQK6786NZT).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_0R6HJY4ASPRC83B80MVSXH310Z

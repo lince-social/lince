@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Wayland window management and desktop policies for Lince Park."
+autoexamples = false
 
 [features]
 graphics-probe = ["dep:ash", "dep:pollster", "dep:serde", "dep:serde_json", "dep:wgpu", "dep:rustix", "smithay/backend_egl", "smithay/renderer_gl", "smithay/backend_vulkan"]
@@ -90,10 +91,6 @@ name = "clipboard_probe"
 required-features = ["clipboard-gate"]
 
 [[example]]
-name = "session_probe"
-required-features = ["server-tests"]
-
-[[example]]
 name = "input_probe"
 required-features = ["server-tests"]
 
@@ -103,10 +100,6 @@ required-features = ["server-tests"]
 
 [[example]]
 name = "park_control_probe"
-required-features = ["server-tests"]
-
-[[example]]
-name = "capture_probe"
 required-features = ["server-tests"]
 
 [[example]]

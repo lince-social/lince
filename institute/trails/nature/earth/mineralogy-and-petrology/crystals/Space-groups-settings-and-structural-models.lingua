@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Interpret a space-group model with translations, settings, and evidence (@mp-space-groups: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Coordination-polyhedra-and-structural-families.lingua#r_6EWCCTQS683WGT6WSBQSGG1FXP") { r_104E10F1QWN2HXBB7V0XRSW3B4
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete space-group and structure representation material; [Crystallography Open Database — structures, citations, and CIF records](../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG), one full record and original refinement publication; [Crystallographic teaching pamphlets — IUCr](../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the symmetry/mapping teaching material in full.
+
+A space group combines translations with compatible symmetry operations of a periodic structure. Screw axes and glide planes include translation components. The conventional 230 three-dimensional crystallographic space-group types describe the usual periodic, nonmagnetic spatial setting; special cases require their appropriate descriptions.
+
+A space-group symbol, origin choice, setting, cell, fractional coordinates, and site multiplicities form a connected representation. Two files using different settings may describe equivalent structures. An apparently different coordinate table should be transformed consistently before concluding that a mineral has changed structure.
+
+Systematic diffraction absences can constrain a symmetry account but may not uniquely determine a full atomic model. Twinning, disorder, weak observations, pseudosymmetry, and experimental limitations complicate inference. Refinement quality and chemical plausibility provide additional tests, while unresolved alternatives should remain explicit.
+
+**Work:** examine a selected CIF and original structural paper. Identify symmetry operations and equivalent sites, calculate the contents of a chosen cell, and connect a reported extinction condition with a specific operation. Compare an alternate setting or plausible lower-symmetry model and explain which observations could distinguish it.
+
+Read the complete space-group explanation and relevant primary structural methods. A database field is a published model claim with provenance; importing or viewing it does not independently verify the sample's symmetry. The diffraction sequence will return to the observational tests.
+
+**Continue:** [Explain coordination and structural families through geometry and chemistry](Coordination-polyhedra-and-structural-families.lingua#r_6EWCCTQS683WGT6WSBQSGG1FXP).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_104E10F1QWN2HXBB7V0XRSW3B4

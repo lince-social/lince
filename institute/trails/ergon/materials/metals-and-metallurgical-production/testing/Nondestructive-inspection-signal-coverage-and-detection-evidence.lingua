@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Interpret nondestructive inspection through signal physics, coverage, calibration, and uncertainty (@metal-nondestructive: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nondestructive-Testing-Training-Guidelines-IAEA.lingua#r_7BCDSPEZ4HRMK7C1WPARVR2AP7", #source "../sources/ASM-Mechanical-Testing-and-Evaluation.lingua#r_1VW327STC5YQGRAPNRAPQSZQNG", #source "../sources/Material-Processing-Theory-and-Practice-NPTEL.lingua#r_7BSA0B8283WGYN6KF2609N2GK2", #metals-and-metallurgical-production "Failure-analysis-history-alternatives-and-causal-evidence.lingua#r_2BKHB12DXF3EBH7VH8M2H22YGX") { r_2R5SS11765JSQ65B16HE20530F
+**Read:** [Training Guidelines in Non-destructive Testing Techniques — IAEA, revision 3](../sources/Nondestructive-Testing-Training-Guidelines-IAEA.lingua#r_7BCDSPEZ4HRMK7C1WPARVR2AP7), the complete common foundation and all full sections for each investigated method; [Mechanical Testing and Evaluation — ASM Handbook, volume 8](../sources/ASM-Mechanical-Testing-and-Evaluation.lingua#r_1VW327STC5YQGRAPNRAPQSZQNG), full relevant testing/evaluation context, when available; [Material Processing: Metallurgical Aspects, Fundamental and Practical — Dwivedi](../sources/Material-Processing-Theory-and-Practice-NPTEL.lingua#r_7BSA0B8283WGYN6KF2609N2GK2), complete relevant material-state, joining, defect, and observation demonstrations.
+
+Visual, surface, electromagnetic, ultrasonic, radiographic, and other methods respond to different physical features and geometries. An indication is a measured/interpreted signal, not automatically a uniquely identified defect. Absence of an indication does not establish absence of every flaw or structural problem.
+
+Define the actual method, specimen/geometry, surface/material state, calibration/reference, coverage, sensitivity/resolution, acquisition/processing, and decision basis. Orientation, depth, local structure, attenuation, noise, access, and operator/system variability can affect detection. A simplified training diagram is distinguished from a qualified practical method and applicable standard.
+
+Read the whole common foundation and complete method sections of the IAEA guideline, then the full primary technical method used in the chosen study. Link detected populations and uncertainty with independent material/structural evidence and the actual service question. Practical inspection uses the appropriate facilities, qualified procedures, and applicable current primary requirements.
+
+**Work:** reconstruct a complete inspection/detection study with original calibration and validation evidence. Independently check a signal/geometry or uncertainty relation and compare a competing material/geometry explanation for an indication. Evaluate coverage and detection limits using independent reference/defect observations. Explain what additional destructive, chemical, structural, or service evidence is needed to resolve the actual integrity question.
+
+**Continue:** [Build a failure explanation from preserved history, competing mechanisms, and independent tests](Failure-analysis-history-alternatives-and-causal-evidence.lingua#r_2BKHB12DXF3EBH7VH8M2H22YGX).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_2R5SS11765JSQ65B16HE20530F

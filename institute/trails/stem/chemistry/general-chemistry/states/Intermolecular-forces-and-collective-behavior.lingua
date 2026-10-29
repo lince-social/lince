@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Explain bulk properties through interactions and collective states (@gc-interactions: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863") { r_2QKWV1YDBB61H0GZN5A4GWRAYH
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 10’s intermolecular-force material, continuing through the whole chapter; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), States of matter and the interaction sections; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), lectures 16–17.
+
+Separate intramolecular bonding from interactions among molecules, ions, surfaces, and solvent. Electrostatic interactions, polarization, dispersion, hydrogen bonding, and solvent reorganization can contribute together. Their relative importance depends on structure, separation, orientation, temperature, and the surrounding medium.
+
+A qualitative interaction model can motivate a property comparison, but a bulk transition or solubility is a collective thermodynamic result. Greater pair attraction alone does not establish every boiling point, miscibility, or adsorption ordering. Size, shape, packing, entropy, and competing interactions can change the comparison.
+
+Use examples to connect molecular and macroscopic descriptions: liquid water, an ionic solution, a nonpolar molecular liquid, and an extended solid require different accounts. A diagram showing one hydrogen bond is an illustration of a possible interaction within a fluctuating many-particle system. Later phase/equilibrium work makes the thermodynamic conditions explicit.
+
+**Work:** predict a small set of property orderings and give a reason for each, then compare with identified textbook or evaluated data. Investigate one counterexample to a simple “stronger forces means everything increases” rule. State which quantities and conditions must be held comparable for the prediction to be meaningful.
+
+Complete the liquid/solid chapter and Chem1's corresponding unit as the progression continues. Return to molecular shape and polarity when needed. These interactions recur in extraction solvents, water chemistry, coatings, polymers, biological systems, and clean surfaces, providing a shared foundation for their specialized mechanisms.
+
+**Continue:** [Use a gas model with defined pressure, temperature, volume, and composition](Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_2QKWV1YDBB61H0GZN5A4GWRAYH

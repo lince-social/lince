@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Independent thermal research with a reproducible question (@th-independent: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #source "../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ", #source "../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW", #thermodynamics-and-heat-transfer "Criticism-revision-and-preserving-thermal-knowledge.lingua#r_0NPFJM00T5KPH7366B1EXKPZVC") { r_7J2R5MAJBHZ2TCY251SS2T4HA3
+**Read:** [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), a complete review and its chosen primary lineage; [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), an example of full method exposition; [The physics and mathematics of the second law — Lieb and Yngvason](../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ), an example of explicit foundational assumptions; [Thermoreflectance methods — September 2026 review](../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW), versioned current research where relevant.
+
+Choose a focused unresolved question emerging from the full programme, such as interface inference, a failed continuum approximation, an uncertain convection regime or a mismatch between material and system measurements. Read the central primary articles in full, trace their earlier methods and inspect later criticism or replication.
+
+Separate what is established, model-dependent and genuinely unknown. Formulate a question whose possible answers can be distinguished by theory, calculation or experiment. Reproduce a central result before proposing an extension, keeping a record of unavailable data or assumptions that prevent exact reproduction.
+
+Perform the investigation at a declared evidential level. Preserve versions, inputs, numerical/measurement checks and negative results. Compare plausible alternatives and obtain independent criticism from someone able to challenge the method. A literature survey is preparation for this work; a research conclusion requires an argument and evidence that answer the stated question.
+
+**Continue:** [Criticism, revision and preserving thermal knowledge](Criticism-revision-and-preserving-thermal-knowledge.lingua#r_0NPFJM00T5KPH7366B1EXKPZVC).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7J2R5MAJBHZ2TCY251SS2T4HA3

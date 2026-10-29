@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Radiation shields and coupled surface balances (@th-shields: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #thermodynamics-and-heat-transfer "Participating-media-absorption-emission-and-scattering.lingua#r_3G1ZW62CXVQ7NWRNPE2Q2YZ3P2", #thermodynamics-and-heat-transfer "../research/Enclosure-radiation-geometry-reflections-and-coupled-temperatures.lingua#r_51HNQPPASJPXJ2PABTEABC98YZ") { r_6R4HZMA6G682DJX6GF89N83CF8
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), shields and radiation-network applications; [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), enclosures and coupled radiative transfer; [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), measurement boundaries and parasitic heat paths.
+
+A shield exchanges radiation on both sides and reaches a temperature set by its energy balance, contacts, residual gas and other inputs. Its effect depends on emissivity, geometry and additional conduction paths. A low-emissivity material does not guarantee a low-loss assembled insulation system.
+
+Derive the ideal parallel-plate/shield case, then add one contact path or gas contribution. Compare the shield temperature and total duty under the same boundary conditions. Distinguish surface property changes, view-factor changes and merely adding more area.
+
+Connect to high-temperature furnaces, cryogenic insulation and electronic packages through their actual thermal environments. Read the complete relevant method and check material/contamination history. A thermal-resistance representation should follow from a valid model, especially when radiation is strongly nonlinear in absolute temperature.
+
+**Continue:** [Participating media: absorption, emission and scattering](Participating-media-absorption-emission-and-scattering.lingua#r_3G1ZW62CXVQ7NWRNPE2Q2YZ3P2) · [Advanced study: enclosure radiation and coupled temperatures](../research/Enclosure-radiation-geometry-reflections-and-coupled-temperatures.lingua#r_51HNQPPASJPXJ2PABTEABC98YZ).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6R4HZMA6G682DJX6GF89N83CF8

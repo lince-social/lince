@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect process control with dynamics, measurements, and a defined operating purpose (@mine-control: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #mining-and-mineral-engineering "Metallurgical-accounting-reconciliation-and-grade-control.lingua#r_1CS10W97ZP2WS11B5PZHAEGFP1") { r_1H6VW5FKZ9SFGTSAKW6GC302ZP
+**Read:** [Wills’ Mineral Processing Technology — Wills and Finch, eighth edition](../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A), all of chapter 3 and the relevant controlled-operation sections, when available; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), complete applicable instrumentation/control and process-balance discussions; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full relevant operating and instrumentation sections.
+
+A controller acts on measurements through equipment with limits and delays. Distinguish the physical process state, sensor response, inferred quality, manipulated variable, disturbance, set point, and final product objective. A stable instrument reading does not prove that an unmeasured quality remains stable.
+
+Construct a dynamic balance before fitting a response model. For a well-mixed constant-volume tank, V dc/dt = Q(c_in − c) gives time constant V/Q under its stated assumptions. A sampling/analyzer delay adds a different timescale. Separate instrument calibration, process dynamics, controller behavior, and the operating envelope when interpreting a step test.
+
+Compare feedback, feedforward, supervisory optimization, and operator work through actual evidence. Saturation, transport delay, changing feed, unreliable measurements, and competing loops can undermine a local improvement. Model validation and change control include the assumptions behind both code and field instrumentation.
+
+**Work:** reconstruct a complete published control case with measured input/output histories, sensor definitions, and sampling timing. Derive and independently test a simple dynamic model; compare it with a more complex model on withheld conditions. Explain which variable is actually improved and how material, water, quality, energy, and workload accounts change. Record failure behavior and the observations needed before transfer to another operating regime.
+
+**Continue:** [Reconcile production accounts without concealing uncertainty or changing the question](Metallurgical-accounting-reconciliation-and-grade-control.lingua#r_1CS10W97ZP2WS11B5PZHAEGFP1).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1H6VW5FKZ9SFGTSAKW6GC302ZP

@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Advanced project — trace one material’s chemical and physical production requirements (@gc-infrastructure-project: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Mineral-Commodities-USGS.lingua#r_1MSRN5WRD5DQT6Y6B7SDYZ8KWW", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #source "../sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "Independent-scholarship-and-revision.lingua#r_4FQ7XAEA72ED9GQDRS23TWSNRT") { r_6SFGRF77RYT053P9K1XNMQP37V
+**Read:** [Mineral Commodity Summaries 2026 and silicon information — USGS](../sources/Mineral-Commodities-USGS.lingua#r_1MSRN5WRD5DQT6Y6B7SDYZ8KWW), the selected dated material accounts and definitions; [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP), the identified evaluated properties and original sources used; [NIST-JANAF Thermochemical Tables — fourth-edition reference data](../sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44), the relevant complete table/conventions; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), the applicable structure/material lectures.
+
+Choose a material such as a metal-bearing feedstock, a silicon-related material, or a defined industrial chemical and investigate a bounded resource-to-product segment. State the product's chemical identity, grade/use, quantities, and evidence. Use a dated commodity account for context and actual technical/primary/evaluated sources for process claims; a supply statistic is not a process design.
+
+Draw the material/energy boundary and identify reaction, phase, separation, and measurement steps. Include impurities, water, reagents, gases, energy, losses, coproducts, waste/recovery, transport, equipment, skill, maintenance, and quality control where relevant. Distinguish a conceptually balanced route from a practically demonstrated one.
+
+Derive a small original stoichiometric/component and thermodynamic study with identified reference states and assumptions. Analyze rate/transport limitations, equilibrium or phase constraints, and the observations needed to verify a purity or conversion claim. Explain which missing process data prevent a complete practical conclusion and how authoritative literature or measurements could resolve them.
+
+**Produce:** a coherent technical explanation with source criticism; independently checked calculations; a chemical/measurement account of quality; an infrastructure/dependency map in ordinary prose or diagrams; and a comparison of at least two plausible pathways or conditions. Address recovery and maintenance as material work rather than ending the story at the desired product's appearance.
+
+This general study connects the shared foundation with later full mining, refining, industrial chemistry, materials, power/water, manufacturing, and semiconductor trails. It should reveal what those specialties need to contribute. Preserve their scope rather than claiming that one chemical overview has already taught a reader to construct the entire chain.
+
+**Continue:** [Scholarly investigation — develop and defend a chemical question](Independent-scholarship-and-revision.lingua#r_4FQ7XAEA72ED9GQDRS23TWSNRT).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_6SFGRF77RYT053P9K1XNMQP37V

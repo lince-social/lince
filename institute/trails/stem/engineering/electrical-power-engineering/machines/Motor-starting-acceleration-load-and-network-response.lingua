@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Motor starting, acceleration, load and network response (@pe-motor-start: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #source "../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR", #source "../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8", #electrical-power-engineering "DC-permanent-magnet-and-brushless-machines.lingua#r_3PWCP058T256NJ9X2SPGHXQP52") { r_00KT11Y3MXJ5BBNJF3T13MZ5R5
+**Read:** [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), complete induction dynamics/control development; [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR), whole application, starting, selection and operating-condition sections; [Mechanical and Electrical Design of Hydroelectric Power Plants — USACE](../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8), complete applicable motor/auxiliary-system context.
+
+A motor starts by accelerating its own and the driven load's inertia against a torque-speed demand. Couple electrical torque to J dω/dt = T_e−T_load with an explicit mechanical model. A steady running equivalent is not a complete startup model, and a high starting current does not by itself determine acceleration time.
+
+Compare direct connection, reduced-voltage starting and a controlled drive under the actual load curve and network impedance. Lowering voltage can reduce current while also reducing torque and prolonging heating; the benefit is conditional. Include repeated starts, stall/locked-rotor behavior, thermal state and protective timing.
+
+For a documented pump/fan/process load, predict current, bus-voltage dip, acceleration, energy and temperature with independently checked limiting cases. Compare an appropriate supervised measurement or complete published test. Trace how a weak source, a concurrent start or a changed mechanical load alters protection/voltage needs. The full machinery and process subjects deepen the driven system; power engineering must still state the load and service assumptions used in its motor/control selection.
+
+**Continue:** [DC, permanent-magnet and brushless machines](DC-permanent-magnet-and-brushless-machines.lingua#r_3PWCP058T256NJ9X2SPGHXQP52).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_00KT11Y3MXJ5BBNJF3T13MZ5R5

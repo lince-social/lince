@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Circulation, lift and the viscous selection of a flow (@fd-lift: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #fluid-dynamics "Unsteady-potential-flow-added-mass-and-fluid-impulse.lingua#r_42431P3X28AY1G8BQAPA3RM1XR") { r_16GKKW380EKZDXK81MZ78J0VB6
+**Read:** [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), aerodynamics and conformal-mapping development; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), potential flows and panel-method applications; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 2 aerodynamic force discussion.
+
+For a suitable steady two-dimensional incompressible outer flow around a body, lift per span is related to density, freestream speed and circulation. State the contour orientation and force direction before assigning the sign. The relation does not itself select the circulation, account for three-dimensional induced drag or determine whether a separated viscous flow remains near the assumed outer solution.
+
+Use a sharp trailing-edge example to explain the Kutta condition and the role of viscous starting and wake formation in selecting a physically relevant outer circulation. Compare surface-pressure integration with a far-field momentum or circulation calculation. Then identify how finite span, angle, compressibility, transition and separation alter the prediction.
+
+Derive a thin-airfoil or conformal-mapping result from the full assigned treatment. Compare its small-parameter range with an independent pressure distribution, retaining geometry and Reynolds/Mach numbers. Explain why a useful lift estimate and an inaccurate drag estimate can coexist in the same approximation.
+
+**Continue:** [Unsteady potential flow, added mass and fluid impulse](Unsteady-potential-flow-added-mass-and-fluid-impulse.lingua#r_42431P3X28AY1G8BQAPA3RM1XR).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_16GKKW380EKZDXK81MZ78J0VB6

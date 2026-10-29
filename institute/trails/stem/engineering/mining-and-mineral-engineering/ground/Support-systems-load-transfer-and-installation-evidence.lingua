@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Explain support through load transfer, ground interaction, and verified work (@mine-support: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #mining-and-mineral-engineering "Backfill-materials-water-and-extraction-sequence.lingua#r_64BKQ5MJZMC6HK1J3DQ4ESZPCS") { r_3Y7GF2FJXMPKQDN0JZ50C86SSH
+**Read:** [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the full rockbolt/cable, shotcrete, and underground interaction chapters; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete ground-support/operating context; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the full relevant support method/design chapters.
+
+Support systems interact with ground deformation, structures, geometry, water, sequence, and time. Bolts/cables, surface support, shotcrete, sets, and other systems perform different roles under identified designs. A product rating or an installed item count does not by itself establish load transfer or system performance.
+
+Distinguish reinforcement, retention, confinement, and support in the actual model. Bond/anchorage, installation, corrosion, damage, curing, deformation capacity, and connections can affect behavior. Laboratory tests, acceptance observations, and field response provide different evidence.
+
+Installation and observation are part of the engineering account. A design can rely on a sequence or ground condition not present during installation, and an inspection can miss an unobserved failure mode. Preserve actual conditions, deviations, tests, and the link between observed response and the model.
+
+**Work:** reconstruct a complete authorized support case from investigation and mechanism through design assumptions, installation evidence, and monitoring. Independently check a bounded load/geometry or test interpretation. Compare a plausible alternative support/ground interaction and identify the observation needed to distinguish it.
+
+Read full rockbolt/cable, shotcrete, structural-instability, and ground-response chapters with the appropriate equipment/material guidance. Practical installation competence requires its actual professional setting; a literature calculation establishes only the stated analytical scope.
+
+**Continue:** [Connect backfill material behavior with water, placement, and extraction history](Backfill-materials-water-and-extraction-sequence.lingua#r_64BKQ5MJZMC6HK1J3DQ4ESZPCS).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_3Y7GF2FJXMPKQDN0JZ50C86SSH

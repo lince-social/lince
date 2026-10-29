@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Infer depositional environments from associations and stratigraphic relationships (@geo-facies: 0, is #chapter, #part-of @geology, #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J", #geology "Basins-subsidence-burial-and-preservation.lingua#r_21MG6SKX54ZFC5K93YK8NHJNFH") { r_4X6HEM5B1RX52T99096BS9TBJH
+**Read:** [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), sedimentary environments, structures, facies, and correlation material in full; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 6 in full; [International Stratigraphic Guide, abridged version — ICS](../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J), unit relationships and correlation.
+
+A facies describes an identified set of sedimentary characteristics; an environmental interpretation is a further argument. Combine lithology, grain/structure data, fossils or traces, geometry, contacts, lateral relationships, and regional context. One rock name seldom fixes water depth, climate, or transport process uniquely.
+
+Vertical successions can record migration of environments, changes in sediment supply, accommodation, erosion, and other controls. Walther's principle applies to conformable successions of environments that were laterally adjacent under its conditions; an unconformity or abrupt event requires its own explanation. Similar vertical motifs can arise through different histories.
+
+Distinguish time surfaces, lithologic boundaries, and inferred systems tracts. The precision of a stratigraphic label depends on supporting observations/correlation. A textbook sea-level curve or idealized sequence is a model for comparison, not a reason to force a local measured section into every expected element.
+
+**Work:** construct a measured/logged section from an authorized teaching dataset or suitable field work. Record grain/structure/fossil observations independently of the environment column. Interpret associations, identify possible gaps, and compare two process histories. Correlate with another section using multiple constraints and show which boundaries may be diachronous.
+
+Read the full sedimentary/historical treatment and the stratigraphic guide's unit distinctions. Advanced stratigraphy and basin analysis will deepen their own quantitative and regional methods, while the shared geological approach keeps facies description, correlation, chronology, and causal interpretation distinguishable.
+
+**Continue:** [Explain basin fill through accommodation, sediment supply, and burial history](Basins-subsidence-burial-and-preservation.lingua#r_21MG6SKX54ZFC5K93YK8NHJNFH).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4X6HEM5B1RX52T99096BS9TBJH

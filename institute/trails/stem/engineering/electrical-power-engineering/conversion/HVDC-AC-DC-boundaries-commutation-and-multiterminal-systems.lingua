@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+HVDC, AC/DC boundaries and multiterminal systems (@pe-hvdc: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/High-Voltage-DC-Transmission-Singh.lingua#r_26QM8ZB3JZVW1D1TWRY8JXX3B4", #source "../sources/Advanced-Power-Electronics-Bhim-Singh.lingua#r_4249XQH4D831ATDY73HJHCPRAS", #source "../sources/DPsim-Transient-and-Dynamic-Phasor-Methods.lingua#r_6Y8PGZBGJHGV3JHZ1Q8XC77RR3", #electrical-power-engineering "../systems/Storage-power-energy-state-and-converter-interfaces.lingua#r_558Q64EG1RKH177QHXP6RYXA98") { r_733GTVZS886FFW1A4MXD3R9Z3T
+**Read:** [High Voltage DC Transmission — S. N. Singh](../sources/High-Voltage-DC-Transmission-Singh.lingua#r_26QM8ZB3JZVW1D1TWRY8JXX3B4), entire written course and examples; [Advance Power Electronics — Bhim Singh, IIT Delhi](../sources/Advanced-Power-Electronics-Bhim-Singh.lingua#r_4249XQH4D831ATDY73HJHCPRAS), complete FACTS/HVDC/VSC modules; [DPsim — electromagnetic-transient and dynamic-phasor methods](../sources/DPsim-Transient-and-Dynamic-Phasor-Methods.lingua#r_6Y8PGZBGJHGV3JHZ1Q8XC77RR3), whole applicable transient-domain models and initialization.
+
+Compare a high-voltage DC transmission system with a low-energy DC supply and with the linearized AC model called DC power flow. They share some circuit ideas but represent different physical systems. Define converter, smoothing/filter elements, line/cable, return/earthing arrangement, controls and fault-interruption paths.
+
+Read all of [High Voltage DC Transmission — S. N. Singh](../sources/High-Voltage-DC-Transmission-Singh.lingua#r_26QM8ZB3JZVW1D1TWRY8JXX3B4) and the advanced HVDC/VSC modules in [Advance Power Electronics — Bhim Singh, IIT Delhi](../sources/Advanced-Power-Electronics-Bhim-Singh.lingua#r_4249XQH4D831ATDY73HJHCPRAS). Derive a line-commutated converter model and its dependence on AC commutation conditions, then compare voltage-source/modular architectures using their actual control and energy states. Reactive exchange, harmonics, commutation failure, current limiting and DC faults require their corresponding models.
+
+Study a complete AC/DC flow and dynamic case, including both terminals and network boundaries. Compare losses, controllability, synchronization and fault/restoration behavior with an alternative arrangement. A controllable scheduled power transfer does not establish unlimited fault isolation or stable operation after losing an AC reference. Use actual component ratings, current requirements and documented tests for a physical claim; no generic topology alone supplies a complete commissioned HVDC installation.
+
+**Continue:** [Storage power, energy, state and converter interfaces](../systems/Storage-power-energy-state-and-converter-interfaces.lingua#r_558Q64EG1RKH177QHXP6RYXA98).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_733GTVZS886FFW1A4MXD3R9Z3T

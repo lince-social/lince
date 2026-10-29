@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Exergy, the environment and available work (@th-exergy: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../computation/An-inspectable-finite-body-work-and-entropy-account.lingua#r_25XA3PWHWX32KGK07RCAXA5XR6") { r_6R6JQK4K8HBTMWSMMWT5MVMF67
+**Read:** [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), available work, second-law efficiency and the complete allocation assignment; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), maximum work and thermodynamic potentials.
+
+Exergy measures a work opportunity relative to a specified environment and allowed final state. Declare environmental temperature, pressure and composition, and whether kinetic, gravitational, chemical or other contributions matter. There is no single universal exergy number independent of those choices.
+
+For appropriate closed-system conditions, a useful nonflow expression involves U+p₀V−T₀S relative to the reference state; flowing matter uses the corresponding enthalpy expression. Heat supplied at boundary temperature T carries a work opportunity proportional to (1−T₀/T) under the associated reservoir assumptions. Exergy destruction is T₀ times entropy generation for the stated reference environment.
+
+Compare two ways of delivering the same heating duty at different temperatures, and distinguish exergy destruction from exergy leaving unused in a stream. A high second-law efficiency can coexist with a small useful output; state the service and denominator. Read the full separation/cogeneration examples before using exergy to allocate a plant's burdens.
+
+**Continue:** [An inspectable finite-body work and entropy account](../computation/An-inspectable-finite-body-work-and-entropy-account.lingua#r_25XA3PWHWX32KGK07RCAXA5XR6).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6R6JQK4K8HBTMWSMMWT5MVMF67

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Preserve usable chemical knowledge and distinguish demonstrated methods from gaps (@ic-knowledge: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST", #industrial-chemistry "../research/A-sustained-industrial-chemistry-reading-and-practice-programme.lingua#r_5JE464G1MT1B1153AD87X7JS90") { r_7Q4T402YF6X9GY8A5KD1QC2971
+**Read:** [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the complete selected public process account and its primary references; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the whole relevant model, parameter and experimental-evidence reasoning; [Quantitative isotope controls for ammonia claims — Andersen and colleagues](../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST), the complete paper, primary methods, version distinction and correction.
+
+Industrial chemical knowledge spans published theory, complete books, process descriptions, patents, primary methods, measurements, equipment experience and practical know-how. These sources establish different kinds of claims. A public flow diagram can explain major reactions while omitting consequential preparation, operating, measurement or maintenance details.
+
+Build an evidence chain another reader can inspect: identities/editions, actual methods, material and quantity bases, assumptions, derivations, source data provenance, independent calculations, contradictory observations and revisions. Record missing information as an unresolved question. Do not fill a gap with an untested recipe and then treat it as established production knowledge.
+
+Connect shared Records and add original explanations where they resolve a real difficulty. External books, papers, models and datasets keep their original identities and actual access/reuse terms. A referenced source changing or becoming unavailable should prompt correction or an authorized alternative, without changing the meaning of past observations silently.
+
+**Work:** reconstruct the public knowledge chain for one complete chemical route and a disputed practical claim. Identify what is reproduced independently, what is supported indirectly and what remains unknown. Produce original connecting explanations and a defensible plan for the next discriminating investigation, retaining the complete bibliography and the practical setting required for the claim being tested.
+
+**Continue:** [Complete substantial chemical-technology books, university work and connected process studies](../research/A-sustained-industrial-chemistry-reading-and-practice-programme.lingua#r_5JE464G1MT1B1153AD87X7JS90).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_7Q4T402YF6X9GY8A5KD1QC2971

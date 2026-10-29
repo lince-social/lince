@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Investigate small phases whose information exceeds their volume fraction (@mp-accessories: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #source "../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #mineralogy-and-petrology "../optics/Specimens-orientation-and-thin-section-preparation.lingua#r_1ZW5S57B5BN7MQ6CBBPG2W8N6W") { r_7X3R4TNR1VE7QAY8F44QD40JPY
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full relevant accessory-mineral descriptions; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected entries and primary papers; [Introduction to Geochronology — Pieter Vermeesch](../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the full relevant analytical/age-system treatment.
+
+Accessory minerals can preserve trace elements, ages, reaction histories, or material impurities disproportionate to their abundance. Zircon, monazite, titanite, rutile, apatite, oxides, sulfides, and other small phases require identification and context rather than being dismissed as insignificant points in a modal description.
+
+An inclusion can constrain relative relationships, but entrapment, later reaction, deformation, diffusion, and section geometry affect interpretation. A mineral enclosed by another is not automatically an unchanged sample of the exact conditions at the host's entire growth history. Distinguish solid, melt, and fluid inclusions and the methods needed to investigate them.
+
+Trace-element/age analyses sample a specific domain and can mix core/rim, inclusions, alteration, or adjacent phases. Preserve imaging, spatial context, preparation, analytical volume, calibration, and uncertainty. A bulk-rock concentration may be controlled by a small heterogeneous population and require an appropriate sampling design.
+
+**Work:** trace an accessory-mineral investigation from field sample through textural imaging and microanalysis to an age or process interpretation. Compare inheritance, new growth, and later alteration as relevant alternatives. Explain how an observed inclusion relationship or zoning pattern constrains rather than simply decorates the argument.
+
+Read the complete accessory descriptions and the relevant advanced method paper reached through them. The later petrochronology and feedstock studies return to these phases as geological records and as impurity hosts.
+
+**Continue:** [Preserve specimen context through preparation and thin-section orientation](../optics/Specimens-orientation-and-thin-section-preparation.lingua#r_1ZW5S57B5BN7MQ6CBBPG2W8N6W).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_7X3R4TNR1VE7QAY8F44QD40JPY

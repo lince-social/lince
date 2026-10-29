@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Rectifiers, inverters, modulation and three-phase power (@pe-rectifiers-inverters: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #electrical-power-engineering "Converter-magnetics-filters-parasitics-and-thermal-design.lingua#r_3AN53ZK2R5SZSV8HE336WA7D15") { r_0WNJBSTSPAEJR38RWS0GW9YE7K
+**Read:** [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), complete rectifier, inverter and modulation progression; [AC Electrical Circuit Analysis — James M. Fiore](../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK), full polyphase and waveform/power foundations.
+
+A converter connects sources/storage/loads through switching states that constrain current and voltage. Derive a bridge's allowed states, freewheel/commutation paths and output waveform with a stated reference. Separate an uncontrolled rectifier, phase-controlled stage and actively modulated converter; they do not have identical input-current or control behavior.
+
+For a modulated inverter, relate DC-link voltage, modulation, switching pattern and fundamental AC output within a specified linear range. Include dead time, minimum pulses, device losses and filter/load response. A sinusoidal reference signal does not make the physical terminal waveform an ideal sinusoid. Check common-mode and return paths as part of the actual geometry.
+
+Work single- and three-phase examples from the complete [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526) programme, then verify power balance, device stress and a changed load. Compare harmonic content with the earlier power-quality definitions. The converter's ability to command an AC waveform does not alone make it a grid-forming source, establish island stability or supply unlimited fault current. The next control and grid-interface Records develop those separate physical claims.
+
+**Continue:** [Converter magnetics, filters, parasitics and thermal design](Converter-magnetics-filters-parasitics-and-thermal-design.lingua#r_3AN53ZK2R5SZSV8HE336WA7D15).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_0WNJBSTSPAEJR38RWS0GW9YE7K

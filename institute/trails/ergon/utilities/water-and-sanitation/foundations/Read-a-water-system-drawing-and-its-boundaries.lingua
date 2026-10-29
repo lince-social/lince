@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Read a water-system drawing and its boundaries (@wu-flowsheets: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE", #source "../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR", #source "../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD", #water-and-sanitation "Microorganisms-indicators-and-routes-of-exposure.lingua#r_6AFSE0XFBRE8Y27W0W57HGD017") { r_4EDEN8TRVC7KRWYHTJZ18G9VG9
+**Read:** [Manual de Saneamento — Funasa, fifth edition](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), system configurations and construction material; [The Physics of Water Treatment Design — AguaClara](../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR), plant hydraulics and implementation chapters; [Water safety plan manual — WHO and IWA, second edition](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD), system description and operational monitoring.
+
+A process flow diagram identifies streams and transformations. A hydraulic profile shows elevations and energy losses. A piping and instrumentation drawing identifies equipment, valves, measurements and control connections. A geographical network locates assets and users. Read these as complementary accounts of the same service.
+
+Choose a simple treatment train and assign a boundary to each unit. Mark normal flow, recycle, bypass, drains, backwash, sludge and overflow. Identify which valves or operating states change the flow path. A normally closed branch still matters during maintenance or an abnormal condition.
+
+Follow one instrument signal from the measurement point to an operator action or automatic response. State what the instrument measures, what it does not observe and whether its location represents the controlled process. Check the drawing against available as-built and operating evidence rather than treating a design drawing as proof of the current installation.
+
+**Continue:** [Microorganisms, indicators and routes of exposure](Microorganisms-indicators-and-routes-of-exposure.lingua#r_6AFSE0XFBRE8Y27W0W57HGD017).
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+} r_4EDEN8TRVC7KRWYHTJZ18G9VG9

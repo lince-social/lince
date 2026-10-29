@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Distinguish cracking chemistry, thermal history and recovered olefin products (@ic-cracking: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6", #industrial-chemistry "Aromatics-isomers-extraction-and-intermediate-quality.lingua#r_39NNHK069KX9K754TW77GRD9GJ") { r_6XS5MEWVCVYWS17PWGAC4WJDBC
+**Read:** [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the complete lower-olefins chapter including reaction, recovery, energy and residuals; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the full petrochemical/cracking and olefin teaching; [Refining of Mineral Oil and Gas, BREF REF](../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6), the entire relevant catalytic-cracking and connected product-system treatment.
+
+Steam cracking and catalytic cracking employ different reaction environments, feed ranges and product objectives. For a simple ethane relation, C₂H₆→C₂H₄+H₂ is balanced, but real feeds form networks of products and deposits. Residence, temperature history, dilution, catalyst state where present, and rapid changes in conditions influence selectivity.
+
+Olefin recovery requires a complete downstream separation/conditioning train. Compression, removal of contaminants, drying, fractionation and control of reactive species influence actual monomer quality and useful recovery. A reactor yield cannot substitute for the final product and energy account.
+
+Trace furnace/heat supply, quench, coke/deposit formation, maintenance and returned material over time. Compare actual feeds and product slates rather than using a nominal cracking label as evidence of equivalent performance. Chemical and physical states at transfer points must remain explicit.
+
+**Work:** reconstruct the entire lower-olefin process chapter and a contrasting conversion route with primary evidence. Independently close carbon/hydrogen and major heat/impurity accounts, explain the kinetic/transport and separation assumptions, and compare accepted monomer output through a full service interval. Identify which measurement would distinguish the proposed selectivity explanation from a separation or feed effect.
+
+**Continue:** [Follow aromatic intermediates through formation, separation and isomer-specific use](Aromatics-isomers-extraction-and-intermediate-quality.lingua#r_39NNHK069KX9K754TW77GRD9GJ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6XS5MEWVCVYWS17PWGAC4WJDBC

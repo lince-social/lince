@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Incompressibility, low-Mach limits and changing density (@fd-compressibility: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "../../../../inquiry/quantitative-literacy/models/Dimensionless-groups.lingua#r_7R4PTGBX4NTZWXQGPC09C1F7ZQ") { r_27TKZTP9HJ4S3SMD31KQF5ABKN
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), compressible waves and Boussinesq development; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), incompressible/compressible equations and atmosphere models; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), dimensionless physical comparisons.
+
+Incompressible motion preserves each material volume. A low Mach number compares flow speed with acoustic speed; it does not by itself guarantee constant density when temperature, composition or phase changes. A variable-density low-Mach model may retain expansion and filter fast acoustic behavior through a different pressure formulation.
+
+Estimate density changes from pressure, temperature and composition separately. Ask which changes affect inertia, buoyancy, storage or flow rate at the desired accuracy. In a Boussinesq approximation, small density changes may be neglected in many terms while retained in gravity; that asymmetry needs a scale argument.
+
+Compare a slowly heated gas, a constant-temperature liquid and a stratified liquid. Explain which assumptions differ even if all move slowly. Record a limit in which the simplified equations approach the more complete ones and a condition under which the simplification should be rejected.
+
+**Continue:** [Dimensionless groups and the limits of dimensional reasoning](../../../../inquiry/quantitative-literacy/models/Dimensionless-groups.lingua#r_7R4PTGBX4NTZWXQGPC09C1F7ZQ).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_27TKZTP9HJ4S3SMD31KQF5ABKN

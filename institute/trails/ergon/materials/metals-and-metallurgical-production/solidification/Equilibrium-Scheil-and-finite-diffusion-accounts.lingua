@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Derive segregation models from phase partition and conserved solute (@metal-segregation-model: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM", #metals-and-metallurgical-production "An-inspectable-equilibrium-and-Scheil-comparison.lingua#r_303TRCDBJ49TR1RA2H9B13CTDA") { r_6V6YZGA84F2Q3VXXV9QE4FC1GP
+**Read:** [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), complete lectures 10–11 and their matching exercises/readings; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the complete partition/solidification derivations; [A Guide to the Solidification of Steels — Jernkontoret](../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM), the whole relevant experimental and alloy account.
+
+A partition coefficient k = c_s/c_l must identify the solute, phases, composition basis, conditions, and equilibrium or effective status. Constant k is a deliberate approximation. Complete mixing of liquid, complete solid diffusion, no solid diffusion, finite diffusion, and solute trapping describe different physical limits.
+
+For a closed binary constant-k model with solid mass fraction f and initial solute fraction c₀, complete equilibrium gives c_l = c₀/[1−(1−k)f] and c_s = k c_l. With a mixed liquid and no diffusion in previously formed solid, the Scheil relation is c_l = c₀(1−f)^(k−1). Instantaneous new-solid composition k c_l then differs from the mean composition of all previously formed solid.
+
+Derive the differential solute account behind the Scheil expression and the integrated mean-solid inventory. As the remaining liquid becomes enriched, new phases or changed k may invalidate the simple model before complete solidification. Do not extend a divergence or a composition above one into a physical prediction.
+
+**Work:** independently derive both limits, check conservation and nonnegativity, and compare with a documented finite-diffusion or assessed multicomponent calculation. Explain the evidence for liquid mixing and solid diffusion in the chosen case. The following original program isolates the algebraic limits; later microsegregation/macrosegregation and casting work add physical mechanisms rather than treating this simple calculation as a validated full casting model.
+
+**Continue:** [Check equilibrium and Scheil limits with distinct instantaneous and mean-solid compositions](An-inspectable-equilibrium-and-Scheil-comparison.lingua#r_303TRCDBJ49TR1RA2H9B13CTDA).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_6V6YZGA84F2Q3VXXV9QE4FC1GP

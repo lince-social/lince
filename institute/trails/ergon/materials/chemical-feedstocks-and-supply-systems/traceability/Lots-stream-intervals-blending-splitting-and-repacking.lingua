@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Preserve the genealogy of material that is split, blended or repacked (@cs-genealogy: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Manufacturing-Supply-Chain-Traceability-NIST.lingua#r_7CK4NN1QW48PPVA9XKMGNHZWDZ", #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #chemical-supply-systems "Provenance-links-and-the-limits-of-a-trusted-document.lingua#r_4JTFSAF00SFZ8AAZY837B4T53P") { r_02433VTTSE10EK51S7YEJ9KJ5Y
+**Read:** [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), complete documentation, repackaging/relabelling and nonconforming sections; [Supply Chain Traceability Principles: A Manufacturing Meta-Framework — NIST IR 8536](../sources/Manufacturing-Supply-Chain-Traceability-NIST.lingua#r_7CK4NN1QW48PPVA9XKMGNHZWDZ), the whole report, with its event/linking examples; [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the complete inventory-system representation discussion.
+
+Start with two deliveries and one receiving tank. A transfer can split a lot among packages, combine several lots, change concentration, or leave a residual heel that influences the next fill. Give the resulting material a clear identity and relate it to its input quantities, periods and operations. A paper label does not make an intermixed material belong exclusively to the latest delivery.
+
+Construct a small lot genealogy using ordinary tables or Records: inputs, operation, outputs, quantity basis, state change, sample/test evidence and responsible party. For a continuous flow, define time intervals and the residence/mixing assumptions used to relate upstream and downstream material. Uncertain mixing histories should remain explicit.
+
+Work an exact mass/constituent balance for a blend and independently check the output. For two equal solution masses at fractions 0.30 and 0.50, the ideal combined fraction is 0.40 if the stated conserved-component and no-loss assumptions hold. Then ask which quality attributes do not obey that arithmetic: contamination, particle distributions, stability or manufacturing-system qualifications may require different evidence. Traceability preserves history and helps target investigation; it does not justify blending rejected material into an apparently acceptable average.
+
+**Continue:** [Distinguish a trustworthy information history from a qualified material](Provenance-links-and-the-limits-of-a-trusted-document.lingua#r_4JTFSAF00SFZ8AAZY837B4T53P).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_02433VTTSE10EK51S7YEJ9KJ5Y

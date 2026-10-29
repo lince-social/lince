@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Explain metasomatism with reaction, transport, and material balance (@mp-metasomatic: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH", #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #mineralogy-and-petrology "Pressure-temperature-time-deformation-and-petrochronology.lingua#r_4CTGHPR28HW3TQ3CWWRF426TRQ") { r_1PEG58WB7ZFB3G5AZ8K91F0J4X
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete metamorphic-fluid/reaction material used; [Rock Classification Scheme — British Geological Survey](../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH), the full metasomatic/hydrothermal and relevant metamorphic criteria; [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the full relevant domain/thermodynamic discussion.
+
+Metasomatism involves chemical modification through component transfer, often coupled to fluids and reaction. Distinguish replacement from a merely different protolith, inherited layering, or closed-system redistribution. A change in concentration can reflect loss of other material as well as addition of the component being discussed.
+
+Reaction fronts and mineral associations depend on fluid composition/flux, rock chemistry, transport pathways, temperature, pressure, kinetics, and evolving porosity/permeability. A vein records part of this account but does not by itself measure the total fluid volume or every reaction outside the sampled section.
+
+Material balances need a reference, volume/mass-change assumptions, element behavior, and uncertainty. Treating an element as immobile requires evidence appropriate to the conditions. A fitted line or normalized composition difference can be mathematically consistent with several transfer histories.
+
+**Work:** reconstruct a complete published replacement/reaction-front case. Separate observations, assumed reference material, chemical transfers, and model conditions. Independently check a bounded component balance and compare an alternative involving volume change, mixing, or different initial composition. Identify the textural or chemical observation that could distinguish it.
+
+Read the full fluid/reaction notes and classification sections for metasomatic/hydrothermal rocks. Later economic-geology, reactive-transport, and processing trails deepen their own flows and reactions while reusing these geological and compositional foundations.
+
+**Continue:** [Join pressure, temperature, age, and deformation without collapsing different events](Pressure-temperature-time-deformation-and-petrochronology.lingua#r_4CTGHPR28HW3TQ3CWWRF426TRQ).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_1PEG58WB7ZFB3G5AZ8K91F0J4X

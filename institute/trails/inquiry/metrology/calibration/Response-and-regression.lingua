@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Fit a response relation and inspect what the residuals say (@met-regression: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../../quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2", #metrology "Regression-uncertainty-and-inversion.lingua#r_33VGQWJCXFMMX2TJ245VDMHS4N") { r_182XY9TP839DMYS0DM3ZEGQ3BH
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 2.3 and the linked process-modelling regression material; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 8.3 and 11.4; [Functions, tables, domains, and inverse questions](../../quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2), the whole Record and function preparation.
+
+For a linear response model y_i = ax_i + b + ε_i, state what x and y represent and which errors are modelled. Ordinary least squares has particular assumptions about the input values and residuals; it is not automatically suitable when reference uncertainty, unequal variance, serial dependence, or errors in both coordinates matter.
+
+With equally weighted observations and the stated simple assumptions, slope a = Σ(x_i − x̄)(y_i − ȳ)/Σ(x_i − x̄)² and intercept b = ȳ − ax̄. Derive the expressions by minimizing the residual sum of squares or by the corresponding normal equations. A good numerical fit is not evidence that those assumptions hold.
+
+Residuals plotted against level, sequence, fitted value, and relevant conditions can reveal curvature, drift, changing variance, or anomalous runs. A large R² alone does not establish linearity or a small calibration uncertainty. Replication helps distinguish observed short-term variation from lack of fit under an appropriate statistical design.
+
+**Work:** fit teaching pairs (0,0.2), (1,1.3), (2,2.4), (3,3.5), and (4,4.6) in explicit input/output units. The exact teaching relation has a = 1.1 and b = 0.2; zero residuals here reflect constructed data, not perfect physical measurements. Add small labelled perturbations, fit again, and inspect the residuals in sequence. Add one curved term and show what a straight-line fit misses.
+
+Read a published calibration example with nontrivial residuals. Compare its weights and reference treatment with the simple formula. Choosing a more complex curve requires physical or predictive justification and enough information to determine it; increasing polynomial order until every point is matched can make interpolation or inversion less defensible.
+
+**Continue:** [Use a fitted calibration without discarding coefficient uncertainty](Regression-uncertainty-and-inversion.lingua#r_33VGQWJCXFMMX2TJ245VDMHS4N).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_182XY9TP839DMYS0DM3ZEGQ3BH

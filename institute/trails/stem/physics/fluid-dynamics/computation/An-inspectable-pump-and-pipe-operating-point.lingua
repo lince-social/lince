@@ -1,0 +1,122 @@
+Import "../Fluid-dynamics.lingua"
+
+An inspectable pump-and-pipe operating point (@fd-pipe-example: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #fluid-dynamics "An-inspectable-nozzle-with-an-internal-normal-shock.lingua#r_1759XXT97JP6XN6H6HS5DMHRSW") { r_0C8QS68GNNJFF403GENEXJARPC
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), internal-flow and energy balances; [Introduction to Fluid Mechanics and Fluid Engineering — Suman Chakraborty](../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2), pipe resistance and system analysis; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), independent verification and applicability.
+
+This original standard-library Python example solves a single steady, fully developed, constant-density Newtonian pipe connected to a prescribed pump curve H_p=H_0−kQ². The system has a static head and a specified local-loss coefficient based on the same pipe mean speed. Lengths and heads are metres, density kg/m³, dynamic viscosity Pa·s, Q m³/s, and pump k has units m/(m³/s)². Output power is hydraulic power; motor efficiency is not modelled.
+
+The declared piecewise model uses the exact circular laminar resistance for Re≤2,300 and the Colebrook turbulent relation for Re≥4,000 with relative roughness at most 0.05. It rejects an operating point between those ranges instead of inventing a transition correlation. These numerical boundaries specify this calculation, not universal physical transition thresholds. The input bounds are computational bounds and do not establish the real fluid's incompressibility, temperature stability, machine suitability or absence of cavitation.
+
+Follow [Pump curves, operating points and connected fluid networks](../internal/Pump-curves-operating-points-and-connected-fluid-networks.lingua#r_38PV7C2PG9F67V9SENTE32AD5Y), [Pipe resistance, roughness and Darcy versus Fanning](../internal/Pipe-resistance-roughness-and-Darcy-versus-Fanning.lingua#r_4428A6CTA9J8GD9VSXPVJTHKBD) and [Circular pipe flow, wall stress and the fourth power](../viscous/Circular-pipe-flow-wall-stress-and-the-fourth-power.lingua#r_2YEKAMXH5749FPWMEQDTZGBGFN) to reconstruct the equations. In the laminar branch, the head balance is a positive quadratic solved in a cancellation-resistant form. In the turbulent branch, friction and operating flow are bracketed separately. The final residual compares loss plus the pump's quadratic reduction with available head. Tiny rounding at a declared branch endpoint is confined to the friction evaluation. Nearly equal pump and static heads make the answer sensitive to their small difference; numerical convergence cannot recover input precision that was never supplied.
+
+Copy the code into the named file and run it with Python 3.13.13. Independently recover flow, Reynolds number, pressure/head closure and power from the output. Vary diameter, viscosity, static head, length and roughness one at a time, predicting the direction of change first. For verification, compare the laminar branch with an independently derived exact quadratic and the turbulent branch with higher-precision iteration in a different unknown. Test invalid values and the unresolved transition case. A small numerical residual verifies the solved head equation, not the physical adequacy of its friction and pump models.
+
+
+```python file=pipe_operating_point.py
+import json
+import math
+
+
+def finite(value, name, low, high):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(name)
+    if not math.isfinite(value) or not low <= value <= high:
+        raise ValueError(name)
+    return float(value)
+
+
+def friction(reynolds, relative_roughness):
+    re = finite(reynolds, "Reynolds number", 1e-100, 1e30)
+    rough = finite(relative_roughness, "relative roughness", 0.0, 0.05)
+    if re <= 2300.0:
+        return 64.0 / re
+    if re < 4000.0:
+        raise ValueError("transition is outside this model")
+    low, high = 1.0, 100.0
+    for _ in range(100):
+        value = (low + high) / 2.0
+        residual = value + 2.0 * math.log10(rough / 3.7 + 2.51 * value / re)
+        if residual > 0.0:
+            high = value
+        else:
+            low = value
+    return 1.0 / ((low + high) / 2.0) ** 2
+
+
+def operating_point(diameter, length, density, viscosity, roughness,
+                    static_head, pump_head, pump_k, minor_k, gravity=9.81):
+    d = finite(diameter, "diameter", 1e-5, 10.0)
+    length = finite(length, "length", 1e-4, 1e6)
+    rho = finite(density, "density", 0.01, 2e4)
+    mu = finite(viscosity, "viscosity", 1e-7, 1e3)
+    eps = finite(roughness, "roughness", 0.0, 0.05 * d)
+    static = finite(static_head, "static head", 0.0, 1e6)
+    head = finite(pump_head, "pump head", 1e-9, 1e6)
+    coefficient = finite(pump_k, "pump coefficient", 1e-12, 1e15)
+    local = finite(minor_k, "minor loss coefficient", 0.0, 1e4)
+    g = finite(gravity, "gravity", 0.1, 100.0)
+    if head <= static:
+        raise ValueError("positive available head is required")
+    area = math.pi * d * d / 4.0
+    free_flow = math.sqrt((head - static) / coefficient)
+    q2300 = 2300.0 * mu * area / (rho * d)
+    q4000 = 4000.0 * mu * area / (rho * d)
+
+    def losses(q, regime):
+        speed = q / area
+        if regime == "laminar":
+            pipe = 32.0 * mu * length * speed / (rho * g * d * d)
+        else:
+            factor = friction(max(4000.0, rho * speed * d / mu), eps / d)
+            pipe = factor * length / d * speed * speed / (2.0 * g)
+        return pipe + local * speed * speed / (2.0 * g)
+
+    def balance(q, regime):
+        return losses(q, regime) + coefficient * q * q - (head - static)
+
+    if balance(min(q2300, free_flow), "laminar") >= 0.0:
+        regime = "laminar"
+        low, high = 0.0, min(q2300, free_flow)
+    elif q4000 <= free_flow and balance(q4000, "turbulent") <= 0.0:
+        regime = "turbulent"
+        low, high = q4000, free_flow
+    else:
+        raise ValueError("operating point lies in the unresolved transition range")
+    if regime == "laminar":
+        a = 128.0 * mu * length / (rho * g * math.pi * d ** 4)
+        b = coefficient + local / (2.0 * g * area * area)
+        q = 2.0 * (head - static) / (a + math.sqrt(a * a + 4.0 * b * (head - static)))
+    else:
+        for _ in range(200):
+            q = (low + high) / 2.0
+            if balance(q, regime) > 0.0:
+                high = q
+            else:
+                low = q
+        q = (low + high) / 2.0
+    speed = q / area
+    re = rho * speed * d / mu
+    factor = friction(min(re, 2300.0) if regime == "laminar" else max(re, 4000.0), eps / d)
+    delivered_head = head - coefficient * q * q
+    return {
+        "regime": regime,
+        "flow_m3_s": q,
+        "mean_speed_m_s": speed,
+        "reynolds": re,
+        "darcy_factor": factor,
+        "pump_head_m": delivered_head,
+        "loss_head_m": losses(q, regime),
+        "hydraulic_power_W": rho * g * q * delivered_head,
+        "head_residual_m": balance(q, regime),
+    }
+
+
+if __name__ == "__main__":
+    print(json.dumps(operating_point(0.05, 80.0, 1000.0, 0.001, 0.00005,
+                                     4.0, 24.0, 2e5, 3.0), sort_keys=True))
+```
+
+**Continue:** [An inspectable nozzle with an internal normal shock](An-inspectable-nozzle-with-an-internal-normal-shock.lingua#r_1759XXT97JP6XN6H6HS5DMHRSW).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0C8QS68GNNJFF403GENEXJARPC

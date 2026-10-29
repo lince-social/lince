@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Scattering, polarizability and resonant response (@em-scattering: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Electromagnetism-II-MIT-8-07.lingua#r_55A4EMWVVACC6KS4Z03ZA91F7G", #electromagnetism "Extinction-optical-theorem-and-conservation-tests.lingua#r_4FDDB20D8BRMC28ZFKTKZXMEJV") { r_6FYBVTP1TQ9W5HZWNEBBQ9GP30
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), scattering and multipole radiation; [Electromagnetism II — MIT 8.07, Fall 2012](../sources/Electromagnetism-II-MIT-8-07.lingua#r_55A4EMWVVACC6KS4Z03ZA91F7G), emission, absorption and scattering course work.
+
+A wave induces charges/currents that generate a scattered field. Define incident, total and scattered fields consistently with boundary conditions and the observation region. An induced dipole p = αE_local is an approximation whose polarizability has units and depends on shape, material, environment and frequency.
+
+Derive the electrostatic polarizability of a homogeneous sphere in a homogeneous background, then identify the small-size conditions needed for a Rayleigh scattering approximation. At fixed material contrast away from resonance, the characteristic small-particle scattering scales strongly with size and frequency. Near resonance, absorption and radiative corrections can invalidate a naive static lossless α.
+
+Define differential and total scattering cross-section, absorption and extinction through power, not physical silhouette alone. Compare a small-particle limit with a fuller multipole solution and establish convergence in size parameter. Ensemble/disorder and multiple scattering require additional assumptions. A material's colour or attenuation cannot generally be inferred from one dipole formula without the particle distribution, medium, spectrum and detection geometry. The later inverse study separates those ambiguities from a well-posed forward calculation.
+
+**Continue:** [Extinction, optical theorem and conservation tests](Extinction-optical-theorem-and-conservation-tests.lingua#r_4FDDB20D8BRMC28ZFKTKZXMEJV).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_6FYBVTP1TQ9W5HZWNEBBQ9GP30

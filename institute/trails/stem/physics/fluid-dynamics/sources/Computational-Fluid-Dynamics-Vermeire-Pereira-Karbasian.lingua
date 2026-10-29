@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues (@fd-concordia: 0, is #reference, #part-of @fd-sources) { r_7B08DEGENZD4JFFRFNPKJCVFCW
+Brian C. Vermeire, Carlos A. Pereira and Hamidreza Karbasian. Computational Fluid Dynamics: An Open-Source Approach, Concordia University Library, 2020. [Publisher reading/download page](https://opentextbooks.concordia.ca/computationalfluiddynamics/) · [University repository](https://spectrum.library.concordia.ca/id/eprint/997607/).
+
+Study the full book and reproduce its numerical exercises and applied cases in an identified environment. Relate the governing physics, numerical methods, mesh, solution and postprocessing to independent checks. Its Gmsh, SU2, ParaView and Python material supplies a practical entry to larger computational investigations.
+
+The publisher lists CC BY-NC 4.0 and also retains a CC BY-NC 3.0 statement; preserve the notice in the actual downloaded edition. The repository's October 2026 deposit is not the book's 2020 publication date. The complete PDF exceeded the browser's size limit; the landing and repository metadata were inspected. Third-party tools and content keep their own licences. No software installation or case execution is claimed here.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_7B08DEGENZD4JFFRFNPKJCVFCW

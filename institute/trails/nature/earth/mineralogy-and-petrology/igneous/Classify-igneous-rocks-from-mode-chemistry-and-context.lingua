@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Use igneous classification without turning a name into an origin proof (@mp-igneous-name: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #mineralogy-and-petrology "Partial-melting-reactions-and-source-composition.lingua#r_15MH726G409NZR6MJGFPE1BKDE") { r_0JPXPD7GZVPEWCDV26V55PX439
+**Read:** [Rock Classification Scheme — British Geological Survey](../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH), the complete igneous report and its scheme/edition distinctions; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the full igneous classification treatment; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the complete corresponding lab/classification work.
+
+An igneous classification uses an identified scheme with descriptive criteria, compositional basis, applicability, and boundaries. Modal mineralogy and bulk chemistry support different schemes and can be unavailable or altered in different specimens. State what was actually measured and how unresolved material was treated.
+
+QAPF-style modal normalization considers selected mineral fractions under specified exclusions and applicability. A total-alkali/silica chemical classification uses a different basis and conditions, including alteration and normalization concerns. A diagram's boundaries are naming conventions, not abrupt physical walls between formation processes.
+
+Ultramafic, fragmental/volcaniclastic, glassy, altered, and unusual-composition rocks may require different branches or qualifiers. A porphyritic texture and a plutonic/volcanic inference should remain tied to observation and context. Geological history needs evidence beyond where a point lands in a field.
+
+**Work:** classify several documented specimens using complete BGS reports and the course method, preserving measured inputs, exclusions, uncertainty, and the resulting qualifiers. Test a point near a boundary and explain the effect of uncertainty or alteration. Compare naming under two explicitly identified schemes without claiming they are identical.
+
+Read the full igneous classification report and corresponding book/course sections. A useful name makes comparison precise; the subsequent melting, partitioning, and differentiation studies explain how a material could develop and how to test that history.
+
+**Continue:** [Explain partial melting through phase relations and material transfer](Partial-melting-reactions-and-source-composition.lingua#r_15MH726G409NZR6MJGFPE1BKDE).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_0JPXPD7GZVPEWCDV26V55PX439

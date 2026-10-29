@@ -2,7 +2,7 @@ use super::*;
 use crate::host::{ItemGeometry, ItemId};
 
 mod native;
-pub(in crate::native::layout) use native::input;
+pub(crate) use native::input;
 pub(in crate::native) use native::keyboard;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Measurement — resolution, variation, bias, and uncertainty (@ql-uncertainty: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-uncertainty, #source @ql-source-vim, #quantitative-literacy "Estimates-and-bounds.lingua#r_5YGGH6Z676MZJNTQXTWQ8AJE4J") { r_7ECX6WRYHP37YAMGXEBGYRW23X
+**Read:** JCGM GUM-1:2023 in full as a short conceptual introduction; VIM's definitions of measurand, measurement result, precision, accuracy, error, and uncertainty. Read NIST TN 1297 sections 2 and 7 now, returning to its full evaluation method in advanced study.
+
+Define the measurand before collecting values: the length between which surfaces, under what conditions, by what procedure? Repeated indications describe variation under those conditions. Their spread does not capture every uncertainty contribution: a common offset, uncertain reference, alignment effect, or incomplete quantity definition may remain.
+
+Instrument resolution is the smallest change distinguishable in its indication under the stated definition. Calibration relates indications and reference quantity values with associated uncertainties; it is not automatically adjustment or a guarantee that every later use is suitable. An uncertainty statement concerns a result and model, not a decorative ± number attached to an instrument forever.
+
+For a measured diameter d and height h, the model V = πd²h/4 makes the influence of diameter different from that of height. At small relative changes, ΔV/V is approximately 2Δd/d + Δh/h as a signed first-order change. A probabilistic combined standard uncertainty additionally needs the input uncertainties, correlations, and model assumptions; adding signed changes is not that calculation.
+
+**Work:** measure an ordinary noncritical object's length repeatedly without destructive tests. Record instrument, conditions, method, resolution, and observations. Identify at least three plausible contributions not removed by repetition. Describe a result using a clearly labelled uncertainty approach and state what information is still missing. A claimed confidence or coverage probability needs justification; a factor of two is not universally a 95% guarantee.
+
+**Continue:** [Estimation, bounds, and the cost of a wrong assumption](Estimates-and-bounds.lingua#r_5YGGH6Z676MZJNTQXTWQ8AJE4J).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_7ECX6WRYHP37YAMGXEBGYRW23X

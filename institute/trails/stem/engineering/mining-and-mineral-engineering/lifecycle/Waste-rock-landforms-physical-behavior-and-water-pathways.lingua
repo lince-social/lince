@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Join waste-landform stability, water pathways, and chemical performance (@mine-waste-ground: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Mine-Rehabilitation-Leading-Practice.lingua#r_4RS2D5ZYYW6Q7EG62C4VDWGWYQ", #source "../sources/Preventing-Acid-and-Metalliferous-Drainage.lingua#r_7SDBPF4TAZV9GKDCTW9BTYJ43R", #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #mining-and-mineral-engineering "Tailings-foundations-deposition-water-and-long-term-performance.lingua#r_1VMWZQHKZME5MT61YCEG415GA4") { r_4VSZTXBD20D124TD4QXQY5TZVF
+**Read:** [Mine rehabilitation — Australian leading-practice handbook](../sources/Mine-Rehabilitation-Leading-Practice.lingua#r_4RS2D5ZYYW6Q7EG62C4VDWGWYQ), the whole relevant landform, material, surface, and monitoring sequence; [Preventing acid and metalliferous drainage — leading-practice handbook](../sources/Preventing-Acid-and-Metalliferous-Drainage.lingua#r_7SDBPF4TAZV9GKDCTW9BTYJ43R), complete waste-placement and water/oxygen-management discussions; [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), full applicable slope/material and observational design chapters.
+
+A waste-rock landform is constructed material with variable size, durability, mineralogy, density, placement history, and internal structure. Its long-term behavior depends on settlement, weathering, erosion, drainage, pore pressures, and interaction with foundations and neighboring ground. A stable angle observed today does not characterize all future states.
+
+Build an explicit material and construction account: which domains are placed where, how their properties were measured, and how the design assumptions are checked during placement. Hydraulic heterogeneity can create preferential pathways, perched water, and different oxygen or reaction environments. Geochemical and geotechnical predictions need compatible geometries and water histories.
+
+Evaluate covers, drainage, erosion resistance, and landform geometry through their physical mechanisms and actual climatic range. Vegetation and near-surface processes can change infiltration and material behavior over time. Separate predicted performance, construction verification, and observations rather than treating a design drawing as evidence of the constructed state.
+
+**Work:** analyze one complete landform case, including foundations, material characterization, placement, drainage, and performance observations. Reproduce the core water/stability reasoning, compare an alternative arrangement, and evaluate settlement, erosion, and changed-water scenarios. Identify which observations test the most consequential assumptions. Account for the inspection, repair, and recordkeeping work needed after production stops.
+
+**Continue:** [Understand tailings facilities as evolving ground, water, structures, and responsibilities](Tailings-foundations-deposition-water-and-long-term-performance.lingua#r_1VMWZQHKZME5MT61YCEG415GA4).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_4VSZTXBD20D124TD4QXQY5TZVF

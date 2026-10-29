@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Treat formulated products as controlled mixtures with measured function over time (@ic-formulation: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Saboes-e-Detergentes-Castro.lingua#r_08ET1T9T2F8GDEB1315ZB6XFRF", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #industrial-chemistry "../renewable/Oils-fats-extraction-refining-and-chemical-modification.lingua#r_4ZXMRQ3P1T7FKKK8TNM4M6GHKQ") { r_05TY3DDRQANXD5QFXYP93TAJSR
+**Read:** [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete relevant formulated-product and natural/synthetic ingredient sequence; [Sabão e detergentes — Heizir F. de Castro](../sources/Saboes-e-Detergentes-Castro.lingua#r_08ET1T9T2F8GDEB1315ZB6XFRF), the full surfactant, formulation and product-function text; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the whole applicable specialty-product, isolation and quality context.
+
+A formulated product combines substances to obtain a useful behavior: wetting, cleaning, coating, adhesion, flow, lubrication, stability or another function. The result may depend on phase distribution, interfaces, particle state, concentration and interactions between ingredients. A recipe listing alone cannot establish performance or shelf stability.
+
+Distinguish synthesis of an ingredient from formulation, mixing, dispersion, maturation and filling. Order/history can matter because a mixture may become metastable, structured or reactive. Raw-material equivalence needs evidence at the relevant molecular, impurity and physical scales, not merely similar trade names.
+
+Follow the actual test method, application conditions, aging and contact/packaging material. A short favorable performance observation can coexist with separation, degradation, contamination or changed function later. Quantities, energy, losses and cleaning belong in the manufacturing account even when the main operation is physical mixing.
+
+**Work:** reconstruct one complete public formulation/process study with a defined functional specification. Derive a reproducible composition basis, compare two justified ingredient/process alternatives and test stability/function under changed conditions. Explain the primary analytical, interfacial, physical and application evidence that supports the conclusion and identifies remaining uncertainty.
+
+**Continue:** [Follow oils and fats from variable biological feed to qualified chemical material](../renewable/Oils-fats-extraction-refining-and-chemical-modification.lingua#r_4ZXMRQ3P1T7FKKK8TNM4M6GHKQ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_05TY3DDRQANXD5QFXYP93TAJSR

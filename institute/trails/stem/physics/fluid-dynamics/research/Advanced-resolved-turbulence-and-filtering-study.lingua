@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced resolved-turbulence and filtering study (@fd-advanced-resolved: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #fluid-dynamics "Advanced-nozzle-shock-and-compressible-duct-study.lingua#r_71ATSDF27111JJ8AAM358JS35K") { r_5RBD4WBYMYYMR54BDK1X22SZQV
+**Read:** [Johns Hopkins Turbulence Databases — numerical flow evidence](../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE), simulation provenance and resolution diagnostics; [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), DNS/LES methods and scales; [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), relevant independent comparisons; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), reproducible computation and verification.
+
+Define a bounded turbulent flow question for which an available DNS, a reproducible LES or a manageable resolved calculation can provide evidence. State the equations, forcing, domain, wall treatment and resolved scales. Distinguish the mathematical filter from the grid and explain the role of any subgrid model.
+
+Assess space/time resolution and statistical duration independently. Compare energy transfer, spectra and a physical output with a trusted reference or experiment. Change resolution and model while keeping the comparison meaningful; a finer grid that changes the effective model or wall treatment is not a pure discretization study.
+
+Document computational cost, memory, parallel choices and reproducibility along with physical uncertainty. Explain which structures are resolved, which are inferred and which remain unsupported. A short visually rich simulation cannot establish converged long-time statistics; the output should answer a specific physical question through sustained evidence.
+
+**Continue:** [Advanced nozzle, shock and compressible-duct study](Advanced-nozzle-shock-and-compressible-duct-study.lingua#r_71ATSDF27111JJ8AAM358JS35K).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5RBD4WBYMYYMR54BDK1X22SZQV

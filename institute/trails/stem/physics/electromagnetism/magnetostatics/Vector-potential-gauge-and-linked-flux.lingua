@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Vector potential, gauge and linked flux (@em-vector-potential: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Magnetic-dipoles-torque-and-force.lingua#r_3VPZ9386PMT2WEKQDKBM56AEZ5") { r_3DPJ91YTSE9VC10VWH8G6AA5XM
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), magnetic vector potential and gauges; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), vector potentials and boundary conditions.
+
+A divergence-free magnetic field can be expressed locally as B = ∇×A. The vector potential is not unique: A + ∇χ yields the same B. In time-dependent fields the accompanying scalar-potential transformation must also be retained. A gauge is a choice of representation, not a way to change a physical force.
+
+In magnetostatics, derive a Poisson equation for A under the Coulomb gauge and suitable conditions, then compare its source integral with Biot–Savart. For a uniform B, construct two different vector potentials and show that their difference is a gradient. At the same time, recognize that topology and boundary conditions can prevent a single globally convenient scalar or vector representation.
+
+Relate ∮A·dl to magnetic flux using Stokes's theorem. Draw the surface and its boundary and state the smoothness/domain conditions. A zero field in a local source-free region does not justify discarding every loop integral in a multiply connected domain. The classical and later quantum meanings of potentials should be distinguished; no quantum phase claim follows solely from this classical gauge calculation.
+
+**Continue:** [Magnetic dipoles, torque and force](Magnetic-dipoles-torque-and-force.lingua#r_3VPZ9386PMT2WEKQDKBM56AEZ5).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3DPJ91YTSE9VC10VWH8G6AA5XM

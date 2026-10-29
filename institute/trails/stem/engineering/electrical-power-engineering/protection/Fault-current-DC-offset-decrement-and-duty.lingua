@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Fault-current offset, decrement and duty (@pe-fault-transient: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/DPsim-Transient-and-Dynamic-Phasor-Methods.lingua#r_6Y8PGZBGJHGV3JHZ1Q8XC77RR3", #source "../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4", #electrical-power-engineering "Asymmetric-faults-and-sequence-connections.lingua#r_5V4B65W6RXCQJTMKBD7G51H23S") { r_4SFG3K5ZMNV4JZ95TJXY5543JQ
+**Read:** [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), CT saturation, offset and fault-response treatment; [DPsim — electromagnetic-transient and dynamic-phasor methods](../sources/DPsim-Transient-and-Dynamic-Phasor-Methods.lingua#r_6Y8PGZBGJHGV3JHZ1Q8XC77RR3), complete applicable EMT model, source, initialization and solver documentation; [Maintenance of Power Circuit Breakers — FIST 3-16](../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4), whole relevant interruption/rating sections.
+
+For a simple sinusoidally driven series RL fault circuit with zero initial current, derive the forced sinusoid plus a decaying DC-offset term from the switching instant and L/R time constant. The first peak can greatly exceed the symmetrical RMS peak. The switching angle and prefault state matter; a single RMS fault number does not describe every instant.
+
+Extend the source model to machine-current decrement or a controlled converter only through its actual dynamics and limits. Distinguish symmetrical breaking current, making peak, short-time thermal duty, mechanical stress and current-zero/interruption conditions. An I²t approximation has a stated domain and does not establish dielectric recovery or breaker interruption capability.
+
+Compare a hand-derived RL limit, a phase-domain transient and the appropriate standards/manufacturer method for a documented case. Check step size, initial state, source representation and the observable being compared. Current-transformer saturation and relay filtering can alter the reported waveform even when the primary model is correct. The shared quasistatic field Record provides the conduction/penetration foundation; power apparatus adds actual source, switching and protective-duty evidence.
+
+**Continue:** [Asymmetric faults and sequence connections](Asymmetric-faults-and-sequence-connections.lingua#r_5V4B65W6RXCQJTMKBD7G51H23S).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4SFG3K5ZMNV4JZ95TJXY5543JQ

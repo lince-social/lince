@@ -1,0 +1,11 @@
+Import "../Metrology.lingua"
+
+Simple Guide for Evaluating and Expressing Uncertainty — Possolo (@met-tn1900: 0, is #book, #part-of @met-sources) { r_75WCVW8CJG4TAFD3330T87588E
+Antonio Possolo. Simple Guide for Evaluating and Expressing the Uncertainty of NIST Measurement Results. NIST Technical Note 1900, 2015. [Official metadata](https://www.nist.gov/publications/simple-guide-evaluating-and-expressing-uncertainty-nist-measurement-results) · [Authorized complete report](https://doi.org/10.6028/NIST.TN.1900).
+
+Read sections 1–8 completely, then the worked examples in successive blocks. Begin with E1 Weighing, E2 Surface Temperature, E5 Gauge Blocks, and E7 Thermistor Calibration. Later use E15 Voltage Reflection Coefficient, E20 Thermal Bath, E32 Load Cell Calibration, and E34 Atmospheric Carbon Dioxide. Complete the remaining examples for the broad advanced reading, examining the statistical method rather than assuming knowledge of every application.
+
+The report supplements rather than replaces TN 1297 and presents a broader probabilistic treatment. Its contrasting model forms and worked calculations are a major advanced reading spine. NIST-authored federal material is generally public domain in the United States; retain attribution and component notices. Edition, contents, and availability checked on 28 October 2026. No report or associated source data is bundled.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_75WCVW8CJG4TAFD3330T87588E

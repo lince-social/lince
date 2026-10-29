@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Explain gas absorption and stripping through equilibrium, transfer and solvent fate (@ic-absorption: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9", #source "../sources/Chemical-Sector-Waste-Gas-BREF.lingua#r_1TCVADXXV40HYCGK8NTERRSSYA", #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #industrial-chemistry "Liquid-extraction-selectivity-solvents-and-staging.lingua#r_78X0A79WGSPRMBEH16G2MCDN5G") { r_69KHFNVHF37DSKEHW5DNJKKA78
+**Read:** [Common Waste Water and Waste Gas Treatment/Management Systems in the Chemical Sector, BREF CWW](../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9), the complete relevant collection, gas/liquid transfer and treatment chapters; [Common Waste Gas Management and Treatment Systems in the Chemical Sector, BREF WGC](../sources/Chemical-Sector-Waste-Gas-BREF.lingua#r_1TCVADXXV40HYCGK8NTERRSSYA), the full applicable prevention, collection, treatment and monitoring treatment; [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), one complete process case including absorption and regeneration.
+
+Absorption transfers a constituent from a gas into a liquid; stripping reverses a useful transfer under suitable conditions. Equilibrium solubility sets one constraint while interfacial area, flow, diffusion and possible liquid-phase reaction influence the rate. A large nominal contactor cannot overcome an unfavorable thermodynamic or regeneration account by itself.
+
+Specify gas and liquid bases, moisture, temperature, pressure and reacting species. Dilute Henry-law behavior and ideal countercurrent stages are useful models within defined domains. Reactive absorption additionally changes speciation, heat release, reagent demand and the fate of captured constituents.
+
+Follow solvent/reagent regeneration, losses, product handling and residuals. A captured contaminant is not destroyed merely because it leaves the gas. Corrosion, fouling, entrainment, foam and changing feed can influence measured performance. Gas cleanup for a catalyst or a high-purity product can require different evidence from bulk emissions removal.
+
+**Work:** reconstruct one complete gas-treatment or product-recovery system with equilibrium, transfer and constituent closure. Compare absorption, stripping/regeneration and an alternative separation on equal product/cleanup requirements. Identify the measurements and uncertainty needed to test whether changed chemistry, contacting or solvent condition explains a performance difference.
+
+**Continue:** [Evaluate liquid extraction with actual partition, finite phases and solvent recovery](Liquid-extraction-selectivity-solvents-and-staging.lingua#r_78X0A79WGSPRMBEH16G2MCDN5G).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_69KHFNVHF37DSKEHW5DNJKKA78

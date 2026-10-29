@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Explain periodic trends through structure and competing effects (@gc-periodicity: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/Atomic-Weights-and-Isotopes.lingua#r_1HF97SGP3GF6YJDRH0D81PQ3S3", #general-chemistry "../bonding/Lewis-structures-and-valence.lingua#r_6H377ERVG3W7RTQBA71Y29FEMQ") { r_1JPAXST3A4ZTBAZQWJKCJR8AZW
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 6’s electronic configuration and periodic trends; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), chapter 3 in full; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), the periodic-table lectures and concept questions; [Atomic weights, isotopes, and the periodic table — CIAAW and IUPAC](../sources/Atomic-Weights-and-Isotopes.lingua#r_1HF97SGP3GF6YJDRH0D81PQ3S3), the relevant element/table notes.
+
+Periodic organization connects recurring electronic structures with chemical behavior. Atomic size, ionization energy, electron affinity, and electronegativity describe different quantities or constructions and need their own definitions. Effective nuclear attraction, shielding, electron interactions, and state changes help explain trends, including why simple monotonic mnemonics have exceptions.
+
+Specify the comparison: neutral atom or ion, gaseous isolated species or condensed material, measured energy or model-based scale. An ion's radius depends on its chemical environment and the chosen definition; a table's apparent precision should not conceal that context. A label such as metal or nonmetal is a useful pattern, not a complete prediction of every compound's behavior.
+
+Use trends to make an initial prediction and identify the evidence needed to test it. A smaller ion with higher charge may interact strongly with ligands, but solvation, covalence, coordination, and lattice structure can change a bulk outcome. Later descriptive chemistry puts the trends into actual species and conditions.
+
+**Work:** explain selected successive ionization energies, compare an isoelectronic series, and analyze one well-known trend exception using configurations and interactions. Distinguish a reasoned prediction from a value that must be obtained experimentally or from an evaluated source.
+
+Read the complete periodicity sections in the first book and Portuguese companion, then compare MIT's stronger treatment. Check the actual periodic-table edition and element definitions when a quantitative calculation depends on it. The goal is a connected explanation of patterns and limits rather than memorizing a decorative chart.
+
+**Continue:** [Build a Lewis structure and test what it represents](../bonding/Lewis-structures-and-valence.lingua#r_6H377ERVG3W7RTQBA71Y29FEMQ).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_1JPAXST3A4ZTBAZQWJKCJR8AZW

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Heat capacity, temperature dependence and calorimetry (@th-capacity: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #thermodynamics-and-heat-transfer "../../../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52") { r_03R86BMA4QVQGH84GXHZZDNJKZ
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), heat capacities, calorimetry and temperature integration; [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), internal energy, enthalpy and entropy properties.
+
+Heat capacity depends on the constraint and material state. For a simple system, C_V relates changes in internal energy to temperature at fixed volume, and C_p relates enthalpy to temperature at fixed pressure. A general heat transfer during an irreversible path is not simply C dT.
+
+Integrate a temperature-dependent capacity over the actual state interval. For a teaching model C(T) = a+bT, the energy increment is a(T₂−T₁) + b(T₂²−T₁²)/2 under its stated constraint. The corresponding entropy increment along a reversible path is a ln(T₂/T₁)+b(T₂−T₁). Positive capacity and a physically meaningful range must be established.
+
+Read the whole calorimetric method behind a claimed value: vessel/addenda, electrical energy, mixing, heat leakage, sensor response, phase/reaction contributions and reference states. A fitted apparent capacity can include unmodelled loss or phase change. [An inspectable finite-body work and entropy account](../computation/An-inspectable-finite-body-work-and-entropy-account.lingua#r_25XA3PWHWX32KGK07RCAXA5XR6) uses a declared capacity model so the thermodynamic reasoning can be checked independently.
+
+**Continue:** [Small changes, derivatives, and first-order approximations](../../../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_03R86BMA4QVQGH84GXHZZDNJKZ

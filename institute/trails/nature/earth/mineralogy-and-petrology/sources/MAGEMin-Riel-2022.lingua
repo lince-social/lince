@@ -1,0 +1,11 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+MAGEMin, an efficient Gibbs energy minimizer — Riel and colleagues (@mp-magemin: 0, is #reference, #part-of @mp-sources) { r_7JK9DVER7XW4ESPJ27K7H9K29S
+Nicolas Riel, Boris J. P. Kaus, Eleanor C. R. Green, and Nicolas Berlie. MAGEMin, an Efficient Gibbs Energy Minimizer: Application to Igneous Systems. Geochemistry, Geophysics, Geosystems 23, e2022GC010427, 2022. DOI [10.1029/2022GC010427](https://doi.org/10.1029/2022GC010427). [Institutional publication](https://openscience.ub.uni-mainz.de/items/cecdddb5-3903-4934-b76c-77f659730713) · [Institutional full-paper route](https://e-docs.geo-leo.de/bitstream/handle/11858/10242/GGGE_GGGE22854.pdf?isAllowed=y&sequence=1).
+
+Read the complete method, tests, examples, and supplement during the advanced equilibrium study, distinguishing minimization behavior, thermodynamic-model validity, and geological applicability. Record actual software/data versions rather than assuming the 2022 description specifies every current behavior.
+
+Open-access status and publication identity were indexed; the Mainz page required client rendering and the direct full-paper request returned 403 during checking. This is not claimed as a complete-paper inspection or execution of its benchmarks. Preserve actual article/code/data rights separately. Metadata/access limits checked on 29 October 2026. External only.
+
+**Return:** [Mineralogy and petrology sources — books, laboratories, analytical methods, and research](../Sources.lingua#r_38Q6Z3J7ER2G1B441JXJ14NV5A).
+} r_7JK9DVER7XW4ESPJ27K7H9K29S

@@ -1,0 +1,25 @@
+Import "../General-chemistry.lingua"
+
+Interpret vapor pressure, phase change, and a phase diagram (@gc-phases: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #general-chemistry "Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA", #mineralogy-and-petrology "../../../../nature/earth/mineralogy-and-petrology/equilibrium/Components-phases-and-the-phase-rule.lingua#r_250V4TCJ0KF4TXQ2SXM6VK77S8", #industrial-chemistry "../../industrial-chemistry/thermodynamics/Mixtures-phases-and-stability-in-industrial-separations.lingua#r_77RX7N6YCX25E5PTTMHQ7X9ZRQ", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/properties/Quality-latent-energy-and-two-phase-properties.lingua#r_12PVBRDY4725K5W1XTVQFDZRFX") { r_7XXDG9YQTWEGSDFX1HXPBTGY8S
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 10’s phase changes, diagrams, and exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), phase changes and vapor pressure; [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP), a chosen phase-property record and its references.
+
+A phase boundary summarizes equilibrium coexistence under chosen variables. Distinguish a pure-substance pressure-temperature diagram from a mixture's composition-dependent diagram. A region or boundary does not describe how quickly a real sample reaches it, nor whether a metastable state persists during an observation.
+
+Vapor pressure concerns equilibrium with a specified condensed phase at a temperature. Boiling occurs when the appropriate equilibrium conditions and surrounding pressure permit bubble formation; evaporation can occur under other circumstances. Melting, sublimation, critical behavior, and a triple point have distinct definitions that should be connected to the diagram and actual species.
+
+The approximate integrated Clausius–Clapeyron relation ln(p₂/p₁) = −ΔH_vap/R (1/T₂−1/T₁) assumes an appropriate ideal-vapor/condensed-volume treatment and nearly constant enthalpy over the range. It is a model-based estimate, not a universal interpolation formula. For invented ΔH_vap = 40.0 kJ mol⁻¹, raising temperature from 300 to 310 K predicts a pressure ratio of about 1.68 under those assumptions.
+
+**Work:** explain paths through a phase diagram, identifying intensive variables and possible coexistence. Derive the approximate pressure relation from its assumptions, check the teaching ratio, and compare with identified evaluated data over a bounded range. Explain what would invalidate extrapolation.
+
+Read the complete phase-change sections and the data source conventions. Mixture separations, crystal growth, distillation, drying, and materials processing will reuse this foundation with more specific phase and transport models.
+
+**Continue:** [Connect crystal structure, defects, and composition with material properties](Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in mineralogy and petrology:** [Count components, phases, and freedoms under explicit constraints](../../../../nature/earth/mineralogy-and-petrology/equilibrium/Components-phases-and-the-phase-rule.lingua#r_250V4TCJ0KF4TXQ2SXM6VK77S8).
+
+**Continue in industrial chemistry:** [Connect mixture phase equilibria with stable states and actual separation duties](../../industrial-chemistry/thermodynamics/Mixtures-phases-and-stability-in-industrial-separations.lingua#r_77RX7N6YCX25E5PTTMHQ7X9ZRQ).
+
+**Continue in thermodynamics and heat transfer:** [Quality, latent energy and two-phase properties](../../../physics/thermodynamics-and-heat-transfer/properties/Quality-latent-energy-and-two-phase-properties.lingua#r_12PVBRDY4725K5W1XTVQFDZRFX).
+} r_7XXDG9YQTWEGSDFX1HXPBTGY8S

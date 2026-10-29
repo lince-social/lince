@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Account for the people and coordinated work required by the mine system (@mine-workforce: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #source "../sources/NIOSH-Dust-Control-in-Mining.lingua#r_12DGN33X5RSS7664BNT1QM5C52", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #mining-and-mineral-engineering "Abnormal-events-dependencies-and-prepared-response.lingua#r_5K00AAW6ZSK6H58Y22TZYET3Z5") { r_01XGCN1DDMC661CP6V2PQM8T4P
+**Read:** [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the complete applicable current organization, training, health, and work provisions; [Handbook for Dust Control in Mining — NIOSH](../sources/NIOSH-Dust-Control-in-Mining.lingua#r_12DGN33X5RSS7664BNT1QM5C52), the full relevant task/control/measurement chapters; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant workforce and operations chapters.
+
+An operating system depends on people performing tasks with appropriate skills, information, tools, access, communication, rest, supervision, and coordination. Staffing is more than a head count: task timing, location, workload, competence, handoffs, and changing conditions affect what work can be completed reliably.
+
+Exposure assessment connects work tasks, material/equipment states, locations, duration, controls, measurement methods, and current applicable criteria. A sampler's fraction, calibration, support period, and placement define what it measured. Ambient environmental and personal/task evidence answer related but different questions.
+
+Ergonomics, visibility, noise/vibration, heat, dust, fatigue, interfaces, and maintenance can interact with performance. Preserve the actual work context before attributing a deviation to an individual's behavior. A procedure needs the resources and conditions that make its execution possible.
+
+**Work:** reconstruct one complete operating/maintenance task and its interfaces using authoritative sources and suitable observed or teaching evidence. Map skills, information, tools, timing, exposures, controls, and verification. Identify a mismatch between the nominal procedure and available work conditions and propose a testable improvement with evidence of its effect.
+
+Read the full relevant current NR-22 text and technical measurement/control methods. Later human factors, education, occupational science, and work-organization studies deepen their unique methods while reusing the actual mining-task account.
+
+**Continue:** [Understand abnormal events through system dependencies, evidence, and prepared work](Abnormal-events-dependencies-and-prepared-response.lingua#r_5K00AAW6ZSK6H58Y22TZYET3Z5).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_01XGCN1DDMC661CP6V2PQM8T4P

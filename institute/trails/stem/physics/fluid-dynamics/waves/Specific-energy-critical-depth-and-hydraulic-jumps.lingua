@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Specific energy, critical depth and hydraulic jumps (@fd-open-channel: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #fluid-dynamics "../geophysical/Stable-stratification-buoyancy-frequency-and-internal-waves.lingua#r_691GN8PDCYCW2BN2T3ETWSNC4B") { r_5R5PG02RW7F1B7X6QWCR4MVZHN
+**Read:** [Advanced Hydraulics — Suresh A. Kartha](../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT), specific energy, critical flow, momentum, hydraulic jumps and varied flow; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), conservation and shallow-water waves.
+
+For a rectangular channel with discharge per width q, specific energy relative to the bed is E=h+q²/(2gh²) under a uniform-profile idealization. Its minimum occurs at critical depth h_c=(q²/g)^(1/3). Two depths can share the same specific energy above that minimum, but they lie on different flow branches.
+
+Across a short ideal hydraulic jump on a horizontal bed, conserve discharge and streamwise momentum to derive h_2/h_1=[√(1+8Fr_1²)−1]/2 for the supercritical upstream branch. Mechanical energy decreases; it is not a conserved condition for the jump. For Fr_1=2 the depth ratio is approximately 2.3723.
+
+Compare alternate depths at equal energy with conjugate depths connected by a jump. Extend to gradually varied flow using a stated friction relation and bed profile, identifying where its approximation fails. Actual channels add nonuniform sections, entrainment, sediment, roughness and unsteady boundary conditions; the ideal relations supply foundations for a more complete hydraulic study.
+
+**Continue:** [Stable stratification, buoyancy frequency and internal waves](../geophysical/Stable-stratification-buoyancy-frequency-and-internal-waves.lingua#r_691GN8PDCYCW2BN2T3ETWSNC4B).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5R5PG02RW7F1B7X6QWCR4MVZHN

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: coupled fluxes and nonequilibrium limits (@th-study-nonequilibrium: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_3NKXVB8QJD92YT4FARHAN5D599
+**Read:** [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), the complete coupled-flux and nonequilibrium sequence; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), full relevant microscopic transport development; [The physics and mathematics of the second law — Lieb and Yngvason](../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ), equilibrium scope and assumptions; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), chemical-potential and equilibrium foundations.
+
+Read the complete near-equilibrium coupled-transport sequence in MIT 2.43 and compare it with the microscopic transport course. Define thermodynamic forces and conjugate fluxes on a consistent basis, then derive entropy production and the restrictions on phenomenological coefficients.
+
+Analyze a coupled heat/mass or thermoelectric example, explicitly stating conditions for reciprocal relations and the role of time-reversal properties. Verify that internal exchange terms cancel from the total energy account and that the chosen coefficients satisfy the applicable dissipation constraint.
+
+Compare the linear prediction with a model or experiment at increasing driving strength. Identify local-equilibrium assumptions, nonlocality and unresolved closure rather than extending an equilibrium formula by notation alone. Deliver derivations, an independently checked example and a reasoned boundary for the model's physical claims.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3NKXVB8QJD92YT4FARHAN5D599

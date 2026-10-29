@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Maxwell relations, response functions and consistency (@th-maxwell: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #source "../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1", #thermodynamics-and-heat-transfer "Stability-convexity-metastability-and-critical-response.lingua#r_3M6CNT1P8N16TEZQ8XTPZBNEVG") { r_2R3VH7BBR9QTY25J55ZQHHJ8Q7
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), potentials and pure-substance thermodynamic relations; [IAPWS-95 — fundamental water properties](../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z), derivative expressions; [CoolProp — thermophysical property models and methods](../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1), property derivatives and phase restrictions.
+
+Equality of suitable mixed derivatives of a thermodynamic potential yields Maxwell relations. Derive them from a chosen differential and its natural variables; do not memorize a sign pattern detached from the potential. A single-phase differentiable state region is part of the argument.
+
+Relate heat capacities, thermal expansion and compressibility. For a stable simple fluid, C_p−C_V = T V α²/κ_T on a consistent extensive basis, with α = (1/V)(∂V/∂T)_p and κ_T = −(1/V)(∂V/∂p)_T. Check units and recover the ideal-gas limit. Near a critical region, large responses can make numerical derivatives ill-conditioned.
+
+Use these identities to test an equation of state or interpolated property table. Agreement of independently evaluated derivatives is a consistency test, while agreement with measured data addresses accuracy. Explain why an inconsistent collection of fitted property formulas can break a cycle or stability calculation despite individually plausible values.
+
+**Continue:** [Stability, convexity, metastability and critical response](Stability-convexity-metastability-and-critical-response.lingua#r_3M6CNT1P8N16TEZQ8XTPZBNEVG).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_2R3VH7BBR9QTY25J55ZQHHJ8Q7

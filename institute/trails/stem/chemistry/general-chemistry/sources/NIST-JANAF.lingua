@@ -1,0 +1,11 @@
+Import "../General-chemistry.lingua"
+
+NIST-JANAF Thermochemical Tables — fourth-edition reference data (@gc-janaf: 0, is #reference, #part-of @gc-sources) { r_64N7R6GQB5B7NVW5KBXB3NYD44
+NIST-JANAF Thermochemical Tables, NIST Standard Reference Database 13. DOI 10.18434/T42S31. [Official tables, background, credits, help, and fourth-edition PDFs](https://janaf.nist.gov/).
+
+Read the introductory conventions and one complete relevant table before using selected entries to reconstruct a reaction calculation. Identify chemical species, phase, temperature range, standard pressure/reference state, units, and the distinction between heat capacity, entropy, enthalpy increments, formation quantities, and equilibrium functions. Check the supplied references and limitations.
+
+The official landing page states the data-content update as 1998. It is an identified historical evaluated reference, not a promise of the newest data for every species. Compare a selected value with another evaluated source and investigate differences. Consult the actual Standard Reference Data and component notices before redistribution. Availability, database identity, stated update, and reference navigation checked on 29 October 2026. Reference only; no tables are copied into this trail.
+
+**Return:** [General chemistry sources — books, courses, data, and research](../Sources.lingua#r_37CHT3QSMD33JDMXE59S6M2ME3).
+} r_64N7R6GQB5B7NVW5KBXB3NYD44

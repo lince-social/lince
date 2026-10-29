@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Potential flow, superposition and physical boundaries (@fd-potential: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #fluid-dynamics "Circulation-lift-and-the-viscous-selection-of-a-flow.lingua#r_16GKKW380EKZDXK81MZ78J0VB6") { r_5PBT5A52N3W72XZSJMP9WKPVA2
+**Read:** [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapters IV and V in full; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), two-dimensional flow and complex velocity potential; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 2 potential motion.
+
+For an irrotational incompressible region, write u=∇φ and solve ∇²φ=0. In two dimensions an appropriate streamfunction describes the same divergence-free motion, and complex-variable methods connect the two. Superpose uniform flows, sources, sinks, doublets and vortices only with their actual singularities and boundary conditions in view.
+
+Construct flow around a circular cylinder and obtain surface pressure from a correctly normalized Bernoulli relation. The steady inviscid noncirculatory solution predicts zero drag. This is a consequence of the ideal model, not evidence that a real body has no resistance. Boundary layers, separation and wake momentum explain why the model's missing physics matters.
+
+Solve both a velocity-potential and a streamfunction version of one problem. Identify excluded singularities and the far-field condition. Check no penetration, net flux, circulation and symmetry before plotting streamlines. A visually attractive streamline plot can conceal a source placed inside the fluid or an incorrect boundary sign.
+
+**Continue:** [Circulation, lift and the viscous selection of a flow](Circulation-lift-and-the-viscous-selection-of-a-flow.lingua#r_16GKKW380EKZDXK81MZ78J0VB6).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5PBT5A52N3W72XZSJMP9WKPVA2

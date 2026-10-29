@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Defend a complete inorganic-product route with independent chemistry and process evidence (@ic-inorganic-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4", #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_6TT4X4GVDHBPW53TSV475HY545
+**Read:** [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the whole general treatment and complete relevant acid/fertiliser chapters; [Large Volume Inorganic Chemicals — Solids and Others Industry, BREF LVIC-S](../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4), the whole relevant product and generic method chapters; [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the entire pertinent specialty/quality comparison; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the full inorganic manufacturing progression revisited.
+
+Choose an acid, salt or solid inorganic family and reconstruct its full feed-to-qualified-product route from complete technical chapters and primary methods. Include actual feed variability, phases, reaction network, separation, product specification, utilities, equipment/material state, service work and residuals.
+
+Derive the consequential element/species, inventory, phase and energy accounts independently. Reproduce a substantial quantitative result with a second method or limiting calculation. Explain the thermodynamic, kinetic, transport and analytical evidence supporting the chosen models and identify a plausible competing mechanism or route.
+
+Compare an actual alternative feed, chemistry or process arrangement on the same accepted output and time basis. Test property, recovery, impurity and utility uncertainties rather than changing a single favorable assumption in isolation. Trace at least one consequential impurity through product, recycle and residual streams.
+
+**Work:** produce a substantial technical/research-style study with complete bibliography, primary methods, derivations, inspectable original calculations, actual observations or clearly identified external data, uncertainty and defended conclusions. Obtain independent criticism of a central claim, revise from evidence and identify the next unresolved scientific or practical question.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6TT4X4GVDHBPW53TSV475HY545

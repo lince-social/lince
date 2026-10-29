@@ -1,0 +1,11 @@
+Import "../Industrial-chemistry.lingua"
+
+Chemical-industry process descriptions and emission factors — EPA AP-42 (@ic-epa-factors: 0, is #reference, #part-of @ic-sources) { r_16XA95GZSY1VD7GZNTSXWVNBC3
+U.S. Environmental Protection Agency. AP-42: Compilation of Air Emissions Factors from Stationary Sources, Volume I, chemical-industry sections. [Official compilation](https://www.epa.gov/air-emissions-factors-and-quantification/ap-42-compilation-air-emissions-factors-stationary-sources) · [Chapter 8, inorganic chemical industry](https://www.epa.gov/air-emissions-factors-and-quantification/ap-42-fifth-edition-volume-i-chapter-8-inorganic-1).
+
+Read the complete process and factor/background sections used in a case, including activity basis, control conditions, evidence and rating. Derive a constituent account and compare the factor estimate with actual measurements and uncertainty. A historical average factor is not a universal performance value, a measurement of a particular plant, or a current permit condition.
+
+The official chapter and dated component records were inspected on 29 October 2026. Several inorganic sections date to 1993, while sulfur recovery has an April 2015 revision; the date belongs to the specific section, not the portal crawl or compilation label. Preserve actual U.S. government and component notices. No factors table, report or dataset is copied here.
+
+**Return:** [Industrial chemistry sources — whole books, courses, technical methods and primary evidence](../Sources.lingua#r_3084780FHMK499ZDAW07TYA3TQ).
+} r_16XA95GZSY1VD7GZNTSXWVNBC3

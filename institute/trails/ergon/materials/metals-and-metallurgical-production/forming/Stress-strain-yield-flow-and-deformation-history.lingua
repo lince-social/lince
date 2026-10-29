@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Derive metal-forming models with the actual stress, strain, rate, and material state (@metal-plastic-flow: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Metal-Forming-NPTEL.lingua#r_7V0FT0Q67E19BFVTK57QABNPX8", #source "../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #metals-and-metallurgical-production "Forging-rolling-loads-work-heat-and-internal-structure.lingua#r_5A8TVVAWFVCYFBPR7Q08V2FEWX") { r_5Y6ANG20ZFEX2WTRJKCQR4EM4J
+**Read:** [Principles of Metal Forming Technology — Pradeep Kumar Jha, NPTEL](../sources/Principles-of-Metal-Forming-NPTEL.lingua#r_7V0FT0Q67E19BFVTK57QABNPX8), the complete stress/strain, yield/flow, instability, temperature/rate, and analysis sequence; [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), all plasticity and related graduate problem sets; [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), the complete solid-state shaping/flow and process-scaling material.
+
+Define the stress/strain measures, geometry, temperature, rate, and material state before comparing forming loads or flow curves. Engineering and true quantities, elastic/plastic components, hydrostatic/deviatoric stress, and accumulated deformation describe different aspects. A uniaxial curve does not directly specify every multiaxial forming response.
+
+Use an explicit yield/flow model with its assumptions about isotropy, hardening, incompressibility, temperature/rate, and path dependence. Metals can localize, damage, change phases, recover/recrystallize, or develop texture during deformation. A convenient ideal-plastic model can be useful without representing all of those mechanisms.
+
+Connect load/work estimates to friction, heat generation/loss, tooling, speed, and actual contact/geometry. Compare required shape and final metallurgical/property state together. A lower predicted load is not enough if the route produces unsuitable structure, surface, dimensions, or defects.
+
+**Work:** reproduce a full forming-theory example and independently verify units, equilibrium/work, and limiting cases. Compare two constitutive or friction assumptions with measured load/deformation/thermal evidence and a separate condition. Explain which observations identify material flow versus apparatus/contact effects. The following process cases use these common models and preserve their limits.
+
+**Continue:** [Connect forging and rolling with deformation fields, heat, and final structure](Forging-rolling-loads-work-heat-and-internal-structure.lingua#r_5A8TVVAWFVCYFBPR7Q08V2FEWX).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_5Y6ANG20ZFEX2WTRJKCQR4EM4J

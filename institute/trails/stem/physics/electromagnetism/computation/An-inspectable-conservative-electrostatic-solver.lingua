@@ -1,0 +1,60 @@
+Import "../Electromagnetism.lingua"
+
+An inspectable conservative electrostatic solver (@em-poisson-example: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #electromagnetism "Mesh-refinement-singularities-and-error-budgets.lingua#r_5N82GRJY13QV6JSR5C8S35PPWV") { r_5M84JGBFDFE7QQVSBX3S0TMASK
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), electrostatic boundary-value methods; [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), dielectric flux and energy.
+
+Use a one-dimensional normalized linear electrostatic model on length L with n equal spacings, fixed endpoint potentials and n−1 internal free-charge densities. The n supplied permittivities live on the faces between adjacent potential nodes. This convention represents piecewise face response; it is not a claim that arbitrary material data can be averaged without geometrical reasoning.
+
+Discretize ∂D/∂x = ρ and D = −ε∂V/∂x. The tridiagonal system has positive diagonal ε_left+ε_right and negative adjacent coefficients. The original implementation below solves it by elimination. All quantities are dimensionless scaled variables; choose consistent physical scales before interpreting them in SI.
+
+```python file=electrostatic_faces.py
+import json
+
+def bounded(value, low, high):
+    if type(value) not in (int, float) or not low <= value <= high:
+        raise ValueError("finite real value outside declared bounds")
+    return float(value)
+
+def solve(eps, rho, length=1.0, left=1.0, right=0.0):
+    if not isinstance(eps, (list, tuple)) or not 2 <= len(eps) <= 128:
+        raise ValueError("two to 128 face permittivities required")
+    n = len(eps)
+    if not isinstance(rho, (list, tuple)) or len(rho) != n - 1:
+        raise ValueError("one charge density per internal node required")
+    eps = tuple(bounded(value, 0.05, 20.0) for value in eps)
+    rho = tuple(bounded(value, -10.0, 10.0) for value in rho)
+    length = bounded(length, 0.1, 10.0)
+    left = bounded(left, -10.0, 10.0)
+    right = bounded(right, -10.0, 10.0)
+    h = length / n
+    diagonal = [eps[j] + eps[j + 1] for j in range(n - 1)]
+    rhs = [h * h * value for value in rho]
+    rhs[0] += eps[0] * left
+    rhs[-1] += eps[-1] * right
+    for j in range(1, n - 1):
+        factor = -eps[j] / diagonal[j - 1]
+        diagonal[j] += factor * eps[j]
+        rhs[j] -= factor * rhs[j - 1]
+    interior = [0.0] * (n - 1)
+    interior[-1] = rhs[-1] / diagonal[-1]
+    for j in range(n - 3, -1, -1):
+        interior[j] = (rhs[j] + eps[j + 1] * interior[j + 1]) / diagonal[j]
+    potential = (left, *interior, right)
+    flux = tuple(-eps[j] * (potential[j + 1] - potential[j]) / h for j in range(n))
+    residual = tuple((flux[j + 1] - flux[j]) / h - rho[j] for j in range(n - 1))
+    energy = sum(h * flux[j] ** 2 / (2.0 * eps[j]) for j in range(n))
+    closure = flux[0] - flux[-1] + h * sum(rho)
+    return {"potential": potential, "flux": flux, "residual": residual, "energy": energy, "charge_closure": closure}
+
+if __name__ == "__main__":
+    print(json.dumps(solve((1, 1, 4, 4), (0, 0, 0)), sort_keys=True, allow_nan=False))
+```
+
+The default potentials are (1, 0.6, 0.2, 0.1, 0), all face fluxes 1.6 and energy per normalized transverse area 0.8. Check the solution with the exact series-capacitance expression and an independent dense solve. Verify local residuals, global free-charge closure, nonnegative energy, source-work identity, reflection and linear scaling.
+
+For smooth ε = 1, use ρ = π²sin(πx), zero endpoints and refine toward V = sin(πx). Distinguish discrete algebraic agreement from convergence to that continuous solution. This static one-dimensional positive-permittivity example does not model breakdown, time response, nonlinear/hysteretic matter, geometry beyond one dimension or a built capacitor.
+
+**Continue:** [Mesh refinement, singularities and error budgets](Mesh-refinement-singularities-and-error-budgets.lingua#r_5N82GRJY13QV6JSR5C8S35PPWV).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_5M84JGBFDFE7QQVSBX3S0TMASK

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+A thermal service and its physical system (@th-service: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #thermodynamics-and-heat-transfer "Systems-boundaries-state-and-thermal-vocabulary.lingua#r_438839TWPYKN6MTK1CCNG2JBCF") { r_13ETYNBXH6JKRVHB3H5KR4QH5Z
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), chapter 1; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), chapters 1–3.
+
+A useful thermal service could keep a chip within its temperature range, melt a specified metal charge, refrigerate food or deliver shaft work. State the useful outcome, material, throughput, time and surrounding conditions. A temperature limit alone does not specify how much energy must move or how quickly.
+
+Draw a boundary around the chosen system and mark material, heat and work transfers. Include stored energy and startup/shutdown rather than assuming steady operation. A furnace may consume energy while its load temperature barely changes during melting; a cooler may maintain nearly constant temperature while rejecting substantial power.
+
+Write three initial questions: what states are possible, what energy/work is required, and what transport rate the geometry/materials allow. Thermodynamics constrains the first two; heat-transfer models and observations address the third. Return to this same service in [A complete thermal service from physics to continuing use](../research/A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2), with a defensible explanation of continued operation, losses, maintenance and replacement.
+
+**Continue:** [Systems, boundaries and thermal vocabulary](Systems-boundaries-state-and-thermal-vocabulary.lingua#r_438839TWPYKN6MTK1CCNG2JBCF).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_13ETYNBXH6JKRVHB3H5KR4QH5Z

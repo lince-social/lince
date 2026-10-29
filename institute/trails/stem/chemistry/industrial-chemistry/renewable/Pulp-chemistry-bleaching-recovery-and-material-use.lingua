@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect pulping and bleaching with chemical recovery, fibres and a complete process account (@ic-pulp: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Papel-e-Celulose-Castro.lingua#r_2MH0P1GEP4X9Y1GA7QSVVS2Q8A", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74", #industrial-chemistry "../specialty/Fine-chemical-route-design-isolation-and-repeatable-evidence.lingua#r_5SV6W0SB837C7Q1TZ07SMRV697") { r_4A797GVR9W8PJ01QW3ZY4EPRCY
+**Read:** [Papel e celulose — Heizir F. de Castro](../sources/Papel-e-Celulose-Castro.lingua#r_2MH0P1GEP4X9Y1GA7QSVVS2Q8A), the entire paper/cellulose apostila including chemical recovery; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete three-part pulp/paper sequence; [Chemical Technology I — Indra Deo Mall, NPTEL](../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74), the full pulp/paper and chemical-recovery teaching where available.
+
+Pulping separates or transforms components of lignocellulosic feed to obtain a useful fibre material. Feed anatomy/composition, chemical pathway, dissolved organic material, fibre damage and physical history influence the result. A reported pulp yield does not alone describe fibre function or the fate of dissolved material.
+
+Bleaching, washing and chemical recovery join product quality with additional reactions, separations, energy and residual streams. Recovered inorganic chemicals and useful energy are internal connections whose quantities and state must be accounted for. A treatment that improves one optical measure can change strength, chemical demand or downstream water behavior.
+
+Follow fibres, dissolved organics, inorganic constituents, water and gases through the full system. Compare chemical routes on the same actual material/function and supporting test methods. Use the later full timber/paper and materials studies for specialist fabrication and service knowledge rather than assuming chemical familiarity supplies all of it.
+
+**Work:** reconstruct a complete public pulping/bleaching/recovery chain with primary feed, chemistry and product evidence. Independently close fibre/organic, inorganic, water and energy accounts. Compare a documented process change and explain which measurements distinguish a chemical effect, fibre-history change, altered washing or a shifted system boundary.
+
+**Continue:** [Develop a fine-chemical route from reaction evidence to repeatable isolated product](../specialty/Fine-chemical-route-design-isolation-and-repeatable-evidence.lingua#r_5SV6W0SB837C7Q1TZ07SMRV697).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4A797GVR9W8PJ01QW3ZY4EPRCY

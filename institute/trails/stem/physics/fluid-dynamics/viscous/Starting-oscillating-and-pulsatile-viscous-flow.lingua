@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Starting, oscillating and pulsatile viscous flow (@fd-unsteady-viscous: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #fluid-dynamics "Creeping-flow-reversibility-and-a-translating-sphere.lingua#r_2NCJ64J8EHE6G7NWVKGK5DC3ZA") { r_5R7D7KW6HKKQPJ88VM9TDX3E2N
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 8 Stokes first and second problems; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 3 unsteady and oscillatory boundary-layer notes; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), viscous diffusion and exact solutions.
+
+A suddenly moving plane transfers momentum into a quiescent half-space by viscous diffusion. With wall speed U and kinematic viscosity ν, the ideal solution is u(y,t)=U erfc[y/(2√(νt))]. The penetration distance scales with √(νt), and the ideal impulsive start gives a singular initial wall shear. A real actuator has a finite response time.
+
+For a wall oscillating as U cos(ωt), the long-time half-space response is U exp(−y/δ) cos(ωt−y/δ), with δ=√(2ν/ω). Amplitude decay and phase lag are separate observables. In a circular tube, the radius relative to the oscillatory penetration length controls whether the profile follows a sequence of parabolas or has an almost plug-like oscillating core and strong phase differences. Define the Womersley parameter R√(ω/ν).
+
+Derive the half-space solutions from ∂u/∂t=ν∂²u/∂y² and verify their initial or periodic boundary conditions. Compare measured amplitude and phase at multiple positions. Identify the distinction between startup transients, the periodic response and a mean streaming motion, which is absent from this linear planar solution.
+
+**Continue:** [Creeping flow, reversibility and a translating sphere](Creeping-flow-reversibility-and-a-translating-sphere.lingua#r_2NCJ64J8EHE6G7NWVKGK5DC3ZA).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5R7D7KW6HKKQPJ88VM9TDX3E2N

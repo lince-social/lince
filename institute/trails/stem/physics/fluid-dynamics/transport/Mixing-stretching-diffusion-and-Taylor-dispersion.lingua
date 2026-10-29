@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Mixing, stretching, diffusion and Taylor dispersion (@fd-mixing-dispersion: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Microfluidic-actuation-electric-fields-and-small-scale-transport.lingua#r_1N19HX89Z4CQFB7SSXW9TRFVHX") { r_59FDSTWHQQ1P5GFEGPR0DG3Y54
+**Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 4 steady and oscillatory shear dispersion; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), mixing and transport; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), solute conservation.
+
+Advection can stretch and fold material regions, creating small concentration scales on which diffusion acts faster. Stirring trajectories and molecular homogenization are related but distinct. Define a mixing measure appropriate to the question, such as concentration variance over a specified volume, and track how boundaries and reactions affect it.
+
+In a long-time fully developed laminar circular tube with molecular diffusivity D_m, the Taylor–Aris axial dispersion coefficient is D_eff=D_m+U²a²/(48D_m), with a the tube radius. The long-time condition requires cross-sectional diffusive equilibration; applying this coefficient immediately after injection ignores the development of the cross-sectional concentration field.
+
+Derive the reduced dispersion result from the full advection-diffusion problem and compare it with a finite-time calculation. Separate residence-time distribution, transverse mixing and irreversible molecular diffusion. In periodic or chaotic advection, examine trajectories and concentration together so a complicated path plot does not stand in for an actual mixed-state measurement.
+
+**Continue:** [Microfluidic actuation, electric fields and small-scale transport](Microfluidic-actuation-electric-fields-and-small-scale-transport.lingua#r_1N19HX89Z4CQFB7SSXW9TRFVHX).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_59FDSTWHQQ1P5GFEGPR0DG3Y54

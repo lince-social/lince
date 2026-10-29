@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Electric Machines — MIT 6.685, Fall 2013 (@pe-kirtley-machines: 0, is #reference, #part-of @pe-sources) { r_6A4HM4XV13NAZDRV92PZDJ31XH
+James L. Kirtley Jr. [Graduate MIT 6.685](https://ocw.mit.edu/courses/6-685-electric-machines-fall-2013/) · [All twelve course-note chapters](https://ocw.mit.edu/courses/6-685-electric-machines-fall-2013/pages/course-notes/) · [Problems and solutions](https://ocw.mit.edu/courses/6-685-electric-machines-fall-2013/pages/assignments/).
+
+Work the entire public programme: electromagnetic forces, magnetic circuits, eddy/surface losses, synchronous models, winding inductances, DC/permanent-magnet machines, brushless motors, induction design, synchronous simulation, induction control, design synthesis and single-phase machines. Derive and test the models, then complete a sustained analytical design and dynamic-parameter investigation.
+
+The official syllabus identifies graduate level and design/analysis expectations. Eleven problem sets and their solutions are public; third-party lamination-steel data are used with permission. OCW CC BY-NC-SA has component exceptions. Course identity, chapter list and resources were checked on 29 October 2026. Public notes do not supply workshop, testing facilities or supervised practical competence. Nothing is bundled.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_6A4HM4XV13NAZDRV92PZDJ31XH

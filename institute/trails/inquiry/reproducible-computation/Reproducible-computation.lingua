@@ -1,0 +1,112 @@
+Import "sources/Scientific-Python-Sundnes.lingua"
+Import "sources/Research-Software-Engineering.lingua"
+Import "sources/Good-Research-Code.lingua"
+Import "sources/Unix-Shell.lingua"
+Import "sources/Python-Reference.lingua"
+Import "sources/Pro-Git.lingua"
+Import "sources/Scientific-Computing-Practices.lingua"
+Import "sources/Reproducible-Research-Rules.lingua"
+Import "sources/Reproducibility-and-Replication.lingua"
+Import "sources/The-Turing-Way.lingua"
+Import "sources/Python-Environments-and-Packaging.lingua"
+Import "sources/Make-Workflows.lingua"
+Import "sources/Snakemake-Workflows.lingua"
+Import "sources/Executable-Notebooks.lingua"
+Import "sources/Declarative-Environments.lingua"
+Import "sources/Containers-and-System-Dependencies.lingua"
+Import "sources/Reproducible-Builds.lingua"
+Import "sources/Floating-Point-Goldberg.lingua"
+Import "sources/Numerical-and-Random-Contracts.lingua"
+Import "sources/Computational-Provenance.lingua"
+Import "sources/FAIR-Principles.lingua"
+Import "foundations/Question-and-claim.lingua"
+Import "foundations/What-reproduction-means.lingua"
+Import "foundations/Files-paths-and-processes.lingua"
+Import "foundations/Shell-arguments-and-failure.lingua"
+Import "foundations/Values-types-and-formulas.lingua"
+Import "foundations/Functions-control-and-state.lingua"
+Import "foundations/Input-output-and-errors.lingua"
+Import "foundations/First-saved-calculation.lingua"
+Import "data/Meaning-and-schema.lingua"
+Import "data/Formats-types-and-encoding.lingua"
+Import "data/Missingness-and-transformations.lingua"
+Import "data/Keys-joins-units-and-time.lingua"
+Import "data/Identity-hashes-and-originals.lingua"
+Import "data/Provenance-and-assumptions.lingua"
+Import "data/A-complete-small-analysis.lingua"
+Import "software/Functions-modules-and-boundaries.lingua"
+Import "software/Arguments-and-configuration.lingua"
+Import "software/Version-control-and-snapshots.lingua"
+Import "software/Collaboration-and-review.lingua"
+Import "software/Independent-checks-and-tests.lingua"
+Import "software/Invariants-and-related-inputs.lingua"
+Import "software/Failures-and-debugging.lingua"
+Import "software/Refactoring-and-method-changes.lingua"
+Import "environments/Interpreter-and-imports.lingua"
+Import "environments/Isolation-resolution-and-locks.lingua"
+Import "environments/System-libraries-and-hardware.lingua"
+Import "environments/Container-reconstruction.lingua"
+Import "environments/Declarative-inputs-and-reconstruction.lingua"
+Import "environments/Reconstruction-and-perturbation.lingua"
+Import "workflows/Inputs-outputs-and-dependencies.lingua"
+Import "workflows/A-small-Make-workflow.lingua"
+Import "workflows/Larger-workflow-engines.lingua"
+Import "workflows/Notebooks-and-hidden-state.lingua"
+Import "workflows/Atomic-output-and-recovery.lingua"
+Import "workflows/Caches-and-reuse.lingua"
+Import "workflows/Execution-accounts-and-logs.lingua"
+Import "workflows/Continuous-checks-and-revalidation.lingua"
+Import "numerics/Floating-point-and-rounding.lingua"
+Import "numerics/Conditioning-and-stable-algorithms.lingua"
+Import "numerics/Convergence-and-tolerances.lingua"
+Import "numerics/Random-streams-and-task-identity.lingua"
+Import "numerics/Simulation-error-and-comparison.lingua"
+Import "numerics/A-numerical-validation-study.lingua"
+Import "performance/Measure-before-optimizing.lingua"
+Import "performance/Scaling-parallelism-and-order.lingua"
+Import "performance/Memory-storage-and-cost.lingua"
+Import "publication/Results-figures-and-explanation.lingua"
+Import "publication/Access-permissions-and-preservation.lingua"
+Import "publication/Citations-editions-and-provenance.lingua"
+Import "publication/Archiving-and-restoration.lingua"
+Import "publication/Independent-reproduction-review.lingua"
+Import "research/A-deterministic-research-project.lingua"
+Import "research/A-stochastic-and-numerical-project.lingua"
+Import "research/Reproduce-a-published-result.lingua"
+Import "research/Independent-investigation-and-revision.lingua"
+Import "research/Completion.lingua"
+Import "Reading-from-zero.lingua"
+Import "Sources.lingua"
+Import "../metrology/Metrology.lingua"
+
+Reproducible computational work (@reproducible-computation: 0, is #chapter, #reproducible-computation "Reading-from-zero.lingua#r_7PQM3TCWSZAA50H4HQ0YF55ZJY") { r_78FWWJDCV0ZGG7VYSPRCWN56DQ
+Make a scientific computation understandable, inspectable, repeatable under stated conditions, and open to criticism and improvement. Begin with an explicit formula and ordinary files, then develop programming, data contracts, versioning, environments, workflows, numerical validation, stochastic methods, resources, publication, and independent scholarly work.
+
+**Start:** [Begin reproducible computational work from zero](Reading-from-zero.lingua#r_7PQM3TCWSZAA50H4HQ0YF55ZJY). No earlier programming course is assumed; shared quantitative and measurement Records provide preparation at the point it is used. Books and articles are linked externally, while the original small calculation and its checks are readable inline and can be saved in a personal exercise area.
+
+| Part | Connected readings |
+| --- | --- |
+| A first transparent calculation | [Begin reproducible computational work from zero](Reading-from-zero.lingua#r_7PQM3TCWSZAA50H4HQ0YF55ZJY) · [Begin with a question and a result someone can check](foundations/Question-and-claim.lingua#r_2G13323XWBD8ZQD7S8FVE13AT0) · [Specify the kind of agreement being claimed](foundations/What-reproduction-means.lingua#r_7GX7RDN4ECAVTT6GZTXK8TCF4R) · [Files, paths, processes, and the working directory](foundations/Files-paths-and-processes.lingua#r_2AEWQC548X1MYJGK7RSQKDD96K) · [Use the shell to run an explicit procedure](foundations/Shell-arguments-and-failure.lingua#r_1R8YM93EXAYPW48D0CEWQ3QXJB) · [Translate quantities into values, types, and expressions](foundations/Values-types-and-formulas.lingua#r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V) · [Functions, branching, repetition, and visible state](foundations/Functions-control-and-state.lingua#r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF) · [Input, output, and errors are part of the method](foundations/Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8) · [Run a first saved calculation and check it independently](foundations/First-saved-calculation.lingua#r_6QDSCHW072VRCTMYHQGXZG3SBE) |
+| Inputs, meaning, and one complete analysis | [Keep observations, formulas, units, and revisions recoverable](../quantitative-literacy/practice/Data-and-calculation-records.lingua#r_5TTXVQ6161YYC7CFWDSQCV8WX8) · [Give every input a meaning and a checkable schema](data/Meaning-and-schema.lingua#r_6R0FJMACN4F6T6R0ETDCQHF6NH) · [Choose a format without losing values or structure](data/Formats-types-and-encoding.lingua#r_2AZM46HQS8E07JMXXSE3WC93RM) · [Make missing values, exclusions, and transformations visible](data/Missingness-and-transformations.lingua#r_1FHVZTXX5WR3DZ5PPFRW7J0BY1) · [Join records without inventing or losing observations](data/Keys-joins-units-and-time.lingua#r_49F957J1ZP9JVG5KQSET12P4PH) · [Preserve originals and distinguish identity from location](data/Identity-hashes-and-originals.lingua#r_39P9KR6GAJ6ST89N2JXND7HBCX) · [Connect each result to its inputs, activity, and responsibility](data/Provenance-and-assumptions.lingua#r_3SY3NX6PMTJVV8AKSKEC9YHFQB) · [A complete small analysis — two lots, one inspectable result](data/A-complete-small-analysis.lingua#r_7CVD48GN8M8X71MHQCRPGMTBN7) |
+| Scientific software and independent checks | [Separate scientific transformations from their surroundings](software/Functions-modules-and-boundaries.lingua#r_78TTB7C486WRJJGY0W3GR7H1WQ) · [Expose parameters and make their interpretation reproducible](software/Arguments-and-configuration.lingua#r_0AH1JA9H4RCTT1T4S876V0N674) · [Version the method and understand what a snapshot contains](software/Version-control-and-snapshots.lingua#r_3SQ3GK6XAMY85MDN8RCZC6DVXM) · [Review scientific changes and resolve conflicts with meaning intact](software/Collaboration-and-review.lingua#r_0ARV56N560SEN2PCT7XRDT2XZK) · [Test against independently justified answers and failure cases](software/Independent-checks-and-tests.lingua#r_6WTYYA5977HEF4T6CEH6CKKQCR) · [Use conservation, symmetries, and related inputs as additional oracles](software/Invariants-and-related-inputs.lingua#r_04TRFA8ARZ7JK0ANVQZYDKMKB3) · [Reduce a failure until its cause can be explained](software/Failures-and-debugging.lingua#r_70541T2GJ91TBBSC8B6NFM2Z9R) · [Improve structure while keeping scientific changes identifiable](software/Refactoring-and-method-changes.lingua#r_449MB2D68DJG0C44H8FC540Q1Q) |
+| Environment reconstruction | [Identify the interpreter and the code it actually imports](environments/Interpreter-and-imports.lingua#r_135ETSE2H731NE6R14RF7XQ9VG) · [Distinguish isolation, dependency resolution, pins, and available artifacts](environments/Isolation-resolution-and-locks.lingua#r_5BEV7Q4J6K3CGCFRHANDW6JXRY) · [Native libraries, operating systems, and hardware can change a computation](environments/System-libraries-and-hardware.lingua#r_6MEK7DSTADH24AV1NAQBG5SR61) · [Use a container as an explicit environment experiment](environments/Container-reconstruction.lingua#r_5CD44P15ZM4A7PWESZGQP3QB6B) · [Declare environment inputs and test what the declaration covers](environments/Declarative-inputs-and-reconstruction.lingua#r_0ZQPPGS35DE7H5522P9PYENNPW) · [Reconstruct in a fresh place and vary declared irrelevant conditions](environments/Reconstruction-and-perturbation.lingua#r_3XGCVXWS4PAJNXAQBJQKW213FB) |
+| Workflows and execution state | [Describe a workflow as transformations with explicit dependencies](workflows/Inputs-outputs-and-dependencies.lingua#r_6FXMW2VCCFTF1X1CS2SGSP1N31) · [Run a small dependency graph and check its freshness assumptions](workflows/A-small-Make-workflow.lingua#r_169Z4XQW39YQTHGVHHE68GYVNM) · [Scale the workflow while keeping the method independent of its engine](workflows/Larger-workflow-engines.lingua#r_3KEYE030EP12Y4MHBY6RB1SJV6) · [Make a notebook reconstructible from a fresh kernel](workflows/Notebooks-and-hidden-state.lingua#r_1BQXFAENRWVF3P7FZHW7NBSBQS) · [Handle interrupted work without confusing partial and completed results](workflows/Atomic-output-and-recovery.lingua#r_67AHSE6SV62WC5H49ECP23VRTX) · [Reuse computed results only under an explicit equivalence rule](workflows/Caches-and-reuse.lingua#r_1MXDE1T63F6G6GYECCCR23RBFW) · [Record the run without letting incidental metadata obscure the result](workflows/Execution-accounts-and-logs.lingua#r_4YAY9ZW1Y3FMHZ952XHD6DYZ4W) · [Keep the computation checkable as its surroundings change](workflows/Continuous-checks-and-revalidation.lingua#r_43P1VCG8ZN9VCRKEWYZBFVB00M) |
+| Numerical and stochastic evidence | [Understand representation, rounding, and the order of operations](numerics/Floating-point-and-rounding.lingua#r_0001BNCJBQDFTK1SAVASYCRZAR) · [Sensitivity, cancellation, dependencies, and conditioning](../quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T) · [Distinguish a sensitive question from an unstable algorithm](numerics/Conditioning-and-stable-algorithms.lingua#r_5MC7MFQ2BE6S2JFMJXR1RJ45SY) · [Discretization — approximate a changing process and check it](../quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX) · [Refine an approximation and justify its numerical accuracy](numerics/Convergence-and-tolerances.lingua#r_1D7K129GJSMBAB3WR7Z1KJFXXK) · [Propagate joint distributions and control the numerical approximation](../metrology/uncertainty/Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E) · [Give stochastic work explicit stream and task identities](numerics/Random-streams-and-task-identity.lingua#r_1QGP0E4XMM77C1FWNHWDHJ2TJT) · [Evaluate simulation error separately from the uncertainty being simulated](numerics/Simulation-error-and-comparison.lingua#r_06Q945ZQ0BJKYWADNE94YHBCFC) · [Build a numerical validation argument across several kinds of evidence](numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8) |
+| Performance and practical resources | [Measure computation time and locate the work that matters](performance/Measure-before-optimizing.lingua#r_4YB1P59S34RAHN5YHNDTSDZH8Q) · [Understand scaling limits and the consequences of parallel execution](performance/Scaling-parallelism-and-order.lingua#r_5VWTDE6CWEGWHPNQPKYKAC6PMR) · [Characterize the resources needed to reconstruct a result](performance/Memory-storage-and-cost.lingua#r_1MPJ0VZA80BTN6QAFEZFM86T3C) |
+| Publication, preservation, and review | [Generate the report from the identified result and explain its limits](publication/Results-figures-and-explanation.lingua#r_4CYNSA0PMKHVVM82W63AB23VFH) · [Distinguish authorized access, reuse rights, and reconstruction limits](publication/Access-permissions-and-preservation.lingua#r_4DJGTXAFTXVJ9Z9ECAAGKTZYD2) · [Cite the particular work and version that supports the method](publication/Citations-editions-and-provenance.lingua#r_5A3TFYE7G3XCFYY4MJNK2VKB2R) · [Preserve a reconstructible study and test restoration](publication/Archiving-and-restoration.lingua#r_1MKF7WR9CNMVP8WG4EJ5HZ05W7) · [Let an unfamiliar reader test the reconstruction and the claim](publication/Independent-reproduction-review.lingua#r_64PY9JV0XV95ZA0SE54TYNBQWN) |
+| Sustained research and completion | [Sustained project — reconstructible material accounting and calibration](research/A-deterministic-research-project.lingua#r_584KCPF0ENH90JFAT0QZ6NHHQS) · [Advanced project — uncertain inputs, numerical control, and execution order](research/A-stochastic-and-numerical-project.lingua#r_4T7Z99R0VQKC0A3699FEZCXE1J) · [Reconstruct and critique a published computational result](research/Reproduce-a-published-result.lingua#r_262594EJP43XMD8STYD24PSHJY) · [Scholarly study — investigate and improve a computational method](research/Independent-investigation-and-revision.lingua#r_0R6HJY4ASPRC83B80MVSXH310Z) · [What completing reproducible computational work means](research/Completion.lingua#r_7VYT5A5V6ZS9K32WJQK6786NZT) |
+
+The first two-lot analysis is deliberately small enough to check by hand. Whole books, the deterministic and stochastic projects, published-result reproduction, and independent investigation extend the work to a demanding practical and academic level. [What completing reproducible computational work means](research/Completion.lingua#r_7VYT5A5V6ZS9K32WJQK6786NZT) explains that progression. A successful rerun, numerical agreement, independent implementation, and scientific replication are distinct claims with different evidence.
+
+**Sources:** [Reproducible-computation sources — books, research, and primary manuals](Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K). [Inquiry — shared ways to understand and investigate](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB), [STEM — mathematics, science, and engineering](../../stem/STEM.lingua#r_4B137J3ZBVM7TD2NA797H2CZ7E), [Ergon](../../ergon/Ergon.lingua#r_00000000000000000000002001), and [Philosophy](../../philosophy/Philosophy.lingua#r_00000000000000000000001001) connect this shared foundation to the wider system of scientific and productive work. Specialist domain theories and methods remain their own studies, reusing these Records where helpful.
+
+Follow the links directly or select both endpoints of #reproducible-computation assertions through an ordinary Protein. A shared Record retains its other learning continuations. Source citations, imports for discovery, and links to other subjects do not recursively expand the learning selection. No views directory or additional Trail feature is needed.
+
+**Continue:** [Begin reproducible computational work from zero](Reading-from-zero.lingua#r_7PQM3TCWSZAA50H4HQ0YF55ZJY).
+} r_78FWWJDCV0ZGG7VYSPRCWN56DQ
+
+Extension @reproducible-computation "lince.vocabulary" {
+ definitions {
+  reproducible-computation "A suggested continuation in constructing, checking, explaining, rerunning, and preserving computational work. Other reading selections, source references, and operational actions keep their own predicates."
+ }
+}

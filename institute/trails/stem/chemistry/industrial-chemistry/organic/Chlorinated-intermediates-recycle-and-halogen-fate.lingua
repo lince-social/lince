@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Trace chlorine through organic intermediates, products, recycle and residuals (@ic-chlorinated-organics: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9", #industrial-chemistry "Nitrogenated-organic-intermediates-and-selective-transformation.lingua#r_6AWS0C1TE00QKPN12DJWEF3XYP") { r_2DDQW0R2T57MGW41S34QMVSEG3
+**Read:** [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the whole ethylene-dichloride/vinyl-chloride chapter; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete relevant chlorinated intermediate and polymer-feed sequence; [Common Waste Water and Waste Gas Treatment/Management Systems in the Chemical Sector, BREF CWW](../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9), the entire applicable constituent-inventory, collection and treatment methods.
+
+Halogen-containing intermediates join carbon chemistry with a consequential halogen inventory. Reaction selectivity, replacement or elimination pathways, separation and catalyst/material compatibility determine which compounds carry chlorine through the route. An overall chlorine amount cannot identify every important chlorinated species.
+
+For an EDC/VCM-type public case, distinguish the actual formation and conversion stages, returned reagents, unreacted intermediates and qualified monomer. Hydrochloric-acid recovery or reuse changes internal flow without creating new net halogen input. Parallel/changing reactions can alter impurity profiles even at similar overall conversion.
+
+Follow volatile, dissolved and solid-bound chlorine-containing constituents through product conditioning, vents, water and residues. Recycling can concentrate a trace species that is inconsequential in fresh feed. A claimed loss reduction needs comparable material/energy and accepted-product boundaries.
+
+**Work:** reconstruct the complete public reaction/separation train with the original primary methods. Independently close carbon/hydrogen/chlorine and identify the evidence supporting consequential species assignments. Compare a documented route or operating change, including purification, heat, equipment materials and residuals, and explain what observation would distinguish a reaction effect from a shifted separation or inventory.
+
+**Continue:** [Connect nitrogen-containing organic products with reaction networks and purification](Nitrogenated-organic-intermediates-and-selective-transformation.lingua#r_6AWS0C1TE00QKPN12DJWEF3XYP).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_2DDQW0R2T57MGW41S34QMVSEG3

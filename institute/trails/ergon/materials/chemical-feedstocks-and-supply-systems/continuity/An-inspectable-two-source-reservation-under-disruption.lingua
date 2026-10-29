@@ -1,0 +1,70 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Optimise a small supply reservation with explicit joint disruption states (@cs-dual-source: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Process-Industry-Supply-Chain-Management-Liu.lingua#r_5W74Q34MKEJAWVS30JV4QH01YQ", #chemical-supply-systems "Recover-the-qualified-supply-after-an-interruption.lingua#r_7F7X7WKYM92SX78N1YTCTMSS15") { r_6PEV0QE2D79GFD3EFVD6X5B84D
+**Read:** [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the complete relevant decision/optimisation programme; [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the entire stochastic-inventory and system-cost account; [Supply chain management for the process industry — Songsong Liu](../sources/Process-Industry-Supply-Chain-Management-Liu.lingua#r_5W74Q34MKEJAWVS30JV4QH01YQ), complete relevant uncertainty and integrated-planning chapters.
+
+This original finite model reserves integer quantities from two qualified sources before learning which are available. A reserved unit costs its stated amount even when its source fails; unused supply has no salvage value. Available reserved quantities can jointly satisfy one known demand, and unmet units carry an explicit penalty. All material is assumed interchangeable, accepted and deliverable in time; those assumptions need actual evidence before use.
+
+The default joint states are the table in the previous Record. Demand and each capacity are ten, unit reservation costs are 1 and 1.5, and shortage penalty is 30. Reserving ten from each costs 25 and leaves expected unmet demand 0.5, for expected cost 40 and service probability 0.95. The program checks every bounded integer reservation; it reports the lexicographically first allocation among exact-cost ties.
+
+```python file=two_source_reservation.py
+from fractions import Fraction as F
+from itertools import product
+
+
+def bounded_integer(value, maximum):
+    if type(value) is not int or not 0 <= value <= maximum:
+        raise ValueError("bounded nonnegative integer required")
+    return value
+
+
+def cost(value):
+    if type(value) is not F or not 0 <= value <= 1000000:
+        raise ValueError("bounded exact nonnegative cost required")
+    return value
+
+
+def solve(demand=10, capacities=(10, 10), costs=(F(1), F(3, 2)), penalty=F(30), states=((F(4, 5), 1, 1), (F(1, 20), 1, 0), (F(1, 10), 0, 1), (F(1, 20), 0, 0))):
+    demand = bounded_integer(demand, 40)
+    if type(capacities) not in (tuple, list) or len(capacities) != 2:
+        raise ValueError("two capacities required")
+    capacities = tuple(bounded_integer(value, 20) for value in capacities)
+    if type(costs) not in (tuple, list) or len(costs) != 2:
+        raise ValueError("two costs required")
+    costs = tuple(cost(value) for value in costs)
+    penalty = cost(penalty)
+    if type(states) not in (tuple, list) or not 1 <= len(states) <= 8:
+        raise ValueError("one to eight joint states required")
+    checked = []
+    for row in states:
+        if type(row) not in (tuple, list) or len(row) != 3:
+            raise ValueError("probability and two availability indicators required")
+        probability, first, second = row
+        if type(probability) is not F or not 0 <= probability <= 1:
+            raise ValueError("exact probability required")
+        checked.append((probability, bounded_integer(first, 1), bounded_integer(second, 1)))
+    if sum((row[0] for row in checked), F(0)) != 1:
+        raise ValueError("probabilities must sum exactly to one")
+    best = None
+    for first, second in product(range(capacities[0] + 1), range(capacities[1] + 1)):
+        shortage = sum((probability * max(0, demand - available_first * first - available_second * second) for probability, available_first, available_second in checked), F(0))
+        objective = costs[0] * first + costs[1] * second + penalty * shortage
+        candidate = (objective, first, second)
+        if best is None or candidate < best:
+            best = candidate
+    objective, first, second = best
+    shortage = sum((probability * max(0, demand - available_first * first - available_second * second) for probability, available_first, available_second in checked), F(0))
+    service = sum((probability for probability, available_first, available_second in checked if available_first * first + available_second * second >= demand), F(0))
+    return dict(reserved=(first, second), expected_cost=objective, expected_shortage=shortage, service=service)
+
+
+if __name__ == "__main__":
+    print(solve())
+```
+
+Independently derive the piecewise-linear expected-cost function and minimise it over the vertices formed by capacity bounds and the shortage break lines. In this two-source binary-availability model, those vertices are integral for integer demand/capacities. Compare many exact cases, ties, zero demand/cost, impossible service and input permutations. Examine service and cost together; a penalty is an explicitly chosen tradeoff, not a measurement of every consequence. Add correlated states with unchanged marginals and explain why an independence assumption can change the selected arrangement.
+
+**Continue:** [Plan restoration as recovery of material, capability and accepted evidence](Recover-the-qualified-supply-after-an-interruption.lingua#r_7F7X7WKYM92SX78N1YTCTMSS15).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_6PEV0QE2D79GFD3EFVD6X5B84D

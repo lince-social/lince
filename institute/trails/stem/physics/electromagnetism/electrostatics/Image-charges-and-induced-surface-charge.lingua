@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Image charges and induced surface charge (@em-images: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Separation-of-variables-and-spatial-spectra.lingua#r_1PFCS2PR7DECWKE9567FPJS6R0") { r_79N7V2J0YH01CA68KG24NVEE36
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), image-charge examples; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), plane and sphere image constructions.
+
+For charge q at height a above a grounded infinite conducting plane, the potential in the physical half-space equals the sum of q and an image −q mirrored below the plane. The image lies outside the solution domain. It constructs the correct zero-potential boundary and vacuum source equation; uniqueness supplies the justification.
+
+The attraction magnitude is q²/(16π ε₀a²). Recover it from the field of the image at the real charge. When using energy, include the response of the induced charge: the system's electrostatic interaction energy is half the naive real/image pair energy. Differentiating the correct energy and differentiating a pair with a fictitious independent image are different operations.
+
+Derive the induced surface density from the normal field and integrate it to −q. Then study a grounded conducting sphere and compare its far/near-plane limits. Change to an isolated sphere with a specified total charge and supply the additional condition. Image methods solve particular geometries; they are not a universal replacement for a boundary solver or a claim that induced charge is concentrated at the fictitious point.
+
+**Continue:** [Separation of variables and spatial spectra](Separation-of-variables-and-spatial-spectra.lingua#r_1PFCS2PR7DECWKE9567FPJS6R0).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_79N7V2J0YH01CA68KG24NVEE36

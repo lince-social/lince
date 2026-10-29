@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Measure and communicate planes and lines without ambiguous conventions (@geo-orientation: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/Geologic-Map-Symbolization.lingua#r_7DHXSTN5K3KF1EPTPG18RM5K1K", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "Folds-facing-and-overprinting.lingua#r_4YNWT9JHWFDN11HKFQW6XJN998") { r_4SACPSFSMY1MM5BV2QM5MJN8QR
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), the full Orientation section and Lab 1 Orientation of Lines and Planes; [Digital Cartographic Standard for Geologic Map Symbolization — FGDC/USGS](../sources/Geologic-Map-Symbolization.lingua#r_7DHXSTN5K3KF1EPTPG18RM5K1K), the complete orientation-symbol conventions used; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), orientation/stereonet preparation.
+
+A plane's strike is the direction of its horizontal line; dip gives its downward inclination and direction. A line uses trend and plunge. These describe different geometrical objects: a lineation lying on bedding is not specified by bedding's orientation alone. State azimuth range, north reference, declination treatment, and the strike/dip convention.
+
+Under a right-hand strike convention the dip direction is 90° clockwise from strike. A plane dipping east at 30° therefore has right-hand strike 000° and dip 30° toward 090°. An unoriented strike line also runs south; confusing the two equivalent line directions with an assigned dip direction creates a different plane.
+
+Compass clinometer measurements require an identified surface/line, suitable instrument procedure, and checks for local interference and accessibility. Separate instrument reading uncertainty from variability in a curved, rough, folded, or poorly exposed feature. A reported average must identify the population and appropriate directional method.
+
+**Work:** complete orientation Lab 1. Translate several equivalent plane notations into sketches and a consistent notation, including horizontal and vertical cases. Measure suitable known surfaces or models, repeat independently, and compare with a geometric construction. Record the instrument/reference conditions and distinguish repeatability from actual spatial variation.
+
+Read the full orientation sections before the map and stereonet problems. Coordinate conventions will remain explicit in the original three-point exercise, which handles a height-representable plane but cannot represent a vertical one.
+
+**Continue:** [Interpret fold geometry, stratigraphic facing, and overprinting together](Folds-facing-and-overprinting.lingua#r_4YNWT9JHWFDN11HKFQW6XJN998).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4SACPSFSMY1MM5BV2QM5MJN8QR

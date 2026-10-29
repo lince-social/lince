@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Convex relaxation of optimal power flow — Steven H. Low (@pe-low: 0, is #reference, #part-of @pe-sources) { r_75K2XQST5PGBNZ7RJ41S3QW08B
+Steven H. Low. Convex Relaxation of Optimal Power Flow, Part I: Formulations and Equivalence, and Part II: Exactness, 2014. [Part I author preprint](https://arxiv.org/abs/1405.0766) · [Part II author preprint](https://arxiv.org/abs/1405.0814) · [Caltech publication record](https://authors.library.caltech.edu/records/436tr-60p50).
+
+Read both entire papers, reconstruct the bus-injection and branch-flow formulations, prove the stated equivalences under their assumptions and examine sufficient exactness conditions. Compare a relaxation's lower bound with an actual feasible AC operating point. An optimizer's success status does not establish that recovered physical variables satisfy the original nonconvex problem.
+
+Primary author/repository records, 2014 dates and the relation between the two parts were checked on 29 October 2026. Author preprints, IEEE journal versions and software implementations have separate version/rights notices. No general open-adaptation licence is inferred solely from free access. These are full scholarly readings; no paper, figures or example data are copied here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_75K2XQST5PGBNZ7RJ41S3QW08B

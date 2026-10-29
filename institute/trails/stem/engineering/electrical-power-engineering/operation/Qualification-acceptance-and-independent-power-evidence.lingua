@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Qualification, acceptance and independent evidence (@pe-quality-evidence: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Commissioning-Guide-Hydroelectric-FIST.lingua#r_0WA7RR86PMVEA3FFM7CG6NQ5RM", #source "../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4", #source "../sources/Electrical-Standards-Edition-and-Jurisdiction.lingua#r_169QEF26N0C345MKSRWQY6KD90", #electrical-power-engineering "../systems/Power-materials-loss-environment-and-recovery.lingua#r_0VYYF0CTRSVGX2CGC7Z9ZPSTHA") { r_3F9EEPEZRVVNPKJHJ690DFGW0D
+**Read:** [Commissioning Guide for Hydroelectric Facilities — FIST 4-7](../sources/Commissioning-Guide-Hydroelectric-FIST.lingua#r_0WA7RR86PMVEA3FFM7CG6NQ5RM), entire relevant acceptance/integration and test context; [Maintenance of Power Circuit Breakers — FIST 3-16](../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4), whole applicable equipment/test methods; [Electrical standards, edition and jurisdiction](../sources/Electrical-Standards-Edition-and-Jurisdiction.lingua#r_169QEF26N0C345MKSRWQY6KD90), actual complete applicable method and edition.
+
+Define what must be shown about a component/system and under which operating conditions. Type tests, routine factory tests, installation acceptance, calibration, functional tests and service monitoring supply different evidence. A nominal rating, certificate title or commercial claim cannot substitute for the underlying scope, method, specimen and result.
+
+Use the shared conformity/metrology Records to connect a requirement, measurand, method, uncertainty and decision. Then add the actual electrical interfaces: voltage/current basis, thermal state, insulation, fault/clearing duty, control/protection function and timing. A passed test at one boundary may leave another untested.
+
+Compare the same proposed component from at least two evidence routes and investigate a disagreement. Preserve edition, method, calibration, actual tested/installed state, exceptions and model discrepancy. Read the complete applicable manufacturer/standard and primary method before claiming conformity. The purpose is a defensible technical conclusion that another specialist can inspect. A checklist alone cannot establish that every item called tested answers the same question. This connects construction, commissioning and continuing operation.
+
+**Continue:** [Power materials, loss, environment and recovery](../systems/Power-materials-loss-environment-and-recovery.lingua#r_0VYYF0CTRSVGX2CGC7Z9ZPSTHA).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3F9EEPEZRVVNPKJHJ690DFGW0D

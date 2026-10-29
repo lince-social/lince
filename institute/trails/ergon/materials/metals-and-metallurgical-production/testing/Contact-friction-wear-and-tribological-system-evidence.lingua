@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Treat wear as behavior of a contact system with material and environmental history (@metal-wear: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/ASM-Mechanical-Testing-and-Evaluation.lingua#r_1VW327STC5YQGRAPNRAPQSZQNG", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/Aluminium-Automotive-Manual.lingua#r_73MPKA19MDBSQ96195B818Z49T", #metals-and-metallurgical-production "Nondestructive-inspection-signal-coverage-and-detection-evidence.lingua#r_2R5SS11765JSQ65B16HE20530F") { r_54DD7QV8DEW4WB6QDHYA4NXZJQ
+**Read:** [Mechanical Testing and Evaluation — ASM Handbook, volume 8](../sources/ASM-Mechanical-Testing-and-Evaluation.lingua#r_1VW327STC5YQGRAPNRAPQSZQNG), complete applicable friction/wear and evaluation chapters, when available; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the full relevant alloy/surface and structure/property material; [Aluminium Automotive Manual — European Aluminium and collaborators](../sources/Aluminium-Automotive-Manual.lingua#r_73MPKA19MDBSQ96195B818Z49T), complete selected product, surface, and functional-performance cases.
+
+Wear involves interacting surfaces, load/motion, lubrication or other interfacial media, environment, debris, heat, and evolving geometry. Abrasion, adhesion, fatigue-related damage, oxidation/tribochemistry, and combined mechanisms can produce different material loss and surface changes. Hardness alone does not determine every wear response.
+
+State contact geometry, material pair, preparation, load, motion/rate, temperature, environment, lubricant, duration, and measurement basis. A wear coefficient from one test is an empirical description of that system and conditions, not automatically a universal alloy property. Counterface and debris changes can alter the process during the test.
+
+Connect material, surface/coating, heat treatment, roughness, residual stress, and microstructure with observed damage. Useful product life and maintenance may depend on dimensional change, surface integrity, contamination, vibration, or failure rather than only removed mass.
+
+**Work:** reconstruct a complete tribological material/process study with original methods, conditions, and complementary damage observations. Independently check a representative loss/work/geometry calculation and uncertainty. Compare two mechanisms and an alternative surface/material arrangement on independent conditions. Explain why the result does or does not transfer to the intended component and what measurements during service would test the claim.
+
+**Continue:** [Interpret nondestructive inspection through signal physics, coverage, calibration, and uncertainty](Nondestructive-inspection-signal-coverage-and-detection-evidence.lingua#r_2R5SS11765JSQ65B16HE20530F).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_54DD7QV8DEW4WB6QDHYA4NXZJQ

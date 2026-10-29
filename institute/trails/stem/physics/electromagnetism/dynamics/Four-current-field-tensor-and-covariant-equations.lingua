@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Four-current, field tensor and covariant equations (@em-covariant: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Action-variation-symmetry-and-conservation.lingua#r_7RVHKMS4NGF4V2MPSSM3J4RDM8") { r_3QWFTQD6180HHM0G8NGYZRYAZ1
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), covariant electromagnetism and energy-momentum; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), relativistic electrodynamics.
+
+Choose spacetime coordinates x⁰ = ct and a metric signature, then construct four-current, four-potential and the antisymmetric electromagnetic tensor. Record the sign and c factors of its components. Many apparent disagreements between references are convention changes; verify the ordinary SI Maxwell equations and Lorentz force by expanding the tensor equations.
+
+Derive current conservation as a four-divergence identity and express the homogeneous field equations using the dual tensor. Relate the two field invariants to tensor contractions. Work one explicit boost matrix on a chosen E/B configuration and compare with the three-vector transformation, including units.
+
+Construct the electromagnetic energy-momentum tensor in vacuum and recover energy density, Poynting flux, momentum density and stress. Separate an identity of the field equations from the material equations determining the sources. Tensors provide a compact, testable account of the same observables; merely memorizing index notation is not advanced understanding. Reconstruct a source/field/particle calculation in both covariant and ordinary components and explain each boundary and initial condition.
+
+**Continue:** [Action, variation, symmetry and conservation](Action-variation-symmetry-and-conservation.lingua#r_7RVHKMS4NGF4V2MPSSM3J4RDM8).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3QWFTQD6180HHM0G8NGYZRYAZ1

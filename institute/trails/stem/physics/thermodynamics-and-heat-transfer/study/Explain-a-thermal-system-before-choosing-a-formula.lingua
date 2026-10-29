@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Explain a thermal system before choosing a formula (@th-foundations-review: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../../../chemistry/general-chemistry/energy/Gibbs-energy-and-chemical-direction.lingua#r_2YN613CG9VVK1CXP2XFHZMF9Z6") { r_07WVS4C6WEPKYQJ1TE7K6R72E8
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), all six chapters and independent exercises; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), complete fundamentals, laws and entropy developments; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), complete first/second-law chapters.
+
+Take a heated solid, a flowing device and a two-phase container. For each, draw the boundary, identify state variables and observable changes, and write a dimensionally consistent first-law account. Explain the chosen work convention and distinguish energy, power, heat capacity and conductivity without relying on their symbols.
+
+For a complete process, calculate entropy transfer and production with the actual boundary temperatures. Explain why a negative entropy change of one component is compatible with a nonnegative total production. Derive the appropriate reversible bound and identify what prevents a real finite-rate process from reaching it.
+
+Solve unseen exercises from the complete introductory books and explain an initially incorrect attempt. Demonstrate property-table interpolation and the choice of an independent state pair. Continue deeper with partial derivatives, potentials and transport once these accounts are reliable; reuse earlier quantitative, chemical or measurement Records for the particular gap.
+
+**Continue:** [Relate chemical direction to Gibbs energy under stated constraints](../../../chemistry/general-chemistry/energy/Gibbs-energy-and-chemical-direction.lingua#r_2YN613CG9VVK1CXP2XFHZMF9Z6).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_07WVS4C6WEPKYQJ1TE7K6R72E8

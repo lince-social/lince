@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Balance substitution through composition, sites, and charge (@mp-substitution: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #mineralogy-and-petrology "Defects-ordering-and-exsolution.lingua#r_1TAP18152580TY3JWTWDJ3XE2T") { r_1R0GKK33GS38M1Y82GQ1XYF850
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full compositional-variation, feldspar, and selected solid-solution sections; [Mineral names and classification reports — IMA-CNMNC](../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH), the full relevant group/nomenclature report; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the selected solution-model definition and primary paper.
+
+Solid solution changes site occupants within a structural family over an allowed range. Site size/coordination, charge, temperature, pressure, ordering, and thermodynamic interactions influence the range and behavior. A linear interpolation of one property is an empirical/model assumption rather than a definition of solid solution.
+
+Coupled substitutions preserve constraints through linked changes. In a simplified feldspar account, Na⁺ + Si⁴⁺ ↔ Ca²⁺ + Al³⁺ preserves total charge while changing different sites. Merely replacing Na with Ca without accounting for the other change does not describe the same electrically balanced framework.
+
+Endmembers are reference compositions under a chosen model. A measured mineral can require several endmembers and a site-allocation scheme; the same bulk composition may admit more than one ordering or oxidation-state account. State how total iron and unmeasured components are treated before calculating an endmember fraction.
+
+**Work:** derive two balanced substitutions from complete mineral-group treatments, checking site capacity and charge separately. Convert a simple analyzed composition into candidate endmember proportions and compare an alternative allocation. Identify observations that could distinguish oxidation state, ordering, vacancies, or a mixed analysis.
+
+Read the complete compositional-variation and group-specific sections. Later activities, nonideal mixing, exsolution, and thermometry use these structural/chemical definitions; a convenient formula normalization should not silently determine the physical model used in a petrological calculation.
+
+**Continue:** [Relate defects and ordering to properties without confusing them with a new bulk composition](Defects-ordering-and-exsolution.lingua#r_1TAP18152580TY3JWTWDJ3XE2T).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_1R0GKK33GS38M1Y82GQ1XYF850

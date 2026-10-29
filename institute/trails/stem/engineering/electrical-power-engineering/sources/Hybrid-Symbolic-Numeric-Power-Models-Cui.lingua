@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Hybrid Symbolic-Numeric Framework — Cui, Li and Tomsovic (@pe-andes-paper: 0, is #reference, #part-of @pe-sources) { r_7XTYA62FQ8W2X448XXVFNPA7AK
+Hantao Cui, Fangxing Li and Kevin Tomsovic. Hybrid Symbolic-Numeric Framework for Power System Modeling and Analysis. [Author preprint, arXiv:2002.09455](https://arxiv.org/abs/2002.09455) · [Full preprint](https://arxiv.org/pdf/2002.09455).
+
+Read the entire paper, reconstruct its differential-algebraic modelling and numerical generation approach, then reproduce one complete published comparison through authorized materials in a separate exercise area. Examine turbine-governor, power-flow, time-domain and eigenvalue cases and distinguish the demonstrated model family from a general proof of correctness.
+
+The primary record identified the authors and February 2020 preprint on 29 October 2026; its later journal citation and current software version must be distinguished from that version. Free preprint access does not automatically assign the same licence as the software. Read the actual full notice and cite the version used. No article, commercial-model files, data or source collection is bundled.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_7XTYA62FQ8W2X448XXVFNPA7AK

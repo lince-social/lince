@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Quasistatic limits, diffusion and skin depth (@em-quasistatic: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #electromagnetism "../dynamics/Maxwell-equations-and-displacement-current.lingua#r_4ETBPA07D21W3J864XWFXHN4X5", #electrical-power-engineering "../../../engineering/electrical-power-engineering/protection/Fault-current-DC-offset-decrement-and-duty.lingua#r_4SFG3K5ZMNV4JZ95TJXY5543JQ") { r_7RSC1KG4B4DNB7C7319F691MSW
+**Read:** [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), quasistatic fields and magnetic diffusion; [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), lossy media and skin depth.
+
+Electroquasistatic and magnetoquasistatic limits retain different dominant terms of Maxwell's equations. Determine their validity from size, time, conduction, displacement and material response, not solely from whether a frequency sounds low. Large structures can have propagation effects at frequencies for which a small laboratory circuit is lumped.
+
+In a homogeneous good conductor with negligible displacement current and linear μ/σ, magnetic diffusion has characteristic scale sqrt(1/(μσω)). For a harmonic plane field the conventional skin depth is δ = sqrt(2/(μσω)). With exp(−iωt), a field penetrating in +z has a decaying factor exp(−z/δ) and a corresponding phase change. State the boundary excitation before comparing amplitudes.
+
+Derive the diffusion equation and skin solution, then compare δ with thickness and curvature radius. Current crowding near edges, proximity effects and magnetic saturation need a fuller solution than a one-dimensional skin formula. Check the good-conductor condition σ ≫ ωε with consistent SI units. At higher frequencies or in dispersive matter, use the full complex constitutive response rather than extrapolating a DC conductivity indefinitely.
+
+**Continue:** [Maxwell equations and displacement current](../dynamics/Maxwell-equations-and-displacement-current.lingua#r_4ETBPA07D21W3J864XWFXHN4X5).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in electrical power engineering:** [Fault-current offset, decrement and duty](../../../engineering/electrical-power-engineering/protection/Fault-current-DC-offset-decrement-and-duty.lingua#r_4SFG3K5ZMNV4JZ95TJXY5543JQ).
+} r_7RSC1KG4B4DNB7C7319F691MSW

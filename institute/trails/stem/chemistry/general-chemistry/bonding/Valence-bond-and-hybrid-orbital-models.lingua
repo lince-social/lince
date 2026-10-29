@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Use valence-bond and hybrid-orbital models with an explicit purpose (@gc-vb: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Molecular-orbitals-and-extended-electronic-states.lingua#r_726ETM9745704A826Y42QSVD0T") { r_3GQ3A9GZAMRV47GHHDVDPRNZCT
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 8’s valence-bond and hybrid-orbital material; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), lectures 24–25 and the corresponding course notes; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the bonding tutorial’s orbital treatments.
+
+Valence-bond descriptions connect localized bonding with overlap and electron pairing under a chosen approximation. Hybrid orbitals are combinations of basis functions useful for representing particular local arrangements. Relate them to geometry and bonding rather than treating a hybridization label as an independently measured physical mechanism.
+
+Distinguish sigma and pi interactions, localized and delocalized descriptions, and changes associated with rotation or conjugation. The model can organize patterns and reactivity, while quantitative energies and magnetic/electronic properties may require a more extensive treatment. Several descriptions can be useful for different questions about the same species.
+
+**Work:** use a simple carbon compound and an unsaturated example to relate geometry, basis functions, and sigma/pi bonding. Explain what information the construction preserves and which electronic behavior it does not predict. Compare the textbook presentation with MIT 5.112's valence-bond lecture and identify a claim that needs another model or experimental evidence.
+
+Read the full advanced-bonding chapter and work its exercises, not only the diagrams. Draw orbital signs and orientation where they matter to overlap. State why a particular basis is convenient for the question, and avoid using a naming mnemonic as the entire explanation of measured structure.
+
+The next Record develops molecular orbitals and a route toward extended solids. Quantum mechanics and theoretical chemistry will supply the deeper mathematical foundations; this general chemistry treatment should already let a reader compare complementary models and understand their empirical consequences.
+
+**Continue:** [Connect molecular orbitals with magnetism and extended electronic states](Molecular-orbitals-and-extended-electronic-states.lingua#r_726ETM9745704A826Y42QSVD0T).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_3GQ3A9GZAMRV47GHHDVDPRNZCT

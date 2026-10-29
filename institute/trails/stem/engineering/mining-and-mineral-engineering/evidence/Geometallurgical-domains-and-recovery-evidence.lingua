@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect geological variability with process response through tested domains (@mine-geometallurgy: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #source "../../../../nature/earth/mineralogy-and-petrology/applications/Grain-associations-liberation-and-process-mineralogy.lingua#r_03BD9ADDV2B62T8RF26S61R77C", #mining-and-mineral-engineering "../planning/Cutoff-grades-value-and-capacity-constraints.lingua#r_2D0X3JWGVJ02492M19S11CBP25") { r_0N5W3EQS3YYM40Z0MZC14BQYBR
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete mineral-characterization, sampling, and relevant process chapters; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the complete corresponding testwork methods; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), the full selected case and its references; [Relate mineral associations to liberation without mistaking a section for every particle](../../../../nature/earth/mineralogy-and-petrology/applications/Grain-associations-liberation-and-process-mineralogy.lingua#r_03BD9ADDV2B62T8RF26S61R77C), the shared association/measurement-support explanation.
+
+Geometallurgy relates geological/mineralogical variability to extraction, fragmentation, concentration, product quality, utilities, and waste behavior. A grade domain and a processing-response domain can differ. Mineral hosts, texture, hardness, alteration, contaminants, and water chemistry may influence response independently of bulk valuable-element content.
+
+Testwork requires representative material, preparation, method, scale, operating conditions, and uncertainty. A single favorable specimen or batch test cannot establish every block's response. Correlating response with a geological label needs a designed population and independent validation rather than automatic extrapolation.
+
+Connect domains with the resource model, process assumptions, sampling support, and schedule. Blending or changing feed can alter recovery, throughput, product, and water/reagent demand nonlinearly. A reported recovery is conditional on the feed, method, and boundaries used.
+
+**Work:** reconstruct a complete characterization/testwork case from geological samples through mineral association and process results. Compare two plausible domains or response models, test an independent sample/condition, and explain the consequence for a production or product-quality account. Identify where data are sparse or proprietary and what original test could address the gap.
+
+Read full CETEM characterization and laboratory methods plus the complete selected plant case. Preserve the handoff between geological evidence and engineering response rather than substituting a commodity-average recovery for the investigated material.
+
+**Continue:** [Analyze cutoff decisions with explicit costs, recovery, quality, and constraints](../planning/Cutoff-grades-value-and-capacity-constraints.lingua#r_2D0X3JWGVJ02492M19S11CBP25).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0N5W3EQS3YYM40Z0MZC14BQYBR

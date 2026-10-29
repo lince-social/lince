@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Interpret fatigue through load history, crack mechanisms, and statistically supported evidence (@metal-fatigue: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #source "../sources/ASM-Mechanical-Testing-and-Evaluation.lingua#r_1VW327STC5YQGRAPNRAPQSZQNG", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "Creep-stress-relaxation-damage-and-thermal-service.lingua#r_4TT7YZNBC18HKW4QR7S2V95GVX") { r_0TTB12YZSCY7ZNPB8G5CKS73Q5
+**Read:** [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), the entire fatigue and related fracture sequence with problems/projects; [Mechanical Testing and Evaluation — ASM Handbook, volume 8](../sources/ASM-Mechanical-Testing-and-Evaluation.lingua#r_1VW327STC5YQGRAPNRAPQSZQNG), full applicable fatigue and crack-growth methods, when available; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), all relevant alloy, surface, residual-stress, and structure/property material.
+
+Fatigue involves repeated loading and evolving damage/cracks under a stated material, geometry, surface, environment, temperature, and stress/strain history. Initiation-oriented life curves, strain-life models, and crack-growth relations answer different questions. Their domains and statistical scatter matter when using them for a component.
+
+Define amplitude/range, mean level or ratio, sequence, frequency, multiaxial/path effects, and the observed failure criterion. Variable histories, residual stresses, surface/defect populations, local plasticity, environment, and closure or threshold behavior can challenge a simple empirical relation. More cycles or a larger fitted data set do not remove a mismatched mechanism or support.
+
+Compare direct test observations with structural/fractographic and environmental evidence. A process improving monotonic strength can change initiation, propagation, or sensitivity to flaws in a different way. A claimed fatigue limit or life needs its actual test basis and uncertainty rather than an alloy-name lookup.
+
+**Work:** reconstruct a complete fatigue or crack-growth study with original loading and observation methods. Independently reproduce a significant life/growth calculation and assess sensitivity to the starting flaw, history, and parameter uncertainty. Compare two defensible mechanisms/models against independent evidence and a changed condition. Explain which further inspection/material observations are needed before transferring the argument into service decisions.
+
+**Continue:** [Connect time-dependent response with temperature, stress, mechanisms, and evolving structure](Creep-stress-relaxation-damage-and-thermal-service.lingua#r_4TT7YZNBC18HKW4QR7S2V95GVX).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_0TTB12YZSCY7ZNPB8G5CKS73Q5

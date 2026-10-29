@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced rotating, stratified flow and potential-vorticity study (@fd-advanced-rotation: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "Advanced-interfacial-shape-wetting-and-instability-study.lingua#r_7HESDAWAFEZPSA3GX8P27H9XSN") { r_22XTETXW1TXM3J0TRQB6HJ9Q8Y
+**Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), complete selected rotating, coastal or thermal modules; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), rotating waves, internal waves and buoyancy development; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), rotating and stratified demonstrations interpreted with notes.
+
+Derive the rotating-frame balances and the thermodynamic or compositional buoyancy model for a specified system. Construct a hierarchy leading to geostrophic, hydrostatic or shallow-layer equations, retaining explicit scale estimates. Recover potential-vorticity conservation under its actual assumptions and identify where forcing or dissipation changes it.
+
+Analyze a bounded wave, Ekman transport, buoyant plume or stratified-withdrawal problem using a complete Mei module and an independent numerical or analytical method. Compare the restoring mechanisms and characteristic scales. Test a regime where the simplest approximation breaks down, such as a boundary, changing rotation parameter or insufficient scale separation.
+
+Relate the result to a controlled rotating/stratified experiment or a documented physical dataset. Explain how density, velocity and boundary uncertainty enter the inference. Preserve the distinction between the general dynamics demonstrated here and the additional geography, thermodynamics and observation systems needed for a complete atmosphere or ocean investigation.
+
+**Continue:** [Advanced interfacial shape, wetting and instability study](Advanced-interfacial-shape-wetting-and-instability-study.lingua#r_7HESDAWAFEZPSA3GX8P27H9XSN).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_22XTETXW1TXM3J0TRQB6HJ9Q8Y

@@ -778,6 +778,7 @@ impl Presentation {
         pressed: bool,
     ) -> Result<(), ProbeFailure> {
         if self.suspended() { return Ok(()); }
+        if pressed { self.app.world_mut().remove_resource::<native::output_views::HandFocusRequest>(); }
         let window = self.input_window()?;
         if pressed {
             let Some(position) = self.app.world().get::<Window>(window).and_then(Window::physical_cursor_position) else { return Ok(()); };
@@ -826,6 +827,9 @@ impl Presentation {
         repeat: bool,
     ) -> Result<(), ProbeFailure> {
         if self.suspended() { return Ok(()); }
+        if pressed && physical == KeyCode::Escape {
+            self.app.world_mut().remove_resource::<native::output_views::HandFocusRequest>();
+        }
         let event = bevy::input::keyboard::KeyboardInput {
             window: self.input_window()?,
             key_code: physical,
@@ -1031,6 +1035,15 @@ impl Presentation {
 
     pub fn frame(&mut self) -> Result<Frame, ProbeFailure> {
         self.synchronize_input_activity()?;
+        let hand_focus = self.app.world_mut().remove_resource::<native::output_views::HandFocusRequest>();
+        if let Some(request) = hand_focus
+            && !self.suspended()
+            && request.fresh()
+            && self.app.world().get_resource::<lince_interface::host::input::InputActivity>().is_none_or(|activity| activity.active())
+            && self.canvas_root().ok().is_some_and(|root| self.output_state.assignments.outputs().iter().any(|output| request.matches(root, output.id, output.active)))
+        {
+            self.focus_output(request.output)?;
+        }
         let started = std::time::Instant::now();
         let references = self.records.as_ref().map(|records| records.opening_references()).unwrap_or_default();
         native::layout::desktop::opening::window_references(self.app.world_mut(), references);

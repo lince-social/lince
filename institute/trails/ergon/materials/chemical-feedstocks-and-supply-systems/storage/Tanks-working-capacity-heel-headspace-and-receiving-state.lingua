@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Distinguish nominal tank volume from usable receiving and supply capacity (@cs-tanks: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Flammable-Liquid-Tanks-HSE-HSG176.lingua#r_3J96NXWJF945DTPAPBRQPT177R", #source "../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43", #source "../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME", #chemical-supply-systems "Solid-feedstocks-particle-change-moisture-and-segregation.lingua#r_0ND9589QKW0521YKSS4QZFEP57") { r_204ACMY61P8Y550HJ4WAESXZVS
+**Read:** [Storage of flammable liquids in tanks — HSE HSG176](../sources/Flammable-Liquid-Tanks-HSE-HSG176.lingua#r_3J96NXWJF945DTPAPBRQPT177R), the complete guide in its stated scope; [Emissions from Storage — European Commission BREF](../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43), complete tank, transfer, emission and control chapters; [Caustic Soda Handbook — OxyChem](../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME), complete equipment, property and unloading sections for the selected grade.
+
+A tank's geometric volume is not its working inventory. Identify normal operating limits, residual heel, unpumpable material, required headspace, measurement uncertainty and the receiving operation. Specify the material's actual density and state and distinguish physical capacity from the quantity permitted or qualified for the service.
+
+Draw an inventory-versus-time account for a tank receiving periodic deliveries while serving a continuous demand. Mark minimum usable inventory, reorder decision, arrival/release delay and the maximum state during a transfer. Include any material awaiting acceptance. A schedule that fits the daily average can still exceed a limit at arrival or leave insufficient accessible inventory before the next delivery.
+
+Read the full applicable storage reference and producer handbook. Investigate contents measurement, overflow/containment interfaces, venting, contact material, maintenance access and residual handling as a coupled system. Derive the quantity balance separately from the actual equipment design. Compare two tanks with a larger single tank, including segregation, maintenance and mixing histories. The advanced storage project must use actual design domains and qualified review; this Record establishes the physical/accounting distinctions needed to ask the correct questions.
+
+**Continue:** [Preserve a solid chemical's composition and usable physical form](Solid-feedstocks-particle-change-moisture-and-segregation.lingua#r_0ND9589QKW0521YKSS4QZFEP57).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_204ACMY61P8Y550HJ4WAESXZVS

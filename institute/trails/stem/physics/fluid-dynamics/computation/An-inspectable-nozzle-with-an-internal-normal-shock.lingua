@@ -1,0 +1,116 @@
+Import "../Fluid-dynamics.lingua"
+
+An inspectable nozzle with an internal normal shock (@fd-nozzle-example: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../sources/Gas-Dynamics-Kulkarni.lingua#r_34YGDV61X77JFYZH8X8NGDBS9W", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "An-inspectable-Blasius-boundary-layer-calculation.lingua#r_7X6RYA08VQGEBYKV786AT13CPJ") { r_1759XXT97JP6XN6H6HS5DMHRSW
+**Read:** [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM), isentropic, area and normal-shock relations; [Gas Dynamics — Vinayak Kulkarni](../sources/Gas-Dynamics-Kulkarni.lingua#r_34YGDV61X77JFYZH8X8NGDBS9W), complete nozzle and shock lessons; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), Laval nozzle and normal-shock development.
+
+This original standard-library example solves a bounded quasi-one-dimensional converging–diverging nozzle problem: a calorically perfect gas, choked throat, isentropic flow on each side of one stationary internal normal shock, no wall friction or heat transfer, and a specified exit back pressure. It deliberately accepts only the internal-shock regime. [Area–Mach relations, choking and nozzle regimes](../compressible/Area-Mach-relations-choking-and-nozzle-regimes.lingua#r_3K6DQDVFKBHGSE3XNF57J8C04N) explains the other regimes; they require their own solution, not extrapolation of this routine.
+
+Inputs are exit-area/throat-area ratio, back-pressure/upstream-stagnation-pressure ratio and γ. The accepted computational ranges are area ratio 1.05–20 and γ 1.1–1.67, with back pressure strictly between the calculated shock-at-exit and vanishing-shock-at-throat limits. The geometry must have a monotone diverging section to turn the returned shock-area ratio into a unique position; the program returns area, not an invented axial coordinate.
+
+The program solves the two area–Mach branches, applies the normal-shock jump, updates stagnation pressure and obtains the downstream subsonic exit state. Its dimensional reference temperature is the conserved upstream stagnation temperature T_0. Pressure is scaled by upstream p_01, density by p_01/(RT_0), and velocity by √(RT_0). The returned entropy rise is Δs/R. Reconstruct mass flux, momentum flux and total enthalpy on both sides of the shock using these definitions.
+
+Copy and run the named file. Independently derive a shock location using the jump equations and a separate high-precision state calculation; compare with [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM). Vary back pressure, area ratio and γ, checking conservation, positive entropy rise, reduced stagnation pressure and the stated regime boundaries. A real nozzle can involve boundary layers, separation, external shocks or nonequilibrium thermodynamics that this calculation does not contain.
+
+
+```python file=nozzle_with_shock.py
+import json
+import math
+
+
+def finite(value, name, low, high):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(name)
+    if not math.isfinite(value) or not low <= value <= high:
+        raise ValueError(name)
+    return float(value)
+
+
+def area_function(mach, gamma):
+    a = (gamma - 1.0) / 2.0
+    exponent = (gamma + 1.0) / (2.0 * (gamma - 1.0))
+    return ((1.0 + a * mach * mach) * 2.0 / (gamma + 1.0)) ** exponent / mach
+
+
+def mach_for_area(area, gamma, supersonic):
+    if area < 1.0:
+        raise ValueError("area ratio below one")
+    if area == 1.0:
+        return 1.0
+    low, high = (1.0, 2.0) if supersonic else (1e-12, 1.0)
+    if supersonic:
+        while area_function(high, gamma) < area:
+            high *= 2.0
+    for _ in range(100):
+        mid = (low + high) / 2.0
+        if (area_function(mid, gamma) < area) == supersonic:
+            low = mid
+        else:
+            high = mid
+    return (low + high) / 2.0
+
+
+def state(mach, gamma, total_pressure=1.0):
+    temperature = 1.0 / (1.0 + (gamma - 1.0) * mach * mach / 2.0)
+    pressure = total_pressure * temperature ** (gamma / (gamma - 1.0))
+    return {
+        "mach": mach,
+        "temperature_T0": temperature,
+        "pressure_p01": pressure,
+        "density_p01_over_RT0": pressure / temperature,
+        "velocity_sqrt_RT0": mach * math.sqrt(gamma * temperature),
+    }
+
+
+def shock_at(shock_area, exit_area, gamma):
+    m1 = mach_for_area(shock_area, gamma, True)
+    m2 = math.sqrt((1.0 + 0.5 * (gamma - 1.0) * m1 * m1)
+                   / (gamma * m1 * m1 - 0.5 * (gamma - 1.0)))
+    density_jump = (gamma + 1.0) * m1 * m1 / (2.0 + (gamma - 1.0) * m1 * m1)
+    pressure_jump = (2.0 * gamma * m1 * m1 - (gamma - 1.0)) / (gamma + 1.0)
+    pressure_ratio = density_jump ** (gamma / (gamma - 1.0)) * pressure_jump ** (-1.0 / (gamma - 1.0))
+    exit_mach = mach_for_area(exit_area * pressure_ratio, gamma, False)
+    return {
+        "shock_area_over_throat": shock_area,
+        "total_pressure_ratio": pressure_ratio,
+        "entropy_increase_over_R": -math.log(pressure_ratio),
+        "upstream": state(m1, gamma),
+        "downstream": state(m2, gamma, pressure_ratio),
+        "exit": state(exit_mach, gamma, pressure_ratio),
+    }
+
+
+def solve(exit_area_ratio, back_pressure_ratio, gamma=1.4):
+    area = finite(exit_area_ratio, "exit area ratio", 1.05, 20.0)
+    gamma = finite(gamma, "gamma", 1.1, 1.67)
+    back = finite(back_pressure_ratio, "back pressure ratio", 1e-6, 1.0)
+    upper_pressure = shock_at(1.0, area, gamma)["exit"]["pressure_p01"]
+    lower_pressure = shock_at(area, area, gamma)["exit"]["pressure_p01"]
+    if not lower_pressure < back < upper_pressure:
+        raise ValueError("back pressure must select a strictly internal normal shock")
+    low, high = 1.0, area
+    for _ in range(90):
+        shock_area = (low + high) / 2.0
+        result = shock_at(shock_area, area, gamma)
+        if result["exit"]["pressure_p01"] > back:
+            low = shock_area
+        else:
+            high = shock_area
+    result = shock_at((low + high) / 2.0, area, gamma)
+    result.update({
+        "gamma": gamma,
+        "exit_area_over_throat": area,
+        "back_pressure_p01": back,
+        "exit_pressure_residual": result["exit"]["pressure_p01"] - back,
+        "internal_shock_pressure_bounds": [lower_pressure, upper_pressure],
+    })
+    return result
+
+
+if __name__ == "__main__":
+    print(json.dumps(solve(2.5, 0.6), sort_keys=True))
+```
+
+**Continue:** [An inspectable Blasius boundary-layer calculation](An-inspectable-Blasius-boundary-layer-calculation.lingua#r_7X6RYA08VQGEBYKV786AT13CPJ).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1759XXT97JP6XN6H6HS5DMHRSW

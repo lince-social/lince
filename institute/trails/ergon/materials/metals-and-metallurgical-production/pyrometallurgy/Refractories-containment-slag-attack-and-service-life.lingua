@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect refractory selection and service life with chemical, thermal, and mechanical evidence (@metal-refractories: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../../../../nature/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN", #metals-and-metallurgical-production "Agglomeration-burden-properties-and-thermal-preparation.lingua#r_4NFC3DTZSP7TN7Q8TDXQPVA68Q") { r_6KJ8JD9AM6TJ5NA4ZY6A62SNPF
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the full refractory and furnace sequence; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), complete relevant containment, furnace, maintenance, and residual cases; [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../../../../nature/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN), reuse phase, chemical, microanalytical, and reaction evidence.
+
+Containment interacts with temperature, thermal cycling, stress, flow, slag/metal chemistry, gas atmosphere, infiltration, and abrasion. A maximum service-temperature label does not specify resistance to every combination. Composition, phases, porosity, bonding, joints, installation, drying history, and repair all affect actual behavior.
+
+Separate equilibrium compatibility, reaction/transport rates, thermal/mechanical response, and measured wear. A favorable bulk chemical comparison may miss a locally penetrating phase, changed redox state, or thermal gradient. Refractory loss can contaminate the product or change heat/flow conditions as well as shorten a campaign.
+
+Trace service observations to locations, operating history, material lots, repairs, and measurements. An average campaign duration combines design, feed, operation, maintenance, and failure criteria. Comparing two materials requires compatible duty and evidence, including what changed during the campaigns.
+
+**Work:** reconstruct one complete refractory/containment case with phase/chemical evidence and service observations. Compare two plausible wear mechanisms and an alternative material or process arrangement. Independently check a stated reaction/heat relation and explain which observation discriminates attack, erosion, or thermal/mechanical damage. Account for inspection, replacement, repair capability, supplies, and product-quality consequences in the integrated production study.
+
+**Continue:** [Evaluate feed preparation through the physical and chemical behavior required downstream](Agglomeration-burden-properties-and-thermal-preparation.lingua#r_4NFC3DTZSP7TN7Q8TDXQPVA68Q).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_6KJ8JD9AM6TJ5NA4ZY6A62SNPF

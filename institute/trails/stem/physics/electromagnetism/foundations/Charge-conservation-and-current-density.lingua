@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Charge conservation and current density (@em-continuity: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "../electrostatics/Coulomb-force-superposition-and-test-charge.lingua#r_4BCJ9YGVJSTWDV9S67V2RDR1YD") { r_16QY5HH6CZN53EJ3J1AERMB3TA
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), current and current density; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), charge conservation and the continuity equation.
+
+Define I as the integral of J·n over an oriented surface. A uniform current density normal to area A gives I = JA; otherwise this shorthand is wrong. Charge conservation on a fixed volume is dQ/dt = −∮J·n dA and locally ∂ρ/∂t + ∇·J = 0. A positive outward current decreases the enclosed charge.
+
+For a capacitor being charged through a wire, conduction current can reach a plate while charge accumulates there. There need not be charge carriers crossing the dielectric gap in the ideal model. The later displacement-current term makes the field account consistent across different spanning surfaces. It does not mean a dielectric carries the same conduction mechanism as a metal.
+
+Draw a junction and retain any changing stored charge before setting the sum of currents to zero. Work a finite volume containing a conductor interface and track free and bound charge separately when material response is introduced. A stationary net charge distribution and a steady current are distinct conditions. Conservation is an exact accounting constraint, while a constitutive relation such as J = σE adds model-dependent material physics.
+
+**Continue:** [Coulomb force, superposition and a test charge](../electrostatics/Coulomb-force-superposition-and-test-charge.lingua#r_4BCJ9YGVJSTWDV9S67V2RDR1YD).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_16QY5HH6CZN53EJ3J1AERMB3TA

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Conductivity, diffusivity, capacity and distinguishable measurements (@th-thermal-properties: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "Heat-flux-calorimetry-guarding-and-energy-accounting.lingua#r_0C5CNS266C7247SV38JME1TKPP") { r_4MJYXPQ8QBZ4JQSN3F48JK50V6
+**Read:** [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), complete apparatus, specimen, regression and uncertainty treatment; [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), complete thermal model and parameter-sensitivity treatment; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), property definitions and measurement context.
+
+Conductivity k, volumetric heat capacity C_vol and diffusivity α = k/C_vol are different parameters. A transient temperature trace can identify a combination of parameters without identifying each separately. Geometry, contact, sensor response and boundary losses can imitate a material-property change.
+
+Compare a steady guarded measurement with a transient method on the same declared material state. Read the entire method, apparatus description, specimen conditioning and uncertainty analysis. Establish which quantity the apparatus observes and which properties enter through a model or separate measurement.
+
+Temperature, pressure, moisture, density, orientation, porosity and manufacturing history belong with a reported property. Reference-material values have a domain and uncertainty; they are not exact values for all specimens of the same nominal substance. Use [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4) as a worked scientific account and [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS) for a substantially different scale and inverse model.
+
+**Continue:** [Heat flux, calorimetry, guarding and energy accounting](Heat-flux-calorimetry-guarding-and-energy-accounting.lingua#r_0C5CNS266C7247SV38JME1TKPP).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_4MJYXPQ8QBZ4JQSN3F48JK50V6

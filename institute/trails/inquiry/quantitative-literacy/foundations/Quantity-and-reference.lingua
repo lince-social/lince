@@ -1,0 +1,19 @@
+Import "../Quantitative-literacy.lingua"
+
+A number needs a quantity and a reference (@ql-quantity: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-1, #source @ql-source-si, #quantitative-literacy "Whole-and-signed-numbers.lingua#r_0SJY2JGRVTKNRYW2N2QV64WXJ7", #metrology "../../metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6") { r_65GAJ89AZRG6VYVXDC43NBT0DK
+**Read:** the introduction and first numerical examples in Math for Trades, Volume 1; SI Brochure chapter 2's introduction to quantities and units. Begin with examples, then revisit the SI definitions after the units reading.
+
+“Twenty” can mean twenty pieces, twenty kilograms, a twentieth percentile, or a ratio multiplied by one hundred. Write the quantity as well as its value: a shipment's mass, a specimen's length, the fraction of a particular substance, or elapsed time between named events. A measurement value combines a numerical value and a reference unit. A count also needs a definition of what counts as one item: a wafer, a packaged chip, and a tested working chip are different inventory units.
+
+Use a small table with quantity, symbol, value, unit, basis, and origin. For example, “dry feed mass, m_f, 1000 kg, one batch, supplied exercise data” says more than “feed = 1000.” Label invented teaching values as invented. A nominal label, an observation, a specification limit, and a model prediction are different kinds of information even when written in kilograms.
+
+**Work:** describe a bag of fasteners, a tank, and one day of material receipts using this table. Specify gross versus net mass, whether packaging counts, and where the day begins and ends. Translate quantity/grandeza, unit/unidade, amount/quantidade, and count/contagem without assuming the English word amount always denotes the SI quantity amount of substance.
+
+**Check:** another reader must be able to say what was counted or measured and which two values can meaningfully be compared. A bare number copied from a chart does not yet meet that standard.
+
+**Continue in metrology:** [Begin with a question and specify the measurand](../../metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6).
+
+**Continue:** [Counting, arithmetic, signs, and exact values](Whole-and-signed-numbers.lingua#r_0SJY2JGRVTKNRYW2N2QV64WXJ7).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_65GAJ89AZRG6VYVXDC43NBT0DK

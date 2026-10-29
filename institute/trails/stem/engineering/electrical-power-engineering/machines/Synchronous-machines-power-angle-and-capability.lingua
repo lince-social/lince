@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Synchronous machines, power angle and capability (@pe-synchronous: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/Hydrogenerator-Design-Manual-USBR.lingua#r_4ENJR7JW17MTFV4J47G989AN30", #electrical-power-engineering "Machine-reference-frames-dq-models-and-state-meaning.lingua#r_0MCY79PS4MZSW8CK4V2MER26NP") { r_1PBXD8QXNWF5SQBMHCN8CYP8T6
+**Read:** [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), chapters 4–5 and 9 in full; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), complete synchronous-machine/winding chapter; [Hydrogenerator Design Manual — Bureau of Reclamation](../sources/Hydrogenerator-Design-Manual-USBR.lingua#r_4ENJR7JW17MTFV4J47G989AN30), whole applicable machine-design context.
+
+A rotating field, rotor excitation and stator winding interact to exchange mechanical and electrical power. Relate mechanical speed to electrical frequency and pole count: n_s = 120f/poles in revolutions per minute. At 50 Hz and four poles, synchronous speed is 1500 r/min. Distinguish electrical angle from mechanical angle by pole-pair count.
+
+Derive a simple round-rotor voltage-behind-reactance model with declared sign/current conventions, then the restricted power-angle relation. Include resistance, saliency, saturation and limits only through the corresponding model. Active power, excitation/reactive exchange and torque are connected but not interchangeable controls over every time scale.
+
+Compare generator and motor operation, capability boundaries, cooling and field/stator current limits. A nameplate MVA or a simple capability circle is not a complete operating envelope. Study synchronizing and changed-load response through a complete documented case or suitable supervised apparatus. The next dynamic model, excitation and stability Records preserve energy/state constraints rather than treating the machine as a static ideal voltage source under all disturbances.
+
+**Continue:** [Machine reference frames, dq models and state meaning](Machine-reference-frames-dq-models-and-state-meaning.lingua#r_0MCY79PS4MZSW8CK4V2MER26NP).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_1PBXD8QXNWF5SQBMHCN8CYP8T6

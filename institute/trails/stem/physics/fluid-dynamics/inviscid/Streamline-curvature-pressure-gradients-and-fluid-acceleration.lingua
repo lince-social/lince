@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Streamline curvature, pressure gradients and fluid acceleration (@fd-curvature: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #fluid-dynamics "../study/Defend-a-fluid-balance-before-selecting-a-solution.lingua#r_7FCXY6QVV016AZ59EC6E0DS3QB") { r_3DBWSSFEFA8V9KBFFAYXHYZW9G
+**Read:** [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), inviscid motion and rotational hydrostatics; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), pressure fields and fluid acceleration with notes; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), Bernoulli and potential-flow interpretation.
+
+A fluid can accelerate while its speed stays constant because its direction changes. Resolve the Euler balance normal to a curved streamline. The required normal acceleration is U²/R toward the centre of curvature; the pressure and body-force gradients must supply the corresponding force.
+
+For a rotating liquid without radial motion, pressure rises outward in the appropriate steady balance. In a curved jet or passage, the cross-stream pressure distribution depends on streamline curvature and the other retained effects. An assumption of uniform pressure across a section may fail even when streamwise speed changes little.
+
+Draw the directions of curvature, pressure gradient and acceleration for two examples. Compare a pressure-tap interpretation with a path following the actual fluid. This calculation provides a physical check on a computed pressure field and a bridge to vortices, bends, lift and rotating systems.
+
+**Continue:** [Defend a fluid balance before selecting a solution](../study/Defend-a-fluid-balance-before-selecting-a-solution.lingua#r_7FCXY6QVV016AZ59EC6E0DS3QB).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3DBWSSFEFA8V9KBFFAYXHYZW9G

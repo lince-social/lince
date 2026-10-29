@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: thermoreflectance of films and interfaces (@th-study-thermoreflectance: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #source "../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_6WKF41FT551WE99MNFMFH6YASP
+**Read:** [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), the entire tutorial and one complete primary experiment; [Thermoreflectance methods — September 2026 review](../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW), the full versioned preprint; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), full relevant interface and measurement discussion.
+
+Read the complete Jiang–Qian–Yang tutorial and the versioned 2026 review, following their primary references for one chosen method. Derive the multilayer thermal response, optical/heating approximation and measured observable. Specify whether time, frequency, spatial or steady-state modulation supplies the information.
+
+Analyze sensitivity to film conductivity/capacity, interface conductance, transducer thickness, spot size and substrate properties. Compare two measurement settings that alter penetration depth or parameter correlation. Check numerical integrals and independently recover a simpler limiting model.
+
+Deliver a complete reconstruction of a published inference or a performed measurement, including unavailable data and uncertainty. Contrast the original paper's claim with what can actually be reproduced. Treat the September 2026 manuscript as the cited preprint version and evaluate its arguments rather than presenting it as established consensus by date alone.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6WKF41FT551WE99MNFMFH6YASP

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Equations of state and caloric information (@th-eos: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1", #thermodynamics-and-heat-transfer "Property-tables-reference-states-and-interpolation.lingua#r_3FSQXM2G05B0C35PEQ6G67M5BZ") { r_3YYAN5FQJXPX2441B2ZK5M4VPN
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), chapter 3; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), pure-substance equations and thermodynamic relations; [CoolProp — thermophysical property models and methods](../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1), fluid equations and state selection.
+
+An equation relating pressure, volume, temperature and amount is not automatically a complete caloric model. For an ideal gas, pV = nRT relates mechanical variables, while U(T) or heat capacity supplies additional energy information. A real-fluid fundamental potential can generate both consistently through its derivatives.
+
+Declare mass-specific versus molar gas constants and absolute pressure/temperature. Compare ideal-gas estimates with compressibility and departure properties over the intended state range. An equation that fits pressure poorly near condensation cannot become reliable by using more decimal places.
+
+Read full pure-substance and real-gas chapters before using cubic or multiparameter models. Test positive response functions, equilibrium branch selection and continuity where appropriate. A mathematical root can represent an unstable or metastable state rather than the stable state the experiment reaches.
+
+**Continue:** [Property tables, reference states and interpolation](Property-tables-reference-states-and-interpolation.lingua#r_3FSQXM2G05B0C35PEQ6G67M5BZ).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3YYAN5FQJXPX2441B2ZK5M4VPN

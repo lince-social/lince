@@ -1,0 +1,19 @@
+Import "../Quantitative-literacy.lingua"
+
+Keep observations, formulas, units, and revisions recoverable (@ql-data: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-data, #source @ql-source-si, #quantitative-literacy "Repeated-observations.lingua#r_6S7MZWJ6S5MERFKE0NQEWC5SY2", #reproducible-computation "../../reproducible-computation/data/Meaning-and-schema.lingua#r_6R0FJMACN4F6T6R0ETDCQHF6NH") { r_5TTXVQ6161YYC7CFWDSQCV8WX8
+**Read:** Broman and Woo's complete Data Organization in Spreadsheets, then apply it to the measurements and stock examples already produced. Revisit the SI writing guidance for column headings and unit symbols. A spreadsheet, plain table, or notebook can all support this work.
+
+Keep original observations distinct from corrected values, derived quantities, model assumptions, and specification limits. A useful column definition states name, meaning, unit, valid range, missing-value convention, and source. A row needs an identity and relevant time or batch; a date without a time zone may be insufficient for a transfer between sites.
+
+For a calculation, preserve the equation, input references, conversion factors, intermediate precision, and output meaning. A formula copied down a column can silently use the wrong absolute reference. A displayed zero can mean a real zero, a rounding effect, an instrument's below-range indication, or a missing observation incorrectly coerced into zero.
+
+**Work:** create a ten-row teaching table with receipts, sample moisture, dry mass, and component fraction. Separate an input sheet from a calculation sheet. Export the input as a text table and reopen it with the same units, decimal conventions, identifiers, and missing values. Then change a conversion factor in the calculation and show that the original observations remain available.
+
+Independently check three rows by hand and one aggregate by a different method. Record the version of an external table used as a source. In later reproducible computing, scripts and version control make these practices scalable; here the essential achievement is that another reader can retrace a numerical claim without guessing what a cell meant.
+
+**Continue in reproducible computation:** [Give every input a meaning and a checkable schema](../../reproducible-computation/data/Meaning-and-schema.lingua#r_6R0FJMACN4F6T6R0ETDCQHF6NH).
+
+**Continue:** [Repeated observations, averages, spread, and shared errors](Repeated-observations.lingua#r_6S7MZWJ6S5MERFKE0NQEWC5SY2).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_5TTXVQ6161YYC7CFWDSQCV8WX8

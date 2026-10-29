@@ -1,0 +1,19 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect chlor-alkali production with brine, cells, co-products and downstream duties (@ic-chloralkali-process: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Hydrochloric-acid-source-absorption-purity-and-use.lingua#r_7KZQ2C95YVJ7756T1757N507KH", #chemical-supply-systems "../../../../ergon/materials/chemical-feedstocks-and-supply-systems/families/Chlor-alkali-co-production-and-competing-demand.lingua#r_6TBYK42RHG7R4JSKZ8KGR1EXD2") { r_4QSMP063PRGB1934XC88JC9F63
+**Read:** [Production of Chlor-alkali, BREF CAK](../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the whole 2014 BREF including preparation, cells, product conditioning, conversion and site legacy; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the complete chlor-alkali teaching; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full relevant reaction/material and energy-account reasoning.
+
+The ideal net reaction 2NaCl+2H₂O→Cl₂+H₂+2NaOH links salt/water, electricity and three useful chemical products. The cell's actual separator/membrane, electrode reactions, current efficiency, voltage, brine condition and temperature influence production and purity. One co-product cannot be counted without its connected chemical account.
+
+Separate reversible electrical work, measured cell input and wider system duties. Brine preparation/return, caustic concentration, chlorine conditioning and hydrogen purification/compression require material, energy, equipment and maintenance. A high current efficiency does not by itself establish overall accepted-product efficiency.
+
+Different historical cell routes carry different impurity and legacy issues; a dated public reference must be read with its actual scope. Product demand and transfer requirements also constrain the useful balance between chlorine, caustic and hydrogen. A co-product is valuable under specified quality and destination, not simply because the equation produces it.
+
+**Work:** reconstruct the entire public membrane-cell route and independently close sodium, chlorine, hydrogen, water, charge and energy accounts. Compare a documented alternative or change at the same accepted co-product boundaries. Explain cell/material state, purification, service history, measurement uncertainty and residual obligations through a full operating interval.
+
+**Continue:** [Distinguish hydrochloric-acid production routes, recovered acid and usable specification](Hydrochloric-acid-source-absorption-purity-and-use.lingua#r_7KZQ2C95YVJ7756T1757N507KH).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+
+**Continue in chemical supply systems:** [Explain why co-products make chemical availability interdependent](../../../../ergon/materials/chemical-feedstocks-and-supply-systems/families/Chlor-alkali-co-production-and-competing-demand.lingua#r_6TBYK42RHG7R4JSKZ8KGR1EXD2).
+} r_4QSMP063PRGB1934XC88JC9F63

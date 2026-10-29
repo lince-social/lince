@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Characterize the resources needed to reconstruct a result (@rc-resources: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #source "../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "../publication/Results-figures-and-explanation.lingua#r_4CYNSA0PMKHVVM82W63AB23VFH") { r_1MPJ0VZA80BTN6QAFEZFM86T3C
+**Read:** [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Research Compendia, environments, and project-design material; [Workflow graphs, environments, and execution — Snakemake documentation](../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS), resource declarations and execution reporting; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), the relevant memory/process measurement references.
+
+A scientifically specified workflow can still be practically inaccessible if it needs undocumented memory, storage, run time, network access, or specialized hardware. Report observed resource requirements with a workload and environment. A reader deciding whether to reproduce a study needs more than a dependency list and an optimistic expected duration.
+
+Distinguish peak memory, retained inputs, temporary intermediates, reusable caches, and final outputs. Streaming can reduce memory while changing which operations remain possible. Compression trades storage and processing and adds a format/decoder dependency. Reconstructible derived outputs can be regenerated, but original observations and permitted source editions may be irreplaceable.
+
+Bound the small teaching program explicitly: one megabyte of input, at most 10,000 lots, and bounded decimal strings. It stores the table in memory to keep the example easy to inspect. A production-scale material ledger would require a revised storage/validation design and corresponding tests; removing the bound without examining arithmetic and memory growth is not a complete scale-up.
+
+**Work:** measure resource use for several authorized or original workload sizes. State which measurement tool and definition produced each number. Estimate the storage and time of a fresh reconstruction, including retrieval and environment creation where relevant. Compare a small independently checkable case with the complete study and explain what scientific questions each can answer.
+
+For the final project provide practical instructions for a small reconstruction and an honest account of the full computation's requirements. If a reported result depends on restricted compute or a disappearing service, document that limit and preserve the strongest accessible evidence and alternative checks. Reproducibility includes the material work needed to keep the method usable.
+
+**Continue:** [Generate the report from the identified result and explain its limits](../publication/Results-figures-and-explanation.lingua#r_4CYNSA0PMKHVVM82W63AB23VFH).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_1MPJ0VZA80BTN6QAFEZFM86T3C

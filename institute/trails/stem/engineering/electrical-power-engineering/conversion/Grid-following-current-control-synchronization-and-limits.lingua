@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Grid-following current control, synchronization and limits (@pe-grid-following: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF", #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #source "../sources/UNIFI-Grid-Forming-Specifications-Version-2.lingua#r_5SF91JRQ8TE46HXTXRK16P9KBZ", #electrical-power-engineering "Grid-forming-voltage-behavior-droop-and-energy.lingua#r_4VKDJXXE9G6QABBCNQ0GB2KAMH") { r_6RBJ2AJVKVGPF9HP5XP3EHYY5T
+**Read:** [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF), entire grid-following/forming and modelling discussion; [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), complete filter/current/control development; [UNIFI grid-forming specifications, version 2](../sources/UNIFI-Grid-Forming-Specifications-Version-2.lingua#r_5SF91JRQ8TE46HXTXRK16P9KBZ), whole applicable capability and plant/unit distinction.
+
+A grid-following converter commonly regulates current relative to a measured voltage/time reference. Derive the filter/network, synchronization, current-loop and outer-loop model for a stated implementation. A phase-locked loop, measurement filter and finite source impedance interact; the ideal reference is not automatically an infinite stiff grid.
+
+Compare active/reactive commands with actual current/voltage capability, DC-link energy, losses and protection. During a low-voltage disturbance a constant-power command may become unattainable, and current limiting/priority changes the terminal behavior. The source cannot be represented by an unlimited commanded PQ injection for every fault or weak-network state.
+
+Read the whole [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF) comparison and relevant converter/control methods, then reconstruct one complete documented case. Test a changed grid impedance and control delay, including both small perturbations and limit transitions. A successful synchronized operating point does not establish the ability to create voltage/frequency in an island. The next grid-forming Record develops that distinct behavior while keeping real control, energy and current limits explicit.
+
+**Continue:** [Grid-forming voltage behavior, droop and energy](Grid-forming-voltage-behavior-droop-and-energy.lingua#r_4VKDJXXE9G6QABBCNQ0GB2KAMH).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6RBJ2AJVKVGPF9HP5XP3EHYY5T

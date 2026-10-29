@@ -1,0 +1,17 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+A complete thermal service from physics to continuing use (@th-integrated: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #thermodynamics-and-heat-transfer "Independent-thermal-research-with-a-reproducible-question.lingua#r_7J2R5MAJBHZ2TCY251SS2T4HA3") { r_7J8HFJ2KFHGSRF5EB4JFNRZRB2
+**Read:** [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), whole-system thermodynamic accounting; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete applicable transport methods; [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), complete evidence/uncertainty method; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), complete relevant cycle developments.
+
+Choose a bounded thermal service: a controlled process temperature, a device cooling path, a heat-recovery/storage duty or a refrigeration/heat-delivery system. Define who needs it, the delivered condition and time history, the available sources/sinks and the circumstances under which the claim must hold.
+
+Build connected material, energy, entropy and exergy accounts. Derive the transport and property models, state their domains, and independently check analytical limits and numerical convergence. Include auxiliaries, contacts, uncertain boundaries, sensors, control response, startup/shutdown and a plausible degraded condition. Compare at least one alternative arrangement at equal delivered service.
+
+Connect specifications to real materials, manufacture, assembly, utilities, measurement and continuing maintenance. Obtain the actual specialist methods required for pressure equipment, electrical systems, chemicals or other parts beyond this shared thermal foundation. Demonstrate a measured result for a practical claim, or explicitly retain the work as a documentary/computational design.
+
+Defend the result with traceable sources, executable calculations, uncertainty, failed cases and an independent critique. Revise a material conclusion in response to evidence. Explain both what the thermal account establishes and which wider engineering claims still require work.
+
+**Continue:** [Independent thermal research with a reproducible question](Independent-thermal-research-with-a-reproducible-question.lingua#r_7J2R5MAJBHZ2TCY251SS2T4HA3).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7J8HFJ2KFHGSRF5EB4JFNRZRB2

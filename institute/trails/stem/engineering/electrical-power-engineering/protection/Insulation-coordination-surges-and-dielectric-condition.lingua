@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Insulation coordination, surges and dielectric condition (@pe-insulation: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2", #source "../sources/DPsim-Transient-and-Dynamic-Phasor-Methods.lingua#r_6Y8PGZBGJHGV3JHZ1Q8XC77RR3", #source "../sources/Transformer-Maintenance-and-Diagnostics-FIST.lingua#r_5Y3NB9GQFCVNJ8QVR9BC53JS32", #source "../sources/Electrical-Standards-Edition-and-Jurisdiction.lingua#r_169QEF26N0C345MKSRWQY6KD90", #electrical-power-engineering "Arcing-interruption-and-an-exposure-model.lingua#r_2X1S107GHDD6M7GBHX5HZTT43R") { r_59ZVMCW67D4VKN4YNEJSPX0Z1Z
+**Read:** [Medium Voltage Technical Guide — Schneider Electric](../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2), complete insulation/overvoltage guidance; [DPsim — electromagnetic-transient and dynamic-phasor methods](../sources/DPsim-Transient-and-Dynamic-Phasor-Methods.lingua#r_6Y8PGZBGJHGV3JHZ1Q8XC77RR3), whole applicable distributed/transient model methods; [Transformer maintenance and diagnostics — FIST 3-30 and 3-31](../sources/Transformer-Maintenance-and-Diagnostics-FIST.lingua#r_5Y3NB9GQFCVNJ8QVR9BC53JS32), complete relevant insulation/condition methods; [Electrical standards, edition and jurisdiction](../sources/Electrical-Standards-Edition-and-Jurisdiction.lingua#r_169QEF26N0C345MKSRWQY6KD90), actual applicable insulation and surge document scope.
+
+Insulation must withstand the voltage stress actually imposed by geometry, operating conditions and disturbances. Continuous power-frequency voltage, temporary overvoltage, switching impulse and lightning-related stress require different models/test evidence. Field concentration at interfaces, contamination, moisture, aging and defects can matter more than a nominal bulk dielectric constant.
+
+Connect the shared dielectric/field understanding to one winding, cable termination or substation interface. Derive a simple equivalent for a surge path, then identify where distributed waves, reflections, nonlinear arresters and stray capacitances/inductances change it. A surge protective device has energy, current and coordination conditions, not an unlimited voltage-clamping promise.
+
+Compare a transient prediction with a correctly defined withstand/test and the actual equipment/installation state. State waveform, repetition, environment and uncertainty. Historical test levels in a guide are not universal present requirements. Read the complete applicable standard/manufacturer method for a design claim. The later EMT and advanced insulation studies keep analytical simplification, solver accuracy and physical dielectric condition as distinct parts of the evidence.
+
+**Continue:** [Arcing, interruption and exposure models](Arcing-interruption-and-an-exposure-model.lingua#r_2X1S107GHDD6M7GBHX5HZTT43R).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_59ZVMCW67D4VKN4YNEJSPX0Z1Z

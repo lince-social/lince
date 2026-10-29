@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Relate a dated signal to closure, cooling, growth, or exposure (@geo-thermal-history: 0, is #chapter, #part-of @geology, #source "../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #source "../sources/IsoplotR-Vermeesch.lingua#r_6H156FG6EJ2M5AJ1A9GV0NV3S4", #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #geology "Geological-timescales-and-boundary-definitions.lingua#r_70936GPH4DD8G6YNN6HM6TBJTC") { r_7SASJB1B94VS5TCVQ0WYTJ8Z11
+**Read:** [Introduction to Geochronology — Pieter Vermeesch](../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), Thermochronology, Cosmogenic Nuclides, and U-series chapters in full; [IsoplotR: A free and open toolbox for geochronology — Vermeesch](../sources/IsoplotR-Vermeesch.lingua#r_6H156FG6EJ2M5AJ1A9GV0NV3S4), the corresponding complete method/interpretation sections; [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), structural/field constraints relevant to a selected history.
+
+A mineral/system's response to thermal and chemical history affects what a numerical date can represent. Closure behavior depends on a model involving transport, scale, rate, and material properties, rather than one universal fixed temperature for every specimen. Growth, resetting, partial disturbance, and inherited domains can preserve several events.
+
+Thermochronology combines such responses with observations to constrain a cooling/exhumation history under assumptions. Several histories can fit a limited dataset. Distinguish model resolution and parameter sensitivity from the displayed precision of individual analytical ages. Geological and structural context can supply independent constraints.
+
+Exposure/burial methods using cosmogenic nuclides require production, shielding, erosion, inheritance, transport, and temporal information appropriate to the system. A surface specimen's signal need not reflect only the age of the current landscape form. State the model and boundary history before interpreting a derived duration.
+
+**Work:** reconstruct a complete lecture-note example and compare two hypothetical histories consistent with a limited set of age constraints. Identify additional systems, specimens, or geological relationships that could distinguish them. Separate assumptions about initial state, analytical measurements, numerical inversion, and geological process.
+
+Read the full thermochronology/cosmogenic/U-series chapters as advanced preparation. Later geochronology, geochemistry, and surface-process work can deepen their unique methods, while this general foundation establishes why “a date” needs a physically meaningful event and uncertainty account.
+
+**Continue:** [Read a timescale as a versioned synthesis of definitions and evidence](Geological-timescales-and-boundary-definitions.lingua#r_70936GPH4DD8G6YNN6HM6TBJTC).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_7SASJB1B94VS5TCVQ0WYTJ8Z11

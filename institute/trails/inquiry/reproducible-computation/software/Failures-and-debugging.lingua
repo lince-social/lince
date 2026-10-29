@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Reduce a failure until its cause can be explained (@rc-debugging: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Refactoring-and-method-changes.lingua#r_449MB2D68DJG0C44H8FC540Q1Q") { r_70541T2GJ91TBBSC8B6NFM2Z9R
+**Read:** [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), error handling, debugging, and testing chapters; [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), chapter 5 revisited; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), exceptions and the debugger reference where used.
+
+Begin debugging with the discrepancy, the expected behavior, and a small input that still exhibits it. Preserve the failing example before changing the code. Separate a parsing problem from an invalid physical assumption, an incorrect equation, numerical approximation, and a mistaken interpretation. They need different corrections even if they first appear as one surprising number.
+
+Trace values across the boundaries of the analysis. If dry mass is wrong, inspect the original field, the parsed value, the basis conversion, and the equation separately. A debugger or a temporary diagnostic can reveal state, but the surviving explanation should identify the cause and a meaningful regression check. Avoid retaining a long sequence of guesses as the only account of the correction.
+
+Failures also have an output contract. A rejected CSV should produce a nonzero status and a useful diagnostic without silently replacing a valid earlier report. A numerical overflow, invalid draw, or failed solver should remain distinguishable from a legitimate zero or missing observation. Catching every exception and continuing can make a failed analysis look reproducible by consistently publishing the same fallback.
+
+**Work:** break the input basis deliberately, then break an arithmetic sign, then point to a missing input. For each, create the smallest revealing case and state what evidence localizes the defect. Correct it and add a check that follows from the expected meaning, not the incidental text of one traceback. Show that the corrected result survives the original full input.
+
+Read the complete error-handling and debugging material in the research-software book. In advanced work reproduce a reported failure from another implementation, document any missing evidence, and explain whether the defect affects only execution, numerical values, or the published scientific claim.
+
+**Continue:** [Improve structure while keeping scientific changes identifiable](Refactoring-and-method-changes.lingua#r_449MB2D68DJG0C44H8FC540Q1Q).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_70541T2GJ91TBBSC8B6NFM2Z9R

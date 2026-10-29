@@ -1,0 +1,11 @@
+Import "../Electromagnetism.lingua"
+
+Yee’s staggered-grid Maxwell paper, 1966 (@em-yee: 0, is #reference, #part-of @em-sources) { r_4CBRR0WD5E152VJ2S1A3MCHXTN
+Kane S. Yee. Numerical solution of initial boundary value problems involving Maxwell's equations in isotropic media. IEEE Transactions on Antennas and Propagation 14(3), 302–307, 1966. DOI 10.1109/TAP.1966.1138693. [Publisher record](https://ieeexplore.ieee.org/document/1138693).
+
+Read the complete paper through an authorized library or publisher route during the historical/methodological comparison. Reconstruct the spatial/time staggering independently and compare the original scope with Schneider and current solvers. A modern solver's features should not be attributed to this six-page original paper without evidence.
+
+The publisher route required a JavaScript verification challenge on 29 October 2026; full text and reuse terms were not inspected. The freely available Schneider text provides an independent method-learning route, while the historical original remains a clearly identified additional scholarly reading. No article or unauthorized mirror is supplied.
+
+**Return:** [Electromagnetic sources — complete books, courses, methods and research](../Sources.lingua#r_6XW0N80NM6WSDWED10N8N7WX3P).
+} r_4CBRR0WD5E152VJ2S1A3MCHXTN

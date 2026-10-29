@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Advanced project — coupled equilibria, activities, and model criticism (@gc-equilibrium-project: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #source "../sources/Henry-Law-Sander.lingua#r_4HW63C2ZE42PFRFC294FDPTYWH", #general-chemistry "A-kinetic-and-thermal-investigation.lingua#r_71VHHPY63F3DGW1PJ5K8HDSYQB") { r_6GQB2QBSJ0BJ4YYVNCAP1AF0V6
+**Read:** [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 6 completely and the selected analytical context; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the full advanced acid/base, carbonate, and exact-solution lessons; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), the complete abridged volume during advanced study; [Compilation of Henry’s law constants, version 5.0.0 — Rolf Sander](../sources/Henry-Law-Sander.lingua#r_4HW63C2ZE42PFRFC294FDPTYWH), the relevant definitions and original sources for a gas-coupled case.
+
+Choose a chemical system connecting at least several of acid/base, complexation, precipitation, gas partition, and a defined water/mineral question. Begin with the original monoprotic titration model as a numerical benchmark, then derive the new species, reactions, balances, phase/open-boundary constraints, and activity assumptions from the actual question.
+
+Read Harvey's complete equilibrium chapter, the assigned Chem1 exact-calculation and application units, the relevant Green Book definitions, and primary/evaluated sources for every needed constant. Identify convention, medium, temperature, phase, uncertainty, and source history. A table of apparently compatible numbers can conceal different standard states or conditional constants.
+
+Develop analytic limits and simpler independent cases before solving the full system. Check nonnegativity, charge/component closure, phase consistency, equations, and numerical tolerance. Compare an ideal model with a justified nonideal alternative, identify valid ranges, and examine sensitivity and parameter identifiability. A numerical root does not establish that all chemically important species were included.
+
+**Produce:** derivation, documented inputs/constants, a reproducible implementation, independent validation, distribution/response plots, uncertainty/model-sensitivity discussion, and an interpreted chemical result. Compare closed and open boundaries where meaningful. Explain which observations could test or distinguish the competing models.
+
+Have another reader reconstruct the small benchmarks and a substantial case, or document a bounded self-restoration if independent access is unavailable. Preserve criticism and a substantive revision. Use the shared computational and metrology Records rather than repeating their entire method here. The outcome should support a detailed technical discussion of assumptions and failure conditions, not merely a colorful speciation diagram.
+
+**Continue:** [Advanced project — infer a kinetic model from chemical and measurement evidence](A-kinetic-and-thermal-investigation.lingua#r_71VHHPY63F3DGW1PJ5K8HDSYQB).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_6GQB2QBSJ0BJ4YYVNCAP1AF0V6

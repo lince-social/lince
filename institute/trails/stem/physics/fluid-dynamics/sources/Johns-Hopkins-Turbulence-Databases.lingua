@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Johns Hopkins Turbulence Databases — numerical flow evidence (@fd-jhtdb: 0, is #reference, #part-of @fd-sources) { r_1D25T86CC1CHT4BX098WQXBQPE
+Johns Hopkins Turbulence Databases. [Current database-access portal](https://turbulence.idies.jhu.edu/database) · [Legacy portal and migration notices](https://turbulence.pha.jhu.edu/?legacy=1).
+
+Read the selected simulation's governing equations, forcing, geometry, resolution, time range, interpolation/differentiation methods and citation instructions before extracting a statistic. Reproduce a known result, then vary sample duration, spacing and estimator. These are numerical experiments with declared models, not measurements of an arbitrary physical flow.
+
+The current portal permits small testing requests below 4,096 points with a public testing identifier; larger work requires an authorization token requested from the project. The legacy page reports HTTP-to-HTTPS problems in older SOAP/pyJHTDB tools and directs users to new Python/Matlab access methods. Access conditions and dataset terms should be checked at use. No token request, data retrieval or copied dataset is part of this Record.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_1D25T86CC1CHT4BX098WQXBQPE

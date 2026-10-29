@@ -1,0 +1,96 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+An inspectable conservative transient layered slab (@th-slab-example: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #source "../sources/FiPy-Partial-Differential-Equations-with-Python.lingua#r_0CA1GV7T9X876WS57M2KH93SZB", #thermodynamics-and-heat-transfer "Continuum-limits-balance-and-numerical-verification.lingua#r_5PJ5RCWTV301NEP8WC30S847XA") { r_6B5B7E7C3Z1APY0RYAC09P12ET
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete transient and layered conduction development; [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), complete finite-volume discretization; [FiPy: Partial Differential Equations with Python](../sources/FiPy-Partial-Differential-Equations-with-Python.lingua#r_0CA1GV7T9X876WS57M2KH93SZB), the entire methods paper.
+
+Divide a slab of length 1 m and area 1 m² into equal cells with piecewise constant conductivity and volumetric heat capacity. Hold both end faces at fixed temperatures and treat the sides as insulated. There is no internal source, flow, contact resistance or phase change. Cell temperatures approximate volume averages; the model is intentionally simple enough to inspect.
+
+A face conductance is the reciprocal of the two half-cell resistances in series. Boundary conductances use the boundary half cell. With cell storage C_i, the update is T_i,new = T_i + Δt(q_i−q_i+1)/C_i, where face heat rates are positive left to right. Internal transfers cancel exactly in the discrete energy account. The time-step rule keeps each update a convex combination of its previous temperature and neighbouring/boundary values.
+
+Conductivity inputs are 0.1–10 W/(m K), capacity inputs 0.1–10 J/(m³ K), and temperatures 100–2000 K. These small capacities are declared teaching values, not property data for an ordinary solid. There are 2–128 cells and at most 20,000 explicit steps; the safety factor lies between 0.05 and 1. The result reports accumulated boundary heat and the independently summed stored-energy change.
+
+```python file=layered_slab.py
+import json
+import math
+
+
+def bounded(value, low, high):
+    if type(value) not in (int, float):
+        raise ValueError("expected a finite real number")
+    try:
+        value = float(value)
+    except OverflowError:
+        raise ValueError("number is outside the model domain") from None
+    if not math.isfinite(value) or not low <= value <= high:
+        raise ValueError("number is outside the model domain")
+    return value
+
+
+def simulate(conductivity, capacity, initial, left=400.0, right=300.0,
+             steps=400, safety=0.8):
+    if not all(isinstance(v, (list, tuple)) for v in (conductivity, capacity, initial)):
+        raise ValueError("properties and initial field must be sequences")
+    count = len(conductivity)
+    if not 2 <= count <= 128 or len(capacity) != count or len(initial) != count:
+        raise ValueError("provide equal sequences with 2 to 128 cells")
+    if type(steps) is not int or not 0 <= steps <= 20000:
+        raise ValueError("steps must be an integer from 0 to 20000")
+    factor = bounded(safety, 0.05, 1.0)
+    k = [bounded(v, 0.1, 10.0) for v in conductivity]
+    c = [bounded(v, 0.1, 10.0) for v in capacity]
+    start = [bounded(v, 100.0, 2000.0) for v in initial]
+    left = bounded(left, 100.0, 2000.0)
+    right = bounded(right, 100.0, 2000.0)
+    width = 1.0 / count
+    storage = [value * width for value in c]
+    conductance = [2.0 * k[0] / width]
+    conductance.extend(
+        1.0 / (0.5 * width / k[i - 1] + 0.5 * width / k[i])
+        for i in range(1, count)
+    )
+    conductance.append(2.0 * k[-1] / width)
+    dt = factor * min(
+        storage[i] / (conductance[i] + conductance[i + 1])
+        for i in range(count)
+    )
+    temperature = start.copy()
+    left_energy = []
+    right_energy = []
+    for _ in range(steps):
+        flux = [conductance[0] * (left - temperature[0])]
+        flux.extend(
+            conductance[i] * (temperature[i - 1] - temperature[i])
+            for i in range(1, count)
+        )
+        flux.append(conductance[-1] * (temperature[-1] - right))
+        left_energy.append(dt * flux[0])
+        right_energy.append(dt * flux[-1])
+        temperature = [
+            temperature[i] + dt * (flux[i] - flux[i + 1]) / storage[i]
+            for i in range(count)
+        ]
+    change = math.fsum(storage[i] * (temperature[i] - start[i]) for i in range(count))
+    left_total = math.fsum(left_energy)
+    right_total = math.fsum(right_energy)
+    return {
+        "temperature_K": temperature,
+        "time_s": steps * dt,
+        "step_s": dt,
+        "left_heat_entering_J": left_total,
+        "right_heat_leaving_J": right_total,
+        "stored_energy_change_J": change,
+        "balance_residual_J": change - left_total + right_total,
+    }
+
+
+if __name__ == "__main__":
+    result = simulate([0.5] * 4 + [2.0] * 4, [4.0] * 8, [300.0] * 8)
+    print(json.dumps(result, sort_keys=True, allow_nan=False))
+```
+
+Check a small case with exact rational arithmetic and an independently assembled matrix update. Recover the steady series-resistance profile and a uniform-medium sinusoidal mode. Refine space and time at the same physical time against a continuum solution. Reverse the material/temperature arrangement, test the maximum principle and energy closure, and reject invalid inputs. Agreement with this bounded model does not validate an unmeasured real slab.
+
+**Continue:** [Continuum limits, balance and numerical verification](Continuum-limits-balance-and-numerical-verification.lingua#r_5PJ5RCWTV301NEP8WC30S847XA).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6B5B7E7C3Z1APY0RYAC09P12ET

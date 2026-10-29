@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Depth-averaged mass and momentum in shallow water (@fd-shallow-water: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #fluid-dynamics "Specific-energy-critical-depth-and-hydraulic-jumps.lingua#r_5R5PG02RW7F1B7X6QWCR4MVZHN") { r_719NEXPHYB8DCJPKVZ3QKNSCXX
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 shallow-water equations; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 7.a shallow-water approximation; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), conservative numerical balances.
+
+When horizontal length greatly exceeds depth and vertical acceleration is appropriately small, pressure is approximately hydrostatic. For a one-dimensional horizontal channel of unit width with depth h and depth-mean speed u, the ideal flat-bed equations are h_t+(hu)_x=0 and (hu)_t+(hu²+gh²/2)_x=0. The momentum flux includes hydrostatic pressure, not merely advected momentum.
+
+Derive the equations by depth integration, explaining the assumed velocity profile and neglected stresses. The characteristic speeds are u±√(gh), and Froude number |u|/√(gh) distinguishes the direction in which long-wave information can travel. A sloping bed adds a source term whose discretization must preserve a lake at rest when appropriate.
+
+Compare a smooth small-amplitude wave with a nonlinear bore or dam-break idealization. State whether the bed is wet or dry, whether friction and topography are included, and whether the flow remains shallow. The conservative momentum equation and a nonconservative velocity equation are equivalent for smooth positive-depth solutions but cannot be used interchangeably across a shock without the correct jump treatment.
+
+**Continue:** [Specific energy, critical depth and hydraulic jumps](Specific-energy-critical-depth-and-hydraulic-jumps.lingua#r_5R5PG02RW7F1B7X6QWCR4MVZHN).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_719NEXPHYB8DCJPKVZ3QKNSCXX

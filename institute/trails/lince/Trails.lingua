@@ -26,7 +26,7 @@ Arrange useful introductions and deeper work with these connections and concise 
 
 Protein filters data available through its source. Resolve references and retrieve external definitions through normal source and Sync workflows; discovery imports do not define the selected route or create personal operational data. Viewing or retrieving data does not enact its actions.
 
-For developed learning material, prefer a Record per descriptively named `.lingua` file, with its content and outgoing assertions together. This development register keeps its general guidance and planned Records together in `institute/trails/Trails.lingua`. Group related Records in useful directories and keep source descriptions beside their referenced material. Imports provide discovery; directories and filenames do not establish learning order. Readers follow ordinary links or configure a Protein in their workspace. Published content requires no query files, views directory, manifest, or special Trail feature.
+For developed learning material, prefer a Record per descriptively named `.lingua` file, with its content and outgoing assertions together. This development register keeps its general guidance and planned Records together in `institute/trails/lince/Trails.lingua`. Group related Records in useful directories and keep source descriptions beside their referenced material. Imports provide discovery; directories and filenames do not establish learning order. Readers follow ordinary links or configure a Protein in their workspace. Published content requires no query files, views directory, manifest, or special Trail feature.
 
 Begin with an accessible primary reading and introduce the understanding it uses. Divide large works into explicit successive reading sections; name what is complete and what is selected. Deepen through connected arguments, language and translation, competing interpretations, sustained investigation, and criticism and revision. Keep those intellectual demands in the relevant material rather than turning them into authoring bureaucracy or software gates. Short paths can remain short when their stated scope is small.
 
@@ -55,17 +55,17 @@ The linked planning Records describe knowledge to develop. ERG labels are editor
 | Field | Planned subjects |
 | --- | --- |
 | [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z) | 12 |
-| [Quantitative and computational practice](Trails.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00) | 2 |
+| [Quantitative and computational practice](Trails.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00) | 0 |
 | [Reasoning and communication](Trails.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB) | 2 |
-| [Measurement and research](Trails.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0) | 2 |
+| [Measurement and research](Trails.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0) | 1 |
 | [Learning and teaching](Trails.lingua#r_1JERVDF9ND9GX4T1AGV0PE1HT3) | 1 |
 | [Knowledge stewardship](Trails.lingua#r_7T9WCQ0Q5TA1Q0VXQJ74Y25F53) | 1 |
 | [Mathematics](Trails.lingua#r_6PZSEX3MTC14A74R94SJQ67B3C) | 20 |
-| [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ) | 23 |
-| [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6) | 18 |
-| [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48) | 33 |
+| [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ) | 20 |
+| [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6) | 16 |
+| [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48) | 31 |
 | [Computing](Trails.lingua#r_7YRTRPQ94D66X8Y7KN7K2XCTK8) | 22 |
-| [Earth and environment](Trails.lingua#r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE) | 14 |
+| [Earth and environment](Trails.lingua#r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE) | 12 |
 | [Life and evolution](Trails.lingua#r_72CYF6F3ZBTDEZ07QGWVYVPBRB) | 14 |
 | [Food, land, and animals](Trails.lingua#r_7TZJ0205WDMV84BK85FENRWE64) | 5 |
 | [Health and care](Trails.lingua#r_1YY66H962HAJ5XJQHYJWGZQ0Z6) | 3 |
@@ -76,7 +76,7 @@ The linked planning Records describe knowledge to develop. ERG labels are editor
 | [Political-Economy](Trails.lingua#r_2WPG1Y767BM24Z0K4BY6Y6T62W) | 8 |
 | [Literature](Trails.lingua#r_68XTEFTFVR5ZPB68D6E1XK0SR3) | 4 |
 | [Geography and communities](Trails.lingua#r_51B6N9Q9KVNQJTZRYTSJVGZ54P) | 1 |
-| [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5) | 8 |
+| [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5) | 6 |
 | [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4) | 4 |
 | [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ) | 4 |
 | [Logistics and exchange](Trails.lingua#r_40D59MXC3BX7K9FEVGCRY5S6F1) | 1 |
@@ -87,7 +87,7 @@ The linked planning Records describe knowledge to develop. ERG labels are editor
 
 ## Source anchors and proposed homes
 
-Use the existing [Philosophy](philosophy/Philosophy.lingua), [Ergon](ergon/Ergon.lingua), [Basic Eletronics](ergon/computer-science/Basic%20Eletronics.lingua), [Farming](nature/farming/Farming.lingua), and [Supply](habits/simple/Supply.lingua) sources by reference. The [Trail Record](../anicca/Lince.lingua#r_Q46Z5FZHZFACPNSNPJP2GEDC1D) remains the authority for Lince's general intention. Use existing identities and keep affected references valid when connecting or reorganising material.
+Use the existing [Philosophy](../philosophy/Philosophy.lingua), [Ergon](../ergon/Ergon.lingua), [Basic Eletronics](../ergon/computer-science/Basic%20Eletronics.lingua), [Farming](../nature/farming/Farming.lingua), and [Supply](../habits/simple/Supply.lingua) sources by reference. The [Trail Record](Lince.lingua#r_Q46Z5FZHZFACPNSNPJP2GEDC1D) remains the authority for Lince's general intention. Use existing identities and keep affected references valid when connecting or reorganising material.
 
 | Proposed content | Source home |
 | --- | --- |
@@ -107,7 +107,7 @@ Use direct file/URL references and known identities for navigation; keep source 
 Philosophical study (@plan-philosophical-study: 0, is #chapter, #planned, #part-of @trails, #contains @plan-philosophical-inquiry-argument-and-dialectic, #contains @plan-logic-and-philosophy-of-logic, #contains @plan-epistemology-and-the-life-of-knowledge, #contains @plan-metaphysics-and-ontology, #contains @plan-ethics-value-and-moral-reasoning, #contains @plan-action-freedom-and-practical-reason, #contains @plan-mind-experience-and-subjectivity, #contains @plan-language-meaning-and-interpretation, #contains @plan-social-philosophy-and-political-judgment, #contains @plan-aesthetics-and-philosophy-of-art, #contains @plan-religion-existence-and-the-meaning-of-life, #contains @plan-history-and-traditions-of-philosophy) { r_49SB3VCQS4WDEBHS2V3BSA411Z
 Proposed branch Record: `@philosophical-inquiry-map`. Organising Record: `@philosophy`.
 
-The existing Philosophy Record is the shared entrance. Use `#philosophy` for its general learning connections and specific predicates such as `#ancient-greek-philosophy` and `#buddhism` for their respective selections. The [Buddhism and Yoga entrance](philosophy/karmic-philosophy/Karmic-philosophy.lingua) connects the ordered Buddhist study and the separate, single-book Yoga reading through ordinary Records. Their learning connections use `#buddhism` and `#yoga`; comparisons and sources retain their own links.
+The existing Philosophy Record is the shared entrance. Use `#philosophy` for its general learning connections and specific predicates such as `#ancient-greek-philosophy` and `#buddhism` for their respective selections. The [Buddhism and Yoga entrance](../philosophy/karmic-philosophy/Karmic-philosophy.lingua) connects the ordered Buddhist study and the separate, single-book Yoga reading through ordinary Records. Their learning connections use `#buddhism` and `#yoga`; comparisons and sources retain their own links.
 
 **Pathways:** Begin with a philosophical question or primary text, reconstruct its argument, and compare objections and alternative accounts. Follow a problem through logic, knowledge, reality, action, value, experience, or historical traditions as relevant. Share formal foundations with Mathematics and interpretive methods with History and Literature, introducing the preparation actually used by each step.
 
@@ -229,34 +229,17 @@ The history of philosophy investigates how questions, arguments, texts, and trad
 **Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
 } r_17Q7Z11WNMH2ZWVXCZT2ASB2RK
 
-Quantitative and computational practice (@plan-quantitative-and-computational-practice: 0, is #chapter, #planned, #part-of @trails, #contains @plan-quantitative-and-technical-literacy, #contains @plan-reproducible-computational-work) { r_7JPGRRFCD72G9ZT8EMV0FEPH00
-Proposed branch Record: `@quantitative-practice-map`. Organising Record: `@inquiry-map`.
+Quantitative and computational practice (@plan-quantitative-and-computational-practice: 0, is #chapter, #part-of @trails) { r_7JPGRRFCD72G9ZT8EMV0FEPH00
+Shared quantitative and computational practice is available through the [Inquiry entrance](../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
 
 **Pathways:** Interpret quantities, tables, and graphs; keep a balance; reproduce a small calculation. Start from the required arithmetic and introduce units, notation, or code when used; operating a table does not require completing programming.
 
-## Planned pathways
+**Available:** [Quantitative and technical literacy](../inquiry/quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2), from arithmetic and complete technical-mathematics books through drawings, balances, uncertainty, advanced model reasoning, and independent studies.
 
-- [Quantitative and technical literacy](Trails.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2)
-- [Reproducible computational work](Trails.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ)
+**Available:** [Reproducible computational work](../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), from a first saved calculation and complete programming/research-software books through independent checks, environments, workflows, numerical and stochastic validation, preservation, and sustained scholarly projects. It reuses quantitative and metrology Records with distinct continuations.
 
 **Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
 } r_7JPGRRFCD72G9ZT8EMV0FEPH00
-
-Quantitative and technical literacy (@plan-quantitative-and-technical-literacy: 0, is #chapter, #planned, #part-of @plan-quantitative-and-computational-practice) { r_4XVN56PQC13JGNFPV0CSGXDCZ2
-**Editorial reference:** ERG-001.
-
-Quantitative literacy is the ability to understand numbers, units, proportions, graphs, spatial relationships, and equations in practical contexts. This material builds the language needed to read STEM material, estimate plausible results, follow technical drawings, and recognise incorrect quantities or comparisons.
-
-**Planning context:** [Quantitative and computational practice](Trails.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00).
-} r_4XVN56PQC13JGNFPV0CSGXDCZ2
-
-Reproducible computational work (@plan-reproducible-computational-work: 0, is #chapter, #planned, #part-of @plan-quantitative-and-computational-practice) { r_78FWWJDCV0ZGG7VYSPRCWN56DQ
-**Editorial reference:** ERG-008.
-
-Reproducible computation preserves the relationship between questions, data, software, calculations, and conclusions. This material introduces practical programming, scripts, versioning, computational environments, numerical checks, provenance, and repeatable execution as shared research skills across STEM.
-
-**Planning context:** [Quantitative and computational practice](Trails.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00).
-} r_78FWWJDCV0ZGG7VYSPRCWN56DQ
 
 Reasoning and communication (@plan-reasoning-and-communication: 0, is #chapter, #planned, #part-of @trails, #contains @plan-scientific-reasoning-and-method, #contains @plan-technical-reading-writing-and-visual-communication) { r_4HHN23A6WFE0YZ8394FZ4A5DTB
 Proposed branch Record: `@reasoning-communication-map`. Organising Record: `@inquiry-map`.
@@ -287,26 +270,19 @@ Technical communication explains complex ideas and procedures while preserving t
 **Planning context:** [Reasoning and communication](Trails.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB).
 } r_25XMNVFPR8DZ9N117APVD4ZDJ7
 
-Measurement and research (@plan-measurement-and-research: 0, is #chapter, #planned, #part-of @trails, #contains @plan-measurement-and-metrology, #contains @plan-research-design-and-experimentation) { r_63SRHN81RMJ2MTA76HE11C5WR0
+Measurement and research (@plan-measurement-and-research: 0, is #chapter, #planned, #part-of @trails, #contains @plan-research-design-and-experimentation) { r_63SRHN81RMJ2MTA76HE11C5WR0
 Proposed branch Record: `@measurement-research-map`. Organising Record: `@inquiry-map`.
 
 **Pathways:** Make and report a bounded measurement; design an informative comparison; follow an investigation from question to conclusion. Begin with quantities and observations; introduce uncertainty, sampling, and later statistical methods where the selected question needs them.
 
+**Available:** [Measurement and metrology](../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), from an accessible first measurement through calibration, traceability, nonlinear and multivariate uncertainty, sampling, physical measurement families, laboratory comparisons, and independent research. Shared quantitative Records retain distinct continuations for each selection.
+
 ## Planned pathways
 
-- [Measurement and metrology](Trails.lingua#r_3G54ENPA974K19AB5XF0P641N5)
 - [Research design and experimentation](Trails.lingua#r_46ZFQQBMNRDP7HA63J3B7AJR8H)
 
 **Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
 } r_63SRHN81RMJ2MTA76HE11C5WR0
-
-Measurement and metrology (@plan-measurement-and-metrology: 0, is #chapter, #planned, #part-of @plan-measurement-and-research) { r_3G54ENPA974K19AB5XF0P641N5
-**Editorial reference:** ERG-003.
-
-Metrology studies how measurements acquire meaning, comparability, and defensible uncertainty. This material covers units, calibration, reference materials, traceability, instrument response, and reporting, connecting everyday measurement to the laboratories, standards, skilled people, and maintenance supporting reliable science and manufacturing.
-
-**Planning context:** [Measurement and research](Trails.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0).
-} r_3G54ENPA974K19AB5XF0P641N5
 
 Research design and experimentation (@plan-research-design-and-experimentation: 0, is #chapter, #planned, #part-of @plan-measurement-and-research) { r_46ZFQQBMNRDP7HA63J3B7AJR8H
 **Editorial reference:** ERG-005.
@@ -547,19 +523,22 @@ Decision theory studies choices under preferences and uncertainty; game theory s
 **Planning context:** [Mathematics](Trails.lingua#r_6PZSEX3MTC14A74R94SJQ67B3C).
 } r_2Z4K5GNESAAA2QEDAD1HSKMC8M
 
-Physics (@plan-physics: 0, is #chapter, #planned, #part-of @trails, #contains @plan-classical-mechanics, #contains @plan-continuum-and-solid-mechanics, #contains @plan-fluid-dynamics, #contains @plan-thermodynamics-and-heat-transfer, #contains @plan-statistical-and-nonequilibrium-physics, #contains @plan-electromagnetism, #contains @plan-waves-and-acoustics, #contains @plan-optics-photonics-and-laser-science, #contains @plan-quantum-mechanics, #contains @plan-atomic-and-molecular-physics, #contains @plan-condensed-matter-physics, #contains @plan-soft-matter-and-complex-materials, #contains @plan-nuclear-physics, #contains @plan-particle-physics-and-quantum-fields, #contains @plan-relativity-and-gravitation, #contains @plan-plasma-physics, #contains @plan-nonlinear-physics-and-complex-systems, #contains @plan-biological-physics, #contains @plan-computational-physics, #contains @plan-experimental-physics-and-instrumentation, #contains @plan-radiation-and-medical-physics, #contains @plan-quantum-information-science, #contains @plan-nanophysics-and-surface-science) { r_5SMEYFVBAX3PK39PSDSDPWQYRQ
+Physics (@plan-physics: 0, is #chapter, #planned, #part-of @trails, #contains @plan-classical-mechanics, #contains @plan-continuum-and-solid-mechanics, #contains @plan-statistical-and-nonequilibrium-physics, #contains @plan-waves-and-acoustics, #contains @plan-optics-photonics-and-laser-science, #contains @plan-quantum-mechanics, #contains @plan-atomic-and-molecular-physics, #contains @plan-condensed-matter-physics, #contains @plan-soft-matter-and-complex-materials, #contains @plan-nuclear-physics, #contains @plan-particle-physics-and-quantum-fields, #contains @plan-relativity-and-gravitation, #contains @plan-plasma-physics, #contains @plan-nonlinear-physics-and-complex-systems, #contains @plan-biological-physics, #contains @plan-computational-physics, #contains @plan-experimental-physics-and-instrumentation, #contains @plan-radiation-and-medical-physics, #contains @plan-quantum-information-science, #contains @plan-nanophysics-and-surface-science) { r_5SMEYFVBAX3PK39PSDSDPWQYRQ
 Proposed branch Record: `@physics-map`. Organising Record: `@stem-map`.
 
 **Pathways:** Explain and measure motion, energy, a circuit, or a wave; develop more rigorous accounts of a chosen system. Offer qualitative and quantitative entrances; add algebra, calculus, linear algebra, or statistical methods at the steps that actually use them.
+
+**Available:** [Electromagnetism](../stem/physics/electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY), from familiar observations, charge, fields, voltage/current and shared mathematics through static boundaries, matter, circuits, induction, Maxwell conservation, relativity, waves, guides, radiation, scattering, computation and physical evidence. Complete technical books and public undergraduate/graduate programmes, three independently checked original calculations and sixteen advanced investigations deepen into an integrated system and independent research. Eleven shared Records retain their distinct electromagnetic continuations.
+
+**Available:** [Thermodynamics and heat transfer](../stem/physics/thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E), from ordinary thermal observations, systems and shared mathematics through energy/entropy/exergy balances, potentials and equilibrium, thermal machines, conduction, convection, radiation, phase change, measurements and microscopic transport. Complete books and public advanced courses, four independently checked original calculations and twenty-two advanced investigations lead into a performed physical study, an integrated thermal service and independent research/revision. Twenty shared Records retain distinct thermal continuations.
+
+**Available:** [Fluid dynamics](../stem/physics/fluid-dynamics/Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ), from observed fluid motion, properties, hydrostatics and shared mathematics through conservation, constitutive laws, viscous/potential flows, pipes, boundary layers, instability/turbulence, compressible and free-surface waves, rotation/stratification, interfaces, multiple phases, rheology, transport, computation and physical evidence. Whole books and public advanced courses, four independently checked original calculations and twenty advanced studies lead into a performed experimental programme, an integrated fluid service and independent research/revision. Nineteen shared Records retain distinct fluid continuations.
 
 ## Planned pathways
 
 - [Classical mechanics](Trails.lingua#r_0SDRWJN2A6ZJ15JWQGQDPV932X)
 - [Continuum and solid mechanics](Trails.lingua#r_0S9MAG1084RSH4NGGFBEC90YSA)
-- [Fluid dynamics](Trails.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ)
-- [Thermodynamics and heat transfer](Trails.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E)
 - [Statistical and nonequilibrium physics](Trails.lingua#r_2NCC3TE3GE2MNZB7B55QMM2JYW)
-- [Electromagnetism](Trails.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY)
 - [Waves and acoustics](Trails.lingua#r_2WAQHN607TSEVR815T405B9BP4)
 - [Optics, photonics, and laser science](Trails.lingua#r_3G9J2ZB6A56CVVRPPVMES1Y1TS)
 - [Quantum mechanics](Trails.lingua#r_3QKXAVG6MAM4QY6K34TH62J0H2)
@@ -597,22 +576,6 @@ Continuum mechanics describes materials through fields such as displacement, str
 **Planning context:** [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ).
 } r_0S9MAG1084RSH4NGGFBEC90YSA
 
-Fluid dynamics (@plan-fluid-dynamics: 0, is #chapter, #planned, #part-of @plan-physics) { r_7PQW1WDHK708BFV23MD8ET61VZ
-**Editorial reference:** ERG-034.
-
-Fluid dynamics studies the movement of liquids and gases and their interaction with boundaries. This material spans viscosity, compressibility, turbulence, multiphase flow, and transport, connecting physical principles with experiments, numerical models, natural circulation, and engineered fluid systems.
-
-**Planning context:** [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ).
-} r_7PQW1WDHK708BFV23MD8ET61VZ
-
-Thermodynamics and heat transfer (@plan-thermodynamics-and-heat-transfer: 0, is #chapter, #planned, #part-of @plan-physics) { r_6KQBZNJM6WNV9A69R3DZY1NH7E
-**Editorial reference:** ERG-035.
-
-Thermodynamics studies energy, entropy, equilibrium, and the limits of physical processes. The material connects those foundations with conduction, convection, radiation, phase changes, engines, and refrigeration, explaining how heat moves and how thermal conditions constrain scientific and industrial systems.
-
-**Planning context:** [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ).
-} r_6KQBZNJM6WNV9A69R3DZY1NH7E
-
 Statistical and nonequilibrium physics (@plan-statistical-and-nonequilibrium-physics: 0, is #chapter, #planned, #part-of @plan-physics) { r_2NCC3TE3GE2MNZB7B55QMM2JYW
 **Editorial reference:** ERG-036.
 
@@ -620,14 +583,6 @@ Statistical physics connects microscopic states and interactions to macroscopic 
 
 **Planning context:** [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ).
 } r_2NCC3TE3GE2MNZB7B55QMM2JYW
-
-Electromagnetism (@plan-electromagnetism: 0, is #chapter, #planned, #part-of @plan-physics) { r_5TJPESCTTNAKY66JH2QNQYN1PY
-**Editorial reference:** ERG-037.
-
-Electromagnetism studies electric and magnetic fields, charges, currents, and their interactions with matter. The material joins electrostatics, magnetism, induction, Maxwell's equations, waves, radiation, and material response, connecting field theory with circuits, machines, communications, and physical measurement.
-
-**Planning context:** [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ).
-} r_5TJPESCTTNAKY66JH2QNQYN1PY
 
 Waves and acoustics (@plan-waves-and-acoustics: 0, is #chapter, #planned, #part-of @plan-physics) { r_2WAQHN607TSEVR815T405B9BP4
 **Editorial reference:** ERG-038.
@@ -765,14 +720,17 @@ Nanophysics investigates matter where confinement, surfaces, and small dimension
 **Planning context:** [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ).
 } r_6QMJF5G8RY6N4MP55QC238WM2B
 
-Chemistry (@plan-chemistry: 0, is #chapter, #planned, #part-of @trails, #contains @plan-general-chemistry, #contains @plan-physical-chemistry-and-chemical-physics, #contains @plan-organic-chemistry, #contains @plan-inorganic-chemistry, #contains @plan-analytical-chemistry-and-chemical-quality, #contains @plan-biochemistry, #contains @plan-polymer-chemistry, #contains @plan-materials-chemistry, #contains @plan-electrochemistry, #contains @plan-surface-colloid-and-interface-chemistry, #contains @plan-theoretical-and-computational-chemistry, #contains @plan-chemical-synthesis, #contains @plan-catalysis-and-reaction-science, #contains @plan-industrial-chemistry, #contains @plan-environmental-chemistry, #contains @plan-food-and-nutritional-chemistry, #contains @plan-agricultural-chemistry, #contains @plan-medicinal-and-pharmaceutical-chemistry) { r_0AMZPCGB2MG2V6D28WFTQZN9Q6
-Proposed branch Record: `@chemistry-map`. Organising Record: `@stem-map`.
+Chemistry (@plan-chemistry: 0, is #chapter, #planned, #part-of @trails, #contains @plan-physical-chemistry-and-chemical-physics, #contains @plan-organic-chemistry, #contains @plan-inorganic-chemistry, #contains @plan-analytical-chemistry-and-chemical-quality, #contains @plan-biochemistry, #contains @plan-polymer-chemistry, #contains @plan-materials-chemistry, #contains @plan-electrochemistry, #contains @plan-surface-colloid-and-interface-chemistry, #contains @plan-theoretical-and-computational-chemistry, #contains @plan-chemical-synthesis, #contains @plan-catalysis-and-reaction-science, #contains @plan-environmental-chemistry, #contains @plan-food-and-nutritional-chemistry, #contains @plan-agricultural-chemistry, #contains @plan-medicinal-and-pharmaceutical-chemistry) { r_0AMZPCGB2MG2V6D28WFTQZN9Q6
+The [Chemistry entrance](../stem/chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0) connects the developed material through STEM.
 
 **Pathways:** Explain composition and reaction; follow a material's transformation; investigate structure, analysis, or synthesis. Introduce chemical entities, amount, and balance before relying on them; deeper physical chemistry or computation is a continuation with explicit preparation.
 
+**Available:** [General chemistry](../stem/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), from zero through whole textbooks, university courses, quantitative reactions, structure/bonding, phases, kinetics/equilibria, electrochemistry, chemical measurement, sustained laboratory work, and advanced practical/scholarly projects. Five shared quantitative, measurement, and computational Records retain distinct continuations.
+
+**Available:** [Industrial chemistry](../stem/chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618), from familiar products, chemical/mathematical language, quantities and feed evidence through reaction/separation, major inorganic/organic and renewable/specialty families, product quality, operation, transfers and recovery. Complete books, university/graduate programmes, primary methods, three original calculations, sustained practical/academic branches, integrated-system work and independent scholarship provide depth. Thirteen shared Records retain distinct industrial-chemistry continuations.
+
 ## Planned pathways
 
-- [General chemistry](Trails.lingua#r_206GS6CVXD8WSY1VX7PRF7136V)
 - [Physical chemistry and chemical physics](Trails.lingua#r_1ZHYBV5NWN4Y4GV6NWPGEKZ7JC)
 - [Organic chemistry](Trails.lingua#r_6HKENEEN1T52PB3XZ1H3FZNTW8)
 - [Inorganic chemistry](Trails.lingua#r_6TYNMN0ZKYRHV779CHKGYTVB9D)
@@ -785,7 +743,6 @@ Proposed branch Record: `@chemistry-map`. Organising Record: `@stem-map`.
 - [Theoretical and computational chemistry](Trails.lingua#r_07S85GJHHQKWQXPHM31EA9Z9Q6)
 - [Chemical synthesis](Trails.lingua#r_1S4CW5J8B3T70QVRNPJHD7HR6A)
 - [Catalysis and reaction science](Trails.lingua#r_2BZF4DH3GCJ7M5V29Z3RKE0A0K)
-- [Industrial chemistry](Trails.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618)
 - [Environmental chemistry](Trails.lingua#r_4EM6Z7FA3FBC03GCVTXW7R3N95)
 - [Food and nutritional chemistry](Trails.lingua#r_78BKD1J97NYVP5RMP10MNWECTC)
 - [Agricultural chemistry](Trails.lingua#r_4Z3HRB4QQ6R3KV3CC0MT7GD63X)
@@ -793,14 +750,6 @@ Proposed branch Record: `@chemistry-map`. Organising Record: `@stem-map`.
 
 **Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
 } r_0AMZPCGB2MG2V6D28WFTQZN9Q6
-
-General chemistry (@plan-general-chemistry: 0, is #chapter, #planned, #part-of @plan-chemistry) { r_206GS6CVXD8WSY1VX7PRF7136V
-**Editorial reference:** ERG-055.
-
-General chemistry provides the language of atoms, molecules, bonding, reactions, composition, and chemical change. This material connects stoichiometry, periodicity, solutions, equilibrium, energy, and laboratory observation, forming a shared foundation for the chemical sciences and their many practical applications.
-
-**Planning context:** [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6).
-} r_206GS6CVXD8WSY1VX7PRF7136V
 
 Physical chemistry and chemical physics (@plan-physical-chemistry-and-chemical-physics: 0, is #chapter, #planned, #part-of @plan-chemistry) { r_1ZHYBV5NWN4Y4GV6NWPGEKZ7JC
 **Editorial reference:** ERG-056.
@@ -898,14 +847,6 @@ Catalysis studies how reaction pathways and rates can be altered by suitable che
 **Planning context:** [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6).
 } r_2BZF4DH3GCJ7M5V29Z3RKE0A0K
 
-Industrial chemistry (@plan-industrial-chemistry: 0, is #chapter, #planned, #part-of @plan-chemistry) { r_3AKBAFB2ABJ0671QW6ZBQ0B618
-**Editorial reference:** ERG-068.
-
-Industrial chemistry studies the chemical transformations supplying society with bulk and specialised substances. This material connects raw materials, reaction families, intermediates, product specifications, purification, and waste streams, showing how laboratory chemistry relates to continuous production and interconnected chemical industries.
-
-**Planning context:** [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6).
-} r_3AKBAFB2ABJ0671QW6ZBQ0B618
-
 Environmental chemistry (@plan-environmental-chemistry: 0, is #chapter, #planned, #part-of @plan-chemistry) { r_4EM6Z7FA3FBC03GCVTXW7R3N95
 **Editorial reference:** ERG-069.
 
@@ -938,10 +879,14 @@ Medicinal chemistry studies molecules intended to influence biological processes
 **Planning context:** [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6).
 } r_22JVJTJ7A7PR682QABEE1X42CG
 
-Engineering (@plan-engineering: 0, is #chapter, #planned, #part-of @trails, #contains @plan-engineering-design-and-systems-engineering, #contains @plan-civil-and-structural-engineering, #contains @plan-geotechnical-engineering, #contains @plan-construction-and-building-services-engineering, #contains @plan-water-and-environmental-engineering, #contains @plan-mechanical-engineering-and-machine-design, #contains @plan-manufacturing-engineering, #contains @plan-materials-engineering, #contains @plan-corrosion-degradation-and-material-protection, #contains @plan-chemical-and-process-engineering, #contains @plan-thermal-and-energy-engineering, #contains @plan-refrigeration-cryogenics-and-cold-chains, #contains @plan-electrical-power-engineering, #contains @plan-batteries-and-electrochemical-energy-systems, #contains @plan-control-and-automation-engineering, #contains @plan-mechatronics-and-robotics, #contains @plan-electronic-engineering, #contains @plan-telecommunications-and-radio-engineering, #contains @plan-optical-and-photonic-engineering, #contains @plan-computer-engineering-and-architecture, #contains @plan-acoustical-and-vibration-engineering, #contains @plan-aerospace-engineering, #contains @plan-marine-and-naval-engineering, #contains @plan-transportation-and-railway-engineering, #contains @plan-automotive-and-vehicle-engineering, #contains @plan-biomedical-engineering, #contains @plan-agricultural-engineering, #contains @plan-mining-and-mineral-engineering, #contains @plan-petroleum-and-subsurface-engineering, #contains @plan-nuclear-engineering, #contains @plan-industrial-engineering-and-production-systems, #contains @plan-reliability-maintenance-and-repair-systems, #contains @plan-human-factors-and-safety-engineering) { r_15X36BC9BQB5PV6WW77ZAAJP48
-Proposed branch Record: `@engineering-map`. Organising Record: `@stem-map`.
+Engineering (@plan-engineering: 0, is #chapter, #planned, #part-of @trails, #contains @plan-engineering-design-and-systems-engineering, #contains @plan-civil-and-structural-engineering, #contains @plan-geotechnical-engineering, #contains @plan-construction-and-building-services-engineering, #contains @plan-water-and-environmental-engineering, #contains @plan-mechanical-engineering-and-machine-design, #contains @plan-manufacturing-engineering, #contains @plan-materials-engineering, #contains @plan-corrosion-degradation-and-material-protection, #contains @plan-chemical-and-process-engineering, #contains @plan-thermal-and-energy-engineering, #contains @plan-refrigeration-cryogenics-and-cold-chains, #contains @plan-batteries-and-electrochemical-energy-systems, #contains @plan-control-and-automation-engineering, #contains @plan-mechatronics-and-robotics, #contains @plan-electronic-engineering, #contains @plan-telecommunications-and-radio-engineering, #contains @plan-optical-and-photonic-engineering, #contains @plan-computer-engineering-and-architecture, #contains @plan-acoustical-and-vibration-engineering, #contains @plan-aerospace-engineering, #contains @plan-marine-and-naval-engineering, #contains @plan-transportation-and-railway-engineering, #contains @plan-automotive-and-vehicle-engineering, #contains @plan-biomedical-engineering, #contains @plan-agricultural-engineering, #contains @plan-petroleum-and-subsurface-engineering, #contains @plan-nuclear-engineering, #contains @plan-industrial-engineering-and-production-systems, #contains @plan-reliability-maintenance-and-repair-systems, #contains @plan-human-factors-and-safety-engineering) { r_15X36BC9BQB5PV6WW77ZAAJP48
+[Engineering — systems, design, construction, and operation](../stem/engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68) connects the developed material through STEM, Ergon, Inquiry, Earth, and Philosophy.
 
 **Pathways:** Compare designs against a need; understand a load-bearing part; diagnose a mechanism; investigate a selected process. Separate understanding, designing, making, inspecting, and maintaining routes. Geometry, CAD, mechanics, chemistry, electronics, and control belong where the chosen task uses them.
+
+**Available:** [Mining and mineral engineering](../stem/engineering/mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA), from a material need, vocabulary, maps, and resource evidence through method/layout/sequence, ground, excavation/transport, utilities, mineral processing, products, waste, closure, and continuing work. Complete books, public university courses, government methods, original calculations, sustained practical/academic projects, integrated design, and independent scholarship provide depth. Eight shared learning Records retain distinct continuations.
+
+**Available:** [Electrical power engineering](../stem/engineering/electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ), from a useful electrical service, quantities and circuits through networks, transformers, machines, conversion, measurement, protection, stability, dispatch and continuing operation. Full technical books and public undergraduate/graduate programmes, three independently checked original calculations and twenty advanced investigations lead into an integrated system and independent research. Seventeen shared learning Records retain distinct power-engineering continuations.
 
 ## Planned pathways
 
@@ -957,7 +902,6 @@ Proposed branch Record: `@engineering-map`. Organising Record: `@stem-map`.
 - [Chemical and process engineering](Trails.lingua#r_7JR1TSS73ENXHDTX07BZEZBNVJ)
 - [Thermal and energy engineering](Trails.lingua#r_4NAAQXAJG8KPDKW1PH8696DQ6V)
 - [Refrigeration, cryogenics, and cold chains](Trails.lingua#r_0CBJH3MH2T9K79WWSQ8HKQ8VCS)
-- [Electrical power engineering](Trails.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ)
 - [Batteries and electrochemical energy systems](Trails.lingua#r_4ZQSGM9SAQTV827SQCE8Q1D419)
 - [Control and automation engineering](Trails.lingua#r_304XPQZYDDGR9S71QJV6RDTZ1Q)
 - [Mechatronics and robotics](Trails.lingua#r_6T9Y025RB9J1ASSBA96CA43ZVA)
@@ -972,7 +916,6 @@ Proposed branch Record: `@engineering-map`. Organising Record: `@stem-map`.
 - [Automotive and vehicle engineering](Trails.lingua#r_35TWD4NN42RDSCVRJ1YP0C47YQ)
 - [Biomedical engineering](Trails.lingua#r_0F36JJFT9DZWQ836TZ7SVR8SDK)
 - [Agricultural engineering](Trails.lingua#r_3A4G0ZX7KFBE78766XRXZ8Q7AN)
-- [Mining and mineral engineering](Trails.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA)
 - [Petroleum and subsurface engineering](Trails.lingua#r_29TEEP8AT7CQ5Y5X6QM9QGSAKP)
 - [Nuclear engineering](Trails.lingua#r_0MMHP26ZDCD0XRTXNF17H4G20Q)
 - [Industrial engineering and production systems](Trails.lingua#r_5V6WZ1GTB8NKZKB28HBC9AC8P6)
@@ -1077,14 +1020,6 @@ Refrigeration and cryogenics create and maintain low-temperature conditions; col
 
 **Planning context:** [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
 } r_0CBJH3MH2T9K79WWSQ8HKQ8VCS
-
-Electrical power engineering (@plan-electrical-power-engineering: 0, is #chapter, #planned, #part-of @plan-engineering) { r_300EPNGATK7PHWNZCQFBXGZFCQ
-**Editorial reference:** ERG-127.
-
-Power engineering designs and operates systems for generating, converting, transmitting, distributing, and using electricity. The material connects generators, transformers, machines, power electronics, protection, networks, stability, and storage with measurements, control, infrastructure planning, and the recurring work sustaining electrical service.
-
-**Planning context:** [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
-} r_300EPNGATK7PHWNZCQFBXGZFCQ
 
 Batteries and electrochemical energy systems (@plan-batteries-and-electrochemical-energy-systems: 0, is #chapter, #planned, #part-of @plan-engineering) { r_4ZQSGM9SAQTV827SQCE8Q1D419
 **Editorial reference:** ERG-128.
@@ -1197,14 +1132,6 @@ Agricultural engineering designs machinery, structures, energy, water, and proce
 
 **Planning context:** [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
 } r_3A4G0ZX7KFBE78766XRXZ8Q7AN
-
-Mining and mineral engineering (@plan-mining-and-mineral-engineering: 0, is #chapter, #planned, #part-of @plan-engineering) { r_22HJPS3RTK5EX1J55YJP75PHYA
-**Editorial reference:** ERG-142.
-
-Mining engineering designs the extraction and initial processing of mineral resources. The material connects geology, mine planning, excavation, ventilation, ground behaviour, mineral separation, water, waste, and closure with the machines, utilities, logistics, and skilled teams sustaining extraction systems.
-
-**Planning context:** [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
-} r_22HJPS3RTK5EX1J55YJP75PHYA
 
 Petroleum and subsurface engineering (@plan-petroleum-and-subsurface-engineering: 0, is #chapter, #planned, #part-of @plan-engineering) { r_29TEEP8AT7CQ5Y5X6QM9QGSAKP
 **Editorial reference:** ERG-143.
@@ -1455,16 +1382,18 @@ This material examines computing approaches that depart from conventional digita
 **Planning context:** [Computing](Trails.lingua#r_7YRTRPQ94D66X8Y7KN7K2XCTK8).
 } r_5Y4E9K079P2KGYT8D1731EZ10B
 
-Earth and environment (@plan-earth-and-environment: 0, is #chapter, #planned, #part-of @trails, #contains @plan-geology, #contains @plan-geophysics, #contains @plan-mineralogy-and-petrology, #contains @plan-geochemistry, #contains @plan-paleontology-and-earth-history, #contains @plan-meteorology-and-atmospheric-science, #contains @plan-climate-science, #contains @plan-ocean-and-cryosphere-sciences, #contains @plan-hydrology-and-water-science, #contains @plan-soil-science, #contains @plan-environmental-systems-science, #contains @plan-geodesy-and-surveying, #contains @plan-remote-sensing-and-earth-observation, #contains @plan-natural-hazards-and-disaster-science) { r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE
-Proposed branch Record: `@earth-environment-map`. Organising Record: `@nature-map`.
+Earth and environment (@plan-earth-and-environment: 0, is #chapter, #planned, #part-of @trails, #contains @plan-geophysics, #contains @plan-geochemistry, #contains @plan-paleontology-and-earth-history, #contains @plan-meteorology-and-atmospheric-science, #contains @plan-climate-science, #contains @plan-ocean-and-cryosphere-sciences, #contains @plan-hydrology-and-water-science, #contains @plan-soil-science, #contains @plan-environmental-systems-science, #contains @plan-geodesy-and-surveying, #contains @plan-remote-sensing-and-earth-observation, #contains @plan-natural-hazards-and-disaster-science) { r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE
+[Earth — materials, processes, and geological history](../nature/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH) is the current entrance, connected through [Nature](../nature/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21), STEM, Philosophy, and Ergon.
 
 **Pathways:** Observe a landscape, water system, soil, or weather record; connect local observations to larger processes. Begin with the chosen observations, quantities, and map use; add the relevant chemistry, mechanics, statistics, or modelling with the selected investigation.
 
+**Available:** [Geology](../nature/earth/geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06), from observations, rocks, maps, and time through tectonics, deformation, surface/water systems, regional history, resources, and infrastructure. Complete books, university/laboratory studies, structural and chronological methods, original calculations, sustained field projects, and independent scholarship provide practical and academic depth. Five shared learning Records have distinct geology continuations.
+
+**Available:** [Mineralogy and petrology](../nature/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN), from specimens and crystal chemistry through symmetry, mineral families, optical/analytical methods, phase relations, and advanced igneous/sedimentary/metamorphic investigation. Complete books and laboratory/course sequences lead to graduate cases, quantitative models, sustained practical projects, feedstock studies, and independent scholarship. Eight shared Records retain distinct continuations.
+
 ## Planned pathways
 
-- [Geology](Trails.lingua#r_3CK43VQS79NK0STWNPSCS8YM06)
 - [Geophysics](Trails.lingua#r_5MNCAE58SMN0ASJ3H3K7WGA2KF)
-- [Mineralogy and petrology](Trails.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN)
 - [Geochemistry](Trails.lingua#r_4E66G7A511KVVFHFH52AKSDXQE)
 - [Paleontology and Earth history](Trails.lingua#r_6X35H9K5RCNYDB8NFB2570CZ4C)
 - [Meteorology and atmospheric science](Trails.lingua#r_0PDR5YA2K07ZYX6QZ552Q50PDH)
@@ -1480,14 +1409,6 @@ Proposed branch Record: `@earth-environment-map`. Organising Record: `@nature-ma
 **Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
 } r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE
 
-Geology (@plan-geology: 0, is #chapter, #planned, #part-of @plan-earth-and-environment) { r_3CK43VQS79NK0STWNPSCS8YM06
-**Editorial reference:** ERG-073.
-
-Geology studies Earth's materials, structures, processes, and history. The material connects rocks, tectonics, deformation, sedimentation, volcanism, and field interpretation, explaining how landscapes and deposits form and how geological understanding supports infrastructure, resource use, and investigation of natural change.
-
-**Planning context:** [Earth and environment](Trails.lingua#r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE).
-} r_3CK43VQS79NK0STWNPSCS8YM06
-
 Geophysics (@plan-geophysics: 0, is #chapter, #planned, #part-of @plan-earth-and-environment) { r_5MNCAE58SMN0ASJ3H3K7WGA2KF
 **Editorial reference:** ERG-074.
 
@@ -1495,14 +1416,6 @@ Geophysics investigates Earth through physical measurements and models. This mat
 
 **Planning context:** [Earth and environment](Trails.lingua#r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE).
 } r_5MNCAE58SMN0ASJ3H3K7WGA2KF
-
-Mineralogy and petrology (@plan-mineralogy-and-petrology: 0, is #chapter, #planned, #part-of @plan-earth-and-environment) { r_44F7X6GPMW6ZSCCN6D71QSVKBN
-**Editorial reference:** ERG-075.
-
-Mineralogy studies minerals and their properties; petrology studies rocks and the processes that produce them. The material joins crystallography, identification, composition, textures, and phase relationships, connecting natural materials with geological history, industrial feedstocks, and methods of characterisation.
-
-**Planning context:** [Earth and environment](Trails.lingua#r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE).
-} r_44F7X6GPMW6ZSCCN6D71QSVKBN
 
 Geochemistry (@plan-geochemistry: 0, is #chapter, #planned, #part-of @plan-earth-and-environment) { r_4E66G7A511KVVFHFH52AKSDXQE
 **Editorial reference:** ERG-076.
@@ -2172,19 +2085,21 @@ Geography investigates spatial patterns and relationships; cartography and geogr
 **Planning context:** [Geography and communities](Trails.lingua#r_51B6N9Q9KVNQJTZRYTSJVGZ54P).
 } r_0WSFYNG49VM9ZG4ZH8KJA3Y0S4
 
-Resources and materials (@plan-resources-and-materials: 0, is #chapter, #planned, #part-of @trails, #contains @plan-mineral-resources-extraction-and-refining-systems, #contains @plan-metals-and-metallurgical-production, #contains @plan-ceramics-glass-cement-and-mineral-products, #contains @plan-polymers-rubber-composites-and-coatings-production, #contains @plan-machine-tools-and-precision-production-infrastructure, #contains @plan-industrial-chemical-feedstocks-and-supply-systems, #contains @plan-textiles-clothing-and-technical-fabrics, #contains @plan-timber-paper-and-packaging-systems) { r_08Q5J1HMAA7S3QNYSJSQ49STJ5
-Proposed branch Record: `@resources-materials-map`. Organising Record: `@ergon`.
+Resources and materials (@plan-resources-and-materials: 0, is #chapter, #planned, #part-of @trails, #contains @plan-mineral-resources-extraction-and-refining-systems, #contains @plan-ceramics-glass-cement-and-mineral-products, #contains @plan-polymers-rubber-composites-and-coatings-production, #contains @plan-machine-tools-and-precision-production-infrastructure, #contains @plan-textiles-clothing-and-technical-fabrics, #contains @plan-timber-paper-and-packaging-systems) { r_08Q5J1HMAA7S3QNYSJSQ49STJ5
+[Resources and materials — feedstocks, useful properties, production, and recovery](../ergon/materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D) connects the developed material through Ergon, Engineering, STEM, Inquiry, Earth, and Philosophy.
 
 **Pathways:** Follow one material from source through processing, specification, use, and recovery. Enter through the object or feedstock; link the particular geology, chemistry, properties, machines, and quantities needed at each depth.
+
+**Available:** [Metals and metallurgical production](../ergon/materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1), from familiar objects, feed, phases, quantities, and product requirements through extraction/refining, metal families, structure/transformations, manufacturing, testing, operation, recovery, and independent scholarship. Complete books, university and graduate courses, primary methods, original calculations, sustained laboratory/process studies, and an integrated material system provide depth. Thirteen shared learning Records retain distinct continuations.
+
+**Available:** [Chemical feedstocks and supply systems](../ergon/materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q), from familiar material, function/quantity/grade and origins through chemical families, supplier-to-user evidence, storage/contact and transfers, usable inventory, planning, continuity, people, maintenance and recovery. Complete books, graduate programmes, full technical/product methods, three independently checked calculations and fourteen sustained advanced investigations deepen into a complete defended system and independent research. Fourteen shared Records retain distinct chemical-supply continuations.
 
 ## Planned pathways
 
 - [Mineral resources, extraction, and refining systems](Trails.lingua#r_1T654Z06ZJ9CA149M75XP0AF95)
-- [Metals and metallurgical production](Trails.lingua#r_59BDAQXT81552YF5F8TH4KQQH1)
 - [Ceramics, glass, cement, and mineral products](Trails.lingua#r_3RDJQY81P7KTR82EDETYYE6S37)
 - [Polymers, rubber, composites, and coatings production](Trails.lingua#r_5QG0QPP2K5BB78CKWK6YFEYF5P)
 - [Machine tools and precision production infrastructure](Trails.lingua#r_54AAZ2Y0HK952ZRH8YCYBHJDPA)
-- [Industrial chemical feedstocks and supply systems](Trails.lingua#r_05V6FYWMN0VND552CQE94HHA2Q)
 - [Textiles, clothing, and technical fabrics](Trails.lingua#r_7J4PQT2PP272F5D218AYG8W3YQ)
 - [Timber, paper, and packaging systems](Trails.lingua#r_1EK7CM15ZR70X480KKR4F150KT)
 
@@ -2198,14 +2113,6 @@ This material follows mineral resources from geological evidence to usable feeds
 
 **Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
 } r_1T654Z06ZJ9CA149M75XP0AF95
-
-Metals and metallurgical production (@plan-metals-and-metallurgical-production: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_59BDAQXT81552YF5F8TH4KQQH1
-**Editorial reference:** ERG-171.
-
-Metallurgical production turns ores, recycled materials, and intermediate substances into metals with useful composition and structure. The material follows iron, steel, aluminium, copper, and other metal families through refining, alloying, casting, working, heat treatment, inspection, and the infrastructure needed to sustain production.
-
-**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
-} r_59BDAQXT81552YF5F8TH4KQQH1
 
 Ceramics, glass, cement, and mineral products (@plan-ceramics-glass-cement-and-mineral-products: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_3RDJQY81P7KTR82EDETYYE6S37
 **Editorial reference:** ERG-172.
@@ -2230,14 +2137,6 @@ Precision production depends on machines capable of creating and checking the co
 
 **Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
 } r_54AAZ2Y0HK952ZRH8YCYBHJDPA
-
-Industrial chemical feedstocks and supply systems (@plan-industrial-chemical-feedstocks-and-supply-systems: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_05V6FYWMN0VND552CQE94HHA2Q
-**Editorial reference:** ERG-175.
-
-This material maps the substances that enable other industries, including acids, bases, fertilisers, solvents, petrochemical intermediates, and speciality chemicals. It connects raw resources, processing plants, purity requirements, storage, transport, utilities, and suppliers with the production chains depending on them.
-
-**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
-} r_05V6FYWMN0VND552CQE94HHA2Q
 
 Textiles, clothing, and technical fabrics (@plan-textiles-clothing-and-technical-fabrics: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_7J4PQT2PP272F5D218AYG8W3YQ
 **Editorial reference:** ERG-184.
@@ -2558,7 +2457,7 @@ Introduce Philosophy's own study branch and the five connected views. Follow the
 } r_5NFNTGG6YY33QA6CPAZA6B13V8
 
 Examine a philosophical question (@plan-pathway-examine-a-philosophical-question: 0, is #chapter, #planned, #part-of @plan-first-connected-pathways, #related @plan-philosophical-study) { r_348ZV22NJFVQXHA0TAJ3RMNTS1
-The authored [Greek philosophy pathway](philosophy/ancient-greek-philosophy/Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3) begins with an accessible survey and continues through [scholarly preparation, advanced seminars, independent research, and criticism and revision](philosophy/ancient-greek-philosophy/research/Research.lingua#r_434NMA510XG7R81DAAG64PZX09). The survey is a foundation stage; full completion requires its published textual, seminar, research, and review evidence. Shared Records connect the earlier thinkers, Plato, Aristotle, the schools, and later reception, with English retained texts, Portuguese alternatives, critical editions, and language preparation at the point of use. The [academic benchmarks](philosophy/ancient-greek-philosophy/sources/Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP) record the university evidence and its limits. Relationships remain ordinary links and references; imports support discovery.
+The authored [Greek philosophy pathway](../philosophy/ancient-greek-philosophy/Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3) begins with an accessible survey and continues through [scholarly preparation, advanced seminars, independent research, and criticism and revision](../philosophy/ancient-greek-philosophy/research/Research.lingua#r_434NMA510XG7R81DAAG64PZX09). The survey is a foundation stage; full completion requires its published textual, seminar, research, and review evidence. Shared Records connect the earlier thinkers, Plato, Aristotle, the schools, and later reception, with English retained texts, Portuguese alternatives, critical editions, and language preparation at the point of use. The [academic benchmarks](../philosophy/ancient-greek-philosophy/sources/Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP) record the university evidence and its limits. Relationships remain ordinary links and references; imports support discovery.
 
 Extend this approach with further questions and sources: identify the concepts, assumptions, argument, and strongest objection; introduce the preparation where it is used; compare a second account or counterexample. The result is a reasoned interpretation and judgment with its unresolved difficulties visible. Native keyboard and reader navigation checks remain part of publication review.
 

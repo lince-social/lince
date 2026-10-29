@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Handle interrupted work without confusing partial and completed results (@rc-atomic: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS", #reproducible-computation "Caches-and-reuse.lingua#r_1MXDE1T63F6G6GYECCCR23RBFW") { r_67AHSE6SV62WC5H49ECP23VRTX
+**Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), tempfile, os.replace, pathlib, and the relevant platform contracts; [Workflow graphs, environments, and execution — Snakemake documentation](../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS), the chosen version’s failure, persistence, and incomplete-output behavior.
+
+An interrupted process can leave an incomplete artifact. If a later stage recognizes only its filename, it may mistake the partial file for a completed result. Define completion and recovery for the workflow's actual storage and execution conditions. For a small local report, write a complete temporary file, validate it, and then publish it with an appropriate replacement operation.
+
+The worked script validates all input and builds the report before writing. Its temporary file is created in the destination directory, closed after writing, and then replaced into the final path. Ordinary input or calculation failures leave an existing report intact. The script refuses a destination that resolves or aliases to the input or its own source under the initial checks. It is a bounded private-workspace teaching example rather than a hardened concurrent filesystem service.
+
+Atomic replacement, durable storage, transactional publication of several outputs, and safe recovery on another machine are different guarantees. File/directory synchronization, network filesystem behavior, simultaneous writers, and host failure can require additional mechanisms. Explain the guarantee actually needed and tested instead of treating one API call as a universal transaction.
+
+**Work:** test rejected input while a previous correct report exists. Confirm the previous bytes survive and no temporary report remains after an ordinary caught failure. Interrupt a longer exercise workflow in a disposable directory and inspect its artifacts before restarting. State how a reader or downstream activity distinguishes completed outputs from attempts.
+
+For a multi-output study, stage and validate a coherent result set before announcing it complete, preserving the input/method identity of the set. A retry should not silently combine one output from an old parameter choice with another from a new run. Record failed attempts where they explain a limitation or needed repair.
+
+**Continue:** [Reuse computed results only under an explicit equivalence rule](Caches-and-reuse.lingua#r_1MXDE1T63F6G6GYECCCR23RBFW).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_67AHSE6SV62WC5H49ECP23VRTX

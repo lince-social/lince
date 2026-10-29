@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Model storage and blending as changing material populations and inventories (@mine-stockpiles: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A", #mining-and-mineral-engineering "Process-instruments-dynamics-control-and-observed-response.lingua#r_1H6VW5FKZ9SFGTSAKW6GC302ZP") { r_0S490SF4SPP602PF43TKA0QDWY
+**Read:** [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the full handling, planning, and material-flow discussions; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), complete applicable handling, sampling, and characterization material; [Wills’ Mineral Processing Technology — Wills and Finch, eighth edition](../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A), chapter 2 in full and the relevant modeling sections, when available.
+
+A stockpile or silo separates production times and changes the feed delivered to the next operation. Inventory is physical material with composition, size, moisture, thermal/reactive behavior, and an uncertain spatial distribution. A spreadsheet label does not guarantee the reclaim stream's properties.
+
+Build a time-dependent mass and constituent account from receipts, withdrawals, losses, and measured inventory changes. Distinguish calculated mean composition from its distribution and sequence. A weighted-average grade ignores segregation, reclaim geometry, selective handling, and nonlinear processing response; averaging recoveries from separate tests may not predict processing of a blend.
+
+Storage can change moisture, oxidation, surface condition, contamination, or self-heating potential. The effect depends on actual mineral/material chemistry, scale, exposure, and history. Preserve batch/domain identity and test how much information survives transfer between mine, stockpile, plant, and customer.
+
+**Work:** reconstruct a documented storage/blending case and its measurement basis. Independently reconcile inventory and constituent totals across a selected period, quantify the effect of moisture or survey bias, and compare predicted versus observed reclaim variability. Propose a sampling and reclaim observation that could distinguish segregation from changing mine feed. Evaluate blend alternatives using the downstream response and quality constraints, not only the average assay.
+
+**Continue:** [Connect process control with dynamics, measurements, and a defined operating purpose](Process-instruments-dynamics-control-and-observed-response.lingua#r_1H6VW5FKZ9SFGTSAKW6GC302ZP).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0S490SF4SPP602PF43TKA0QDWY

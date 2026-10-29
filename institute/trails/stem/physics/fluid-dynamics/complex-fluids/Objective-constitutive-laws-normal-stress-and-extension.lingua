@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Objective constitutive laws, normal stress and extension (@fd-objective-models: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #fluid-dynamics "History-dependence-thixotropy-and-elastic-instability.lingua#r_50D2X9FX0CF87WVGH3WT85M8ET") { r_0B3J7Q6R99JJHRQCCETNB4TH52
+**Read:** [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), constitutive equations, normal stresses and strong flows; [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), public problems and syllabus references for differential constitutive equations.
+
+A tensor constitutive law must transform consistently when an observer changes coordinates and rigidly rotates. Simply replacing the scalar time derivative in a shear-memory formula with componentwise derivatives can create an observer-dependent prediction. Follow the construction of objective derivatives and declare the velocity-gradient convention used.
+
+For an upper-convected model with L_ij=∂u_i/∂x_j, the derivative of a stress tensor is its material derivative minus Lτ minus τLᵀ. Derive steady simple-shear and extensional predictions for a selected model, including solvent and polymer contributions where present. Normal-stress differences and extensional viscosity contain information absent from a shear-viscosity curve.
+
+Compare Oldroyd-B with a finite-extensibility or anisotropic-drag alternative in a stated deformation range. Identify unphysical divergences or missing shear thinning in a simple model and what new parameters the alternative introduces. Check objectivity, dissipation and numerical stability separately; a stable discretization does not prove the constitutive law represents the measured material.
+
+**Continue:** [History dependence, thixotropy and elastic instability](History-dependence-thixotropy-and-elastic-instability.lingua#r_50D2X9FX0CF87WVGH3WT85M8ET).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0B3J7Q6R99JJHRQCCETNB4TH52

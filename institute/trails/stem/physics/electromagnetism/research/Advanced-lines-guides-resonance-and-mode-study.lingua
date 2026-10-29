@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced transmission, guides and resonant modes (@em-guided-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #source "../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_5BWBKTPS1G0F85NTJ0NSS5KYBT
+**Read:** [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), entire volume; [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ), complete relevant waveguide, line, layer and resonance chapters.
+
+Read both full [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA) and [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ) volumes and the complete applicable [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ) chapters. Choose a transition, loaded guide, cavity or layered structure where a simple mode/line approximation has a meaningful but limited range. Derive its modes and normalize them by the actual power/energy observable.
+
+Calculate reflection, transmission, loss, phase/group delay and any resonant quantities with an explicit reference plane. Include higher and evanescent modes needed near a discontinuity. Compare a reduced analytical model with a converged field solution and an available full experimental case. Establish energy conservation and reciprocity where their assumptions apply; for loss, account for where power goes.
+
+Vary frequency and geometry through a cutoff, resonance or matching condition. Demonstrate where a one-mode or lumped model fails and why. For a layered stack, extend the original example to oblique/polarized or lossy response only after deriving the changed normalization and numerically stable formulation. Report sensitivity to material, roughness, interfaces and calibration. The finished study should make a guided-wave result reproducible and physically interpretable, not merely optimize an unexplained solver output.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_5BWBKTPS1G0F85NTJ0NSS5KYBT

@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Drives, torque/speed control and load service (@pe-motor-drives: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #source "../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR", #electrical-power-engineering "../control/Excitation-reactive-control-limiters-and-measurement.lingua#r_0GBD1BSCV5NBEGWRAX56BQ9WN3") { r_668AGMR7EG7TY2818PDFR2E0PN
+**Read:** [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), complete induction/permanent-magnet control and simulation chapters; [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), whole relevant drive/conversion development; [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR), entire sourcebook.
+
+A drive combines machine, converter, sensing, controls, supply and driven load. Distinguish torque control, speed control and process regulation. The same machine can have different operating limits and efficiency under a changed switching strategy, cooling condition or load schedule.
+
+Derive an induction or permanent-magnet drive model from the actual winding/reference-frame equations and the converter's current/voltage capabilities. Compare scalar and field-oriented approaches through their assumptions and observables, not only labels. Include current/voltage saturation, speed/position estimation, loss and the mechanical inertia/torque curve.
+
+Read the complete relevant [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH) control chapters and [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526) motion-control applications, then all of [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR) for the useful system context. Work a changed speed/load case, compare independent predictions and suitable measurements or a full published experiment. Regeneration, DC-link energy, harmonic/insulation stress, bearing currents and network/protection interactions require the actual model and evidence. Finishing an ideal speed response does not establish a usable maintained industrial service.
+
+**Continue:** [Excitation, reactive control, limiters and measurement](../control/Excitation-reactive-control-limiters-and-measurement.lingua#r_0GBD1BSCV5NBEGWRAX56BQ9WN3).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_668AGMR7EG7TY2818PDFR2E0PN

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Wave equation, speed and initial data (@em-wave-equation: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Polarization-complex-vectors-and-Stokes-parameters.lingua#r_35HQG1V7NGMHF15D31PM6T4P1P") { r_2QYBJYED0RXYF436544V27EJ46
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 16 in full; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), the full electromagnetic-wave derivation.
+
+In a uniform source-free vacuum, taking a curl of Faraday's law and using Maxwell's other equations yields ∇²E − (1/c²)∂²E/∂t² = 0, and the analogous equation for B. A solution of the component wave equations must also satisfy divergence constraints and the coupling between E and B. Arbitrary independent scalar waves do not automatically form a Maxwell field.
+
+Construct a plane wave with a chosen propagation direction, transverse E and B, and B = k̂×E/c. Verify both curl equations and the energy flow direction. Superpose counterpropagating waves to form a standing wave; electric and magnetic energy then exchange in space/time rather than maintaining the same local travelling-wave relation.
+
+Distinguish an initial-value problem, a continuously driven harmonic problem and a pulse entering from a boundary. A propagation speed in a material depends on the constitutive response and frequency; c/√(ε_rμ_r) is a nondispersive-model result, not a universal signal speed. Later records separate phase, group and causal-front velocities and investigate when a wave model reduces to the earlier quasistatic descriptions.
+
+**Continue:** [Polarization, complex vectors and Stokes parameters](Polarization-complex-vectors-and-Stokes-parameters.lingua#r_35HQG1V7NGMHF15D31PM6T4P1P).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_2QYBJYED0RXYF436544V27EJ46

@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Join pressure, temperature, age, and deformation without collapsing different events (@mp-ptt: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #mineralogy-and-petrology "Disequilibrium-reaction-rates-and-preservation.lingua#r_79G1ER9M053Q0F1E4KPGTYP959") { r_4CTGHPR28HW3TQ3CWWRF426TRQ
+**Read:** [Introduction to Geochronology — Pieter Vermeesch](../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the complete relevant analytical, age, closure/history, and covariance treatment; [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the full equilibrium/inference review and case references; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete relevant metamorphic/deformation context.
+
+A pressure–temperature–time–deformation history combines observations with different spatial domains, sensitivities, closure/reaction processes, and uncertainties. A mineral age, exchange temperature, pressure-sensitive assemblage, and fabric do not automatically describe the same instant.
+
+Petrochronology links numerical ages with mineral growth, reactions, composition, inclusions, and textures. Preserve the analyzed domain and what the dating system can record. Inheritance, dissolution/reprecipitation, diffusion, mixed analyses, and later resetting can change the meaning of an apparent age.
+
+Pressure is not automatically depth without a mechanical/density model, and a path drawn through separated points does not establish its rate or continuity. Correlated calibration/systematic uncertainty can affect comparisons between age or condition estimates. Explain what is an event, bound, duration, or interpolation under a proposed history.
+
+**Work:** reconstruct a full published path argument using at least two method types and independently described domain relationships. Check one numerical result and compare an alternative event correlation. Identify the evidence needed to assign deformation to a growth/condition stage and propose a targeted observation that would resolve the principal ambiguity.
+
+Read the complete relevant geochronology and thermodynamic methods plus the entire case study. The aim is a defended history with clear constraints, not a sequence of precise-looking points collected from unrelated grains.
+
+**Continue:** [Test equilibrium interpretations against kinetics and preservation](Disequilibrium-reaction-rates-and-preservation.lingua#r_79G1ER9M053Q0F1E4KPGTYP959).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_4CTGHPR28HW3TQ3CWWRF426TRQ

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Test leaching rate models against changing material and solution conditions (@metal-leach-kinetics: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Biohydrometallurgical-Processes-CETEM.lingua#r_6DQNK4H5798FVNTHJ48QF7QNGN", #metals-and-metallurgical-production "Biological-reactions-solution-chemistry-and-bioleaching-evidence.lingua#r_6653S9HM3C6Y1QKT9XCRVKM396") { r_0VDM051E40BGDKQDTK9H13KCVX
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete hydrometallurgical theory and original methods used; [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), all relevant solution/kinetics and industrial cases; [Biohydrometallurgical Processes: A Practical Approach — CETEM](../sources/Biohydrometallurgical-Processes-CETEM.lingua#r_6DQNK4H5798FVNTHJ48QF7QNGN), complete relevant reaction/transport methods for a further comparison, when available.
+
+Reuse the earlier heterogeneous-reaction and transport models with the actual leaching context. Dissolution can change porosity, expose new mineral surfaces, create passivating products, or alter solution composition. A rate measured on a selected mineral surface need not apply to a heterogeneous ore, concentrate, or recycled feed.
+
+Separate intrinsic reaction, external transfer, intraparticle transport, interfacial area, and changes in driving force. Slurry and heap/porous-bed arrangements have different flow/contact and residence histories. In a circulating solution, a nominal inlet composition does not describe every location or time.
+
+Use a model with enough chemical and geometric detail for the question, then test identifiability and transferability. Particle-size and temperature dependence, structural/phase observations, solution profiles, and independent operating states supply stronger mechanism evidence than one transformed straight-line fit.
+
+**Work:** reproduce a full kinetic leaching paper with its original methods and uncertainty. Compare at least two defensible mechanisms on the same observations and validate under changed size/solution conditions. Independently check conversion and constituent inventories, limits, numerical convergence, and the effect of a plausible systematic assay or sampling bias. Explain which scale-up assumption is still unsupported and the experiment most likely to resolve it.
+
+**Continue:** [Separate biological contributions from chemical and transport explanations in bioleaching](Biological-reactions-solution-chemistry-and-bioleaching-evidence.lingua#r_6653S9HM3C6Y1QKT9XCRVKM396).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_0VDM051E40BGDKQDTK9H13KCVX

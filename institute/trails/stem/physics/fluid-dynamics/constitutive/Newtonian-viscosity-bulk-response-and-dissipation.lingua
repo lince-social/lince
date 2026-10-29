@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Newtonian viscosity, bulk response and dissipation (@fd-newtonian: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Close-the-Navier-Stokes-model-and-count-its-unknowns.lingua#r_0DT1PYJ1ZG1VMZRXH100M388GD") { r_7669C29E0HBC127Y4NJ2JT6QEY
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 6 constitutive momentum transport; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 3 stress, viscosity and dissipation; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), moving-fluid stress and viscosity.
+
+An isotropic Newtonian constitutive model is τ=2μD+λ(∇·u)I. The bulk viscosity is ζ=λ+2μ/3. For incompressible motion the dilatational term vanishes, leaving τ=2μD. When viscosity varies, its derivatives remain inside the stress divergence.
+
+The viscous conversion of mechanical to internal energy is τ:D. Decomposing D into its traceless part D′ and dilation gives 2μD′:D′+ζ(∇·u)². Nonnegative shear and bulk viscosities give nonnegative viscous dissipation in this model. The commonly used Stokes hypothesis ζ=0 is an assumption, not a universal material law.
+
+Calculate stress for planar shear and rigid rotation. Explain why rigid rotation has no viscous dissipation in this constitutive model. Compare the stress–rate relation with an actual material's measured response before adopting it for a polymer solution, paste, suspension or rapidly driven gas.
+
+**Continue:** [Close the Navier–Stokes model and count its unknowns](Close-the-Navier-Stokes-model-and-count-its-unknowns.lingua#r_0DT1PYJ1ZG1VMZRXH100M388GD).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7669C29E0HBC127Y4NJ2JT6QEY

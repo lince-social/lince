@@ -1,0 +1,11 @@
+Import "../Reproducible-computation.lingua"
+
+The Good Research Code Handbook — Mineault and community (@rc-goodcode: 0, is #book, #part-of @rc-sources) { r_771ZMSHAY1TCSTFCHPT9KZRA66
+Patrick J. Mineault and The Good Research Code Handbook Community. The Good Research Code Handbook, 2021. [Complete book](https://goodresearch.dev/) · [Citable edition](https://doi.org/10.5281/zenodo.5796873) · [Author’s repository and licence](https://github.com/patrickmineault/codebook).
+
+Read the full handbook: project setup, organization, decoupled code, testing, code/project documentation, collaboration, and the sample project. Work the numerical-testing extension as part of advanced study. Its intended audience includes graduate students and researchers who already use some Python; follow the earlier Sundnes reading where that preparation is new.
+
+The author’s repository supplies a CC BY 4.0 licence. Preserve attribution, edition, and separately credited material when reusing. The handbook and its sample project are external references; the calculation developed in these Records is original teaching material. Authorship, citation, contents, and licence checked on 29 October 2026.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_771ZMSHAY1TCSTFCHPT9KZRA66

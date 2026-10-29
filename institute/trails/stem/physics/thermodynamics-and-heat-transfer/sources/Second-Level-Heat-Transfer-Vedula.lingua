@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Second Level Course in Heat Transfer — R. P. Vedula (@th-vedula: 0, is #reference, #part-of @th-sources) { r_663BY2CF56BBB35C1S595A2VRF
+R. P. Vedula, IIT Bombay. NPTEL course 112101001. [Course](https://nptel.ac.in/courses/112101001) · [Full syllabus](https://archive.nptel.ac.in/content/syllabus_pdf/112101001.pdf).
+
+Follow the complete available web course. Its seventeen-topic analytical progression includes multidimensional/transient conduction, orthogonality and Duhamel response, internal and boundary-layer convection, turbulent transport, enclosure/gas radiation, boiling, condensation and melting/solidification. Reconstruct derivations and solve independent examples before consulting outcomes.
+
+The official outline explicitly gives little emphasis to numerical solution; [FiPy — conservative finite-volume modelling](FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), [Convecção e métodos numéricos — Maliska, UFSC](Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7) and our computational studies supply that distinct work. The syllabus does not establish a precise original run year. Public NPTEL access is not a blanket reuse licence for every associated book, slide or article. The complete commercial readings it names remain optional external access routes.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_663BY2CF56BBB35C1S595A2VRF

@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Relate sediment properties to sources, transport, and deposition (@geo-sediment-transport: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z", #geology "Facies-environments-and-stratigraphic-patterns.lingua#r_4X6HEM5B1RX52T99096BS9TBJH") { r_3K5MK1G2T0WFFJNMFA1528YB24
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapters 6 and 13’s sediment/transport sections; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete sedimentary environments and sedimentary structures treatments; [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z), the complete sedimentary-rock and process exercises.
+
+Sediment supply, entrainment, transport, deposition, and later reworking link source areas with deposits. Grain size, density, shape, sorting, roundness, mineralogy, and structures constrain possible pathways, but several processes can produce similar textures. Distinguish an observed grain population from a unique environmental diagnosis.
+
+Flow conditions, turbulence, cohesion, density contrasts, and sediment supply influence movement. A grain-settling model requires its specified flow regime and particle assumptions; applying one formula across mud, sand, gravel, and concentrated flows without checking its range can fail. A preserved bed reflects deposition and what escaped later erosion.
+
+Build a mass account with storage as well as throughput. For a defined reach, sediment input minus output and other transfers equals storage change. A low downstream load can indicate retention or changing sources, not necessarily negligible upstream erosion. Sampling must address event-driven and spatial variability.
+
+**Work:** complete the sedimentary and stream exercises. Describe a deposit from its actual grain/structure observations, propose at least two transport histories, and identify a discriminating feature. Draw a source-to-sink sediment account with uncertainty and unresolved storage. Explain how a dam, changed vegetation, or a new sediment pulse would enter the account.
+
+Read the complete relevant sediment and stream material. Later sedimentology, hydraulics, geomorphology, and watershed engineering deepen their distinct methods; this sequence provides the common reasoning joining processes, material transfers, and the incomplete preserved record.
+
+**Continue:** [Infer depositional environments from associations and stratigraphic relationships](Facies-environments-and-stratigraphic-patterns.lingua#r_4X6HEM5B1RX52T99096BS9TBJH).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_3K5MK1G2T0WFFJNMFA1528YB24

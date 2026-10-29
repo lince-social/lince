@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Reconstruct sulfuric-acid production through conversion, absorption and a complete sulfur account (@ic-sulfuric-acid: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3", #industrial-chemistry "Phosphate-minerals-feed-evidence-and-process-chemistry.lingua#r_6K8V29YMR4FWDRKEGWGHWAQZH0") { r_07JKJK86YAKGMS0V4SDW41TNTS
+**Read:** [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the entire sulfuric-acid manufacturing sequence; [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the complete sulfuric-acid chapter with feed, heat recovery, absorption and residuals; [Chemical-industry process descriptions and emission factors — EPA AP-42](../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3), the whole sulfuric-acid process/factor and background sections.
+
+Sulfuric-acid production connects sulfur-oxide generation, catalytic conversion, gas conditioning and absorption into the required acid state. S+O₂→SO₂ and 2SO₂+O₂⇌2SO₃ provide part of the chemical account. The relation SO₃+H₂O→H₂SO₄ is a stoichiometric statement, not a description of all practical absorption and mist behavior.
+
+Gas composition, contaminants, catalyst condition, temperature profiles and heat recovery interact. Equilibrium and finite rates influence conversion; absorption and entrainment influence what reaches the product and residual gas. Different sulfur-bearing feeds can require different preparation and impurity handling even when the final acid specification is similar.
+
+Define acid concentration, water/oleum basis and consequential contaminants. Trace the sulfur through product, returned material, mist, tail gas, wastewater and deposits. Energy recovered as steam is useful only on a compatible temperature, time and product boundary.
+
+**Work:** reconstruct a complete public acid route and derive its sulfur/oxygen/water and thermal accounts independently. Compare two documented contact/absorption arrangements or feed sources at equal accepted acid output. Explain how actual catalyst, gas, absorption and monitoring evidence supports the comparison, including influential uncertainty and changed conditions.
+
+**Continue:** [Connect phosphate resources and feed characterization with chemical production](Phosphate-minerals-feed-evidence-and-process-chemistry.lingua#r_6K8V29YMR4FWDRKEGWGHWAQZH0).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_07JKJK86YAKGMS0V4SDW41TNTS

@@ -1,0 +1,95 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+An inspectable diffuse-grey radiation enclosure (@th-radiation-example: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #thermodynamics-and-heat-transfer "../radiation/Radiation-shields-insulation-and-coupled-surface-balances.lingua#r_6R4HZMA6G682DJX6GF89N83CF8") { r_6Q4DQJ0ZEWQ2V631Z1SAEZXJCQ
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the full diffuse-grey enclosure derivation; [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), complete surface-exchange and view-factor lectures.
+
+Consider opaque, isothermal, diffuse-grey surfaces forming a closed enclosure with a nonparticipating intervening medium. Let F_ij be the fraction leaving surface i that reaches j, J the radiosity and E_b = σT⁴. The equations are J_i = ε_i E_b,i + (1−ε_i)ΣF_ij J_j. Irradiation is the summed incident radiosity; net outward power is A_i(J_i−ΣF_ij J_j).
+
+The original solver below checks nonnegative factors, row closure and area reciprocity, then uses pivoted elimination. These checks are necessary but do not prove that a proposed matrix represents a realizable geometry. All temperatures are prescribed; an unknown shield temperature needs a separate coupled energy solution.
+
+The deliberate domain is 2–12 surfaces, 100–1500 K, 0.1–100 m² and emissivity 0.05–1. The positive emissivity bound makes the reflection operator contractive and the linear system nonsingular. Closure/reciprocity checks allow the stated 1e−11 numerical tolerance. σ = 5.670374419e−8 W/(m² K⁴) is a rounded numerical value.
+
+```python file=grey_enclosure.py
+import json
+import math
+
+
+SIGMA = 5.670374419e-8
+
+
+def bounded(value, low, high):
+    if type(value) not in (int, float):
+        raise ValueError("expected a finite real number")
+    try:
+        value = float(value)
+    except OverflowError:
+        raise ValueError("number is outside the model domain") from None
+    if not math.isfinite(value) or not low <= value <= high:
+        raise ValueError("number is outside the model domain")
+    return value
+
+
+def solve(temperatures=(600.0, 300.0), areas=(1.0, 1.0),
+          emissivities=(0.8, 0.6), view=((0.0, 1.0), (1.0, 0.0))):
+    inputs = (temperatures, areas, emissivities, view)
+    if not all(isinstance(value, (list, tuple)) for value in inputs):
+        raise ValueError("provide surface and view-factor sequences")
+    count = len(temperatures)
+    if not 2 <= count <= 12 or any(len(value) != count for value in inputs):
+        raise ValueError("provide 2 to 12 surfaces with matching dimensions")
+    temperature = [bounded(v, 100.0, 1500.0) for v in temperatures]
+    area = [bounded(v, 0.1, 100.0) for v in areas]
+    epsilon = [bounded(v, 0.05, 1.0) for v in emissivities]
+    factors = []
+    for row in view:
+        if not isinstance(row, (list, tuple)) or len(row) != count:
+            raise ValueError("the view-factor matrix must be square")
+        values = [bounded(v, 0.0, 1.0) for v in row]
+        if abs(math.fsum(values) - 1.0) > 1e-11:
+            raise ValueError("view factors must close each enclosure row")
+        factors.append(values)
+    for i in range(count):
+        for j in range(count):
+            forward = area[i] * factors[i][j]
+            backward = area[j] * factors[j][i]
+            if abs(forward - backward) > 1e-11 * max(1.0, forward, backward):
+                raise ValueError("view factors must satisfy area reciprocity")
+    matrix = [
+        [float(i == j) - (1.0 - epsilon[i]) * factors[i][j]
+         for j in range(count)] + [epsilon[i] * SIGMA * temperature[i] ** 4]
+        for i in range(count)
+    ]
+    for column in range(count):
+        pivot = max(range(column, count), key=lambda row: abs(matrix[row][column]))
+        matrix[column], matrix[pivot] = matrix[pivot], matrix[column]
+        for row in range(column + 1, count):
+            ratio = matrix[row][column] / matrix[column][column]
+            for j in range(column, count + 1):
+                matrix[row][j] -= ratio * matrix[column][j]
+    radiosity = [0.0] * count
+    for row in range(count - 1, -1, -1):
+        remaining = math.fsum(matrix[row][j] * radiosity[j] for j in range(row + 1, count))
+        radiosity[row] = (matrix[row][-1] - remaining) / matrix[row][row]
+    irradiation = [
+        math.fsum(factors[i][j] * radiosity[j] for j in range(count))
+        for i in range(count)
+    ]
+    net = [area[i] * (radiosity[i] - irradiation[i]) for i in range(count)]
+    return {
+        "radiosity_W_per_m2": radiosity,
+        "irradiation_W_per_m2": irradiation,
+        "net_power_out_W": net,
+        "enclosure_residual_W": math.fsum(net),
+    }
+
+
+if __name__ == "__main__":
+    print(json.dumps(solve(), sort_keys=True, allow_nan=False))
+```
+
+Independently sum successive emission/reflection contributions instead of solving the same matrix again. Recover two parallel surfaces, black surfaces and equal-temperature equilibrium; test surface permutation, area scaling, fourth-power temperature scaling and total power closure. Invalid enclosure data must fail. This calculation does not include specular reflection, participating gases, subwavelength gaps or temperature-dependent spectra.
+
+**Continue:** [Radiation shields and coupled surface balances](../radiation/Radiation-shields-insulation-and-coupled-surface-balances.lingua#r_6R4HZMA6G682DJX6GF89N83CF8).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6Q4DQJ0ZEWQ2V631Z1SAEZXJCQ

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: transient diffusion, convergence and validation (@th-study-transients: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/FiPy-Partial-Differential-Equations-with-Python.lingua#r_0CA1GV7T9X876WS57M2KH93SZB", #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_6D7203E6JM4YAB6QNBAJS74SXA
+**Read:** [FiPy: Partial Differential Equations with Python](../sources/FiPy-Partial-Differential-Equations-with-Python.lingua#r_0CA1GV7T9X876WS57M2KH93SZB), the entire paper; [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), complete discretization and applicable diffusion/coupled examples; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), complete transient conduction methods; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), full transient conduction development.
+
+Begin with [An inspectable conservative transient layered slab](../computation/An-inspectable-conservative-transient-layered-slab.lingua#r_6B5B7E7C3Z1APY0RYAC09P12ET) and independently derive its cell balance and stability restriction. Extend a verified method to a transient multilayer problem with measured or explicitly synthetic boundary histories. Add complexity only after recovering analytical and manufactured solutions for the simpler model.
+
+Check conservation, spatial/time refinement, interface treatment, maximum-principle behavior where applicable and dependence on solver tolerances. Use an independently formulated calculation; comparing two front ends to the same kernel is a weaker check. Examine an implicit method and explain stability versus accuracy.
+
+Read the complete FiPy paper and relevant manual/examples, then compare an independently configured calculation. If physical data are used, separate numerical verification from uncertainty in the sensor, properties and boundary model. Deliver an executable study, failure cases and a conclusion whose scope matches the evidence.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6D7203E6JM4YAB6QNBAJS74SXA

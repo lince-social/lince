@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced static numerical-field verification (@em-static-numerics-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_0HV1EN0TSCEJ133D4S253Z0PXD
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), whole relevant potential and boundary methods; [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), complete electrostatic/interface chapters.
+
+Begin with the original conservative one-dimensional electrostatic solver and its exact interface/series-capacitance limits. Read the complete applicable boundary and numerical methods from [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H) and [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA). Derive a two-dimensional finite-volume or finite-element problem with actual interface conditions and an analytical/manufactured reference.
+
+Implement or use an authorized external solver with a pinned version and reconstruct the discrete weak/balance equations. Compare an independent discretization or Green-function solution. Check local residuals, global charge, energy, reciprocity and forces. Include positive-permittivity conditioning, a nonuniform mesh and a singular corner/source case with an explicitly defined observable.
+
+Perform at least three useful refinements, separate algebraic tolerance from spatial and domain errors, and compare the observed order with the theory's assumptions. Show a deliberately plausible but incorrect face/material averaging scheme and explain the conservation or interface error it creates. Carry a geometry/material uncertainty through to a physical claim. A verified small implementation should support a larger field investigation while preserving its stated scope; it does not establish that every future mesh or nonlinear model is correct.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_0HV1EN0TSCEJ133D4S253Z0PXD

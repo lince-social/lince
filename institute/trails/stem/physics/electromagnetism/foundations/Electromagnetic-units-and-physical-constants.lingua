@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Electromagnetic units and the post-2019 SI (@em-constants: 0, is #chapter, #part-of @electromagnetism, #source "../../../../inquiry/quantitative-literacy/sources/SI-Brochure.lingua#r_0QS0FQDWGM0BE9ZM4099FGRXED", #source "../sources/CODATA-2022-Fundamental-Constants.lingua#r_2KX7CCRRKXXRS1Q0F5KYRRKNA5", #electromagnetism "../../../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J") { r_50N03RM640KWQ6S5DQQJ5ADRAX
+**Read:** [The International System of Units — BIPM and Inmetro](../../../../inquiry/quantitative-literacy/sources/SI-Brochure.lingua#r_0QS0FQDWGM0BE9ZM4099FGRXED), electrical units and defining constants; [CODATA 2022 recommended constants — NIST](../sources/CODATA-2022-Fundamental-Constants.lingua#r_2KX7CCRRKXXRS1Q0F5KYRRKNA5), the complete relevant constants entries and uncertainties.
+
+Use one unit system consistently. In SI, Coulomb's constant is 1/(4π ε₀), the vacuum wave speed obeys c² = 1/(μ₀ ε₀), and the vacuum wave impedance is sqrt(μ₀/ε₀). Mixing SI and Gaussian-unit formulae can create factors of c or 4π that dimensional checking may expose only after the model is already confused.
+
+The SI defines c = 299792458 m/s and e = 1.602176634 × 10⁻¹⁹ C exactly. After the 2019 redefinition, μ₀ and ε₀ are not exact defined values. Use [CODATA 2022 recommended constants — NIST](../sources/CODATA-2022-Fundamental-Constants.lingua#r_2KX7CCRRKXXRS1Q0F5KYRRKNA5) for an evaluated value and uncertainty; 4π × 10⁻⁷ N/A² is an excellent familiar approximation for μ₀, not a currently exact definition. Distinguish an exact unit conversion from an experimentally evaluated material property.
+
+Derive units for capacitance, inductance, electric flux, magnetic flux, energy density and Poynting flux. Verify that ε₀E² has J/m³ units and EH has W/m² units. The computational examples later use explicitly declared normalized variables; they do not silently identify those numbers with a physical material or precision calibration.
+
+**Continue:** [Vectors, coordinate systems, and spatial meaning](../../../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_50N03RM640KWQ6S5DQQJ5ADRAX

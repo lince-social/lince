@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+Pro Git — Chacon and Straub (@rc-git: 0, is #book, #part-of @rc-sources) { r_7NQ43JGJ863RMR0HDHA7GMRD9G
+Scott Chacon and Ben Straub. Pro Git, second edition. Apress, 2014, with maintained corrections and contributions. [Complete official book and downloads](https://git-scm.com/book/en/v2) · [Português brasileiro](https://git-scm.com/book/pt-br/v2).
+
+Read chapters 1–3 and 5 completely for the first practical progression, then chapter 7’s relevant tools and chapter 10’s object model in deeper study. The full book is the sustained continuation for understanding distributed workflows and repository internals. Hosting-service details can change; use current command documentation when a particular operation matters.
+
+The official book page states CC BY-NC-SA 3.0 for book content. Preserve author, publisher, edition, source, and component notices. The Portuguese translation can be used alongside the English edition; inspect terminology and update differences where an exact command is being reproduced.
+
+Edition, authors, translations, licence, and authorized access checked on 29 October 2026. No book or external repository is copied into this trail.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_7NQ43JGJ863RMR0HDHA7GMRD9G

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Cylinders, spheres and changing transfer area (@th-radial: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #thermodynamics-and-heat-transfer "Internal-generation-variable-properties-and-hot-spots.lingua#r_2SW0JFBWDHREWM93VCFK7GY5M0") { r_05G5H8FQXMWYDSEG2RF0RYD7A3
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), cylindrical/spherical conduction and insulation; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), insulation-thickness analysis.
+
+In radial conduction, the area through which heat moves changes with radius. Derive cylindrical and spherical resistance by integrating the local flux law over the actual geometry. A plane-wall expression applied to a thick pipe can give the wrong rate and interface temperatures.
+
+For a cylinder of length L, constant k and no generation, resistance between radii r₁ and r₂ is ln(r₂/r₁)/(2πkL). Check the thin-wall limit against the plane result and keep end effects outside or inside the declared model. For a sphere, the corresponding radius dependence differs.
+
+Study insulation with external convection and its possible critical-radius effect under the assumptions of a constant external coefficient. Distinguish increased external area from a universal claim that adding insulation always increases or decreases heat loss. Temperature-dependent properties, radiation and geometry can alter the comparison.
+
+**Continue:** [Internal generation, variable properties and hot spots](Internal-generation-variable-properties-and-hot-spots.lingua#r_2SW0JFBWDHREWM93VCFK7GY5M0).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_05G5H8FQXMWYDSEG2RF0RYD7A3

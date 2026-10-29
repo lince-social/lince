@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: traceable thermal measurements (@th-study-metrology: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/Radiance-Temperature-Calibrations-NIST.lingua#r_1ZZFTRWTTE4RBKGANZJMEYQ0WE", #source "../sources/Heat-Flux-Sensor-Calibration-NIST.lingua#r_6RP9VC0545310FNGXY9B50PN16", #source "../../../../inquiry/metrology/sources/SI-Realizations.lingua#r_240WHEHDVW9TR241AXP6T4STM0", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_6W5QAJWM3SCEDMD9WHNGJNS6DE
+**Read:** [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), the entire report; [Radiance temperature calibrations — NIST SP 250-43](../sources/Radiance-Temperature-Calibrations-NIST.lingua#r_1ZZFTRWTTE4RBKGANZJMEYQ0WE), the entire report and current method context; [Heat-flux sensor calibration — NIST SP 250-65](../sources/Heat-Flux-Sensor-Calibration-NIST.lingua#r_6RP9VC0545310FNGXY9B50PN16), the entire report; [Practical realizations of SI units — BIPM consultative committees](../../../../inquiry/metrology/sources/SI-Realizations.lingua#r_240WHEHDVW9TR241AXP6T4STM0), full applicable realization documents.
+
+Read the complete NIST guarded-hot-plate, radiance-temperature and heat-flux reports. Compare the observables, reference realizations, calibration transfer, specimen conditions and dominant uncertainty mechanisms. Choose one method for a full reconstruction of its measurement equation.
+
+Recalculate a published uncertainty or calibration example from the reported information; label any unavailable inputs rather than inventing them. Examine correlated quantities, model terms, drift, response and the distinction between a reference material's certification interval and an arbitrary application.
+
+Deliver a method comparison and a complete proposed or performed measurement with raw evidence appropriate to its status. Test a changed specimen or installation condition that challenges the model. State exactly which traceability and uncertainty claims the available calibration records support.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6W5QAJWM3SCEDMD9WHNGJNS6DE

@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Introduction to Loop Heat Pipes — Sergey Semenov (@th-loop-heatpipe: 0, is #reference, #part-of @th-sources) { r_6WFJ8TNG86GRTFSKSXD319J97D
+Sergey Semenov, NASA Goddard Space Flight Center. Introduction to Loop Heat Pipes, Thermal & Fluids Analysis Workshop, 21–25 August 2023. [Complete 85-page technical course](https://tfaws.nasa.gov/wp-content/uploads/19.TFAWS-2023-Technical-Course-Introduction-to-LHPs-Semenov.pdf).
+
+Read the entire course, reconstructing the distinction between capillary pumped loops and loop heat pipes, component sizing, fluid inventory, temperature regulation, startup/shutdown and analytical models. Follow the references for the specific geometry and operating regime selected for deeper work.
+
+This NASA-hosted course is freely accessible; preserve its notices and separately credited figures. A reported flight example is evidence for that configuration and history, not a universal lifetime guarantee. The slides complement the older full handbook and do not replace its derivations or a documented manufacturing and test procedure. All slides and referenced articles remain external.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_6WFJ8TNG86GRTFSKSXD319J97D

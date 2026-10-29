@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Translate a bulk material requirement into questions about mineral hosts and impurities (@mp-feedstock: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../../geology/sources/Mineral-Commodity-Summaries-USGS.lingua#r_47FJ4GZC4CS4KJX8WXNDB418CX", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #mineralogy-and-petrology "Grain-associations-liberation-and-process-mineralogy.lingua#r_03BD9ADDV2B62T8RF26S61R77C") { r_6J4G1Q2JJ80B1SDS0NVQMR9H4M
+**Read:** [Mineral Commodity Summaries 2026 — USGS](../../geology/sources/Mineral-Commodity-Summaries-USGS.lingua#r_47FJ4GZC4CS4KJX8WXNDB418CX), the overview/definitions and complete relevant commodity chapters; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete relevant industrial/economic-mineral descriptions; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), the full relevant trace/quantitative method discussion; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected host-mineral entries.
+
+Industrial suitability depends on mineral form, structure, composition, grain association, defects, inclusions, alteration, variability, and the actual downstream specification. Bulk element abundance alone does not reveal how readily it can be separated, converted, purified, or maintained within that specification.
+
+High-silica material can contain lattice substitutions, fluid/melt inclusions, grain-boundary phases, coatings, and accessory minerals with different removal behavior. A reported low impurity concentration needs sampling support, method detection/quantification, contamination control, and uncertainty. An unmeasured element is not demonstrated absent.
+
+Connect geological origin and texture with the proposed process without treating a deposit model as a production recipe. A method effective on a discrete impurity phase may not remove a lattice-bound constituent similarly. Natural variability and analytical sample support affect what a batch or resource statement can establish.
+
+**Work:** choose silica, a feldspar/clay feedstock, a metal-bearing mineral, or another material with a documented specification. Build a host/association account for consequential components and compare two geological settings. Identify which optical, diffraction, microchemical, and bulk measurements support the proposed pathway and what remains unknown.
+
+Read complete selected commodity chapters and primary characterization papers. The later beneficiation, refining, ceramics/glass, semiconductor-material, and manufacturing trails develop their unique process/design knowledge; this mineralogical handoff should make the material and evidence requirements explicit.
+
+**Continue:** [Relate mineral associations to liberation without mistaking a section for every particle](Grain-associations-liberation-and-process-mineralogy.lingua#r_03BD9ADDV2B62T8RF26S61R77C).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_6J4G1Q2JJ80B1SDS0NVQMR9H4M

@@ -1,0 +1,11 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Crystallography Open Database — structures, citations, and CIF records (@mp-cod: 0, is #reference, #part-of @mp-sources) { r_0GWYXPDY9KYA4V4AXPCEFJG9RG
+Crystallography Open Database contributors. [Official database, citation, search, and licence](https://www.crystallography.net/cod/).
+
+Use selected identified crystal-structure records with their original publications, measurement conditions, composition, refinement, and CIF metadata. Distinguish experimental observations, structure models, occupancies, uncertainties, and later corrections. Several records for one chemical formula need not represent identical conditions or polymorphs.
+
+The official site dedicates the data/database to the public domain under CC0 and requests acknowledgement of original structural authors. That database notice does not automatically change the copyright of the source articles or every external program. Access and rights checked on 29 October 2026. Keep chosen CIF/data and original-paper references external; no bulk download or new Lince importer is required.
+
+**Return:** [Mineralogy and petrology sources — books, laboratories, analytical methods, and research](../Sources.lingua#r_38Q6Z3J7ER2G1B441JXJ14NV5A).
+} r_0GWYXPDY9KYA4V4AXPCEFJG9RG

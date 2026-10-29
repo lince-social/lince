@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Reversibility, reservoirs and physical irreversibilities (@th-reversibility: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "Carnot-limits-and-thermodynamic-temperature.lingua#r_6R2GGRMXKFWVNTD3STTQ272GNC") { r_4A9BNASZF5VTZYZ9WETP9N1QYY
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), second-law foundations; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), irreversibility and the second law; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), precise thermodynamic definitions.
+
+A reversible idealization permits the system and surroundings to be restored with no other net change. It is a limit against which actual processes can be compared, not an instruction that every slow machine achieves that limit. Friction, mixing, reaction away from equilibrium, electrical resistance and heat transfer across a finite temperature difference generate entropy.
+
+A thermal reservoir maintains a specified temperature while exchanging the relevant heat, as an approximation over the studied duty. A finite body generally changes temperature; treating it as an infinite reservoir can overstate available work or misstate an entropy balance.
+
+Construct a process that is quasistatic but dissipative, and another that is adiabatic but irreversible. Explain each distinction using a full system/surroundings account. Later microscopic reversibility and fluctuation statements require additional definitions and do not erase these macroscopic accounting conditions.
+
+**Continue:** [Carnot limits and thermodynamic temperature](Carnot-limits-and-thermodynamic-temperature.lingua#r_6R2GGRMXKFWVNTD3STTQ272GNC).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_4A9BNASZF5VTZYZ9WETP9N1QYY

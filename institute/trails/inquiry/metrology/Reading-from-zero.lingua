@@ -1,0 +1,26 @@
+Import "Metrology.lingua"
+
+Begin measurement and metrology from zero (@met-reading: 0, is #chapter, #part-of @metrology, #source "sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1", #source "sources/Metrology-in-Short.lingua#r_348S70JD4Z4VX9S3KA08JXQ2MS", #metrology "../quantitative-literacy/foundations/Quantity-and-reference.lingua#r_65GAJ89AZRG6VYVXDC43NBT0DK") { r_0KE3E2MMWJ9JVV3Q60WZDMW3YJ
+**Read:** [A Beginner’s Guide to Uncertainty of Measurement — Bell](sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1), complete; [Metrology — in Short — Howarth and Redgrave](sources/Metrology-in-Short.lingua#r_348S70JD4Z4VX9S3KA08JXQ2MS), complete, with historical definitions checked against current sources.
+
+Start with Bell’s complete beginner guide to uncertainty and Howarth and Redgrave’s complete introductory handbook. The latter is a historical 2008 edition: use the current SI and practical-realization sources for definitions and current institutional references. Read the linked explanations while doing the exercises; short Records connect substantial sources rather than replace them.
+
+The route borrows four actual shared quantitative Records: [A number needs a quantity and a reference](../quantitative-literacy/foundations/Quantity-and-reference.lingua#r_65GAJ89AZRG6VYVXDC43NBT0DK), [Units, dimensions, and equations that can make sense](../quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1), [Repeated observations, averages, spread, and shared errors](../quantitative-literacy/practice/Repeated-observations.lingua#r_6S7MZWJ6S5MERFKE0NQEWC5SY2), and [Small changes, derivatives, and first-order approximations](../quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52). Their metrology continuations lead into the measurement material at the point where that preparation is used. Other useful arithmetic, algebra, graph, geometry, and data references are available through [Quantitative and technical literacy](../quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2). Return to a needed part without assuming a previous course or requiring the whole quantitative programme first.
+
+| Stage | Sustained reading | Work to become able to do |
+| --- | --- | --- |
+| Accessible beginning | Bell complete; Metrology — in Short complete; VIM definitions in context; SI quantity-and-unit chapters | define the question, distinguish indication/result and calibration/adjustment, describe a reference chain, make a first measurement report |
+| Physical comparison and calibration | NPL dimensional guide complete; NIST handbook chapter 2 complete through successive linked sections; a full calibration-family guide | design observations, fit and check a response, examine drift/loading, use corrections and reference evidence |
+| Measurement models and uncertainty | TN 1297 complete; GUM main text with annexes and 2026 amendment in stages; GUM-6 complete; TN 1900 sections 1–8 and examples | construct a model, evaluate inputs, retain dependence, check coverage and nonlinearity, report a defensible result |
+| Propagation and advanced inference | JCGM 101 and 102 complete; TN 1900 complete; software manual for the selected independent check | derive exact benchmarks, compare linear and joint numerical propagation, handle vector outputs and inverse questions |
+| Measurement families and material targets | the assigned calibration guides; complete Eurachem uncertainty, sampling, and validation guides; relevant full SI/reference document | compare physical principles, reconstruct examples in contrasting families, preserve the target and conditions through a transfer |
+| Decisions, comparison, and research | JCGM 106 and GUM-5:2026 complete; actual certificates/comparison reports; independent research treatments for the chosen question | defend a decision rule, assess comparisons, complete sustained projects, investigate and revise a focused method claim |
+
+Read the first explanations and perform the modest first study before attempting the later statistical and physical depth. Work difficult derivations more than once and use the mathematical preparation the particular passage needs. A named later clause means return to that part; it does not cancel the earlier whole-book reading.
+
+The full programme is intentionally substantial. Paper studies, published-data reconstruction, clearly labelled simulations, and actual properly supported laboratory work establish different kinds of evidence. Preserve that distinction in the project rather than treating equipment access or a completion label as proof of a real capability.
+
+**Continue:** [A number needs a quantity and a reference](../quantitative-literacy/foundations/Quantity-and-reference.lingua#r_65GAJ89AZRG6VYVXDC43NBT0DK).
+
+**Return:** [Measurement and metrology](Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_0KE3E2MMWJ9JVV3Q60WZDMW3YJ

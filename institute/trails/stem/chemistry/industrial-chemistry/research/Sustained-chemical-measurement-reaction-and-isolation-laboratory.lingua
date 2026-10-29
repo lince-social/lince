@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Demonstrate a substantial laboratory investigation joining chemical reaction and product evidence (@ic-laboratory-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_49GWJFEB1F7VXQ47E9V8JZHWRH
+**Read:** [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the whole relevant experimental/reaction-development guide; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete parameter-estimation and applicable reaction/energy methods; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the entire relevant reaction, isolation and analytical-process chapters; [Quantitative isotope controls for ammonia claims — Andersen and colleagues](../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST), the complete corrected measurement/contamination case.
+
+Build a sustained study that joins representative feed/material identification, a defined reaction, time/thermal observations, product isolation and independent chemical/physical characterization. Choose actual appropriate primary methods, facilities and supervision for the chemistry; a literature or supplied-data version must identify that scope accurately.
+
+Calibrate and test the consequential measurements, preserving blanks, sampling support, recovery, uncertainty and relevant instrument dynamics. Independently close material and energy where supported by the observations. Distinguish disappearance of feed, formation of desired product, isolated yield and accepted material state.
+
+Test at least one consequential changed condition and a competing explanation for the result. Repeated or complementary observations should establish more than an isolated favorable sample. Trace cleaning, contamination, retained material and the actual time/history of the evidence.
+
+**Work:** produce a complete primary-method account, original calculations and observation record with full external bibliography and data provenance. Have another reader reproduce a central inference and challenge the strongest alternative mechanism or measurement explanation. Revise the conclusions and explain which further process/scale claims the study does and does not establish.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_49GWJFEB1F7VXQ47E9V8JZHWRH

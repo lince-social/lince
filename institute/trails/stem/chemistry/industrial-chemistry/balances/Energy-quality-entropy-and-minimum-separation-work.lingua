@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Distinguish energy quantity, temperature level, entropy and useful work (@ic-exergy: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #source "../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X", #industrial-chemistry "../../general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H") { r_6KQ9H7SJ6V4QVR5QF3T2WSHQ0M
+**Read:** [Graduate Chemical Engineering Thermodynamics — MIT 10.40](../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT), the complete entropy, availability, open-system and constitutive-model problems relevant to the comparison; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the full energy/resource and relevant process chapters if using this commercial route; [Improving Steam System Performance — U.S. DOE sourcebook](../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X), the complete system account and pertinent heat-recovery methods.
+
+An energy account closes quantity; entropy and exergy help explain why equally large energy flows need not perform the same task. Heat supplied reversibly at temperature T relative to an environment T₀ has work potential Q(1−T₀/T). Real irreversibility destroys useful work potential even though energy remains conserved.
+
+For an original illustrative comparison with T₀=300 K, 100 MJ supplied as heat at 600 K has a reversible work potential of 50 MJ, while the same heat amount at 350 K has about 14.29 MJ. These ideal bounds do not account for finite heat-transfer approach, variable temperature, pressure, chemical composition or actual equipment performance.
+
+Separation also has a thermodynamic cost. Reversing ideal mixing requires work linked to composition and temperature; a real distillation or adsorption system consumes additional work/heat through finite driving forces, pressure losses and recovery duties. A low net energy total can conceal poor temperature matching or an omitted purification burden.
+
+**Work:** construct consistent energy and exergy boundaries for a complete chemical route, stating environment and property models. Compare two utility arrangements at the same accepted product output. Explain where a claimed heat recovery is physically feasible, where a temperature constraint prevents it, and which actual measurements are needed to test the modeled improvement.
+
+**Continue:** [Connect chemical potential, activities, and the reaction direction](../../general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6KQ9H7SJ6V4QVR5QF3T2WSHQ0M

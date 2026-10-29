@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Commissioning, system function and handover (@pe-commissioning: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Commissioning-Guide-Hydroelectric-FIST.lingua#r_0WA7RR86PMVEA3FFM7CG6NQ5RM", #source "../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD", #source "../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6", #source "../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC", #electrical-power-engineering "Auxiliary-power-cooling-controls-and-hidden-dependencies.lingua#r_07SBEGZTPXB61KPF875G4WMH53") { r_27QFYZB06Z0RPZCJT47RG33HK4
+**Read:** [Commissioning Guide for Hydroelectric Facilities — FIST 4-7](../sources/Commissioning-Guide-Hydroelectric-FIST.lingua#r_0WA7RR86PMVEA3FFM7CG6NQ5RM), entire guide and complete applicable methods; [Protective relay operation, maintenance and tests — FIST 3-8](../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD), complete relevant functional-chain testing; [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6), whole installed-setting/evidence interface; [Conduct of power operations and maintenance — FIST](../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC), complete relevant handover and operating context.
+
+Commissioning establishes evidence that the installed system performs its intended functions under defined conditions. Separate factory/component tests, installation checks, subsystem tests, integrated control/protection tests and operating observations. Passing each component independently does not establish all interfaces or the complete sequence.
+
+Read the whole [Commissioning Guide for Hydroelectric Facilities — FIST 4-7](../sources/Commissioning-Guide-Hydroelectric-FIST.lingua#r_0WA7RR86PMVEA3FFM7CG6NQ5RM) guide and the actual relevant equipment/testing methods. Derive test observables and expected responses from the design/model before inspecting results. Include as-built connections, polarity, sensor calibration, auxiliary supply, settings, communication failure, interlocks and the actual breaker/actuator behavior. Use current equipment and applicable requirements for physical work.
+
+Compare one intended function with the full evidence chain and an independent changed/failure case. Preserve uncertainties, deviations, exceptions and resolved/unresolved discrepancies rather than treating a signed checklist as physical proof. Transfer model, drawings, settings, condition baselines, spare/support information and actual limits to operations/maintenance.
+
+**Continue:** [Auxiliary power, cooling, controls and hidden dependencies](Auxiliary-power-cooling-controls-and-hidden-dependencies.lingua#r_07SBEGZTPXB61KPF875G4WMH53).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_27QFYZB06Z0RPZCJT47RG33HK4

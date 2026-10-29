@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Exact differentials, partial derivatives and thermal models (@th-derivatives: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE", #thermodynamics-and-heat-transfer "../balances/Cycles-efficiency-and-the-direction-of-useful-output.lingua#r_1FJ3QB261EXN8ET1NADXP55MQG") { r_58NJQNAS8V4TVM3FAKB7HAK9QP
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), the complete mathematical appendices and state-function treatment; [Differential Equations — MIT 18.03SC](../sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE), first-order methods before transient thermal models.
+
+A partial derivative states what is held fixed. The derivative of pressure with respect to temperature at fixed volume is different from the derivative along a saturated phase boundary. Write the independent variables and constraints before comparing coefficients.
+
+For a differentiable state function U(T,V), dU = (∂U/∂T)_V dT + (∂U/∂V)_T dV. Its integral between states is path independent, while heat and work generally require path information. Equality of suitable mixed derivatives leads to useful identities only where the required differentiability and single-phase description hold.
+
+Read the full mathematical appendices in [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1) and the needed complete calculus chapters in [Calculus and differential-equation preparation — Strang and Herman, OpenStax](../../../chemistry/industrial-chemistry/sources/Calculus-and-Differential-Equations-OpenStax.lingua#r_027WKVM5NG5X84M86TSVRA77J3). Use [Differential Equations — MIT 18.03SC](../sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE) for the complete ODE progression. Work a two-variable example, check units and numerical perturbations, and explain why a derivative across a discontinuous phase change needs different treatment.
+
+**Continue:** [Cycles, efficiency and useful output](../balances/Cycles-efficiency-and-the-direction-of-useful-output.lingua#r_1FJ3QB261EXN8ET1NADXP55MQG).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_58NJQNAS8V4TVM3FAKB7HAK9QP

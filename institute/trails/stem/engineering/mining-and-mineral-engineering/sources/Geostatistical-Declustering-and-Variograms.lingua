@@ -1,0 +1,11 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Geostatistical sampling, continuity, estimation, and simulation — Deutsch and contributors (@mine-geostat: 0, is #reference, #part-of @mine-sources) { r_1MDWJYNM88E34YCM4918C7DEEQ
+Clayton V. Deutsch, Cell Declustering Parameter Selection, 2015, University of Alberta; M. Samson and C. V. Deutsch, The Sill of the Variogram, 2021. J. L. Deutsch, editor, Geostatistics Lessons. [Complete declustering lesson](https://geostatisticslessons.com/lessons/celldeclustering) · [Complete variogram-sill lesson](https://geostatisticslessons.com/lessons/sillofvariogram) · [Author-edited methods index](https://geostatisticslessons.com/all).
+
+For prediction and uncertainty, also read Zahra Ashtiani and C. V. Deutsch, [Kriging with Constraints](https://geostatisticslessons.com/lessons/krigingconstraints), 2024; Zahra Hadavand and C. V. Deutsch, [Conditioning by Kriging](https://geostatisticslessons.com/lessons/conditioningbykriging), 2020; and Rafael Ortiz and C. V. Deutsch, [Multivariate Gaussian Distribution](https://geostatisticslessons.com/lessons/multigaussian), 2022. Read all five named lessons in full, including derivations and original references. Trace support, stationarity, spatial dependence, constraints, conditional distributions, and model-conditioned uncertainty rather than treating a smooth block model as observed grade.
+
+The author/institution, dated lessons, and public methods were accessible on 29 October 2026. Preserve actual article/component terms and citations; a public teaching site is not a bulk-ingestion requirement or a blanket licence for linked software/data. Selected works remain external references.
+
+**Return:** [Mining and mineral engineering sources — books, courses, methods, and evidence](../Sources.lingua#r_5368N4FVSGP1G4DP5612SJD0M5).
+} r_1MDWJYNM88E34YCM4918C7DEEQ

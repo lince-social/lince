@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced scattering, extinction and response study (@em-scattering-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_6VQB1CK8FSP8M7MCCWHH8Y6NSR
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), whole scattering and radiation chapters; [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH), complete relevant wave/scattering work.
+
+Read the complete scattering/multipole development in [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H) and the relevant graduate problems in [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH). Choose a sphere, cylinder or other shape with an independently available limiting or analytical solution. Define the incident field, background, amplitude normalization and the integrated/differential observables.
+
+Derive a small-particle polarizability approximation and compare it with a fuller modal or numerical solution over size and material contrast. Include radiative/absorptive consistency, forward interference and the optical theorem under its proper assumptions. Check extinction = scattering + absorption for a passive system and investigate any apparent violation before clipping or renormalizing results.
+
+Resolve angular integration and computational-domain error separately. Compare resonance position, linewidth and angular pattern, not just one peak. If inferring material or size from data, examine degeneracy and a second independently predicted observable. Discuss what changes in an absorbing background or with multiple particles. The finished account should establish both mathematical convergence and the actual information contained in a scattering measurement, with clear limits on extending a simple isolated-particle formula.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_6VQB1CK8FSP8M7MCCWHH8Y6NSR

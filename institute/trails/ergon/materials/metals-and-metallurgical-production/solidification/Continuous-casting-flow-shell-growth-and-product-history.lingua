@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Reconstruct continuous casting through coupled flow, shell formation, chemistry, and work (@metal-continuous-casting: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #metals-and-metallurgical-production "../refining/Volatility-segregation-zone-refining-and-high-purity-handling.lingua#r_639221FWZC0ZJRD057G5VSFR84") { r_6SK54AG2Q53MB4RJPFS21GJ0VY
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), all tundish, casting, heat/segregation, and downstream-processing lectures; [Steel Making — Dipak Mazumdar and Satish Ch. Koria, NPTEL](../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ), the complete casting and relevant flow-model progression; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), the whole continuous-casting and integrated-transfer chapter; [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), all steel-factory/casting and associated transport work.
+
+Continuous casting connects liquid delivery/tundish, mold flow/heat transfer, growing solid shell, support/withdrawal, secondary cooling, straightening/cutting, and later processing. Composition, inclusion/gas state, temperature, liquid level, flow, and machine history affect both stability and product quality.
+
+Derive the appropriate heat/interface and material accounts, then identify what shell-growth, flow, strain, and segregation models assume. Local equilibrium and a steady state can be useful approximations, but transitions, geometry, variable cooling/contact, and chemistry may challenge them. Sensor or coupon observations sample particular locations and times.
+
+Track internal and surface defects, phase/chemical populations, orientation/grains, residual stress, and the actual rolling/forging requirement. A casting may satisfy one dimensional or bulk chemistry criterion while carrying a consequential structure or defect for later fabrication/service.
+
+**Work:** reconstruct a complete published continuous-casting case, including measured thermal/flow/quality evidence and the full model/method. Independently reproduce a central prediction, test numerical/physical limiting cases, and validate against a separate condition. Compare a meaningful process alternative with changed feed or transition behavior. Explain the observations that distinguish thermal, flow/entrainment, chemical, and deformation explanations for the product discrepancy.
+
+**Continue:** [Explain physical refining through phase distribution, transport, and contamination evidence](../refining/Volatility-segregation-zone-refining-and-high-purity-handling.lingua#r_639221FWZC0ZJRD057G5VSFR84).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_6SK54AG2Q53MB4RJPFS21GJ0VY

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced boundary-layer similarity, separation and drag study (@fd-advanced-layer: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "Advanced-linear-stability-transient-growth-and-transition-study.lingua#r_0WHDHE2BSBQ7ZMTW2EXS3D2MBN") { r_3HJ4ZSH1RBJCTQ98VZ4VE3QEYX
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), complete boundary-layer development; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapters VIII and IX with independent problems; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), pressure-gradient and unsteady boundary-layer notes; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), profile and gradient uncertainty.
+
+Derive the boundary-layer scaling and Blasius similarity equation, then reproduce wall shear and thickness integrals using two independent solution methods. Use [An inspectable Blasius boundary-layer calculation](../computation/An-inspectable-Blasius-boundary-layer-calculation.lingua#r_7X6RYA08VQGEBYKV786AT13CPJ) to distinguish numerical spacing error from truncation of the infinite domain, and verify the momentum-integral relation.
+
+Introduce a specified pressure gradient, work the relevant Falkner–Skan or differential boundary-layer problem, and compare it with an integral approximation. Locate where a selected solution ceases to support the attached-flow assumption. Keep the outer flow and displacement interaction consistent with the level of approximation claimed.
+
+Compare profiles, shear and integrated drag with a documented experiment or independent high-quality solution, accounting for inlet, transition and measurement filtering. Explain why agreement in one integral quantity does not establish an accurate local profile or separation prediction. Defend the limitations of a two-dimensional steady analysis for the chosen case.
+
+**Continue:** [Advanced linear stability, transient growth and transition study](Advanced-linear-stability-transient-growth-and-transition-study.lingua#r_0WHDHE2BSBQ7ZMTW2EXS3D2MBN).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3HJ4ZSH1RBJCTQ98VZ4VE3QEYX

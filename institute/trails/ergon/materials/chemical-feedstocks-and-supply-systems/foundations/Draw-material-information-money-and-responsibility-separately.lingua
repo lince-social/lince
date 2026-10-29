@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Draw the boundaries and the different flows across them (@cs-boundary: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C", #source "../sources/Enterprise-wide-Optimization-Grossmann.lingua#r_4XD1X5QN83H40RBMGJVSZY9Y8V", #source "../sources/Gestao-de-Operacoes-e-Logistica-Rosa.lingua#r_6J7SWGEMAKMNVKVNGATZW4EB2J", #chemical-supply-systems "../origins/Mineral-air-water-carbon-and-recovered-origins.lingua#r_18DV5AVKV5YFZEB77Z5SHBYYCT") { r_12722F6QK2K31GCEZEJYMYSP5H
+**Read:** [Understanding Water Treatment Chemical Supply Chains and the Risk of Disruptions — EPA](../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C), the complete framework and methodology chapters; [Enterprise-wide Optimization: A New Frontier in Process Systems Engineering — Grossmann](../sources/Enterprise-wide-Optimization-Grossmann.lingua#r_4XD1X5QN83H40RBMGJVSZY9Y8V), the whole paper; [Gestão de Operações e Logística I — Rodrigo de Alvarenga Rosa](../sources/Gestao-de-Operacoes-e-Logistica-Rosa.lingua#r_6J7SWGEMAKMNVKVNGATZW4EB2J), the complete order and transport chapters.
+
+Draw the chemical path from source/feed preparation to manufacturer, terminal, distributor, user storage and point of use. Then draw information, money and responsibility on separate copies. A quality laboratory may influence acceptance without receiving the bulk material; a shared utility may stop two apparently independent producers; a distributor may obtain both products from one manufacturer.
+
+Give each process node an input/output boundary, state and time basis. Give each transfer a source, destination, quantity, delay, contact system and evidence of receipt. Do not follow every connection merely because it exists: expand upstream when it changes the question being investigated. This keeps an explanation readable while preserving the ability to trace a consequential dependency.
+
+Develop three versions: a package delivery, a continuously replenished bulk tank and an on-site supply contract. Mark ownership and operational control explicitly instead of inferring them from physical location. Identify the people who can stop, change or accept a transfer and what they need to know. The diagram becomes a physical and institutional hypothesis; compare it with the later supplier interviews, technical manuals or documented cases and revise unsupported edges.
+
+**Continue:** [Map chemical origins without confusing a substance with one production route](../origins/Mineral-air-water-carbon-and-recovered-origins.lingua#r_18DV5AVKV5YFZEB77Z5SHBYYCT).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_12722F6QK2K31GCEZEJYMYSP5H

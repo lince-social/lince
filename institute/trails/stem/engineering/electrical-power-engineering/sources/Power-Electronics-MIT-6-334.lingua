@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Power Electronics — MIT 6.334, Spring 2007 (@pe-mit-converters: 0, is #reference, #part-of @pe-sources) { r_071M46GNC27PPJVTZEQTMEF526
+David Perreault. [Graduate MIT 6.334](https://ocw.mit.edu/courses/6-334-power-electronics-spring-2007/) · [Lecture notes](https://ocw.mit.edu/courses/6-334-power-electronics-spring-2007/pages/lecture-notes/) · [Assignments](https://ocw.mit.edu/courses/6-334-power-electronics-spring-2007/pages/assignments/).
+
+Complete the available lecture/problem progression on switching energy conversion, rectification/inversion, DC–DC stages, magnetics and filters, devices, modelling and control. Reconstruct averaged and switched models, derive loss/thermal/operating limits, and compare a design with independently predicted waveforms. This supplies the converter material missing from the introductory power-course notes.
+
+The official page identifies graduate level, instructor, run and public notes/assignments; checked on 29 October 2026. A reading-list commercial textbook is separate from the public resources, and OCW's CC BY-NC-SA licence has individual-component exceptions. Keep older device/application examples distinct from current ratings, availability and engineering requirements. This is an external learning source, not an installed simulator or authority to construct high-energy hardware without appropriate facilities.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_071M46GNC27PPJVTZEQTMEF526

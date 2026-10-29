@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Characterize feed variability for the actual chemistry and process response (@ic-feed: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6", #industrial-chemistry "Define-a-usable-chemical-product-and-its-evidence.lingua#r_535PMG683E3954QDWW0ERTPYG8") { r_4SGD9MAA6F3FBXHX5JR40TWWWM
+**Read:** [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the complete raw-material preparation and impurity discussion for the selected inorganic route; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the full feed/property account for the corresponding organic family; [Refining of Mineral Oil and Gas, BREF REF](../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6), the complete feed-characterization and relevant process descriptions.
+
+A feed description needs more than the name of its dominant ingredient. Moisture, phase identity, particle/physical state, organic or mineral impurities, inhibitors, catalyst poisons, dissolved gases and time variability can alter reactions and separations. The useful feed property depends on the process and final product.
+
+Sampling defines which delivered quantity the result represents. Distinguish a grab sample, a composite over time and an inventory estimate; their supports and uncertainties differ. Preparation can change volatile, reactive, hygroscopic or multiphase feeds before analysis. Keep the material's identity and history attached to the result.
+
+Characterization also tests whether a convenient model applies. A nominally renewable feed may carry a variable molecular distribution; a brine's trace ions can matter to a downstream cell; an apparently equivalent gas mixture may contain an influential catalyst poison. Similar bulk composition does not guarantee interchangeable behavior.
+
+**Work:** compare two documented feeds for the same product route. Specify representative sampling, analytical and physical characterization, then explain the consequences for reaction, separation, utilities, product quality and residuals. Identify one observation that could reverse the preferred route. Distinguish actual measurements from estimates or literature-supported expectations.
+
+**Continue:** [Translate chemical usefulness into identity, composition, physical form and acceptance evidence](Define-a-usable-chemical-product-and-its-evidence.lingua#r_535PMG683E3954QDWW0ERTPYG8).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4SGD9MAA6F3FBXHX5JR40TWWWM

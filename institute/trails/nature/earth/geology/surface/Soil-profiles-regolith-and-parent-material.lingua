@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Read soils and regolith as evolving materials in a landscape (@geo-soils: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #source "../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N", #geology "Sediment-production-transport-and-deposition.lingua#r_3K5MK1G2T0WFFJNMFA1528YB24") { r_6M1BCEWCJFN5MSFV00F3G22AV6
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), the full soil and weathering sections of chapter 5; [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), the complete soil-related chapter; [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N), the selected regional soil/parent-material context.
+
+Soil develops through interacting parent material, climate, organisms, relief, transport, and time. A profile records horizons and their relationships rather than a uniform layer with one property. Regolith is a broader material cover; distinguish in-place weathered material from transported deposits and artificial fill.
+
+Texture, structure, porosity, organic matter, mineralogy, chemistry, water, and biological activity affect behavior. A geological parent-material map does not fully determine a present soil's fertility, permeability, strength, or contamination. Those questions require suitable observations and methods at the relevant scale.
+
+Profiles are open systems with additions, removals, transformations, and transfers. Concentration changes can reflect volume/mass loss as well as element input. A percentage comparison alone does not establish accumulation without a reference and mass balance. Landscape position can influence drainage and erosion history.
+
+**Work:** describe an authorized profile or a suitable supervised exposure with horizon boundaries, scale, parent-material evidence, and disturbance history. Compare two profiles in different landscape positions, separating observations from causal interpretation. State which measurements would be needed for an agricultural, groundwater, or engineering question rather than reusing a visual classification as their answer.
+
+Read the full soil material and its Brazilian regional context. [Farming](../../../farming/Farming.lingua#r_13YG8DNJGT3QRX08G4BAMD92F3) provides an existing continuation into land and cultivation. The dedicated soil-science trail will deepen classification, experiments, biology, and transport while reusing geological observations and chemical foundations.
+
+**Continue:** [Relate sediment properties to sources, transport, and deposition](Sediment-production-transport-and-deposition.lingua#r_3K5MK1G2T0WFFJNMFA1528YB24).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_6M1BCEWCJFN5MSFV00F3G22AV6

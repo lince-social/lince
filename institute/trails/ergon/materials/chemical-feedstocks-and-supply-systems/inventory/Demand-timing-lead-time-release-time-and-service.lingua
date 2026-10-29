@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Define when a chemical is needed and what a successful supply means (@cs-time-service: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #source "../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F", #chemical-supply-systems "Deterministic-replenishment-and-the-economic-order-model.lingua#r_35550DET1TPPY9M2R2CD8V0VR2") { r_64XA779F0M4495F9C2AECCWHHZ
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), Inventory Systems and the complete stochastic-inventory chapter; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), the complete demand, lead-time and service teaching; [Supply Chain Resilience: Guide for Water and Wastewater Utilities — EPA](../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F), the entire supplier/continuity discussion.
+
+Define demand as a function of a stated operation and time interval. A continuous process, a batch campaign and intermittent laboratory use require different descriptions. Distinguish average consumption, peak rate, minimum order, campaign grouping and requirements that occur together. An annual total cannot establish that every operating period is supplied.
+
+Decompose replenishment time into order decision/communication, supplier preparation, dispatch, transport, receiving, analysis/review and release to use. Some components overlap; others cannot. State whether the clock ends at arrival or at usable availability. Different grades and routes can have different delays and uncertainty even when the substance name is the same.
+
+Choose service measures explicitly: probability of no shortage in a cycle, fraction of requested material supplied, lateness distribution, hours of lost operation, or delivered quality at use. These are not interchangeable. Work a two-period example in which the same quantity shortfall has very different consequences for a continuous user and a reschedulable batch. Connect the consequence to technical production and people affected, with the money model stated separately. Later uncertainty models should compute the chosen measure, not simply print a number called reliability.
+
+**Continue:** [Derive a simple replenishment model before applying it to chemicals](Deterministic-replenishment-and-the-economic-order-model.lingua#r_35550DET1TPPY9M2R2CD8V0VR2).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_64XA779F0M4495F9C2AECCWHHZ

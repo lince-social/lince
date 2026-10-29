@@ -1,0 +1,17 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Local entropy production and transport assumptions (@th-local-entropy: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #thermodynamics-and-heat-transfer "Exergy-environment-and-available-work.lingua#r_6R6JQK4K8HBTMWSMMWT5MVMF67", #fluid-dynamics "../../fluid-dynamics/constitutive/Incompressibility-low-Mach-limits-and-changing-density.lingua#r_27TKZTP9HJ4S3SMD31KQF5ABKN") { r_0XE4QFR9SE1KBW2RDHYPVVJZZE
+**Read:** [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), local equilibrium and entropy-production derivations; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), conduction and energy equations; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), continuum and microscopic transport limits.
+
+Within a local-equilibrium continuum description, heat conduction contributes q·∇(1/T) to entropy production per volume. With isotropic Fourier conduction q = −k∇T and k≥0, this becomes k|∇T|²/T²≥0. Tensor conductivity requires the relevant positive-semidefinite dissipative part.
+
+Other contributions arise from viscous stress, diffusion and reactions, with fluxes and driving forces defined consistently. Changing from a total energy flux to a heat flux in a mixture can move enthalpy-carrying terms between definitions. Derive the entropy balance alongside the energy and species balances.
+
+Integrate a one-dimensional steady wall example and recover the two-boundary entropy account. Then identify when local temperature, an instantaneous constitutive law or local equilibrium may fail. A nonlinear transient model must be checked for both conservation and admissible entropy behavior, not merely for a converged residual.
+
+**Continue:** [Exergy, the environment and available work](Exergy-environment-and-available-work.lingua#r_6R6JQK4K8HBTMWSMMWT5MVMF67).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Continue in fluid dynamics:** [Incompressibility, low-Mach limits and changing density](../../fluid-dynamics/constitutive/Incompressibility-low-Mach-limits-and-changing-density.lingua#r_27TKZTP9HJ4S3SMD31KQF5ABKN).
+} r_0XE4QFR9SE1KBW2RDHYPVVJZZE

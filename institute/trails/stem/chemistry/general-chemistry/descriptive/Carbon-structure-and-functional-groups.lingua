@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Recognize carbon structures, isomers, and functional-group questions (@gc-organic: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Polymers-and-composition-distributions.lingua#r_1ZHVMRMJPS4B7PRPH1GDJ25GHB") { r_38833EZY8VJXQ3VJKMCWFTWJSV
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 20 in full with exercises; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), the organic/bonding applications in the advanced sequence; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the relevant carbon/bonding examples.
+
+Organic chemistry uses the same atoms, bonding, geometry, energy, and reaction principles with a rich set of carbon-based structures. Learn structural notation, functional groups, and naming through identifiable molecular examples. A molecular formula may leave connectivity, stereochemistry, conformation, and speciation undetermined.
+
+Connect a functional group with plausible interactions, acid/base behavior, reaction possibilities, and evidence needed to identify it. A label is a useful organizing cue, not a complete prediction of every molecule's reactivity, toxicity, or material behavior. Solvent, neighboring structure, catalysts, temperature, and competing pathways can matter.
+
+Distinguish constitutional and stereochemical differences, and relate geometry to properties or recognition where supported. Use the earlier orbital/resonance models to explain a small set of examples rather than memorizing a large disconnected reaction list. Spectroscopic and other analytical evidence will later test proposed structures.
+
+**Work:** translate between formula and structural representations for selected textbook species, identify functional groups, and explain what remains ambiguous. Compare two isomers using a defined property/evidence question. Write an atom/charge-balanced reaction account and distinguish it from an asserted mechanism.
+
+Read the entire organic-introduction chapter and its exercises. The later full organic-chemistry trail will develop mechanism, synthesis, spectroscopy, stereochemistry, and research in depth; this Record provides a complete general-chemistry entrance and connections to solvents, polymers, fuels, biology, and industrial feedstocks.
+
+**Continue:** [Understand a polymer as chemistry, architecture, and a distribution](Polymers-and-composition-distributions.lingua#r_1ZHVMRMJPS4B7PRPH1GDJ25GHB).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_38833EZY8VJXQ3VJKMCWFTWJSV

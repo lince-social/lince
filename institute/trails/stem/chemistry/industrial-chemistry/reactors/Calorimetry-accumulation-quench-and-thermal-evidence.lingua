@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Measure reaction heat and accumulation before extending a process argument (@ic-calorimetry: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #industrial-chemistry "Gas-liquid-solid-contact-phases-and-catalyst-particles.lingua#r_68XDTKFBYC0AJ6RPE6DWNMRE2R") { r_780HSC98AC6KFVKCBJ7N55T5JT
+**Read:** [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the whole experimental assessment, accumulation, scale and operating-basis guide; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete relevant dynamic energy-balance and thermal-model derivations; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the full reaction-development and batch thermal assessment treatment.
+
+Reaction calorimetry connects a measured thermal response with the material and energy model of the apparatus. Heat loss, instrument dynamics, mixing, addition, evaporation, heat capacity and baseline corrections influence what is inferred. Distinguish total reaction enthalpy, instantaneous heat-release rate and heat accumulated during a changing reaction history.
+
+An adiabatic temperature-rise estimate ΔT_ad≈Q_release/C_total can identify a consequential scale, but its assumptions must remain explicit. A measured peak at one scan rate or sample scale is not automatically a production onset temperature, a long-term stability limit or a complete decomposition model. Side reactions and incompatible contaminants can change the behavior.
+
+Quenching or transfer introduces its own chemistry, mixing, gas, energy and capacity requirements. Trace the fate of unreacted inventory and reaction intermediates rather than assuming an abstract stop command ends the process. Changed cooling, agitation, feed or material state must be interpreted against actual measurements and uncertainties.
+
+**Work:** reconstruct a complete primary calorimetric/process-development study and its calibration/model. Independently close heat and material accounts, derive the relevant accumulation limits and compare a competing interpretation. Specify the additional tests and professional facilities needed before a scale or operating claim is supported; separate literature calculations from physical observations actually made.
+
+**Continue:** [Explain multiphase reaction performance through contacting, transfer and chemical state](Gas-liquid-solid-contact-phases-and-catalyst-particles.lingua#r_68XDTKFBYC0AJ6RPE6DWNMRE2R).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_780HSC98AC6KFVKCBJ7N55T5JT

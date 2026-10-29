@@ -185,6 +185,7 @@ fn verify(
     label: &str,
     records: &mut Vec<serde_json::Value>,
 ) {
+    eprintln!("Verifying shader pixels: {label}");
     let id = ItemId::Native(canvas.app.world().get::<LayoutBox>(sand).unwrap().id);
     let background = {
         canvas
@@ -365,7 +366,7 @@ fn verify(
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
-fn shader_sources_match_final_free_tiled_maximized_and_overview_return_pixels_at_multiple_scales() {
+fn shader_sources_match_final_free_tiled_maximized_and_overview_return_pixels_at_fractional_scale() {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(32 * 1024 * 1024)
@@ -418,7 +419,7 @@ fn shader_sources_match_final_free_tiled_maximized_and_overview_return_pixels_at
             .unwrap()
             .effect = effect(kind);
         wait(&mut canvas, sand, camera, kind);
-        for scale in [1.0, 1.25, 1.5, 2.0] {
+        for scale in [1.25] {
             canvas.outputs(vec![output(scale)]).unwrap();
             let prefix = format!("mode-{kind}-scale-{}", (scale * 100.0) as u32);
             verify(

@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Time reference, synchrophasors and frequency estimation (@pe-pmu: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B", #electrical-power-engineering "State-estimation-observability-bad-data-and-topology.lingua#r_3HZZS294V9MX6W1EQ7H480C33G") { r_5V4HEC50TPTSMZCXAV49AK2S78
+**Read:** [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), complete numerical-phasor, DSP and frequency-estimation modules; [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B), state-estimation measurement models.
+
+A phasor measurement refers a fitted fundamental component to a time/phase convention over an observation window. A synchrophasor adds a common reference and specified reporting behavior; it is not an instantaneous perfect view of every waveform. Frequency and rate-of-change estimates depend on the algorithm, filtering, window and disturbance.
+
+Relate a timing error Δt to phase error approximately ωΔt for a steady sinusoid. At 50 Hz, 1 μs corresponds to approximately 0.018 degrees. Distinguish constant timing bias, jitter, channel skew, drift and loss of reference. Harmonics, transients and amplitude/frequency ramps test different aspects of the estimator.
+
+Use the shared time/frequency metrology Record and derive a small Fourier/least-squares phasor estimate. Examine CT/VT response and sampling before attributing a discrepancy to the network. Preserve timestamp meaning, latency and missing-data behavior when using measurements for control or state estimation. Read the applicable full specification and test method for a performance claim; no generic algorithm or GPS label alone establishes compliance or suitability for a fast protection/control function.
+
+**Continue:** [State estimation, observability, bad data and topology](State-estimation-observability-bad-data-and-topology.lingua#r_3HZZS294V9MX6W1EQ7H480C33G).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5V4HEC50TPTSMZCXAV49AK2S78

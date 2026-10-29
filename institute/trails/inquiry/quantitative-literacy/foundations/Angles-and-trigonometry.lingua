@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Angles, grade, triangles, and periodic relationships (@ql-trigonometry: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-3, #source @ql-source-algebra, #quantitative-literacy "Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J") { r_0FPTH1YN87PZ97SHWGX19ZJZDZ
+**Read:** Math for Trades, Volume 3, Grade and Total Fall and Trigonometry, complete. Continue with Algebra and Trigonometry 2e chapter 7, sections 8.1–8.3, and the law-of-sines and law-of-cosines sections of chapter 10.
+
+Grade as a rise/run ratio uses horizontal run; the inclined path length is the hypotenuse. A 10% grade has tan θ = 0.10, so θ is about 5.71°, not 10°. Degrees and radians describe the same angle with different numerical values. Arc length s = rθ uses θ expressed in radians.
+
+Sine and cosine relate components to a magnitude and an angle in a specified coordinate system. The signs depend on the quadrant. An inverse trigonometric value may need a quadrant decision, and the sine rule can admit an ambiguous triangle. A calculator's degree/radian setting can create a plausible-looking wrong answer.
+
+A periodic model A sin(ωt + φ) requires a dimensionless phase. Angular frequency ω is commonly written in rad/s, while frequency f counts cycles per second and ω = 2πf. Keep the quantity name and convention visible even though the radian is dimensionless in dimensional algebra.
+
+**Work:** calculate the vertical rise and inclined length for a 30 m horizontal run at 8% grade. Reconstruct a triangle from two sides and the included angle; check by a second relation. Project a 2 m displacement at 35° onto horizontal and vertical axes. Then create a sinusoidal teaching signal, identify its amplitude, phase, period, and units, and explain what its mathematical shape does not tell you about the physical system.
+
+**Continue:** [Vectors, coordinate systems, and spatial meaning](Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_0FPTH1YN87PZ97SHWGX19ZJZDZ

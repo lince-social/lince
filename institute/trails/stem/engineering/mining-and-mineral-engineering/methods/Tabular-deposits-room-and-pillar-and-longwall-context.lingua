@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Interpret tabular extraction systems with ground, gas, and sequence context (@mine-tabular: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #source "../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08", #mining-and-mineral-engineering "Caving-mass-mining-and-ground-movement.lingua#r_6AKTXETKA664AXV8XPFC3B6TNP") { r_7Z93N54QJH13CBRCR048V3S67G
+**Read:** [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the complete tabular/coal and underground-system material; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant tabular, coal, and pillar/panel chapters; [Pillar and Roof Span Design Guidelines for Underground Stone Mines — NIOSH](../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08), the full report with its stone-mine domain and limits.
+
+Tabular deposits can support room-and-pillar, panel/retreat, longwall, or other systems under identified geometry and ground/operating conditions. Coal, salt, stone, and metal-bearing tabular deposits differ in properties, gas/water behavior, roof/floor, depth, and product requirements; one diagram cannot establish interchangeability.
+
+Pillars, panels, roof spans, support, retreat, and load redistribution interact with sequence and adjacent workings. A surface expression or intact-rock strength alone does not establish excavation behavior. Weak layers, discontinuities, water, multiple seams, time-dependent response, and induced stress can matter.
+
+Gas/dust, ventilation, access/escape, continuous equipment, handling, worker tasks, and monitoring belong to the method account. A productivity comparison must include actual operating constraints and the consequences of changing the extraction sequence.
+
+**Work:** compare two complete published tabular cases, preserving material, depth, geometry, ground observations, systems, and applicability. Identify the evidence needed before transferring a pillar/span or operating assumption between them. Draw how extraction changes ground, air, and material routes over time.
+
+Read full course/handbook treatments and the stone-mine guideline within its stated domain. Later ground and environmental Records examine mechanisms and measurements; actual operational design requires the appropriate mine-specific professional investigation rather than an inferred universal layout.
+
+**Continue:** [Explain caving systems through induced movement, draw, and system interactions](Caving-mass-mining-and-ground-movement.lingua#r_6AKTXETKA664AXV8XPFC3B6TNP).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_7Z93N54QJH13CBRCR048V3S67G

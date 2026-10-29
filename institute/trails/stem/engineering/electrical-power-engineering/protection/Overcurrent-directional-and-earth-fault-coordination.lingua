@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Overcurrent, directional and earth-fault coordination (@pe-overcurrent: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD", #source "../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6", #electrical-power-engineering "Distance-protection-apparent-impedance-and-power-swings.lingua#r_3NJRHD64WCEAAMRH5PSHKGKW1J") { r_7ZZ68HEEKWJ5CVTBMS31GQ3FES
+**Read:** [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), all overcurrent, directional and earth-fault lectures/tutorials; [Protective relay operation, maintenance and tests — FIST 3-8](../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD), complete applicable test method; [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6), complete setting development and communication work examples.
+
+An overcurrent scheme compares a measured quantity with pickup and timing behavior. The current multiple, curve family, time setting, reset/memory, measurement filtering and device tolerances all influence operation. Use the actual specified curve and device data rather than assuming every inverse-time relay has the same equation.
+
+For a teaching example, define an illustrative curve explicitly, then coordinate downstream and backup clearing over a range of credible fault currents. Include relay uncertainty, breaker time, CT behavior and changed source/topology conditions. A time margin at one maximum fault point does not prove coordination across the entire range. Check load/starting current and minimum-fault sensitivity separately.
+
+Directional measurement adds voltage/current angle and reference-polarity assumptions; earth-fault sensing depends on residual/zero-sequence paths. Distributed or converter sources can reverse flows and limit fault current, changing a scheme that worked in a radial single-source model. Complete the full tutorials, reconstruct a changed case independently and connect the final settings to actual test evidence and maintained system data.
+
+**Continue:** [Distance protection, apparent impedance and power swings](Distance-protection-apparent-impedance-and-power-swings.lingua#r_3NJRHD64WCEAAMRH5PSHKGKW1J).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7ZZ68HEEKWJ5CVTBMS31GQ3FES

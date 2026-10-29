@@ -1,0 +1,19 @@
+Physics — fields, matter, motion and physical evidence (@physics-map: 0, is #chapter, #physics "electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY", #physics "../engineering/electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ") { r_04A5CP8RTBERZEN4XCCDQ3T47W
+Connect observed physical behavior with mathematical models, measurements, approximations and the material systems that use them. Begin from a concrete question, deepen the shared foundations at the step that uses them and compare predictions with evidence.
+
+[Electromagnetism — charge, fields, matter, waves and physical evidence](electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY) starts with charge, voltage, current and fields, then develops static boundaries, matter, induction, Maxwell conservation, relativity, waves, radiation, computation, experiments and independent research. Complete technical books and public undergraduate/graduate programmes support the increasing depth.
+
+[Inquiry — shared ways to understand and investigate](../../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB) supplies shared quantitative, measurement and computational methods. [STEM — mathematics, science, and engineering](../STEM.lingua#r_4B137J3ZBVM7TD2NA797H2CZ7E) connects other sciences; [Engineering — systems, design, construction, and operation](../engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68), [Resources and materials — feedstocks, useful properties, production, and recovery](../../ergon/materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D) and [Ergon](../../ergon/Ergon.lingua#r_00000000000000000000002001) connect physical understanding with production, useful systems and continuing work. Questions about assumptions, evidence and purposes return to [Philosophy](../../philosophy/Philosophy.lingua#r_00000000000000000000001001). These are ordinary Records and references; connected specialist subjects keep their own full scope.
+
+Connect fields and material response with power systems, machines, conversion, measurement and continuing service through [Electrical power engineering — sources, networks, machines and continuing service](../engineering/electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+
+**Thermodynamics and heat transfer:** [Thermodynamics and heat transfer](thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E) develops energy, entropy, equilibrium, transport, measurements and advanced thermal investigation through complete books, courses and shared foundations.
+
+**Fluid dynamics:** [Fluid dynamics — motion, forces, transport and evidence](fluid-dynamics/Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ) connects observed fluid motion with pressure, forces, conservation laws, transport and the mathematical and experimental evidence for a flow model.
+} r_04A5CP8RTBERZEN4XCCDQ3T47W
+
+Extension @physics-map "lince.vocabulary" {
+ definitions {
+  physics "A continuation into physical models, observations, matter, fields, motion, energy and shared experimental or theoretical methods."
+ }
+}

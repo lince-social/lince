@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Circulation, Kelvin’s theorem and material loops (@fd-circulation: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "../inviscid/Potential-flow-superposition-and-physical-boundaries.lingua#r_5PBT5A52N3W72XZSJMP9WKPVA2") { r_4W25ZRVXG4JG4XXY8YHBM2WVR3
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 2 circulation and Kelvin theorem; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), inviscid and two-dimensional potential motion; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), vorticity and circulation treatments.
+
+Circulation Γ is the line integral of velocity around an oriented closed curve. By Stokes' theorem it equals vorticity flux through a compatible spanning surface when the fields and domain meet the theorem's requirements. A material loop moves and deforms with the fluid; it is not the same curve as a fixed laboratory contour at successive times.
+
+For smooth inviscid barotropic flow with conservative body forces, Kelvin's theorem conserves circulation around a material loop. Derive the time derivative carefully, including the evolving line element. Viscosity, non-barotropic pressure-density relations and discontinuities can invalidate the simplified conclusion. In a domain excluding a vortex core or solid body, locally irrotational flow can still have nonzero circulation around a loop that cannot be contracted within the domain.
+
+Reconcile a lifting body's circulation and starting wake with the stated theorem and its viscous starting process. Compare a contour well outside a vortex with the resolved core. State which circulation can be inferred from sparse velocity measurements and how the chosen contour affects its uncertainty.
+
+**Continue:** [Potential flow, superposition and physical boundaries](../inviscid/Potential-flow-superposition-and-physical-boundaries.lingua#r_5PBT5A52N3W72XZSJMP9WKPVA2).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4W25ZRVXG4JG4XXY8YHBM2WVR3

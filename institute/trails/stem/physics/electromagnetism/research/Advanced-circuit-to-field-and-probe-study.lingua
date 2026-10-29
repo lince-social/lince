@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced circuit-to-field and probe study (@em-circuit-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_3NMAAA6ARRKBX261QBQV9M3N43
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), complete line, current and time-varying chapters; [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), whole applicable circuit/transmission developments.
+
+Select a passive network or line fixture whose response moves from lumped to distributed behavior over an accessible band. Work the full transmission/circuit development in [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA) and the corresponding complete [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC) chapters. Revisit electrical/time metrology through the shared Records and reconstruct the measurement chain.
+
+Derive a time-domain and a frequency-domain prediction, including source impedance, probe loading, cable/reference plane, return path and parasitic capacitance/inductance. Identify which parameters are independently measured and which are fitted. Compare voltage/current/power with a consistent amplitude convention. Test a DC limit, a transient limit, a resonance and the onset of propagation effects.
+
+Use an isolated current-limited setup in a suitable supervised setting or a complete documented experimental dataset. Repeat with a changed probe or return geometry and predict the change. Fit complex rather than only magnitude data and quantify parameter correlation. Diagnose a discrepancy using field/circuit reasoning rather than adding arbitrary elements until a curve fits. Produce an explanation of exactly when the lumped model is adequate and which observable first requires a distributed electromagnetic account.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3NMAAA6ARRKBX261QBQV9M3N43

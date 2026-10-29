@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Estimate mineral proportions with an explicit observation and sampling design (@mp-modal: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #mineralogy-and-petrology "../analysis/Powder-diffraction-observations-and-identification.lingua#r_353CVHXVZE6EM4ZFRT71H550E2") { r_0MQXK1WERQ99N1S861GKH7N8NF
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full rock-forming mineral/rock description and optical quantitative treatment; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the complete measurement and textural-description procedures; [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), sampling, spatial variation, and uncertainty as needed.
+
+Modal mineralogy describes the phases actually observed under a stated method; a calculated norm or model assemblage describes something different. Relate the hand specimen, section, field, image, and counting support to the target rock population. A carefully measured unrepresentative section can still mislead a bulk interpretation.
+
+Point counting and image segmentation require phase categories, ambiguous/unresolved categories, scale, preparation, selection, and checks. Area/point fractions can estimate volume fractions under appropriate stereological/sampling assumptions; converting to mass fractions needs densities and composition. A two-dimensional grain-size distribution also needs a sectioning account before representing true sizes.
+
+For an ideal independent binary point-count model with p = 0.25 and N = 400, the binomial standard deviation of the estimated fraction is √(p(1−p)/N), about 0.02165. Spatial clustering and systematic classification/preparation error can make that model inadequate; more pixels do not automatically provide independent observations.
+
+**Work:** independently derive the example, then design and perform a count or documented-image analysis with preserved raw classifications. Compare repeat classification and an independent section/field, explaining the target and different uncertainty sources. Test a plausible segmentation ambiguity rather than removing it silently.
+
+Read the full rock/texture and quantitative-observation material. Later classification and material balances must state whether they use observed mode, chemistry, or an equilibrium calculation and preserve the distinctions.
+
+**Continue:** [Connect a powder pattern with specimen preparation and a structural hypothesis](../analysis/Powder-diffraction-observations-and-identification.lingua#r_353CVHXVZE6EM4ZFRT71H550E2).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_0MQXK1WERQ99N1S861GKH7N8NF

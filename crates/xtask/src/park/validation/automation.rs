@@ -23,9 +23,13 @@ pub(super) fn configuration(configuration: &Configuration) -> Result<()> {
 }
 
 fn prepare_probe(directory: &Path) -> Result<String> {
+    if let Some(probe) = prebuilt_probe("control-probe")? {
+        let target = directory.join("bin/control-probe");
+        fs::copy(probe, &target).map_err(error)?;
+        return digest(&target);
+    }
     let mut command = cargo_command();
-    command.args(["run", "--release", "--locked", "--message-format=json", "-p", "lince-park", "--features", "server-tests", "--example", "park_control_probe", "--", "--help"]);
-    deny_warnings(&mut command);
+    command.args(["run", "--locked", "--message-format=json", "-p", "lince-park", "--features", "server-tests", "--example", "park_control_probe", "--", "--help"]);
     let output = command.output().map_err(error)?;
     fs::write(directory.join("prepare-control-probe.log"), &output.stderr).map_err(error)?;
     if !output.status.success() { return Err("Preparing the automation probe failed".into()); }

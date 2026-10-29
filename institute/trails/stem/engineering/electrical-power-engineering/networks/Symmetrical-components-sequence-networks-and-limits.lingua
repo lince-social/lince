@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Symmetrical components, sequence networks and limits (@pe-sequence: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #electrical-power-engineering "Per-unit-bases-transformer-ratios-and-base-changes.lingua#r_7FMPYRBXVHDAC31RKAKB7292BE") { r_4BYZNGXQMGZC9KWP1RDN3FCP6A
+**Read:** [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), chapter 4 in full; [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), complete sequence-component and apparatus-modelling module.
+
+Transform a three-component phasor vector into zero, positive and negative sequences with a = exp(j2π/3) under a declared phase-order convention. Write the transform and its inverse, recover the original phases and check that the chosen scaling gives the corresponding power relation. A sequence is a mathematical component, not an additional physical wire.
+
+For an appropriately symmetric linear network the sequences decouple, making many fault and unbalance calculations simpler. A non-transposed or otherwise asymmetric network can couple sequences; a diagonal sequence model is then an approximation to justify. Transformer winding connections and grounded neutrals change the zero-sequence path while positive-sequence voltage ratios alone do not reveal it.
+
+Work a balanced input, a single nonzero phase input and a negative-sequence input, then compare phase-domain and sequence-domain calculations. Distinguish steady harmonic sequence components from transient frequency content. Negative sequence can heat rotating-machine parts and affect protection; zero sequence requires an actual return path. Use the later fault and instrument-transformer studies to connect the transform to observable currents, rather than memorizing connection diagrams without the underlying circuit.
+
+**Continue:** [Per-unit bases, transformer ratios and base changes](Per-unit-bases-transformer-ratios-and-base-changes.lingua#r_7FMPYRBXVHDAC31RKAKB7292BE).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4BYZNGXQMGZC9KWP1RDN3FCP6A

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Thin gaps, lubrication and the pressure that carries load (@fd-lubrication: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #fluid-dynamics "Porous-flow-Darcy-flux-and-the-scale-of-a-permeability.lingua#r_6F57YVHJSPPTDA0FGV79KTX1QY") { r_5ZAVCSV2QTPX1DATNVCF9EHJ9V
+**Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 2 lubrication approximation and thin layers; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), Hele–Shaw and low-Reynolds-number approximations; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), complex viscous-flow problems.
+
+Let a gap thickness h vary over length L with h/L≪1. For an appropriate slow thin-film motion, pressure is nearly uniform across the gap while streamwise viscous shear balances its gradient. Integrating the local Couette–Poiseuille profile gives flux per width q=−h³p_x/(12μ)+h(U_1+U_2)/2. Mass conservation supplies h_t+q_x=0 for the two-dimensional incompressible gap.
+
+Derive the resulting Reynolds lubrication equation, declaring whether the walls approach, slide or both. Integrate pressure over area to obtain load and evaluate wall shear separately. A converging geometry can support a pressure distribution; a model that predicts a physically unsustainable liquid tension needs a cavitation or free-boundary treatment rather than silently clipping pressure while ignoring mass.
+
+Solve one steady wedge and one squeeze-film case. Test the thin-gap and inertia assumptions using the resulting velocities, not only the imposed wall speed. Examine how load changes with clearance and viscosity, how roughness and temperature enter, and which additional contact/material physics a real bearing requires. Preserve the distinction between the fluid foundation and complete machine design.
+
+**Continue:** [Porous flow, Darcy flux and the scale of a permeability](Porous-flow-Darcy-flux-and-the-scale-of-a-permeability.lingua#r_6F57YVHJSPPTDA0FGV79KTX1QY).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5ZAVCSV2QTPX1DATNVCF9EHJ9V

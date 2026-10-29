@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Reconstruct a sedimentary rock from sources through burial and alteration (@mp-sedimentary-project: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM", #source "../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH", #source "../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #mineralogy-and-petrology "Advanced-metamorphic-model-and-petrochronology-study.lingua#r_7P5KPCH145YG8XYV124C723F73") { r_21K256CCMWD35R663MPV64NG88
+**Read:** [Sedimentary Geology — John Southard, MIT 12.110](../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM), the complete notes and full relevant original references; [Rock Classification Scheme — British Geological Survey](../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH), the full applicable reports; [A laboratory manual for X-ray powder diffraction — Poppe and colleagues](../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6), the full relevant analytical method; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full observation/measurement procedures used; [Introduction to Geochronology — Pieter Vermeesch](../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the full relevant detrital/chronological method.
+
+Choose a clastic, carbonate, evaporitic, siliceous, or other sedimentary-material question with sufficient section/specimen context. Read the complete sedimentary notes and original case/method papers. Connect source, transport/deposition, texture, mineralogy, reactions, fluids, burial, and preservation rather than interpreting each proxy independently.
+
+Produce or reconstruct a documented petrographic description, justified modal/classification account, and chemical/mineralogical measurements. Preserve counting basis, sample selection, unresolved grains, preparation, analytical support, and uncertainty. Identify what was deposited and what formed or changed later.
+
+Reproduce one consequential provenance, mixture, reaction-transfer, chronology, porosity, or diagenetic argument. Independently check quantities and test an alternative involving sorting/recycling, replacement, different fluid history, sampling, or missing phases. State which observations can discriminate it and which merely repeat the same assumption.
+
+**Work:** produce a sustained source-to-burial history supported by maps/sections where relevant, original texture/domain evidence, complete references, reproducible calculation, alternative interpretation, and a feasible next study. Connect one result with groundwater, material quality, or another explicit practical question while identifying additional specialist work needed.
+
+Defend the report against independent critique and revise it with evidence-linked changes. A convenient rock name or normalized compositional triangle is useful communication but insufficient as the project's full explanatory result.
+
+**Continue:** [Defend a metamorphic history with domain, phase, and chronological tests](Advanced-metamorphic-model-and-petrochronology-study.lingua#r_7P5KPCH145YG8XYV124C723F73).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_21K256CCMWD35R663MPV64NG88

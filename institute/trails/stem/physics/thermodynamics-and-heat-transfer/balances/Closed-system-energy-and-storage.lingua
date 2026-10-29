@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Closed-system energy and storage (@th-closed: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Boundary-work-quasistatic-paths-and-irreversibility.lingua#r_3FJYGFE1APRF36P7GC0QZYCW0P") { r_26CN1Z2H23NCXB8W7K74CVW5VN
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), chapter 4 in full; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), chapter 2 in full; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), the complete first-law development.
+
+For a closed system, E includes internal, macroscopic kinetic and gravitational potential contributions when those are relevant. The first law relates a state change to integrated heat and work transfers. It does not say how fast a transfer occurs or whether a proposed process is possible under the second law.
+
+Choose the system for a piston, a rigid vessel, an electrical heater inside a calorimeter and a deforming solid. Decide whether a given electrical input is work crossing the chosen boundary or already internal dissipation. A rigid boundary removes its volume-displacement work, not every possible work mechanism.
+
+Derive a transient balance before making the steady assumption. Reconcile instantaneous rates with time-integrated quantities and check the limiting case of an isolated system. Compare two paths joining the same states: ΔU agrees, while Q and W may differ.
+
+**Continue:** [Boundary work, quasistatic paths and irreversibility](Boundary-work-quasistatic-paths-and-irreversibility.lingua#r_3FJYGFE1APRF36P7GC0QZYCW0P).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_26CN1Z2H23NCXB8W7K74CVW5VN

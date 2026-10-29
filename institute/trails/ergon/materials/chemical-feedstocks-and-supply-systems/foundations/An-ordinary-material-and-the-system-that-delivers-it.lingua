@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Begin with a material somebody needs to use (@cs-question: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Fundamentos-da-Logistica-Paura.lingua#r_0YB9YHAW4GYQDK0NHA4JN2KA77", #source "../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C", #chemical-supply-systems "Feedstock-grade-lot-stream-supplier-and-user.lingua#r_3A7JR8G06NM9Q3X29D8Z8B1623") { r_2666BKGJCX0F9A5GEJY84B28GR
+**Read:** [Fundamentos da Logística — Glávio Leal Paura](../sources/Fundamentos-da-Logistica-Paura.lingua#r_0YB9YHAW4GYQDK0NHA4JN2KA77), the introductory logistics and service discussion; [Understanding Water Treatment Chemical Supply Chains and the Risk of Disruptions — EPA](../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C), the complete introduction and supply-chain framework.
+
+A laboratory receiving an unfamiliar bottle needs more than its delivery date. It needs to know what substance or mixture is inside, its amount and concentration, the purpose for which it was supplied, and how the evidence relates to that particular bottle. A treatment plant asking for an alkali has the same logical problem at a larger scale, with tanks, vehicles and continuous service involved.
+
+Choose an ordinary supplied material and write a one-page account from source to use. Name the actual user operation and the function served by the chemical. Mark what is observed on a label, reported by a supplier, established by a test, or still unknown. Draw the movement of material separately from orders, payments and information. A merchant can own a material without physically handling it; a carrier can handle it without determining its grade.
+
+Start with one delivery rather than all world trade. Extend upstream when a claim needs an explanation: where did this producer obtain its feed, how was the usable grade made, who maintains the equipment, and what happens if delivery stops? These questions progressively reveal a production society through a specific physical supply. Keep the first account and revise it after the later methods and family cases.
+
+**Continue:** [Use the language of material, organisations and transfers precisely](Feedstock-grade-lot-stream-supplier-and-user.lingua#r_3A7JR8G06NM9Q3X29D8Z8B1623).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_2666BKGJCX0F9A5GEJY84B28GR

@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Adequacy, energy limits and correlated failures (@pe-adequacy-reliability: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G", #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #electrical-power-engineering "Contingencies-security-screening-and-dynamic-checks.lingua#r_6NDG8CV5PF3WZX4BWDTAJ4KA95") { r_1A4E6T6AW67E09WQ2C1NPRH3Y7
+**Read:** [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G), entire report and complete relevant later method in its series; [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), complete chronological uncertainty, contingency and energy-state formulation.
+
+Capacity adequacy asks whether resources and transfers can supply the required service under a model of demand, availability and operating constraints. A reserve margin is a coarse descriptor, not a complete chronological risk calculation. Outages, weather, fuel, cooling, communications and load can share causes.
+
+Define risk metrics precisely: probability/frequency/duration/timing/size of shortfall and expected unserved energy describe different aspects of loss. Integrate units and time correctly. A sequence-sensitive storage or flexible-load model requires the actual chronological state; independent hourly samples can create impossible recharge/support behavior.
+
+Read the entire [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G) report and compare a small original capacity-only example with a chronological, dependent one. Include transmission support and its own common causes rather than treating imports as perfect firm capacity. Separate modelled adequacy, operational security and restoration. Report sampling/model uncertainty and sensitivity to adverse weather/event sequences. The full electricity-infrastructure pathway extends institutions, geography and supply systems, while this engineering account must preserve the actual physical and probabilistic assumptions of its adequacy claim.
+
+**Continue:** [Contingencies, screening and dynamic checks](Contingencies-security-screening-and-dynamic-checks.lingua#r_6NDG8CV5PF3WZX4BWDTAJ4KA95).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_1A4E6T6AW67E09WQ2C1NPRH3Y7

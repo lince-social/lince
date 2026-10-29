@@ -1,0 +1,104 @@
+Import "../Reproducible-computation.lingua"
+
+Test against independently justified answers and failure cases (@rc-testing: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Invariants-and-related-inputs.lingua#r_04TRFA8ARZ7JK0ANVQZYDKMKB3") { r_6WTYYA5977HEF4T6CEH6CKKQCR
+**Read:** [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), Test your code and the complete numerical-testing extension; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), testing chapters and exercises; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), unittest and subprocess.
+
+A test compares observed behavior with an expectation supported by something other than the implementation it is supposed to check. For a balance, hand-derived totals and conservation provide that support. For a numerical method, analytic solutions or an independently implemented reference problem can provide it. A saved output is useful for detecting change, but unchanged output may preserve an old error.
+
+Save this original check as check_pipeline.py beside analyze.py and inputs.csv. Run python3 check_pipeline.py. Derive the expected fractions before inspecting the results. The checks exercise exact totals, valid zero cases, rejected inputs, row-order meaning, and preservation of an existing output after a failed CLI run.
+
+```python file=check_pipeline.py
+import csv
+from fractions import Fraction
+import hashlib
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import unittest
+
+import analyze
+
+class PipelineChecks(unittest.TestCase):
+    def setUp(self):
+        self.raw = Path(__file__).with_name("inputs.csv").read_bytes()
+
+    def test_independent_totals(self):
+        rows = analyze.load_rows(self.raw)
+        report = analyze.build_report(rows, "input", "code")
+        self.assertEqual(report["totals"], {
+            "dry_kg": "1120",
+            "input_component_kg": "132/5",
+            "product_kg": "180",
+            "recovered_component_kg": "98/5",
+            "tail_kg": "940",
+            "tail_component_kg": "34/5",
+            "mass_yield": "9/56",
+            "component_recovery": "49/66",
+        })
+        self.assertEqual(rows[0]["component_recovery"], Fraction(25, 36))
+        self.assertEqual(rows[1]["component_recovery"], Fraction(4, 5))
+
+    def test_zero_cases_are_explicit(self):
+        empty = analyze.calculate([Fraction(0)] * 5)
+        self.assertIsNone(empty["component_recovery"])
+        self.assertIsNone(empty["mass_yield"])
+        no_component = analyze.calculate(list(map(Fraction, (100, 0, 0, 20, 0))))
+        self.assertIsNone(no_component["component_recovery"])
+        self.assertEqual(no_component["mass_yield"], Fraction(1, 5))
+
+    def test_row_order_changes_identity_but_not_values(self):
+        lines = self.raw.decode("utf-8").splitlines()
+        reordered = ("\n".join([lines[0], *reversed(lines[1:])]) + "\n").encode()
+        self.assertEqual(analyze.load_rows(self.raw), analyze.load_rows(reordered))
+        self.assertNotEqual(hashlib.sha256(self.raw).digest(), hashlib.sha256(reordered).digest())
+
+    def test_rejects_bad_inputs(self):
+        lines = self.raw.decode("utf-8").splitlines()
+        invalid = [
+            ("\n".join([*lines, lines[1]]) + "\n").encode(),
+            self.raw.replace(b"water_fraction", b"water_percent"),
+            self.raw.replace(b"800", b"NaN"),
+            self.raw.replace(b"800", b"-800"),
+            self.raw.replace(b"0.1,0.02", b"1.1,0.02"),
+            self.raw.replace(b"100,0.1", b"900,0.1"),
+            self.raw.replace(b"100,0.1", b"100,0.9"),
+            self.raw.replace(b"800", b"1e3"),
+            self.raw.replace(b"800", b""),
+            self.raw.replace(b"A,800", b"A,extra,800"),
+            self.raw.replace(b"A,800,0.1,0.02,100,0.1", b"A,800"),
+            (lines[0] + "\n").encode(),
+        ]
+        for raw in invalid:
+            with self.subTest(raw=raw):
+                with self.assertRaises((ValueError, UnicodeError, csv.Error)):
+                    analyze.load_rows(raw)
+
+    def test_failed_run_preserves_existing_report(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            source = directory / "bad input.csv"
+            destination = directory / "report.json"
+            source.write_bytes(self.raw.replace(b"800", b"NaN"))
+            destination.write_bytes(b"previous result")
+            completed = subprocess.run(
+                [sys.executable, str(Path(analyze.__file__).resolve()), str(source), str(destination)],
+                cwd=directory, capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 2)
+            self.assertIn("analysis failed", completed.stderr)
+            self.assertEqual(destination.read_bytes(), b"previous result")
+            self.assertEqual(list(directory.glob(".balance-*")), [])
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
+The check is deliberately narrower than proof of correctness. It covers a stated model, input family, and ordinary filesystem behavior. Extend it with independent invalid balances, encoding/field-count cases, boundary fractions, protected input paths, and relocation. Avoid adding expectations simply because a current implementation produces them. A green check should answer a particular question worth asking.
+
+**Work:** introduce an incorrect unweighted average of recoveries and show that the independently derived total detects it. Introduce a missing-data-to-zero change and construct a case that exposes the scientific consequence. Explain which defects are caught and which model assumptions remain untested.
+
+**Continue:** [Use conservation, symmetries, and related inputs as additional oracles](Invariants-and-related-inputs.lingua#r_04TRFA8ARZ7JK0ANVQZYDKMKB3).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_6WTYYA5977HEF4T6CEH6CKKQCR

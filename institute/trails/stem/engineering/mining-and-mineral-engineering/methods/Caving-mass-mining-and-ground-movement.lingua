@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Explain caving systems through induced movement, draw, and system interactions (@mine-caving-methods: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #mining-and-mineral-engineering "Placer-dredging-and-solution-extraction-systems.lingua#r_1NTMM1VCNWXBG1FMQFXYM7DWAT") { r_6AKTXETKA664AXV8XPFC3B6TNP
+**Read:** [Underground Mining of Metalliferous Deposits — Mandal and Dey, NPTEL](../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ), the complete caving/mass-mining sequence; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant caving and ground-response chapters; [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the full stress, rock-mass, and underground design discussion.
+
+Caving methods deliberately use ground movement as part of a designed extraction system. Cave initiation/propagation, fragmentation, draw, dilution, recovery, access, stress, water, air, and subsidence interact. A high-capacity method name does not establish that a deposit will cave or flow as assumed.
+
+Distinguish empirical caveability/draw accounts, physical/numerical models, and observed performance. Scale, material properties, structures, stress, geometry, sequence, and data domain affect applicability. A simulation's apparent realism does not independently validate its material law or flow assumptions.
+
+Changing draw and extraction can affect grade, mixing, loading, access, seismic/ground response, and the environment. Observation and model updates require traceable domains and operating history. Preserve deviations and contradictory evidence rather than calibrating only to a favorable period.
+
+**Work:** reconstruct a complete authorized caving case and its principal model/method paper. Explain inputs, predicted mechanisms, observations, uncertainty, and limits. Compare an alternative cave/flow/fragmentation account, identify a discriminating observation, and trace the consequence for material quality or supporting infrastructure.
+
+Read the full method and ground-control treatment before the advanced design project. This step develops understanding and model criticism; actual operational decisions depend on the investigated system, monitoring, and appropriate professional practice.
+
+**Continue:** [Compare water-based and solution extraction with explicit material and boundary accounts](Placer-dredging-and-solution-extraction-systems.lingua#r_1NTMM1VCNWXBG1FMQFXYM7DWAT).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_6AKTXETKA664AXV8XPFC3B6TNP

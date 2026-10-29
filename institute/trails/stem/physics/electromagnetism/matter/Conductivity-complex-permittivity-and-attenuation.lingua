@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Conductivity, complex permittivity and attenuation (@em-loss: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #electromagnetism "Dispersion-pulses-phase-group-and-front-velocity.lingua#r_62MGEANY8E8CA374CPVJ5H203D") { r_4PB9PGW3EFESYNHEZEG2DBRW74
+**Read:** [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), complete lossy-medium propagation development; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), complex constitutive definitions, losses and measurement models.
+
+With exp(−iωt), a local Ohmic current σE can be grouped into ε_eff = ε + iσ/ω. A passive ordinary dielectric has the corresponding positive loss sign in this convention. A forward field exp(ikz) decays for Im(k) > 0. Translate all three choices together when comparing a text using the opposite time sign.
+
+Derive propagation constant and wave impedance from Maxwell's equations for homogeneous isotropic lossy matter. Distinguish amplitude attenuation from intensity attenuation, and separate absorption within a medium from reflection at its boundary. If amplitude decays as exp(−αz), intensity decays as exp(−2αz) under the same mode assumptions.
+
+Evaluate the good-conductor limit and recover skin depth; then test where σ ≫ ωε ceases to hold. A fitted complex permittivity can combine several mechanisms and may depend on specimen preparation, temperature and frequency. Do not count conduction twice by including it both in a quoted complex ε and as an additional σ without checking definitions. Read the full measurement report before using a loss tangent as a material constant independent of method.
+
+**Continue:** [Dispersion, pulses and three meanings of velocity](Dispersion-pulses-phase-group-and-front-velocity.lingua#r_62MGEANY8E8CA374CPVJ5H203D).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_4PB9PGW3EFESYNHEZEG2DBRW74

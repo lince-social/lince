@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Distinguish framework mineral structures, substitutions, and histories (@mp-framework: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #mineralogy-and-petrology "Pyroxenes-amphiboles-and-chain-silicates.lingua#r_0B0NYE7JFPXEJGEQJN0BABAFZG") { r_6R635CVNT9MZ33T0EYRAYAH8XQ
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), all framework-silicate and feldspar sections; [Optical Mineralogy — Brock University course and laboratory material](../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E), the complete feldspar/quartz-related optical material and lab; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected entries and primary references.
+
+Framework minerals connect tetrahedra into extended structures, with different compositions, occupants, and ordering. Compare silica polymorphs, feldspars, feldspathoids, and zeolitic frameworks through their actual structure/composition accounts. An overall framework label does not predict every optical, hydration, or phase behavior.
+
+Feldspars combine major substitutions and ordering with temperature/history-dependent relationships. Twinning, exsolution, zoning, alteration, and strain can all affect a thin-section interpretation. A measured Na–Ca–K proportion needs the mineral formula/site account and an identified classification scheme before receiving an endmember or rock name.
+
+Quartz/feldspathoid relationships in an igneous interpretation involve system chemistry and phase relations, not just an arbitrary naming rule. Zeolite behavior can depend on channels, water, exchangeable components, and conditions. Distinguish structural water, pore water, and included material when comparing an analysis or industrial application.
+
+**Work:** compare a quartz, feldspar, and another framework example using structure, formula, optical properties, and full species descriptions. Reconstruct one documented feldspar intergrowth or alteration history and an alternative. Explain why a bulk-rock analysis cannot directly supply the composition of every feldspar grain present.
+
+Read all framework sections and the corresponding optical-identification material. Later igneous phase diagrams and sedimentary diagenesis will return to these same minerals with different process questions and increasingly precise evidence.
+
+**Continue:** [Interpret chain silicates through structure, sites, optics, and nomenclature](Pyroxenes-amphiboles-and-chain-silicates.lingua#r_0B0NYE7JFPXEJGEQJN0BABAFZG).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_6R635CVNT9MZ33T0EYRAYAH8XQ

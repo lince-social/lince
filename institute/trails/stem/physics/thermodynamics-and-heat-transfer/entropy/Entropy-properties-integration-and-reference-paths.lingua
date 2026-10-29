@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Entropy properties, integration and reference paths (@th-entropy-properties: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Local-entropy-production-and-transport-assumptions.lingua#r_0XE4QFR9SE1KBW2RDHYPVVJZZE") { r_5PBN5Q06X2XF6SN21MCCWR8VJY
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), specific entropy and applications; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), entropy properties, heat capacities and phase changes.
+
+For a calorically perfect ideal gas on a mass basis, Δs = c_p ln(T₂/T₁)−R ln(p₂/p₁), equivalently c_v ln(T₂/T₁)+R ln(v₂/v₁). The formulas require absolute temperatures and pressures and constant capacities over the range. A real fluid requires the appropriate property relations.
+
+For an incompressible constant-capacity teaching material, entropy change is m c ln(T₂/T₁) under the model. A phase transition at equilibrium contributes its reversible latent heat divided by transition temperature; do not extend a single-phase capacity integral through a latent discontinuity without accounting for it.
+
+Compute the same entropy change along two allowed reversible reference paths and compare it with an actual irreversible-process balance. Check limiting equal states, mass scaling and reference consistency. Avoid substituting an informal “disorder” judgement for these defined state relations and measured properties.
+
+**Continue:** [Local entropy production and transport assumptions](Local-entropy-production-and-transport-assumptions.lingua#r_0XE4QFR9SE1KBW2RDHYPVVJZZE).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5PBN5Q06X2XF6SN21MCCWR8VJY

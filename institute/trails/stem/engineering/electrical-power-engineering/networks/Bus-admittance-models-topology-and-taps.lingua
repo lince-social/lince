@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Bus admittance models, topology and taps (@pe-ybus: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #electrical-power-engineering "../../../physics/electromagnetism/induction/Self-mutual-inductance-and-magnetic-energy.lingua#r_4QR58S6KHFRSBV15QCCX7NA63E") { r_08GZBJE51AJ1MMX05MJRY1EXHJ
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), chapter 3 in full, especially branches and network equations; [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete network modelling development.
+
+Form a bus-current relation I = YV by assembling each component's terminal equations on declared bus/phase references. Derive a series branch stamp from I_ij = y(V_i−V_j), then add shunts and the actual transformer/tap model. Each diagonal/off-diagonal entry has physical meaning; a missing return path or wrong connection cannot be fixed by numerical regularization alone.
+
+For a reciprocal simple line, check equal/opposite terminal currents and complex power balance. An off-nominal complex tap changes how voltages and currents are referred and can make the assembled representation nonsymmetric; do not force symmetry on an arbitrary phase-shifting model. Keep tap magnitude, phase angle, side and per-unit basis explicit.
+
+Inspect disconnected islands, isolated reference choices and the matrix's rank before solving. Compare a small hand assembly with the complete branch model in [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), including shunt charging. Recover zero-shunt, unity-tap and zero-phase limits. Source/load power equations are nonlinear even when I = YV is linear in V, because constant power involves V times conjugate current. That distinction leads directly to power flow.
+
+**Continue:** [Self-inductance, mutual inductance and magnetic energy](../../../physics/electromagnetism/induction/Self-mutual-inductance-and-magnetic-energy.lingua#r_4QR58S6KHFRSBV15QCCX7NA63E).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_08GZBJE51AJ1MMX05MJRY1EXHJ

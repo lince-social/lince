@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Boiling, nucleation, regimes and critical heat flux (@th-boiling: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #thermodynamics-and-heat-transfer "Condensation-film-resistance-and-noncondensable-gases.lingua#r_3S9E90CHJX1DJK9VPST9393QYA") { r_5SRYEBH3HXSNPW0K9CJNPMCA83
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the entire boiling treatment and problems; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), subcooled/developed boiling and critical heat flux; [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), phase-change convection.
+
+Boiling depends on pressure, superheat, surface condition, nucleation sites, fluid motion and confinement. Distinguish pool from flow boiling and local wall temperature from a bulk saturation temperature. An equilibrium latent heat does not itself determine the transfer coefficient.
+
+Read the full regime map and derivations behind nucleate, transition and film-boiling descriptions. Critical heat flux marks a change in heat-removal behavior under particular conditions; it is not one universal material number. A change of regime can cause a large wall-temperature change at comparable supplied power.
+
+Reconstruct a documented experiment or design case with the actual surface/fluid and correlation domain. Track uncertainty and transient/flow stability. Suitable supervised facilities are needed for physical boiling studies; a calculation or public-data reconstruction should state exactly which evidence it provides.
+
+**Continue:** [Condensation, film resistance and noncondensable gases](Condensation-film-resistance-and-noncondensable-gases.lingua#r_3S9E90CHJX1DJK9VPST9393QYA).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5SRYEBH3HXSNPW0K9CJNPMCA83

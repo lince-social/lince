@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Humid air, evaporation, drying and moisture storage (@th-moisture: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Porous-media-effective-properties-and-nonequilibrium.lingua#r_1E12SSXGWM0QSESEZ0HNXA0N1H") { r_5SWJJWAQVW3VXJT5N7SAR7GTMX
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), heat/mass-transfer coupling and evaporation; [CoolProp — thermophysical property models and methods](../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1), humid-air definitions, equations and domain; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), mixture activities and equilibrium.
+
+Distinguish relative humidity, humidity ratio, water activity, dew point and wet-bulb conditions. Specify total pressure and the mixture model. Relative humidity alone does not determine the water mass carried by a stream.
+
+Couple evaporation/condensation with energy and mass balances, including latent energy and changing gas/liquid composition. In drying, internal transport and material binding can control the rate after an externally controlled stage. Shrinkage, porous structure and temperature history may change properties and quality.
+
+Construct a complete air/water state and balance example with a verified property model. Compare an idealized psychrometric process with a documented dryer or enclosure case. The thermal foundation supports later agriculture, buildings and process engineering without silently treating their biological or material constraints as solved.
+
+**Continue:** [Porous media, effective properties and thermal nonequilibrium](Porous-media-effective-properties-and-nonequilibrium.lingua#r_1E12SSXGWM0QSESEZ0HNXA0N1H).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5SWJJWAQVW3VXJT5N7SAR7GTMX

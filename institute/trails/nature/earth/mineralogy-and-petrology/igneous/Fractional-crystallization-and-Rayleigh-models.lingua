@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Distinguish crystallization, separation, and a Rayleigh distribution model (@mp-fractionation: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF", #mineralogy-and-petrology "Mixing-assimilation-and-energy-constraints.lingua#r_02ENGHZHBX047A1VFVS8HN611Z") { r_6W8ZBWZZZ0WGZRPAD66MPHRHT1
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete fractional-crystallization/trace-element notes; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full differentiation lectures and assignments; [Advanced Igneous Petrology — Timothy Grove, MIT 12.490](../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF), the complete relevant natural/experimental case.
+
+Crystallization changes phase assemblages; fractional crystallization additionally removes phases from continued exchange with the evolving liquid under a model. Crystal settling, compaction, filtering, flow, and other processes may separate material, but their effectiveness needs physical and textural evidence.
+
+For a trace constituent with constant bulk D and continuously removed equilibrium crystals, the ideal Rayleigh liquid relation is C_l/C₀ = F^(D−1), where F is the remaining liquid mass fraction. With invented D = 0.1 and F = 0.2, the enrichment is about 4.257. This differs from batch melting because the history and mass account differ.
+
+An evolving crystallizing assemblage can change D, and an actual rock may be a cumulate, mixed liquid/crystal sample, altered body, or disequilibrium population. A straight trend on a transformed plot is not unique evidence that one constant-D Rayleigh history occurred.
+
+**Work:** derive the differential mass balance and integrate it under stated assumptions. Check endmember/limiting cases and compare liquid with accumulated removed-solid composition, closing the original element account. Reconstruct a published differentiation argument with modal, mineral, and textural evidence, then test an accumulation/mixing alternative.
+
+Read the full fractional-crystallization treatment and original natural/experimental papers in the assigned advanced case. The next mixing and storage studies add processes whose signatures can overlap with this convenient model.
+
+**Continue:** [Test mixing and assimilation with material, heat, and geological evidence](Mixing-assimilation-and-energy-constraints.lingua#r_02ENGHZHBX047A1VFVS8HN611Z).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_6W8ZBWZZZ0WGZRPAD66MPHRHT1

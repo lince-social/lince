@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Volume fractions, slip, interphase exchange and model choice (@fd-multiphase-models: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #fluid-dynamics "Suspension-stress-concentration-migration-and-granular-limits.lingua#r_2YSMF4GB2EBRBZ20F4Z7S586GQ") { r_16W07EWTERB3C53SMKY5XJKD20
+**Read:** [Fundamentals of Multiphase Flow — Christopher E. Brennen](../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM), complete model-formulation and flow-regime treatments; [Cavitation and Bubble Dynamics — Christopher E. Brennen](../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578), cavitation and two-phase-flow connections; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), numerical conservation and physical-model choices.
+
+For two interpenetrating averaged phases, volume fractions sum to one where the description fills the control volume. Each phase needs a consistent mass balance, and phase velocities may differ. A mixture mean hides relative motion unless a closure restores it. Mass transfer between phases must cancel in the summed mass account.
+
+Compare resolved-interface, Eulerian–Lagrangian, two-fluid and mixture descriptions. Identify the scale being averaged, the unknown phase stresses and exchange terms, and which assumptions close drag, lift, breakup, coalescence or heat/mass transfer. Interphase forces must be accounted for consistently so that internal exchange does not create net momentum from nothing.
+
+Choose a bubbly pipe, settling suspension or spray and justify a model with scale and loading estimates. Compare multiple observables, such as phase fraction, slip and pressure loss, rather than fitting one bulk quantity. Document regime changes and the dataset behind a correlation. A regime map is a guide tied to its variables and conditions, not a universal classification independent of fluid and geometry.
+
+**Continue:** [Suspension stress, concentration, migration and granular limits](Suspension-stress-concentration-migration-and-granular-limits.lingua#r_2YSMF4GB2EBRBZ20F4Z7S586GQ).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_16W07EWTERB3C53SMKY5XJKD20

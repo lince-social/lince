@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Internal generation, variable properties and hot spots (@th-generation: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #thermodynamics-and-heat-transfer "Thermal-contacts-layers-and-material-history.lingua#r_68Z22QE65T6P6TYMDN3CP6500E") { r_2SW0JFBWDHREWM93VCFK7GY5M0
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), generation and variable-property conduction; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), steady generation and nonlinear considerations; [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), source terms and nonlinear iteration.
+
+With internal energy generation, heat rate changes across the material and the maximum temperature can occur away from a boundary. Derive the temperature profile for a uniformly generating slab or cylinder, apply the actual boundary conditions and verify that total outward heat equals integrated generation at steady state.
+
+Electrical, chemical, nuclear or dissipative sources may depend on temperature or other fields. When the source grows faster than heat can be removed, a steady solution can disappear or become unstable. A converged low-temperature branch is not automatically the realized operating state.
+
+For variable k(T), preserve ∇·(k∇T) rather than treating k∇²T as generally identical. Compare an analytically integrable case with a conservative numerical result. Identify maximum material/contact temperature, not merely average outlet temperature, when assessing a thermal service.
+
+**Continue:** [Thermal contacts, layers and material history](Thermal-contacts-layers-and-material-history.lingua#r_68Z22QE65T6P6TYMDN3CP6500E).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_2SW0JFBWDHREWM93VCFK7GY5M0

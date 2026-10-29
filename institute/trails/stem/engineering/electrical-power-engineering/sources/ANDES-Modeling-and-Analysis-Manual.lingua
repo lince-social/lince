@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+ANDES — dynamic modelling and analysis manual (@pe-andes: 0, is #reference, #part-of @pe-sources) { r_5JM9DVGXWSD8645484SZP5XRSZ
+Hantao Cui and contributors, CURENT/ANDES. [Complete stable manual](https://docs.andes.app/en/stable/) · [Repository](https://github.com/CURENT/andes) · [Actual licence](https://raw.githubusercontent.com/CURENT/andes/master/LICENSE).
+
+Read the full applicable tutorials, modelling guide, device equations, solver/initialization material and verification cases. Follow power flow, time-domain and eigenvalue analysis through the same consistent model, then investigate a changed controller or network condition. Inspect limits, discontinuities and state initialization rather than treating a model name as sufficient documentation.
+
+The stable documentation identified version 2.0.0 on 29 October 2026. The actual licence grants GPL version 3 or later; documentation, data and linked dependencies retain their own notices. Pin the version used because stable pages move. The project's comparisons with commercial tools are published evidence to inspect, not tests performed here. No package, cases or environment was installed or added to this repository.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_5JM9DVGXWSD8645484SZP5XRSZ

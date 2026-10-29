@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Motors, generators, transformers and energy accounts (@em-electromechanics: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "Quasistatic-limits-diffusion-and-skin-depth.lingua#r_7RSC1KG4B4DNB7C7319F691MSW", #electrical-power-engineering "../../../engineering/electrical-power-engineering/machines/Synchronous-machines-power-angle-and-capability.lingua#r_1PBXD8QXNWF5SQBMHCN8CYP8T6") { r_3G4DF28F72Y3GD5QRG19CD75W8
+**Read:** [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), complete electromechanical energy and force development; [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), motors, actuators and transformer applications.
+
+A generator turns mechanical work into electromagnetic energy delivered to a circuit; a motor transfers it in the other direction. The same coupling coefficients appear in a consistent reversible ideal model, while losses and operating constraints set actual performance. A label such as motor or transformer is not a replacement for torque, flux, current and energy equations.
+
+Derive a rotating-loop sinusoidal emf from changing linked flux, then include load current and opposing torque. Track mechanical input, winding heat, magnetic loss and electrical output. For a magnetic actuator, compare energy and coenergy derivatives under fixed flux versus fixed current. The power supply belongs in the account whenever it maintains an imposed current or voltage.
+
+Use these field derivations as interfaces to the distinct power-engineering and machinery subjects. A complete machine also needs magnetic/material characterization, thermal paths, insulation, bearings, control, fabrication, testing and maintenance. Investigate a small isolated teaching apparatus or a fully documented case before extrapolating to industrial equipment. An analytical ideal efficiency is a limit of a model, not an evidence-based claim about a built machine.
+
+**Continue:** [Quasistatic limits, diffusion and skin depth](Quasistatic-limits-diffusion-and-skin-depth.lingua#r_7RSC1KG4B4DNB7C7319F691MSW).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in electrical power engineering:** [Synchronous machines, power angle and capability](../../../engineering/electrical-power-engineering/machines/Synchronous-machines-power-angle-and-capability.lingua#r_1PBXD8QXNWF5SQBMHCN8CYP8T6).
+} r_3G4DF28F72Y3GD5QRG19CD75W8

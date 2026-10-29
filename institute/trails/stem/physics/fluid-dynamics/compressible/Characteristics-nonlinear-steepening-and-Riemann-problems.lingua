@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Characteristics, nonlinear steepening and Riemann problems (@fd-characteristics: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #fluid-dynamics "Variable-properties-relaxation-and-rarefied-flow.lingua#r_7Y5K4F9AE60ZFKJFJXHYE4F5A8") { r_79Y00P32FGZZC1W2JN17JC0NQ2
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 characteristics, wave steepening and shocks; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), conservative computational treatment; [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), advection and conservation-law discretization.
+
+For a scalar conservation law q_t+f(q)_x=0, smooth characteristics move at speed f′(q). If that speed depends on the state, neighboring characteristics can converge and the smooth solution can develop an infinite gradient. Continuing intersecting characteristics as a multivalued physical field is not an admissible continuation.
+
+Integrate the conservation law across a moving discontinuity to obtain the jump speed s=[f]/[q], then impose an entropy condition to select a physical weak solution. For systems, characteristic families, contact discontinuities, shocks and rarefactions interact. A Riemann problem starts from two constant states and provides a local building block for conservative numerical fluxes.
+
+Solve a scalar shock and rarefaction analytically before working a gas-dynamic or shallow-water example. Verify conserved quantities and admissibility rather than comparing only a front's location. Relate the mathematical entropy condition to the physical dissipative limit, and state when the simplified continuum equations omit additional physics within the front.
+
+**Continue:** [Variable properties, relaxation and rarefied flow](Variable-properties-relaxation-and-rarefied-flow.lingua#r_7Y5K4F9AE60ZFKJFJXHYE4F5A8).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_79Y00P32FGZZC1W2JN17JC0NQ2

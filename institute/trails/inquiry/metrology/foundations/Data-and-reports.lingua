@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+A measurement record another person can interpret and repeat (@met-measurement-records: 0, is #chapter, #part-of @metrology, #source "../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH", #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #metrology "../research/First-measurement-study.lingua#r_3Q9EX59YKEV2MNAAMBB5NPTFCV") { r_01A7WVXPKHKNSSS10X9D7PYMVC
+**Read:** [International vocabulary of metrology — JCGM and Inmetro](../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH), the English and Portuguese definitions in context; [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), the checklist; [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the reporting clause.
+
+Preserve observations before correcting or transforming them. Record the object or specimen identity, measurand definition, procedure version, instrument and reference identities, conditions, time basis, calibration source, original indications, corrections, rejected observations with reasons, and final result. An attractive table without these definitions can lose its meaning when passed to a different laboratory or production stage.
+
+Keep a calculation’s input estimates, standard uncertainties or other uncertainty descriptions, dependence assumptions, units, sensitivity coefficients, and source references distinct. A rounded result should remain linked to the unrounded calculation. A change in firmware, processing algorithm, reference data, or fitting model can change a result even when the displayed unit remains the same.
+
+Use the shared [Keep observations, formulas, units, and revisions recoverable](../../quantitative-literacy/practice/Data-and-calculation-records.lingua#r_5TTXVQ6161YYC7CFWDSQCV8WX8) Record for input tables, missing-value conventions, and calculation separation. For an English–Portuguese report, specify grandeza mensurável, mensurando, indicação, correção, calibração, rastreabilidade metrológica, and incerteza de medição using the Portuguese VIM reference rather than translating a familiar word casually.
+
+**Work:** make a one-page measurement report and a supporting table for an ordinary length question. Separate observed facts, assumptions, calculated estimates, and acceptance requirements. Ask another reader to reconstruct the reported number using only the report and linked sources. Record the first ambiguity they encounter and repair it.
+
+A recipient should be able to reuse the result under the supported conditions or recognize why it is unsuitable for a new use. Source links, revisions, and units provide continuity across the chain; a conclusion should never depend on remembering an undocumented conversation with the original operator.
+
+**Continue:** [First study — turn an ordinary measurement into a defensible result](../research/First-measurement-study.lingua#r_3Q9EX59YKEV2MNAAMBB5NPTFCV).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_01A7WVXPKHKNSSS10X9D7PYMVC

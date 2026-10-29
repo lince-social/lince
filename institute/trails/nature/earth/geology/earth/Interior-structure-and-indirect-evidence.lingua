@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Infer Earth’s interior from several kinds of evidence (@geo-interior: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #geology "Pressure-heat-and-thermal-timescales.lingua#r_1K4DA43MK7DGA9Q05RFF1WFWJJ") { r_2YEXGGAP9CA97F2N19K6CKXKF6
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 9 in full; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete mantle-composition and seismicity material; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), Earth systems and interior/tectonic foundations.
+
+Earth's interior is investigated through observations and physical models rather than a direct view of every depth. Seismic behavior, density/mass information, gravity, magnetism, heat, materials, experiments, and planetary comparison constrain different aspects. Distinguish compositional divisions from mechanical/rheological ones such as lithosphere and asthenosphere.
+
+A seismic discontinuity is an interpreted change in wave behavior under a model; translating it into composition, phase, temperature, or melt requires additional information. Several influences can produce related signals. Preserve the actual observation and resolution when comparing an accessible schematic with research evidence.
+
+Connect pressure, temperature, phase relations, density, and material behavior with depth. A rock observed at the surface may preserve evidence of a deeper setting but needs a geological transport/history account. A specimen is not an unmodified sample of every interior condition it once experienced.
+
+**Work:** compare two independent evidence types for an interior feature using complete textbook/course treatments. Identify what each measures, the model connecting it with structure, and what remains nonunique. Derive one simple mass/density or pressure estimate as a labelled approximation and state its limits.
+
+Read the full interior chapter and MIT mantle/seismic exercises. The later geophysics, seismology, mineral-physics, and planetary trails will deepen their unique inversions and experiments; general geology should already support a critical connection between an interior diagram and its evidence.
+
+**Continue:** [Use pressure and thermal models with explicit scales and assumptions](Pressure-heat-and-thermal-timescales.lingua#r_1K4DA43MK7DGA9Q05RFF1WFWJJ).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_2YEXGGAP9CA97F2N19K6CKXKF6

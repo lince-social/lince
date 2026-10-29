@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Explain solidification morphology through transport, stability, and material evidence (@metal-morphology: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM", #source "../sources/Wheeler-Boettinger-McFadden-Phase-Field.lingua#r_32N0NAN7NS30RXD9H2ZSJB81QA", #metals-and-metallurgical-production "Equilibrium-Scheil-and-finite-diffusion-accounts.lingua#r_6V6YZGA84F2Q3VXXV9QE4FC1GP") { r_4KCQ85TBX02PBPVPS2JKGW4FMQ
+**Read:** [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), all binary front-stability, morphology, and phase-selection material; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the entire solidification chapter and original references used; [A Guide to the Solidification of Steels — Jernkontoret](../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM), all four parts for sustained structure/experimental comparison; [A Phase-Field Model for Isothermal Phase Transitions in Binary Alloys — NISTIR 4662](../sources/Wheeler-Boettinger-McFadden-Phase-Field.lingua#r_32N0NAN7NS30RXD9H2ZSJB81QA), the complete primary report for a further model comparison.
+
+Thermal and solutal fields near a moving interface can destabilize a nominally planar front. Interface curvature/anisotropy, kinetic effects, growth rate, gradients, and phase equilibria contribute to cellular/dendritic or multiphase structures. A convenient cooling-rate correlation does not encode all of those independent variables.
+
+Derive a representative stability or constitutional-supercooling argument with its assumptions and units. Distinguish an ideal criterion, a fitted spacing relation, and a measured structure. Eutectic/peritectic and multicomponent phase selection need the appropriate phases, transport, nucleation, and thermodynamic account.
+
+Compare observed geometry, orientation, chemistry, spacing, and distribution with the actual thermal/flow history and observation method. A two-dimensional section can distort spacing or connectivity, and preparation/indexing can alter apparent phase identity. Independent structural and thermal/compositional evidence makes the interpretation stronger.
+
+**Work:** reconstruct a complete primary or technical morphology study using the full methods. Reproduce one quantitative relation, test limits, and compare predicted behavior against an independent growth/gradient condition. Investigate an alternative nucleation, convection, or measurement interpretation. Explain which additional observation would change the conclusion and how the structure affects later homogenization, forming, heat treatment, or service behavior.
+
+**Continue:** [Derive segregation models from phase partition and conserved solute](Equilibrium-Scheil-and-finite-diffusion-accounts.lingua#r_6V6YZGA84F2Q3VXXV9QE4FC1GP).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_4KCQ85TBX02PBPVPS2JKGW4FMQ

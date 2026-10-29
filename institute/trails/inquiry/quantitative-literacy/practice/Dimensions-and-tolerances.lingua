@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Dimensions, tolerances, references, and an inspection question (@ql-tolerances: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-blueprint, #source @ql-source-vim, #source @ql-source-si, #quantitative-literacy "Rates-and-accumulation.lingua#r_0NTXN5E5ZJ1A8C149BQF4G2YCZ") { r_0K38T1TBRR4N9ESP1FYR55H90T
+**Read:** Basic Blueprint Reading, Dimensioning, Machined Features, and Print Interpretation. Read VIM definitions for measurement result, uncertainty, calibration, and metrological traceability. Consult SI writing conventions when the drawing mixes symbols and numbers.
+
+A nominal dimension communicates an intended value; limits define an allowed region under a specified convention. A length of 20.00 ± 0.05 mm has limits 19.95–20.05 mm in this simple example. The tolerance is a design requirement. The uncertainty of measuring that length describes knowledge of a result, and instrument resolution describes a feature of an indication. They are not interchangeable.
+
+For two bounded lengths A = 100.0 ± 0.2 mm and B = 40.0 ± 0.1 mm, a worst-case interval for A − B is 60.0 ± 0.3 mm. Root-sum-of-squares would require a probabilistic model and assumptions; it is not the same bound. Dependencies and common references can change an uncertainty calculation even when individual intervals look identical.
+
+An origin, axis, datum feature, and measurement procedure determine what is being compared. Reading a caliper near an edge does not establish flatness, position, roundness, or every functional requirement of a part. Specialized geometric tolerancing requires its own convention and deeper manufacturing study.
+
+**Work:** annotate the block drawing with simple limits, select one measurable dimension, and describe the reference surfaces and method. Report a hypothetical result and its uncertainty separately from the allowed interval. If the uncertainty interval crosses a limit, explain why a pass/fail claim needs an agreed decision rule. Do not infer conformance from a displayed digit alone.
+
+**Continue:** [Rates, accumulation, and the boundary of an account](Rates-and-accumulation.lingua#r_0NTXN5E5ZJ1A8C149BQF4G2YCZ).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_0K38T1TBRR4N9ESP1FYR55H90T

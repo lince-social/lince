@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Model the demand that occurs before replacement becomes usable (@cs-uncertain-lead: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #source "../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D", #chemical-supply-systems "An-inspectable-exact-replenishment-demand-distribution.lingua#r_6EXE7DWBBK7BSDWM5675JY6X4H") { r_7KV83BXJ1Q08JHFD9ZAC9ERTK6
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the entire Stochastic Inventory Control chapter and relevant appendix; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), complete stochastic-inventory and lead-time material; [Good storage and distribution practices for medical products — WHO](../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D), complete status, rotation and condition requirements.
+
+Define demand during replenishment as the total requirement between the ordering decision and usable replacement. If daily demands are independent and identically distributed with mean μ and variance σ², and the integer lead time L is independent of them, then E[Dᴸ]=μE[L] and Var(Dᴸ)=σ²E[L]+μ²Var(L). Derive these statements using conditioning on L before applying them.
+
+Work a finite distribution exactly and compare it with an assumed normal approximation. State which service event is being modelled: under a particular continuous-review cycle model, a reorder point may be chosen from a lead-demand quantile. Cycle service, expected shortage and fill fraction still require their own policy context. Do not interpret a single quantile as a universal plant-uptime guarantee.
+
+Investigate dependence, intermittent demand, variable lot release and correlated delays. A larger safety stock can increase age and capacity pressure. Compare moving inventory nearer to the user, shortening a testing delay, improving delivery reliability and holding a reserve, using the same measurable service requirement. The next original program calculates the exact finite-mixture distribution under explicit independence assumptions; the later empirical/academic work tests how well those assumptions represent the actual chemical supply.
+
+**Continue:** [Calculate an exact finite replenishment-demand distribution and test it independently](An-inspectable-exact-replenishment-demand-distribution.lingua#r_6EXE7DWBBK7BSDWM5675JY6X4H).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_7KV83BXJ1Q08JHFD9ZAC9ERTK6

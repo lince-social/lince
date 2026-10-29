@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Voltmeters, probes, return paths and loading (@em-probing: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #electromagnetism "../currents/RC-RL-RLC-transients-and-energy.lingua#r_4F9B677SF6134C9JSNNYZ94QCJ") { r_1GC52AMZ8AGAPCFD5Y0N9NWJWM
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), measurement-related field and transmission examples; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), reference planes, fixtures and calibration.
+
+A measurement changes the circuit it connects to. A 10 MΩ voltmeter across a 1 MΩ source resistance reduces the ideal open-circuit voltage by a factor 10/11. A probe's input capacitance can dominate its large DC resistance at high frequency. A reference lead has inductance and encloses a loop that can intercept changing flux.
+
+Specify the measurand, reference points, bandwidth, probe model, cable, grounding/return geometry and calibration. A differential input rejects only a finite range of common-mode disturbance. Two-terminal resistance includes contacts/leads; a four-terminal arrangement separates current injection and potential sensing under its own assumptions. A bridge or null measurement still needs a model of its reference and parasitics.
+
+Draw both intended signal path and actual return path. Test a predicted loading change with an alternative impedance or geometry, then propagate uncertainty through the corrected model. The reused electrical-metrology Record supplies traceability and complex measurement context. Use isolated educational circuits for direct exercises; higher-energy or earth-referenced instruments require a suitably designed measurement system rather than improvised probing.
+
+**Continue:** [RC, RL and RLC transients and energy](../currents/RC-RL-RLC-transients-and-energy.lingua#r_4F9B677SF6134C9JSNNYZ94QCJ).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_1GC52AMZ8AGAPCFD5Y0N9NWJWM

@@ -55,7 +55,6 @@ pub(super) fn type_command(canvas: &mut Presentation, text: &str) {
                 )
                 .unwrap();
         }
-        canvas.probe_frame().unwrap();
     }
     settle(canvas);
 }

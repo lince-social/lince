@@ -1,0 +1,29 @@
+Import "../Reproducible-computation.lingua"
+
+Run a first saved calculation and check it independently (@rc-first: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #reproducible-computation "../../quantitative-literacy/practice/Data-and-calculation-records.lingua#r_5TTXVQ6161YYC7CFWDSQCV8WX8") { r_6QDSCHW072VRCTMYHQGXZG3SBE
+**Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), fractions, assert statements, and invoking scripts; [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), revisit formulas and functions as needed.
+
+Save this original teaching example as first_calculation.py in your personal exercise directory. It uses Python's standard library and needs no downloaded dataset. Fraction represents exact rational arithmetic for the invented decimal inputs. It does not remove uncertainty from a real mass measurement.
+
+```python file=first_calculation.py
+from fractions import Fraction
+
+wet_kg = Fraction("800")
+water_fraction = Fraction("0.1")
+dry_kg = wet_kg * (1 - water_fraction)
+assert dry_kg == 720
+print(f"dry_kg={dry_kg}")
+```
+
+Run python3 first_calculation.py with your chosen documented interpreter. Expect dry_kg=720. Reconstruct the result by arithmetic outside the program. Then change the wet mass to 500 and water fraction to 0.2, update the independent expected value, and rerun. An assertion is useful evidence only when its expected value has an independent reason; pasting the program's answer into an assertion supplies little protection.
+
+Record the exact interpreter version and the command. Copy the script into a differently named directory, run it from another working directory using its path, and compare output. This program has no filesystem inputs, so its result should not depend on the working directory. A later version will introduce explicit file inputs and test that expectation again.
+
+**Work:** explain every line and alter it to return both dry mass and water mass. Verify wet = dry + water using independently chosen examples, including zero water and entirely wet material. State whether these limiting cases are meaningful for a particular real material before using them scientifically. The mathematical test and the experimental interpretation are distinct.
+
+Now follow [Keep observations, formulas, units, and revisions recoverable](../../quantitative-literacy/practice/Data-and-calculation-records.lingua#r_5TTXVQ6161YYC7CFWDSQCV8WX8) for the existing treatment of observations, units, formulas, and revisions. Its reproducible-computation continuation brings those ideas into the next data-schema Record; its quantitative continuation remains available for other study.
+
+**Continue:** [Keep observations, formulas, units, and revisions recoverable](../../quantitative-literacy/practice/Data-and-calculation-records.lingua#r_5TTXVQ6161YYC7CFWDSQCV8WX8).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_6QDSCHW072VRCTMYHQGXZG3SBE

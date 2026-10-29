@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Conservative finite volumes and cancelling face fluxes (@fd-finite-volume: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Advection-schemes-boundedness-diffusion-and-shock-capture.lingua#r_0XH17KPCTVWEZATGC9DTC9PGFN") { r_680N35BTK54VZEA3DZ3Z0EGQ9N
+**Read:** [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), complete governing-equation and discretization development; [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), finite-volume derivation and mesh geometry; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), integral versus differential conservation.
+
+Integrate a balance over a control volume before discretizing. A finite-volume update changes the stored quantity through oriented face fluxes and source terms. If adjacent cells use the same interfacial flux with opposite signs, their internal exchange cancels exactly in the global account, up to arithmetic and solver tolerances.
+
+Derive a one-dimensional advection-diffusion update, including boundary faces and cell volume. Distinguish a cell average from a point value and derive the reconstruction used at a face. On a nonuniform mesh, preserve geometric factors and the physical meaning of flux; a copied uniform-grid formula can break consistency or conservation.
+
+Check a constant field, an exact steady balance and a transient integral account. Compare finite-volume, finite-difference, finite-element and spectral formulations through the actual discrete equations rather than their labels. Conservation is necessary for many physical questions, but a conservative method can still be inaccurate, unstable or physically inappropriate.
+
+**Continue:** [Advection schemes, boundedness, diffusion and shock capture](Advection-schemes-boundedness-diffusion-and-shock-capture.lingua#r_0XH17KPCTVWEZATGC9DTC9PGFN).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_680N35BTK54VZEA3DZ3Z0EGQ9N

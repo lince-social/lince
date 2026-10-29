@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Boundary layers, similarity and integral methods (@th-boundary-layers: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #thermodynamics-and-heat-transfer "Internal-flow-bulk-temperature-and-developed-transport.lingua#r_1ZXV5J2YPTWKRRWF1PPZCDT0TP") { r_7V982S8W9Y3XT7TAADDWJ13WXS
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the complete boundary-layer analysis; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), Falkner–Skan and integral methods; [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), low/high-Prandtl and thermal-boundary-condition derivations.
+
+Define momentum and thermal boundary layers through the evolving flow and temperature fields. Derive the boundary-layer approximation from scale comparisons and state when streamwise diffusion, separation, strong property variation or other effects invalidate it.
+
+Study a laminar flat-plate similarity solution and compare constant wall temperature with constant wall heat flux. The thermal layer changes relative to the velocity layer with Prandtl number. Local and average transfer coefficients are different observables.
+
+Work an integral approximation and compare it with the similarity solution over a declared regime. Check wall flux, integrated duty and leading-edge behavior. A textbook flat-plate result cannot be transferred unchanged to a short, rough, pressure-gradient, mixed-convection or impinging-flow geometry.
+
+**Continue:** [Internal flow, bulk temperature and developed transport](Internal-flow-bulk-temperature-and-developed-transport.lingua#r_1ZXV5J2YPTWKRRWF1PPZCDT0TP).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7V982S8W9Y3XT7TAADDWJ13WXS

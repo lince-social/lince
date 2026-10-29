@@ -1,0 +1,45 @@
+Import "../Electromagnetism.lingua"
+
+An inspectable periodic Yee wave (@em-yee-example: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM", #source "../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX", #electromagnetism "Finite-domains-sources-PML-and-reflection-tests.lingua#r_3HA5JXCH0JJR2BYHJ8AFHKZ9MV") { r_7HQHSXPAZ45JWXAC5G48DC8D10
+**Read:** [Understanding the Finite-Difference Time-Domain Method — John B. Schneider](../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM), one-dimensional FDTD and dispersion; [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX), time-domain method and verification principles.
+
+This original one-dimensional normalized vacuum example has a unit-length periodic domain, c = ε = μ = 1, E at integer nodes/times and H at half nodes/times. It evolves a single standing Fourier mode without physical absorption, boundaries or sources. The retained Courant range ends at 0.9, leaving a margin below the ideal one-dimensional limit.
+
+```python file=periodic_yee.py
+import json
+import math
+
+def run(cells=48, mode=2, courant=0.5, steps=120):
+    if type(cells) is not int or not 8 <= cells <= 256:
+        raise ValueError("eight to 256 cells required")
+    if type(mode) is not int or not 0 <= mode <= cells // 2:
+        raise ValueError("resolved nonnegative integer mode required")
+    if type(steps) is not int or not 0 <= steps <= 4096:
+        raise ValueError("zero to 4096 steps required")
+    if type(courant) not in (int, float) or not 0.0 <= courant <= 0.9:
+        raise ValueError("finite Courant number between zero and 0.9 required")
+    courant = float(courant)
+    k = 2.0 * math.pi * mode / cells
+    electric = [math.cos(k * j) for j in range(cells)]
+    magnetic = [0.5 * courant * (electric[(j + 1) % cells] - electric[j]) for j in range(cells)]
+    def invariant():
+        following = [magnetic[j] - courant * (electric[(j + 1) % cells] - electric[j]) for j in range(cells)]
+        return (sum(value * value for value in electric) + sum(magnetic[j] * following[j] for j in range(cells))) / (2.0 * cells)
+    initial_energy = invariant()
+    for _ in range(steps):
+        magnetic = [magnetic[j] - courant * (electric[(j + 1) % cells] - electric[j]) for j in range(cells)]
+        electric = [electric[j] - courant * (magnetic[j] - magnetic[(j - 1) % cells]) for j in range(cells)]
+    return {"E": electric, "H_previous_half": magnetic, "initial_invariant": initial_energy, "final_invariant": invariant(), "time": steps * courant / cells}
+
+if __name__ == "__main__":
+    print(json.dumps(run(), sort_keys=True, allow_nan=False))
+```
+
+The exact discrete solution is E_j at step m = cos(kj)cos(mω_d) and H at time m−1/2 = sin(k(j+1/2))sin((m−1/2)ω_d), where ω_d = 2asin(s sin(k/2)). Verify it independently for resolved modes, including the uniform limit. The exactly conserved modified discrete energy uses H_previous multiplied by H_next, as implemented; a naive simultaneous E²+H_previous² expression is not the same invariant.
+
+For continuum convergence choose mode 1, s = 0.5, physical time 0.3 and cells 20, 40, 80, 160, with steps 0.6 times cells. Compare against cos(2πx)cos(2πt), check second-order errors and distinguish them from agreement with the discrete oracle. This does not test a three-dimensional solver, actual matter or an absorbing boundary.
+
+**Continue:** [Finite domains, sources, PML and reflection tests](Finite-domains-sources-PML-and-reflection-tests.lingua#r_3HA5JXCH0JJR2BYHJ8AFHKZ9MV).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_7HQHSXPAZ45JWXAC5G48DC8D10

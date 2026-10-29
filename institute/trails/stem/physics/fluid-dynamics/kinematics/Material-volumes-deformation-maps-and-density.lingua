@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Material volumes, deformation maps and density (@fd-deformation-map: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "../mathematics/Differential-equations-boundary-data-and-a-solvable-flow-model.lingua#r_5HKW1NTEG39SPQQ5PF9THNHCMX") { r_1R8TG4FSEVRSMJRH25WAX6128Z
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapters 3, 5 and 8 field descriptions and continuity; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), kinematic transport theorem and fluid-motion notes.
+
+A flow map sends an initial material label a to its current position x(a,t). Its deformation gradient describes changes in small material vectors. The determinant J gives the local volume ratio while the map remains regular. Conservation of material mass gives ρ(x,t)J=ρ₀(a).
+
+Differentiate this account to connect density with expansion: DJ/Dt=J∇·u and Dρ/Dt=−ρ∇·u. Incompressible motion has ∇·u=0 and preserves material volume. It can still carry a spatially nonuniform density field whose value remains constant along each trajectory, if the other modelling assumptions allow it.
+
+Apply the result to the planar stretching field and to uniform expansion. Identify when the map ceases to describe a single smooth material motion. This bridge connects a moving-particle description with the local continuity equation and explains what volume preservation actually means.
+
+**Continue:** [Differential equations, boundary data and a solvable flow model](../mathematics/Differential-equations-boundary-data-and-a-solvable-flow-model.lingua#r_5HKW1NTEG39SPQQ5PF9THNHCMX).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1R8TG4FSEVRSMJRH25WAX6128Z

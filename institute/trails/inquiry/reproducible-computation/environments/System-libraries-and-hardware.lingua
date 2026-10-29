@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Native libraries, operating systems, and hardware can change a computation (@rc-native: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #source "../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Container-reconstruction.lingua#r_5CD44P15ZM4A7PWESZGQP3QB6B") { r_6MEK7DSTADH24AV1NAQBG5SR61
+**Read:** [Numerical arrays and reproducible random streams — NumPy documentation](../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY), the build/runtime, reduction, and numerical-testing documentation used by the project; [What Every Computer Scientist Should Know About Floating-Point Arithmetic — Goldberg](../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH), system and language interactions in the full paper; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), the environment options comparison.
+
+A Python package can call native code linked against numerical libraries, a compiler runtime, or accelerator drivers. The visible language-level version is therefore only part of the computational environment. Inspect the actual dependency/build information for the operations used rather than assuming a high-level package is self-contained.
+
+Relevant influences can include operating-system interfaces, C-library behavior, CPU instruction sets, GPU kernels, mathematical libraries, compiler optimization, thread count, and filesystem semantics. Floating-point reductions may group additions differently under parallel execution. A library update can alter an algorithm or random transformation. The result may change even when the input and top-level script remain identical.
+
+Choose verification proportional to the computation. The exact rational teaching program avoids most numerical-library variation, while a large floating-point fit or simulation needs independent benchmarks and declared tolerance. Record the specific influences required to explain observed differences. A long hardware inventory without a reproducibility experiment supplies weaker evidence than a bounded, tested claim.
+
+**Work:** inspect the build/runtime information exposed by your numerical library and compare a single-thread and multithread run on a known reduction. Distinguish time variation from numerical variation. Repeat a small benchmark in a second environment and classify any discrepancy before changing its tolerance.
+
+For a publication, identify any dependence on unavailable hardware, licensed software, or remote execution. Provide the best accessible independent check and state what was actually reconstructed. A container or package pin helps specify software inputs, but the subsequent Records ask which host influences remain outside that specification.
+
+**Continue:** [Use a container as an explicit environment experiment](Container-reconstruction.lingua#r_5CD44P15ZM4A7PWESZGQP3QB6B).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_6MEK7DSTADH24AV1NAQBG5SR61

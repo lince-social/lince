@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Reconstruct a blast furnace through coupled reduction, heat, flow, and material behavior (@metal-blast-furnace: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #metals-and-metallurgical-production "Direct-and-smelting-reduction-intermediates-and-energy-systems.lingua#r_78WJKGTR6J2VBT9RMH770V263T") { r_4KZ0TXMQ2WAT83FCPAEVVTMEV6
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), all blast-furnace lectures, derivations, and exercises; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the full ironmaking and RIST sequence; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), the complete blast-furnace chapter and integrated-works context.
+
+The blast-furnace system couples a descending burden with ascending gases, changing reactions/phases, heat exchange, liquids, and supporting structure/permeability. Chemical equilibria and overall balances frame the problem; local kinetics, transport, burden distribution, flow, and material changes determine actual behavior.
+
+Read the complete course treatment of iron-oxide reduction, gas-solid kinetics, aerodynamics, heat/material balances, RIST reasoning, burden preparation/distribution, fuel efficiency, products, and alternatives. Derive the model's zones and assumptions before interpreting a diagram or production indicator as an independent observation.
+
+Track iron, carbon, oxygen, gangue/flux constituents, impurities, dust/returns, slag, and gases on compatible time boundaries. Fuel or carbon input serves several physical and chemical functions. Product composition/temperature, gas/heat recovery, containment, wear, maintenance, and abnormal-state evidence belong to the complete account.
+
+**Work:** reconstruct a substantial published furnace balance/model case and reproduce its central calculation independently. Compare a simpler limiting model and a changed burden/reductant condition against observed evidence. Explain how a mismatch could arise from chemical assumptions, flow/contact, thermal behavior, sampling, or inventory. Defend a process alternative through all consequential connected duties rather than one favorable theoretical reaction.
+
+**Continue:** [Evaluate direct and smelting reduction through product state and complete system duties](Direct-and-smelting-reduction-intermediates-and-energy-systems.lingua#r_78WJKGTR6J2VBT9RMH770V263T).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_4KZ0TXMQ2WAT83FCPAEVVTMEV6

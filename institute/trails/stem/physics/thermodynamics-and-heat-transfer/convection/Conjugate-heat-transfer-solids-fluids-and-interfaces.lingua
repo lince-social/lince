@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Conjugate heat transfer through solids, fluids and interfaces (@th-conjugate: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7", #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #thermodynamics-and-heat-transfer "../radiation/Blackbody-spectrum-Planck-law-and-radiative-quantities.lingua#r_5ADJ79PGB2MACX2GETK7QQRMRE", #thermodynamics-and-heat-transfer "../research/Conjugate-transport-and-auditable-computational-fluid-dynamics.lingua#r_1M8CF0Z404X2SJQB63MET4FF29") { r_3ZZVC37HDSQKWS93WMDW22PRF3
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), solid/fluid coupling and internal/external transfer; [Convecção e métodos numéricos — Maliska, UFSC](../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7), coupled conservation and numerical methods; [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), interface and coupled-equation examples.
+
+Conjugate analysis solves coupled solid and fluid thermal behavior with consistent interface conditions. The wall temperature is then an outcome, not an independently imposed constant, unless a controlled approximation makes it so. Fluid flow, solid spreading and contacts can compete in determining the hottest location.
+
+Build a sequence of models: overall balance, resistance estimate, resolved solid with a justified fluid boundary, then coupled flow/temperature fields. Compare the same observable across levels and identify what additional data each level requires.
+
+For a selected heat sink or exchanger passage, check continuity of interface heat flux, fluid enthalpy rise and total source power. Vary an uncertain contact or flow distribution separately from mesh resolution. A detailed geometry is useful only when its material, interface and operating assumptions are also defensible.
+
+**Continue:** [Blackbody spectra, Planck's law and radiative quantities](../radiation/Blackbody-spectrum-Planck-law-and-radiative-quantities.lingua#r_5ADJ79PGB2MACX2GETK7QQRMRE) · [Advanced study: conjugate transport and auditable CFD](../research/Conjugate-transport-and-auditable-computational-fluid-dynamics.lingua#r_1M8CF0Z404X2SJQB63MET4FF29).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3ZZVC37HDSQKWS93WMDW22PRF3

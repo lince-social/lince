@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Advanced chronological dispatch, storage and reserves (@pe-scheduling-study: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #source "../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G", #source "../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA", #electrical-power-engineering "../study/An-integrated-electrical-power-system-investigation.lingua#r_06BN864FF9C0AN3EWZJE78Y6Y3") { r_2CYRYB70Q4YNZYTC4GS5K0MJ9B
+**Read:** [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), entire manual with complete formulations and examples; [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G), entire report and applicable complete later methods; [Convex Optimization — Boyd and Vandenberghe](../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA), whole applicable optimization foundation.
+
+Read the entire [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99) manual and complete relevant [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G) and [Convex Optimization — Boyd and Vandenberghe](../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA) methods. Define a bounded chronological problem with sources, commitment, ramps, reserves, storage, flexible service, network and uncertain demand/resource states. State initial/terminal conditions and which decisions can use which information.
+
+Solve an original small case independently through exact enumeration/convex subproblems or another justified method, then compare with a pinned external tool. Check energy/state closure, demand/service, limits, scenario weighting, reserve deliverability and nonanticipativity. Compare a capacity-only, single-period and full chronological answer to expose what each omits.
+
+Investigate a changed event sequence, a common cause or a storage terminal-value assumption. Test a held-out scenario and separate optimizer feasibility from the uncertainty model's adequacy. Explain objective tradeoffs and what practical operator/control capability is assumed to implement the schedule. The final account should make both the mathematics and physical service constraints reconstructible, with clear limits on extending a cost optimum into a claim of long-term adequacy or dynamic security.
+
+**Continue:** [An integrated electrical-power-system investigation](../study/An-integrated-electrical-power-system-investigation.lingua#r_06BN864FF9C0AN3EWZJE78Y6Y3).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_2CYRYB70Q4YNZYTC4GS5K0MJ9B

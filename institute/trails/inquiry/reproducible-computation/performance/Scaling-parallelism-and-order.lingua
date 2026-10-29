@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Understand scaling limits and the consequences of parallel execution (@rc-scaling: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #source "../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS", #reproducible-computation "Memory-storage-and-cost.lingua#r_1MPJ0VZA80BTN6QAFEZFM86T3C") { r_5VWTDE6CWEGWHPNQPKYKAC6PMR
+**Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), multiprocessing/concurrent execution references for the selected implementation; [Numerical arrays and reproducible random streams — NumPy documentation](../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY), parallel random streams, reductions, and thread-safety contracts; [Workflow graphs, environments, and execution — Snakemake documentation](../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS), resources and parallel execution configuration.
+
+Algorithmic work and storage growth matter before adding processors. Compare an implementation's observed scaling with its data operations: sorting, nested comparisons, indexing, streaming, and serialization. A small fast benchmark can hide quadratic growth or a memory requirement that fails at the intended study size. Define the workload family rather than extrapolating from one point.
+
+For a simple fixed-work parallel model with serial fraction s and p processors, ideal speedup is bounded by 1/(s + (1−s)/p), before communication and overhead. Derive this by adding serial time and divided parallel time. It is a conditional model, not a prediction for every distributed workload, and changing the problem size asks a different scaling question.
+
+Parallel execution also affects order and state. Floating-point reductions can group operations differently. Random draws tied to worker scheduling can change the scientific samples. Concurrent output writers can overwrite or mix attempts. Give tasks explicit identities, isolate appropriate state, and define how results are combined. Inspect the selected engine and library's actual guarantees.
+
+**Work:** predict scaling for the larger teaching balance, measure several input sizes, and explain deviations. Compare fixed total work with growing work per worker. In a simulation, rerun with different worker counts while preserving logical-task identities, and compare both individual-task values and the aggregation. Analyze numerical changes separately from timing changes.
+
+Read enough official multiprocessing/concurrency and numerical-library material to explain the implementation used. A deeper parallel-computing trail will supply distributed algorithms and architecture; here the foundation is a defensible execution/reconstruction claim when a project introduces parallel work.
+
+**Continue:** [Characterize the resources needed to reconstruct a result](Memory-storage-and-cost.lingua#r_1MPJ0VZA80BTN6QAFEZFM86T3C).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_5VWTDE6CWEGWHPNQPKYKAC6PMR

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Build a chemical-process measurement from representative material and validated inference (@ic-process-analysis: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9", #industrial-chemistry "../../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ") { r_2YTQZ47RWD0XWVCP9ANFGAYY0W
+**Read:** [Quantitative isotope controls for ammonia claims — Andersen and colleagues](../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST), the complete paper, methods/support, institutional-version distinction and correction; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the whole relevant analytical, isolation and process-quality context; [Common Waste Water and Waste Gas Treatment/Management Systems in the Chemical Sector, BREF CWW](../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9), the complete stream inventory, characterization and monitoring methods.
+
+A process measurement links the material of interest to a sample or signal, preparation, calibration, model and reported quantity. Each connection can change the result. A correct instrumental reading does not establish that the sample represents the intended stream, batch or production interval.
+
+Define identity, speciation, phase and the amount/concentration basis. Quenching, dilution, filtration, extraction, storage and transport can transform reactive or multiphase material. Trace contaminants need suitable blanks, recovery, selectivity, detection capability and independent checks. A numerical non-detection is not proof of absence.
+
+Online measurements add time response, location, fouling and process-condition influences; laboratory methods add sampling and delay. Agreement may be misleading if both share a calibration bias or unrepresentative material. Compare complementary methods and propagate influential uncertainties through the actual production or acceptance decision.
+
+**Work:** reconstruct a complete primary chemical-method study for an actual process quantity. Independently test calibration, blanks/recovery, uncertainty, sample support and changed conditions, including a competing interpretation. Use the full corrected isotope-ammonia case to challenge how product origin and small-signal quantities are established. Report which measurements were performed and which conclusions remain inferred.
+
+**Continue:** [Conformity decisions, guard bands, and the risk being controlled](../../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_2YTQZ47RWD0XWVCP9ANFGAYY0W

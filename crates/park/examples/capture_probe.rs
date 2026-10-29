@@ -2,15 +2,17 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut arguments = std::env::args_os().skip(1);
     let report = arguments.next().ok_or("Provide a report path, or --help")?;
-    if report == "--help" { println!("capture_probe REPORT [--image PATH] [--application APP_ID]: capture an authorized output and optionally require a mapped application"); return Ok(()); }
+    if report == "--help" { println!("capture_probe REPORT [--image PATH] [--application APP_ID] [--minimum-applications COUNT]: capture an authorized output and optionally require mapped applications"); return Ok(()); }
     let mut image = None;
     let mut application = None;
+    let mut minimum_applications = 0;
     while let Some(option) = arguments.next() {
         if option == "--image" { image = Some(arguments.next().ok_or("--image needs a new PPM filename")?); }
         else if option == "--application" { application = Some(arguments.next().ok_or("--application needs an app ID")?.into_string().map_err(|_| "Invalid application ID")?); }
+        else if option == "--minimum-applications" { minimum_applications = arguments.next().ok_or("--minimum-applications needs a count")?.into_string().map_err(|_| "Invalid application count")?.parse::<usize>()?; if minimum_applications > 16 { return Err("Application count exceeds the probe bound".into()); } }
         else { return Err("Unexpected capture argument".into()); }
     }
-    client::run(std::path::Path::new(&report), image.as_deref().map(std::path::Path::new), application.as_deref())?;
+    client::run(std::path::Path::new(&report), image.as_deref().map(std::path::Path::new), application.as_deref(), minimum_applications)?;
     Ok(())
 }
 
@@ -33,11 +35,12 @@ mod client {
     struct State {
         output: Option<wl_output::WlOutput>, shm: Option<wl_shm::WlShm>, factory: Option<Factory>, manager: Option<Manager>,
         size: Option<[u32; 2]>, argb: bool, constraints: bool, ready: bool, normal: bool, time: bool, damage: bool, failure: Option<String>,
+        frame_failure: Option<wayland_client::WEnum<frame::FailureReason>>,
         foreign: Option<list::ExtForeignToplevelListV1>,
         windows: Vec<(handle::ExtForeignToplevelHandleV1, String, String)>,
     }
 
-    pub(super) fn run(report: &Path, image: Option<&Path>, application: Option<&str>) -> io::Result<()> {
+    pub(super) fn run(report: &Path, image: Option<&Path>, application: Option<&str>, minimum_applications: usize) -> io::Result<()> {
         let connection = Connection::connect_to_env().map_err(io::Error::other)?;
         let mut queue = connection.new_event_queue();
         let qh = queue.handle();
@@ -46,6 +49,10 @@ mod client {
         until(&connection, &mut queue, &mut state, |state| state.output.is_some() && state.shm.is_some() && state.factory.is_some() && state.manager.is_some())?;
         if let Some(application) = application {
             until(&connection, &mut queue, &mut state, |state| state.windows.iter().any(|(_, app_id, _)| app_id.to_lowercase().contains(&application.to_lowercase())))?;
+        }
+        if minimum_applications > 0 {
+            until(&connection, &mut queue, &mut state, |state| state.windows.iter().filter(|(_, app_id, _)| !app_id.is_empty())
+                .map(|(_, app_id, _)| app_id).collect::<std::collections::BTreeSet<_>>().len() >= minimum_applications)?;
         }
         let source = state.factory.as_ref().unwrap().create_source(state.output.as_ref().unwrap(), &qh, ());
         let session = state.manager.as_ref().unwrap().create_session(&source, manager::Options::empty(), &qh, ());
@@ -59,10 +66,24 @@ mod client {
         let pool = state.shm.as_ref().unwrap().create_pool(file.as_fd(), length as i32, &qh, ());
         let buffer = pool.create_buffer(0, size[0] as i32, size[1] as i32, size[0] as i32 * 4, wl_shm::Format::Argb8888, &qh, ());
         pool.destroy();
-        let frame = session.create_frame(&qh, ());
-        frame.attach_buffer(&buffer);
-        frame.capture();
-        until(&connection, &mut queue, &mut state, |state| state.ready)?;
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let frame = loop {
+            state.ready = false;
+            state.normal = false;
+            state.time = false;
+            state.damage = false;
+            let frame = session.create_frame(&qh, ());
+            frame.attach_buffer(&buffer);
+            frame.capture();
+            until(&connection, &mut queue, &mut state, |state| state.ready || state.frame_failure.is_some())?;
+            if state.ready { break frame; }
+            frame.destroy();
+            let reason = state.frame_failure.take().ok_or_else(|| io::Error::other("Capture failed without a reason"))?;
+            if reason != wayland_client::WEnum::Value(frame::FailureReason::Stopped) || Instant::now() >= deadline {
+                return Err(io::Error::other(format!("Output capture failed: {reason:?}")));
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        };
         if !state.normal || !state.time || !state.damage { return Err(io::Error::other("Capture completed without its transform, timestamp or initial damage")); }
         file.rewind()?;
         let mut pixels = vec![0; length as usize];
@@ -180,7 +201,7 @@ mod client {
                 frame::Event::PresentationTime { tv_sec_hi, tv_sec_lo, tv_nsec } => state.time = (tv_sec_hi != 0 || tv_sec_lo != 0) && tv_nsec < 1_000_000_000,
                 frame::Event::Damage { x, y, width, height } => state.damage |= state.size.is_some_and(|size| x == 0 && y == 0 && width == size[0] as i32 && height == size[1] as i32),
                 frame::Event::Ready => state.ready = true,
-                frame::Event::Failed { reason } => state.failure = Some(format!("Output capture failed: {reason:?}")),
+                frame::Event::Failed { reason } => state.frame_failure = Some(reason),
                 _ => {}
             }
         }

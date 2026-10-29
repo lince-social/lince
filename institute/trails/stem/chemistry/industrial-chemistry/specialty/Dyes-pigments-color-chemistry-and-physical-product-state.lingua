@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect color-producing chemistry with composition, physical form and application (@ic-dyes-pigments: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #industrial-chemistry "Specialty-inorganic-products-impurities-and-chemical-form.lingua#r_6AAF6TGKJFYW9M4PVZ49M9FDKK") { r_2668NZW8A96QW17CXA02TTSRMB
+**Read:** [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the entire relevant organic dye/pigment and isolation chapters; [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the complete specialty-inorganic pigment treatment; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the full dye/intermediate and formulated-product teaching available.
+
+Dyes and pigments illustrate the link between molecular/electronic structure, physical state and useful optical behavior. A soluble colorant, an insoluble particle, a surface-treated pigment and a formulated dispersion need different production and application evidence. A similar visible color does not establish chemical identity or equivalent service behavior.
+
+Trace synthesis, side products, salts/solvents, isolation, particle formation, washing, drying and formulation. Impurities and physical distributions can alter color strength, dispersion, stability or the response to the application environment. Bulk assay alone may miss a consequential structural or interfacial difference.
+
+Compare actual measurement conditions: substrate, illumination, concentration, dispersion, aging and exposure can matter. Product and residual accounts should retain the fate of colorant, reagents, metals where relevant, water and solvents rather than assuming that a visually clear stream has no consequential constituents.
+
+**Work:** reconstruct a complete public dye or pigment process with its primary structural, analytical and application tests. Independently close material and residual quantities, compare a documented route or finishing change at equal function and explain what observation would distinguish a molecular mechanism from particle, dispersion or measurement effects.
+
+**Continue:** [Follow specialty inorganic products through chemical form, purification and function](Specialty-inorganic-products-impurities-and-chemical-form.lingua#r_6AAF6TGKJFYW9M4PVZ49M9FDKK).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_2668NZW8A96QW17CXA02TTSRMB

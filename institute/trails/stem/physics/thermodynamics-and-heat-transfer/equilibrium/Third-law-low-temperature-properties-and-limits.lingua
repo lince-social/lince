@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Third law, low-temperature properties and limits (@th-third-law: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #thermodynamics-and-heat-transfer "../../../chemistry/general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H") { r_7H842F7EKN9PQHHJBWNNN5PQG9
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), chapter 6 in full; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), microscopic heat capacity and carrier statistics.
+
+Study the precise form of the third-law statement and the conditions under which entropy approaches a limiting value. Distinguish a perfect equilibrium crystal from residual configurational disorder, constrained states and a system that has not equilibrated on the measurement time scale.
+
+Low-temperature heat capacities expose microscopic excitations and cannot generally be extrapolated as constant to zero temperature. Integrating C/T requires appropriate limiting behavior and treatment of transitions. Practical unattainability statements concern processes and resources, not merely replacing T by zero in an algebraic formula.
+
+Read the complete cryogenic/third-law treatment, derive an entropy integral with a physically sensible low-temperature capacity and identify the measurement needed to test it. Refrigeration hardware, cryogenic supply and safe facility operation are deeper engineering subjects connected to this physical foundation.
+
+**Continue:** [Connect chemical potential, activities, and the reaction direction](../../../chemistry/general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7H842F7EKN9PQHHJBWNNN5PQG9

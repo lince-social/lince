@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Use direction and plane indices with an explicit cell and convention (@mp-indices: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Point-symmetry-and-physical-properties.lingua#r_2KSSZ1DBRR07M3YX82HAAAZ1PM") { r_79PJ4B5E4TKFRY5SG9Y45YKTGA
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete Miller-index/direction and cell-geometry material; [Crystallographic teaching pamphlets — IUCr](../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the complete relevant matrix/symmetry pamphlet sections.
+
+Crystallographic direction indices and plane indices describe different geometrical objects. Identify the cell, basis, notation, symmetry-family convention, and orientation before interpreting a label. A direction normal to a plane can have a simple corresponding index relationship in a cubic system that fails in a general nonorthogonal cell.
+
+Miller indices encode plane intercept relationships in the reciprocal description; a zero index represents a parallel direction rather than a zero intercept. Sign and proportionality matter. Distinguish an individual plane orientation from a family of symmetry-equivalent planes and from parallel translated planes.
+
+Hexagonal/trigonal settings can use four-index conventions for particular purposes. Derive the conversion under the actual convention instead of treating an additional index as an independent coordinate. A published drawing and a CIF can use different settings for the same structure.
+
+**Work:** draw several indexed planes and directions in a specified cell, including a zero and a negative index. Calculate a plane normal and angle with the metric rather than guessing from the index triples. Translate one published alternate setting and show that physical geometry is preserved. Identify how an indexing error would affect an interpretation of cleavage, twinning, growth, or diffraction.
+
+Read the full index/geometry sections and work their exercises. Later symmetry, diffraction, and deformation observations will use these same explicit conventions, allowing evidence from a microscope, a structure model, and an analytical pattern to be compared meaningfully.
+
+**Continue:** [Connect point symmetry with shape, structure, and property constraints](Point-symmetry-and-physical-properties.lingua#r_2KSSZ1DBRR07M3YX82HAAAZ1PM).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_79PJ4B5E4TKFRY5SG9Y45YKTGA

@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+MOST User’s Manual, version 1.3.1 (@pe-most: 0, is #reference, #part-of @pe-sources) { r_3BNCVR190YKFZ0YMSWHV1PMJ99
+Ray D. Zimmerman and Carlos E. Murillo-Sánchez. MATPOWER Optimal Scheduling Tool, MOST User's Manual 1.3.1, 12 July 2025. [Complete 119-file-page manual](https://matpower.org/docs/MOST-manual-1.3.1.pdf) · [Versioned manuals](https://matpower.org/doc-original/manuals/).
+
+Read the entire manual, including formulation and examples, for multiperiod economic dispatch, unit commitment, security/contingencies, uncertain demand/renewables, reserves, ramping, storage and deferrable demand. Derive one small problem independently and state what scenario weighting and boundary/terminal conditions mean physically.
+
+Title, date and contents were inspected on 29 October 2026. Software, manual copyright, external case data and optional optimization engines retain separate notices. A deterministic schedule and a stochastic/security-constrained schedule make different claims; neither establishes adequacy or stability without the corresponding model and evidence. Keep inputs, solver tolerances, version and feasibility residuals with the result. No manual, data or executable environment is copied into this repository.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_3BNCVR190YKFZ0YMSWHV1PMJ99

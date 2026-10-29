@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Derive a weak-acid calculation and test its approximation (@gc-weak: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "Buffers-capacity-and-composition.lingua#r_5D2PT65E1JNFFB35PCBXFE0M6X") { r_1X16MN6WMFKKBA6XGFSSHZB8XP
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 14’s weak-acid/base examples and exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the complete advanced weak-acid/base calculation lessons; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), the corresponding systematic-equilibrium examples.
+
+For a simple uncharged monoprotic acid HA at analytical concentration C_T in an ideal aqueous concentration model, write acid balance, charge balance, and the concentration-form acid/water constants. If water contributes negligibly and h = [H⁺] is the dissociated amount concentration, then K_a,c = h²/(C_T−h). The common square-root approximation adds the assumption h ≪ C_T.
+
+For invented C_T = 0.0100 mol L⁻¹ and K_a,c = 1.00×10⁻⁵ mol L⁻¹, the quadratic solution is about 3.1127×10⁻⁴ mol L⁻¹, giving pH about 3.5069 under the ideal reference-concentration convention. The simple square root gives about 3.1623×10⁻⁴ mol L⁻¹. Check the difference against the intended accuracy rather than applying a mnemonic percentage rule without interpretation.
+
+Use the stable form h = 2K_a,c C_T/(K_a,c + √(K_a,c²+4K_a,c C_T)) to avoid subtracting nearly equal terms in the quadratic formula. This numerical improvement does not remove the neglected-water or ideality assumptions. At sufficiently low analytical concentration, include water and solve the complete system.
+
+**Work:** derive both expressions, check mass/charge/equilibrium substitution, and compare with the later full solver. Vary analytical concentration and acid strength to map where each approximation is adequate. Analyze a conjugate-base salt and identify the counterion contribution to charge balance.
+
+Read the whole weak-acid/base calculation sequence, including exact numerical solutions and limiting cases. This exercise connects chemical assumptions, algebra, numerical stability, and reporting precision in one small system that can be checked independently.
+
+**Continue:** [Understand a buffer through equilibrium and finite material amounts](Buffers-capacity-and-composition.lingua#r_5D2PT65E1JNFFB35PCBXFE0M6X).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_1X16MN6WMFKKBA6XGFSSHZB8XP

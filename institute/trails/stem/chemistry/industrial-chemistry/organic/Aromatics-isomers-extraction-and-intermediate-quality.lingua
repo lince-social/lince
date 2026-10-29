@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow aromatic intermediates through formation, separation and isomer-specific use (@ic-aromatics: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6", #industrial-chemistry "Methanol-synthesis-feed-ratio-equilibrium-and-isolation.lingua#r_71944T5PP4PCJE3MV3B1WTYQK5") { r_39NNHK069KX9K754TW77GRD9GJ
+**Read:** [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the whole aromatics chapter and the complete chosen downstream intermediate case; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the full aromatic production and derivative sequence; [Refining of Mineral Oil and Gas, BREF REF](../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6), the entire relevant reforming/fractionation and product-treatment context.
+
+Benzene, toluene and xylene families connect hydrocarbon sources with many industrial intermediates. Their production and recovery can involve several reaction and separation routes. A total aromatic or carbon assay does not determine the individual compounds, isomers or trace constituents needed by the downstream synthesis.
+
+Closely related structures can have different reaction pathways and application requirements. Separation by distillation, extraction, adsorption or another method depends on the actual mixture and physical properties. Isomer distribution and recycle can create substantial circulation and purification work beyond the main formation reaction.
+
+Follow catalyst state, hydrogen/co-product connections, solvent recovery, product storage and residuals. Compare routes on the same delivered aromatic/isomer specification and supporting analytical method. A commercial family name cannot establish equivalence for a sensitive catalyst or polymer intermediate.
+
+**Work:** reconstruct one complete public aromatic-to-intermediate chain, including the actual isomer/product account and isolation. Independently balance carbon/hydrogen and consequential impurity/solvent streams. Compare a justified alternative source or separation route, quantify influential uncertainty and explain what new chemical/phase/analytical evidence would distinguish the alternatives.
+
+**Continue:** [Connect methanol synthesis with mixed-carbon feeds, equilibrium, recycle and product quality](Methanol-synthesis-feed-ratio-equilibrium-and-isolation.lingua#r_71944T5PP4PCJE3MV3B1WTYQK5).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_39NNHK069KX9K754TW77GRD9GJ

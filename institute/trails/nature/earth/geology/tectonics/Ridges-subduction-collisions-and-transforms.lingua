@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Explain boundaries through material, heat, deformation, and geological history (@geo-boundaries: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "Volcanic-systems-products-and-evidence.lingua#r_4PFCEXS09TEDAV09B9YMYG8YV4") { r_2GMMJETT0Y2X66FEN58NVQVD2P
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), the whole boundary/evolution sections in chapter 10, linked with chapters 3–4 and 7; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), orogenesis and tectonic history; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), complete relevant tectonic lectures.
+
+Compare divergent, convergent, and transform settings by their relative motions and physical processes. At a ridge, extension, melting, cooling, hydrothermal circulation, and new lithosphere connect different evidence. At a subduction zone, the descending slab, overriding plate, fluids, melting, seismicity, and deformation require a geometry and history rather than a single boundary symbol.
+
+Continental collision can thicken and deform crust through several processes; subsequent extension or erosion can expose an earlier deep record. A transform accommodates relative sliding, but bends, steps, and broader boundary zones may add local compression or extension. Real regions often preserve changes between settings.
+
+Use field relationships, structures, ages, metamorphic conditions, sedimentary histories, and geophysical evidence together. A volcanic composition or a fold alone is not a unique tectonic diagnosis. Distinguish the observed association from the proposed process and test alternatives against the regional history.
+
+**Work:** compare a ridge, subduction/collision system, and transform using complete textbook/course treatments. Draw material and heat pathways and explain what evidence constrains each. For one ancient region, propose two settings compatible with part of the evidence and identify a discriminating observation or age relationship.
+
+Return to rock formation and time when a reconstruction depends on them. The infrastructure connection comes later through geological processes concentrating materials and shaping ground/water conditions, rather than treating every tectonic description as an immediately usable resource prediction.
+
+**Continue:** [Connect volcanic products with magma, transport, eruption, and later change](Volcanic-systems-products-and-evidence.lingua#r_4PFCEXS09TEDAV09B9YMYG8YV4).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_2GMMJETT0Y2X66FEN58NVQVD2P

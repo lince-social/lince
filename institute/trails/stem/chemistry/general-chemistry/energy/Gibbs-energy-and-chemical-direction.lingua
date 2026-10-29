@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Relate chemical direction to Gibbs energy under stated constraints (@gc-gibbs: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/equilibrium/Thermodynamic-potentials-natural-variables-and-constraints.lingua#r_6V58CVPWD0BEY8MEKZQCVK1RHM") { r_2YN613CG9VVK1CXP2XFHZMF9Z6
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 16 in full with exercises; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), Unit III’s thermodynamics lectures and problems; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), Gibbs energy and equilibrium completely.
+
+For appropriate constant-temperature, constant-pressure conditions, Gibbs energy G = H−TS provides a criterion for allowed change and equilibrium when the other work/exchange conditions are specified. Derive the criterion from the total entropy account rather than treating ΔG as an unexplained sign rule. Different constraints can call for a different potential.
+
+Distinguish a finite Gibbs-energy change, a reaction Gibbs energy per extent at a given composition, and a standard reaction quantity. Δ_rG° concerns specified standard states; the actual mixture generally needs composition information. A favorable thermodynamic direction also does not establish a fast rate or a usable pathway.
+
+For an identified reaction at equilibrium, Δ_rG° = −RT ln K under compatible dimensionless activity conventions. For the hypothetical K = 4 example at 298.15 K, this gives about −3.437 kJ mol⁻¹ of reaction extent. A small-looking standard energy can correspond to a substantial equilibrium ratio; the actual driving force changes as composition changes.
+
+**Work:** derive the K relation from the chemical-potential treatment developed next, and check the numerical example independently. Compare reactions with favorable enthalpy but different entropy contributions over a stated temperature range. Analyze a thermodynamically favorable but kinetically persistent state without changing the meaning of equilibrium.
+
+Read the full chapter and MIT thermodynamics unit, solving the problems before looking at solutions. A later physical-chemistry trail will deepen potentials, statistical foundations, and nonideal systems; general chemistry should already support a coherent argument about what a calculated sign does and does not predict.
+
+**Continue:** [Connect chemical potential, activities, and the reaction direction](Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in thermodynamics and heat transfer:** [Thermodynamic potentials, natural variables and constraints](../../../physics/thermodynamics-and-heat-transfer/equilibrium/Thermodynamic-potentials-natural-variables-and-constraints.lingua#r_6V58CVPWD0BEY8MEKZQCVK1RHM).
+} r_2YN613CG9VVK1CXP2XFHZMF9Z6

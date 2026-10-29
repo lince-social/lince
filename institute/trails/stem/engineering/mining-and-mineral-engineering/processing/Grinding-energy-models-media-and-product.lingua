@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Relate grinding energy and circuit performance to material and measured product (@mine-grinding: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD", #mining-and-mineral-engineering "Screening-classification-and-partition-curves.lingua#r_2G0WQE2KY3QB2AXNKJ2YWZC107") { r_5AYC92J7CG5938NXTGH8Z2HAHC
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete grinding, energy, and circuit treatment; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the full grinding/work-index and size-analysis methods used; [Introduction to Mineral Processing — Arun Kumar Majumder, NPTEL](../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD), the complete grinding/comminution sequence.
+
+Grinding couples breakage, transport, media/liners, slurry state, residence behavior, classification, and recirculation. Feed mineralogy/texture, size, hardness, abrasivity, moisture, and surface changes affect energy, wear, product, and downstream separation.
+
+Empirical energy-size relations have their own units, size definitions, indices, tests, corrections, and domains. For the conventional Bond form W = 10W_i(1/√P₈₀−1/√F₈₀), the common formulation uses W/W_i in kWh t⁻¹ and sizes in micrometres. Invented W_i = 10, F₈₀ = 1,000 μm, and P₈₀ = 100 μm give about 6.838 kWh t⁻¹ under that form, not a complete mill-power prediction.
+
+Installed/gross power, net grinding work, classification load, throughput, size distribution, liberation, and accepted product can vary differently. A single percentile cannot represent every consequential fine or coarse population. Tests need representative material and observed circuit conditions.
+
+**Work:** derive/check the teaching value and reconstruct a complete laboratory/circuit case, preserving index method, feed, units, scale-up, and uncertainty. Compare a changed material or classifier assumption and explain the effect on energy and mineral exposure. Identify an independent observation beyond fitting one product percentile.
+
+Read full grinding, energy-test, and circuit chapters/labs before scale-up. Later mineral processing and machinery research can deepen each mechanism through the same measured population and duty account.
+
+**Continue:** [Interpret size separation through partition behavior and material balances](Screening-classification-and-partition-curves.lingua#r_2G0WQE2KY3QB2AXNKJ2YWZC107).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_5AYC92J7CG5938NXTGH8Z2HAHC

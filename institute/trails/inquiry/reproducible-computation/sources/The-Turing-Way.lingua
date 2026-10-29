@@ -1,0 +1,11 @@
+Import "../Reproducible-computation.lingua"
+
+The Turing Way — reproducible research, collaboration, and preservation (@rc-turing: 0, is #book, #part-of @rc-sources) { r_5K6W3KETGFH4N3SDYCB5V0Q3MZ
+The Turing Way Community. The Turing Way, Guide for Reproducible Research and connected guides. [Official book](https://book.the-turing-way.org/reproducible-research/overview/).
+
+Read the Guide for Reproducible Research completely in successive sections: definitions, open research, version control, licensing, data management, environments, documentation, quality, testing, review, reusable code, continuous integration, Make, and research compendia. Use the project-design, collaboration, communication, and ethical-research chapters where the later project needs them. Retain the consulted chapter titles and version/date.
+
+This is an openly published community book whose specific chapter and component notices should be preserved when reusing material. The trail uses particular reading assignments and original connecting explanations; it does not ingest or mirror the community collection. Official guide structure and availability checked on 29 October 2026. Some migrated links redirect to the current book domain; use the resolved chapter location for precise citations.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_5K6W3KETGFH4N3SDYCB5V0Q3MZ

@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Resolution, rounding, thresholds, and when repetition helps (@met-resolution: 0, is #chapter, #part-of @metrology, #source "../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1", #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #metrology "Drift-hysteresis-and-loading.lingua#r_2R85N10DD9HD65VBW8KQ6X9TDA") { r_1XRZT4EC7VWK34F5JXD8MXRQF2
+**Read:** [A Beginner’s Guide to Uncertainty of Measurement — Bell](../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1), resolution and uncertainty examples; [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the Type B and reporting treatment; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), the model-form and numerical-accuracy discussion.
+
+A digital indication partitions a continuous or otherwise finer-valued signal into reported values. If rounding to a step d leaves an unknown error plausibly uniform over −d/2 to +d/2, the associated standard uncertainty is d/√12. This follows from the variance of the assumed rectangular distribution. It is not the meaning of resolution in every measurement system.
+
+When repeated indications remain the same, dividing d/√12 by √n is generally unsupported unless the model justifies independent quantization errors. Common rounding, fixed offset, deadband, or a static input can preserve a contribution across all repetitions. Noise or deliberate variation can sometimes expose sub-step information, but the acquisition and estimation model must describe how.
+
+Analogue interpolation, threshold detection, instrument digit count, data-file rounding, and final report rounding can introduce different effects. Include a contribution once under a justified model. Do not add a specification’s already combined digit term and an identical separately modelled effect without checking for double counting.
+
+**Work:** take a hypothetical indication step of 0.1 mm. Under the uniform rounding model its standard uncertainty is about 0.0289 mm. Compare one rounded reading, ten identical rounded readings, and ten readings generated from independent known analogue variation. Explain which uncertainty terms are reduced by averaging in each case.
+
+Create a calculation with a value near a decision threshold and compare premature rounding with reporting after the decision calculation. State which precision is retained and why. A reported interval or probability should come from the physical and statistical model, not from how many digits the user interface happens to display.
+
+**Continue:** [Drift, hysteresis, loading, and a changing calibration relation](Drift-hysteresis-and-loading.lingua#r_2R85N10DD9HD65VBW8KQ6X9TDA).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_1XRZT4EC7VWK34F5JXD8MXRQF2

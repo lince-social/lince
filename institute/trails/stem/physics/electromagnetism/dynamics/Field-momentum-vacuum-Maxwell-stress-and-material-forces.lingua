@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Field momentum, vacuum stress and material forces (@em-stress: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Scalar-vector-potentials-and-gauge-choice.lingua#r_0BW4D2YAXHAFYBP2ZPVZZ9XEBX") { r_0JWB2N6JEY5498VNAM64CBHB6N
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), momentum and stress tensor; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), electromagnetic momentum and force.
+
+In vacuum, momentum density is g = ε₀ E×B, and the Maxwell stress has components ε₀(E_iE_j−δ_ijE²/2) + (B_iB_j−δ_ijB²/2)/μ₀. Integrating stress over a closed surface and subtracting the rate of enclosed field momentum gives the force on the enclosed matter. Fix outward normals and distinguish stress from an oppositely signed momentum-flux convention.
+
+Recover electrostatic plate pressure and radiation pressure on an absorbing or reflecting target. For a normally incident plane wave of intensity I in vacuum, ideal absorption gives pressure I/c, ideal specular reflection 2I/c. Include outgoing directions and field momentum when the geometry is oblique or transient.
+
+Inside matter, electromagnetic/material momentum partition requires a specified model of the complete system. Do not present one vacuum expression or one Abraham/Minkowski label as a universal measurable field momentum in every dielectric. Use a vacuum surface surrounding the object where possible, account for mechanical supports and material energy, and compare the predicted total force with an operational measurement. The advanced force study investigates the distinction in detail.
+
+**Continue:** [Scalar/vector potentials and gauge choice](Scalar-vector-potentials-and-gauge-choice.lingua#r_0BW4D2YAXHAFYBP2ZPVZZ9XEBX).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_0JWB2N6JEY5498VNAM64CBHB6N

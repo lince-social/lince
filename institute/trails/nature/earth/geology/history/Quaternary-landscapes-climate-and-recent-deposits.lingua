@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Interpret recent geological history through multiple dated records (@geo-quaternary: 0, is #chapter, #part-of @geology, #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #source "../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N", #geology "Brazil-Rio-Grande-do-Sul-and-regional-synthesis.lingua#r_7ET2YMFD4GHD3RY95ZZRQ55DYX") { r_6V6VJ3GRBA5BXVXXS38FM8QEQ6
+**Read:** [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete Quaternary/recent-history treatment; [Introduction to Geochronology — Pieter Vermeesch](../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the full radiocarbon, cosmogenic, and relevant uncertainty sections; [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N), the recent coastal/landscape history used in the regional study.
+
+Quaternary history joins climate variability, ice, sea level, rivers, coasts, soils, organisms, and recent deformation. Young deposits can be spatially complex, thin, disturbed, or poorly preserved, yet govern much of the ground and water encountered by infrastructure.
+
+Choose dating methods for the material and event: radiocarbon, luminescence, exposure, tephra correlation, stratigraphic ordering, and other approaches constrain different processes. An uncalibrated radiocarbon result, a calibrated calendar interval, and a modelled depositional age need distinct labels. Record calibration curve/version and reservoir or contamination assumptions where applicable.
+
+Several ages sharing a calibration, decay constant, reference, or model may have correlated uncertainty. Reworking can make a grain or fossil older than deposition; later disturbance can introduce younger material. An age-depth curve depends on assumptions about accumulation, mixing, erosion, and gaps.
+
+**Work:** reconstruct a dated landscape sequence using at least two complementary methods or records. Draw the event ordering and explain each numerical constraint. Compare an alternative allowing a gap or reworking, stating which observation would discriminate it. Relate the resulting history to likely material heterogeneity without treating the reconstruction as a completed site investigation.
+
+Read the complete recent-history sections, not only a dating table. This links the earlier geomorphology, sedimentology, time, and uncertainty work with modern ground conditions, while more advanced dating and paleoclimate methods remain available for independent research.
+
+**Continue:** [Build a regional geological synthesis from maps, materials, and history](Brazil-Rio-Grande-do-Sul-and-regional-synthesis.lingua#r_7ET2YMFD4GHD3RY95ZZRQ55DYX).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_6V6VJ3GRBA5BXVXXS38FM8QEQ6

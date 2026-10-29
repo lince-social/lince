@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Connect an electrochemical cell with a balanced reaction and energy account (@gc-cells: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A") { r_71ACM8HAWDABKYZHW6E653JQJX
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 17 in full; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), All about electrochemistry completely; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), Unit IV’s redox and cell material; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), electrochemical quantities and conventions.
+
+An electrochemical cell couples reaction changes with charge transfer through an external path under specified conditions. Identify the electrodes, electrolyte, phases, half-reaction conventions, reaction extent, and electron amount. Oxidation occurs at the anode and reduction at the cathode; electrode sign also depends on whether the cell is operated galvanically or electrolytically.
+
+Tabulated standard electrode potentials use a reference and reduction convention. Combine them with a consistent balanced reaction, reversing the reaction account where necessary. Potential is an intensive quantity and is not multiplied by a stoichiometric factor as an energy would be. For electron-number coefficient z, the reversible reaction relation is Δ_rG = −zFE for the appropriately defined cell conditions.
+
+Separate equilibrium/reversible cell potential from an operating terminal voltage with current, resistance, polarization, concentration gradients, and junction effects. A standard potential alone cannot predict the rate, power, stability, or actual performance of a device. Preserve the exact reference states and chemical species before comparing values.
+
+**Work:** build complete reaction and energy accounts for textbook cell examples, checking charge and element balances. Explain reference-electrode dependence and why an individual half-cell value is not an independently measurable absolute electrical potential. Calculate the electron amount associated with a stated reaction extent.
+
+Read the complete electrochemistry chapter and Chem1 unit, then the MIT redox/cell lectures. The later Nernst, electrolysis, and corrosion Records reuse this foundation, while batteries, power systems, and industrial electrochemistry will deepen their unique materials and operation.
+
+**Continue:** [Use the Nernst relation with the actual reaction quotient](Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_71ACM8HAWDABKYZHW6E653JQJX

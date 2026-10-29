@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Transmission lines, distributed parameters and loss (@pe-line-model: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #source "../../../physics/electromagnetism/sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #electrical-power-engineering "../apparatus/Thermal-dielectric-short-circuit-and-continuity-ratings.lingua#r_49KSGDVVC0CVT7PFP254KC0YYZ") { r_5JFKCZDVB9ZBK40HHJGZQH4A1X
+**Read:** [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete transmission/component development; [Electromagnetics Volume 1 — Steven W. Ellingson](../../../physics/electromagnetism/sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), the complete transmission-line chapter; [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete branch model and its approximations.
+
+Derive per-length series R/L and shunt G/C from a stated geometry, conductor/material state and frequency range. A short-line, nominal-π and full distributed representation make different approximation choices. For a long line, derive terminal relations and compare magnitude/phase errors against the reduced model for the requested operating condition.
+
+Work both loaded and lightly loaded cases. Shunt charging can make receiving voltage exceed sending voltage without producing net energy; source reactive exchange and distributed fields must be accounted for. Conductor loss, reactive flow, thermal constraints and voltage limits are different quantities. Model earth return, mutual coupling and transposition when they influence the observable.
+
+Connect the shared electromagnetic line/wave account to the steady power-frequency model and later travelling transients. A parameter set fitted at the fundamental need not reproduce a fast switching front. State where a lumped network is adequate and which time/frequency/spatial features require a distributed model. Compare independently calculated terminal power, stored-field behavior and losses before treating a line model as a credible interface between regions.
+
+**Continue:** [Thermal, dielectric, short-circuit and continuity ratings](../apparatus/Thermal-dielectric-short-circuit-and-continuity-ratings.lingua#r_49KSGDVVC0CVT7PFP254KC0YYZ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5JFKCZDVB9ZBK40HHJGZQH4A1X

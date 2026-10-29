@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Set up a petrographic microscope and explain the observation chain (@mp-microscope: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E", #source "../sources/Virtual-Petrography-Toronto.lingua#r_4ZA3K3DY6FMKNN06EFJ8X8SARS", #mineralogy-and-petrology "Polarization-refraction-and-the-optical-indicatrix.lingua#r_56E0Q648CAJ85CMJN64KK39KBM") { r_5SB8Z0J3715X5FB9RSG4CA2VK8
+**Read:** [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full microscope adjustment, imaging, and measurement sections; [Optical Mineralogy — Brock University course and laboratory material](../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E), the complete microscope introduction and Lab 1; [Virtual Petrography — Daxberger and Kennedy, University of Toronto Scarborough](../sources/Virtual-Petrography-Toronto.lingua#r_4ZA3K3DY6FMKNN06EFJ8X8SARS), selected identified sample views with their credits.
+
+A petrographic microscope combines illumination, polarizers, optics, stage/orientation, objectives, apertures, and observation or recording. Learn what each adjustment changes before using the instrument to name a mineral. Plane-polarized, crossed-polarized, orthoscopic, and conoscopic observations answer different questions.
+
+Centering, focus, illumination/aperture adjustment, scale calibration, and stage rotation affect what can be measured or compared. A digital camera's exposure, white balance, processing, and display can alter apparent colors and contrast. Preserve the observation mode and conditions when recording a feature.
+
+A virtual thin section is useful for recognition, rotation relationships, and texture, while real instrument competence also includes setup, focusing, locating suitable grains, measuring, and recognizing limitations. The Toronto resource provides identified sample views with CC BY credits; its images do not certify that a reader has performed an instrument procedure.
+
+**Work:** complete the microscope-setup sections and introductory lab under suitable guidance. Explain the light/measurement path, calibrate a length scale, record the effect of a deliberate adjustment, and produce comparable plane/crossed observations of the same region. Use selected virtual samples as an additional interpretive exercise with their identities preserved.
+
+Read the entire practical guide progressively and the full microscope/light lectures. Later observations should be reproducible descriptions, not colors or screenshots detached from the settings and geometry that produced them.
+
+**Continue:** [Explain mineral optics through polarization and directional optical response](Polarization-refraction-and-the-optical-indicatrix.lingua#r_56E0Q648CAJ85CMJN64KK39KBM).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_5SB8Z0J3715X5FB9RSG4CA2VK8

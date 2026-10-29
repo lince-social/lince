@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Connect issue order with release, expiry and actual chemical state (@cs-expiry: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D", #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10", #chemical-supply-systems "../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8") { r_51EG5VC98CFTY7FR8ZBTR113N8
+**Read:** [Good storage and distribution practices for medical products — WHO](../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D), complete stock-rotation, storage-condition and returned/nonconforming discussions; [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), complete inventory-system and time-dependent control material; [Warehouse & Distribution Science — Bartholdi and Hackman](../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10), the complete operations and inventory information account.
+
+First-in-first-out follows arrival order; first-expiry-first-out follows the next relevant validity boundary. They agree only under particular histories. A later-arriving material can have an earlier expiry, and a present lot may still be quarantined. Define the status and date conventions before evaluating a policy.
+
+Use an explicit rule that a lot with expiry day e is unavailable for an issue at the beginning of day e. Decide when scheduled release occurs, when demand is served and when expiry is recognised. These are model conventions; actual chemical validity follows the qualified material/state history. A date in a database cannot establish that the storage envelope was maintained.
+
+Draw two lots across four daily periods. Compare issuing by receipt order, expiry order and an inappropriate “largest lot first” rule. Close physical quantity, fulfilled/unfulfilled demand, expired material and remaining quarantined stock. Identify when allocation restrictions, product differences or time-dependent use make a simple greedy policy insufficient. The original exact example isolates one identical-item problem so its mathematical claim can be checked independently; advanced studies add observed chemical quality and real receiving/replenishment constraints.
+
+**Continue:** [Build a numerical validation argument across several kinds of evidence](../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_51EG5VC98CFTY7FR8ZBTR113N8

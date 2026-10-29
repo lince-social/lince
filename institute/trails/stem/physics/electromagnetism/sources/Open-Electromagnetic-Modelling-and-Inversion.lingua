@@ -1,0 +1,11 @@
+Import "../Electromagnetism.lingua"
+
+3D electromagnetic modelling and inversion — Oldenburg and colleagues (@em-inversion-paper: 0, is #reference, #part-of @em-sources) { r_5N6Z2MJVEW5GP1XW9J28J1AM69
+Douglas W. Oldenburg, Lindsey J. Heagy, Seogi Kang and Rowan Cockett. 3D electromagnetic modelling and inversion: A case for open-source. [Author preprint, arXiv:1902.08245v1, 21 February 2019](https://arxiv.org/abs/1902.08245v1) · [Full preprint](https://arxiv.org/pdf/1902.08245). Journal version: Exploration Geophysics 51(1), 25–37, 2020; DOI 10.1080/08123985.2019.1580118.
+
+Read the complete paper and reconstruct one of its airborne/ground electromagnetic modelling or joint-inversion cases with the linked notebooks and the actual software version. Examine experiment geometry, model assumptions, regularization, identifiability and alternative explanations.
+
+The primary preprint record, authors, version, journal citation and linked reproducibility materials were checked on 29 October 2026. A repository link is not proof that an old environment still runs. Software, preprint, journal version and data have distinct notices. No solver, notebooks, earth data or article is copied here.
+
+**Return:** [Electromagnetic sources — complete books, courses, methods and research](../Sources.lingua#r_6XW0N80NM6WSDWED10N8N7WX3P).
+} r_5N6Z2MJVEW5GP1XW9J28J1AM69

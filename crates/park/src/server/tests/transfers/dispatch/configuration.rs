@@ -102,10 +102,10 @@ pub(super) fn application_input(fixture: &mut Fixture, id: SurfaceId, window: &C
         let ready = fixture.client.key_recipients.len() >= keys + 2 && fixture.client.button_recipients.len() >= buttons + 2;
         if !ready && !traced && started.elapsed() > Duration::from_secs(5) {
             traced = true;
-            eprintln!("Application setup input: keys={:?}, buttons={:?}, keyboard={:?}, pending_focus={:?}, pending_output={:?}, layer_focus={:?}, held_buttons={:?}, grabbed={}, server_grabbed={}",
+            eprintln!("Application setup input: keys={:?}, buttons={:?}, keyboard={:?}, pending_focus={:?}, pending_output={:?}, layer_focus={:?}, held_buttons={:?}, grabbed={}",
                 fixture.client.key_recipients.get(keys..), fixture.client.button_recipients.get(buttons..), fixture.client.keyboard_focus,
                 fixture.desktop.pending_focus, fixture.desktop.pending_output, fixture.desktop.layer_focus, fixture.desktop.buttons,
-                fixture.desktop.grabbed.is_some(), fixture.desktop.server.pointer_grabbed());
+                fixture.desktop.grabbed.is_some());
         }
         ready
     });

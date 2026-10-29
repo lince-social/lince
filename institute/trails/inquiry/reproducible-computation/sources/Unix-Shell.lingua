@@ -1,0 +1,11 @@
+Import "../Reproducible-computation.lingua"
+
+The Unix Shell — Software Carpentry (@rc-shell: 0, is #book, #part-of @rc-sources) { r_5YJ6K2A69H1D45AADES3QR94AX
+Software Carpentry and The Carpentries contributors. The Unix Shell. [Official lesson, setup, and complete episodes](https://swcarpentry.github.io/shell-novice/).
+
+Complete the whole lesson and exercises: introduction, navigating and working with files/directories, pipes and filters, loops, scripts, and finding things. Use the lesson’s authorized practice material in a personal working directory if desired; it is not bundled here. This is a practical first command-line course, not an assumption that a reader already knows terminal conventions.
+
+Keep the lesson’s attribution and current content/code licensing notices. The lesson is openly published and maintained; record the consulted date or source revision for a particular exercise. Setup, episode identities, and access checked on 29 October 2026. The later research-software book provides a sustained second treatment using actual analysis work.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_5YJ6K2A69H1D45AADES3QR94AX

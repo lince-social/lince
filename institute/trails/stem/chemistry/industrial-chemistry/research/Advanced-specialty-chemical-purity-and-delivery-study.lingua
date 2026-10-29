@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Defend a specialty or electronic chemical through complete purity and interface evidence (@ic-specialty-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_40BSZKK47YDGFBTB45F9V9GKCD
+**Read:** [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the whole relevant specialty-product, purification and quality chapters; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the complete applicable isolation and high-purity process methods; [Quantitative isotope controls for ammonia claims — Andersen and colleagues](../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST), the full paper, methods/support, version distinction and correction; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the whole relevant silicon/electronic-material process examples if chosen.
+
+Choose a specialty chemical with an actual useful specification and reconstruct its full public source-to-point-of-use account. Read complete relevant technical chapters and primary synthesis, purification, analytical, phase and application methods. Preserve material identity, chemical form, contact/packaging and time history.
+
+Independently close target, recovery and consequential impurity inventories. Reproduce a significant purification or measurement result using another method or physically justified bound. Distinguish non-detection, a reported limit and a supported concentration; test representativeness and the effect of contamination introduced after purification.
+
+Compare a documented route or delivery change at the same downstream requirement. Explain what actual process observation establishes suitability rather than relying only on a supplier purity label. Include utility, equipment/material, maintenance and remaining residual consequences across the full boundary.
+
+**Work:** produce a complete technical/scholarly study with primary methods, bibliography, derivations, original calculations, uncertainty, alternatives and independent challenge. Identify the strongest unresolved mechanism or measurement question and propose the observation capable of deciding it. Report which actual preparation, instrument, delivery or fabrication achievements are demonstrated and which remain interpretive/model claims.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_40BSZKK47YDGFBTB45F9V9GKCD

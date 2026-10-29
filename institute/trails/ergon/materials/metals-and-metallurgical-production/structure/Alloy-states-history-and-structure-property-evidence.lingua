@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Describe an alloy state through phases, defects, spatial structure, and processing history (@metal-metallurgical-states: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #metals-and-metallurgical-production "Dislocations-slip-twinning-and-crystal-response.lingua#r_20235H2JPMBC98V0BGH00ZTMHM") { r_6DWZGNBM98KP22AK1XC1H55Q7C
+**Read:** [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the complete transformation and worked-example progression; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the full year-2/year-3 metals/alloys notes and question sheets; [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), the complete structure/mechanism and property-model framework.
+
+Return from the metal-family cases to their common structure/property problem. Composition and temperature alone do not describe every manufactured state. Solidification, diffusion, transformation, deformation, recovery, joining, and service can leave different phase populations, grain/defect structures, segregation, texture, stresses, and surfaces.
+
+Use an explicit hierarchy of evidence: processing observations and histories; bulk and local composition; phase/crystal measurements; spatial structures; property tests under defined conditions. Explain which scale each measurement samples and how a proposed mechanism connects them. A good empirical correlation may be useful while remaining incomplete as a causal model.
+
+Compare the same alloy in different states and different alloys fulfilling a common function. Yield strength, toughness, fatigue, creep, conductivity, corrosion, manufacturability, and stability can compete. A design decision needs the actual environment, geometry, time, loading, and inspection/maintenance context.
+
+**Work:** reconstruct three well-documented states of one alloy with their complete primary methods, histories, structural observations, and property evidence. Develop and challenge a mechanistic account of their differences. Identify one missing observation that could reverse the interpretation. Use the following defect, strengthening, transformation, and processing studies to refine the account quantitatively, preserving evidence that does not fit the preferred explanation.
+
+**Continue:** [Connect crystal deformation mechanisms with measured material response](Dislocations-slip-twinning-and-crystal-response.lingua#r_20235H2JPMBC98V0BGH00ZTMHM).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_6DWZGNBM98KP22AK1XC1H55Q7C

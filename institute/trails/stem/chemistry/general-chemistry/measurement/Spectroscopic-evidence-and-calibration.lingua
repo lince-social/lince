@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Use a spectrum as chemical evidence with an observation model (@gc-spectra: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #source "../../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #general-chemistry "Separations-and-distribution.lingua#r_7AKDFABRZJJ53MR6EQQZ8GAW2G") { r_5KF8FB97G6AMW8SNB4Y21E2ZHZ
+**Read:** [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 10 in full; [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP), guide and the chosen spectral/property record with conditions; [The Fitness for Purpose of Analytical Methods — Eurachem](../../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), validation and selectivity guidance relevant to the example.
+
+A spectrum relates a measured response to a variable such as wavelength, frequency, energy, or mass-to-charge ratio under a specified method. Signal processing, calibration, instrument response, specimen preparation, and chemical environment help determine what the observation means. A familiar peak is evidence to evaluate alongside alternatives and other measurements.
+
+In a simple absorbance model A = −log₁₀(I/I₀) = εℓc, specify reference intensity, path length, concentration units, coefficient, wavelength, and validity range. Stray light, scattering, chemical equilibria, matrix effects, and instrumental nonlinearity can invalidate a naive linear interpretation. A calibration fit is useful only for its scope.
+
+Structural identification and quantitative assay ask different questions. A matching reference spectrum may support an identity while leaving mixture composition uncertain; an elemental signal may not distinguish oxidation state or molecular structure. Read the evaluated source's conditions and original references rather than assigning certainty from one visual resemblance.
+
+**Work:** reconstruct a complete textbook calibration example with blanks, independent checks, residuals, and a defined concentration result. Compare an unknown/reference interpretation and state which alternatives remain. Use a small authorized NIST reference consultation for conditions and source criticism without downloading a spectral collection into the repository.
+
+Read Harvey's entire spectroscopic chapter and connect the quantum/bonding foundations with the actual measurement chain. The specialized analytical and spectroscopic trails will deepen their methods; the shared chemical-measurement Record provides uncertainty, selectivity, recovery, and sampling questions already needed here.
+
+**Continue:** [Account for what a separation distributes, removes, and leaves behind](Separations-and-distribution.lingua#r_7AKDFABRZJJ53MR6EQQZ8GAW2G).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_5KF8FB97G6AMW8SNB4Y21E2ZHZ

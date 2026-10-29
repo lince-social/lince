@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Control loops, bandwidth, delay, saturation and robustness (@pe-feedback-control: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #electrical-power-engineering "../conversion/Drives-torque-speed-control-and-load-service.lingua#r_668AGMR7EG7TY2818PDFR2E0PN") { r_0Q868KQNPXRCK6JT71Q9HRY0BX
+**Read:** [Feedback Systems — Åström and Murray](../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833), complete applicable modelling, stability and robustness chapters; [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), whole converter-control sequence.
+
+Define the controlled observable, actuator, measurement chain, disturbance and plant before drawing a feedback loop. Derive its local input/output or state-space model and identify uncertainties. A gain chosen for one ideal circuit can fail when source impedance, delays, sensors, saturation or a filter resonance are included.
+
+Work a regulator design from the full [Feedback Systems — Åström and Murray](../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833) and [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526) development. Compare stability, bandwidth, sensitivity, disturbance rejection, noise and actuator effort. Include anti-windup/limits and the actual digital update where relevant. A large loop gain is not universally beneficial, and a comfortable isolated-loop margin does not prove stability after connecting another controlled source.
+
+Compare an analytical limiting case, independent numerical model and suitable experimental or complete published evidence. Test a changed parameter, delay and operating point that were not used to tune the design. Report what a small-signal result establishes and which large-signal transitions remain untested. The later excitation, governor, inverter and interacting-control Records apply these generic concepts to distinct physical plants without making each controller a different learning abstraction.
+
+**Continue:** [Drives, torque/speed control and load service](../conversion/Drives-torque-speed-control-and-load-service.lingua#r_668AGMR7EG7TY2818PDFR2E0PN).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_0Q868KQNPXRCK6JT71Q9HRY0BX

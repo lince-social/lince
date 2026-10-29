@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Begin with a question and specify the measurand (@met-measurand: 0, is #chapter, #part-of @metrology, #source "../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1", #source "../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #metrology "Principle-procedure-result.lingua#r_2PT30AZGBV9V63Z3T0G7W8FSP6") { r_7ZNCJFEGXNJSGJJJKGYH6MGFE6
+**Read:** [A Beginner’s Guide to Uncertainty of Measurement — Bell](../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1), the whole guide on a first pass; [International vocabulary of metrology — JCGM and Inmetro](../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH), chapter 2 and the measurand definition; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 5–6.
+
+Measurement begins with a question precise enough for another person to investigate. “The diameter of this part” may mean a local two-point distance, the diameter of an associated fitted cylinder, a maximum envelope, or a value at a reference temperature. “Copper concentration” needs a defined material, component, sampling target, chemical form where relevant, and mass or volume basis. Different definitions can produce different legitimate results.
+
+The measurand is the quantity intended to be measured. Distinguish the object, its property, the conditions used to define that property, and the procedure used to estimate its value. A procedure-defined quantity can be useful, but changing the procedure may change what is being reported. A nominal design value and a numerical observation do not define one another.
+
+Start a measurement description with purpose, object or population, quantity, reference conditions, intended range, and the decision or comparison it should support. Then ask which omissions could matter at the required uncertainty. It is unnecessary to specify every microscopic feature for an ordinary measurement, but claiming a smaller uncertainty can make previously negligible ambiguities significant.
+
+**Work:** write three descriptions of a container’s capacity: geometric internal volume at a stated temperature, volume delivered by a specified draining procedure, and usable volume below a marked fill level. Explain why the same container need not give identical numbers. Repeat for a powder shipment’s moisture and a component’s thickness. Label the exercise values as hypothetical if no measurements exist.
+
+**Deepen:** propose an operational definition and an alternative realization for one quantity. Identify what evidence would show they measure sufficiently comparable properties for the intended purpose. Preserve a question about the definition as a substantive scientific issue rather than concealing it in an uncertainty number.
+
+**Continue:** [Principle, method, procedure, indication, and result](Principle-procedure-result.lingua#r_2PT30AZGBV9V63Z3T0G7W8FSP6).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_7ZNCJFEGXNJSGJJJKGYH6MGFE6

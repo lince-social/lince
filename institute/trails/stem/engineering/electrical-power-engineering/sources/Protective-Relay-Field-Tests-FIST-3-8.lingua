@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Protective relay operation, maintenance and tests — FIST 3-8 (@pe-fist-relays: 0, is #reference, #part-of @pe-sources) { r_5MSER4KEH301A73PTXK505CCSD
+U.S. Bureau of Reclamation. FIST 3-8, protective relay operation, maintenance and field-test procedures, September 2021 catalogue issue. [Official catalogue](https://www.usbr.gov/power/data/fist_pub.html) · [Complete linked manual](https://www.usbr.gov/power/data/fist/FIST_3-8_%289-2021%29.pdf).
+
+Read the entire applicable manual before the advanced relay-test study. Connect the protection function, input transformers, logic, trip circuits, auxiliary supplies, communications and end-to-end response. Distinguish calculation/settings verification, secondary injection, functional circuit tests and the operating conditions under which each observation means what it claims.
+
+The primary catalogue and cross-reference from FIST 6-4 were checked on 29 October 2026; direct file retrieval timed out. Verify the actual file's complete title, revision and notices when reading it. Settings management is covered separately by 6-4, and catalogue guidance says 4-1B overrides equipment-specific schedules. Physical tests require suitable facilities and qualified procedures; a documentary reconstruction is different evidence. No relay files, manuals or test data are copied here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_5MSER4KEH301A73PTXK505CCSD

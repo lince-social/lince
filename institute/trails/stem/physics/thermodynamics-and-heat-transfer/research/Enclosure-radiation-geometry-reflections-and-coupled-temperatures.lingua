@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: enclosure radiation and coupled temperatures (@th-study-enclosures: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Radiance-Temperature-Calibrations-NIST.lingua#r_1ZZFTRWTTE4RBKGANZJMEYQ0WE", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_51HNQPPASJPXJ2PABTEABC98YZ
+**Read:** [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), complete surface-exchange and material-property sequence; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the complete enclosure radiation development; [Radiance temperature calibrations — NIST SP 250-43](../sources/Radiance-Temperature-Calibrations-NIST.lingua#r_1ZZFTRWTTE4RBKGANZJMEYQ0WE), complete radiometric measurement context.
+
+Derive the radiosity equations and reproduce [An inspectable diffuse-grey radiation enclosure](../computation/An-inspectable-diffuse-grey-radiation-enclosure.lingua#r_6Q4DQJ0ZEWQ2V631Z1SAEZXJCQ) through an independent reflection-series calculation. Obtain view factors for an actual geometry by analysis or independently checked integration, preserving reciprocity and enclosure closure. Algebraic consistency alone does not prove geometric realizability.
+
+Compare black, diffuse-grey and spectrally resolved models. Add an unknown shield or wall temperature by coupling radiation to the complete energy account, rather than assigning the desired temperature. Examine uncertainty in surface condition, emissivity, geometry and parasitic conduction.
+
+Deliver a converged calculation with analytical limits and a measurement plan or documented experiment. Explain where directional reflection, participating gas or near-field effects invalidate the enclosure approximation. Relate the conclusion to a furnace, thermal enclosure or radiative cooler with a clearly bounded operating range.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_51HNQPPASJPXJ2PABTEABC98YZ

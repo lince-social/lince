@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Verify fluid code before comparing it with an experiment (@fd-fluid-verification: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #fluid-dynamics "Validate-a-defined-prediction-against-independent-physical-evidence.lingua#r_6H9AXRJ7C8KS3CQKVAPK0BW0GV") { r_56BN593RTAZZVHY7S5VT2EJRKK
+**Read:** [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), complete code and solution verification guidance; [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), model-specific verification grids and definitions; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), independent computational checks.
+
+Code verification asks whether the implemented equations and numerical method are solved as intended; solution verification estimates errors in a particular calculation. An exact Couette, Poiseuille, viscous-diffusion or wave solution can reveal specific implementation errors, but no one example exercises every boundary, coordinate and coupling path.
+
+Use manufactured smooth fields to test terms that a simple exact solution leaves zero. Derive the forcing independently, check boundary consistency and measure the observed convergence of multiple fields and outputs. For discontinuous solutions, use conserved jumps and appropriate error measures instead of expecting smooth-solution order at the front.
+
+Record tests for constants, equilibrium, symmetry, dimensions, positivity where required, global fluxes, failure behavior and sensitivity to numerical controls. Verify a turbulence-model implementation against its precise definition before interpreting a validation comparison. A passing benchmark supports only the mechanisms and domains it actually exercises.
+
+**Continue:** [Validate a defined prediction against independent physical evidence](Validate-a-defined-prediction-against-independent-physical-evidence.lingua#r_6H9AXRJ7C8KS3CQKVAPK0BW0GV).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_56BN593RTAZZVHY7S5VT2EJRKK

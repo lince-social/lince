@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Test a reaction mechanism against more than the overall equation (@gc-mechanisms: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "Catalysis-and-competing-pathways.lingua#r_4Z85MENW43NS707PTCHNTDTDME") { r_5ASWQH1QT4Z4Z2PWK425QBE2WJ
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 12’s mechanism and elementary-step sections; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), elementary processes, intermediates, and mechanisms; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), Lecture 33, ligand substitution and its context.
+
+A mechanism proposes elementary events, intermediate species, and their relations. Summing its steps should recover the overall stoichiometry, but that is only one constraint. Observed rate behavior, intermediates, isotope effects, condition dependence, and other independent evidence can distinguish competing proposals.
+
+Pre-equilibrium and steady-state approximations have different meanings. The first assumes a suitable step is close to equilibrium; the second approximates slow change of a selected intermediate under a justified regime. Neither makes the intermediate absent, nor turns every mechanism into one universal “slowest-step” mnemonic.
+
+Derive the rate expression from the proposed steps and approximations, then examine their validity. A single observed rate law can be compatible with several mechanisms. Parameter combinations may be identifiable even when individual elementary constants are not. A fitted mechanism should state what observations could contradict it.
+
+**Work:** reconstruct two textbook mechanisms that lead to a similar overall rate form, identifying how additional measurements might distinguish them. Derive one steady-state expression and check its limits, units, and initial-transient assumptions. Compare the derived law with hypothetical data outside the assumed regime and explain the failure.
+
+Read the complete mechanism material and later ligand-substitution lecture for a chemical application. The scholarly study will demand competing interpretations and criticism rather than presenting one successful calculation as a uniquely established microscopic history.
+
+**Continue:** [Relate catalysis to pathways, selectivity, and equilibrium constraints](Catalysis-and-competing-pathways.lingua#r_4Z85MENW43NS707PTCHNTDTDME).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_5ASWQH1QT4Z4Z2PWK425QBE2WJ

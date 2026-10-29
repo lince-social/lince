@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Build disruption scenarios from actual material and service dependencies (@cs-disruptions: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C", #source "../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F", #source "../sources/Process-Industry-Supply-Chain-Management-Liu.lingua#r_5W74Q34MKEJAWVS30JV4QH01YQ", #chemical-supply-systems "Two-suppliers-can-share-the-same-failure.lingua#r_3YJ0DPY2TX68GEYCK057JWJFJX") { r_6V3XJ76FYZKDCYF6JPA6X77MRE
+**Read:** [Understanding Water Treatment Chemical Supply Chains and the Risk of Disruptions — EPA](../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C), the complete methodology, limitations and case analyses; [Supply Chain Resilience: Guide for Water and Wastewater Utilities — EPA](../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F), the whole guide; [Supply chain management for the process industry — Songsong Liu](../sources/Process-Industry-Supply-Chain-Management-Liu.lingua#r_5W74Q34MKEJAWVS30JV4QH01YQ), the complete uncertainty and integrated-planning studies.
+
+Differentiate routine quantity/lead-time variation, a specific source outage, loss of an accepted grade, common utility/transport failure and a systemic change in demand or regulation. Use the actual dependency map to describe a cause, affected functions, duration, evidence and feasible response. Avoid treating every unknown as an independent random supplier failure.
+
+Read the complete EPA report and compare its dated cases and risk method with one local supply question. Separate criticality, evidence of occurrence and the user's vulnerability. A national assessment can suggest hypotheses without establishing a particular site's probabilities. Label elicited assumptions and distinguish absence of observations from evidence of impossibility.
+
+Construct at least six scenarios, including quality failure and interruption at a shared terminal or utility. Track accepted usable stock, demand, arrival/release opportunities and response work over time. Compare results under different plausible probabilities or use scenarios without assigning probabilities when the evidence does not justify them. Determine which decisions remain useful across cases and which depend on a fragile assumption. The later original allocation model isolates a finite decision problem; the sustained projects must connect its mathematical structure to actual physical and institutional evidence.
+
+**Continue:** [Calculate diversification with the actual joint dependence](Two-suppliers-can-share-the-same-failure.lingua#r_3YJ0DPY2TX68GEYCK057JWJFJX).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_6V3XJ76FYZKDCYF6JPA6X77MRE

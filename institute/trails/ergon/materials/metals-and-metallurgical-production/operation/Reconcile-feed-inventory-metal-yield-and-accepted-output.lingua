@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Reconcile plant quantities through reaction, inventory, byproducts, and qualified product (@metal-plant-accounting: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #metals-and-metallurgical-production "Process-observations-dynamics-control-and-model-updates.lingua#r_26714A275WBAXKS0S7GGZZ7XPV") { r_144BG6K8K312A0S00PKXBKDQS7
+**Read:** [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the complete material/energy progression and multi-stream examples; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), one whole primary/secondary production, byproduct, and inventory case; [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1), the full quality and connected-recovery system context.
+
+After the shared production-accounting step, extend the account through chemical transformation, refining, casting/fabrication, specification, and shipment. Dry/wet feed, metal content, chemically recovered metal, gross shape yield, and accepted product have different denominators. Changing the reporting boundary can make a process appear better without improving delivered useful output.
+
+Track the target and consequential impurities across products, coproducts, slag/dross, gas/dust, solutions, recycled returns, rejected product, and inventories. Repeated remelting or internal recycling changes energy, losses, composition, and timing. A material counted as recovered at one boundary may remain unsuitable or require considerable further work.
+
+Use compatible survey/assay/moisture/mass/charge and product-quality evidence with uncertainty. Preserve raw versus reconciled values and distinguish model discrepancy, measurement bias, time alignment, and genuine process loss. A closed spreadsheet under assumed streams does not prove that the physical account is complete.
+
+**Work:** reconstruct a full production period for a published metal-to-product case. Independently close target and impurity inventories, quantity and quality yields, and a substantial energy account. Compare an alternative timing or recycle interpretation and check against independent inventory/shipment evidence. Explain how the result changes a production or maintenance decision and what measurement most reduces the consequential uncertainty.
+
+**Continue:** [Connect process control with measured dynamics, material meaning, and validated changes](Process-observations-dynamics-control-and-model-updates.lingua#r_26714A275WBAXKS0S7GGZZ7XPV).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_144BG6K8K312A0S00PKXBKDQS7

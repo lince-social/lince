@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Relate catalysis to pathways, selectivity, and equilibrium constraints (@gc-catalysis: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Reaction-versus-transport.lingua#r_72WYPRVE8CS893QJVFB49FZ9HE", #industrial-chemistry "../../industrial-chemistry/kinetics/Catalyst-state-selectivity-poisoning-and-regeneration.lingua#r_5W2DGJAXJA6FE0744B3XTVR3YY") { r_4Z85MENW43NS707PTCHNTDTDME
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 12’s catalysis treatment; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), Lecture 34 and related Unit V material; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the complete catalysis discussion.
+
+A catalyst participates in a pathway that changes observed rates while being regenerated in the overall catalytic account. Identify the active form, steps, state, and conditions rather than assuming the material originally added remains unchanged. A catalyst can affect competing pathways differently and thus alter observed selectivity at a given time or conversion.
+
+At fixed thermodynamic conditions a catalyst does not change the equilibrium constant of the same overall reaction. It changes how the system approaches the allowed thermodynamic state through available pathways. Adsorption, phase changes, coupled reactions, transport, or a changed chemical system can complicate what an observed “yield improvement” means.
+
+Compare homogeneous, heterogeneous, and biological examples at the level of their common questions: species/active sites, elementary account, turnover definition, selectivity basis, deactivation, and evidence. Their detailed mechanisms belong to later specialist trails, but a general foundation should already support critical comparison.
+
+**Work:** draw uncatalyzed and proposed catalytic reaction accounts, verify regeneration and overall stoichiometry, and distinguish rate from equilibrium claims. Analyze a hypothetical selectivity change using two competing pathways. State what observations would distinguish intrinsic kinetic behavior from mass-transfer limitation or catalyst loss/deactivation.
+
+Read the complete textbook catalysis section and MIT's catalytic lectures. Connect surface behavior and coordination chemistry when the example requires them. Advanced practical study should explain what the catalyst and its supporting infrastructure actually enable, rather than stopping at the phrase “lowers activation energy.”
+
+**Continue:** [Distinguish chemical rate from mixing, diffusion, and heat-transfer effects](Reaction-versus-transport.lingua#r_72WYPRVE8CS893QJVFB49FZ9HE).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in industrial chemistry:** [Explain catalytic performance through actual catalyst state, selectivity and lifetime](../../industrial-chemistry/kinetics/Catalyst-state-selectivity-poisoning-and-regeneration.lingua#r_5W2DGJAXJA6FE0744B3XTVR3YY).
+} r_4Z85MENW43NS707PTCHNTDTDME

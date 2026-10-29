@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Use strength models with the material, conditions, and data that support them (@mine-strength: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #source "../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #mining-and-mineral-engineering "Excavation-sequence-stress-change-and-deformation.lingua#r_7NRWRVWG3C4HBBDX238JQQX3XE") { r_60HM2VGMVX6V6HNKQG8K238QGZ
+**Read:** [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the full intact, discontinuity, rock-mass, and original criterion/calibration treatments; [Pillar and Roof Span Design Guidelines for Underground Stone Mines — NIOSH](../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08), the full strength and empirical-domain methodology; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete ground/stress context.
+
+Strength depends on material/structure, confinement, water, direction, loading path/rate, scale, and history. Uniaxial strength, tensile behavior, shear response, rock-mass criteria, and discontinuity strength describe different observations/models. A single number cannot represent every mechanism.
+
+For a simple specified frictional-plane model, shear resistance may be written τ = c′ + σ′_n tanφ′ with an identified effective-normal-stress account. The parameters, drainage/pore conditions, contact state, and applicability matter. It is not a universal constitutive law or a complete excavation-stability calculation.
+
+For invented c′ = 5 kPa, σ′_n = 100 kPa, and φ′ = 30°, the relation gives about 62.735 kPa. This arithmetic cannot establish a natural discontinuity's properties or the adequacy of a ground design. Empirical rock-mass criteria also require their calibration, domain, and uncertainty.
+
+**Work:** derive/check the teaching value and reconstruct a complete published strength calibration with test conditions and parameter correlations. Compare an intact, discontinuity, and rock-mass account for one mine question. Identify which field/laboratory evidence supports each and where extrapolation changes the inference.
+
+Read the full strength/model chapters and original criterion papers used. Preserve experimental and observation limits before passing values into a numerical model; independent geological and response checks remain necessary.
+
+**Continue:** [Explain how excavation and sequence change the ground problem](Excavation-sequence-stress-change-and-deformation.lingua#r_7NRWRVWG3C4HBBDX238JQQX3XE).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_60HM2VGMVX6V6HNKQG8K238QGZ

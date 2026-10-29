@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues (@fd-water-hammer-source: 0, is #reference, #part-of @fd-sources) { r_60QC37FY494KQ6Z6YEWDCCFYTN
+Mohamed S. Ghidaoui, Ming Zhao, Duncan A. McInnis and David H. Axworthy. A Review of Water Hammer Theory and Practice, Applied Mechanics Reviews 58, 2005. DOI 10.1115/1.1828050. [University-hosted complete article](https://hydraulics.unibs.it/hydraulics/wp-content/uploads/2012/04/A_review_of_water_hammer_theory_and_practice.pdf).
+
+Read the full review before an advanced pipe-transient study. Derive its balance and wave-speed assumptions, inspect boundary treatments and compare steady versus unsteady friction models. The discussion distinguishes physical limitations from numerical artifacts and connects one-dimensional models with more detailed flow descriptions.
+
+The inspected institutional PDF has 28 pages and a January 2005 ASME copyright notice. Free institutional access is not a general adaptation licence. Its research outlook describes the time of publication; a new research claim needs later primary work as well. Preserve the original citation and notices. The article remains external.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_60QC37FY494KQ6Z6YEWDCCFYTN

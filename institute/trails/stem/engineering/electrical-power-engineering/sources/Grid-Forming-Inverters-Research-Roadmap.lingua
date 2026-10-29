@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Research Roadmap on Grid-Forming Inverters (@pe-gfm-roadmap: 0, is #reference, #part-of @pe-sources) { r_1XBSV4CPJGZG5FE56MH7507WAF
+Yashen Lin, Joseph H. Eto, Brian B. Johnson, Jack D. Flicker, Robert H. Lasseter, Hugo N. Villegas Pico, Gab-Su Seo, Brian J. Pierre and Abraham Ellis. Research Roadmap on Grid-Forming Inverters, NREL/TP-5D00-73476, 2020. [Institutional record](https://research-hub.nlr.gov/en/publications/research-roadmap-on-grid-forming-inverters/) · [Complete report](https://www.nlr.gov/docs/fy21osti/73476.pdf).
+
+Read the whole report, comparing grid-forming and grid-following models, frequency/voltage control, protection, ride-through and modelling/validation questions. Reconstruct one system-level claim with explicit converter/controller and network assumptions, then compare it with more recent primary work.
+
+The institutional record identifies the full byline, 2020 and 60 pages; checked on 29 October 2026. The historical publication remains an NREL report even though the current repository uses NLR branding. Its research roadmap is a dated account and set of questions, not proof that all deployment problems are solved or a binding interconnection standard. Preserve the report's actual rights and third-party notices. No report or data is bundled.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_1XBSV4CPJGZG5FE56MH7507WAF

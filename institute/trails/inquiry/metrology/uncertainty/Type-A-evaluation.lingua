@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Type A evaluation — statistical information and its conditions (@met-type-a: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #metrology "Type-B-and-distributions.lingua#r_0Z1BHCHATX6CS017685KDY4FTT") { r_4R6T465PVRV8EYK0145W6MBMR4
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 2’s Type A, long-term variability, and gauge-study sections; [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the Type A evaluation and coverage treatment; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), observation models and worked repeated-data examples.
+
+Type A evaluation uses statistical analysis of measured quantity values. The resulting uncertainty depends on the observation design and model: repeated readings, multiple days, operators, specimens, and laboratories can support different components. “Statistical” does not automatically mean independent, representative, or free of unmodelled bias.
+
+Under a stable independent equal-distribution model, the sample mean’s estimated standard uncertainty is s/√n. If observations are correlated, the variance of their mean includes covariance terms. For a stationary series with variance σ² and lag correlations ρ_k, var(x̄) = (σ²/n)[1 + 2Σ_(k=1)^(n−1)(1 − k/n)ρ_k]. Positive serial dependence can leave much less information than the nominal reading count suggests.
+
+Separate repeat-reading spread from uncertainty in a target mean or an individual future reading. The latter can include variation that averaging the current observations does not eliminate. A between-day component may dominate long-term use even when within-run readings are tightly grouped.
+
+**Work:** use the shared repeated-observation example as the independent benchmark. Then construct a sequence with a common offset or gradual drift and explain which assumptions of that benchmark fail. Analyse a handbook case with more than one level of variation, retaining the experimental design and the meaning of each component.
+
+State what population and conditions the data represent and how uncertainty in an estimated variance is handled when material. A standard deviation calculated from three observations is itself uncertain. An advanced analysis examines residuals, outlier explanations, dependence, and sensitivity to reasonable alternative models rather than selecting the smallest convenient standard error.
+
+**Continue:** [Type B evaluation — use other information without inventing a distribution](Type-B-and-distributions.lingua#r_0Z1BHCHATX6CS017685KDY4FTT).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_4R6T465PVRV8EYK0145W6MBMR4

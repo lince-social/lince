@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow selective separations through capacity, transport, regeneration and waste (@ic-adsorption-membranes: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9", #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #source "../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ", #industrial-chemistry "Crystallization-nucleation-growth-and-chemical-purity.lingua#r_0NRN1K5ADPNX1GKMYG749S46RJ") { r_794F81FPAZEEDBSKVX4T3EHNFM
+**Read:** [Common Waste Water and Waste Gas Treatment/Management Systems in the Chemical Sector, BREF CWW](../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9), the complete relevant adsorption, ion-exchange, membrane and residual-management methods; [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the full product-purification and materials account; [Haber–Bosch ammonia in an energy landscape — Smith, Hill and Torrente-Murciano](../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ), the complete relevant synthesis/separation comparison and supporting assumptions.
+
+Adsorption and ion exchange use selective interactions with a solid phase; membranes separate through selective transport under a driving force. Equilibrium selectivity, usable capacity, rate and cycling behavior are distinct properties. A material showing attractive uptake in one small experiment may behave differently in a competitive industrial mixture.
+
+For a bed, breakthrough depends on flow, dispersion, transfer, loading history and the actual feed. For a membrane, permeance, selectivity, concentration polarization, fouling, defects and pressure/chemical stability affect useful performance. Nominal material properties do not by themselves determine accepted product over a service interval.
+
+Include regeneration, cleaning, replacement, retained contaminants and utility demands. A cleaner product can be accompanied by a concentrated waste or spent material whose fate remains part of the chemical account. Trace purification also requires an appropriate sampling and detection model.
+
+**Work:** reconstruct one complete bed or membrane process from primary methods and operating evidence. Compare equilibrium/ideal predictions with the observed transient/cycle behavior, independently close the target and impurity inventories, and test a competing limitation. Evaluate a changed feed and a full regeneration/replacement cycle before drawing a system-level conclusion.
+
+**Continue:** [Connect crystallization with phase relations, particle populations and impurity fate](Crystallization-nucleation-growth-and-chemical-purity.lingua#r_0NRN1K5ADPNX1GKMYG749S46RJ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_794F81FPAZEEDBSKVX4T3EHNFM

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+An independent fluid-dynamics research question (@fd-independent-research: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #fluid-dynamics "Criticism-reproduction-and-revision-of-a-fluid-argument.lingua#r_38H3CJYJMX9BVAETGBNYB50TKR") { r_3E8DPHG6DWB1FPCNXXM1NC6HJD
+**Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), the complete advanced module most directly connected to the question; [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), or another complete specialist source as appropriate to the question; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), evidence and uncertainty standards; [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), the course project as one example of a substantial critical investigation.
+
+Form a narrow question whose answer is not already supplied by a worked exercise. Establish the relevant primary literature and identify a gap, conflicting prediction or unsupported extrapolation. Explain the physical significance and design a feasible analytical, numerical and/or experimental investigation capable of changing the answer.
+
+Preserve a reproducible derivation and evidence chain, including unsuccessful models and decisions. Verify original calculations independently, assess the actual observational or numerical limits, and use data not consumed in model selection for the strongest comparison. An inaccessible experiment or proprietary input is a limit to report and work around honestly, not a reason to invent evidence.
+
+Produce a substantial paper or technical report with enough methods, uncertainties and authorized references for another reader to challenge it. Separate demonstrated findings, inference and speculation. The contribution can be a corrected assumption, a careful negative result, a reproducible method or a new bounded physical conclusion; it must withstand independent criticism rather than merely add plots.
+
+**Continue:** [Criticism, reproduction and revision of a fluid argument](Criticism-reproduction-and-revision-of-a-fluid-argument.lingua#r_38H3CJYJMX9BVAETGBNYB50TKR).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3E8DPHG6DWB1FPCNXXM1NC6HJD

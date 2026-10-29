@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Trace continued chemical production to skilled work, maintenance and repair evidence (@ic-maintenance: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #industrial-chemistry "Storage-packaging-custody-and-changed-material-state.lingua#r_0GJDC7Y0YXE6K708NH5C0QW4A3") { r_0XD38YDA9FKJ5CY7YE630MVZ1D
+**Read:** [Improving Steam System Performance — U.S. DOE sourcebook](../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X), the complete system maintenance, measurement and continued-performance treatment; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the full relevant equipment, cleaning, campaign and operation chapters; [Production of Chlor-alkali, BREF CAK](../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the whole applicable material, cell, service and product-conditioning context.
+
+Production continues through operation, analytical work, inspection, calibration, cleaning, catalyst/material service, repair, parts, utilities and coordination. These tasks preserve or restore actual chemical/physical states. An ideal flowsheet omitting them cannot explain accepted output over time.
+
+Failure and restoration histories need a defined equipment/process boundary. A simple availability relation MTBF/(MTBF+MTTR) assumes a particular repeated failure/repair model; measured service histories may violate its assumptions. Actual product output additionally depends on rate, quality, feed and operating state.
+
+For an original simplified example, a nominal 100 t/day rate, 0.90 operating fraction and 0.95 accepted-product fraction gives 85.5 t/day over the stated time basis. This arithmetic does not establish that the factors are independent or constant. A repair can change calibration, contamination, heat transfer or catalyst condition as well as uptime.
+
+**Work:** reconstruct a complete public operating/service case and its consequential technical tasks. Independently connect downtime, inventories, product state and material/energy losses. Compare a justified maintenance or restoration change, explain the skills/parts/metrology evidence it requires and identify the observation that would distinguish restored function from a merely favorable short production interval.
+
+**Continue:** [Preserve chemical identity and useful state through storage and transfers](Storage-packaging-custody-and-changed-material-state.lingua#r_0GJDC7Y0YXE6K708NH5C0QW4A3).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_0XD38YDA9FKJ5CY7YE630MVZ1D

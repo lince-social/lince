@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Stable stratification, buoyancy frequency and internal waves (@fd-stratified: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "Boussinesq-flow-natural-convection-plumes-and-instability.lingua#r_3D346A9GVA8D8T39K4KHG0X3W0") { r_691GN8PDCYCW2BN2T3ETWSNC4B
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 internal gravity waves and chapter 5 stratified instability; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), stratified withdrawal, waves and thermal-flow notes; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), stratified-flow demonstrations.
+
+In a simple Boussinesq liquid with vertical background density ρ̄(z), small vertical displacements experience a buoyancy frequency satisfying N²=−(g/ρ_0)dρ̄/dz. Positive N² describes stable stratification under these assumptions. For compressible atmospheres, use the appropriate thermodynamic stratification variable instead of applying this incompressible formula indiscriminately.
+
+Derive the displacement restoring force and then the linear internal-wave relation for an unbounded uniformly stratified nonrotating fluid. Distinguish frequency from the direction of phase and energy propagation. In the ideal two-dimensional case, ω²=N²k_h²/(k_h²+k_z²); rotation and boundaries change the permitted modes.
+
+Explain how a density profile can suppress vertical transport while allowing horizontal motion and waves. Compare a velocity shear with stratification through a defined gradient Richardson number and the assumptions behind any stability criterion. Use measured temperature/composition and their density relation, including uncertainty, rather than treating color bands as quantitative density evidence.
+
+**Continue:** [Boussinesq flow, natural convection, plumes and instability](Boussinesq-flow-natural-convection-plumes-and-instability.lingua#r_3D346A9GVA8D8T39K4KHG0X3W0).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_691GN8PDCYCW2BN2T3ETWSNC4B

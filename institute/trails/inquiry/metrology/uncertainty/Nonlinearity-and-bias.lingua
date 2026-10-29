@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Nonlinearity can change the estimated value as well as its uncertainty (@met-nonlinear: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4", #metrology "Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E") { r_7RZPX9400CJWKT2SH1S8WGFWMW
+**Read:** [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the nonlinear discussion with the complete 2026 amendment; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), nonlinear relationships and model choice; [Propagation of distributions using Monte Carlo — JCGM 101](../sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4), conditions for nonlinear propagation.
+
+For a nonlinear function, f evaluated at input means need not equal the mean of f applied to uncertain inputs. First-order propagation can miss a shift in the output estimate as well as an uncertainty contribution. A small local slope does not necessarily mean the output is well determined.
+
+Let X have a normal distribution with mean zero and standard deviation σ, and let Y = X². Then E(Y) = σ² and var(Y) = 2σ⁴. Evaluating f at E(X) gives zero, while the first derivative at zero also gives a zero first-order variance. Both miss the nontrivial output distribution. The example can represent a squared signal or a mathematical benchmark; it needs no claim that every measurement noise is normal.
+
+A second-order expansion contains curvature terms. Under appropriate conditions, the mean shift includes one half of the trace of the Hessian times the input covariance. This approximation also has conditions and omitted terms. It is not a substitute for checking the actual output behavior or for a valid model near a singularity or discontinuity.
+
+**Work:** derive the squared-normal result from the second and fourth moments, then verify it numerically. Compare small- and large-uncertainty versions of a ratio model whose denominator remains safely away from zero. State why a denominator distribution with substantial mass near zero can undermine ordinary moment-based summaries.
+
+Read the 2026 amendment alongside the base GUM and explain what changes in the treatment of a selected nonlinear example. Compare an appropriate higher-order method with propagation of distributions. The practical question is whether the approximation is adequate for the required result, not whether a linear formula is easier to place in a budget table.
+
+**Continue:** [Propagate joint distributions and control the numerical approximation](Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_7RZPX9400CJWKT2SH1S8WGFWMW

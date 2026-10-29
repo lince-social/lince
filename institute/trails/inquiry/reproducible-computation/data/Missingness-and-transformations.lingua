@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Make missing values, exclusions, and transformations visible (@rc-missing: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Keys-joins-units-and-time.lingua#r_49F957J1ZP9JVG5KQSET12P4PH") { r_1FHVZTXX5WR3DZ5PPFRW7J0BY1
+**Read:** [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), data and record-keeping recommendations; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Research Data Management and relevant ethical-data discussions.
+
+An absent observation, a value below a detection threshold, a failed instrument reading, an inapplicable quantity, and a true zero require different interpretations. Decide how each appears in the input and how it affects a calculation. Replacing all of them with zero can bias a total or turn an undefined ratio into a confident claim.
+
+Every exclusion changes the population or material balance to which a result refers. Preserve the original data, the selection rule, the selected identities, and counts before and after each transformation. If a rule changes after examining an unexpected result, record that methodological change and compare its consequences. Repeating the final code is not enough to reconstruct an undocumented analytical choice.
+
+For the toy pipeline every required measurement field must be present. It rejects empty fields and does not impute missing mass or concentration. A separate zero-denominator rule returns an undefined ratio while retaining defined masses. This narrow contract makes a first study inspectable; it is not a prescription for all censored or incomplete scientific observations.
+
+**Work:** remove one product assay from the two-lot example. Explain why the total recovered component cannot be determined under the current model even if both product masses are known. Write two explicitly conditional scenarios with bounds or additional assumptions rather than filling in a convenient mean without explanation. Then consider a detection-limit indication and identify what information its measurement procedure supplies.
+
+Return to [Model discrepancy, double counting, and sensitivity to assumptions](../../metrology/uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3) for distinctions between observation, model inadequacy, and assumptions about unobserved values. Build a transformation log that lets another person trace one published row back to its original input, including every exclusion and unit/basis conversion.
+
+**Continue:** [Join records without inventing or losing observations](Keys-joins-units-and-time.lingua#r_49F957J1ZP9JVG5KQSET12P4PH).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_1FHVZTXX5WR3DZ5PPFRW7J0BY1

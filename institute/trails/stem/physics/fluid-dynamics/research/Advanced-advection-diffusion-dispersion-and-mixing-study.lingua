@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced advection, diffusion, dispersion and mixing study (@fd-advanced-mixing: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #fluid-dynamics "Advanced-fluid-structure-or-field-coupling-study.lingua#r_64X1S719WFMBMAEZY9J0WVR3Q3") { r_2MZ7ZF2GP6SNSGEV4H9BEC9WKD
+**Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), complete transport and steady/oscillatory dispersion notes; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), complete transport and mixing development; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), conservative solute balances; [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), advection and diffusion discretization.
+
+Derive a conservative species balance with stated diffusion, reaction and wall conditions. Recover a diffusion limit and a long-time Taylor-dispersion result, then compare them with a resolved concentration field. Identify the time and length scales required for cross-sectional averaging to be valid.
+
+Choose a mixer, laminar channel or buoyant transport setting and define a measurable mixing or residence-time quantity. Compare particle trajectories with actual concentration variance or reaction yield. Preserve source injection, measurement filtering, diffusivity and any density/viscosity feedback on the velocity field.
+
+Use independent primary measurements or a performed bounded experiment to assess the model over several conditions. Separate numerical diffusion from molecular and unresolved physical transport. Explain whether a successful bulk response also constrains local concentration extremes, and which additional observation would test that claim.
+
+**Continue:** [Advanced fluid–structure or field-coupling study](Advanced-fluid-structure-or-field-coupling-study.lingua#r_64X1S719WFMBMAEZY9J0WVR3Q3).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2MZ7ZF2GP6SNSGEV4H9BEC9WKD

@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Power Grid Library — OPF benchmarks and provenance (@pe-pglib: 0, is #reference, #part-of @pe-sources) { r_6AC54N8ECBG43CFWW99NERNWN5
+IEEE PES Task Force on Benchmarks for Validation of Emerging Power System Algorithms. [PGLib-OPF repository, mathematical model, report and baseline results](https://github.com/power-grid-lib/pglib-opf) · [Actual licence](https://github.com/power-grid-lib/pglib-opf/blob/master/LICENSE).
+
+Read the complete linked model/report and the actual selected cases' headers, modifications and baseline descriptions. Reproduce a small case before comparing formulations or algorithms. The cases are curated for a particular AC OPF problem; use for another network, dynamics or adequacy question needs its own justification.
+
+On 29 October 2026 the licence distinguished CC BY 4.0 data from MIT-licensed software, and required case-specific attribution. The project explicitly warns that it changes: cite a version/commit and original case sources. A benchmark's provenance and purpose are part of its meaning; it is not a complete operational grid model simply because it has many buses. No network data, case files, report or scripts are copied here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_6AC54N8ECBG43CFWW99NERNWN5

@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Reuse computed results only under an explicit equivalence rule (@rc-caching: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS", #source "../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Execution-accounts-and-logs.lingua#r_4YAY9ZW1Y3FMHZ952XHD6DYZ4W") { r_1MXDE1T63F6G6GYECCCR23RBFW
+**Read:** [Workflow graphs, environments, and execution — Snakemake documentation](../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS), between-workflow caching and the exact selected cache contract; [Deterministic artifacts and environmental variation — Reproducible Builds](../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A), input identity and deterministic artifacts; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), workflow reconstruction discussions.
+
+A cache substitutes a previous result for a new computation. Its key should represent the inputs, method, parameters, and relevant environment that determine the result under the claim being made. If a scientifically relevant influence is omitted, a cache can consistently return stale but plausible output. Repetition then creates confidence in a computation that never actually reran.
+
+Distinguish exact-byte reuse from scientific equivalence. The teaching input's row order affects its digest but not its sorted numerical result. A cache keyed by raw input bytes is conservative for that permutation. A cache keyed by a normalized scientific representation needs a justified normalization rule, versioned schema, and evidence that it discards only irrelevant information. Normalizing away units or missingness would destroy the method's meaning.
+
+Inspect cache lookup, validation, invalidation, failure recovery, and storage ownership in the chosen engine. Do not let a cached success conceal a failed new attempt. A cache is replaceable derived material when the original inputs and method can reconstruct it; explicitly retained observations and accepted source editions have different preservation requirements.
+
+**Work:** rerun a project with caching disabled and compare with the reused result. Change one scientific parameter, one input value, and one irrelevant path in separate trials. Predict which changes should invalidate the reuse and inspect what actually happens. Introduce a deliberately incomplete key in a disposable example and show the resulting stale output.
+
+Use the experiment to state a bounded cache contract. Content identity helps implement it, but the scientific reasoning decides which content matters. Keep this computational-study topic separate from any application's automatic HTTP cache: the concepts connect, while their storage and freshness rules need their own evidence.
+
+**Continue:** [Record the run without letting incidental metadata obscure the result](Execution-accounts-and-logs.lingua#r_4YAY9ZW1Y3FMHZ952XHD6DYZ4W).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_1MXDE1T63F6G6GYECCCR23RBFW

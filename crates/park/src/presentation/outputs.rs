@@ -31,6 +31,13 @@ pub struct Output {
     pub viewport: OutputViewport,
 }
 
+fn default_output_order(a: &Output, b: &Output) -> std::cmp::Ordering {
+    let builtin = |name: &str| name.starts_with("eDP-") || name.starts_with("LVDS-") || name.starts_with("DSI-");
+    builtin(&b.name).cmp(&builtin(&a.name))
+        .then_with(|| a.viewport.bounds.origin()[0].total_cmp(&b.viewport.bounds.origin()[0]))
+        .then_with(|| a.name.cmp(&b.name))
+}
+
 pub(super) struct Target {
     pub image: Handle<Image>,
     pub size: [u32; 2],
@@ -160,6 +167,8 @@ impl Presentation {
         if outputs.is_empty() {
             native::shader_effects::set_compositor_presentation_active(self.app.world_mut(), false);
             if !self.suspended() { self.focus(false)?; }
+            self.app.world_mut().remove_resource::<native::output_views::OutputViews>();
+            self.app.world_mut().remove_resource::<native::output_views::OutputNames>();
             let removed: Vec<_> = self.output_state.assignments.outputs().iter().map(|output| output.id).collect();
             for id in removed { self.output_state.assignments.disconnect(id); }
             self.output_state.outputs.clear();
@@ -532,7 +541,9 @@ impl Presentation {
         }
         let focused = self.output_state.assignments.focused().unwrap();
         let mut locals = Vec::new();
-        for output in &self.output_state.outputs {
+        let mut outputs: Vec<_> = self.output_state.outputs.iter().collect();
+        outputs.sort_by(|a, b| default_output_order(a, b));
+        for output in outputs {
             let assignment = self
                 .output_state
                 .assignments
@@ -617,6 +628,11 @@ impl Presentation {
         }
         let mut views = native::output_views::OutputViews::new(locals, focused)
             .ok_or_else(|| input_failure("invalid canvas output views"))?;
+        let names = native::output_views::OutputNames(self.output_state.outputs.iter()
+            .map(|output| (output.viewport.id, output.name.clone())).collect());
+        if self.app.world().get_resource::<native::output_views::OutputNames>() != Some(&names) {
+            self.app.world_mut().insert_resource(names);
+        }
         views.canvas = Some(root);
         let local = views.focused().clone();
         if self
@@ -1325,6 +1341,25 @@ fn operation(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hand_control_defaults_to_builtin_then_leftmost_output() {
+        use lince_interface::host::{Rectangle, raster::RasterMapping};
+        let output = |id, name: &str, x| {
+            let bounds = Rectangle::new([x, 0.0], [800.0, 600.0]).unwrap();
+            Output {
+                name: name.into(),
+                viewport: OutputViewport {
+                    id: OutputId(id), bounds, usable: Some(bounds), physical_size: [800, 600],
+                    raster: RasterMapping { origin: [x, 0.0], scale: [1.0; 2] },
+                    workspace: id, rotation: Default::default(),
+                },
+            }
+        };
+        let mut outputs = [output(1, "HDMI-A-1", 0.0), output(2, "eDP-1", 800.0), output(3, "DP-1", -800.0)];
+        outputs.sort_by(default_output_order);
+        assert_eq!(outputs.iter().map(|output| output.name.as_str()).collect::<Vec<_>>(), ["eDP-1", "DP-1", "HDMI-A-1"]);
+    }
 
     #[test]
     fn output_preferences_are_private_and_atomically_replace_the_previous_document() {

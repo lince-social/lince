@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Maintain the ability to deliver accepted material over time (@cs-maintenance: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV", #source "../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0", #source "../sources/Flammable-Liquid-Tanks-HSE-HSG176.lingua#r_3J96NXWJF945DTPAPBRQPT177R", #chemical-supply-systems "Disruption-scenarios-common-causes-and-evidence.lingua#r_6V3XJ76FYZKDCYF6JPA6X77MRE") { r_7BWN32VFTEPBA8RYMSA5A1QRTQ
+**Read:** [Oxygen Pipeline and Piping Systems — EIGA Doc 13/20](../sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV), complete cleaning, fabrication, inspection, commissioning and operation chapters; [Methanol Safe Handling Manual — Methanol Institute](../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0), the whole asset-integrity and management-of-change discussion; [Storage of flammable liquids in tanks — HSE HSG176](../sources/Flammable-Liquid-Tanks-HSE-HSG176.lingua#r_3J96NXWJF945DTPAPBRQPT177R), the complete inspection, maintenance and operating sections.
+
+Select a transfer pump, tanker connection, analysis instrument, gas vaporiser or storage component that the supply depends on. Follow its inspection, maintenance, spare availability, repair, replacement and return to service. Identify the state of the material during the work and which evidence establishes that the system can again deliver the required grade and quantity.
+
+Distinguish nominal redundancy from independent service capability. Two pumps can share electrical power, a controller, a blocked intake or a spare-part source. Replacement contact materials or lubricants can change contamination and compatibility. A completed mechanical repair can still require cleaning, inspection, measurement or process qualification before chemical use resumes.
+
+Construct a maintenance/availability case using complete technical methods and a documented or explicitly hypothetical history. Include planned outage windows, personnel competence, supplier support and access to test/reference material. Compare repair, installed reserve and alternative delivery on the same service objective and qualification time. Do not equate a manufacturer's interval with an observed failure distribution. The advanced operation study should defend its assumptions and show how field observations would revise the proposed arrangement.
+
+**Continue:** [Build disruption scenarios from actual material and service dependencies](Disruption-scenarios-common-causes-and-evidence.lingua#r_6V3XJ76FYZKDCYF6JPA6X77MRE).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_7BWN32VFTEPBA8RYMSA5A1QRTQ

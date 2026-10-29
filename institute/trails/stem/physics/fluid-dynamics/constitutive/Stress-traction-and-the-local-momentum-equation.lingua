@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Stress, traction and the local momentum equation (@fd-stress: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #fluid-dynamics "Newtonian-viscosity-bulk-response-and-dissipation.lingua#r_7669C29E0HBC127Y4NJ2JT6QEY") { r_7CCBAA58W97CSN9A250DXPZNVJ
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapters 4 and 8 stress and momentum; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), stress tensor, conservation laws and Navier–Stokes development; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter VII viscous flows.
+
+Represent traction on an outward normal n by σ·n. Separate isotropic pressure from additional stress: σ=−pI+τ. Local momentum conservation is ρDu/Dt=∇·σ+ρb for body acceleration b. The divergence of stress is a force per unit volume, not a pressure at a single point.
+
+For an ordinary continuum without body couples or independent internal angular momentum, angular-momentum balance makes the Cauchy stress symmetric. Other continua may need additional variables; symmetry is a physical-model consequence. A constitutive equation is still required to connect τ with the material's response.
+
+Draw the normal and tangential tractions on three mutually perpendicular planes. Check the components of ∇·σ using a declared index convention. Integrate the local equation over a region and recover the control-volume force account. This consistency links the field model to measurable forces.
+
+**Continue:** [Newtonian viscosity, bulk response and dissipation](Newtonian-viscosity-bulk-response-and-dissipation.lingua#r_7669C29E0HBC127Y4NJ2JT6QEY).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7CCBAA58W97CSN9A250DXPZNVJ

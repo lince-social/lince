@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Yee staggering, discrete curls and Maxwell constraints (@em-time-domain: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM", #source "../sources/Finite-Difference-Maxwell-Yee-1966.lingua#r_4CBRR0WD5E152VJ2S1A3MCHXTN", #electromagnetism "CFL-stability-numerical-dispersion-and-initial-staggering.lingua#r_4MZK1WY80NXBHV1245D8SHYA0S") { r_31SEC4XD55TPNETRM5967E15VZ
+**Read:** [Understanding the Finite-Difference Time-Domain Method — John B. Schneider](../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM), complete Yee-grid, source and multidimensional chapters; [Yee’s staggered-grid Maxwell paper, 1966](../sources/Finite-Difference-Maxwell-Yee-1966.lingua#r_4CBRR0WD5E152VJ2S1A3MCHXTN), the full original method paper through authorized access.
+
+A Yee discretization places electric and magnetic components on staggered spatial locations and advances them at staggered times. Derive the curl updates by integrating the field laws over their corresponding geometric elements. In a compatible grid, the discrete divergence of a discrete curl vanishes, providing a structural conservation property when sources and initialization are consistent.
+
+For a normalized one-dimensional vacuum problem, choose E_y and H_z varying with x. Maxwell gives ∂H/∂t = −∂E/∂x and ∂E/∂t = −∂H/∂x. Staggering H by half a cell and half a time step yields the update used by the original next example. Draw every index/time before translating it into an array shift.
+
+A method's name is not proof of correct sign, initialization, source injection or boundaries. Check an exact discrete Fourier mode, uniform fields, discrete charge/flux conditions and the appropriate energy identity. Then compare with a continuum solution under refinement. Extend to two/three dimensions only after deriving component placement and the material treatment needed there. The full Schneider book and Meep methods provide the sustained multidimensional development.
+
+**Continue:** [CFL stability, dispersion and initial staggering](CFL-stability-numerical-dispersion-and-initial-staggering.lingua#r_4MZK1WY80NXBHV1245D8SHYA0S).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_31SEC4XD55TPNETRM5967E15VZ

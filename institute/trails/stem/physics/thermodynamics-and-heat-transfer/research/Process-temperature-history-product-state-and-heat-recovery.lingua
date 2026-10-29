@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: process thermal history and heat recovery (@th-study-process: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_7WQ6CWZ0Q1B9YXXE173P53D5BY
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete relevant radiation, convection and transient chapters; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), complete exergy and multicomponent accounting; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), complete relevant phase/reaction theory; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), whole-service thermal machine analysis.
+
+Choose a documented heating, drying, melting or cooling process whose material transformation can be followed through [Industrial chemistry — chemical transformations, useful products and continuing production](../../../chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618) or [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../../../../ergon/materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1). Define the required product state and throughput before comparing energy use. Include material, reaction and phase-change terms on consistent bases.
+
+Develop a spatial/transient thermal model and compare it with a whole-process balance. Investigate heat recovery, insulation, load arrangement or scheduling at equal product requirements. Include exhaust and cooling services and their exergy implications; transferring a loss to another boundary is not necessarily an improvement.
+
+Deliver full primary reading, an independently checked process case, evidence for property and boundary assumptions, and a critique of at least one published improvement claim. Explain which manufacturing or quality observations would confirm the predicted product state and which remain unavailable.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7WQ6CWZ0Q1B9YXXE173P53D5BY

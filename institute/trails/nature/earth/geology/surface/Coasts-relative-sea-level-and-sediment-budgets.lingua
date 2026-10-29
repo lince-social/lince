@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Interpret coastlines through waves, sediment, sea level, and land motion (@geo-coasts: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #source "../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N", #geology "Ocean-basins-sediments-and-deep-time-records.lingua#r_2EJ3CP09GCFYPWCM2KZK7H2QHK") { r_4674G17AR76JSEJ08BXV9Z88YW
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 17 in full; [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), the complete coastal/marine context chapter; [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N), the coastal-region history and mapped evidence.
+
+Coasts connect waves, tides, currents, storms, sediment supply, rock/material properties, organisms, and land motion. Relative sea level is water level relative to land; it can differ from a global mean change because uplift, subsidence, compaction, and other local/regional effects matter.
+
+Erosion and deposition redistribute material through a defined coastal system. A beach's apparent growth during one season does not establish a long-term sediment surplus. Dams, dredging, ports, coastal works, and catchment changes can alter pathways; analyze their boundary and storage effects rather than assuming material remains within the photographed reach.
+
+Marine terraces, beach ridges, estuarine deposits, fossils, and other indicators constrain past conditions with age, elevation, ecological, and preservation uncertainties. An indicator's present elevation is not automatically an exact former sea-level measurement. The interpretation needs an indicative relationship and a vertical reference.
+
+**Work:** construct a coastal sediment account for a documented regional example with sources, sinks, pathways, and storage. Compare two explanations for shoreline change using dates, map references, and land-motion evidence. Identify which observation window could separate event-scale variability from a sustained trend.
+
+Read the entire shorelines chapter and the Brazilian coastal context. Relate it to ports, infrastructure, coastal aquifers, and aggregate supply with the actual data scales. Specialized coastal engineering, oceanography, and sea-level research can deepen their unique models while reusing the geological history and mass-balance discipline.
+
+**Continue:** [Connect ocean-floor processes with sediments and a changing geological record](Ocean-basins-sediments-and-deep-time-records.lingua#r_2EJ3CP09GCFYPWCM2KZK7H2QHK).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4674G17AR76JSEJ08BXV9Z88YW

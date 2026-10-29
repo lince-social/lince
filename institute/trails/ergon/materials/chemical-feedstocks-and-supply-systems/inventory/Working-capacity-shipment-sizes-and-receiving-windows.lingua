@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Reconcile inventory policy with storage and transfer capacity (@cs-capacity: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10", #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Flammable-Liquid-Tanks-HSE-HSG176.lingua#r_3J96NXWJF945DTPAPBRQPT177R", #chemical-supply-systems "First-expiry-first-out-and-material-that-can-no-longer-be-used.lingua#r_51EG5VC98CFTY7FR8ZBTR113N8") { r_0GBGVZ3PMK40GFB457GW0MWQAK
+**Read:** [Warehouse & Distribution Science — Bartholdi and Hackman](../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10), the entire capacity, material-flow, storage and operations teaching; [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the complete deterministic extensions and inventory-system model; [Storage of flammable liquids in tanks — HSE HSG176](../sources/Flammable-Liquid-Tanks-HSE-HSG176.lingua#r_3J96NXWJF945DTPAPBRQPT177R), complete applicable tank, transfer and operating provisions.
+
+Translate a proposed order policy into an actual inventory trajectory. Include working rather than geometric tank capacity, release/quarantine space, minimum usable contents, delivery batch size and receiving windows. If a vessel can take a delivery only after enough space is available, delayed consumption can obstruct replenishment just as high consumption can cause shortage.
+
+Construct a deterministic schedule for two accepted product grades sharing a receiving operation. State whether their storage/contact systems can be shared, what cleaning/changeover is required and what evidence permits that sharing. Keep material compatibility constraints separate from optional preferences. Include vehicle queues and the capacity of personnel and analysis.
+
+Evaluate a larger shipment, more frequent deliveries and added storage on a common service requirement. Check every event time and not only the period-end totals. Determine whether the model allows overlapping unloading and consumption, whether a quarantined delivery can occupy the receiving tank, and what happens if the next window is missed. Complete the warehouse and MIT analytical readings before developing a larger optimisation model. The later scheduling study must defend these constraints with source methods or explicit hypotheses.
+
+**Continue:** [Connect issue order with release, expiry and actual chemical state](First-expiry-first-out-and-material-that-can-no-longer-be-used.lingua#r_51EG5VC98CFTY7FR8ZBTR113N8).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_0GBGVZ3PMK40GFB457GW0MWQAK

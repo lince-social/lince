@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Relaxation, creep and linear viscoelastic spectra (@fd-linear-viscoelastic: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #fluid-dynamics "Objective-constitutive-laws-normal-stress-and-extension.lingua#r_0B3J7Q6R99JJHRQCCETNB4TH52") { r_19B5S842D5P8Q3JM8R37V5XGEC
+**Read:** [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), linear viscoelasticity, relaxation and rheometry sections; [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), material functions and homework; the public index lacks topic 4 lecture notes.
+
+An elastic response stores recoverable energy, while a viscous response dissipates it; a viscoelastic material can do both with a time-dependent relation. In a simple Maxwell shear model, τ+λτ̇=ηγ̇. Derive stress relaxation after an imposed small step strain and creep after a step stress, identifying the times and experimental conditions in which the model is intended to apply.
+
+For small-amplitude oscillatory shear, define storage and loss moduli using a consistent phase convention. The Maxwell model gives G′=G(ωλ)²/[1+(ωλ)²] and G″=Gωλ/[1+(ωλ)²], with G=η/λ. A spectrum of relaxation times can model a broader response, but recovering a spectrum from finite noisy data is an inverse problem with limited identifiability.
+
+Establish the linear strain-amplitude range experimentally or from primary data before fitting frequency dependence. Check temperature, aging and instrument inertia. Distinguish a physical long-time plateau from one caused by a finite measurement window. Compare relaxation, creep and oscillatory predictions using a common model rather than fitting unrelated parameters to each plot.
+
+**Continue:** [Objective constitutive laws, normal stress and extension](Objective-constitutive-laws-normal-stress-and-extension.lingua#r_0B3J7Q6R99JJHRQCCETNB4TH52).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_19B5S842D5P8Q3JM8R37V5XGEC

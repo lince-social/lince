@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect polymer chemistry with reactor state, molecular distributions and accepted material (@ic-polymer-production: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Polymer-Production-BREF.lingua#r_01PXATYT6P16206KQ3VDX34K1F", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Elastomers-fibres-copolymerization-and-physical-history.lingua#r_63SE671XHERWEFAM5MM8WWZ6PG") { r_4DD3QYV4SWX7KVBPD7SKAXE0GK
+**Read:** [Production of Polymers, BREF POL](../sources/Polymer-Production-BREF.lingua#r_01PXATYT6P16206KQ3VDX34K1F), the whole generic process/operation treatment and complete selected polymer chapter; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the entire polymer and synthetic-material production sequence; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete relevant polymer/particulate reactor and population-balance examples.
+
+Polymerization creates a distribution of chains or network structures, not simply one low-molecular-mass product. Chain-growth and step-growth pathways, monomer functionality, initiator/catalyst, termination/transfer, conversion and composition history can influence molecular distributions and final behavior.
+
+Bulk, solution, suspension, emulsion and gas-phase production organize heat, mass transfer and material separation differently. Viscosity, particle formation and changing phases can alter contacting, local reaction and thermal response as conversion proceeds. A constant-property ideal reactor is therefore a model to test rather than an automatic description.
+
+Finishing removes or recovers solvents, unreacted monomer, catalyst residues and other constituents, then creates a physical form suitable for further use. Accepted polymer output includes relevant molecular, compositional, residual and physical evidence. Follow off-grade material, cleaning, recycle, utilities and service history through the full account.
+
+**Work:** reconstruct one complete public polymer-family production chapter with the full relevant chemistry and primary methods. Derive representative conversion/distribution and energy/material quantities, independently check them and compare a documented process alternative at equal material function. Preserve the boundary with deeper polymer-science and fabrication studies rather than inferring all material properties from conversion.
+
+**Continue:** [Explain rubber and fibre production through chemical distribution and processing history](Elastomers-fibres-copolymerization-and-physical-history.lingua#r_63SE671XHERWEFAM5MM8WWZ6PG).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4DD3QYV4SWX7KVBPD7SKAXE0GK

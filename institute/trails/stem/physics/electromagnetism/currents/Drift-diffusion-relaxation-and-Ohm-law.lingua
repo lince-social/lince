@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Drift, diffusion, relaxation and Ohm law (@em-current-model: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #electromagnetism "Circuit-approximations-sources-resistance-and-power.lingua#r_0Y05GYZKN18BT1FY2GGQ6476W2", #electrical-power-engineering "../../../engineering/electrical-power-engineering/apparatus/Conductors-resistance-contacts-temperature-and-duty.lingua#r_6ZD2CSVVP595WFY53DFRB6T4JR") { r_3P3417NJ3B753K217S24RZY08D
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 9 in full; [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), charge transport and conduction.
+
+A macroscopic current can include motion driven by electric field, concentration gradients and moving matter. The simplest Ohmic model is J = σE in an isotropic stationary medium. It presupposes an appropriate range of field, temperature and frequency; it is not a universal definition of current. Charge carriers in metals, electrolytes and semiconductors have different microscopic dynamics.
+
+Distinguish carrier drift speed from electromagnetic signal speed. In a wire, I = nqAv_d for a single uniform carrier population with a consistent sign. A small drift speed does not imply that closing a circuit sends a slow packet of electrons from source to lamp before anything responds. Fields and the distributed circuit establish the transient response.
+
+Combine continuity, Gauss's law and constant σ/ε in a homogeneous bulk region to derive exponential charge relaxation with time ε/σ. State where interfaces, injection, diffusion or frequency-dependent transport invalidate that elementary result. Work resistance R = ℓ/(σA) for a uniform sample, then compare it with contact resistance and geometry-dependent current paths. Connect microscopic assumptions to the material actually measured rather than inferring a universal conductivity from a nominal material name.
+
+**Continue:** [Circuit approximations, sources and power](Circuit-approximations-sources-resistance-and-power.lingua#r_0Y05GYZKN18BT1FY2GGQ6476W2).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in electrical power engineering:** [Conductors, contacts, temperature and duty](../../../engineering/electrical-power-engineering/apparatus/Conductors-resistance-contacts-temperature-and-duty.lingua#r_6ZD2CSVVP595WFY53DFRB6T4JR).
+} r_3P3417NJ3B753K217S24RZY08D

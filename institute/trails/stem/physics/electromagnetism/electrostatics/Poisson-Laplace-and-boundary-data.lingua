@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Poisson, Laplace and boundary data (@em-poisson: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #electromagnetism "Uniqueness-energy-and-the-maximum-principle.lingua#r_7RFDH08A5XYW98SEA2E7YSC5C7") { r_2ED6JFNCPEGRT1P8KTP2Y7WPZG
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), Poisson/Laplace equations and boundary-value problems; [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), chapter 5, potential and boundary conditions.
+
+Combining E = −∇V with Gauss's law gives ∇²V = −ρ/ε₀ in vacuum. In a linear inhomogeneous isotropic dielectric, use ∇·(ε∇V) = −ρ_free, with the actual interface conditions. Moving ε outside the derivative is valid only where its spatial dependence permits.
+
+A field equation is incomplete without a domain and boundary data. Dirichlet conditions specify potential; Neumann conditions specify normal derivative or flux. A pure Neumann problem requires compatible total source/flux and determines potential only up to an additive constant. Mixed boundary conditions describe many actual devices. Do not prescribe both arbitrary potential and normal derivative on every boundary and expect a solution.
+
+Derive the one-dimensional capacitor with and without a volume charge. For uniform ε and ρ, integrate V'' = −ρ/ε twice, apply the two boundary potentials and inspect the field slope. The later original conservative solver handles positive piecewise face permittivity and prescribed potentials. First construct an analytical solution and its charge/energy checks, then compare the numerical approximation. Smooth-looking potential plots alone cannot verify the equation or its interfaces.
+
+**Continue:** [Uniqueness, energy and the maximum principle](Uniqueness-energy-and-the-maximum-principle.lingua#r_7RFDH08A5XYW98SEA2E7YSC5C7).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_2ED6JFNCPEGRT1P8KTP2Y7WPZG

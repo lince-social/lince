@@ -66,11 +66,10 @@ pub(super) fn reveal(canvas: &mut Presentation, entity: Entity) {
         let before = world.get::<ScrollPosition>(scroll).unwrap().0;
         let content = world.get::<ComputedNode>(scroll).unwrap().content_size;
         steps.push((point, scroll, before, center, extent, content));
-        let delta = [if axes[0] { (center.x - point.x).clamp(-512.0, 512.0) } else { 0.0 },
-            if axes[1] { (center.y - point.y).clamp(-512.0, 512.0) } else { 0.0 }];
-        canvas
-            .pointer([visible.max.x - 3.0, visible.center().y])
-            .unwrap();
+        let inverse_scale = world.get::<ComputedNode>(scroll).unwrap().inverse_scale_factor();
+        let delta = [if axes[0] { ((center.x - point.x) * inverse_scale).clamp(-4096.0, 4096.0) } else { 0.0 },
+            if axes[1] { ((center.y - point.y) * inverse_scale).clamp(-4096.0, 4096.0) } else { 0.0 }];
+        super::shortcuts::pixel_pointer(canvas, [visible.max.x - 3.0, visible.center().y]);
         settle(canvas);
         canvas
             .scroll(

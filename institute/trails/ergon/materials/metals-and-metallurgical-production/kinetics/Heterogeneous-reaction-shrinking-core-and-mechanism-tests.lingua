@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Test heterogeneous reaction mechanisms with geometry, conversion, and independent evidence (@metal-reaction-kinetics: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #metals-and-metallurgical-production "Atomic-diffusion-profiles-mobilities-and-thermal-history.lingua#r_0939YMHD8KWFA8ZRJAPDJHQ6BX") { r_6CK5EQM4MP5QHJY0AAQXBQYFV7
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), the complete gas-solid reduction kinetics sequence; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), all applicable heterogeneous reaction and extraction sections; [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), the full relevant reaction/transport method and examples.
+
+Gas-solid, liquid-solid, and slag/metal reactions combine chemical changes, transport, evolving interfaces, porosity, and heat. Define conversion X for a particular constituent and material population. A fitted apparent rate constant can combine several mechanisms whose relative importance changes with size, composition, temperature, or time.
+
+For an ideal spherical shrinking-core model with stated constant properties and conditions, a chemical-interface-controlled relation can be written 1 − (1−X)^(1/3) = t/τ. A product-layer-diffusion form is 1 − 3(1−X)^(2/3) + 2(1−X) = t/τ with a differently defined characteristic τ. Derive both from the material/interface account and boundary assumptions; do not treat τ as the same physical parameter in the two models.
+
+Changing particle size, shape, cracks, porosity, sintering, product phase, or solution/gas conditions can invalidate that simple geometry. Transforming one data set into an apparently straight line is weak mechanism evidence if measurement support, range, and competing models are not investigated.
+
+**Work:** reproduce a complete published gas-solid reduction or leaching study with original methods. Fit at least two defensible models using uncertainty and independent validation conditions. Compare particle-size and temperature dependence with structural/phase observations, test the model limits X = 0 and X approaching 1, and design the experiment most likely to reject the preferred mechanism. Report where the model is an effective engineering correlation rather than an established microscopic account.
+
+**Continue:** [Connect atomic diffusion with concentration profiles, mobility, and actual thermal history](Atomic-diffusion-profiles-mobilities-and-thermal-history.lingua#r_0939YMHD8KWFA8ZRJAPDJHQ6BX).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_6CK5EQM4MP5QHJY0AAQXBQYFV7

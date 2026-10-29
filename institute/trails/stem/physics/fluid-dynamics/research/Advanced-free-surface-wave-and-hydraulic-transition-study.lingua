@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced free-surface wave and hydraulic-transition study (@fd-advanced-shallow: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #fluid-dynamics "Advanced-rotating-stratified-flow-and-potential-vorticity-study.lingua#r_22XTETXW1TXM3J0TRQB6HJ9Q8Y") { r_7D92P33JB08JEJ18AW6GX5H46J
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), complete surface- and shallow-wave sections; [Advanced Hydraulics — Suresh A. Kartha](../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT), complete critical, varied-flow, jump and surge progression; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), wave and shallow-water notes; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), discontinuous and smooth-solution checks.
+
+Derive finite-depth gravity–capillary dispersion and the shallow-water limit from the appropriate boundary conditions. Compare phase, group and particle motion for a bounded wave packet. Then derive the depth-averaged nonlinear balances and distinguish smooth propagation, rarefaction and a momentum-conserving hydraulic jump.
+
+Verify [An inspectable conservative wet shallow-water solver](../computation/An-inspectable-conservative-wet-shallow-water-solver.lingua#r_0WT5RWX37GNCS5RSRFAKTFHYBV) against exact wet-state Riemann data and a small-amplitude wave, measuring both integral closure and refinement error. Extend to a physically justified boundary, topographic or friction term only after checking the appropriate equilibrium and jump behavior. A dry-bed extension needs an explicit positivity and wetting treatment.
+
+Compare with measured channel or wave-tank data, or a fully documented primary dataset, preserving geometry, depth, timing and boundary motion. Evaluate the regimes in which the hydrostatic and depth-averaged approximations remain credible. Deliver a coherent account of waves, transitions and energy loss rather than treating each as an unrelated empirical formula.
+
+**Continue:** [Advanced rotating, stratified flow and potential-vorticity study](Advanced-rotating-stratified-flow-and-potential-vorticity-study.lingua#r_22XTETXW1TXM3J0TRQB6HJ9Q8Y).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7D92P33JB08JEJ18AW6GX5H46J

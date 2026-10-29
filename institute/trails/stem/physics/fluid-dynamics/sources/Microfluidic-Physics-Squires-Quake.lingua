@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake (@fd-microfluidics: 0, is #reference, #part-of @fd-sources) { r_5TN8JGKY1B6VKGJQG859J61JE2
+Todd M. Squires and Stephen R. Quake. Microfluidics: Fluid physics at the nanoliter scale. Reviews of Modern Physics 77, 977–1026, 2005. DOI 10.1103/RevModPhys.77.977. [Caltech record and complete article](https://authors.library.caltech.edu/records/wbwdf-drn84).
+
+Read the whole review for the advanced small-scale study. Derive the competing dimensionless ratios and examine how viscous motion, diffusion, interfaces, material elasticity, rarefaction and boundary-driven flow affect a selected device. Compare scaling predictions with a complete primary experiment from its references.
+
+The repository's displayed July date differs from its notice that the article was published on 6 October 2005; cite the journal work and identify the repository copy. The APS copyright notice remains; authorized repository reading does not establish a general CC adaptation licence. Source text, images and device data remain external.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_5TN8JGKY1B6VKGJQG859J61JE2

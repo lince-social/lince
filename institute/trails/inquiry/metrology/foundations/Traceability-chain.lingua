@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+A documented calibration chain for a particular result (@met-trace-chain: 0, is #chapter, #part-of @metrology, #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH", #source "../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1", #metrology "References-and-certificates.lingua#r_0BNMDMZ7WPMYWYD9P0BAE281ZB") { r_7XW6NVMPW7PMPJPBESW5G1757N
+**Read:** [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), the complete text and checklist; [International vocabulary of metrology — JCGM and Inmetro](../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH), the traceability definition and its notes; [CIPM MRA, CMCs, and key comparisons — BIPM](../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1), the arrangement introduction and one actual CMC.
+
+Metrological traceability concerns a measurement result connected to a stated reference through documented calibrations, each contributing uncertainty. A serial number, a national-laboratory logo, an invoice, or possession of a recently calibrated device is not the complete argument. The conditions of its actual use must remain connected to the reference information.
+
+Represent a chain as results and comparisons, not as a list of prestigious institutions. For each link identify the measurand, reference, procedure, validity conditions, uncertainty, and responsible source. A working instrument used outside its calibrated range or under a different measurand definition can break the proposed argument even if every certificate is genuine.
+
+For a schematic chain with independent standard-uncertainty contributions 0.2, 0.3, and 0.4 µm, a compatible additive model gives √(0.2² + 0.3² + 0.4²), about 0.539 µm. This is an illustrative budget, not a universal formula for a chain. A certificate may already include upstream uncertainty, and adding that upstream term again would double count it. Shared standards can also create covariance between two downstream results.
+
+**Work:** annotate a published calibration certificate or technical example and construct the supported part of its reference chain. Mark a missing link as missing. Distinguish metrological traceability from sample custody and document history; all can matter, but one does not establish the others.
+
+**Deepen:** compare two suppliers whose stated uncertainties differ. Determine whether their quantities, ranges, conditions, coverage statements, and intended uses match before selecting a numerical winner. Traceability supports comparability, while fitness for the decision also depends on the uncertainty and method being adequate for that decision.
+
+**Continue:** [Read a reference certificate and turn it into usable information](References-and-certificates.lingua#r_0BNMDMZ7WPMYWYD9P0BAE281ZB).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_7XW6NVMPW7PMPJPBESW5G1757N

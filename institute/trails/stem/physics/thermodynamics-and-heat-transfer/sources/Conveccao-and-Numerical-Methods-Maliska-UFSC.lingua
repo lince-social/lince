@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Convecção e métodos numéricos — Maliska, UFSC (@th-ufsc-cfd: 0, is #reference, #part-of @th-sources) { r_71K7JMRA8M0N3Y8EKMZJT9NGQ7
+Clovis R. Maliska, SINMEC, Universidade Federal de Santa Catarina. [Laboratory's public course announcements and access](https://sinmec.ufsc.br/site/index.php).
+
+Work through both complete available Portuguese graduate lecture sequences: convection and numerical methods for fluid flow/heat transfer. Derive the continuum balances, boundary conditions and finite-volume equations, then reproduce a documented example with independent numerical and physical checks. These complement the analytical heat-transfer reading with discretization and solution practice.
+
+The institutional announcement dated 3 April 2021 describes approximately thirty hours for each recorded course. It separately describes the commercially published Transferência de Calor e Mecânica dos Fluidos Computacional book; the free lecture route does not make that book open. The linked announcement page was accessible while the domain root timed out. Full playlist contents were not inspected here; check their actual inventory, revisions and component rights before relying on completeness. No lectures or textbook files are bundled.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_71K7JMRA8M0N3Y8EKMZJT9NGQ7

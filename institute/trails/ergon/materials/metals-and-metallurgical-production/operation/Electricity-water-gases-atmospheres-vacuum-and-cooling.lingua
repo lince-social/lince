@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Account for the utilities and controlled environments that make metal production possible (@metal-utilities: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #source "../sources/Ferrous-Metals-Processing-BREF.lingua#r_49RSZE1MH5VHM49SDAXFQGHWRD", #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #metals-and-metallurgical-production "Equipment-maintenance-skilled-work-and-restored-production.lingua#r_3EXHTMEAR84ZES01SD2KWKDH4V") { r_2V3HF09AG20CQQPTJ49PZB8HX1
+**Read:** [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), all shared utility and chosen metal-family service chapters used; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), the complete integrated-works energy/water/gas context; [Ferrous Metals Processing Industry — European Commission BREF](../sources/Ferrous-Metals-Processing-BREF.lingua#r_49RSZE1MH5VHM49SDAXFQGHWRD), whole relevant downstream utility/thermal accounts; [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), the full applicable transport and energy derivations.
+
+Production depends on delivered electricity, fuels/reductants, process and cooling water, gases, atmosphere/vacuum, exhaust/capture, compressed services, and communication/control infrastructure. Each has a required quantity, quality, pressure/temperature, availability, and measurement basis. A nominal utility connection is not evidence of stable service under the proposed duty.
+
+Connect service conditions with chemistry, heat, transport, containment, structure, and product contamination. Water quality can affect chemistry and equipment; atmosphere purity can matter to reactive metals or surfaces; vacuum performance depends on gas sources, conductance, seals, pumping, and observation as a system. Utilities can constrain output even when major production equipment has spare nominal capacity.
+
+Build compatible material/energy and return-stream accounts. Recovered heat/water/gas may be useful only at particular quality and temporal conditions. A local utility reduction can move work to another stage or change maintenance, emissions, or product acceptance.
+
+**Work:** reconstruct a complete utility account for a metal-production/fabrication case. Independently check one significant electrical/thermal, water, and gas/flow quantity with uncertainty and actual source conditions. Compare two service arrangements and a consequential interruption or degraded-quality scenario. Identify upstream production/repair knowledge needed next and the observations that demonstrate dependable delivered function.
+
+**Continue:** [Trace reliable production to inspectable equipment, skilled work, repair, and supplies](Equipment-maintenance-skilled-work-and-restored-production.lingua#r_3EXHTMEAR84ZES01SD2KWKDH4V).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_2V3HF09AG20CQQPTJ49PZB8HX1

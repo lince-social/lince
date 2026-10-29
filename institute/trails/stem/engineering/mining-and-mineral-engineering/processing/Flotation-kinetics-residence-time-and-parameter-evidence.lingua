@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Derive flotation recovery models and test what their parameters can explain (@mine-flotation-kinetics: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A", #source "../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD", #mining-and-mineral-engineering "Roughers-cleaners-scavengers-and-recycle.lingua#r_2BZJNDFG57WRXSJX0GNMYG86DX") { r_0FGGNJEAT08S8WDCECHNVJBNS0
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete flotation theory and kinetics discussions; [Wills’ Mineral Processing Technology — Wills and Finch, eighth edition](../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A), chapter 12 in full and appendices V–VI, when available; [Introduction to Mineral Processing — Arun Kumar Majumder, NPTEL](../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD), the complete flotation lecture sequence.
+
+Begin with a recoverable constituent class and a first-order disappearance model. A batch test gives recovery R(t) = R∞(1 − exp(−kt)), while an ideal continuously stirred tank at steady state gives R = R∞ kτ/(1 + kτ). Here R∞ is a class-specific limiting fraction, k is a rate constant, and τ is mean residence time on a consistent basis. These models share assumptions about the class but differ in residence-time history.
+
+For n identical perfectly mixed tanks in series with total mean time τ, the corresponding result is R = R∞[1 − (1 + kτ/n)^−n]. Derive it from stage constituent balances. With R∞ = 0.9, k = 0.1 min⁻¹, and total τ = 10 min, a single ideal tank gives 0.45 and two equal tanks give 0.50; the ideal batch value at ten minutes is about 0.56891. These are invented model comparisons, not plant predictions.
+
+Real populations have distributed rate behavior, liberation, residence times, froth recovery, and entrainment. A fitted k can absorb several changing mechanisms. Inspect parameter correlation, data-time coverage, residuals, independent validation, and sensitivity to the assumed model before interpreting it physically.
+
+**Work:** fit at least two plausible models to a documented time series, include measurement uncertainty, and validate on independent conditions. Reproduce the ideal limits kτ → 0 and large kτ, compare batch and continuous assumptions, and explain why laboratory recovery cannot simply be assigned to a plant residence time. Preserve original observations, fits, and failure cases.
+
+**Continue:** [Design a flotation circuit through connected streams and competing objectives](Roughers-cleaners-scavengers-and-recycle.lingua#r_2BZJNDFG57WRXSJX0GNMYG86DX).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0FGGNJEAT08S8WDCECHNVJBNS0

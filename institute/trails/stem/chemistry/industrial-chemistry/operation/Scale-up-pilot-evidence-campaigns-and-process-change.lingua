@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Extend a chemical process claim through scale, repeated operation and changed conditions (@ic-scale-production: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Equipment-materials-surfaces-corrosion-and-process-state.lingua#r_6FT29RK2NR7R7D4ZPNJKEEASGR") { r_471AV9S2RAXMYZ21KM20ESPCAC
+**Read:** [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the whole experimental-development, scale and operating-basis guide; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the entire process-development, batch/campaign and changed-operation context; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full relevant transport, parameter and transient model work.
+
+Scale-up compares systems whose geometry, contacting, heat paths, residence histories and material state can differ. Reproducing a laboratory conversion is insufficient if product isolation, thermal behavior, contamination or repeatability changes. Define the specific phenomenon and output that a proposed scale relation preserves.
+
+Pilot and demonstration studies supply evidence under particular feeds, equipment, methods and service intervals. They do not automatically establish every commercial condition. Repeated batches/campaigns can reveal accumulation, cleaning, aging and drift that a short successful run misses.
+
+Process changes include altered raw materials, catalysts, solvents, equipment surfaces, software/model settings and operating policies. Trace what changes in chemistry, transport, measurement and product evidence. Keep experimental observations, fitted extrapolation and untested assumptions separate so that disagreements can guide the next study.
+
+**Work:** reconstruct a complete primary process-development or pilot case through its scale steps and repeated-operation evidence. Independently test the central scale/model argument, compare a documented alternative and identify the strongest unresolved limitation. Design a discriminating study with actual measurements and uncertainty, reporting the practical setting required and the precise claim it could establish.
+
+**Continue:** [Connect chemical performance with equipment materials, surfaces and service history](Equipment-materials-surfaces-corrosion-and-process-state.lingua#r_6FT29RK2NR7R7D4ZPNJKEEASGR).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_471AV9S2RAXMYZ21KM20ESPCAC

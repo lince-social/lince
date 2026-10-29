@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+Deterministic artifacts and environmental variation — Reproducible Builds (@rc-builds: 0, is #reference, #part-of @rc-sources) { r_1WZF9P4S3GQYQWVT15HWJVCQ3A
+Reproducible Builds contributors. Official documentation. [Definitions, environmental variance, and verification](https://reproducible-builds.org/docs/).
+
+Read the introductory definitions, quickstart, build-environment material, variance topics, and verification sections. Work examples involving input/output ordering, timestamps, time zones, locale, randomness, archive metadata, build paths, and unavailable inputs. Compare these artifact-level claims with numerical agreement and the scientific claim in a research analysis.
+
+The site states CC BY-SA 4.0 for content and a separate MIT licence for style, with component and trademark notices. Preserve those terms when adapting material. The explanations here are original and the external documentation is linked rather than mirrored.
+
+Official definitions, topic list, licence statement, and access checked on 29 October 2026. Choose a bounded reproducibility claim and an actual verification experiment instead of assuming a deterministic filename guarantees a deterministic artifact.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_1WZF9P4S3GQYQWVT15HWJVCQ3A

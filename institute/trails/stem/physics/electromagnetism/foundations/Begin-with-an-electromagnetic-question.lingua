@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+A physical question, an observation and an explanatory model (@em-question: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electricity-and-Magnetism-MIT-8-02T.lingua#r_00CWY37VDJSBRF5D6A8BCD7SXT", #electromagnetism "Charge-field-potential-current-and-energy.lingua#r_73F672N5XQ9B4B1MPJAKCK2EGS") { r_1PMJFESWTM62NGP42X33D125WA
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), the introductions to electric charge, current and circuits; [Electricity and Magnetism — MIT 8.02T and TEAL notes](../sources/Electricity-and-Magnetism-MIT-8-02T.lingua#r_00CWY37VDJSBRF5D6A8BCD7SXT), introductory experimental and field explanations.
+
+A lamp is not explained by saying that electricity travels through it. Identify a source of energy, a closed conducting arrangement, charges in matter, the electric field that drives current, and mechanisms transferring energy to light and heat. A battery maintains an electrochemical difference; its terminal voltage depends on its state and load. The later field account explains how energy reaches the load through the surrounding electromagnetic field.
+
+Draw a source, two conductors, a switch and a load. Label a possible voltage measurement across two points and current measurement through one cross-section. Predict the effect of opening the circuit, changing the load and bringing a compass nearby. These are different questions and require different observables. A model of a perfect wire or ideal source is an approximation with a useful domain.
+
+Begin with drawings or an isolated, current-limited educational setup. Describe apparatus ratings and observation conditions before a physical study. Later high-energy equipment, stored charge and strong fields require suitable facilities and competent supervision. This subject develops the explanations and evidence needed for such work rather than turning a household observation into permission to work on a power installation.
+
+**Continue:** [Charge, field, potential, current and energy are different quantities](Charge-field-potential-current-and-energy.lingua#r_73F672N5XQ9B4B1MPJAKCK2EGS).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_1PMJFESWTM62NGP42X33D125WA

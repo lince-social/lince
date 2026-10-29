@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Ratings, operating states, models and evidence (@pe-operating-state: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #source "../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8", #electrical-power-engineering "../mathematics/Linear-algebra-differential-equations-and-control-bridges.lingua#r_5HPRA3VXTJQKHD1RDH620HJW43") { r_4BA5QEZMPE71TKF40R5EYJ9HMQ
+**Read:** [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), equipment selection, operating conditions and verification; [Mechanical and Electrical Design of Hydroelectric Power Plants — USACE](../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8), complete applicable equipment/design context.
+
+Separate normal operating conditions, startup, overload, fault, isolated maintenance and return to service. Equipment that carries a current continuously may not safely make or interrupt the prospective fault current. A thermal limit, dielectric withstand, stability boundary and protection setting constrain different phenomena and time scales.
+
+For one documented device, list nominal values, allowable ranges, duty and environmental conditions, the actual measurement, calibration/uncertainty and the model used to predict performance. Identify which evidence is a type test, routine factory test, installation test or service observation. A drawing showing a component does not prove that the built component has its declared connections or condition.
+
+Use simple models initially, then state what has been omitted and what observation would expose it. A steady sinusoidal solution is not a startup or fault transient. A converged power flow is not proof of dynamic stability, protection coordination or thermal acceptability. The later records refine these separate claims and connect them through the complete design, construction, commissioning and maintenance case. Preserve the conditions with the result instead of promoting one successful test into an unrestricted equipment capability.
+
+**Continue:** [Matrix, differential-equation and control bridges](../mathematics/Linear-algebra-differential-equations-and-control-bridges.lingua#r_5HPRA3VXTJQKHD1RDH620HJW43).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4BA5QEZMPE71TKF40R5EYJ9HMQ

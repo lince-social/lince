@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Begin with a question and a result someone can check (@rc-claim: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/Reproducibility-and-Replication.lingua#r_32SK41ZP8P04Z0PMZX5NN6C2T9", #reproducible-computation "What-reproduction-means.lingua#r_7GX7RDN4ECAVTT6GZTXK8TCF4R") { r_2G13323XWBD8ZQD7S8FVE13AT0
+**Read:** [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), the whole paper, initially as a map of the practices; [Reproducible Research in Computational Science — Peng](../sources/Reproducibility-and-Replication.lingua#r_32SK41ZP8P04Z0PMZX5NN6C2T9), the complete short article.
+
+A calculation becomes useful evidence when its inputs, operations, and interpretation can be examined. Begin with a small question: what fraction of a specified component was recovered from two hypothetical material lots? That question already requires decisions about wet and dry mass, the meaning of a component fraction, and which lots belong in the total. A program cannot supply those meanings merely by running successfully.
+
+Write three separate sentences: the question; the mathematical operation used to answer it; the claim the answer supports. For the teaching calculation, all quantities are invented, the model is a nonreacting dry-mass balance, and the answer describes those numbers only. It is not a measured recovery for a mine or an assessment of an actual process.
+
+Draw the chain from original input to interpreted result. Name every manual alteration, imported reference value, filtering rule, fitting choice, and external service along that chain. A plot copied into a report is an output; the computation that produced it is a separate object worth preserving. A number remembered from an earlier interactive session is an undeclared input until it is written down.
+
+**Work:** calculate a dry mass from 800 kg wet material containing a water mass fraction of 0.10. Explain why 720 kg follows, what the fraction's denominator is, and which observation would be needed to use this equation on real material. Ask another reader to reproduce the arithmetic from your explanation alone. Then deliberately omit the wet/dry distinction and observe how many different interpretations become possible.
+
+The first achievement is modest: an explicit, inspectable calculation. The later research programme asks whether an unfamiliar reader can reconstruct an entire analysis, test its assumptions, criticize it, and improve it. Keep that scientific purpose visible while learning the tools.
+
+**Continue:** [Specify the kind of agreement being claimed](What-reproduction-means.lingua#r_7GX7RDN4ECAVTT6GZTXK8TCF4R).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_2G13323XWBD8ZQD7S8FVE13AT0

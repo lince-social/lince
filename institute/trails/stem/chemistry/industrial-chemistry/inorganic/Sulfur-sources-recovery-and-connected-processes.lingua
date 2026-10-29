@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Trace sulfur through resources, gas treatment, recovery and chemical use (@ic-sulfur: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6", #source "../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3", #industrial-chemistry "Sulfuric-acid-conversion-absorption-and-heat-recovery.lingua#r_07JKJK86YAKGMS0V4SDW41TNTS") { r_0T9N6SJPFNJY9V033D7RQ8EGJ5
+**Read:** [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the whole sulfur-feed and sulfuric-acid process context; [Refining of Mineral Oil and Gas, BREF REF](../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6), the complete sulfur recovery, gas preparation and related utility/tail-gas treatment; [Chemical-industry process descriptions and emission factors — EPA AP-42](../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3), the complete sulfur-recovery section and its April 2015 background methods.
+
+Sulfur reaches industry in different chemical forms and through interconnected production systems. Recovery from sulfur-containing process gases is chemically different from obtaining native sulfur or processing a sulfide material. Feed composition, water, carbon compounds, particulates and contaminants influence the useful route.
+
+An idealized recovery relation 2H₂S+SO₂→3S+2H₂O captures a net chemical balance, while a complete route includes the source and adjustment of reacting gases, thermal and catalytic steps, condensation, returned streams and tail-gas treatment. A single recovery percentage needs a defined inlet, outlet, species basis and operating interval.
+
+Follow sulfur into acids, products, emissions, wastewater and solid residues. A byproduct can become a useful feed only with appropriate chemical/physical quality, handling and demand. A change in another industry can therefore change the availability and character of the sulfur supply even if its downstream chemistry remains familiar.
+
+**Work:** reconstruct one complete public sulfur-recovery-to-use chain and independently close sulfur, water and energy accounts. Compare two documented treatment arrangements at equal useful sulfur output and residual requirements. Explain which actual gas/property/catalyst or monitoring evidence distinguishes a chemical, separation or operating limitation.
+
+**Continue:** [Reconstruct sulfuric-acid production through conversion, absorption and a complete sulfur account](Sulfuric-acid-conversion-absorption-and-heat-recovery.lingua#r_07JKJK86YAKGMS0V4SDW41TNTS).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_0T9N6SJPFNJY9V033D7RQ8EGJ5

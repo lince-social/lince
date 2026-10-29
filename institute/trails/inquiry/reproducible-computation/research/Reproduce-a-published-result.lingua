@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Reconstruct and critique a published computational result (@rc-paper: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Independent-investigation-and-revision.lingua#r_0R6HJY4ASPRC83B80MVSXH310Z") { r_262594EJP43XMD8STYD24PSHJY
+**Read:** [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), the whole research project and publishing exercises; [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), the complete paper compared with the selected study; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), research-compendium and review guidance.
+
+Select an openly accessible paper, textbook study, or university research example whose full computational method and authorized inputs can be inspected. Choose a result substantial enough to require more than running one supplied command, and small enough to validate a meaningful part independently. The research-software book's complete Zipf project is one accessible starting point; a domain study from a later specialist trail can deepen the investigation.
+
+Read the whole source, including appendices, method assumptions, and limitations. Identify the exact result being reproduced and derive the comparison rule before executing the supplied implementation. Resolve data, code, environment, version, configuration, and access conditions. An unavailable input is a finding to document, not permission to substitute invented values and call the original result reproduced.
+
+Reconstruct the stated computation, preserving a precise account of assistance or corrections needed. Independently implement a tractable part without calling the original computational helper. Compare equations, units, selections, numerical behavior, and interpretation. Agreement obtained through two wrappers around the same hidden library operation offers weaker independence than two genuinely different derivations or implementations.
+
+**Investigate:** one environmental influence; one numerical parameter; one scientific-model or data-selection assumption; and one potential failure case. Explain which changes affect only representation, which alter numerical accuracy, and which change the scientific question or conclusion. Reproduce enough of the source's other results to check that the selected finding was not an isolated convenient case.
+
+Write a reproduction report with citations, available artifacts, commands, independent checks, observed agreements/discrepancies, limits, and proposed corrections. Let another reader examine it. A well-supported failed reproduction with a diagnosed cause is more informative than a claim of success resting on a visually similar figure with unknown inputs.
+
+**Continue:** [Scholarly study — investigate and improve a computational method](Independent-investigation-and-revision.lingua#r_0R6HJY4ASPRC83B80MVSXH310Z).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_262594EJP43XMD8STYD24PSHJY

@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Connect biaxial figures with principal indices and directional geometry (@mp-biaxial: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #mineralogy-and-petrology "Twinning-zoning-strain-and-multiple-domains.lingua#r_2CS1MMWSJAVV7B6P6R6VNS4WY1") { r_055H5F5MZ3GN10AZE1ZNPDP0F3
+**Read:** [Optical Mineralogy — Brock University course and laboratory material](../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E), the complete biaxial indicatrix, figure, optic-sign, and associated laboratory material; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full biaxial optical treatment; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the relevant complete observation/measurement procedures.
+
+A biaxial indicatrix uses three principal refractive indices, conventionally ordered α ≤ β ≤ γ in the selected text. Two optic-axis directions and their angular relationship arise from the geometry; the measured apparent figure also depends on orientation, objective/aperture, wavelength, and specimen conditions.
+
+Distinguish acute/obtuse bisectrix, optic-axis, and flash figures, including off-center cases. Isogyre movement under rotation is evidence requiring a geometrical interpretation. A small optic angle or an incomplete figure can make an apparently simple pattern ambiguous.
+
+Optical sign identifies which principal direction corresponds to the acute bisectrix under the adopted convention. Dispersion, absorption, twinning, zoning, and strain can complicate observations. A numerical 2V estimate needs its actual measurement method and uncertainty rather than an unsupported value read from a schematic.
+
+**Work:** complete the biaxial optics/figure labs. Construct indicatrix sections and explain a sign determination using the actual accessory and orientation procedure. Compare two candidate interpretations of an incomplete observed figure, identifying a discriminating rotation or complementary property. State where the uncertainty prevents an exact compositional inference.
+
+Read all biaxial lectures and practical-guide sections before attempting unknowns. Combine the result with plane-light, crossed-light, texture, and chemical evidence rather than using optical sign as a complete mineral name.
+
+**Continue:** [Distinguish twins, zoning, exsolution, and deformation features](Twinning-zoning-strain-and-multiple-domains.lingua#r_2CS1MMWSJAVV7B6P6R6VNS4WY1).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_055H5F5MZ3GN10AZE1ZNPDP0F3

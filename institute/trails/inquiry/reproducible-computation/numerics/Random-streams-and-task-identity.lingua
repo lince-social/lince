@@ -1,0 +1,39 @@
+Import "../Reproducible-computation.lingua"
+
+Give stochastic work explicit stream and task identities (@rc-streams: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../../metrology/sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4", #reproducible-computation "Simulation-error-and-comparison.lingua#r_06Q945ZQ0BJKYWADNE94YHBCFC") { r_1QGP0E4XMM77C1FWNHWDHJ2TJT
+**Read:** [Numerical arrays and reproducible random streams — NumPy documentation](../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY), parallel streams and compatibility policy completely; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), random guarantees, generator objects, and hashlib; [Propagation of distributions using Monte Carlo — JCGM 101](../../metrology/sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4), simulation control and the full guide’s examples.
+
+A pseudorandom computation depends on an algorithm, initialization, transformations, call sequence, and execution partition. A seed number alone does not specify every result across versions, builds, machines, or libraries. Read NumPy's complete compatibility and parallel-stream discussions and record the actual conditions of the chosen generator.
+
+The following original standard-library example assigns a deterministic seed to each logical task using SHA-256, then instantiates a separate Random object. It demonstrates task identity surviving a changed scheduling order under the tested runtime. It does not establish statistically independent streams, cryptographic suitability, or compatibility for every future library/version. Scientific production work needs a generator/stream construction justified for its sampling purpose; compare NumPy SeedSequence and spawning.
+
+```python file=streams.py
+import hashlib
+import json
+import math
+import random
+
+def task(task_id, count=20000):
+    material = f"lince-uniform-square-v1:84017:{task_id}".encode("utf-8")
+    seed = int.from_bytes(hashlib.sha256(material).digest(), "big")
+    generator = random.Random(seed)
+    values = [generator.random() ** 2 for _ in range(count)]
+    return {"count": count, "mean": math.fsum(values) / count}
+
+identities = ["specimen-A", "specimen-B", "specimen-C"]
+forward = {identity: task(identity) for identity in identities}
+reverse = {identity: task(identity) for identity in reversed(identities)}
+assert forward == reverse
+for result in forward.values():
+    assert abs(result["mean"] - 1 / 3) < 0.02
+print(json.dumps(forward, sort_keys=True))
+```
+
+The 0.02 check is a deliberately loose smoke bound for these fixed teaching runs, not a confidence guarantee or a serious Monte Carlo accuracy assessment. The next Record supplies that assessment. The exact target E(X²) = 1/3 comes from integration, independently of the generator.
+
+**Work:** reverse task order, change worker grouping, and compare each task's output. Contrast this with a shared generator consumed in scheduling order, and with workers accidentally receiving copies of identical state. Repeated samples are reproducible yet can misrepresent effective sample size. Specify logical task identities, stream construction, aggregation order, implementation, and numerical acceptance for a real study.
+
+**Continue:** [Evaluate simulation error separately from the uncertainty being simulated](Simulation-error-and-comparison.lingua#r_06Q945ZQ0BJKYWADNE94YHBCFC).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_1QGP0E4XMM77C1FWNHWDHJ2TJT

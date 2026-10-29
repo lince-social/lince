@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow phosphoric acid through mineral reaction, solid separation and impurity control (@ic-phosphoric-acid: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3", #industrial-chemistry "Potassium-phosphate-fertilisers-and-nutrient-accounting.lingua#r_15KD96DVW38ZFC1M02YZDGR904") { r_3W1VQB0X8GTV0RJH1PVWX34J3N
+**Read:** [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the entire phosphoric-acid chapter, separation, purification and residual context; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the complete phosphoric-acid production teaching; [Chemical-industry process descriptions and emission factors — EPA AP-42](../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3), the whole phosphoric-acid section and original background evidence.
+
+Wet-process phosphoric-acid manufacture couples phosphate-mineral reaction with acid, calcium-sulfate phase formation, solid/liquid separation and further purification or concentration. A thermally derived phosphorus route has different chemistry, utilities, product impurities and residuals. Compare complete routes rather than treating acid identity as a complete process description.
+
+For a deliberately simplified hydroxyapatite account, Ca₅(PO₄)₃OH+5H₂SO₄→3H₃PO₄+5CaSO₄+H₂O is balanced. Actual mineral substitutions, fluoride, calcium-sulfate hydration, mother liquor, dissolved impurities and side reactions require their own species/water accounts. The symbolic equation is not an operating recipe or a prediction of the actual phases present.
+
+Filtration/washing, acid recovery, impurity distribution and residue behavior connect reaction conditions with useful product and environmental work. A food, industrial or fertiliser use can require a different purification and evidence chain even at similar nominal acid concentration.
+
+**Work:** reconstruct a complete public route with actual phase and impurity evidence, independently closing phosphorus, calcium, sulfur, water and one consequential trace constituent. Compare two reaction/separation/purification arrangements at the same product requirement. Explain uncertainty, retained liquor and the observations needed to test the proposed phase and recovery model.
+
+**Continue:** [Connect fertiliser chemistry, physical form and nutrient reporting conventions](Potassium-phosphate-fertilisers-and-nutrient-accounting.lingua#r_15KD96DVW38ZFC1M02YZDGR904).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_3W1VQB0X8GTV0RJH1PVWX34J3N

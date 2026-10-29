@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Model batch and semi-batch chemistry with feed history, inventory and thermal response (@ic-batch: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #industrial-chemistry "Stirred-flow-and-packed-bed-reactor-accounts.lingua#r_4ZM75C2HFZY6FZWDMQE26ENGXJ") { r_0XQR509GVT9DHKFW280V98DMAJ
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full batch/semi-batch material and energy derivations and examples; [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the entire batch/semi-batch reaction-development and assessment guide; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the complete relevant batch development, operations and isolation chapters.
+
+A batch system begins with a specified inventory; semi-batch operation adds or removes material during the reaction. Amounts, volume, concentrations, phases and heat capacity can therefore change with time. Derive the appropriate balances before replacing them with a convenient constant-volume rate equation.
+
+Feed policy can influence temperature, local composition and competition between desired and undesired pathways. It also changes accumulation of unreacted material, solvent and heat. A uniform vessel model cannot by itself establish what happens near a feed point or during a mixing/utility failure.
+
+The useful cycle includes charging, reaction, holding, quenching or transfer, isolation, cleaning, sampling and readiness for the next batch. Reaction time and total cycle time differ. Campaign changes can leave residual material or alter contact surfaces, and a narrowly successful experiment may not explain repeated manufacturing behavior.
+
+**Work:** reconstruct a complete published batch/semi-batch process with actual addition and temperature histories, species/energy equations and isolation steps. Compare two feed policies on yield, thermal accumulation, quality, cycle time and residuals. Identify the calorimetry, mixing and measurement evidence needed to test the comparison in its appropriate laboratory or professional process setting.
+
+**Continue:** [Compare continuous reactor arrangements through balances and useful product](Stirred-flow-and-packed-bed-reactor-accounts.lingua#r_4ZM75C2HFZY6FZWDMQE26ENGXJ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_0XQR509GVT9DHKFW280V98DMAJ

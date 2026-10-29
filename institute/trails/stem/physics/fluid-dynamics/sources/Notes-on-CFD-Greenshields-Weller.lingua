@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Notes on Computational Fluid Dynamics — Greenshields and Weller (@fd-cfdnotes: 0, is #reference, #part-of @fd-sources) { r_50W8G5SX00YH7R6TBXK4FAP5MY
+Christopher J. Greenshields and Henry G. Weller. Notes on Computational Fluid Dynamics: General Principles, CFD Direct, 2022. ISBN 9781399920780. [Complete free web book](https://doc.cfd.direct/notes/cfd-general-principles/).
+
+Read the whole book through equations, discretization, boundary conditions, algorithms, turbulence modelling and worked cases. Derive a conservative discrete balance and explain how the chosen pressure/velocity and flux treatments implement it. Use it alongside [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW) and the actual solver-version documentation.
+
+The authors' site identifies eight chapters and 291 print pages. Free web reading is under the site's terms of use, with copyright retained; the software's GPL does not make the book GPL or CC. Print purchase and paid training are separate from the public text. Keep the book and external examples linked.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_50W8G5SX00YH7R6TBXK4FAP5MY

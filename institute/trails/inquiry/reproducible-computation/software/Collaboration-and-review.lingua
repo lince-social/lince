@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Review scientific changes and resolve conflicts with meaning intact (@rc-collaboration: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Pro-Git.lingua#r_7NQ43JGJ863RMR0HDHA7GMRD9G", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #reproducible-computation "Independent-checks-and-tests.lingua#r_6WTYYA5977HEF4T6CEH6CKKQCR") { r_0ARV56N560SEN2PCT7XRDT2XZK
+**Read:** [Pro Git — Chacon and Straub](../sources/Pro-Git.lingua#r_7NQ43JGJ863RMR0HDHA7GMRD9G), Distributed Git and branching/merging; [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), Make it social; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), collaboration and code review material.
+
+Two collaborators can make textually compatible changes that contradict the scientific model. One may convert feed mass to dry basis while another applies a wet-basis assay. A clean merge proves that the version-control operation found no unresolved textual conflict; it does not establish that the combined method is coherent.
+
+For each proposed change state the problem, the changed behavior, the assumptions, and the evidence. Review equations, units, selections, numerical tolerances, and interpretation as well as syntax. Include a small independently justified example showing the before/after difference. A reviewer unfamiliar with the recent conversation should be able to understand the change from its scientific account and diff.
+
+In a personal practice repository, let two copies make different improvements and reconstruct the combined result. Resolve conflicts by checking the intended method, not by choosing whichever side is newer. Preserve the reasoning for changes that alter published conclusions. Distinguish an editorial correction from a new analysis revision and retain access to the version underlying an earlier report.
+
+**Work:** ask a partner to inspect a deliberate dry/wet-basis mistake in a small revision. If working alone, write the expected physical interpretation before reading the diff and review against that independent note. Then review a test change that merely accepts the program's new output without an independent reason; identify what evidence it fails to provide.
+
+The handbook's social practices and the research-software book's collaboration exercises deepen the method. Learn how to communicate a reproducible failure with the smallest input that still exhibits it. Good collaboration makes the analysis more inspectable and repairable without depending on one person's memory or access to a private interactive session.
+
+**Continue:** [Test against independently justified answers and failure cases](Independent-checks-and-tests.lingua#r_6WTYYA5977HEF4T6CEH6CKKQCR).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_0ARV56N560SEN2PCT7XRDT2XZK

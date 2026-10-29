@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+First study — turn an ordinary measurement into a defensible result (@met-first-study: 0, is #chapter, #part-of @metrology, #source "../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1", #source "../sources/Dimensional-Metrology.lingua#r_5XRAV7WQWR6CTM94WM04G0Z647", #source "../../quantitative-literacy/sources/Uncertainty-Guides.lingua#r_11PDFVNTH65FKFVZVHMHMAF6CH", #metrology "../calibration/Comparisons-and-corrections.lingua#r_1A4VTANENM6ME5PE8BPRWFN7ME") { r_3Q9EX59YKEV2MNAAMBB5NPTFCV
+**Read:** [A Beginner’s Guide to Uncertainty of Measurement — Bell](../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1), the full worked calculation and cautions; [Fundamental Good Practice in Dimensional Metrology — Flack and Hannaford](../sources/Dimensional-Metrology.lingua#r_5XRAV7WQWR6CTM94WM04G0Z647), the guide’s practical measurement treatment; [Uncertainty guides — Taylor, Kuyatt, and JCGM](../../quantitative-literacy/sources/Uncertainty-Guides.lingua#r_11PDFVNTH65FKFVZVHMHMAF6CH), the reporting guidance.
+
+Choose an ordinary noncritical object and a quantity you can investigate with available equipment, such as a block’s length or a container’s delivered water volume. A document-only study using clearly labelled teaching observations is also useful when equipment or references are unavailable. Do not claim actual calibration traceability from invented data.
+
+Specify the measurand and intended purpose, sketch the measurement principle, and write a repeatable procedure. Record the equipment’s identity and resolution and the actual reference information you possess. Collect a modest series of repeated observations while noting conditions and sequence. Separate what repeat observations show from influences they cannot reveal.
+
+Produce an initial result with a reasoned interval or uncertainty description, identifying its interpretation and limitations. List the most important missing evidence and explain which observation or reference would improve it. An honest rough result with a clear definition is more useful than an unsupported small ± number.
+
+Then revise the method once: improve alignment, clarify reference conditions, change timing, or add an independent check. Preserve both sets of observations and explain whether the apparent difference is compatible with their stated conditions. The exercise should establish a connection between physical changes, a measurement model, and the result.
+
+**Evidence:** retain the question, sketch, procedure, observations, calculation, uncertainty reasoning, source references, and revision. Another person should understand what was measured and what remains unestablished. The later calibration and advanced projects return to this format with a stronger reference chain, explicit probability models, and independently checked calculations.
+
+**Continue:** [Calibration as a comparison with corrections and conditions](../calibration/Comparisons-and-corrections.lingua#r_1A4VTANENM6ME5PE8BPRWFN7ME).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_3Q9EX59YKEV2MNAAMBB5NPTFCV

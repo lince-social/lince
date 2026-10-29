@@ -1,0 +1,17 @@
+Resources and materials — feedstocks, useful properties, production, and recovery (@resources-materials-map: 0, is #chapter, #resources-and-materials "metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1", #resources-and-materials "../../stem/chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618", #resources-and-materials "chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q") { r_14HP6K610XB12E2WGNK9A6VN8D
+Follow a material from its source and preparation through composition, structure, useful properties, fabrication, inspection, use, and recovery. Connect each transfer with its quantities, evidence, utilities, equipment, maintenance, and human work.
+
+Begin with [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1) for primary and secondary feed, extraction/refining, alloys and transformations, qualified products, service evidence, operation, and recovery. [Mining and mineral engineering — extraction, processing, and continuing work](../../stem/engineering/mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA) and [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../../nature/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN) supply connected mineral and preparation knowledge.
+
+Shared methods and scientific models are available through [Inquiry — shared ways to understand and investigate](../../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB), [General chemistry](../../stem/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), and [STEM — mathematics, science, and engineering](../../stem/STEM.lingua#r_4B137J3ZBVM7TD2NA797H2CZ7E). Continue design/construction/operation through [Engineering — systems, design, construction, and operation](../../stem/engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68) and connected production/upkeep through [Ergon](../Ergon.lingua#r_00000000000000000000002001). Questions about purposes, evidence, and assumptions return to [Philosophy](../../philosophy/Philosophy.lingua#r_00000000000000000000001001).
+
+Connect industrial substances, reaction/separation systems, useful chemical products and recovery through [Industrial chemistry — chemical transformations, useful products and continuing production](../../stem/chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+
+Follow specified chemical feedstocks from origin through suppliers, storage, delivery, acceptance, continuity and recovery in [Chemical feedstocks and supply systems — specified materials from origin to accepted use](chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_14HP6K610XB12E2WGNK9A6VN8D
+
+Extension @resources-materials-map "lince.vocabulary" {
+ definitions {
+  resources-and-materials "A continuation into the origin, preparation, properties, production, use, or recovery of useful materials."
+ }
+}

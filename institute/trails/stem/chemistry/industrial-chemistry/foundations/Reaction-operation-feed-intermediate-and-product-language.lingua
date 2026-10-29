@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Use industrial chemical language with an explicit substance, operation and basis (@ic-language: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Industrial-Chemical-Technology-I-NOUN.lingua#r_2026VMVXVJQGK3WTH1P17FE8T9", #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #source "../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74", #industrial-chemistry "Molecules-phases-particles-equipment-and-observations.lingua#r_2RN04P6Z2PXNY10792WDY0VRPX") { r_64314EV3Y9ZKDEEWWSZXQFP5AB
+**Read:** [Industrial Chemical Technology I — Adebayo, NOUN](../sources/Industrial-Chemical-Technology-I-NOUN.lingua#r_2026VMVXVJQGK3WTH1P17FE8T9), the complete introductory definitions and operation classifications; [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the feedstock, product and flowsheet units; [Chemical Technology I — Indra Deo Mall, NPTEL](../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74), the introductory process-technology material and one full process description.
+
+Separate a chemical species, a material stream and a commercial product. A stream may contain several species and phases; a product grade carries additional specifications. Feedstock, intermediate, reagent, catalyst, solvent, utility, co-product and waste identify roles in a particular process, and one material can occupy different roles in connected plants.
+
+A unit process emphasizes a chemical transformation, while a unit operation describes a physical task such as distillation, filtration or heat exchange. Real equipment couples both: reaction may change phase behavior, evaporation may remove a product, and a catalyst's pore structure may control the apparent rate. A process name does not replace the governing chemistry and transport.
+
+Build Portuguese/English meanings in context: matéria-prima/feedstock, corrente/stream, teor or composição/composition, rendimento/yield, conversão/conversion, seletividade/selectivity, purga/purge, reciclo/recycle, operação unitária/unit operation and especificação/specification. Keep the actual equation and denominator beside a quantity rather than trusting a familiar translation.
+
+**Work:** annotate a complete published process description and flowsheet. Identify every material role and every consequential transformation/separation. Resolve three ambiguous terms with units, material state, boundaries and evidence. Explain a case where translating a word literally would conceal a different industrial definition.
+
+**Continue:** [Connect molecular chemistry with phases, particles, equipment and observed behavior](Molecules-phases-particles-equipment-and-observations.lingua#r_2RN04P6Z2PXNY10792WDY0VRPX).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_64314EV3Y9ZKDEEWWSZXQFP5AB

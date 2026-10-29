@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Evaluate experimental constraints and the limits of transferring them to natural rocks (@mp-experimental: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #mineralogy-and-petrology "../applications/Mineral-hosts-impurities-and-industrial-specifications.lingua#r_6J4G1Q2JJ80B1SDS0NVQMR9H4M") { r_36V798SPKFZBP76EH1J1YCN2TC
+**Read:** [Advanced Igneous Petrology — Timothy Grove, MIT 12.490](../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF), the complete selected experimental case and original paper; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the full experimental/data-calibration papers relevant to the selected model; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), the full relevant analytical validation context.
+
+Experimental petrology links controlled conditions and materials with products and measured properties. Starting composition, apparatus, calibration, pressure/temperature gradients, duration, capsule/container interaction, redox/fluid control, quench behavior, and analysis affect what an experiment establishes.
+
+An apparent stable product can reflect incomplete reaction or nucleation barriers. Reversal/bracketing approaches, repeated conditions, time studies, and independent standards can test equilibrium and calibration under identified assumptions. A reported boundary should retain its uncertainty and experimental domain.
+
+Transferring a result to nature needs comparable composition/structure, conditions, mechanisms, and the geological history. A synthetic endmember experiment may constrain a model without describing every impurity-bearing solid solution. A successful fit to experimental points also does not validate untested extrapolation.
+
+**Work:** read a complete primary experimental paper from the advanced course/model bibliography. Reconstruct the observation chain and one quantitative calibration/phase constraint. Compare a competing interpretation involving disequilibrium, container interaction, or calibration where relevant; identify the experiment or independent observation that could discriminate it.
+
+Actual high-pressure, high-temperature, beam, or chemical laboratory operation requires appropriate facilities and specialist supervision. This study demands understanding the experiment and its evidence; reproducing a table or model is a distinct achievement from performing the experiment. Later experimental/material-science trails deepen apparatus and methods.
+
+**Continue:** [Translate a bulk material requirement into questions about mineral hosts and impurities](../applications/Mineral-hosts-impurities-and-industrial-specifications.lingua#r_6J4G1Q2JJ80B1SDS0NVQMR9H4M).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_36V798SPKFZBP76EH1J1YCN2TC

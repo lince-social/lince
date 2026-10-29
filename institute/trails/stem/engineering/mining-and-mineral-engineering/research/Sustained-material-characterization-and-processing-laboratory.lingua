@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Build and defend a connected material-characterization and processing investigation (@mine-laboratory-project: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #mining-and-mineral-engineering "Advanced-resource-method-and-production-planning-study.lingua#r_5Y2NXQ412NVQNSD0MDVHBWQW4K") { r_1NH1Y0TDS8D47PPDEQFYYC1P6Z
+**Read:** [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the whole manual, with complete procedures for each performed/interpreted method; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), all chapters supporting the actual unit operations; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), the full comparable integrated plant case and its references.
+
+Choose a mineral feed with enough material/domain information to connect geological origin, sample support, mineral hosts, liberation, particle populations, and measured separation. Plan a substantial sequence using the full CETEM laboratory methods, not one successful demonstration. Practical laboratory achievement uses appropriate facilities and guidance; a supplied-data investigation explicitly reports which methods were studied rather than performed.
+
+Begin with a question, population/support, sample identity, characterization, preparation history, and quality evidence. Include representative splits, blanks/references where applicable, repeat measurements, instrument calibration, uncertainty, and preservation of the original observations. Explain how preparation could alter the measured property or lose a constituent.
+
+Investigate comminution/classification and at least two scientifically suitable separation or dewatering approaches. Use complete size/constituent balances, response curves, variability, and independent validation. Compare a mechanistic interpretation with an alternative involving association, surface change, entrainment, segregation, or measurement bias. Design the discriminating test rather than choosing the explanation with the best fitted curve.
+
+**Work:** produce a reproducible technical report with literature/theory, full methods, observations, uncertainty, calculations, failed runs, and conclusions limited by the actual evidence. Independently reproduce a central balance/model and show the consequences of plausible sample or instrument bias. Propose a pilot/continuous test that addresses the most consequential scale-up uncertainty. Another reader should be able to reconstruct the argument without accepting the chosen process as correct by definition.
+
+**Continue:** [Defend an advanced mine plan under geological and operating uncertainty](Advanced-resource-method-and-production-planning-study.lingua#r_5Y2NXQ412NVQNSD0MDVHBWQW4K).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1NH1Y0TDS8D47PPDEQFYYC1P6Z

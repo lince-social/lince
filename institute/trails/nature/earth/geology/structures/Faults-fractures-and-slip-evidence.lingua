@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Infer fault displacement and sequence without equating separation with slip (@geo-faults: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Geologic-Map-Symbolization.lingua#r_7DHXSTN5K3KF1EPTPG18RM5K1K", #geology "Rheology-fabrics-and-shear-zones.lingua#r_4Q9MAX6W9S07RPR2J175PAXFNJ") { r_7GZYF6WKSDK43K38TBXHVNZ1YC
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), Fractures, Faults, Tectonic Environments of Faulting, and Labs 7–8 in full; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 12’s fault discussion and chapter 11 context; [Digital Cartographic Standard for Geologic Map Symbolization — FGDC/USGS](../sources/Geologic-Map-Symbolization.lingua#r_7DHXSTN5K3KF1EPTPG18RM5K1K), fault/contact representation used.
+
+A fracture is a break; a fault includes displacement along it. Describe fault orientation, displaced markers, fault rock, slickensides/lineations, steps, and cross-cutting relations before assigning movement. Normal, reverse, strike-slip, and oblique categories refer to components under stated geometry.
+
+Separation of a marker in a map or section is not generally the net slip vector. Its apparent offset depends on marker orientation, fault geometry, topography, and viewing plane. One piercing point or multiple independent markers can constrain information unavailable from a single planar contact.
+
+Distinguish current activity, evidence of an old movement, and the order of multiple movements. A mineralized vein or damaged zone may record fluids and several events rather than one instantaneous fault episode. Missing exposure can permit alternative connections among mapped segments.
+
+**Work:** complete fracture analysis and slip/fault problems, deriving the geometric distinction between separation and slip with an original construction. For a mapped fault, identify observed and inferred segments, at least two displacement constraints, and the unresolved component. Establish a relative sequence from cross-cutting or sealing evidence and state the limits of any activity claim.
+
+Read the complete fractures, faults, and tectonic fault-environment sections. The connection to groundwater, mineralization, slopes, earthquakes, and engineering should depend on the actual geometry/material/history, rather than treating every mapped fault as identical in permeability, strength, or present hazard.
+
+**Continue:** [Connect deformation mechanisms with conditions and preserved fabrics](Rheology-fabrics-and-shear-zones.lingua#r_4Q9MAX6W9S07RPR2J175PAXFNJ).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_7GZYF6WKSDK43K38TBXHVNZ1YC

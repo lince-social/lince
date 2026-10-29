@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Describe a mine as connected physical, informational, and working systems (@mine-system: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #mining-and-mineral-engineering "Material-grade-recovery-and-operating-vocabulary.lingua#r_0BXGZZP1DEME655JAC89NJ6A4J") { r_0WEGJD1A06ZDDW1CMPYCCZE9G6
+**Read:** [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the whole public introductory course progressively; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete lifecycle/layout and environmental context; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), one complete integrated case initially, then the whole book.
+
+A mine includes exploration/evaluation, access and development, extraction, material handling, processing, waste/water systems, maintenance, and closure/post-closure. These stages overlap and change the conditions encountered later. Closure assumptions affect early layout and material choices rather than appearing only after production ends.
+
+Draw stocks, flows, equipment, work, information, utilities, and decision boundaries. Ore and waste are classifications within a specified plan and context; the same material may change destination when quality, processing, geometry, or constraints change. Preserve the physical material identity through those decisions.
+
+Interfaces matter: a plant feed requirement influences selective mining and stockpiles, excavation affects ground/ventilation, dewatering changes water pathways, and maintenance or workforce constraints limit usable capacity. A nominal equipment rate does not describe the throughput of the connected system.
+
+**Work:** reconstruct a complete published teaching/plant case as a lifecycle and process account. Name the inputs/outputs and the teams exchanging samples, material, data, or responsibility. Identify one dependency whose loss changes several downstream systems and trace how the effect would be observed.
+
+Read the entire introductory course and revisit its system map through the later studies. The source books provide substantial explanations; these Records connect their quantities, assumptions, and practical consequences without introducing another Lince abstraction or requiring every neighboring field before starting.
+
+**Continue:** [Keep mining and processing terms tied to their quantities and contexts](Material-grade-recovery-and-operating-vocabulary.lingua#r_0BXGZZP1DEME655JAC89NJ6A4J).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0WEGJD1A06ZDDW1CMPYCCZE9G6

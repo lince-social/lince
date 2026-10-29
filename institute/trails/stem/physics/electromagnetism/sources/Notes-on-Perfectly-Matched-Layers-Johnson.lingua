@@ -1,0 +1,11 @@
+Import "../Electromagnetism.lingua"
+
+Notes on Perfectly Matched Layers — Steven G. Johnson (@em-pml: 0, is #reference, #part-of @em-sources) { r_0NSKFHQZEZSB48A279RTVFB8HM
+Steven G. Johnson. Notes on Perfectly Matched Layers (PMLs), arXiv:2108.05348, submitted 4 August 2021. [Versioned primary record](https://arxiv.org/abs/2108.05348) · [Complete paper](https://arxiv.org/pdf/2108.05348). [Earlier MIT notes, updated 10 March 2010](https://math.mit.edu/~stevenj/18.369/spring10/pml.pdf).
+
+Read the whole paper, reconstruct complex-coordinate stretching, and investigate the limits imposed by discretization, medium variation and evanescent fields. Compare a deliberately difficult case with an enlarged-domain result rather than assuming a PML removes every reflection.
+
+The 2021 record and the earlier notes identify distinct versions; checked on 29 October 2026. The earlier notes were created in 2007 and updated in 2010, not published as the 2021 arXiv version. Free author-hosted/preprint reading is available; no general CC adaptation licence is asserted here. Preserve the actual version and notices used.
+
+**Return:** [Electromagnetic sources — complete books, courses, methods and research](../Sources.lingua#r_6XW0N80NM6WSDWED10N8N7WX3P).
+} r_0NSKFHQZEZSB48A279RTVFB8HM

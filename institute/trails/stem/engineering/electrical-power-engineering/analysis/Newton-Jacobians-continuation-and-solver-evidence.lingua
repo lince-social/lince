@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Newton, Jacobians, continuation and solver evidence (@pe-power-flow-solver: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B", #source "../sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW", #electrical-power-engineering "../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8") { r_2KM2RZT4E5AY1HNQWXJGBXBQ6H
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), chapters 4–5 in full; [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B), complete detailed Newton/Jacobian sequence; [Introduction to Applied Linear Algebra — Boyd and Vandenberghe](../sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW), conditioning, least-squares and linear-system methods.
+
+Derive the mismatch equations and Jacobian for a small power-flow system. A Newton step solves a local linear approximation; damping, initial conditions, scaling and stopping criteria influence convergence. Small residuals prove satisfaction of the stated equations within numerical accuracy, not uniqueness or physical suitability of the model.
+
+Compare analytic derivatives with an independent finite-difference check over a justified perturbation range. Test known limits, alternative initial states and a second formulation. Separate equation residual, update size, constraint violations and discontinuous bus/control logic. An unconverged result must not be presented as a physical state merely because its voltages look plausible.
+
+Use continuation to trace a solution branch through loading, with a declared parameterization and event/limit treatment. Near a fold, the ordinary Jacobian becomes ill-conditioned and sensitivity increases; a different parameterization can still follow the mathematical branch. Distinguish voltage-solvability limits from dynamic voltage stability. The original two-bus calculation provides an exact restricted branch benchmark before the complete multibus methods and independent advanced investigations.
+
+**Continue:** [Build a numerical validation argument across several kinds of evidence](../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_2KM2RZT4E5AY1HNQWXJGBXBQ6H

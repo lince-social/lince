@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Read from a first specimen through substantial books and advanced studies (@mp-reading: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../sources/Mineralogy-and-Optical-Laboratory-Manual.lingua#r_4EH79TNHB2YMYGY79B5PV11FTG", #mineralogy-and-petrology "A-mineral-and-rock-question.lingua#r_34W71KV9Y00D9TGQJSQMT1NNSC") { r_57NZD8HAVKQW409DEN9D771VK5
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete opening chapters first, then all chapters and exercises; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the complete book alongside the rock sequence; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the entire guide progressively; [Mineralogy and Optical Mineralogy Laboratory Manual — McNamee and Gunter](../sources/Mineralogy-and-Optical-Laboratory-Manual.lingua#r_4EH79TNHB2YMYGY79B5PV11FTG), the full lab sequence and projects.
+
+Begin with the complete introduction, mineral chemistry, and physical-property chapters of Perkins's Mineralogy. Use a known teaching specimen or an authorized image to connect terms with observations. Follow the shared geology identification step and return for mineral definitions and crystal chemistry; no previous specialist course is assumed.
+
+Read the whole mineralogy book as the crystal, mineral-family, optics, and analysis sequence develops. Read all of Petrology alongside the rock/process studies. Preserve the actual open edition used: the institutional snapshots and maintained host have different dates and access conditions.
+
+Use the entire thin-section guide in English or Portuguese and the complete mineralogy/optical manual with suitable practical guidance. The Brock course develops optical theory/labs, and named virtual specimens provide additional interpretive practice. Complete the Raman guide and relevant full diffraction/microanalysis methods as the analytical questions deepen.
+
+The full MIT 12.109, Nelson, and Southard programmes lead toward MIT 12.490's graduate cases, complete primary papers, multicomponent models, and independent studies. Mathematical, chemical, measurement, and computational preparation appears where used; unfamiliarity at one step is a reason to follow its shared explanation, not climb every unrelated course first.
+
+**Work:** keep original descriptions, sketches, calculations, source/edition notes, and revised interpretations in your study workspace. Begin with one described observation and question now. Later completion demands sustained practical and scholarly work, while any Record can be followed or reused through ordinary links.
+
+**Continue:** [Begin with a material, an observation, and a question about its formation](A-mineral-and-rock-question.lingua#r_34W71KV9Y00D9TGQJSQMT1NNSC).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_57NZD8HAVKQW409DEN9D771VK5

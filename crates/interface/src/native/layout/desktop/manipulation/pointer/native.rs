@@ -86,7 +86,7 @@ fn mouse(world: &mut World, state: &mut Native, event: &MouseButtonInput) -> boo
     true
 }
 
-pub(in crate::native::layout) fn input(world: &mut World) {
+pub(crate) fn input(world: &mut World) {
     world.init_resource::<Native>();
     let mut state = world.remove_resource::<Native>().unwrap();
     state.keys.clear();

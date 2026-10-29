@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Explain electrical separation through particle properties and actual conditions (@mine-electrostatic: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #mining-and-mineral-engineering "Sensor-based-sorting-observability-and-rejection.lingua#r_1C2JP9GAXHD912MVT0WS8Q071G") { r_6VETYWKH3MXQFWRTD8NFWVVY2T
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete electrical/electrostatic separation chapter; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the full relevant preparation/conditioning/separation methods; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), a complete applicable case and primary method reference.
+
+Electrical/electrostatic separation connects charging or conductivity behavior with particle size, shape, association, surface state, contact history, fields, geometry, motion, and environmental conditions. A mineral's bulk electrical classification does not fully determine every prepared particle's trajectory.
+
+Moisture, coatings, impurities, temperature, contamination, and handling can alter surface/conductivity response. A laboratory result requires its preparation and conditioning account before transfer to another feed or scale. Fine intergrowth and mixed/aggregated particles can limit selectivity.
+
+Separate apparatus/settings, measured material properties, a force/trajectory model, and observed stream partition. Product quality, recovery, throughput, environmental controls, maintenance, and energy should share a clear basis. Stable operation with representative feed needs more evidence than one favorable batch result.
+
+**Work:** reconstruct a complete electrical-separation case with preparation, method, environmental conditions, particle population, sampling, and uncertainty. Independently check a stream/constituent balance and a stated model relation within its domain. Compare an alternative involving surface state or association and identify the experiment needed to distinguish it.
+
+Read full theory and laboratory methods with the equipment's actual professional guidance. The next surface-chemistry/flotation sequence develops another form of selectivity whose response also depends on both mineral identity and changing interfaces.
+
+**Continue:** [Test sensor-based sorting against measured particles and the complete feed account](Sensor-based-sorting-observability-and-rejection.lingua#r_1C2JP9GAXHD912MVT0WS8Q071G).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_6VETYWKH3MXQFWRTD8NFWVVY2T

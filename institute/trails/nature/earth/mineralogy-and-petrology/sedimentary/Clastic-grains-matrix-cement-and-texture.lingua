@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Describe clastic rocks before inferring source or environment (@mp-clastic: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM", #source "../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #mineralogy-and-petrology "Provenance-sorting-recycling-and-source-ambiguity.lingua#r_68WCSN54XX2DRSB8VJ3TD2690H") { r_4AQZE2384375M555JN9V5PZJFP
+**Read:** [Sedimentary Geology — John Southard, MIT 12.110](../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM), the complete siliciclastic composition, texture, and rock-type notes; [Rock Classification Scheme — British Geological Survey](../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH), the full sediment/sedimentary-rock report; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full relevant texture and observation procedures.
+
+A clastic rock's grains, lithic fragments, matrix, cement, pores, structures, and alteration need separate descriptions. Grain size, sorting, roundness, shape, composition, packing, and contacts preserve different influences of source, transport, deposition, and diagenesis. One descriptive term does not uniquely establish the whole process history.
+
+Classification depends on a named scheme, counting procedure, denominator, and treatment of altered or composite grains. A sand-grain proportion normalized after excluding matrix and cement answers a different question from the mode of the whole rock. Sectioning and grain-size selection can bias a comparison.
+
+Distinguish depositional matrix from later pseudomatrix or fine replacement where the evidence permits. Authigenic overgrowths, dissolution, pressure solution, compaction, and later cement can obscure original grains and contacts. The preserved rock is not always a direct record of its unconsolidated sediment composition.
+
+**Work:** complete the siliciclastic notes and classification report. Describe/count an identified teaching or published section with explicit categories and unresolved observations. Compare two candidate origins for a fine-grained component or grain boundary and propose a discriminating optical/chemical test. Explain how the uncertainty affects a source or reservoir/material inference.
+
+Read the full relevant note sequence and microscopy guide. Shared geology provides transport and depositional context; this petrological study deepens grain-scale composition, textures, reactions, and the evidential links needed by the next provenance step.
+
+**Continue:** [Infer provenance while accounting for transport, weathering, and recycling](Provenance-sorting-recycling-and-source-ambiguity.lingua#r_68WCSN54XX2DRSB8VJ3TD2690H).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_4AQZE2384375M555JN9V5PZJFP

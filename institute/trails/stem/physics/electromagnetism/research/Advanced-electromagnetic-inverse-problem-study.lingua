@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced electromagnetic inverse-problem study (@em-inverse-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_4AAZ68A806WG3FF0AE5YMMN3F6
+**Read:** [3D electromagnetic modelling and inversion — Oldenburg and colleagues](../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69), entire paper, methods and one complete linked case; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), complete applicable inversion and uncertainty methods.
+
+Read the whole [3D electromagnetic modelling and inversion — Oldenburg and colleagues](../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69), its linked complete reproducibility case and the applicable inversion/uncertainty parts of [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91). Choose material reconstruction, source localization or a geophysical induction problem with explicitly available permitted data. Identify the measurement operator, unknowns, forward model and error assumptions.
+
+First verify the forward calculation independently. Analyze its Jacobian, singular directions and parameter tradeoffs. Construct multiple plausible models, vary regularization/prior assumptions and compare the inferred result with actual data information. A posterior interval conditioned on one forward model does not include every possible model discrepancy.
+
+Reproduce one published result in a separate exercise area without adding external datasets or notebooks to this repository. Then change geometry, calibration or a held-out frequency range and predict an independent observable. Explain what could not be identified and design the next measurement that would most directly resolve it. Compare a high-dimensional image with a simpler physically interpretable model. The scholarly depth is the argument from data and assumptions to a limited physical conclusion, not the apparent resolution of a reconstruction plot.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_4AAZ68A806WG3FF0AE5YMMN3F6

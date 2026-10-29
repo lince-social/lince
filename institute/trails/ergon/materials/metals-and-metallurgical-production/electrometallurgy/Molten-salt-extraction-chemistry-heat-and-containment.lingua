@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Explain molten-salt production through coupled chemistry, current, heat, and material evidence (@metal-molten-electrolysis: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #metals-and-metallurgical-production "../metal-families/Iron-feeds-burden-reductants-and-route-selection.lingua#r_2XFN71HW1HPVHZWH0135TJERBG") { r_5J4EF5HRK4TAPTCT56SCND2SRY
+**Read:** [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), the entire electrometallurgy, fused-salt model, and aluminium/magnesium extraction material; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete molten-salt reduction and refining sequence; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the whole relevant cell, electrode, utility, and product-quality account.
+
+Some metals require a nonaqueous route because aqueous conditions allow competing reactions or do not support the required stable species and practical selectivity. Molten salts have their own solvent/speciation, phase, conductivity, activity, and transport models. A room-temperature aqueous electrode-potential table is not a complete model for a high-temperature salt cell.
+
+Join feed dissolution/reaction, both electrodes, current paths, interfaces, gas/products, thermal balance, electrolyte composition, containment, and product removal. Feed purity, water or unwanted compounds, electrode consumption, and changing composition can alter cell behavior. Heating and useful reduction are coupled but distinct duties.
+
+Compare actual production quality, current/energy efficiency, material use, emissions/residuals, service life, and maintenance. An ideal reversible-work calculation omits the transport, electrical, thermal, and physical constraints that determine a workable industrial system.
+
+**Work:** reconstruct a complete aluminium or other documented molten-salt extraction case with the full method/technical account. Independently close charge and target/impurity inventories and compare theoretical electrical work with the measured whole-cell energy/heat basis. Analyze an alternative electrode/material or feed-quality assumption and test it against independent evidence. Explain how the resulting metal must be characterized/refined before further alloy production.
+
+**Continue:** [Compare ironmaking routes with the burden and final steel requirement explicit](../metal-families/Iron-feeds-burden-reductants-and-route-selection.lingua#r_2XFN71HW1HPVHZWH0135TJERBG).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_5J4EF5HRK4TAPTCT56SCND2SRY

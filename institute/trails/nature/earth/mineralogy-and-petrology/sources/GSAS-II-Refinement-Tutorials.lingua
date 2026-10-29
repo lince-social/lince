@@ -1,0 +1,11 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+GSAS-II — diffraction analysis and refinement tutorials (@mp-gsas: 0, is #reference, #part-of @mp-sources) { r_14B5VSDN6YR5MQJVNTKYJXF3XB
+GSAS-II/Advanced Photon Source contributors. [Official tutorials and exercise links](https://advancedphotonsource.github.io/GSAS-II-tutorials/tutorials.html) · [Documentation guide](https://advancedphotonsource.github.io/GSAS-II-tutorials/documentation.html) · [Maintained technical documentation](https://gsas-ii.readthedocs.io/en/latest/).
+
+Complete Starting GSAS-II, Fitting laboratory X-ray powder data for fluoroapatite, Simulating Powder Diffraction, and the background, parameter-limit, and publication/CIF exercises relevant to the study. Explain the model and corrections before trusting a low residual. Preserve the actual program/tutorial/input versions, instrument model, and restrictions on particular source data.
+
+The official tutorial index and documentation were accessible on 29 October 2026. Exercise downloads are for the reader's own study workspace; no execution of the full package is claimed here. Software, documentation, data, and original articles have distinct notices. No package or exercise data is embedded in Lince.
+
+**Return:** [Mineralogy and petrology sources — books, laboratories, analytical methods, and research](../Sources.lingua#r_38Q6Z3J7ER2G1B441JXJ14NV5A).
+} r_14B5VSDN6YR5MQJVNTKYJXF3XB

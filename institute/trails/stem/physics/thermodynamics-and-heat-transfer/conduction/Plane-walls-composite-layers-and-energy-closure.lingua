@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Plane walls, composite layers and energy closure (@th-plane: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #thermodynamics-and-heat-transfer "Cylinders-spheres-and-changing-transfer-area.lingua#r_05G5H8FQXMWYDSEG2RF0RYD7A3") { r_4J8Z4W7NZGZ0N1MCE66CAGQHJF
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete steady plane/composite-wall sections; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), one-dimensional steady conduction; [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), guarded one-dimensional measurement assumptions.
+
+For steady one-dimensional conduction without internal generation, serial layers share the same heat rate and their temperature drops follow their resistances. Sum L/(kA) only when the geometry, area convention and constitutive assumptions support that expression. Add distinct contact and external transfer resistances where physically justified.
+
+Derive interface temperatures and check that each layer's energy account closes. A large temperature drop identifies a large resistance under these conditions; it does not directly identify the material responsible without thickness and contact evidence. Parallel heat paths require a different network.
+
+Work a complete multilayer example, then change one contact resistance and an external temperature. Compare an analytical resistance calculation with the steady limit of [An inspectable conservative transient layered slab](../computation/An-inspectable-conservative-transient-layered-slab.lingua#r_6B5B7E7C3Z1APY0RYAC09P12ET). The independently derived agreement verifies the restricted numerical model; measurements still determine whether it describes the physical assembly.
+
+**Continue:** [Cylinders, spheres and changing transfer area](Cylinders-spheres-and-changing-transfer-area.lingua#r_05G5H8FQXMWYDSEG2RF0RYD7A3).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_4J8Z4W7NZGZ0N1MCE66CAGQHJF

@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Represent extraction dependencies without equating a graph solution with a buildable mine (@mine-precedence: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS", #source "../sources/MineLib-Benchmarks-and-Methods.lingua#r_3KXVJNVZ2FSQ8CZJMJG2JDQYR8", #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #mining-and-mineral-engineering "Production-scheduling-capacities-and-value-through-time.lingua#r_1H23PH3C97H8PE2M8T9AYA0S7C") { r_1PWM02XFF4XQ8TCHCH5MA0MWSW
+**Read:** [A Review of Operations Research in Mine Planning — Newman and colleagues](../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS), the complete review and selected original formulation paper; [MineLib — Espinoza, Goycoolea, Moreno, and Newman](../sources/MineLib-Benchmarks-and-Methods.lingua#r_3KXVJNVZ2FSQ8CZJMJG2JDQYR8), the complete paper and exact selected problem specification; [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the full phases/sequences context.
+
+A block or activity precedence describes an identified dependency: access, overlying material, support/backfill, ventilation, development, or another condition. Its physical meaning, time convention, and uncertainty belong to the model. A precedence graph can simplify geometry while hiding working-space or sequence requirements.
+
+An ultimate-pit model chooses an admissible set under value and geospatial dependencies. A schedule additionally assigns time and capacities; a detailed operating design adds geometry, equipment, utilities, people, and actual conditions. The same block values can therefore produce different outputs for different problems.
+
+Define whether predecessors must be completed in an earlier period or may share a period under further sequencing. Define unselected material, destinations, processing, stockpiles, and the scope of capacity. Omitting a dependency can yield an attractive objective that cannot be physically reached.
+
+**Work:** construct a small original dependency graph from a stated excavation model and explain each arc. Compare a set-only solution with a time/capacity account and identify a missing operational constraint. Read a complete MineLib problem definition and map its quantities to the model, preserving what it intentionally abstracts.
+
+Read the full operations-research review and selected primary methods. Benchmark feasibility and optimality must be checked against the exact stated formulation rather than inferred from a solver's successful termination or a three-dimensional display.
+
+**Continue:** [Schedule production with explicit precedence, capacities, and objective meaning](Production-scheduling-capacities-and-value-through-time.lingua#r_1H23PH3C97H8PE2M8T9AYA0S7C).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1PWM02XFF4XQ8TCHCH5MA0MWSW

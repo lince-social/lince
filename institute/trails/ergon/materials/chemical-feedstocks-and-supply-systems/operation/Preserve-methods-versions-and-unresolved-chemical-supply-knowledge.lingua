@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Preserve the evidence needed to understand and revise a chemical supply (@cs-knowledge: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Manufacturing-Supply-Chain-Traceability-NIST.lingua#r_7CK4NN1QW48PPVA9XKMGNHZWDZ", #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Enterprise-wide-Optimization-Grossmann.lingua#r_4XD1X5QN83H40RBMGJVSZY9Y8V", #chemical-supply-systems "../research/Sustained-books-courses-and-chemical-supply-studies.lingua#r_59J7G5MXA4H219TQKVSJC546K7") { r_67TQ5VNRGNXF9GBJ3KJT5R1TAB
+**Read:** [Supply Chain Traceability Principles: A Manufacturing Meta-Framework — NIST IR 8536](../sources/Manufacturing-Supply-Chain-Traceability-NIST.lingua#r_7CK4NN1QW48PPVA9XKMGNHZWDZ), the entire principles, linking and disclosure discussion; [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the complete documentation/change and contracted-activity material; [Enterprise-wide Optimization: A New Frontier in Process Systems Engineering — Grossmann](../sources/Enterprise-wide-Optimization-Grossmann.lingua#r_4XD1X5QN83H40RBMGJVSZY9Y8V), the complete research perspective and the primary methods actually selected.
+
+Build a readable account of the chosen material from origin to use, including sources, methods, dates, units, grade/lot, assumptions, observations, changes and unresolved questions. Preserve the difference between an open-licensed work, a freely readable copyrighted manual, an authorized commercial standard and information not available to the investigator.
+
+Use ordinary source Records and links. Retain a source's actual edition and passage when it supports a specific claim; a changed website title should not silently alter the reasoning. Public catalogues and incomplete indexed abstracts can identify a work without proving its methods or results. Mark the actual scope of inspection and obtain the full primary material before claiming its detailed findings.
+
+Where practical know-how or a proprietary process is missing, state the consequence for the supply argument. Seek independently testable function and quality, alternative public methods or a different qualified arrangement. Do not fill the gap with an invented recipe or treat inaccessible detail as proof that no alternative exists. The later projects should leave enough original explanation, calculation and source context that another reader can reproduce the argument and improve it as new knowledge becomes available.
+
+**Continue:** [Deepen through complete books, graduate analysis and substantial supply studies](../research/Sustained-books-courses-and-chemical-supply-studies.lingua#r_59J7G5MXA4H219TQKVSJC546K7).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_67TQ5VNRGNXF9GBJ3KJT5R1TAB

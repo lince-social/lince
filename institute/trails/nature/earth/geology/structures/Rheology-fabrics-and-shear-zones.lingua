@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Connect deformation mechanisms with conditions and preserved fabrics (@geo-rheology: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "Construct-and-test-geological-cross-sections.lingua#r_22PW66CWPDPGQ9VEP3V28GQGV6") { r_4Q9MAX6W9S07RPR2J175PAXFNJ
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), the complete Fabrics, Shear Zones, Kinematics and Strain sections and Lab 6; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), the metamorphic/deformation treatments; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), deformation exercise.
+
+Rock behavior depends on composition, grain size, temperature, pressure, fluids, stress, strain rate, and history. Brittle and ductile descriptions summarize behavior in a context rather than permanently classifying a rock name. Different mechanisms can operate together or at successive stages of a deformation history.
+
+Distinguish elastic response, frictional sliding/fracture, and time-dependent irreversible deformation. A constitutive relation expresses a model over an identified range. Extrapolating a laboratory relation over geological times and changing conditions requires a physical justification and uncertainty analysis.
+
+Foliation, lineation, recrystallization, porphyroclasts, and shear-zone asymmetries can constrain deformation under suitable observation and interpretation. An apparent shear-sense indicator needs the correct section/orientation and a compatible assemblage of evidence. Local asymmetry alone does not uniquely define an entire region's kinematics.
+
+**Work:** complete the fabrics and shear-zone sections and Lab 6. Compare a brittle fault-zone and ductile shear-zone account, relating observations to proposed conditions and mechanisms. Critically reconstruct one illustrated shear-sense interpretation, showing the viewing geometry, supporting observations, and alternatives. Explain what is not constrained without microstructural, age, or pressure-temperature evidence.
+
+Use the earlier metamorphic and stress/strain work to connect fabric with history. Advanced petrology, materials, and continuum-mechanics studies will deepen experiments and constitutive models, while this geological sequence already requires a coherent explanation rather than recognition of visual patterns alone.
+
+**Continue:** [Construct sections that distinguish observations, geometry, and assumptions](Construct-and-test-geological-cross-sections.lingua#r_22PW66CWPDPGQ9VEP3V28GQGV6).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4Q9MAX6W9S07RPR2J175PAXFNJ

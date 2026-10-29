@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Layered dielectrics, interference and transfer matrices (@em-layer-theory: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ", #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #electromagnetism "../computation/An-inspectable-lossless-dielectric-stack.lingua#r_2B5TPEKP76WN8CJ5EE31FVREY8") { r_2C4CFNY2E9JFY0YTQDWT4AREM4
+**Read:** [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ), layered-medium and matrix methods; [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), planar interfaces and interference.
+
+A finite layer has two interfaces and repeated internal reflections. Derive its response by matching tangential fields at each interface, then express the same result as either a transfer matrix or a scattering recursion. Both must retain phase and power normalization. Multiplying isolated-interface power transmissions discards interference and is generally wrong.
+
+For nonmagnetic lossless normal incidence with exp(−iωt), take normalized magnetic amplitude η₀H and a layer of index n and phase thickness δ. A left-to-right field relation can be written with diagonal cosδ and off-diagonal terms −i sinδ/n and −in sinδ when mapping right-boundary fields to left-boundary fields. State that direction explicitly before composing several matrices.
+
+A quarter-wave layer with n = sqrt(n₀n_s) cancels normal-incidence reflection at its design frequency in this ideal model. It does not give perfect matching for every frequency, angle or polarization. Recover zero-thickness, identical-index and half-wave limits; compare energy and reciprocity. The next original program gives a bounded lossless implementation and an independently checkable scattering formulation for this exact scope.
+
+**Continue:** [An inspectable lossless dielectric stack](../computation/An-inspectable-lossless-dielectric-stack.lingua#r_2B5TPEKP76WN8CJ5EE31FVREY8).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_2C4CFNY2E9JFY0YTQDWT4AREM4

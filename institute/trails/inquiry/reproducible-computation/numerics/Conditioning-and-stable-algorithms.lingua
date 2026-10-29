@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Distinguish a sensitive question from an unstable algorithm (@rc-conditioning: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "../../quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX") { r_5MC7MFQ2BE6S2JFMJXR1RJ45SY
+**Read:** [What Every Computer Scientist Should Know About Floating-Point Arithmetic — Goldberg](../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH), rounding-error analysis and the complete later sections; [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), the numerical-testing extension; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), decimal and math contracts.
+
+Conditioning describes how the mathematical answer responds to changes in the specified input. Stability concerns how an algorithm's approximation and rounding relate to that mathematical problem. A well-implemented algorithm cannot recover information absent from uncertain inputs; a poorly chosen expression can also lose accuracy beyond the question's inherent sensitivity.
+
+Consider x² + bx + c = 0 with b positive and much larger than √c. The small-magnitude root can be expressed as (−b + √(b² − 4c))/2. Subtracting nearly equal terms loses relative information. Rationalizing yields −2c/(b + √(b² − 4c)), which avoids that subtraction for this case. State the assumptions about b, c, and the discriminant; a formula rearrangement is not a complete solver for every quadratic.
+
+**Work:** derive the rearrangement algebraically. Compare both expressions for b = 10⁸ and c = 1 using the chosen binary floating-point implementation and a higher-precision decimal reference. Check the small root against the relation between the roots and their product. Perturb b and c independently and analyze whether observed changes come from the problem, the formula, or reference rounding.
+
+Use independent residuals carefully. A tiny residual can coexist with a large forward error in an ill-conditioned problem. Scaling also changes the apparent size of a residual. Define the error measure and normalization before comparing methods, and use a reference with enough independently justified precision.
+
+Read the rest of Goldberg's paper and complete numerical-testing work in the handbook. For a larger calculation identify its sensitive intermediate operations, algorithmic alternatives, and accepted accuracy. Preserve both the mathematical model and the chosen implementation, then follow [Discretization — approximate a changing process and check it](../../quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX) to the shared approximation example before running a convergence study.
+
+**Continue:** [Discretization — approximate a changing process and check it](../../quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_5MC7MFQ2BE6S2JFMJXR1RJ45SY

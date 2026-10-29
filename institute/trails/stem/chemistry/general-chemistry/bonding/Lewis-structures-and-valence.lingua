@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Build a Lewis structure and test what it represents (@gc-lewis: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "Formal-charge-and-delocalization.lingua#r_43EAP1EC5N8J3HRPWV4D9T51AF") { r_6H377ERVG3W7RTQBA71Y29FEMQ
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 7’s ionic/covalent and Lewis-structure material; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), chapter 5 in full; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), Unit II’s first bonding lectures.
+
+Lewis structures organize valence-electron accounting, connectivity, bonds, and lone pairs. Start from the total valence-electron count, including charge, and use a chemically plausible connectivity model. Check electron count and formal charges independently. The octet pattern is useful for many main-group species but has stated exceptions and a limited explanatory scope.
+
+An ionic model emphasizes charge balance and electrostatic interactions; a covalent model emphasizes shared electronic structure. Real bonding can require several complementary descriptions. A formal drawing does not supply a measured charge distribution, bond energy, molecular geometry, or solid-state structure without further theory and evidence.
+
+Choose examples that reveal a model's limits: electron-deficient compounds, radicals, ions, and extended materials as well as ordinary closed-shell molecules. Distinguish a valid valence-electron account from a claim that every proposed structure is equally plausible or stable. Use bond lengths, spectra, reactivity, and better electronic models to evaluate alternatives.
+
+**Work:** construct neutral and charged textbook species, showing every electron-count decision. Draw competing structures and explain which additional constraints select a useful description. Identify a species for which a simple octet rule fails and compare the textbook's treatment with the MIT lecture explanation.
+
+Read the complete bonding/geometry chapter and the Portuguese bonding chapter, then continue to formal charge, resonance, and shape. The purpose of the drawing is to expose a chemically interpretable model that can be questioned and improved, not to replace the actual three-dimensional electronic system with one notation.
+
+**Continue:** [Distinguish formal charge, oxidation state, and delocalized bonding](Formal-charge-and-delocalization.lingua#r_43EAP1EC5N8J3HRPWV4D9T51AF).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_6H377ERVG3W7RTQBA71Y29FEMQ

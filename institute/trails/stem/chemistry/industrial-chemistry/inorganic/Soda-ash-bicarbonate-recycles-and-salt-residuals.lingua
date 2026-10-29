@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow sodium carbonate and bicarbonate through reactions, recycle and finishing (@ic-soda: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3", #industrial-chemistry "Silicates-silica-solution-chemistry-and-solid-products.lingua#r_6RC3NYH9QG0C5XSJS3RD6PA4TT") { r_5YS41NVFSA5SM9XM36JEQ37Z35
+**Read:** [Large Volume Inorganic Chemicals — Solids and Others Industry, BREF LVIC-S](../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4), the entire soda-ash/bicarbonate production and residual chapters; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the complete sodium-compound process sequence; [Chemical-industry process descriptions and emission factors — EPA AP-42](../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3), the whole sodium-carbonate section with original factor/background basis.
+
+Sodium-carbonate production can use natural mineral resources or a synthetic route whose intermediates and recycled reagents shape the process. The net relation 2NaCl+CaCO₃→Na₂CO₃+CaCl₂ illustrates one overall synthetic material account, but it does not describe the ammonia, water, gas, heat and phase histories inside that route.
+
+Distinguish reaction, precipitation, thermal conversion, reagent regeneration and final product finishing. Solubility, crystal form, retained liquor and drying influence purity and physical behavior. Carbonate, bicarbonate and hydrated forms need their own amount and water bases.
+
+A recycled reagent is neither consumed at the gross circulating rate nor perfectly recovered by definition. The resulting salt and other residual streams need quantities, quality and a realistic destination. Compare natural and synthetic sources on delivered useful product, full utilities and actual feed/residual evidence.
+
+**Work:** reconstruct a complete public soda-ash route and independently derive its overall and internal balances. Compare another source or operating arrangement at equal product specification. Identify the measured phase, recovery, impurity, heat and water evidence that supports the comparison and explain how omitted recycle loss or retained liquid would distort the result.
+
+**Continue:** [Connect silicate and silica chemistry with solution state, particles and product function](Silicates-silica-solution-chemistry-and-solid-products.lingua#r_6RC3NYH9QG0C5XSJS3RD6PA4TT).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_5YS41NVFSA5SM9XM36JEQ37Z35

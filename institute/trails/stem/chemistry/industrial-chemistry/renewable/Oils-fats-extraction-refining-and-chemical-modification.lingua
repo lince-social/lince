@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow oils and fats from variable biological feed to qualified chemical material (@ic-oils-fats: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Oleos-e-Gorduras-Castro.lingua#r_4C89Z0YDFDBY55HN2R7WCDEETY", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5", #industrial-chemistry "Soap-detergents-surfactants-and-complete-product-accounts.lingua#r_02YGZWRNNZWZK9JAVQMY2MR448") { r_4ZXMRQ3P1T7FKKK8TNM4M6GHKQ
+**Read:** [Óleos e gorduras — Heizir F. de Castro](../sources/Oleos-e-Gorduras-Castro.lingua#r_4C89Z0YDFDBY55HN2R7WCDEETY), the entire apostila including chemistry, extraction, refining and modification; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete oils/fats and processing sequence; [Química verde no Brasil: 2010–2030 — MCT/CGEE](../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5), the whole pertinent oleochemical chapter and its references.
+
+Oils and fats contain distributions of molecules whose composition depends on biological source and processing history. Free acids, water, oxidation products, pigments, metals and other constituents can affect refining, stability, reaction and product function. One bulk index cannot identify the whole molecular distribution.
+
+Extraction and refining combine physical separation with chemical and interfacial effects. Further hydrolysis, hydrogenation, esterification/transesterification or other transformations change the useful product distribution and its residual streams. Distinguish the balanced ideal reaction from actual feed variability, catalyst state, competing chemistry and isolation.
+
+Trace solvents, water, catalyst/reagents, co-products and losses through the complete route. The delivered material's application and stability determine relevant quality evidence. Compare biological sources or chemical routes on a consistent product/function and boundary rather than assuming common origin or a favorable isolated yield establishes equivalence.
+
+**Work:** reconstruct a complete Portuguese and English public oil/fat process account with primary characterization and reaction evidence. Independently close mass, carbon and consequential species/solvent quantities. Compare a documented modification or refining alternative, identify influential uncertainty and explain the observations needed to distinguish feed, reaction and separation causes of a product difference.
+
+**Continue:** [Connect soap and detergent chemistry with interfaces, manufacture and useful formulation](Soap-detergents-surfactants-and-complete-product-accounts.lingua#r_02YGZWRNNZWZK9JAVQMY2MR448).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4ZXMRQ3P1T7FKKK8TNM4M6GHKQ

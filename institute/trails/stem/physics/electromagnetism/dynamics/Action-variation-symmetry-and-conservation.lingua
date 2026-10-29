@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Action, variation, symmetry and conservation (@em-action: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH", #electromagnetism "../waves/Wave-equation-speed-and-initial-data.lingua#r_2QYBJYED0RXYF436544V27EJ46") { r_7RVHKMS4NGF4V2MPSSM3J4RDM8
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), action and symmetries of electromagnetism; [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH), advanced field-theoretic and relativistic methods.
+
+The classical vacuum field Lagrangian density in SI can be written ε₀E²/2 − B²/(2μ₀) − ρφ + J·A, with a consistent external-source or coupled-matter account. Vary potentials under suitable boundary conditions to recover the inhomogeneous Maxwell equations; the homogeneous equations follow from defining fields through potentials.
+
+Show how gauge invariance of the source coupling connects to charge conservation after integration by parts. State which variations vanish on the boundary and which source quantities are held fixed. A driven external current can inject energy, so a conservation statement for the field alone must include source work. Adding particle or material dynamics changes the complete variational problem.
+
+Compare canonical and symmetric energy-momentum expressions and identify the physical conserved totals and surface terms. Reconstruct one derivation carefully rather than treating a compact action as an explanation of every material response. Dissipation, constitutive memory and microscopic quantum behavior demand additional descriptions. The graduate study uses this structure to connect forces, propagation, relativity and conservation without replacing physical boundary data with formal notation.
+
+**Continue:** [Wave equation, speed and initial data](../waves/Wave-equation-speed-and-initial-data.lingua#r_2QYBJYED0RXYF436544V27EJ46).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_7RVHKMS4NGF4V2MPSSM3J4RDM8

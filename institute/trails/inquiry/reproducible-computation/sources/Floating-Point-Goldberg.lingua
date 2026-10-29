@@ -1,0 +1,11 @@
+Import "../Reproducible-computation.lingua"
+
+What Every Computer Scientist Should Know About Floating-Point Arithmetic — Goldberg (@rc-goldberg: 0, is #article, #part-of @rc-sources) { r_4FHXH9WWX5Q535CD32ESSVSEHH
+David Goldberg. “What Every Computer Scientist Should Know About Floating-Point Arithmetic.” ACM Computing Surveys 23(1), 1991, pages 5–48. [Authorized edited reprint in Oracle’s Numerical Computation Guide](https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html).
+
+Read the full paper in later numerical study, including rounding error, representation, special values, and system interactions. Reconstruct selected derivations and small examples and compare the historical discussion with the chosen current runtime and numerical library documentation. A 1991 treatment is not by itself the latest IEEE standard or a guarantee about every modern implementation.
+
+The host explicitly identifies an edited reprint used with ACM permission. Free authorized reading is available; it is not represented as a public-domain or unrestricted-adaptation text. Keep the actual notices and distinguish the host’s later addenda from Goldberg’s original paper. Citation, reprint identity, and access checked on 29 October 2026. No paper is copied into the repository.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_4FHXH9WWX5Q535CD32ESSVSEHH

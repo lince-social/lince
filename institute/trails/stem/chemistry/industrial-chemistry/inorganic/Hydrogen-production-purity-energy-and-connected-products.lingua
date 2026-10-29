@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Compare hydrogen routes on delivered amount, purity and complete material/energy boundaries (@ic-hydrogen: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #source "../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Synthesis-gas-reforming-gasification-and-composition.lingua#r_54CH7SW9WFFBJ00FMN2BVRTCMQ") { r_671AHTBHPTB522FV4SGAQJYKNZ
+**Read:** [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), all hydrogen/industrial-gas production teaching; [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the whole hydrogen, water-gas and synthesis-gas units; [Haber–Bosch ammonia in an energy landscape — Smith, Hill and Torrente-Murciano](../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ), the complete hydrogen-production, separation and system-boundary analysis; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full relevant thermodynamic/energy and reaction-balance reasoning.
+
+Hydrogen can be produced from water, hydrocarbons, biomass-derived feeds and other chemical systems. The molecule does not encode its production route. Compare the actual feed, chemical reactions, energy carriers, co-products, purification and delivery state, preserving upstream assumptions and measured evidence.
+
+For water electrolysis, 2H₂O→2H₂+O₂ gives a stoichiometric and charge basis. Reversible work, thermoneutral heat and measured cell/system input are different quantities. For hydrocarbon-derived hydrogen, reforming, shift, heat supply and separation connect carbon and hydrogen accounts; reporting reactor conversion alone omits consequential duties.
+
+The required product may need removal of water, carbon compounds, sulfur species, oxygen or other constituents. Compression, storage, contact materials, leakage and continuity of supply affect usable hydrogen. A general energy label cannot establish catalyst compatibility or a complete process comparison.
+
+**Work:** reconstruct two complete hydrogen routes feeding the same downstream chemical process. Independently close stoichiometric, energy and consequential contaminant accounts at a defined delivery pressure/quality and time basis. Compare observed, modeled and projected performance and quantify which uncertainty could change the preferred route.
+
+**Continue:** [Explain synthesis gas through feed chemistry, reaction paths and product requirements](Synthesis-gas-reforming-gasification-and-composition.lingua#r_54CH7SW9WFFBJ00FMN2BVRTCMQ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_671AHTBHPTB522FV4SGAQJYKNZ

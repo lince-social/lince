@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Measure equipment performance with explicit states, periods, and definitions (@mine-reliability: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #source "../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #mining-and-mineral-engineering "Maintenance-condition-spares-and-return-to-service.lingua#r_0T3Y0YNBQ4XF6C6J2Q8KQ70MXH") { r_0MV0F4CAPSWVG9GPC1S8PDS9RB
+**Read:** [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full equipment, maintenance, and operating-capacity sections; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant reliability/maintenance chapters; [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), time, sampling, dependence, and uncertainty as needed.
+
+Reliability, maintainability, availability, utilization, and productive performance describe different quantities. Define operating/failed/planned-outage/delay states and the observation window before calculating a percentage. A high average can conceal long interruptions at critical work times.
+
+For a simple long-run alternating operating/repair account with finite mean durations and its stated assumptions, A = mean operating time/(mean operating time + mean repair time). Invented means 100 h and 10 h give A = 10/11 ≈ 0.9091. This is not an automatic prediction for a complex fleet with planned outages, dependencies, or changing conditions.
+
+Condition, age, failure mode, environment, duty, spares, crew, diagnosis, and repair quality affect the observed process. Truncated records, unreported waiting, censored lifetimes, and changed definitions can bias estimates. Availability of components does not combine into system availability without the structure/dependence account.
+
+**Work:** reconstruct a complete equipment-state dataset with event identities and definitions. Independently check time closure and a stated availability/reliability result. Compare two repair or redundancy assumptions and identify observations needed to distinguish them. Explain how the uncertainty affects a schedule or capacity claim.
+
+Read full handbook/operation chapters and the complete relevant primary methods. The next maintenance study connects measured states with the actual work, supplies, and feedback required to improve them.
+
+**Continue:** [Connect maintenance strategy with condition evidence, work, and production](Maintenance-condition-spares-and-return-to-service.lingua#r_0T3Y0YNBQ4XF6C6J2Q8KQ70MXH).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0MV0F4CAPSWVG9GPC1S8PDS9RB

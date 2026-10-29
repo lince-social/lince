@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Work, potential difference and reference choice (@em-potential: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Conductors-electrostatic-equilibrium-and-shielding.lingua#r_137AR1F19ABQJW33AB60E4ANFD") { r_0KDY19PKDZXWKFN38GPNQMKR3N
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 7 in full; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), electrostatic work, potentials and energy.
+
+In electrostatics E = −∇V and the work done by the field on charge q from a to b is q(V_a − V_b). Potential energy changes by q(V_b − V_a). A voltage is a difference; adding a constant to V leaves the field unchanged. A reference at infinity is useful for localized sources but may be unsuitable for infinite ideal distributions.
+
+For a uniform field in the positive x direction, V decreases with x. A positive released charge gains kinetic energy while its electric potential energy falls. The same voltage difference changes a negative charge's potential energy with the opposite sign. Distinguish a conservative field from a time-varying induced field, where a single scalar voltage cannot describe every loop integral.
+
+Derive potential integrals for point and continuous sources and recover the field by differentiation. Compare the ring's nonzero midpoint potential with its zero midpoint field. Trace a voltmeter's leads and reference path in a time-dependent magnetic environment; the reading can depend on the measurement loop. Later induction and gauge records explain exactly which part of the electrostatic account must be extended.
+
+**Continue:** [Conductors, electrostatic equilibrium and shielding](Conductors-electrostatic-equilibrium-and-shielding.lingua#r_137AR1F19ABQJW33AB60E4ANFD).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_0KDY19PKDZXWKFN38GPNQMKR3N

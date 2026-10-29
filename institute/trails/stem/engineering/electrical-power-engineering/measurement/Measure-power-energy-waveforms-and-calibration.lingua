@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Measure power, energy, waveforms and calibration (@pe-metering: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Brazilian-Distribution-and-Network-Requirements.lingua#r_447WGES28KC2NYSCXTRQSWN82Y", #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #electrical-power-engineering "Current-voltage-transformers-saturation-and-polarity.lingua#r_3PF6HPV3MFDEE7PBB6Z25QVJ37") { r_5P5D0PP8SNAFFR88JE8567KH83
+**Read:** [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), instrument-transformer and numerical-phasor modules; [Brazilian distribution and network requirements — ANEEL and ONS](../sources/Brazilian-Distribution-and-Network-Requirements.lingua#r_447WGES28KC2NYSCXTRQSWN82Y), complete relevant current measurement/quality modules; [AC Electrical Circuit Analysis — James M. Fiore](../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK), power measurement and waveform interpretation.
+
+Define the measurand and boundary: terminal voltage/current, active energy, fundamental P/Q, waveform, loss or delivered service. Sampling, bandwidth, phase error, instrument loading, channel timing and aggregation affect the result. A meter's displayed precision is not its measurement uncertainty or evidence that it measures the intended power definition.
+
+For sinusoidal power P = VI cosφ, derive sensitivity to amplitude and phase. At low power factor, a small phase error can dominate relative active-power error. For distorted waveforms, model the actual sampling/transfer response and channel alignment. Separate an uncertainty on a calibrated measurand from a discrepancy caused by measuring the wrong observable.
+
+Use the shared electrical metrology Record, then build a complete measurement chain with current/voltage transformers, transducers, leads and reference planes. Compare an independent method or a changed channel/probe arrangement. Verify energy balance over time including stored-energy changes and auxiliaries. Electrical power quantities often cross contractual and technical boundaries; preserve calibration, conditions, sign/basis and uncertainty with the evidence instead of treating an invoice or nameplate as a physical measurement.
+
+**Continue:** [Current/voltage transformers, saturation and polarity](Current-voltage-transformers-saturation-and-polarity.lingua#r_3PF6HPV3MFDEE7PBB6Z25QVJ37).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5P5D0PP8SNAFFR88JE8567KH83

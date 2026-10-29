@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Fluid services connect machines, materials, energy and people (@fd-fluid-service: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #fluid-dynamics "Keep-a-fluid-system-understood-through-change-and-maintenance.lingua#r_0VA875G7B5W9ZKP27DG3ZGPXTY") { r_14C278NFN0ZBZ903RME1NGZGBS
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), engineering applications and balances; [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), transient consequences for services; [Fundamentals of Multiphase Flow — Christopher E. Brennen](../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM), material-dependent transport limits.
+
+Trace a service such as cooling-water circulation, clean gas delivery, ventilation, slurry transport or a process-liquid supply from its source to its users and return/disposal path. Specify the delivered quantity, quality, pressure, temperature and availability that the user actually needs. A pipe network is only part of that service.
+
+Connect the fluid balance to pumps or compressors, power, treatment, thermal exchange, storage, controls, instrumentation, isolation, materials, maintenance and operating knowledge. Identify upstream/downstream dependencies and measurements that reveal deteriorating performance. Distinguish delivered flow from gross circulated flow, and account for leakage, recirculation and losses on the same basis.
+
+Use the developed chemistry, metrology, thermal and power Records where a specific concept is needed, then pursue the full specialist subject for its unique knowledge. Explain how an ordinary pressure or flow observation can support a decision without pretending to identify every failure mechanism. The integration should remain a connected technical account with explicit handoffs among people and equipment.
+
+**Continue:** [Keep a fluid system understood through change and maintenance](Keep-a-fluid-system-understood-through-change-and-maintenance.lingua#r_0VA875G7B5W9ZKP27DG3ZGPXTY).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_14C278NFN0ZBZ903RME1NGZGBS

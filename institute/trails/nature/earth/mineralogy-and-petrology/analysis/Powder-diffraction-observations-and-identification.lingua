@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Connect a powder pattern with specimen preparation and a structural hypothesis (@mp-diffraction: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/GSAS-II-Refinement-Tutorials.lingua#r_14B5VSDN6YR5MQJVNTKYJXF3XB", #mineralogy-and-petrology "Bragg-spacing-indexing-and-instrument-conventions.lingua#r_06VC3CMZT1TY5BZ00AWV8TD3ZQ") { r_353CVHXVZE6EM4ZFRT71H550E2
+**Read:** [A laboratory manual for X-ray powder diffraction — Poppe and colleagues](../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6), the complete diffraction, preparation, and identification manual; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full diffraction/analysis chapters; [GSAS-II — diffraction analysis and refinement tutorials](../sources/GSAS-II-Refinement-Tutorials.lingua#r_14B5VSDN6YR5MQJVNTKYJXF3XB), the complete introductory powder-data and simulation exercises.
+
+A powder diffraction pattern records scattering from a prepared specimen under an instrument geometry and radiation model. Peak positions, intensities, widths, background, and uncertainties have different influences. A strongest-peak match alone does not establish a unique mineral in a mixture.
+
+Crystallite orientation statistics, preferred orientation, particle size, absorption, fluorescence, strain, instrument broadening, zero/displacement errors, and preparation can affect the pattern. Grain size, coherent-domain size, and a fitted peak-width parameter are different quantities. An apparently missing weak peak can reflect detection or model limitations.
+
+Compare candidate phases using complete observed features and appropriate reference structures/patterns with conditions and provenance. An experimental reference and a calculated pattern from a structural model serve related but distinct roles. Polymorphs, compositions, mixed layers, and alteration may complicate a match.
+
+**Work:** read the full manual and reconstruct one documented identification, preserving preparation, radiation, geometry, range, and uncertainty. Compare an alternative phase mixture that fits some peaks and identify the discriminating evidence. Explain which features require improved data rather than a more elaborate fitting model.
+
+Continue to quantitative spacing and refinement only after understanding the observation chain. The later analytical study requires independent reference/known-material checks and a defensible statement of identification and detection limits.
+
+**Continue:** [Calculate diffraction spacing and test an indexing account](Bragg-spacing-indexing-and-instrument-conventions.lingua#r_06VC3CMZT1TY5BZ00AWV8TD3ZQ).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_353CVHXVZE6EM4ZFRT71H550E2

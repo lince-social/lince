@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Order events from relationships before assigning numerical ages (@geo-relative-time: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z", #geology "Stratigraphic-units-sections-and-correlation.lingua#r_5EQD05WT0076BC486SGXW7B7X5") { r_0KXVTSWTTJQ9GASZX3Y90Z5YNN
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 8’s relative-dating treatment; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), Sequences of Strata and the complete relative-time material; [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z), the complete relative-dating exercises.
+
+Relative chronology uses relationships such as superposition, cross-cutting, inclusions, intrusive contacts, unconformities, and deformation overprints under their stated conditions. Explain why a relationship constrains an order and what could complicate it. A description of tilted or overturned strata needs structural context before a simple top-to-bottom sequence is accepted.
+
+Distinguish deposition, crystallization, intrusion, deformation, metamorphism, erosion, weathering, exposure, and measurement as events. A rock can contain inherited material older than deposition and minerals younger than its original formation. “The age of the rock” is incomplete until the event and evidence are specified.
+
+A partial order is often more honest than one fully specified story. Some relationships establish that one event preceded another while leaving their duration or order relative to a third unresolved. A gap in exposure or record can preserve several alternative histories. Later numerical constraints should be attached to the particular events they date.
+
+**Work:** interpret an authorized textbook outcrop diagram or image, listing observed relationships and a justified event order. Construct two histories consistent with the same incomplete evidence and identify a discriminating observation. Add a hypothetical age constraint and explain which event interval it bounds.
+
+Read the complete relative-time sections and apply them to actual described field relations. Historical reasoning and physical/chemical mechanisms work together; a plausible mechanism alone does not establish that it occurred in that order at that place.
+
+**Continue:** [Correlate sections without confusing rock units with time units](Stratigraphic-units-sections-and-correlation.lingua#r_5EQD05WT0076BC486SGXW7B7X5).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_0KXVTSWTTJQ9GASZX3Y90Z5YNN

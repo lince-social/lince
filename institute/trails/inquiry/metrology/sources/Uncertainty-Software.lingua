@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Uncertainty Machine and its numerical methods — Lafarge and Possolo (@met-machine: 0, is #reference, #part-of @met-sources) { r_0JJ7DQ8KRD6ACMN16THF87F3PW
+Thomas Lafarge and Antonio Possolo. NIST Uncertainty Machine and User’s Manual. [Official application](https://uncertainty.nist.gov/) · [Manual supplied by the application](https://uncertainty.nist.gov/NISTUncertaintyMachine-UserManual.pdf) · [Official background and instructions](https://uncertainty.nist.gov/about/about_English.md.html).
+
+Read the complete manual, including input distributions, correlations, model expression, scalar and vector outputs, and the worked examples used in your investigation. Record application and manual versions separately: the inspected application identified version 1.6.4, while an available manual identifies version 1.4, November 2020.
+
+Compare the implementation with Lafarge and Possolo, “The NIST Uncertainty Machine,” NCSLI Measure Journal of Measurement Science 10(3), 2015, pages 20–27, [DOI](https://doi.org/10.1080/19315775.2015.11721732). Use authorized access to the article; the freely readable official manual supports the required study.
+
+The application is an optional independent numerical check. Preserve your model, distributions, correlations, settings, and results so a different implementation can reproduce them. NIST federal text and separately published article/software terms differ; inspect the actual notices before redistribution. Metadata and official access checked on 28 October 2026. No dependency on a live website is needed for the hand-derived benchmark cases.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_0JJ7DQ8KRD6ACMN16THF87F3PW

@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Declare environment inputs and test what the declaration covers (@rc-declarative: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Declarative-Environments.lingua#r_4RZDRCZGB1NQ9119G6RNSWPT2W", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Reconstruction-and-perturbation.lingua#r_3XGCVXWS4PAJNXAQBJQKW213FB") { r_0ZQPPGS35DE7H5522P9PYENNPW
+**Read:** [Declarative environments and pinned inputs — Nix documentation](../sources/Declarative-Environments.lingua#r_4RZDRCZGB1NQ9119G6RNSWPT2W), first steps, interpreted scripts, declarative shells, pinning, language basics, and impurities; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), environment-capture comparison.
+
+A declarative environment states the selected inputs and relationships from which a tool constructs an environment. Read the Nix first-step tutorials in order, including interpreted scripts, declarative shells, pinning Nixpkgs, and language basics. Learn how the chosen declaration refers to package sources and local files before treating its evaluation as a complete record of the analysis.
+
+Distinguish an environment shell from a fully specified build. A shell supplies tools, but a script run inside it can still read the home directory, current working directory, environment variables, network services, or an unrecorded data file. A pin identifies chosen source inputs; availability and permitted preservation of the source/binary artifacts remain separate requirements.
+
+Inspect impurities and dependencies relevant to the claim. Record the declaration, resolved source identities, tool version, target system, required local inputs, and execution command. Compare reconstruction from retained artifacts with reconstruction by fetching remote inputs. An offline failure caused by an unavailable dependency is evidence about preservation, even if the declaration is unchanged and valid.
+
+**Work:** express the teaching example's interpreter environment using a method from the official tutorials. Run the independent checks in a fresh invocation, inspect the selected interpreter, and compare output identities with the recorded environment. Then vary the working directory and a deliberately used environment variable to expose the boundary between the shell and the analysis itself.
+
+Choose one substantial environment method for the final project and investigate another closely enough to compare their assumptions. Nix, language-level environments, and containers answer related questions at different boundaries. The completion requirement is an actual reconstruction with explained inputs and limitations; following every pathway does not require using every tool in the same analysis.
+
+**Continue:** [Reconstruct in a fresh place and vary declared irrelevant conditions](Reconstruction-and-perturbation.lingua#r_3XGCVXWS4PAJNXAQBJQKW213FB).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_0ZQPPGS35DE7H5522P9PYENNPW

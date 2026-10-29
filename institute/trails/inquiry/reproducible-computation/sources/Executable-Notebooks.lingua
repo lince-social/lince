@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+Executable notebooks and unattended execution — Jupyter (@rc-notebooks: 0, is #reference, #part-of @rc-sources) { r_0Q66F0CBYJG56Y8KGBGY97X5YN
+Project Jupyter contributors. JupyterLab notebook documentation and nbconvert execution documentation. [Notebook model and user documentation](https://jupyterlab.readthedocs.io/en/stable/user/notebook.html) · [Execution with nbconvert](https://nbconvert.readthedocs.io/en/latest/execute_api.html).
+
+Read the notebook, kernel, file-format, and execution material, then reproduce a small notebook from a fresh kernel in declared order without hidden interactive state. Read the exact-version execution options, timeout, error, and working-directory behavior used by the study. Preserve the source notebook and the evidence of its execution separately where that distinction matters.
+
+Notebook text, code, and stored output are different evidence. A displayed table can survive after its inputs or producing cell have changed. The companion Records use this distinction to design a reproducible notebook-to-report process.
+
+Keep Jupyter’s documentation and software notices when reusing its material. Official JupyterLab documentation and notebook-model topics checked on 29 October 2026; consult the particular nbconvert edition for execution details. No notebook collection or service is bundled or required to read the trail.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_0Q66F0CBYJG56Y8KGBGY97X5YN

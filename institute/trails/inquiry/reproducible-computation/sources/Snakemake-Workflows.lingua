@@ -1,0 +1,11 @@
+Import "../Reproducible-computation.lingua"
+
+Workflow graphs, environments, and execution — Snakemake documentation (@rc-snakemake: 0, is #reference, #part-of @rc-sources) { r_6FGN565JFTD2FTW69KDCS9BWHS
+Snakemake contributors. Official tutorial and workflow documentation. [General-use tutorial](https://snakemake.readthedocs.io/en/stable/tutorial/tutorial.html).
+
+Complete the tutorial’s basic workflow and advanced sections, then read the writing-rules, configuration, distribution/reproducibility, caching, monitoring, and provenance material relevant to a project. Compare its graph and execution semantics with Make. One substantial workflow tool can support the practical project; reading a second helps distinguish the underlying method from a particular syntax.
+
+The official tutorial describes automatic dependency graphs and resource-constrained execution, including distributed settings and environment integration. Record the exact implementation version, configuration, and selected execution method for a run. Preserve project documentation/software notices; the example data remain at their authorized external locations. Official tutorial and available topics checked on 29 October 2026.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_6FGN565JFTD2FTW69KDCS9BWHS

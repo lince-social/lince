@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Derive solidification through interface conditions and coupled heat/solute transport (@metal-solidification-physics: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM", #metals-and-metallurgical-production "Front-stability-dendrites-eutectics-and-phase-selection.lingua#r_4KCQ85TBX02PBPVPS2JKGW4FMQ") { r_2QEBG1QH9VBZJY4ZF6ANQS5RRT
+**Read:** [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), all solidification, Stefan-condition, binary-alloy, and corresponding problem/exam material; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the complete nucleation and solidification chapters; [A Guide to the Solidification of Steels — Jernkontoret](../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM), the full experimental-method and relevant alloy sections.
+
+Solidification creates a structure through nucleation, interface motion, heat removal, solute redistribution, and flow. Equilibrium phase relations supply constitutive constraints under a stated local-equilibrium model; they do not replace energy, mass, momentum, or kinetic equations.
+
+Derive an interface energy balance and the appropriate solute balance with compatible phase quantities and signs. Define the temperature/composition fields, latent heat, transport properties, interface behavior, and boundary/initial conditions. A moving-boundary calculation must distinguish material properties and model assumptions from parameters fitted to the same observed interface position.
+
+Nucleation sites, undercooling, curvature, anisotropy, kinetics, thermal gradients, and fluid motion can alter morphology and phase selection. A smooth front, cellular/dendritic structure, eutectic, and multiphase casting require different levels of description. Compare model limits rather than assuming every observed pattern verifies the most elaborate simulation.
+
+**Work:** reproduce a complete analytic or numerical solidification case from the open course and primary methods. Independently check interface/material/energy relations, limiting cases, and numerical convergence. Compare with measured thermal/structural evidence and an alternative boundary or kinetic account. Identify the observation that most discriminates the models before extending to an industrial casting with additional coupled effects.
+
+**Continue:** [Explain solidification morphology through transport, stability, and material evidence](Front-stability-dendrites-eutectics-and-phase-selection.lingua#r_4KCQ85TBX02PBPVPS2JKGW4FMQ).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_2QEBG1QH9VBZJY4ZF6ANQS5RRT

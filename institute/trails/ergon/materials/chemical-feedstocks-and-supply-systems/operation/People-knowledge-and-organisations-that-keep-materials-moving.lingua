@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Account for the human work behind reliable chemical supply (@cs-people: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0", #source "../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10", #chemical-supply-systems "Cost-service-and-resource-consequences-of-a-supply-arrangement.lingua#r_0PMZPA76DCFTHHATKX9PW8Y7EX") { r_59R4FQW1E554XQYJ3BTEY8ASTA
+**Read:** [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the full organisation/personnel, equipment, quality and contracted-activity sections; [Methanol Safe Handling Manual — Methanol Institute](../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0), the complete competency, workforce, contractor and training discussion; [Warehouse & Distribution Science — Bartholdi and Hackman](../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10), the whole operations and work-organisation analysis.
+
+Map the work in one complete supply chain: production, sampling, analysis, dispatch, driving, receiving, storage, inventory planning, maintenance, procurement, technical review and recovery. For each activity identify the knowledge used, equipment/resources required, time, responsibility and evidence of completion. A model that assigns capacity to a machine but no trained people can miss the actual constraint.
+
+Use a full product manual and quality/distribution guide to distinguish tasks that can be documented publicly from locally learned operating knowledge. Record where a method is reproducible, where an experienced judgement is being relied upon and where a trade secret or unavailable procedure limits reconstruction. Specify an observation, experiment or alternative source that could reduce each gap.
+
+Develop a shift/continuity case in which an analyst, receiving operator or maintenance capability is unavailable. Trace the consequence to usable material and service; adding another chemical delivery may not solve it. Compare cross-training, shared services, external support and altered schedules with their actual qualification and capacity implications. The Ergon account should make continued work visible without reducing people to a number in an optimisation objective or claiming that reading a manual demonstrates their operating competence.
+
+**Continue:** [Evaluate the complete arrangement on explicit technical and economic bases](Cost-service-and-resource-consequences-of-a-supply-arrangement.lingua#r_0PMZPA76DCFTHHATKX9PW8Y7EX).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_59R4FQW1E554XQYJ3BTEY8ASTA

@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Validate the intended use and verify the particular implementation (@met-method-validation: 0, is #chapter, #part-of @metrology, #source "../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #source "../sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #metrology "Control-and-recalibration.lingua#r_6AHX4PAFTWTDPKEZVQ3KSNP9AC") { r_696ZGSGKBG8BPXN1MF2RZNK69W
+**Read:** [The Fitness for Purpose of Analytical Methods — Eurachem](../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), the complete guide and its statistical annexes; [Quantifying Uncertainty in Analytical Measurement — Eurachem/CITAC](../sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS), the main treatment and worked validation-based uncertainty examples; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), fitness-for-purpose and model-choice sections.
+
+Validation examines whether a measurement procedure is adequate for an intended use. Verification checks evidence that specified requirements are fulfilled in a particular case. Calibration of an instrument can be an important input to either, but does not demonstrate selectivity, sampling suitability, full working range, robustness, or every other performance characteristic of a complete method.
+
+Specify the intended target, range, conditions, uncertainty or decision needs, and performance characteristics before choosing experiments. Depending on the method, examine precision, bias/trueness, selectivity, sensitivity, detection and quantification behavior, response model, robustness, and handling. A familiar published method can still require evidence that its local implementation is suitable.
+
+Use independent checks where possible. Recovering an added analyte may not test the behavior of native material bound differently in a matrix. Agreement with one reference material may not establish performance across all matrices and ranges. An excellent calibration fit does not validate the specimen preparation or the inverse inference.
+
+**Work:** write a validation plan for a hypothetical temperature-indication procedure or an analytical concentration method. For each claim identify a useful experiment, acceptance basis, data to retain, and important limitations. Contrast it with a smaller verification study for an already characterized procedure used within its supported scope.
+
+Tie the study to an uncertainty evaluation and subsequent quality control. Reusing validation data can be more realistic than inventing independent contributions, but requires explaining which effects and conditions the data cover. A completed validation report is evidence from a defined study; later changes to material, procedure, equipment, or purpose can require renewed investigation.
+
+**Continue:** [Keep a measurement process under observation between calibrations](Control-and-recalibration.lingua#r_6AHX4PAFTWTDPKEZVQ3KSNP9AC).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_696ZGSGKBG8BPXN1MF2RZNK69W

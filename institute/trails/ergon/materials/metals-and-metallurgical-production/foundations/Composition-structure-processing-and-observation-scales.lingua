@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Keep composition, structure, process history, and observation scale connected (@metal-structure-scales: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/ASM-Metallography-and-Microstructures.lingua#r_4XHEJ1ZHW0B1YNG9AWCEC491ME", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #metals-and-metallurgical-production "Mass-composition-fraction-purity-and-capacity.lingua#r_5ZX3J8072ECM1VMYKXBD6A2A7M") { r_539959YT1REA5MWMHTT1G8Y2DT
+**Read:** [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the full structure, microscopy, preparation, and alloy observation discussions; [Metallography and Microstructures — ASM Handbook, volume 9](../sources/ASM-Metallography-and-Microstructures.lingua#r_4XHEJ1ZHW0B1YNG9AWCEC491ME), complete relevant interpretation and preparation chapters, when available; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the complete worked examples associated with the observed transformations.
+
+A bulk assay, a polished two-dimensional micrograph, a diffraction pattern, a local electron-beam analysis, and a mechanical specimen describe different supports and properties. Their agreement must be established through preparation, sampling, calibration, interpretation, and uncertainty; similar labels do not guarantee they refer to the same material population.
+
+Separate grains, phases, inclusions, precipitates, dislocations, segregation, porosity, and cracks. A dark region in one imaging mode is not identified solely by darkness. Structure includes spatial distribution, connectivity, orientation, and scale as well as average fractions. These can change how the material deforms, conducts, reacts, or fails.
+
+Record a material's processing path: feed chemistry, melting/refining, thermal history, deformation, joining, storage, and service. Different histories can create similar average properties or superficially similar micrographs. Independent observations are needed to test the preferred mechanism.
+
+**Work:** assemble a documented evidence set for one alloy state, including a bulk measurement, a spatial/structural observation, and a relevant property test. Explain their sampling supports and the transformations between observation and inference. Propose an alternative interpretation and the measurement that would discriminate it. Keep the original evidence linked externally and author the explanatory account rather than copying a gallery of unexamined images.
+
+**Continue:** [State mass, composition, purity, yield, and capacity on compatible bases](Mass-composition-fraction-purity-and-capacity.lingua#r_5ZX3J8072ECM1VMYKXBD6A2A7M).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_539959YT1REA5MWMHTT1G8Y2DT

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Explain roasting through coupled reactions, gas conditions, heat, and product evidence (@metal-roasting: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #metals-and-metallurgical-production "Reduction-potentials-reaction-paths-and-usable-metal.lingua#r_28QXJBHB45E3AFBD9A8H3EBDZ7") { r_0NKV4BHR9Z7W2Y2H4Y1SDAH519
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete thermal chemical-treatment and predominance-diagram sequence; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), all roasting material/heat-balance examples and exercises; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the full applicable roasting and gas/residual-management case.
+
+Roasting changes a feed by chemical reaction with a defined gas environment, often while much of the material remains solid. Oxidation, sulfation, chlorination, and other duties involve different equilibria, rates, products, and residuals. A generic thermal-treatment label or a furnace temperature does not identify the actual reaction path.
+
+Derive conserved-element and gas accounts, then combine potential/phase relations with reaction/transport evidence. Particle size, porosity, product layers, agglomeration, sintering, local gas access, and heat release can change performance. Equilibrium potential diagrams alone do not establish uniform conversion or a suitable feed for the next operation.
+
+Track desired and undesirable constituents into solids, gas, dust, condensates, and treatment products. A high target-element retention can coexist with a difficult impurity or gas-handling problem. Heat recovery, containment, observation, and maintenance belong to the same system boundary.
+
+**Work:** reconstruct a complete published roasting case using the full method and feed/operating evidence. Independently balance target metal, sulfur or another consequential element, and a defensible heat account. Compare predicted phases with measurements and a competing transport or local-potential interpretation. Evaluate an alternative treatment on the actual downstream product requirement and the complete residual/utility account.
+
+**Continue:** [Connect reduction with phase chemistry, rates, product separation, and total work](Reduction-potentials-reaction-paths-and-usable-metal.lingua#r_28QXJBHB45E3AFBD9A8H3EBDZ7).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_0NKV4BHR9Z7W2Y2H4Y1SDAH519

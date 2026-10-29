@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Preserve a solid chemical's composition and usable physical form (@cs-solids: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Storage-Handling-and-Transport-Solid-Fertilizers.lingua#r_7QADF65GMMER3S52G9ANCVR2G8", #source "../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43", #source "../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA", #chemical-supply-systems "Stability-time-temperature-and-contamination-history.lingua#r_621TVDZF59JYYDV3V68PJRY2C5") { r_0ND9589QKW0521YKSS4QZFEP57
+**Read:** [Storage, handling and transportation of solid mineral fertilizers — Fertilizers Europe](../sources/Storage-Handling-and-Transport-Solid-Fertilizers.lingua#r_7QADF65GMMER3S52G9ANCVR2G8), the entire storage, handling and transport guide; [Emissions from Storage — European Commission BREF](../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43), the complete solid-storage, transfer and emission-control chapters; [Validation of Measurement Procedures that Include Sampling — Eurachem](../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA), the complete sampling and sample-preparation methodology.
+
+Describe a solid feed as a distribution of composition, particle size, shape, moisture and other consequential properties. Storage or handling can break particles, promote segregation, cause caking or change surface state. A bulk average assay can remain similar while the portions delivered to an operation behave differently.
+
+Choose a granular fertiliser, salt or powdered industrial input. Read the complete applicable solid-storage and handling methods, including the environmental and housekeeping account. Draw transfers through package/silo, conveying, loading, discharge and the user's feed system. Identify where a representative sample should be taken and what changes its representativeness.
+
+Work an as-delivered and dry-basis balance and examine a moisture change explicitly. Compare storage arrangements on condition preservation, segregation, dust/residual management, accessible inventory and cleaning/maintenance. Identify which claims need measured particle or flow properties rather than assumptions from a generic diagram. A flowability or dust-hazard test has a method and domain; do not infer a complete handling design from the chemical formula. Later bulk-solids and machinery studies deepen those methods while this route retains the physical material/history interface.
+
+**Continue:** [Connect aging and stability to the actual stored chemical](Stability-time-temperature-and-contamination-history.lingua#r_621TVDZF59JYYDV3V68PJRY2C5).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_0ND9589QKW0521YKSS4QZFEP57

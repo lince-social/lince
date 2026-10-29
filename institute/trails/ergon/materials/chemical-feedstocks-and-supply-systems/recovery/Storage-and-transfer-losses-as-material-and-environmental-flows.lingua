@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Trace chemical losses to their physical pathway and evidence (@cs-environment: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43", #source "../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0", #source "../sources/Chemical-Warehousing-HSE-HSG71.lingua#r_6MKP347GP6BY1H1PCKCJKAV91R", #chemical-supply-systems "Returns-rejected-lots-and-closed-material-accounts.lingua#r_00A3Q2KZ6FB44RZEJMZJ7DQQWP") { r_341X99P6FEVRPYKJZNA5YA41X2
+**Read:** [Emissions from Storage — European Commission BREF](../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43), complete relevant storage, transfer, emission and control chapters; [Methanol Safe Handling Manual — Methanol Institute](../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0), the whole environmental and loss/incident discussion; [Chemical warehousing — HSE HSG71](../sources/Chemical-Warehousing-HSE-HSG71.lingua#r_6MKP347GP6BY1H1PCKCJKAV91R), the complete containment, waste and operating-review account.
+
+Read the complete relevant EFS storage/transfer chapters and map possible releases from the actual material route: volatile emissions, entrained mist/dust, leaks, residual heels, wash liquids, rejected stock and returned packaging. Distinguish measured loss from an estimated emission factor or an unexplained inventory residual.
+
+Develop a mass/constituent account for one transfer cycle with boundaries, time and uncertainty. A reduction in apparent tank loss can move material into a captured residual or wastewater rather than eliminate the burden. Follow those streams far enough to explain the treatment, recovery or disposition actually supporting continued supply.
+
+Compare prevention, changed package/route, capture, recovery and replacement of a problematic material on the same function. Identify utility, equipment and analytical work needed for each. Use actual methods and dated technical references; a historical emissions example does not establish a current local permit or site measurement. Develop an uncertainty and sensitivity account and state what observations would resolve the largest unknowns. Later environmental and waste-treatment subjects retain their full domain, while this route makes the chemical supply's losses and supporting services visible.
+
+**Continue:** [Follow nonconforming or returned material to an actual disposition](Returns-rejected-lots-and-closed-material-accounts.lingua#r_00A3Q2KZ6FB44RZEJMZJ7DQQWP).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_341X99P6FEVRPYKJZNA5YA41X2

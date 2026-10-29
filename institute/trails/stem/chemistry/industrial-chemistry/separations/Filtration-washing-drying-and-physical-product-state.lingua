@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Account for solids separation, washing, drying and the material delivered (@ic-solids: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4", #source "../sources/Industria-Acucareira-Castro.lingua#r_2MZSAZ19HXA59C006AANFNSM4J", #industrial-chemistry "../utilities/Temperature-levels-heat-exchange-and-integrated-duties.lingua#r_0AB2T3N3JWJY8FF9KR5CDBJCNB") { r_74FDG721Y6Q0HQGAJS6JSXTCYC
+**Read:** [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the complete solids isolation, washing, drying and recovery methods; [Large Volume Inorganic Chemicals — Solids and Others Industry, BREF LVIC-S](../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4), the whole relevant product preparation/finishing and residual chapters; [Indústria açucareira — Heizir F. de Castro](../sources/Industria-Acucareira-Castro.lingua#r_2MZSAZ19HXA59C006AANFNSM4J), the complete concentration/crystallization and product-separation context.
+
+Filtration, sedimentation, centrifugation and drying produce different material states from a suspension or wet solid. Particle size/shape, compressibility, aggregation, liquid viscosity and equipment history influence performance. A laboratory clarity or drying observation does not alone establish a production throughput or final chemical state.
+
+Distinguish dry solids, retained liquid and dissolved constituents in that liquid. Washing exchanges or dilutes the retained phase but may dissolve product or alter surface chemistry. Drying removes volatile material while exposing the solid to a thermal, gas and mechanical history that can change phase, degradation, dust behavior or impurities.
+
+Close species and energy accounts across the complete operation, including returned wash water, solvent recovery, exhaust, fines and off-specification solids. A high dry-basis assay may coexist with poor usable recovery or a distribution unsuitable for the downstream process.
+
+**Work:** reconstruct a complete published solid-product isolation/finishing case. Compare two separation/washing/drying arrangements at the same usable product specification, preserving liquid/solute loss and utility demand. Explain the primary experiments and representative sampling needed to distinguish a chemical, particle or equipment limitation.
+
+**Continue:** [Match process heat duties at compatible temperatures and operating times](../utilities/Temperature-levels-heat-exchange-and-integrated-duties.lingua#r_0AB2T3N3JWJY8FF9KR5CDBJCNB).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_74FDG721Y6Q0HQGAJS6JSXTCYC

@@ -1,0 +1,152 @@
+Import "sources/Mineralogy-Perkins.lingua"
+Import "sources/Petrology-Perkins.lingua"
+Import "sources/Guide-to-Thin-Section-Microscopy.lingua"
+Import "sources/Mineralogy-and-Optical-Laboratory-Manual.lingua"
+Import "sources/MIT-Petrology-12-109.lingua"
+Import "sources/MIT-Advanced-Igneous-Petrology.lingua"
+Import "sources/MIT-Sedimentary-Geology.lingua"
+Import "sources/Petrology-Nelson-Tulane.lingua"
+Import "sources/IUCr-Crystallographic-Teaching.lingua"
+Import "sources/Handbook-of-Mineralogy.lingua"
+Import "sources/Crystallography-Open-Database.lingua"
+Import "sources/Raman-Mineral-Identification-Practical-Guide.lingua"
+Import "sources/NIST-Quantitative-EDS.lingua"
+Import "sources/Perple-X-Methods-and-Documentation.lingua"
+Import "sources/HPx-eos-and-THERMOCALC.lingua"
+Import "sources/MAGEMin-Riel-2022.lingua"
+Import "sources/BGS-Rock-Classification-Scheme.lingua"
+Import "sources/USGS-X-ray-Powder-Diffraction-Manual.lingua"
+Import "sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua"
+Import "sources/GSAS-II-Refinement-Tutorials.lingua"
+Import "sources/Optical-Mineralogy-Brock.lingua"
+Import "sources/Virtual-Petrography-Toronto.lingua"
+Import "sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua"
+Import "sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua"
+Import "foundations/A-mineral-and-rock-question.lingua"
+Import "foundations/Species-groups-varieties-and-materials.lingua"
+Import "foundations/Composition-sites-and-charge-accounting.lingua"
+Import "crystals/Lattices-bases-and-unit-cells.lingua"
+Import "crystals/Cell-metric-and-reciprocal-geometry.lingua"
+Import "crystals/Directions-planes-and-crystallographic-indices.lingua"
+Import "crystals/Point-symmetry-and-physical-properties.lingua"
+Import "crystals/Space-groups-settings-and-structural-models.lingua"
+Import "crystals/Coordination-polyhedra-and-structural-families.lingua"
+Import "crystals/Solid-solution-sites-and-coupled-substitution.lingua"
+Import "crystals/Defects-ordering-and-exsolution.lingua"
+Import "crystals/Polymorphs-stability-and-metastability.lingua"
+Import "crystals/Nucleation-growth-and-textural-history.lingua"
+Import "minerals/Isolated-ring-and-other-silicate-structures.lingua"
+Import "minerals/Quartz-feldspars-feldspathoids-and-frameworks.lingua"
+Import "minerals/Pyroxenes-amphiboles-and-chain-silicates.lingua"
+Import "minerals/Micas-chlorite-serpentine-and-sheet-silicates.lingua"
+Import "minerals/Carbonates-oxides-sulfides-and-other-mineral-classes.lingua"
+Import "minerals/Accessory-minerals-inclusions-and-disproportionate-information.lingua"
+Import "optics/Specimens-orientation-and-thin-section-preparation.lingua"
+Import "optics/Set-up-and-understand-a-petrographic-microscope.lingua"
+Import "optics/Polarization-refraction-and-the-optical-indicatrix.lingua"
+Import "optics/Plane-polarized-observations-and-refractive-index.lingua"
+Import "optics/Interference-retardation-and-extinction.lingua"
+Import "optics/Uniaxial-indicatrices-and-interference-figures.lingua"
+Import "optics/Biaxial-indicatrices-optic-angles-and-sign.lingua"
+Import "optics/Twinning-zoning-strain-and-multiple-domains.lingua"
+Import "optics/Opaque-phases-reflected-light-and-complementary-methods.lingua"
+Import "optics/Modal-analysis-sampling-and-rock-description.lingua"
+Import "analysis/Powder-diffraction-observations-and-identification.lingua"
+Import "analysis/Bragg-spacing-indexing-and-instrument-conventions.lingua"
+Import "analysis/Whole-pattern-refinement-and-quantitative-phase-analysis.lingua"
+Import "analysis/Read-and-test-a-crystal-structure-record.lingua"
+Import "analysis/Raman-spectra-processing-and-mineral-identification.lingua"
+Import "analysis/Electron-microanalysis-standards-and-sample-volume.lingua"
+Import "analysis/Normalize-oxide-data-and-test-formula-assumptions.lingua"
+Import "analysis/An-inspectable-oxide-normalization.lingua"
+Import "analysis/Compositional-maps-domains-and-image-analysis.lingua"
+Import "analysis/Bulk-composition-modal-data-and-compositional-basis.lingua"
+Import "equilibrium/Chemical-potentials-and-mineral-equilibrium.lingua"
+Import "equilibrium/Components-phases-and-the-phase-rule.lingua"
+Import "equilibrium/Binary-ternary-and-projected-phase-diagrams.lingua"
+Import "equilibrium/Tie-lines-phase-amounts-and-mass-balance.lingua"
+Import "equilibrium/An-inspectable-two-phase-equilibrium.lingua"
+Import "equilibrium/Activities-nonideal-mixing-and-solvi.lingua"
+Import "equilibrium/Fluid-components-redox-and-open-system-constraints.lingua"
+Import "equilibrium/Thermodynamic-data-model-compatibility-and-numerical-tests.lingua"
+Import "igneous/Magmas-melts-crystals-and-material-balance.lingua"
+Import "igneous/Classify-igneous-rocks-from-mode-chemistry-and-context.lingua"
+Import "igneous/Partial-melting-reactions-and-source-composition.lingua"
+Import "igneous/Partition-coefficients-batch-melting-and-limits.lingua"
+Import "igneous/Fractional-crystallization-and-Rayleigh-models.lingua"
+Import "igneous/Mixing-assimilation-and-energy-constraints.lingua"
+Import "igneous/Storage-crystal-populations-and-thermal-history.lingua"
+Import "igneous/Volatiles-pressure-fluid-separation-and-preservation.lingua"
+Import "igneous/Mantle-rocks-basalt-generation-and-residues.lingua"
+Import "igneous/Crustal-magmas-granitoids-and-plutonic-assemblies.lingua"
+Import "sedimentary/Clastic-grains-matrix-cement-and-texture.lingua"
+Import "sedimentary/Provenance-sorting-recycling-and-source-ambiguity.lingua"
+Import "sedimentary/Carbonate-components-textures-and-reaction-history.lingua"
+Import "sedimentary/Diagenesis-compaction-cement-and-porosity-history.lingua"
+Import "sedimentary/Clay-minerals-mixed-layers-and-treatment-evidence.lingua"
+Import "sedimentary/Evaporites-silica-phosphates-and-organic-associated-materials.lingua"
+Import "metamorphic/Assemblages-textures-and-equilibrium-domains.lingua"
+Import "metamorphic/Facies-protolith-and-metamorphic-classification.lingua"
+Import "metamorphic/Balance-reactions-and-read-petrogenetic-grids.lingua"
+Import "metamorphic/Thermometry-barometry-and-calibration-assumptions.lingua"
+Import "metamorphic/Effective-bulk-composition-and-fractionated-domains.lingua"
+Import "metamorphic/Calculate-and-interpret-a-bulk-specific-pseudosection.lingua"
+Import "metamorphic/Mineral-zoning-growth-diffusion-and-reaction-progress.lingua"
+Import "metamorphic/Metasomatism-reaction-fronts-and-fluid-rock-transfer.lingua"
+Import "metamorphic/Pressure-temperature-time-deformation-and-petrochronology.lingua"
+Import "metamorphic/Disequilibrium-reaction-rates-and-preservation.lingua"
+Import "methods/Experimental-petrology-calibration-and-transfer-to-nature.lingua"
+Import "sources/NASA-Lunar-Samples-and-Astromaterials.lingua"
+Import "applications/Mineral-hosts-impurities-and-industrial-specifications.lingua"
+Import "applications/Grain-associations-liberation-and-process-mineralogy.lingua"
+Import "applications/Alteration-waste-rock-and-secondary-minerals.lingua"
+Import "applications/Planetary-materials-shock-and-comparative-petrology.lingua"
+Import "research/A-sustained-mineralogy-and-petrology-programme.lingua"
+Import "research/Sustained-specimen-and-microscope-laboratory-study.lingua"
+Import "research/Integrated-crystal-and-analytical-characterization.lingua"
+Import "research/Advanced-igneous-process-and-experimental-study.lingua"
+Import "research/Advanced-sedimentary-provenance-and-diagenetic-study.lingua"
+Import "research/Advanced-metamorphic-model-and-petrochronology-study.lingua"
+Import "research/An-advanced-mineral-to-feedstock-study.lingua"
+Import "research/Independent-mineralogical-and-petrological-scholarship.lingua"
+Import "research/Completion-and-specialist-continuations.lingua"
+Import "foundations/Reading-minerals-and-rocks-from-zero.lingua"
+Import "Sources.lingua"
+Import "../geology/Geology.lingua"
+
+Mineralogy and petrology — minerals, crystals, rock processes, and investigation (@mineralogy-and-petrology: 0, is #chapter, #mineralogy-and-petrology "foundations/Reading-minerals-and-rocks-from-zero.lingua#r_57NZD8HAVKQW409DEN9D771VK5") { r_44F7X6GPMW6ZSCCN6D71QSVKBN
+Begin with a specimen or question about a material. Connect composition and structure with properties, learn to observe and analyze mineral/rock constituents, and explain how igneous, sedimentary, metamorphic, and related processes shaped the evidence. No prior specialist course is assumed; shared preparation appears where used.
+
+[Read from a first specimen through substantial books and advanced studies](foundations/Reading-minerals-and-rocks-from-zero.lingua#r_57NZD8HAVKQW409DEN9D771VK5) starts with substantial book chapters and observations, growing through complete mineralogy/petrology books, English/Portuguese microscopy, full analytical methods, laboratories, university/graduate cases, quantitative phase and process models, and independent research. A reader can enter at a particular question and return for an unfamiliar foundation.
+
+| Reading area | Records |
+| --- | --- |
+| Begin with specimens, definitions, and composition | [Read from a first specimen through substantial books and advanced studies](foundations/Reading-minerals-and-rocks-from-zero.lingua#r_57NZD8HAVKQW409DEN9D771VK5) · [Begin with a material, an observation, and a question about its formation](foundations/A-mineral-and-rock-question.lingua#r_34W71KV9Y00D9TGQJSQMT1NNSC) · [Distinguish a mineral species from a group, variety, phase, or material name](foundations/Species-groups-varieties-and-materials.lingua#r_165HC53VTHME15GHWW142V3X7X) · [Connect a mineral formula with atoms, sites, charge, and measured composition](foundations/Composition-sites-and-charge-accounting.lingua#r_559FNR7H67KS8GMHM91CX3DQ4F) |
+| Crystal geometry, symmetry, structures, and change | [Build a crystal model from translations and an atomic basis](crystals/Lattices-bases-and-unit-cells.lingua#r_2HS07Q4PD6XHTVGDHBJ3SDB6J3) · [Calculate geometry with the cell metric and reciprocal basis](crystals/Cell-metric-and-reciprocal-geometry.lingua#r_6CB07MYV3Z3DK5KBGKFET4K8SM) · [Use direction and plane indices with an explicit cell and convention](crystals/Directions-planes-and-crystallographic-indices.lingua#r_79PJ4B5E4TKFRY5SG9Y45YKTGA) · [Connect point symmetry with shape, structure, and property constraints](crystals/Point-symmetry-and-physical-properties.lingua#r_2KSSZ1DBRR07M3YX82HAAAZ1PM) · [Interpret a space-group model with translations, settings, and evidence](crystals/Space-groups-settings-and-structural-models.lingua#r_104E10F1QWN2HXBB7V0XRSW3B4) · [Explain coordination and structural families through geometry and chemistry](crystals/Coordination-polyhedra-and-structural-families.lingua#r_6EWCCTQS683WGT6WSBQSGG1FXP) · [Balance substitution through composition, sites, and charge](crystals/Solid-solution-sites-and-coupled-substitution.lingua#r_1R0GKK33GS38M1Y82GQ1XYF850) · [Relate defects and ordering to properties without confusing them with a new bulk composition](crystals/Defects-ordering-and-exsolution.lingua#r_1TAP18152580TY3JWTWDJ3XE2T) · [Distinguish structural identity, equilibrium stability, and preserved metastability](crystals/Polymorphs-stability-and-metastability.lingua#r_7D6WBSRHBGAH7ZWA1ZMTJKDSVX) · [Connect crystal growth with driving force, transport, and preserved textures](crystals/Nucleation-growth-and-textural-history.lingua#r_4W51WE1Z1RRCJE9N3KBK5C3MQ6) |
+| Structural families and mineral constituents | [Organize silicates by connectivity while preserving composition and site differences](minerals/Isolated-ring-and-other-silicate-structures.lingua#r_736317PHP4KMSCR801YWR3M20H) · [Distinguish framework mineral structures, substitutions, and histories](minerals/Quartz-feldspars-feldspathoids-and-frameworks.lingua#r_6R635CVNT9MZ33T0EYRAYAH8XQ) · [Interpret chain silicates through structure, sites, optics, and nomenclature](minerals/Pyroxenes-amphiboles-and-chain-silicates.lingua#r_0B0NYE7JFPXEJGEQJN0BABAFZG) · [Connect sheet structures, hydration, and compositional variability](minerals/Micas-chlorite-serpentine-and-sheet-silicates.lingua#r_4QKPW3NA78Z626YYAXB6400ET9) · [Study non-silicate classes through chemistry, structure, and useful contrasts](minerals/Carbonates-oxides-sulfides-and-other-mineral-classes.lingua#r_62ANF5JYK06ED76NTEZ1E2ESZF) · [Investigate small phases whose information exceeds their volume fraction](minerals/Accessory-minerals-inclusions-and-disproportionate-information.lingua#r_7X3R4TNR1VE7QAY8F44QD40JPY) |
+| Preparation, microscopy, optical theory, and texture | [Preserve specimen context through preparation and thin-section orientation](optics/Specimens-orientation-and-thin-section-preparation.lingua#r_1ZW5S57B5BN7MQ6CBBPG2W8N6W) · [Set up a petrographic microscope and explain the observation chain](optics/Set-up-and-understand-a-petrographic-microscope.lingua#r_5SB8Z0J3715X5FB9RSG4CA2VK8) · [Explain mineral optics through polarization and directional optical response](optics/Polarization-refraction-and-the-optical-indicatrix.lingua#r_56E0Q648CAJ85CMJN64KK39KBM) · [Use plane-polarized observations as measured evidence for identification](optics/Plane-polarized-observations-and-refractive-index.lingua#r_5ZS4G6V7VWX08CA643X2HAJ5M9) · [Relate crossed-polarized observations to thickness, birefringence, and orientation](optics/Interference-retardation-and-extinction.lingua#r_6EJ7RHWMKX81AVKDEB45Q1WGZ5) · [Interpret uniaxial optics through geometry and suitable observations](optics/Uniaxial-indicatrices-and-interference-figures.lingua#r_3PTF28NPQE0WGQ1S0GWBAV8GZ5) · [Connect biaxial figures with principal indices and directional geometry](optics/Biaxial-indicatrices-optic-angles-and-sign.lingua#r_055H5F5MZ3GN10AZE1ZNPDP0F3) · [Distinguish twins, zoning, exsolution, and deformation features](optics/Twinning-zoning-strain-and-multiple-domains.lingua#r_2CS1MMWSJAVV7B6P6R6VNS4WY1) · [Identify opaque phases with suitable observations and complementary evidence](optics/Opaque-phases-reflected-light-and-complementary-methods.lingua#r_46VP12HFWFJRGMYP9B1R2FKK7E) · [Estimate mineral proportions with an explicit observation and sampling design](optics/Modal-analysis-sampling-and-rock-description.lingua#r_0MQXK1WERQ99N1S861GKH7N8NF) |
+| Diffraction, spectra, microanalysis, formulas, and maps | [Connect a powder pattern with specimen preparation and a structural hypothesis](analysis/Powder-diffraction-observations-and-identification.lingua#r_353CVHXVZE6EM4ZFRT71H550E2) · [Calculate diffraction spacing and test an indexing account](analysis/Bragg-spacing-indexing-and-instrument-conventions.lingua#r_06VC3CMZT1TY5BZ00AWV8TD3ZQ) · [Evaluate a refined pattern through model, residuals, correlations, and evidence](analysis/Whole-pattern-refinement-and-quantitative-phase-analysis.lingua#r_75FAFYT5JQC9ZPHSE8RDMPMF9V) · [Read a CIF as a traceable model and compare it with its original evidence](analysis/Read-and-test-a-crystal-structure-record.lingua#r_1SVFJVQWKZM86VHF3Z5Y2XWVX1) · [Use Raman spectra with calibration, specimen context, and controlled processing](analysis/Raman-spectra-processing-and-mineral-identification.lingua#r_74ZXVR1CEKVKVG97CK96KZ2SKT) · [Interpret electron microanalysis through standards, corrections, and spatial context](analysis/Electron-microanalysis-standards-and-sample-volume.lingua#r_4DM5842PJRXRJHV6XXFZXGBMS1) · [Derive a mineral formula from oxide data without hiding its assumptions](analysis/Normalize-oxide-data-and-test-formula-assumptions.lingua#r_3S3B97TF7704BK3YVVGKTBXZ2P) · [Calculate an oxygen-basis formula and expose the retained analytical total](analysis/An-inspectable-oxide-normalization.lingua#r_45M80VFVGPQ0ZX888J14RQENMC) · [Interpret compositional maps with calibration and geological domain identity](analysis/Compositional-maps-domains-and-image-analysis.lingua#r_5393SVPBBX49ZR6Z1P58HX1GEP) · [Keep bulk chemistry, mineral modes, and calculated norms distinct](analysis/Bulk-composition-modal-data-and-compositional-basis.lingua#r_5VR788G2X2J6VYBART77S5X1HQ) |
+| Thermodynamics, phase amounts, solution models, and tests | [Derive phase equilibrium from chemical potentials and a defined system](equilibrium/Chemical-potentials-and-mineral-equilibrium.lingua#r_3H5V4CVENHRRZAQ3RZ4RNB2PNN) · [Count components, phases, and freedoms under explicit constraints](equilibrium/Components-phases-and-the-phase-rule.lingua#r_250V4TCJ0KF4TXQ2SXM6VK77S8) · [Read phase diagrams with their basis, variables, and projection assumptions](equilibrium/Binary-ternary-and-projected-phase-diagrams.lingua#r_57K2PVW70VR7BPDBWHVRDYSJEX) · [Derive phase amounts from a tie line and preserve their basis](equilibrium/Tie-lines-phase-amounts-and-mass-balance.lingua#r_5VBSCW4DQFHPD00EQHBQ752R87) · [Solve and independently test a deliberately simple two-phase equilibrium](equilibrium/An-inspectable-two-phase-equilibrium.lingua#r_0N9KF8HD8HGNAZ114DPF9ZP2JW) · [Relate solid-solution thermodynamics to activities, ordering, and exsolution](equilibrium/Activities-nonideal-mixing-and-solvi.lingua#r_5PPNHA0XQ09N8BVJVN816PJDMF) · [Specify water, carbon, redox, and open-system constraints in a phase model](equilibrium/Fluid-components-redox-and-open-system-constraints.lingua#r_6QCQEWZVFBMQNVYP5H5ZBGMXRR) · [Separate thermodynamic validity, numerical convergence, and geological applicability](equilibrium/Thermodynamic-data-model-compatibility-and-numerical-tests.lingua#r_4VK39PV7M2RHZHCSWK6R1AGW6F) |
+| Magmas, melting, differentiation, storage, and source histories | [Distinguish magma, melt, crystals, and the system being sampled](igneous/Magmas-melts-crystals-and-material-balance.lingua#r_2MNYJC6NDNW704DEW47KJGR76V) · [Use igneous classification without turning a name into an origin proof](igneous/Classify-igneous-rocks-from-mode-chemistry-and-context.lingua#r_0JPXPD7GZVPEWCDV26V55PX439) · [Explain partial melting through phase relations and material transfer](igneous/Partial-melting-reactions-and-source-composition.lingua#r_15MH726G409NZR6MJGFPE1BKDE) · [Derive a partitioning model and distinguish its coefficient from a universal constant](igneous/Partition-coefficients-batch-melting-and-limits.lingua#r_3B2TW5ED1ABJ87H801PXK3HW15) · [Distinguish crystallization, separation, and a Rayleigh distribution model](igneous/Fractional-crystallization-and-Rayleigh-models.lingua#r_6W8ZBWZZZ0WGZRPAD66MPHRHT1) · [Test mixing and assimilation with material, heat, and geological evidence](igneous/Mixing-assimilation-and-energy-constraints.lingua#r_02ENGHZHBX047A1VFVS8HN611Z) · [Interpret storage and transport from several mineral and textural records](igneous/Storage-crystal-populations-and-thermal-history.lingua#r_67PCMW7A1Y4XFVF8RXXDYZQPMF) · [Connect volatile behavior with pressure, phase relations, and sampled evidence](igneous/Volatiles-pressure-fluid-separation-and-preservation.lingua#r_388NSFRN85ZCYHY5FTJ4P1ECDF) · [Interpret mantle and basalt histories through minerals, experiments, and balances](igneous/Mantle-rocks-basalt-generation-and-residues.lingua#r_1VA4KEHC0R7MV9RHYR6A2BYPKZ) · [Explain crustal igneous diversity without reducing it to one source model](igneous/Crustal-magmas-granitoids-and-plutonic-assemblies.lingua#r_6R54EHAY8Y81XH9MW6H0JW9PV3) |
+| Grains, provenance, carbonate/chemical materials, and alteration | [Describe clastic rocks before inferring source or environment](sedimentary/Clastic-grains-matrix-cement-and-texture.lingua#r_4AQZE2384375M555JN9V5PZJFP) · [Infer provenance while accounting for transport, weathering, and recycling](sedimentary/Provenance-sorting-recycling-and-source-ambiguity.lingua#r_68WCSN54XX2DRSB8VJ3TD2690H) · [Separate carbonate deposition, fabric, and later chemical change](sedimentary/Carbonate-components-textures-and-reaction-history.lingua#r_2TV14853GT8HPXDBZ11G5TD26G) · [Reconstruct diagenesis through textures, reactions, fluids, and burial constraints](sedimentary/Diagenesis-compaction-cement-and-porosity-history.lingua#r_4RF28CK89JY6YNRYSP4E0PW79Y) · [Identify clay phases with structural, chemical, and preparation evidence](sedimentary/Clay-minerals-mixed-layers-and-treatment-evidence.lingua#r_1YK3X2Z2EPXKF4P85R27T8A6FF) · [Explain chemical and biogenic sedimentary materials through component budgets](sedimentary/Evaporites-silica-phosphates-and-organic-associated-materials.lingua#r_6HTY4SNKY5J2B4REKH2QWDXQXT) |
+| Assemblages, reactions, models, domains, and event histories | [Define a metamorphic assemblage through spatial and temporal relationships](metamorphic/Assemblages-textures-and-equilibrium-domains.lingua#r_329FT3EHXC5DZT6P5THMYDCREY) · [Use facies and rock names without assigning a universal pressure-temperature point](metamorphic/Facies-protolith-and-metamorphic-classification.lingua#r_0GDYP376EMTYS89VYE9BFH5AR7) · [Balance metamorphic reactions and interpret their equilibrium boundaries](metamorphic/Balance-reactions-and-read-petrogenetic-grids.lingua#r_2VYNSCYCWXZHBJNGVNHHKJPDSK) · [Infer conditions from calibrated mineral relations with their uncertainty](metamorphic/Thermometry-barometry-and-calibration-assumptions.lingua#r_52CQD7G1AWVW9FMT5B50S7NTXY) · [Define the composition that actually participates in the modeled reaction](metamorphic/Effective-bulk-composition-and-fractionated-domains.lingua#r_2XN684WEWC9RSCNV7ZMGMDD6GX) · [Build a bulk-specific phase section and test its geological interpretation](metamorphic/Calculate-and-interpret-a-bulk-specific-pseudosection.lingua#r_1MQ5QE3WH0VR3P4BWSWPVG93AC) · [Read mineral zoning as a record modified by growth, transport, and later events](metamorphic/Mineral-zoning-growth-diffusion-and-reaction-progress.lingua#r_0HQFK46WKVZYYG564EAZ05BTFJ) · [Explain metasomatism with reaction, transport, and material balance](metamorphic/Metasomatism-reaction-fronts-and-fluid-rock-transfer.lingua#r_1PEG58WB7ZFB3G5AZ8K91F0J4X) · [Join pressure, temperature, age, and deformation without collapsing different events](metamorphic/Pressure-temperature-time-deformation-and-petrochronology.lingua#r_4CTGHPR28HW3TQ3CWWRF426TRQ) · [Test equilibrium interpretations against kinetics and preservation](metamorphic/Disequilibrium-reaction-rates-and-preservation.lingua#r_79G1ER9M053Q0F1E4KPGTYP959) |
+| Experimental constraints and transfer to nature | [Evaluate experimental constraints and the limits of transferring them to natural rocks](methods/Experimental-petrology-calibration-and-transfer-to-nature.lingua#r_36V798SPKFZBP76EH1J1YCN2TC) |
+| Feedstocks, associations, waste reactions, and planetary materials | [Translate a bulk material requirement into questions about mineral hosts and impurities](applications/Mineral-hosts-impurities-and-industrial-specifications.lingua#r_6J4G1Q2JJ80B1SDS0NVQMR9H4M) · [Relate mineral associations to liberation without mistaking a section for every particle](applications/Grain-associations-liberation-and-process-mineralogy.lingua#r_03BD9ADDV2B62T8RF26S61R77C) · [Explain waste-material change through mineral reactions, transport, and conditions](applications/Alteration-waste-rock-and-secondary-minerals.lingua#r_2Q8ZGJBA5R7A0BH4RF4XMQ7Q2R) · [Apply mineral and rock evidence to planetary samples with their actual histories](applications/Planetary-materials-shock-and-comparative-petrology.lingua#r_13MYWX75DMQXVM5XFE1ZSG9YMR) |
+| Sustained practical, advanced, and independent investigation | [Complete the substantial book, lecture, and analytical-method reading](research/A-sustained-mineralogy-and-petrology-programme.lingua#r_0CW5J4TVZGG1T3K1JE8ZZ2412X) · [Demonstrate specimen, microscope, and analytical-observation competence](research/Sustained-specimen-and-microscope-laboratory-study.lingua#r_32GJMXG5AZ5WT3PCQHY77G2WB0) · [Characterize a material by independent structural, optical, and chemical evidence](research/Integrated-crystal-and-analytical-characterization.lingua#r_5C4Q9327N8YT8SAN6Q8F2SJF1P) · [Defend an igneous history using phase relations, material balance, and independent evidence](research/Advanced-igneous-process-and-experimental-study.lingua#r_6TQ5TWWMJ8WZWXWBJTABAY0CQK) · [Reconstruct a sedimentary rock from sources through burial and alteration](research/Advanced-sedimentary-provenance-and-diagenetic-study.lingua#r_21K256CCMWD35R663MPV64NG88) · [Defend a metamorphic history with domain, phase, and chronological tests](research/Advanced-metamorphic-model-and-petrochronology-study.lingua#r_7P5KPCH145YG8XYV124C723F73) · [Build a mineralogical handoff from geological material to a production requirement](research/An-advanced-mineral-to-feedstock-study.lingua#r_0DWP2N35XZ7YJN6DEXCGMA5T0X) · [Conduct an independent mineralogical or petrological investigation](research/Independent-mineralogical-and-petrological-scholarship.lingua#r_2RWA3AAGE5KFVA8P379Q76X8XQ) · [Demonstrate integrated mineral, method, process, and research understanding](research/Completion-and-specialist-continuations.lingua#r_63VQA6WVZ91KKYDQD43BYDFXRK) |
+
+Eight shared Records keep their existing routes and add distinct mineralogy/petrology continuations: [Identify a mineral through converging properties and context](../geology/materials/Mineral-identification-and-evidence.lingua#r_4V80T5SEAWK0JPVQTJ29YSH6F4), [Connect crystal structure, defects, and composition with material properties](../../../stem/chemistry/general-chemistry/states/Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA), [Read a rock’s texture, structure, composition, and alteration together](../geology/materials/Textures-structures-and-rock-classification.lingua#r_6YHWHD1G11JAT700N6FVMHVP5N), [Chemical measurements — matrix, recovery, selectivity, and reference material](../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ), [Interpret vapor pressure, phase change, and a phase diagram](../../../stem/chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S), [Build a numerical validation argument across several kinds of evidence](../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8), [Explain igneous materials through melting, crystallization, and field relations](../geology/materials/Melting-crystallization-and-igneous-bodies.lingua#r_7QWRZH8D2EVJR6F20Z77Y4QXR7), and [Infer metamorphic history from reactions, fabrics, and context](../geology/materials/Metamorphism-protolith-and-pressure-temperature-history.lingua#r_3P42J3NDC118QXFD1G1ME5SGTG). Select both endpoints of `#mineralogy-and-petrology` assertions to follow this subject. Source references and other predicates retain their own meaning; ordinary Protein selection suffices without another Trail feature or saved view directory.
+
+[Mineralogy and petrology sources — books, laboratories, analytical methods, and research](Sources.lingua#r_38Q6Z3J7ER2G1B441JXJ14NV5A) identifies complete works, authorized links, editions, rights, and access limits. Books, articles, media, structures, spectra, and external datasets remain external. The two small inline programs and connecting explanations are original teaching material, with explicit limited models rather than a promise of general mineral identification or petrological simulation.
+
+[Demonstrate integrated mineral, method, process, and research understanding](research/Completion-and-specialist-continuations.lingua#r_63VQA6WVZ91KKYDQD43BYDFXRK) requires sustained practical and academic work, independent checks, alternative interpretations, and scholarship. A virtual or supplied-data study has value within its stated scope; it does not itself establish actual field, instrument, or experimental competence.
+
+Continue through [Earth — materials, processes, and geological history](../Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH), [Geology — Earth materials, processes, history, and investigation](../geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06), and [Nature — Earth, living systems, and their relationships](../../Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21) for the wider natural history, [Chemistry — substances, transformations, and evidence](../../../stem/chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0) and [STEM — mathematics, science, and engineering](../../../stem/STEM.lingua#r_4B137J3ZBVM7TD2NA797H2CZ7E) for related science/methods, and [Ergon](../../../ergon/Ergon.lingua#r_00000000000000000000002001) for extraction, materials, manufacturing, and maintenance. Questions about explanation and evidence return to [Philosophy](../../../philosophy/Philosophy.lingua#r_00000000000000000000001001). The unique later geochemistry, economic-geology, mining, processing, and materials work remains its own depth, reusing these foundations.
+
+**Continue:** [Read from a first specimen through substantial books and advanced studies](foundations/Reading-minerals-and-rocks-from-zero.lingua#r_57NZD8HAVKQW409DEN9D771VK5).
+} r_44F7X6GPMW6ZSCCN6D71QSVKBN
+
+Extension @mineralogy-and-petrology "lince.vocabulary" {
+ definitions {
+  mineralogy-and-petrology "A useful continuation in minerals, crystals, rock-forming processes, observation and analysis, phase relations, practical investigation, and petrological research. Source references and other learning selections retain their own predicates."
+ }
+}

@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Several output quantities — JCGM 102 (@met-multi: 0, is #book, #part-of @met-sources) { r_1S5554FGCGA5E8GKAM6C9KMJKK
+JCGM 102:2011. Evaluation of measurement data — Supplement 2 to the GUM — Extension to any number of output quantities. [Official edition DOI](https://doi.org/10.59161/JCGM102-2011) · [Catalogue](https://www.bipm.org/en/committees/jc/jcgm/publications).
+
+Read the complete guide after scalar propagation and the covariance bridge. Reconstruct a vector-output example, retaining the output covariance matrix and coverage-region definition. Study linear propagation and the Monte Carlo treatment rather than reporting several independent ± intervals by habit.
+
+The early vector Record introduces component and matrix notation locally. Use the shared algebra preparation as needed, and pursue full linear algebra for a general treatment of rank, quadratic forms, and transformations.
+
+Authorized free access with JCGM copyright and reproduction/translation terms retained. Document identity and availability checked on 28 October 2026. The guide remains an external reference.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_1S5554FGCGA5E8GKAM6C9KMJKK

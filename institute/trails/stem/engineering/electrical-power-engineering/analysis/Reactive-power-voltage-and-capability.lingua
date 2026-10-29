@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Reactive power, voltage and capability (@pe-reactive-control: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Excitation-Systems-Hydroelectric-FIST-2026.lingua#r_725R40RX14YMRTQNWKGHY12JCN", #electrical-power-engineering "Radial-and-meshed-distribution-phase-detail-and-loss.lingua#r_5JDYMJDX74TPPDT59SCKNH0YZ3") { r_5E8CNSEF120NGYA02XH9WF89KV
+**Read:** [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete reactive/voltage and system-operating development; [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), generator capabilities, controls and continuation; [Excitation Systems for Hydroelectric Units — FIST 3-14](../sources/Excitation-Systems-Hydroelectric-FIST-2026.lingua#r_725R40RX14YMRTQNWKGHY12JCN), complete applicable excitation-system treatment.
+
+Voltage depends on network impedance, active/reactive injections and controls; the slogan that Q alone controls V is a useful restricted intuition rather than a universal decoupling law. Resistance, weak networks, active-power limits and converter controls can couple the quantities strongly. Derive sensitivities from the actual operating point.
+
+Compare generator excitation, transformer taps, shunt capacitors/reactors and power-electronic compensation. Each has a location, range, time response, losses and constraints. A tap change can improve one measured voltage while changing reactive demand, loading or another bus's condition. Device capability depends on current, voltage, temperature and operating mode, not only a circular P/Q sketch.
+
+Work a changed-load case, calculate the voltage response and test a compensation strategy against equipment/network limits and an alternative controller. Include discrete steps, delay, deadband and interaction where relevant. Use a distinct dynamic model when evaluating whether a controller can attain the steady solution. Later voltage stability, excitation, converter and protection studies join these individual limits into an evidence-based operating account.
+
+**Continue:** [Distribution networks, phase detail and loss](Radial-and-meshed-distribution-phase-detail-and-loss.lingua#r_5JDYMJDX74TPPDT59SCKNH0YZ3).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5E8CNSEF120NGYA02XH9WF89KV

@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Fundamentals of Multiphase Flow — Christopher E. Brennen (@fd-multiphase: 0, is #reference, #part-of @fd-sources) { r_0T6RH2YC70Z23SR3H4QZDJ69JM
+Christopher E. Brennen. Fundamentals of Multiphase Flow, Cambridge University Press, 2005. [Caltech repository, complete book and chapters](https://authors.library.caltech.edu/records/n710r-5mn62) · [Author-hosted text](https://brennen.caltech.edu/INTMult/multbook.pdf). DOI 10.1017/CBO9780511807169.
+
+Read the complete graduate treatment while developing phases, particles/bubbles, relative motion, flow regimes, averaging and multiphase equations. Work derivations and compare a closure with the observations supporting it. Use the book's specialist references for the selected physical system rather than treating one general model as every possible two-phase flow.
+
+Caltech provides the full book, sixteen chapter files, contents and bibliography. The repository labels access open but does not supply a general CC licence in its rights field. Author-hosted retrieval was intermittent; the repository inventory was inspected. Preserve publication and download-version distinctions and each file's notices. All books and data stay external.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_0T6RH2YC70Z23SR3H4QZDJ69JM

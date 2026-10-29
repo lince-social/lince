@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Vorticity transport, stretching, diffusion and baroclinicity (@fd-vorticity: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "Circulation-Kelvins-theorem-and-material-loops.lingua#r_4W25ZRVXG4JG4XXY8YHBM2WVR3") { r_0T941GM8MCPAABF9AFXBV21TJZ
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapters 2 and 3 vorticity and viscous motion; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 1 vorticity theorem and wall-generated vorticity; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), uncertainty in derived gradients.
+
+Define ω=∇×u. Taking the curl of momentum for a constant-property incompressible Newtonian fluid gives Dω/Dt=(ω·∇)u+ν∇²ω when body forces are conservative. Vortex stretching and tilting change vorticity even without viscosity. In strictly two-dimensional incompressible flow the stretching term vanishes, but diffusion and boundaries still matter.
+
+In variable-density inviscid flow the full relation includes −ω∇·u and the baroclinic term (∇ρ×∇p)/ρ². Derive their signs from the momentum equation. Misaligned pressure and density gradients can generate vorticity. A no-slip boundary also changes circulation through viscous stress and pressure-gradient relations; the absence of imposed upstream vorticity does not guarantee a vortex-free downstream field.
+
+Trace the vorticity budget in a starting wall flow, a stretching tube and a stratified interface. Distinguish a visual swirling structure from a precise field criterion. Estimate whether a measured spatial grid can support the derivatives used to identify it; differentiation can strongly amplify velocity error.
+
+**Continue:** [Circulation, Kelvin’s theorem and material loops](Circulation-Kelvins-theorem-and-material-loops.lingua#r_4W25ZRVXG4JG4XXY8YHBM2WVR3).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0T941GM8MCPAABF9AFXBV21TJZ

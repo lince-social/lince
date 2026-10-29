@@ -1,0 +1,71 @@
+Import "Fluid-dynamics.lingua"
+
+Fluid dynamics sources — books, courses, methods and physical evidence (@fd-sources: 0, is #chapter, #part-of @fluid-dynamics) { r_3Y3TVV9VQAB50M2ZSECK5JTYVG
+Use a complete introductory text while working through the early questions. [University Physics Volume 1 — OpenStax](sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6) supplies the first mechanics and fluid vocabulary; [Lectures in Elementary Fluid Dynamics — James M. McDonough](sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18) and the Portuguese [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J) supply sustained foundations. [Intermediate Fluid Mechanics — James Liburdy](sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), [Fluid Mechanics — David Tong](sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA) and [Fluid Mechanics — Richard Fitzpatrick](sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V) develop analytical methods. [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ) supplies demanding independent problems and examinations, while [Advanced fluid dynamics — Mei notes and MIT modules](sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P) extends the analytical tools.
+
+[Interfacial Phenomena — John W. M. Bush, MIT 18.357](sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), [Introductory Lectures on Turbulence — James M. McDonough](sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), [Fundamentals of Multiphase Flow — Christopher E. Brennen](sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM) and [Cavitation and Bubble Dynamics — Christopher E. Brennen](sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578) deepen interfaces, irregular motion and multiple phases. [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), [Notes on Computational Fluid Dynamics — Greenshields and Weller](sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), [OpenFOAM Foundation — versioned methods and user guide](sources/OpenFOAM-Foundation-Methods-and-User-Guide.lingua#r_6RVWPNB9VWAA4JDXH1HCXFDGQY), [CFD verification and validation — NPARC Alliance](sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV) and [Turbulence Modeling Resource — model definitions and benchmarks](sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6) support computational work whose equations, approximations and comparisons can be inspected. [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), [Water-flow calibration — NIST SP 250-98](sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05) and [Uncertainty quantification in particle image velocimetry — Sciacchitano](sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6) support measurement. The [Johns Hopkins Turbulence Databases — numerical flow evidence](sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE) simulations provide a distinct kind of evidence from a physical experiment.
+
+Sources have different terms: some permit adaptation under a named open licence; others are authorized free reading with retained copyright. Follow each edition's notices. Access to a public course does not grant access to every commercial reading it cites. Books, articles, films, software and datasets remain external references.
+
+[Advanced Hydraulics — Suresh A. Kartha](sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT)
+
+[Gas Dynamics — Vinayak Kulkarni](sources/Gas-Dynamics-Kulkarni.lingua#r_34YGDV61X77JFYZH8X8NGDBS9W)
+
+[A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN)
+
+[Macromolecular Hydrodynamics — Armstrong and McKinley](sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB)
+
+[Lectures on Non-Newtonian Fluid Dynamics — John Hinch](sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3)
+
+[University Physics Volume 1 — OpenStax](sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6)
+
+[Lectures in Elementary Fluid Dynamics — James M. McDonough](sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18)
+
+[Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J)
+
+[Fluid Mechanics — David Tong](sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA)
+
+[Intermediate Fluid Mechanics — James Liburdy](sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N)
+
+[Fluid Mechanics — Richard Fitzpatrick](sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V)
+
+[Advanced Fluid Mechanics — MIT 2.25, Fall 2013](sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ)
+
+[Advanced fluid dynamics — Mei notes and MIT modules](sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P)
+
+[Interfacial Phenomena — John W. M. Bush, MIT 18.357](sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN)
+
+[Introductory Lectures on Turbulence — James M. McDonough](sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ)
+
+[Fundamentals of Multiphase Flow — Christopher E. Brennen](sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM)
+
+[Cavitation and Bubble Dynamics — Christopher E. Brennen](sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578)
+
+[Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW)
+
+[Notes on Computational Fluid Dynamics — Greenshields and Weller](sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY)
+
+[OpenFOAM Foundation — versioned methods and user guide](sources/OpenFOAM-Foundation-Methods-and-User-Guide.lingua#r_6RVWPNB9VWAA4JDXH1HCXFDGQY)
+
+[Turbulence Modeling Resource — model definitions and benchmarks](sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6)
+
+[CFD verification and validation — NPARC Alliance](sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV)
+
+[Equations, Tables, and Charts for Compressible Flow — NACA 1135](sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM)
+
+[Water-flow calibration — NIST SP 250-98](sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05)
+
+[Uncertainty quantification in particle image velocimetry — Sciacchitano](sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6)
+
+[Johns Hopkins Turbulence Databases — numerical flow evidence](sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE)
+
+[Experimental Methods in Fluid Mechanics — Pranab K. Mondal](sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4)
+
+[Introduction to Fluid Mechanics and Fluid Engineering — Suman Chakraborty](sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2)
+
+[Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2)
+
+[Fluid mechanics films and illustrated notes — NCFMF](sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP)
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3Y3TVV9VQAB50M2ZSECK5JTYVG

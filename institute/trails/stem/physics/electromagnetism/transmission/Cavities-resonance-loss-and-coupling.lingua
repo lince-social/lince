@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Cavities, resonance, loss and coupling (@em-cavities: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #electromagnetism "../radiation/Retarded-potentials-near-fields-and-radiation-zone.lingua#r_021CHNJF2T7759JNHH4AZ0GG09") { r_6KWKPHVZFYZJR8T014QKKPMD4A
+**Read:** [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), resonators and field energy; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), complete resonance measurement methods.
+
+A closed or weakly open electromagnetic cavity supports modes determined by geometry and boundary/material conditions. Derive one rectangular-cavity mode and verify all field components and boundary conditions. Degenerate modes and perturbations can change observed polarization or coupling even when a simple resonance frequency barely changes.
+
+Define stored energy, dissipated power and unloaded Q under a stated weak-loss approximation. External coupling adds a loading channel; loaded and intrinsic Q are different. A measured linewidth can also reflect overlapping modes, drift or non-Lorentzian response. Identify the port model and complex background before extracting one fitted number.
+
+Use perturbation reasoning to predict the frequency shift from a small dielectric specimen, then identify limits from sample size, loss, field nonuniformity and altered boundary conditions. This links a cavity's field theory to the material measurements in [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91). Compare an eigenfrequency calculation, a driven response and a decaying time-domain signal. They should agree only after their normalization, loss model and excitation assumptions are matched, and after convergence is established for the actual observable.
+
+**Continue:** [Retarded potentials, near fields and radiation zone](../radiation/Retarded-potentials-near-fields-and-radiation-zone.lingua#r_021CHNJF2T7759JNHH4AZ0GG09).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_6KWKPHVZFYZJR8T014QKKPMD4A

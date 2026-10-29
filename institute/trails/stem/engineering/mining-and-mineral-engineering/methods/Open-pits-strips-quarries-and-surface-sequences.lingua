@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect surface geometry and sequence with access, material movement, and ground (@mine-surface-methods: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #mining-and-mineral-engineering "Underground-access-development-and-stoping-systems.lingua#r_384X3KJ4AQNHZ4780D9Z26FMV2") { r_1MD9JMH32P3R9JP1NZ26ZZCE0G
+**Read:** [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the complete surface phases, excavation, transport, slopes, and closure lectures; [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the full surface-method studies; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant surface-design chapters through authorized access.
+
+Open-pit, strip, quarry, and other surface systems differ in geometry, deposit setting, excavation sequence, equipment, waste placement, and material flow. Benches, slopes, ramps, working areas, drainage, and haul routes form a connected design rather than independent features selected from separate tables.
+
+Separate ultimate geometry from a physically workable sequence of phases and benches. Minimum working space, temporary slopes, access changes, equipment movement, water, grade control, and waste storage can constrain a mathematical pit shell. A favorable final shell need not be reachable under the proposed capacities or schedule.
+
+Stripping describes a relationship between material quantities under a defined mass/volume and time basis. An average life-of-mine ratio, incremental phase ratio, and operating-period ratio answer different questions. Density, swell, rehandling, and mixed material can complicate comparison.
+
+**Work:** reconstruct a complete teaching surface-mine case with observed/modelled deposit geometry, phase sequence, accesses, water, destinations, and changing waste/ore quantities. Independently check one stripping/volume/capacity account and compare an alternative sequence. Explain the observation or design refinement needed before an apparently attractive shell becomes an operating plan.
+
+Complete the full surface-mining course and relevant handbook chapters. Later ground, roads, queues, equipment, and closure studies test the interfaces that a simple pit drawing can conceal.
+
+**Continue:** [Join underground access, development, stopes, and supporting systems](Underground-access-development-and-stoping-systems.lingua#r_384X3KJ4AQNHZ4780D9Z26FMV2).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1MD9JMH32P3R9JP1NZ26ZZCE0G

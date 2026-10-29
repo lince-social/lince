@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Generation, energy sources and supporting services (@pe-generation-sources: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF", #electrical-power-engineering "../control/Frequency-droop-reserves-and-control-time-scales.lingua#r_10E3WX4GPH8P6K6DPVGV1T9K2D") { r_1ZSHRTZEF2Z3TVEZGG1YN7VAHQ
+**Read:** [Mechanical and Electrical Design of Hydroelectric Power Plants — USACE](../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8), whole plant overview and applicable source/auxiliary interfaces; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), complete generation/conversion context; [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF), whole resource/control and energy-interface discussion.
+
+Electrical generation converts or transfers energy from another physical source. A synchronous generator requires mechanical input; photovoltaic conversion and fuel cells have different terminal/source characteristics and interfaces. Storage returns previously supplied energy with losses and limits. Separate a source's instantaneous power capability, available energy, ramp/duty and supporting services.
+
+Map hydro, thermal, wind, solar and storage interfaces into the power model, identifying what sets output and what can fail. Prime mover/fuel/water, cooling, lubrication, excitation, controls, auxiliary supply and protection belong in the operating boundary. An ideal generator bus hides these dependencies unless the relevant models and constraints are added.
+
+Read a complete plant case through [Mechanical and Electrical Design of Hydroelectric Power Plants — USACE](../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8), the source/control developments in the power courses and current primary material for the selected generation technology. Trace a change in resource, environmental condition or auxiliary failure to electrical service. The full thermal, mechanical, electrochemical and generation/infrastructure subjects retain their own depth; this power-engineering interface should make their required quantities and evidence explicit rather than claiming a static source symbol explains an entire plant.
+
+**Continue:** [Frequency, droop, reserves and time scales](../control/Frequency-droop-reserves-and-control-time-scales.lingua#r_10E3WX4GPH8P6K6DPVGV1T9K2D).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_1ZSHRTZEF2Z3TVEZGG1YN7VAHQ

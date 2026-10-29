@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Reconcile production accounts without concealing uncertainty or changing the question (@mine-accounting: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A", #source "../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #mining-and-mineral-engineering "Laboratory-pilot-plant-scale-up-and-integrated-design.lingua#r_3VK1ZRG6NNVS5BCKWZ808762WQ", #metals-and-metallurgical-production "../../../../ergon/materials/metals-and-metallurgical-production/operation/Reconcile-feed-inventory-metal-yield-and-accepted-output.lingua#r_144BG6K8K312A0S00PKXBKDQS7") { r_1CS10W97ZP2WS11B5PZHAEGFP1
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete balance, sampling, and relevant metallurgical-performance discussions; [Wills’ Mineral Processing Technology — Wills and Finch, eighth edition](../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A), chapter 3 in full, when available; [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), reuse measurement models, covariance, sampling, calibration, and uncertainty.
+
+Reconcile mine movement, stockpiles, plant feed, intermediate inventory, final product, and shipments on matched periods and dry/wet bases. Sampling support, timing, moisture, density, assay basis, and inventory changes can create apparent gains or losses. Separate geological-model prediction, short-range grade-control prediction, material actually mined, and measured plant feed.
+
+For a linear balance A x = 0 and unbiased measurements y with known positive-definite covariance Σ, unconstrained weighted reconciliation gives x̂ = y − Σ Aᵀ(AΣAᵀ)⁻¹Ay when the balance rows are independent. Derive this with a constrained quadratic minimization. Nonnegativity, uncertain model terms, correlated systematic errors, and gross errors require more than applying that expression mechanically.
+
+For an invented mass-only example y = (100, 8, 91) t for feed, concentrate, and tailings with equal independent variance, A = (1, −1, −1) gives reconciled values (299/3, 25/3, 274/3) t. The discrepancy is distributed according to the assumed uncertainty model; the calculation does not establish which instrument is wrong. Constituent balances and inventory evidence may reveal a different problem.
+
+**Work:** reconstruct a complete production-accounting campaign, preserve raw and reconciled values, derive uncertainty assumptions, and independently check closure. Compare an alternative moisture/time-alignment interpretation, investigate large residuals, and test against independent inventory or shipment evidence. Explain how short-range material decisions would change without rewriting historical observations to match a target.
+
+**Continue:** [Defend scale-up through mechanisms, test design, and independent operating evidence](Laboratory-pilot-plant-scale-up-and-integrated-design.lingua#r_3VK1ZRG6NNVS5BCKWZ808762WQ).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+
+**Continue in metals and metallurgical production:** [Reconcile plant quantities through reaction, inventory, byproducts, and qualified product](../../../../ergon/materials/metals-and-metallurgical-production/operation/Reconcile-feed-inventory-metal-yield-and-accepted-output.lingua#r_144BG6K8K312A0S00PKXBKDQS7).
+} r_1CS10W97ZP2WS11B5PZHAEGFP1

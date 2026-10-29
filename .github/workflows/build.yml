@@ -8,6 +8,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      validation_candidate:
+        description: Build the Park acceptance candidate without rerunning the broad CI suite
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -18,16 +23,18 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  RUSTUP_TOOLCHAIN: 1.96.0
   RUSTFLAGS: "-D warnings"
   CARGO_INCREMENTAL: "0"
   CARGO_TERM_COLOR: always
 
 jobs:
   park-checks:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.validation_candidate }}
     uses: ./.github/workflows/park.yml
   binary:
     needs: [park-checks]
-    if: github.ref != 'refs/heads/dev'
+    if: ${{ always() && !cancelled() && github.ref != 'refs/heads/dev' && (needs.park-checks.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.validation_candidate && needs.park-checks.result == 'skipped')) }}
     name: binary (${{ matrix.variant }}, ${{ matrix.os }}, ${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -65,6 +72,9 @@ jobs:
             mold \
             pigz \
             pkg-config \
+            meson \
+            ninja-build \
+            curl \
             libfontconfig-dev \
             clang \
             libclang-dev \
@@ -87,6 +97,14 @@ jobs:
             libgl1-mesa-dev \
             libvulkan-dev \
             libegl1-mesa-dev libgbm-dev libdrm-dev libudev-dev libinput-dev libseat-dev
+          curl --fail --location --retry 3 --output /tmp/libdisplay-info-0.4.0.tar.xz \
+            https://gitlab.freedesktop.org/emersion/libdisplay-info/-/releases/0.4.0/downloads/libdisplay-info-0.4.0.tar.xz
+          printf '%s\n' '43b180baa143e2035654759d84e2b2f5ee77d5fe817c423838c7fe59c0d68459  /tmp/libdisplay-info-0.4.0.tar.xz' | sha256sum --check
+          tar -xf /tmp/libdisplay-info-0.4.0.tar.xz -C /tmp
+          meson setup /tmp/libdisplay-info-build /tmp/libdisplay-info-0.4.0 --prefix=/usr/local --buildtype=release
+          sudo meson install -C /tmp/libdisplay-info-build
+          sudo ldconfig
+          pkg-config --atleast-version=0.4.0 libdisplay-info
           printf '%s\n' 'RUSTFLAGS=-D warnings -C link-arg=-fuse-ld=mold' >> "$GITHUB_ENV"
 
       - name: Restore compiled crates
@@ -131,18 +149,6 @@ jobs:
           mkdir -p target
           cargo xtask park release --target "$BUILD_TARGET" --headless > target/release-build-info.json
           jq -e '.optimized == true and .features == {ui: false, instinct: true, park: false}' target/release-build-info.json >/dev/null
-
-      - name: Save compiled crates
-        if: ${{ !cancelled() && steps.cache.outputs.cache-primary-key != '' && steps.cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target/debug
-            target/release
-            target/${{ matrix.target }}/release
-          key: ${{ steps.cache.outputs.cache-primary-key }}
 
       - name: Package binary
         if: matrix.variant == 'native'
@@ -198,6 +204,44 @@ jobs:
           retention-days: 7
           compression-level: 0
 
+      - name: Build Park validation helpers
+        if: matrix.variant == 'native' && matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          mkdir -p validation-binaries
+          cargo test --locked --message-format=json -p lince-park --features session,server-tests,clipboard-gate --lib --no-run > validation-binaries/fixtures.jsonl
+          jq -r 'select(.reason == "compiler-artifact" and .target.name == "lince_park" and .executable != null) | .executable' validation-binaries/fixtures.jsonl | tail -1 | xargs -r -I '{}' cp '{}' validation-binaries/park-fixtures
+          for client in session_probe capture_probe; do
+            cargo run --locked -p lince-park-clients --bin "$client" -- --help
+          done
+          cargo run --locked -p lince-park --features server-tests --example park_control_probe -- --help
+          cp target/debug/session_probe validation-binaries/session-probe
+          cp target/debug/capture_probe validation-binaries/capture-probe
+          cp target/debug/examples/park_control_probe validation-binaries/control-probe
+          cp target/debug/xtask validation-binaries/xtask
+          printf '%s\n' "$GITHUB_SHA" > validation-binaries/revision
+          test -x validation-binaries/park-fixtures
+
+      - name: Save compiled crates
+        if: ${{ !cancelled() && steps.cache.outputs.cache-primary-key != '' && steps.cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/debug
+            target/release
+            target/${{ matrix.target }}/release
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: Upload Park validation helpers
+        if: matrix.variant == 'native' && matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lince-park-validation-${{ matrix.target }}
+          path: validation-binaries/*
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Package headless binary
         if: matrix.variant == 'headless'
         env:
@@ -231,7 +275,7 @@ jobs:
           retention-days: 7
 
   publish-rolling:
-    if: github.ref == 'refs/heads/main'
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || !inputs.validation_candidate) }}
     needs: [binary]
     runs-on: ubuntu-latest
     permissions:
@@ -317,7 +361,7 @@ jobs:
           gh release upload "$TAG" release-artifacts/* --clobber --repo "$GH_REPO"
 
   publish-main:
-    if: github.ref == 'refs/heads/main'
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || !inputs.validation_candidate) }}
     needs: [binary]
     runs-on: ubuntu-latest
     permissions:
@@ -378,7 +422,7 @@ jobs:
             --clobber --repo "$GH_REPO"
 
   publish-tag:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: ${{ startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || !inputs.validation_candidate) }}
     needs: [binary]
     runs-on: ubuntu-latest
     permissions:

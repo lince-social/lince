@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect electrowinning with solution preparation, competing reactions, and deposit quality (@metal-electrowinning: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7", #metals-and-metallurgical-production "Electrorefining-anodes-cathodes-slimes-and-impurity-pathways.lingua#r_22B7PD8BX58G92NXZE1A5F0FQD") { r_73FM9HEWKQQ9WZW89PVQH873Z9
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the full electrochemical recovery sequence; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), complete applicable leach/purification/electrowinning process chapters; [Extractive Metallurgy of Copper — Schlesinger, Sole, Davenport, and Alvear Flores](../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7), all of chapters 14–16 and the connected balance evidence, when available.
+
+Electrowinning recovers a metal from a solution through a cell reaction whose other electrode reaction must also be specified. Solution composition/speciation, impurity behavior, transport, temperature, electrode surfaces, current distribution, and gas evolution affect both energy and product. Bulk target-metal concentration alone does not characterize the electrolyte.
+
+Track solution purification and recycle, metal deposition, anode products, reagent/water changes, solids, and maintenance on one boundary. A solution that dissolves the desired metal well may still be unsuitable for an efficient clean deposit. Physical entrainment from an upstream separation can matter even when bulk chemical assays appear favorable.
+
+Distinguish equilibrium possibility, polarization/transport, current efficiency, whole-route recovery, product morphology/impurities, and accepted output. A cell operating at a measured average current and voltage does not prove uniform conditions or stable long-term performance.
+
+**Work:** reconstruct a full electrowinning case with feed-solution chemistry, cell/method details, measurement support, product characterization, and returned streams. Independently close charge, target/impurity balances, and a defensible energy account. Compare a solution-purification or cell arrangement alternative and a changed-feed condition. Explain the most consequential remaining mechanism or scale-up uncertainty and the observation that would test it.
+
+**Continue:** [Follow electrorefining through both electrodes, solution, and impurity products](Electrorefining-anodes-cathodes-slimes-and-impurity-pathways.lingua#r_22B7PD8BX58G92NXZE1A5F0FQD).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_73FM9HEWKQQ9WZW89PVQH873Z9

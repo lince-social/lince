@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Evaluate calculated alloy equilibria through model definitions, assessment evidence, and verification (@metal-calphad-models: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #metals-and-metallurgical-production "../solidification/Nucleation-growth-heat-and-solute-at-an-interface.lingua#r_2QEBG1QH9VBZJY4ZF6ANQS5RRT") { r_3E072MYE1DJKV48DPM4M1WR94T
+**Read:** [pycalphad — Otis and Liu, paper and computational thermodynamics](../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR), the complete paper and all model/database/equilibrium documentation actually used; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the full graduate thermodynamic modeling and question material; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the complete equilibrium/free-energy derivations.
+
+CALPHAD joins consistent phase descriptions with thermodynamic optimization and experimental/evaluated evidence. A software engine, database, model parameterization, source assessment, numerical calculation, and physical alloy question are separate parts of the argument. A public engine does not automatically make a commercial or third-party database open or suitable.
+
+Inspect components/species, phase models and sublattices, reference states, magnetic/ordering contributions, allowed or suppressed phases, and validity range. Derive representative chemical-potential/equilibrium conditions and check them with independent limiting or reduced calculations. Report numerical convergence, global-stability questions, and physical-model validity separately.
+
+Compare phase-boundary, calorimetric/activity, and microstructural evidence with the assessment's actual fitting data. Validation should use independent observations; fitted data do not become new verification because a different program replots them. Parameter correlation, omitted phases, and extrapolation can affect small but important impurity predictions.
+
+**Work:** read the complete pycalphad paper and exact official documentation used, select an authorized documented database, and reproduce a substantial alloy-equilibrium result. Independently check mass/nonnegativity, phase conditions, limits, and numerical sensitivity. Compare an alternative defensible assessment or phase constraint and explain the evidence that would decide between them. Software/data remain external; the study preserves exact versions and original explanations/calculations.
+
+**Continue:** [Derive solidification through interface conditions and coupled heat/solute transport](../solidification/Nucleation-growth-heat-and-solute-at-an-interface.lingua#r_2QEBG1QH9VBZJY4ZF6ANQS5RRT).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_3E072MYE1DJKV48DPM4M1WR94T

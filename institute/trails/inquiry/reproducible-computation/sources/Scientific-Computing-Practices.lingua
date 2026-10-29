@@ -1,0 +1,11 @@
+Import "../Reproducible-computation.lingua"
+
+Good enough practices in scientific computing — Wilson and colleagues (@rc-practices: 0, is #article, #part-of @rc-sources) { r_5J8HXCQDNJH59EZC1PRJTQK38B
+Greg Wilson, Jennifer Bryan, Karen Cranston, Justin Kitzes, Lex Nederbragt, and Tracy K. Teal. “Good enough practices in scientific computing.” PLOS Computational Biology 13(6), e1005510, 2017. [Authorized article](https://doi.org/10.1371/journal.pcbi.1005510).
+
+Read the complete paper, then compare its recommendations with one small analysis you can actually rerun. Return to it after the project to distinguish essential practices from tools that are merely convenient for that particular scale of work. Follow its cited sources when a methodological claim needs a deeper treatment.
+
+The publisher supplies an open-access article under its stated Creative Commons Attribution terms. Preserve the authors, publication, DOI, and notices when reusing it. Citation, author list, access, and publication terms checked on 29 October 2026. The source stays external.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_5J8HXCQDNJH59EZC1PRJTQK38B

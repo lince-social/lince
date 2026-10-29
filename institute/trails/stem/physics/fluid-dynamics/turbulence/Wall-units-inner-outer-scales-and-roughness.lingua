@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Wall units, inner and outer scales, and roughness (@fd-wall-turbulence: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #fluid-dynamics "Energy-cascades-spectra-and-the-limits-of-scaling-laws.lingua#r_0KK7VWV52ZQZHS4DJ7QS9WJQ50") { r_5R0RB1C4ZP85MKS4SJ8DPE2D9T
+**Read:** [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), wall-bounded turbulent flow; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter X turbulent-flow development; [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), wall-treatment definitions and verification cases.
+
+Define friction velocity u_τ=√(|τ_w|/ρ), wall coordinate y⁺=yu_τ/ν and mean speed U⁺=U/u_τ for a chosen wall-flow convention. The viscous near-wall relation, buffer region and logarithmic overlap describe different balances and ranges. A logarithmic fit is not a substitute for resolving or modelling the actual wall condition.
+
+Connect the total shear budget in a developed channel or pipe to its pressure gradient. Compare molecular and Reynolds shear contributions across the section. Derive the appropriate linear total-stress variation and check its sign, wall value and symmetry-plane limit. Use the integral mean flow to connect wall stress with a friction factor.
+
+For a computation, select wall resolution or a wall treatment consistently with the model's documented applicability. For a measurement, preserve wall location uncertainty, roughness, pressure gradient and finite probe size. Compare inner scaling and outer defect scaling without assuming one universal curve applies to all geometries and Reynolds numbers.
+
+**Continue:** [Energy cascades, spectra and the limits of scaling laws](Energy-cascades-spectra-and-the-limits-of-scaling-laws.lingua#r_0KK7VWV52ZQZHS4DJ7QS9WJQ50).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5R0RB1C4ZP85MKS4SJ8DPE2D9T

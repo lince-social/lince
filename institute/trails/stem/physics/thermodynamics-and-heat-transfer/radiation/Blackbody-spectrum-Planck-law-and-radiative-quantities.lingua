@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Blackbody spectra, Planck's law and radiative quantities (@th-blackbody: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #thermodynamics-and-heat-transfer "../../electromagnetism/waves/Fresnel-reflection-refraction-and-Brewster-angle.lingua#r_5X8JFEWJNR27PDCQQX5CG9WWA9") { r_5ADJ79PGB2MACX2GETK7QQRMRE
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the complete thermal-radiation foundation; [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), blackbody and radiative quantities lectures; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), photon/statistical foundations.
+
+Thermal radiation carries energy through electromagnetic fields without requiring a material medium between surfaces. Define spectral radiance, irradiation, emissive power and angular integration carefully; they have different units and geometric meanings.
+
+Study Planck's distribution and derive its frequency/wavelength representations with the Jacobian between them. Their peaks occur at different numerical coordinates because a density depends on the chosen spectral variable. Integrating the blackbody spectrum yields σT⁴, using absolute temperature; the net exchange between surfaces is not simply one surface's emission.
+
+Compare a blackbody reference, a real opaque surface and a semitransparent layer. Introduce absorption, emission, reflection and transmission under stated direction, wavelength and thermodynamic conditions. Revisit the shared electromagnetic interface reasoning before using a grey diffuse approximation.
+
+**Continue:** [Fresnel reflection, refraction and Brewster angle](../../electromagnetism/waves/Fresnel-reflection-refraction-and-Brewster-angle.lingua#r_5X8JFEWJNR27PDCQQX5CG9WWA9).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5ADJ79PGB2MACX2GETK7QQRMRE

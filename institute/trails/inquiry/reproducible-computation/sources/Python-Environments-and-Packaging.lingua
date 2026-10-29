@@ -1,0 +1,11 @@
+Import "../Reproducible-computation.lingua"
+
+Environments, dependency records, and packaging — PyPA (@rc-packaging: 0, is #reference, #part-of @rc-sources) { r_5VVAF04TH8R3DRY9Z36308BH88
+Python Packaging Authority contributors. Python Packaging User Guide. [Official tutorials and specifications](https://packaging.python.org/en/latest/tutorials/).
+
+Work the installing-packages, managing-application-dependencies, and packaging-project tutorials. Read the associated virtual-environment, pyproject, dependency/version, distribution/import-package, and reproducible-environment discussions when constructing a study’s environment. Inspect the current lock-file specification and the chosen tool’s actual support rather than assuming every dependency list is a complete environment lock.
+
+Record interpreter, platform, resolved artifacts, sources, and the method used to recreate them. The documentation changes as packaging standards and tools evolve; use exact versions for an executable claim. Preserve the documentation’s licensing and component notices before reuse. Official tutorial structure and available specification topics checked on 29 October 2026. No package index or dependency collection is downloaded into the repository.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_5VVAF04TH8R3DRY9Z36308BH88

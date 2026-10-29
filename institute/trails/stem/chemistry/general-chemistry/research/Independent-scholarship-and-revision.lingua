@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Scholarly investigation — develop and defend a chemical question (@gc-research: 0, is #chapter, #part-of @general-chemistry, #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "Completion.lingua#r_0F3AN0M8QY98NA42NVQS00D48F") { r_4FQ7XAEA72ED9GQDRS23TWSNRT
+**Read:** [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), the full abridged volume and the particular definitions used; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), the complete chapters supporting the investigation; [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP), the selected records, original references, and evaluation notes; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), the complete advanced course as preparation rather than a substitute for research.
+
+Formulate a specific chemical research question arising from the preceding work. It can concern an equilibrium/kinetic model, an evaluated property disagreement, a measurement method, a reaction interpretation, or a material transformation. Read the relevant scholarly literature and primary sources deeply, including work that challenges the preferred explanation. A graduate-level depth comes from the actual derivations, evidence, comparison, and independent contribution, not a label attached to an introductory course.
+
+State what is known, what remains uncertain, why the chosen question matters, and what observation or argument could contradict your expectation. Distinguish original research articles, reviews, textbooks, specifications, and compiled data. Follow a crucial tabulated value or claimed result back to its source and assess conditions, uncertainty, evaluation, and later correction.
+
+Develop a substantial investigation with a mathematical/chemical model, appropriate experimental or computational evidence, independent benchmarks, uncertainty and model criticism, source/edition identity, and reproducible analysis. Practical claims need the relevant actual practical evidence; numerical agreement alone cannot establish specimen identity or experimental competence.
+
+Seek informed criticism and respond with a substantive revision. Explain which conclusions changed, why, and what evidence remains limited. Preserve negative results, alternative interpretations, and reconstruction limits. An honest unresolved question with a well-supported investigation can contribute more understanding than a confident conclusion resting on an unexamined approximation.
+
+**Completion evidence:** a sustained scholarly report and accessible authorized artifacts/references; independently checkable central arguments/calculations; a defended chemical interpretation; reconstruction or appropriately bounded independent assessment; and a reasoned response to criticism. The next Record brings this progression together without adding a formal permission or software gate to the ordinary learning content.
+
+**Continue:** [What completing general chemistry means](Completion.lingua#r_0F3AN0M8QY98NA42NVQS00D48F).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_4FQ7XAEA72ED9GQDRS23TWSNRT

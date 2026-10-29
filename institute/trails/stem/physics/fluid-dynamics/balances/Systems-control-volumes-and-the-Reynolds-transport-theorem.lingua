@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Systems, control volumes and the Reynolds transport theorem (@fd-transport-theorem: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "Integral-and-local-conservation-of-mass.lingua#r_788QM37A7NFT52RQGTMS01Q89Q") { r_2K8N085T7ET89K52K52W8QASMT
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 7, especially the full transport-theorem derivation; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), control-volume theorems and applications; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), kinematic transport theorem.
+
+A material system follows the same particles; a control volume selects a region whose boundary may move with a declared velocity w. For a specific carried property b, the system's rate of change equals the rate of storage in the control volume plus the outward flux ∮ρb(u−w)·n dA, evaluated for the coincident system and volume at that instant.
+
+The relative velocity in the crossing term prevents counting a moving boundary as if it were fixed. The storage derivative also includes the moving region. Start with mass, then apply the same transport statement to momentum and energy while retaining their own physical source terms.
+
+Draw a fixed tank, a translating control volume and a material parcel. Identify the stored quantity, crossing rate and external action for each. Check that choosing a different control volume changes the accounting terms but preserves a consistent prediction for the same physical system.
+
+**Continue:** [Integral and local conservation of mass](Integral-and-local-conservation-of-mass.lingua#r_788QM37A7NFT52RQGTMS01Q89Q).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2K8N085T7ET89K52K52W8QASMT

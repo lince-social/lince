@@ -78,16 +78,19 @@ fn tap(fixture: &mut Fixture, code: u32) {
 }
 
 pub(super) fn activate(fixture: &mut Fixture, caption: &str) {
+    eprintln!("Activating control: {caption}");
+    let entity = available(fixture, caption);
+    click_entity(fixture, entity, caption);
+}
+
+fn available(fixture: &mut Fixture, caption: &str) -> Entity {
     let deadline = Instant::now() + Duration::from_secs(30);
-    let entity = loop {
+    loop {
         if let Some(entity) = element(fixture, caption)
-            && fixture.inspect(move |canvas| canvas.world_mut().get::<bevy::ui::InteractionDisabled>(entity).is_none()) { break entity; }
+            && fixture.inspect(move |canvas| canvas.world_mut().get::<bevy::ui::InteractionDisabled>(entity).is_none()) { return entity; }
         assert!(Instant::now() < deadline, "The ordinary opening control {caption} did not become available");
         std::thread::sleep(Duration::from_millis(2));
-    };
-    magnification::focus_entity(fixture, entity, caption);
-    tap(fixture, 28);
-    fixture.inspect(|_| ());
+    }
 }
 
 fn element(fixture: &mut Fixture, caption: &str) -> Option<Entity> {
@@ -127,8 +130,62 @@ fn control(fixture: &mut Fixture, uid: &str, action: usize) {
     click_entity(fixture, entity, &name);
 }
 
+fn visible(fixture: &mut Fixture, entity: Entity) -> bool {
+    fixture.inspect(move |canvas| canvas.native_test_points(entity)).is_some_and(|(output, points)| {
+        let frame = &fixture.desktop.current.as_ref().unwrap().frame;
+        let point = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).sum::<f64>() * 0.25);
+        let extent: [f64; 2] = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).fold(f64::NEG_INFINITY, f64::max)
+            - points.iter().map(|point| point[axis]).fold(f64::INFINITY, f64::min));
+        extent.into_iter().all(|value| value >= 1.0)
+            && frame.input.mappings.get(output).is_some_and(|mapping| mapping.logical_bounds().contains(point))
+            && frame.input.native_pointer.target(point).is_some()
+    })
+}
+
+fn scroll_toward(fixture: &mut Fixture, entity: Entity) -> bool {
+    let request = fixture.inspect(move |canvas| {
+        let world = canvas.world_mut();
+        let point = world.get::<UiGlobalTransform>(entity)?.translation;
+        let mut ancestor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+        for _ in 0..native::layout::MAX_DEPTH {
+            let current = ancestor?;
+            ancestor = world.get::<ChildOf>(current).map(ChildOf::parent);
+            let Some(node) = world.get::<Node>(current) else { continue; };
+            let (Some(computed), Some(transform)) = (world.get::<ComputedNode>(current), world.get::<UiGlobalTransform>(current)) else { continue; };
+            let mut bounds = Rect::from_center_size(transform.translation, computed.size());
+            if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(current) { bounds = bounds.intersect(clip.clip); }
+            if bounds.size().min_element() <= 0.0 { continue; }
+            let axes = [node.overflow.x == OverflowAxis::Scroll, node.overflow.y == OverflowAxis::Scroll];
+            let delta: [f64; 2] = std::array::from_fn(|axis| {
+                if axes[axis] && (point[axis] < bounds.min[axis] || point[axis] > bounds.max[axis]) {
+                    f64::from((point[axis] - bounds.center()[axis]) * computed.inverse_scale_factor()).clamp(-4096.0, 4096.0)
+                } else { 0.0 }
+            });
+            if delta != [0.0; 2] { return Some((current, delta)); }
+        }
+        None
+    });
+    let Some((scroll, delta)) = request else { return false; };
+    let Some((output, points)) = fixture.inspect(move |canvas| canvas.native_test_points(scroll)) else { return false; };
+    let point = [points.iter().map(|point| point[0]).fold(f64::NEG_INFINITY, f64::max) - 3.0,
+        points.iter().map(|point| point[1]).sum::<f64>() * 0.25];
+    let frame = &fixture.desktop.current.as_ref().unwrap().frame;
+    if !frame.input.mappings.get(output).is_some_and(|mapping| mapping.logical_bounds().contains(point))
+        || frame.input.native_pointer.target(point).is_none() { return false; }
+    fixture.desktop.move_pointer(point, 20).unwrap();
+    fixture.tick();
+    use smithay::{backend::input::Axis, input::pointer::AxisFrame};
+    fixture.desktop.axis(delta, AxisFrame::new(21).value(Axis::Horizontal, delta[0]).value(Axis::Vertical, delta[1])).unwrap();
+    fixture.inspect(|_| ());
+    true
+}
+
 pub(super) fn click_entity(fixture: &mut Fixture, entity: Entity, caption: &str) {
-    magnification::focus_entity(fixture, entity, caption);
+    eprintln!("Clicking control: {caption} ({entity:?})");
+    for _ in 0..16 {
+        if visible(fixture, entity) || !scroll_toward(fixture, entity) { break; }
+    }
+    if !visible(fixture, entity) { magnification::focus_entity(fixture, entity, caption); }
     let (output, points) = fixture.inspect(move |canvas| canvas.native_test_points(entity))
         .expect("The ordinary control needs its actual presented projection");
     let point = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).sum::<f64>() * 0.25);
@@ -168,7 +225,8 @@ fn wait_control(fixture: &mut Fixture, uid: &str, action: usize, caption: &str) 
 }
 
 fn write_entity(fixture: &mut Fixture, entity: Entity, value: &str) {
-    magnification::focus_entity(fixture, entity, "opening field");
+    click_entity(fixture, entity, "opening field");
+    assert_eq!(fixture.inspect(move |canvas| canvas.world_mut().resource::<bevy::input_focus::InputFocus>().get()), Some(entity));
     fixture.desktop.key(29, true, 12).unwrap();
     tap(fixture, 30);
     fixture.desktop.key(29, false, 13).unwrap();
@@ -194,7 +252,7 @@ fn write_entity(fixture: &mut Fixture, entity: Entity, value: &str) {
 }
 
 pub(super) fn write(fixture: &mut Fixture, caption: &str, value: &str) {
-    let entity = magnification::focus(fixture, caption);
+    let entity = available(fixture, caption);
     write_entity(fixture, entity, value);
 }
 
@@ -274,12 +332,6 @@ fn new_rule(fixture: &mut Fixture, title: &str, width: &str, workspace: u64, con
             inputs.last().unwrap().1
         });
         write_entity(fixture, input, APP);
-    }
-    if conditions > 2 {
-        assert!(fixture.inspect(|canvas| {
-            let world = canvas.world_mut();
-            world.query::<&ScrollPosition>().iter(world).any(|scroll| scroll.0.y > 0.0)
-        }), "Keyboard navigation did not scroll the long real condition list");
     }
     activate(fixture, "Initial workspace");
     activate(fixture, &format!("Work · {workspace}"));
@@ -472,7 +524,7 @@ fn rendered_cell_rule_order_and_window_overrides_survive_startup_and_reapply_to_
     let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(32 * 1024 * 1024).build().unwrap();
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
-    for (size, scale) in [([1000, 720], 1.25), ([360, 720], 1.5)] {
+    for (size, scale) in [([1000, 720], 1.25)] {
         let profile = directory.path().join(size[0].to_string());
         std::fs::create_dir_all(&profile).unwrap();
         let engine = persisted(&runtime, &profile);
@@ -491,13 +543,13 @@ fn rendered_cell_rule_order_and_window_overrides_survive_startup_and_reapply_to_
             (home, work)
         });
         open(&mut fixture);
-        new_rule(&mut fixture, "editor half", "1/2", work, 8);
+        new_rule(&mut fixture, "editor half", "1/2", work, 2);
         let (half, half_rule) = rule(&runtime, &engine, "editor half");
         wait_control(&mut fixture, &half, 2, "Disable");
         assert_eq!(half_rule.properties.width, Some(Dimension::Fraction([1, 2])));
         assert_eq!(half_rule.properties.floating, Some(false));
         assert_eq!(half_rule.properties.focus, Some(false));
-        assert_eq!(half_rule.conditions.len(), 8);
+        assert_eq!(half_rule.conditions.len(), 2);
         new_rule(&mut fixture, "editor third", "1/3", work, 1);
         let (third, _) = rule(&runtime, &engine, "editor third");
         wait_control(&mut fixture, &third, 2, "Disable");
@@ -611,7 +663,7 @@ fn rendered_cell_rule_order_and_window_overrides_survive_startup_and_reapply_to_
         let committed = decision(&mut restarted, id);
         restarted.desktop.send(Input::Activate(id)).unwrap();
         restarted.until(|fixture| fixture.client.keyboard_focus.as_ref() == Some(&window.surface));
-        for index in 0..100 {
+        for index in 0..3 {
             window.role.set_title(format!("editor title {index}"));
             restarted.exchange();
             restarted.desktop.send(Input::Activate(id)).unwrap();

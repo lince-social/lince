@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect nitrogen-containing salts with neutralization, finishing and useful specifications (@ic-nitrogen-salts: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #industrial-chemistry "Sulfur-sources-recovery-and-connected-processes.lingua#r_0T9N6SJPFNJY9V033D7RQ8EGJ5") { r_6RBXMJQ5M3DPGC1JGBCBQ4VKR9
+**Read:** [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the complete relevant ammonium-salt, finishing and product-quality chapters; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the full nitrogen-fertiliser process sequence; [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the complete applicable reaction/thermal assessment methods.
+
+Producing a nitrogen-containing salt joins an acid/base or other chemical transformation with concentration and physical product formation. For example, NH₃+HNO₃→NH₄NO₃ expresses one neutralization relation, while actual solution conditions, heat release, water and impurities determine the following process behavior.
+
+Follow the nitrogen basis and the actual product form. Solution, crystals, granules and formulated mixtures have different handling, stability and application properties. Moisture, particle distributions, coatings, contamination and temperature history can be consequential even when the main-component assay is similar.
+
+Material compatibility and thermal behavior belong in the full process account. Heating, concentrating or mixing a material can change its state or pathways, so a reaction equation and nominal yield are insufficient operating knowledge. The relevant primary methods and appropriate professional setting provide the actual evidence for a process claim.
+
+**Work:** reconstruct one complete public nitrogen-salt production/finishing case with its methods, heat/material accounts and product tests. Compare alternatives on accepted nutrient/function output, not gross mass alone. Explain how feed variability, isolation or changed physical form affects both the chemistry and the evidence needed for delivery and use.
+
+**Continue:** [Trace sulfur through resources, gas treatment, recovery and chemical use](Sulfur-sources-recovery-and-connected-processes.lingua#r_0T9N6SJPFNJY9V033D7RQ8EGJ5).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6RBXMJQ5M3DPGC1JGBCBQ4VKR9

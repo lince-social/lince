@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Explain crustal igneous diversity without reducing it to one source model (@mp-crust: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #mineralogy-and-petrology "../sedimentary/Clastic-grains-matrix-cement-and-texture.lingua#r_4AQZE2384375M555JN9V5PZJFP") { r_6R54EHAY8Y81XH9MW6H0JW9PV3
+**Read:** [Advanced Igneous Petrology — Timothy Grove, MIT 12.490](../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF), the complete relevant plutonic/continental case and labs; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the full granitoid/differentiation notes; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the complete relevant crustal igneous treatment.
+
+Granitoids and other crustal igneous rocks can record melting, differentiation, assimilation, mixing, accumulation, fluid processes, emplacement, and later modification. A chemical classification or tectonic label is a hypothesis-organizing tool rather than direct proof of one origin.
+
+Connect mineral assemblages, whole-rock/mineral chemistry, textures, field contacts, age populations, and experimental phase relations. Feldspar or zircon populations can preserve several events; an apparently coherent whole-rock trend can combine spatially or temporally distinct processes. Preserve the actual sampling and domain context.
+
+Plutonic bodies may assemble incrementally, deform, exchange material, or preserve cumulate-rich regions. Treating every sample as a quenched representative liquid can produce misleading source and fractionation inferences. Material/energy budgets and geological geometry help test an account.
+
+**Work:** complete the advanced course's relevant plutonic case and original papers. Reconstruct one quantitative composition/phase argument and an independent field/chronological constraint. Compare two origins or assembly histories compatible with part of the evidence, identifying a decisive observation and the uncertainty in its interpretation.
+
+Read the complete case rather than using a classification plot as the entire explanation. The independent igneous project later combines these methods into a defended history, with the sedimentary and metamorphic sequences examining what happens to the same materials under different conditions.
+
+**Continue:** [Describe clastic rocks before inferring source or environment](../sedimentary/Clastic-grains-matrix-cement-and-texture.lingua#r_4AQZE2384375M555JN9V5PZJFP).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_6R54EHAY8Y81XH9MW6H0JW9PV3

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Test transformation models against phase, spatial, and time-dependent evidence (@metal-transformation-kinetics: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Theory-of-Transformations-in-Steels.lingua#r_3HDKH2533KSM4NXA88N6496T20", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "Steel-transformations-pearlite-martensite-bainite-and-evidence.lingua#r_5JVE2AWASGR0Z8GRAR1JE65BBG") { r_454J0PMVBRQA4PQ3SHE6E7JKDE
+**Read:** [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the whole nucleation/solidification/iron-carbon/precipitation sequence; [Theory of Transformations in Steels — Bhadeshia](../sources/Theory-of-Transformations-in-Steels.lingua#r_3HDKH2533KSM4NXA88N6496T20), the complete authorized monograph and original references used; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), all relevant advanced kinetics and transformation exercises.
+
+An observed transformed fraction combines nucleation, growth, impingement, spatial heterogeneity, chemistry, and measurement response. Different microscopic histories can produce similar bulk time curves. Diffusional and displacive transformations require different atomic and interfacial accounts even when a convenient empirical fit resembles the same mathematical form.
+
+A relation such as X = 1 − exp[−(kt)ⁿ] has assumptions about the nucleation/growth process, geometry, time origin, and observed fraction. Derive the chosen form and define k and n with units; a fitted exponent is not a mechanism identifier by itself. Continuous cooling and competing transformations need more than substitution of time into one isothermal curve.
+
+Compare chemical driving force, interfacial/strain energy, transport, crystal correspondence, and actual observed products. Thermal gradients, initial defects/grains, heterogeneous nucleation sites, composition, and prior deformation can change the result. Include uncertainty and incomplete detection rather than forcing every measurement into one clean curve.
+
+**Work:** reconstruct a complete primary transformation study. Reproduce a quantitative result, compare at least two defensible mechanism/kinetic accounts, and validate against an independent thermal or structural condition. Test conservation, time/temperature limits, and parameter identifiability. Explain what evidence would reject the preferred mechanism and how that changes the proposed processing route.
+
+**Continue:** [Compare steel transformation mechanisms through complete theory and primary observations](Steel-transformations-pearlite-martensite-bainite-and-evidence.lingua#r_5JVE2AWASGR0Z8GRAR1JE65BBG).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_454J0PMVBRQA4PQ3SHE6E7JKDE

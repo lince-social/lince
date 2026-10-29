@@ -1,0 +1,49 @@
+Import "Metrology.lingua"
+
+Measurement and metrology sources — books, guides, and research (@met-sources: 0, is #chapter, #part-of @metrology) { r_6H584EJ2Z9D11PG89Y21Y8T1A3
+These are particular books, technical guides, reports, and reference documents to read. Every source Record states the assigned scope, edition, authorized access, and known publication terms. English and Portuguese SI/VIM references are reused from the shared quantitative sources.
+
+## Shared references
+
+- [The International System of Units — BIPM and Inmetro](../quantitative-literacy/sources/SI-Brochure.lingua#r_0QS0FQDWGM0BE9ZM4099FGRXED).
+- [International vocabulary of metrology — JCGM and Inmetro](../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH).
+- [Uncertainty guides — Taylor, Kuyatt, and JCGM](../quantitative-literacy/sources/Uncertainty-Guides.lingua#r_11PDFVNTH65FKFVZVHMHMAF6CH).
+
+## Introductory books, models, and uncertainty
+
+- [A Beginner’s Guide to Uncertainty of Measurement — Bell](sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1).
+- [Metrology — in Short — Howarth and Redgrave](sources/Metrology-in-Short.lingua#r_348S70JD4Z4VX9S3KA08JXQ2MS).
+- [Fundamental Good Practice in Dimensional Metrology — Flack and Hannaford](sources/Dimensional-Metrology.lingua#r_5XRAV7WQWR6CTM94WM04G0Z647).
+- [Measurement Process Characterization — NIST/SEMATECH](sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN).
+- [Metrological Traceability — Possolo, Bruce, and Watters](sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD).
+- [Practical realizations of SI units — BIPM consultative committees](sources/SI-Realizations.lingua#r_240WHEHDVW9TR241AXP6T4STM0).
+- [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E).
+- [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ).
+- [Developing and using measurement models — JCGM GUM-6](sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46).
+- [Propagation of distributions using Monte Carlo — JCGM 101](sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4).
+- [Several output quantities — JCGM 102](sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK).
+- [Measurement uncertainty in conformity assessment — JCGM 106](sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY).
+- [Worked measurement examples — JCGM GUM-5:2026](sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0).
+- [Uncertainty Machine and its numerical methods — Lafarge and Possolo](sources/Uncertainty-Software.lingua#r_0JJ7DQ8KRD6ACMN16THF87F3PW).
+
+## Calibration, material targets, and laboratory practice
+
+- [Calibration of non-automatic weighing instruments — EURAMET cg-18](sources/Weighing-Calibration.lingua#r_5VF8R8DG8XMTSHWXG8Y32AJYCQ).
+- [Gravimetric volume calibration — EURAMET cg-19](sources/Volume-Calibration.lingua#r_1Y7BMP63V5GF7963V2HRNT3917).
+- [Calibration of digital multimeters — EURAMET cg-15](sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R).
+- [Calibration of temperature and humidity enclosures — EURAMET cg-20](sources/Thermal-Enclosures.lingua#r_4A4JXBQPJ1SXY82FVV367HSN70).
+- [Force, pressure, and torque calibration — EURAMET](sources/Force-and-Pressure.lingua#r_5VJQR5MWS25V13ZAQZ03TVH3PH).
+- [Quantifying Uncertainty in Analytical Measurement — Eurachem/CITAC](sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS).
+- [Measurement uncertainty arising from sampling — Ramsey, Ellison, and Rostron](sources/Sampling-Uncertainty.lingua#r_3Q0NEPSBDFX8Z1JWAG3C3HRHJM).
+- [The Fitness for Purpose of Analytical Methods — Eurachem](sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY).
+- [Reference materials, certificates, and their scope — NIST](sources/Reference-Materials.lingua#r_6M66GJE1X11ZY0R3517A3VEYM3).
+- [CIPM MRA, CMCs, and key comparisons — BIPM](sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1).
+- [Laboratory competence — ISO/IEC 17025 and open technical guidance](sources/Laboratory-Competence.lingua#r_0RT4JM2Q799A0FYNA35H1Q8Y2Z).
+
+
+All source books, papers, standards, certificates, data, and software stay at their authorized external locations. Readers can use the publisher’s download choices for a retained copy. The original explanations, worked teaching examples, and learning connections are the content authored here.
+
+Official publisher pages, edition identities, contents, and stated availability were checked on 28 October 2026. The EURAMET weighing and volume PDF endpoints timed out during automated inspection; their catalogue identities and download references were available. Preserve those limits when describing an inspected source. Freely readable NPL, EURAMET, Eurachem, and JCGM publications retain their respective rights; NIST federal text and third-party components can have different terms. The ISO standard is identified as a restricted professional reference rather than an open text.
+
+**Return:** [Measurement and metrology](Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_6H584EJ2Z9D11PG89Y21Y8T1A3

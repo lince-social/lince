@@ -1,0 +1,19 @@
+Import "../Quantitative-literacy.lingua"
+
+Study a part from a drawing through a measurement report (@ql-drawing-study: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-blueprint, #source @ql-source-si, #source @ql-source-vim, #source @ql-source-uncertainty, #quantitative-literacy "Infrastructure-account.lingua#r_1SPNJTQF61CBZ3V6H0NPM7SD0E") { r_5T0JG8AMM1T2N0KY48SNYBHZ5Y
+**Read:** Basic Blueprint Reading completely, reviewing its exercises; SI Brochure chapters 2–5; VIM chapter 2 and the calibration and traceability definitions. Read NIST TN 1297 sections 1–7 and appendix A before assigning a probabilistic uncertainty.
+
+Choose a harmless ordinary object, such as a rectangular spacer or hollow container. Create a dimensioned drawing with principal views and one useful section. State units, projection convention, material if known, revision, and which features are intentionally left unspecified. An unknown material stays unknown; use a labelled hypothetical density if illustrating a mass prediction.
+
+Define one measurand with reference surfaces, conditions, and procedure. Collect repeat observations with an available ruler or caliper and preserve raw readings. Explain the instrument's resolution and identify alignment, reference, reading, temperature, and shape effects that may matter to the stated purpose. Estimate an interval or standard uncertainty only with an explicit basis; do not give an unsupported coverage probability.
+
+Use the geometry to predict volume, then compare an independent volume or mass estimate when practical without damaging the object. Carry input uncertainty or hard bounds through the calculation using the appropriate method. State why the method suits the scale of the changes and what nonlinear effects it omits.
+
+**Result:** publish the drawing, data dictionary, raw table, formulas, uncertainty reasoning, and a short interpretation. Add a fictional acceptance interval clearly labelled as a teaching specification. Discuss a result far inside the interval and one near a boundary, including why an agreed conformity decision rule matters. No actual product or safety certification is claimed.
+
+Have another reader reconstruct the shape and repeat the calculation from the report alone. Their disagreement can reveal missing definitions as well as arithmetic mistakes. Revise the report and preserve the reason for the change.
+
+**Continue:** [Follow a quantitative account across an infrastructure chain](Infrastructure-account.lingua#r_1SPNJTQF61CBZ3V6H0NPM7SD0E).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_5T0JG8AMM1T2N0KY48SNYBHZ5Y

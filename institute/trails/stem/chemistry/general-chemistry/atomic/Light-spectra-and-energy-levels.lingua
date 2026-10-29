@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Use spectra to connect energy changes with atomic structure (@gc-light: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #general-chemistry "Orbitals-quantum-numbers-and-electrons.lingua#r_4B0D7XPCFSZAW46VKG2NE7B54P") { r_3Z2QB3MQ90C9GRT3XV9QNKN7KG
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 6’s light, spectra, and atomic-model sections; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), Unit I in full; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), chapter 2’s atomic-model and quantum-number material.
+
+Frequency, wavelength, and photon energy are related by c = λν and E = hν for light in vacuum. Specify the propagation medium when using a wavelength relation. An emitted or absorbed photon can connect particular states through an energy difference; a spectrum is evidence about transitions under conditions, not a direct picture of a classical electron orbit.
+
+Using SI-defined h and c, a 500 nm vacuum photon has an energy of about 3.973×10⁻¹⁹ J, corresponding to about 239.3 kJ for a mole of those photons. The wavelength is a rounded teaching input. Distinguish energy per photon from molar energy and from the power delivered over a time interval.
+
+Read how line spectra and wave-particle behavior motivate a different atomic model. The simple hydrogen spectrum has special structure that does not automatically carry over to many-electron atoms. Transition rules, level populations, broadening, instrument response, and chemical environment enter a detailed interpretation.
+
+**Work:** convert between wavelength, frequency, photon energy, and molar photon energy with explicit units. Reconstruct one line-energy difference in a textbook atomic model, explaining its assumptions and precision. Compare absorption and emission observations and state what else would be needed to infer an unknown sample's composition.
+
+Complete the electronic-structure chapter and MIT's corresponding lectures/problems. Later spectroscopy returns to the actual measurement chain and molecular/solid-state transitions. The shared idea is that a chemical model should explain a pattern of observations and its limits, rather than supplying an appealing diagram alone.
+
+**Continue:** [Read orbitals and electron configurations as quantum models](Orbitals-quantum-numbers-and-electrons.lingua#r_4B0D7XPCFSZAW46VKG2NE7B54P).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_3Z2QB3MQ90C9GRT3XV9QNKN7KG

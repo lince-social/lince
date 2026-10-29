@@ -1,0 +1,17 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Control-volume mass and energy balances (@th-control: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Turbines-compressors-valves-mixers-and-nozzles.lingua#r_5FNNDS9HS3F0FDBD0MX1H5D8YJ", #fluid-dynamics "../../fluid-dynamics/balances/Pressure-work-kinetic-energy-head-and-dissipation.lingua#r_7HQS960HZ708YJQVV7BA16JVMA") { r_3GJ7MNPFS8HECS4WPV8WZCEY2M
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), chapter 5 in full; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), chapter 3 in full; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), open-system energy and matter.
+
+The shared balance reasoning extends to flowing energy. For a fixed control volume, accumulation equals heat input minus work output plus incoming minus outgoing mass-flow contributions of h + v²/2 + gz. Use a distinct symbol for velocity so it is not confused with specific volume. The formula assumes a consistent description of ports and work terms.
+
+Enthalpy includes the pressure-volume contribution associated with carrying matter through a boundary. Derive this from a moving parcel rather than memorizing an unexplained h in the flow balance. Mass and species conservation remain necessary alongside energy.
+
+Compare startup filling with steady flow. A tank receiving hot fluid can change pressure, temperature and inventory simultaneously; a steady-flow equation cannot describe its entire startup. Check port temperature/pressure profiles and averaging assumptions before replacing a distributed inlet with one number.
+
+**Continue:** [Turbines, compressors, valves, mixers and nozzles](Turbines-compressors-valves-mixers-and-nozzles.lingua#r_5FNNDS9HS3F0FDBD0MX1H5D8YJ).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Continue in fluid dynamics:** [Pressure work, kinetic energy, head and dissipation](../../fluid-dynamics/balances/Pressure-work-kinetic-energy-head-and-dissipation.lingua#r_7HQS960HZ708YJQVV7BA16JVMA).
+} r_3GJ7MNPFS8HECS4WPV8WZCEY2M

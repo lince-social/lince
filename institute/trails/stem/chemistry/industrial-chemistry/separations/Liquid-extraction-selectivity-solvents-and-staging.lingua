@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Evaluate liquid extraction with actual partition, finite phases and solvent recovery (@ic-extraction: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #industrial-chemistry "Adsorption-ion-exchange-membranes-and-regeneration.lingua#r_794F81FPAZEEDBSKVX4T3EHNFM") { r_78X0A79WGSPRMBEH16G2MCDN5G
+**Read:** [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), the complete liquid-liquid extraction and finite-stage balance material; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the whole relevant extraction, washing, isolation and solvent-recovery treatment; [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the full relevant product separation and purity account.
+
+Liquid extraction redistributes components between liquid phases. Define the distribution ratio at the actual composition, temperature, pH/speciation and solvent condition. Selectivity compares specified components under those same conditions; a large ratio for the target does not alone establish useful purification.
+
+Finite phase inventories matter. For a dilute single-contact model with distribution ratio D=C_extract/C_raffinate, initially solute-free extractant volume V_E and raffinate volume V_R, the raffinate fraction remaining is V_R/(V_R+DV_E). Repeated fresh contacts differ from one contact with the same total solvent, and countercurrent staging has different balances again.
+
+Real systems include mutual solubility, emulsions, entrainment, solvent degradation, phase disengagement and possible chemical reaction. Track extraction, washing, stripping and solvent recycle together. A high target recovery can carry an impurity or create an expensive regeneration/separation duty.
+
+**Work:** reconstruct a complete extraction process using primary equilibrium, contact and recovery methods. Independently check a finite-stage benchmark, compare alternative solvent/contact arrangements and quantify impurity and solvent fate. Explain the additional evidence required when the dilute constant-distribution approximation fails or the interface becomes difficult to separate.
+
+**Continue:** [Follow selective separations through capacity, transport, regeneration and waste](Adsorption-ion-exchange-membranes-and-regeneration.lingua#r_794F81FPAZEEDBSKVX4T3EHNFM).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_78X0A79WGSPRMBEH16G2MCDN5G

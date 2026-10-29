@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Drift, hysteresis, loading, and a changing calibration relation (@met-drift-loading: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R", #source "../sources/Thermal-Enclosures.lingua#r_4A4JXBQPJ1SXY82FVV367HSN70", #metrology "../../quantitative-literacy/practice/Repeated-observations.lingua#r_6S7MZWJ6S5MERFKE0NQEWC5SY2") { r_2R85N10DD9HD65VBW8KQ6X9TDA
+**Read:** [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 9–10, especially shared and time-dependent effects; [Calibration of digital multimeters — EURAMET cg-15](../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R), preliminary conditions and measurement operations; [Calibration of temperature and humidity enclosures — EURAMET cg-20](../sources/Thermal-Enclosures.lingua#r_4A4JXBQPJ1SXY82FVV367HSN70), the complete treatment of an enclosure’s conditions.
+
+A calibration relation can depend on time, history, loading, and surroundings. Drift is a change in metrological properties over time; hysteresis gives different responses depending on the preceding path; loading means the measurement interaction changes the system. These require distinct experiments and models.
+
+An additive drift model C(t) = C₀ + kt is an assumption to test over its relevant interval. Uncertainty in k and C₀ and their dependence affect interpolation and future use. A straight line through two calibration dates cannot reveal every intervening disturbance. A new shock, repair, storage condition, or firmware change can invalidate that historical model.
+
+For a simple source with open-circuit voltage V_s, source resistance R_s, and meter input resistance R_m, the loaded indication is V_sR_m/(R_s + R_m). With R_s = 1 MΩ and R_m = 10 MΩ, the ratio is 10/11, about 0.9091. A perfectly calibrated indication can therefore differ from the intended open-circuit quantity because of the interaction.
+
+**Work:** design ascending and descending reference sequences to reveal hysteresis separately from time drift. Use a check standard before and after a run and state which drift shapes it could detect. Calculate the simple loading example for several R_m values and identify what information a correction would need. Use a paper or simulated electrical study rather than hazardous sources.
+
+Choose a model that preserves the relevant history and conditions instead of attaching one universal correction to the device. Later control and recalibration decisions use evidence about these changes; they cannot be settled by a calendar label alone.
+
+**Continue:** [Repeated observations, averages, spread, and shared errors](../../quantitative-literacy/practice/Repeated-observations.lingua#r_6S7MZWJ6S5MERFKE0NQEWC5SY2).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_2R85N10DD9HD65VBW8KQ6X9TDA

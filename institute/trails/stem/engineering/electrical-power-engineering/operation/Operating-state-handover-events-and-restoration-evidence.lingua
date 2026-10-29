@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Operating state, handover, events and restoration evidence (@pe-operations: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC", #source "../sources/Commissioning-Guide-Hydroelectric-FIST.lingua#r_0WA7RR86PMVEA3FFM7CG6NQ5RM", #electrical-power-engineering "Protection-control-SCADA-time-and-communication-boundaries.lingua#r_251RXEWC13723V5N98WDFFHN0Y") { r_6EVVYWESWD36PC42HCGF4ZBQJG
+**Read:** [Conduct of power operations and maintenance — FIST](../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC), both complete manuals and full applicable procedures; [Commissioning Guide for Hydroelectric Facilities — FIST 4-7](../sources/Commissioning-Guide-Hydroelectric-FIST.lingua#r_0WA7RR86PMVEA3FFM7CG6NQ5RM), complete relevant integration and handover guidance.
+
+Operation depends on a shared technically accurate account of equipment state, limits, work and responsibility. Distinguish a command, indication, independently verified position and a model's assumed topology. A control-room screen is evidence from a particular sensing/communication chain, not an infallible view of the physical installation.
+
+Read the complete [Conduct of power operations and maintenance — FIST](../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC) manuals and trace a documented operating transition through prerequisites in the physical system, controls/protection, observations and changed state. Compare normal response with an indication failure, delayed communication or unavailable auxiliary supply.
+
+Preserve event time/reference, observations, settings, model and unresolved uncertainty so another party can reconstruct what happened. A return to service should be supported by the actual function/condition evidence affected by the work. Incident analysis should distinguish initiating event, propagation, failed defenses and recovery instead of assigning one vague root cause to a complex system. The later integrated study joins these practices with field/circuit models, data and continuing maintenance.
+
+**Continue:** [Protection, control, SCADA and communication boundaries](Protection-control-SCADA-time-and-communication-boundaries.lingua#r_251RXEWC13723V5N98WDFFHN0Y).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6EVVYWESWD36PC42HCGF4ZBQJG

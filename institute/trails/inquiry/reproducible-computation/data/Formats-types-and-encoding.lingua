@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Choose a format without losing values or structure (@rc-formats: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #reproducible-computation "Missingness-and-transformations.lingua#r_1FHVZTXX5WR3DZ5PPFRW7J0BY1") { r_2AZM46HQS8E07JMXXSE3WC93RM
+**Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), csv, json, Unicode/text encoding, decimal and fractions references; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), the data-reading and configuration material.
+
+Text formats expose bytes to inspection, but their interpretation still needs a contract. CSV requires rules for separators, quoting, embedded newlines, encoding, and headers. JSON distinguishes numbers, strings, arrays, objects, true/false, and null; it does not carry physical units unless the schema supplies them. A spreadsheet adds cell types, formatting, formulas, locale assumptions, and often hidden state.
+
+Round trips can lose information. A long identifier read as a floating-point number may change digits. A date imported automatically may acquire a regional interpretation. A large integer written to JSON can exceed a consumer's exact numeric range. Saving a formula's displayed rounded value discards the operation and intermediate precision. Make these risks concrete with a deliberately small test table.
+
+The worked pipeline accepts UTF-8 CSV with an exact header and a bounded plain-decimal grammar. It serializes rational results as strings such as 49/66, with null for undefined ratios. That is an explicit teaching interchange choice, not a general claim that every scientific dataset should use rational strings. A downstream consumer must know this schema rather than interpreting the slash as a path or division command.
+
+**Work:** round-trip identifiers 0007 and a 20-digit identifier, a missing entry, a quoted comma, and a non-ASCII label through the formats you actually use. Compare bytes and interpreted values separately. List which format conversions are reversible and which need an explicit loss policy.
+
+For substantial arrays and tabular datasets, investigate the chosen binary format's official specification, metadata, compression, and library dependencies before adoption. Preserve the small portable benchmark alongside the larger format experiment so reconstruction does not depend solely on one application successfully opening its own file.
+
+**Continue:** [Make missing values, exclusions, and transformations visible](Missingness-and-transformations.lingua#r_1FHVZTXX5WR3DZ5PPFRW7J0BY1).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_2AZM46HQS8E07JMXXSE3WC93RM

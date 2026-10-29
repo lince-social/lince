@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Follow sulfide copper through matte, slag, gas, conversion, and refining feed (@metal-copper-sulfides: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7", #metals-and-metallurgical-production "Copper-leaching-extraction-electrowinning-and-returned-solutions.lingua#r_7V3XG6GE2VAV9D7BX786V5DA05") { r_2GZT07FQCPW7HY4VB6CDWVWT3N
+**Read:** [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), the entire copper-sulfide extraction and refining sequence; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the full copper smelting/conversion, sulfur, and residual account; [Extractive Metallurgy of Copper — Schlesinger, Sole, Davenport, and Alvear Flores](../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7), all of chapters 3–13 and applicable original cases, when available.
+
+A copper sulfide concentrate contains a mineral/particle population and accompanying elements, not only a copper grade. Sulfur, iron, silica/flux constituents, impurities, moisture, and physical properties affect smelting/conversion, energy, gas capture, slag losses, and the metal sent to refining.
+
+Apply the shared smelting, phase distribution, reaction/heat, and separation knowledge to the complete copper route. Compare flash/bath and conversion arrangements through their actual contact, gas, heat, product, and operating evidence. A high local copper recovery is distinguished from metal circulating in slag-cleaning or dust-return systems.
+
+Track sulfur and consequential impurities into gas/captured products, slag, metal, dust, and side streams. Conversion and refining modify both chemical and physical states, while product purity and byproduct recovery depend on later steps. Offgas and residual management are part of route feasibility and continuing work.
+
+**Work:** reconstruct one complete sulfide-copper plant/process case and a substantive alternative. Independently close copper, sulfur, and an impurity through the whole route and reproduce a significant heat or phase-distribution calculation. Compare predicted and measured losses, investigating entrainment or feed-variability explanations. Defend the alternative on accepted refining feed, utility/capture systems, maintenance, residuals, and uncertainty.
+
+**Continue:** [Reconstruct copper solution routes with coupled feed, purification, and cell evidence](Copper-leaching-extraction-electrowinning-and-returned-solutions.lingua#r_7V3XG6GE2VAV9D7BX786V5DA05).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_2GZT07FQCPW7HY4VB6CDWVWT3N

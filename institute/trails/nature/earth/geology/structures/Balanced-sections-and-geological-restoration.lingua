@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Restore structures while testing conservation assumptions and nonuniqueness (@geo-restoration: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #geology "../surface/Weathering-reactions-and-material-transfer.lingua#r_68BN017EPADZ0CG7V3JJ8R8TSA") { r_4010RK1GC4QCECKQS9J3RWZ365
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), Lab 10 Fold-thrust Belts and the complete supporting fold/fault sections; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), regional tectonic reconstruction examples.
+
+Restoration asks whether a proposed present geometry can be transformed into a geologically admissible earlier configuration under stated assumptions. Line length or cross-sectional area may be conserved in particular models; compaction, dissolution, erosion, deposition, flow out of the section, and distributed strain can invalidate a simple conservation rule.
+
+A balanced section is geometrically consistent under its rules, but balance alone does not prove the true history. Several fault geometries and deformation sequences may fit the same sparse observations. Bed thickness, cutoff positions, regional datum horizons, subsurface constraints, timing, and independent structural measurements can reduce this ambiguity.
+
+Distinguish section trace, transport direction, strain partitioning, and out-of-plane motion. A two-dimensional construction through a strongly three-dimensional structure can be misleading even if its local linework closes. Show which parts are observed and which are inferred before testing the reconstruction.
+
+**Work:** complete the fold/thrust-belt lab and restore a specified simple section step by step. Account for the quantities claimed to be conserved and document erosion or missing material. Produce an alternative balanced interpretation and identify a borehole, facing relationship, age, or structural observation capable of distinguishing it. Explain why a precise drawing is insufficient evidence for a unique buried resource or foundation geometry.
+
+Read the full supporting folds/faults and tectonic-environment discussions. This integrates field, geometric, physical, and historical reasoning and prepares the later plate-reconstruction and regional projects without introducing a separate learning abstraction.
+
+**Continue:** [Explain weathering through reactions, fragmentation, and transport conditions](../surface/Weathering-reactions-and-material-transfer.lingua#r_68BN017EPADZ0CG7V3JJ8R8TSA).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4010RK1GC4QCECKQS9J3RWZ365

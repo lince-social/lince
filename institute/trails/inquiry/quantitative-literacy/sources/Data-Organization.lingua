@@ -1,0 +1,13 @@
+Import "../Quantitative-literacy.lingua"
+
+Data Organization in Spreadsheets — Broman and Woo (@ql-source-data: 0, is #article, #part-of @ql-sources) { r_6AXFG9QT0X74W3DRDE58RP470M
+Karl W. Broman and Kara H. Woo. Data Organization in Spreadsheets. The American Statistician 72(1), 2018, pages 2–10. [DOI](https://doi.org/10.1080/00031305.2017.1375989) · [Authors' manuscript and source](https://kbroman.org/Paper_DataOrg/) · [Author's tutorial](https://kbroman.org/dataorg/).
+
+Read the complete article, then apply it to a small measurement or inventory table. The authors' manuscript site explicitly states CC BY. Preserve authors, title, publication details, and licence and component notices when reusing it. The journal's formal citation and the author's reference agree on volume 72; one tutorial display has an inconsistent volume number, so use the DOI citation.
+
+Keep observations and their definitions recoverable when later calculations change. The trail uses this reading for data organization and elementary calculation traceability; version control, executable workflows, and software environments belong in reproducible computational work.
+
+The official journal metadata and author-hosted access were checked on 28 October 2026. Neither the paper nor an example dataset is downloaded into the repository.
+
+**Return:** [Quantitative literacy sources — books, standards, and articles](../Sources.lingua#r_7MMXWNA1B4YGA271KMHPPJEK9Q).
+} r_6AXFG9QT0X74W3DRDE58RP470M

@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Connect representative-element patterns with actual chemical substances (@gc-representative: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Transition-metals-and-coordination.lingua#r_626J6NPKQF5BAM5EDFSN37RMTN") { r_5TFA3E8JYT5GP6EGP68R4381E1
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 18 in full with exercises; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), chapter 3’s property and element-group discussions revisited; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the relevant descriptive examples across the complete text.
+
+Descriptive chemistry gives concrete species and observations to the structural, thermodynamic, and kinetic principles already developed. Read the full representative-element chapter rather than treating the periodic table as a replacement for knowledge of actual substances. Identify elemental forms, common compounds, oxidation states, phases, sources, reactions, and uses under stated conditions.
+
+Compare patterns across a group and departures arising from structure, size, solvation, bonding, or competing states. A useful trend should help explain specific evidence and make a testable prediction. A chemical formula or group label alone cannot supply purity, stability, hazard, or industrial suitability.
+
+Relate oxygen, hydrogen, nitrogen, carbon, sulfur, phosphorus, silicon, halogens, and relevant metals to matter/energy flows without reducing them to an inventory of names. The same element can occupy very different chemical forms and functions. Distinguish a total-element resource statement from availability of a particular usable compound or grade.
+
+**Work:** construct original comparison notes for several related elements and selected compounds, citing the exact textbook/evaluated sources. Explain one industrial or biological role through bonding, reaction, equilibrium, or phase behavior. Include an exception to a simple periodic mnemonic and an observation that would distinguish candidate explanations.
+
+Use the deeper inorganic, environmental, industrial, and material trails when they are developed for species-specific methods and production. This general study supplies a substantial common descriptive foundation; it should make later applications recognizable without claiming that a chapter provides an entire manufacturing route.
+
+**Continue:** [Explain coordination, color, magnetism, and metal speciation](Transition-metals-and-coordination.lingua#r_626J6NPKQF5BAM5EDFSN37RMTN).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_5TFA3E8JYT5GP6EGP68R4381E1

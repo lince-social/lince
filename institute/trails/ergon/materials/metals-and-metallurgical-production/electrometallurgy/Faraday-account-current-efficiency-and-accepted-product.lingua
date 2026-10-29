@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect charge with recovered metal while preserving efficiency and quality definitions (@metal-current-efficiency: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #metals-and-metallurgical-production "Electrowinning-solution-quality-deposit-and-anode-reaction.lingua#r_73FM9HEWKQQ9WZW89PVQH873Z9") { r_4YKAZ56DZSGM8JH2H033S1SMK5
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), all Faraday/cell reduction and refining examples; [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), the complete applicable electrometallurgical cases; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), one whole industrial cell/product/energy case.
+
+For a defined deposition reaction, theoretical deposited mass is ItM/(nF) under the stated current/time and reaction basis. A current efficiency η attributes only a fraction of the total charge to that metal reaction. Useful recovery and accepted product yield are additional questions involving dissolution, shorting, morphology, detachment, contamination, handling, and other losses.
+
+For invented copper deposition at 1000 A for one hour, η = 0.95, M = 63.546 g mol⁻¹, and n = 2, calculate ηItM/(2F); it is about 1.13 kg. Independently check the charge and unit conversions. An input voltage is needed for electrical energy; heat and upstream solution preparation require a wider account.
+
+Define how η was measured and which mass, time, composition, and inventory observations support it. A high cathode mass can include retained liquid or impurities, and product removed during a period may have been deposited earlier. Reconcile measurement timing and support before interpreting a performance change.
+
+**Work:** reconstruct a full deposition/refining campaign with charge, mass, assay, moisture, inventory, and voltage evidence. Independently calculate theoretical and useful output, uncertainty, and energy per accepted product. Compare a plausible current-efficiency change with a sampling or inventory explanation. Explain why a favorable charge balance alone does not validate purity, morphology, or whole-process recovery.
+
+**Continue:** [Connect electrowinning with solution preparation, competing reactions, and deposit quality](Electrowinning-solution-quality-deposit-and-anode-reaction.lingua#r_73FM9HEWKQQ9WZW89PVQH873Z9).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_4YKAZ56DZSGM8JH2H033S1SMK5

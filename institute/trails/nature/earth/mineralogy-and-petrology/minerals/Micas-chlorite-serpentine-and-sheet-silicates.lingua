@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Connect sheet structures, hydration, and compositional variability (@mp-sheets: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E", #source "../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #mineralogy-and-petrology "Carbonates-oxides-sulfides-and-other-mineral-classes.lingua#r_62ANF5JYK06ED76NTEZ1E2ESZF") { r_4QKPW3NA78Z626YYAXB6400ET9
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), all sheet-silicate and associated mineral sections; [Optical Mineralogy — Brock University course and laboratory material](../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E), the full mica/chlorite material and lab; [A laboratory manual for X-ray powder diffraction — Poppe and colleagues](../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6), the full relevant clay-identification/preparation treatment; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected entries.
+
+Sheet silicates combine tetrahedral and octahedral layers with different occupants, interlayers, and structural components. Compare micas, chlorite, serpentine, talc, and clay-related structures through their actual layer arrangements. Similar platy appearance does not establish identical composition, swelling, stability, or geological origin.
+
+OH groups, water, interlayer cations, charge, vacancies, and substitutions have distinct structural roles. An electron-probe oxide analysis may not directly determine all light elements, water, or oxidation states. A plausible normalized formula is therefore a constrained candidate rather than a complete independent structural measurement.
+
+Preferred orientation, fine grain size, intergrowths, alteration, and mixed layers affect optical and diffraction observations. An apparently homogeneous green grain can contain several fine phases. A bulk clay-fraction pattern and a microanalysis sample different material supports and should be compared accordingly.
+
+**Work:** build structure/formula/property accounts for a mica, chlorite, and serpentine or clay example using complete sections and species references. Explain the unmeasured components and the additional observation needed to discriminate candidate formulas or structures. Connect one transformation with water/component transfer without assuming all layer changes conserve bulk composition.
+
+Read the entire sheet-silicate treatment and optical lab. The later clay, hydrothermal, metamorphic, and material-processing studies deepen their distinct methods, reusing this structure and measurement account.
+
+**Continue:** [Study non-silicate classes through chemistry, structure, and useful contrasts](Carbonates-oxides-sulfides-and-other-mineral-classes.lingua#r_62ANF5JYK06ED76NTEZ1E2ESZF).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_4QKPW3NA78Z626YYAXB6400ET9

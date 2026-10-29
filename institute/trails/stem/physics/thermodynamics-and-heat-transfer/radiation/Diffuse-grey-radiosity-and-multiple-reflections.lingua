@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Diffuse-grey radiosity and multiple reflections (@th-radiosity: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #thermodynamics-and-heat-transfer "../computation/An-inspectable-diffuse-grey-radiation-enclosure.lingua#r_6Q4DQJ0ZEWQ2V631Z1SAEZXJCQ") { r_7K7NSA9SC8SRD152XYZGSQ4M07
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the entire enclosure/radiosity analysis; [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), complete enclosure lectures and exercises.
+
+For opaque diffuse-grey surfaces in a nonparticipating enclosure, radiosity combines emitted and reflected radiation: J_i = ε_iσT_i⁴+(1−ε_i)G_i, with irradiation G_i = ΣF_ijJ_j. Net outward heat rate is A_i(J_i−G_i). State the temperature, property and geometric assumptions.
+
+Multiple reflection couples all surfaces, so using only a direct εσA(T₁⁴−T₂⁴) difference can be wrong. Derive the linear system for fixed surface temperatures and solve an elementary enclosure by hand. An unknown surface temperature introduces a coupled nonlinear balance with any conduction, convection or internal source.
+
+Check equal-temperature equilibrium, black-surface limits, area reciprocity and total energy closure. [An inspectable diffuse-grey radiation enclosure](../computation/An-inspectable-diffuse-grey-radiation-enclosure.lingua#r_6Q4DQJ0ZEWQ2V631Z1SAEZXJCQ) provides an original inspectable fixed-temperature solver with a bounded domain. Grey diffuse results are an approximation to spectral/directional transfer, not a replacement for it.
+
+**Continue:** [An inspectable diffuse-grey radiation enclosure](../computation/An-inspectable-diffuse-grey-radiation-enclosure.lingua#r_6Q4DQJ0ZEWQ2V631Z1SAEZXJCQ).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7K7NSA9SC8SRD152XYZGSQ4M07

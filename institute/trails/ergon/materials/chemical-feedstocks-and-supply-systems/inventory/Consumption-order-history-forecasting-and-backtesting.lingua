@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Forecast the quantity actually needed rather than an unexamined order series (@cs-forecast: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #chemical-supply-systems "Finite-demand-outcomes-conditional-probability-and-dependence.lingua#r_7PMCMYCZV1W1VJ0Y9BHMKXPZ4N") { r_32EYX5Y4K4905VHCQCTNW67ERW
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the whole Demand Forecasting chapter and computational work; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), the complete four-part forecasting sequence; [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the complete information/planning assignments.
+
+Separate actual consumption, requests, orders, dispatches, accepted receipts and issued quantities. Shortages, large batches or a changed process can make their time series differ. A forecast fitted to shipments during a supply constraint may learn the supplier's capacity instead of the user's need.
+
+Read Rossi's whole forecasting chapter and work its examples. Develop a baseline before a complex method: known schedule, last value, seasonal pattern or moving average, as appropriate to the operation. Preserve units, time aggregation, missing observations, stockouts and dated process changes. Evaluate forecasts on periods not used for fitting, with a rolling historical decision date so future information cannot leak into the model.
+
+Compare forecast error, bias and the service/cost consequences of an inventory policy using that forecast. A smaller average numerical error does not automatically give better continuity under asymmetric shortage consequences or expiry. Examine a new product or shutdown separately from routine variation. For a chemical case, connect changed concentration/grade and active-content demand to the historical series. The later research study should publish the exact data meaning, model version, comparison and sensitivity, using actual or clearly synthetic observations without claiming a literature example represents a functioning plant.
+
+**Continue:** [Build a probability model whose outcomes have a physical meaning](Finite-demand-outcomes-conditional-probability-and-dependence.lingua#r_7PMCMYCZV1W1VJ0Y9BHMKXPZ4N).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_32EYX5Y4K4905VHCQCTNW67ERW

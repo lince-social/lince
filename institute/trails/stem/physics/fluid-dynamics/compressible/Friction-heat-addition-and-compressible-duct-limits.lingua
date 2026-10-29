@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Friction, heat addition and compressible duct limits (@fd-fanno-rayleigh: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Gas-Dynamics-Kulkarni.lingua#r_34YGDV61X77JFYZH8X8NGDBS9W", #source "../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../../thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M", #fluid-dynamics "Characteristics-nonlinear-steepening-and-Riemann-problems.lingua#r_79Y00P32FGZZC1W2JN17JC0NQ2") { r_1R8Q2YYRFR7SFY4KXJ84MA52R5
+**Read:** [Gas Dynamics — Vinayak Kulkarni](../sources/Gas-Dynamics-Kulkarni.lingua#r_34YGDV61X77JFYZH8X8NGDBS9W), complete Rayleigh and Fanno lessons with derivations; [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM), state conventions and applicable compressible relations; [Control-volume mass and energy balances](../../thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M), flow-energy balances.
+
+A constant-area compressible duct can change state through wall friction or heat transfer even when its geometry is unchanged. The ideal Fanno model isolates adiabatic friction; the Rayleigh model isolates heat transfer with negligible wall friction. Neither is a general replacement for a duct in which both mechanisms and area changes are significant.
+
+Derive each model from the common mass, momentum and energy balances, then plot its states in a thermodynamic plane. Track Mach number, static and stagnation quantities and entropy. Identify how the sonic state limits the connected steady solution under the model's constraints. Define the friction-factor convention before comparing a reported friction-length parameter.
+
+Solve an assigned duct problem by both an independently integrated balance and the appropriate tabulated relation. Change inlet Mach number and imposed heat or length, checking when the presumed regime becomes impossible. Connect those failures to the need for a new upstream condition, shock or unsteady response rather than extrapolating a table outside its physical branch.
+
+**Continue:** [Characteristics, nonlinear steepening and Riemann problems](Characteristics-nonlinear-steepening-and-Riemann-problems.lingua#r_79Y00P32FGZZC1W2JN17JC0NQ2).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1R8Q2YYRFR7SFY4KXJ84MA52R5

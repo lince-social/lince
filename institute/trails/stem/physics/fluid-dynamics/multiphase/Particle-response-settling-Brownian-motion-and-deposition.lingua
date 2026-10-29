@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Particle response, settling, Brownian motion and deposition (@fd-particles: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "Volume-fractions-slip-interphase-exchange-and-model-choice.lingua#r_16W07EWTERB3C53SMKY5XJKD20") { r_4HE4FR5RX1H2Z2H18573WWM5MV
+**Read:** [Fundamentals of Multiphase Flow — Christopher E. Brennen](../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM), particle dynamics and dispersed flows; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 2 aerosols and coagulation; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), small-scale diffusion and transport; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), tracer response and measurement limits.
+
+A dilute particle moving through a fluid has its own momentum balance. In a restricted small-sphere Stokes-drag model, its relaxation time is τ_p=ρ_p d²/(18μ). Compare τ_p with a stated flow time to form a Stokes number. A particle with small response time may follow some resolved motion while still failing to follow fast accelerations or remaining affected by gravity and diffusion.
+
+Recover settling from drag and buoyant weight, then identify corrections for finite particle Reynolds number, wall proximity, shape, added mass, history and fluid acceleration. For small particles, Brownian transport competes with advection and settling. A distribution of sizes generally cannot be represented faithfully by one arithmetic mean diameter because response and transport depend nonlinearly on size.
+
+Construct an aerosol or suspension transport account that distinguishes concentration, mass loading, number density and deposition. Check whether particles alter the carrier flow or interact with one another. This connects measurement tracers, filtration, clean environments and slurry transport through shared physics while preserving their distinct material and service requirements.
+
+**Continue:** [Volume fractions, slip, interphase exchange and model choice](Volume-fractions-slip-interphase-exchange-and-model-choice.lingua#r_16W07EWTERB3C53SMKY5XJKD20).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4HE4FR5RX1H2Z2H18573WWM5MV

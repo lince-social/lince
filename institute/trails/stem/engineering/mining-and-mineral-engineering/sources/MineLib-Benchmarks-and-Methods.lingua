@@ -1,0 +1,11 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+MineLib — Espinoza, Goycoolea, Moreno, and Newman (@mine-minelib: 0, is #reference, #part-of @mine-sources) { r_3KXVJNVZ2FSQ8CZJMJG2JDQYR8
+Daniel Espinoza, Marcos Goycoolea, Eduardo Moreno, and Alexandra Newman. MineLib: a library of open pit mining problems. Annals of Operations Research 206, 2013. DOI [10.1007/s10479-012-1258-3](https://doi.org/10.1007/s10479-012-1258-3). [Authors' library, problem definitions, preprint, and licence](https://minelib.org/v1/).
+
+Read the complete paper/preprint and the exact specification for a selected ultimate-pit or scheduling case. Preserve data/model versions, units, precedence, capacities, objective, and the difference between a feasible solution and a documented optimum or bound. Benchmark instances are not validated designs for an operating mine.
+
+The authors' site states CC BY-SA 3.0 for MineLib and gives a 2012 citation with pagination differing from later indexed journal metadata. Preserve the actual paper/version; the preprint request timed out. Source identity, licence, and access limits checked on 29 October 2026. No instance collection or solver is copied here.
+
+**Return:** [Mining and mineral engineering sources — books, courses, methods, and evidence](../Sources.lingua#r_5368N4FVSGP1G4DP5612SJD0M5).
+} r_3KXVJNVZ2FSQ8CZJMJG2JDQYR8

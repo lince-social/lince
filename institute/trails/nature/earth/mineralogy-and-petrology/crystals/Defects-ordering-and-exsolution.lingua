@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Relate defects and ordering to properties without confusing them with a new bulk composition (@mp-defects: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #mineralogy-and-petrology "Polymorphs-stability-and-metastability.lingua#r_7D6WBSRHBGAH7ZWA1ZMTJKDSVX") { r_1TAP18152580TY3JWTWDJ3XE2T
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete defect, ordering, twinning/exsolution, and relevant group sections; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the full textural and cooling/history treatment used; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), the selected full entries and primary references.
+
+Vacancies, substitutions, interstitials, dislocations, boundaries, and disorder describe different departures from an ideal periodic model. Their populations and arrangements can influence diffusion, optical/electrical response, strength, reactivity, and preservation. An average unit-cell refinement may not uniquely reveal their local distribution.
+
+Ordering distinguishes how occupants are arranged, even when bulk composition is unchanged. Exsolution separates compositions/structures within a former parent under suitable thermodynamic and kinetic conditions. Fine intergrowths can affect optical observations, diffraction, microanalysis, and processing behavior in different ways.
+
+A slow analytical probe can average a heterogeneous region while a microscopic image resolves separate features, or the reverse if the apparent feature is not chemically distinct. Specify spatial resolution and interaction/sample volume when comparing methods. A normalized formula cannot repair a mixed grain measurement.
+
+**Work:** compare an ideal structural model with a documented ordered/disordered or exsolved example. Explain the observations, length scales, thermal history, and alternative interpretations. Construct a charge/site account for a simple vacancy substitution and identify which defect claim requires direct structural, spectroscopic, or microchemical evidence.
+
+Read the entire defects/order and relevant mineral-group treatments, then connect them with the later phase/mixing and kinetic work. These features are central to natural histories and industrial materials; they should not be relegated to an unexplained correction after assigning a mineral name.
+
+**Continue:** [Distinguish structural identity, equilibrium stability, and preserved metastability](Polymorphs-stability-and-metastability.lingua#r_7D6WBSRHBGAH7ZWA1ZMTJKDSVX).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_1TAP18152580TY3JWTWDJ3XE2T

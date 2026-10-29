@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Use a gas model with defined pressure, temperature, volume, and composition (@gc-gases: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Molecular-motion-and-distributions.lingua#r_44XEP1GDGE3QKRCSEXBZM135TY", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/properties/Equations-of-state-and-caloric-information.lingua#r_3YYAN5FQJXPX2441B2ZK5M4VPN") { r_6SXC8H8YSR9B739R9H8K2KF863
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 9 in full with exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the complete six-part gas unit; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), pressure, temperature, gas, and composition conventions.
+
+The ideal-gas equation pV = nRT connects a state under a model whose validity needs assessment. Use absolute pressure and thermodynamic temperature, consistent units for R, and the amount of the specified gas entities. A gauge reading and an absolute pressure are different quantities; a Celsius temperature must be converted before substituting into this equation.
+
+For an ideal mixture, component partial pressure is p_i = y_i p and amounts add. Specify whether a collected gas contains water vapor or another component. The pressure measured for the mixture is not automatically the partial pressure of the species whose amount is sought. A chemical reaction can change total gas amount while conserving elements.
+
+Under hypothetical p = 100.0 kPa, V = 24.78957 L, and T = 298.15 K, the ideal model gives approximately one mole using compatible SI R. These are teaching inputs, not a universal molar volume. Changing temperature, pressure, or gas nonideality changes the volume/amount relation.
+
+**Work:** derive density and molar-mass relations from the ideal equation, checking units. Account for a stated binary mixture and a wet-gas collection problem. Compare a constant-temperature compression with a process in which temperature changes, identifying what additional information is needed.
+
+Read the entire gas chapter and Chem1 gas unit. An engineering vessel also needs material, pressure, thermal, flow, and safety design beyond this state equation. Here establish the chemical-state model and the conditions required to infer amount from a gas observation.
+
+**Continue:** [Relate molecular motion and distributions to gas behavior](Molecular-motion-and-distributions.lingua#r_44XEP1GDGE3QKRCSEXBZM135TY).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in thermodynamics and heat transfer:** [Equations of state and caloric information](../../../physics/thermodynamics-and-heat-transfer/properties/Equations-of-state-and-caloric-information.lingua#r_3YYAN5FQJXPX2441B2ZK5M4VPN).
+} r_6SXC8H8YSR9B739R9H8K2KF863

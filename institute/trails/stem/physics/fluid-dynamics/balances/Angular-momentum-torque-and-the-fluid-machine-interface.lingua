@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Angular momentum, torque and the fluid-machine interface (@fd-angular-momentum: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "../../thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M") { r_4X2TD7FV2EMXZ2MQ9ADZGCPJMB
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), moment of momentum and fluid-machine applications; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), control-volume momentum methods; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 7 conservation framework.
+
+Take the moment of momentum about a declared origin. Its storage rate plus the flux of r×u equals the external torque, including surface and body-force moments. A steady rotor account connects torque with the change in the fluid's angular momentum; it still needs actual inlet and outlet velocity information.
+
+For a rotation about a fixed axis, mechanical shaft power is torque times angular speed. This relation connects the momentum account to the energy account but does not determine efficiency, leakage, blade loading or stable operation on its own. Retain velocity triangles and the distinction between absolute and blade-relative velocity.
+
+Analyze a simple idealized turning flow and check the origin and sign conventions. Explain where losses, nonuniform profiles and transient storage would enter. Full pump, turbine and compressor design belongs to the machinery studies that reuse this common balance.
+
+**Continue:** [Control-volume mass and energy balances](../../thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4X2TD7FV2EMXZ2MQ9ADZGCPJMB

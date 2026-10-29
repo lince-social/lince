@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Complex amplitude, frequency and sign conventions (@em-phasors: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "Impedance-resonance-passivity-and-quality-factor.lingua#r_7ATZTVDYNEVH4RS80RSV55W07Y", #electrical-power-engineering "../../../engineering/electrical-power-engineering/foundations/RMS-phasors-passive-signs-and-complex-power.lingua#r_556PBA65ZE7BMDDYWHFFR0DK6D") { r_5TBWGB70EQDF2DWG4NAWA8QRBK
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), sinusoidal quantities and phasor treatment; [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), complex waves and circuit notation.
+
+Represent a real harmonic field as Re{Ẽ exp(−iωt)} throughout the wave examples in this subject. Then time differentiation becomes −iω and a forward plane wave can have exp(+ikz). Other books use exp(+iωt), conjugating several formulas. State the convention before comparing impedance, loss or propagation signs.
+
+A complex amplitude stores magnitude and relative phase, not an additional physical dimension. With peak-amplitude phasors, average port power is (1/2)Re{Ṽ Ĩ*}; RMS amplitudes omit the factor 1/2. Keep radians versus cycles, angular frequency ω = 2πf, reference time and reference plane distinct.
+
+For this convention a capacitor has Z_C = i/(ωC), and an inductor Z_L = −iωL. Their instantaneous energy oscillates even when ideal average dissipation vanishes. Derive these from the time-domain laws and translate them into the opposite convention. A steady harmonic solution does not include an arbitrary startup transient. The reused time/frequency Record provides calibration, synchronization and stability for an actual frequency-dependent experiment.
+
+**Continue:** [Impedance, resonance, passivity and quality factor](Impedance-resonance-passivity-and-quality-factor.lingua#r_7ATZTVDYNEVH4RS80RSV55W07Y).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in electrical power engineering:** [RMS phasors, passive signs and complex power](../../../engineering/electrical-power-engineering/foundations/RMS-phasors-passive-signs-and-complex-power.lingua#r_556PBA65ZE7BMDDYWHFFR0DK6D).
+} r_5TBWGB70EQDF2DWG4NAWA8QRBK

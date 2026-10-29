@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+A complete fluid-service investigation (@fd-integrated-service: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #source "../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05", #fluid-dynamics "Compare-primary-fluid-results-through-their-assumptions-and-evidence.lingua#r_767M1Y5BHBXPSSAA7S1X7D8Q0G") { r_688VD7S50KPEC6CY2Y8KY3K0F5
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), engineering balances and complete foundational reasoning; [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), transient extensions; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), evidence for numerical and physical conclusions; [Water-flow calibration — NIST SP 250-98](../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05), measurement and continuity of calibration.
+
+Define an actual fluid service with a source, delivery conditions, users, return/disposal path and changing demand. Examples include a bounded cooling loop, a laboratory gas-delivery system, a small liquid process service or a ventilation study. Build the mass, momentum, energy and relevant composition/quality account, and identify the human and equipment work required to maintain it.
+
+Develop a hierarchy from hand calculations through independently verified computation and physical comparison. Include normal operation, a transient or changed condition, degraded performance, measurement and maintenance. Use specialized material, electrical, thermal, chemical or machine knowledge by reference where needed; identify unresolved specialist requirements rather than claiming the fluid foundation alone supplies them.
+
+Deliver reproducible geometry and calculations, actual or primary documented equipment/measurement evidence, uncertainty, commissioning or comparison criteria, and a justified operating/maintenance interpretation. Defend a tradeoff and a failure of the initial model. The work should explain how the service can be understood, reproduced and kept under review by another person.
+
+**Continue:** [Compare primary fluid results through their assumptions and evidence](Compare-primary-fluid-results-through-their-assumptions-and-evidence.lingua#r_767M1Y5BHBXPSSAA7S1X7D8Q0G).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_688VD7S50KPEC6CY2Y8KY3K0F5

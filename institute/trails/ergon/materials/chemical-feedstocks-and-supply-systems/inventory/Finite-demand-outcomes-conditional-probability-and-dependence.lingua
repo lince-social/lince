@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Build a probability model whose outcomes have a physical meaning (@cs-probability: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #chemical-supply-systems "Demand-during-replenishment-and-the-meaning-of-safety-stock.lingua#r_7KV83BXJ1Q08JHFD9ZAC9ERTK6") { r_7PMCMYCZV1W1VJ0Y9BHMKXPZ4N
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the complete prerequisite/appendix material used for stochastic inventory, then the whole stochastic chapter; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), the complete probability review and stochastic-inventory teaching.
+
+Begin with a finite set of possible outcomes and nonnegative probabilities summing to one. An event is a subset; its probability is the sum over that subset. For a quantity X, E[X]=ΣpᵢXᵢ. Conditional probability asks about the remaining possibilities after information is known. Independence is a substantive hypothesis, not a consequence of putting two columns in a table.
+
+Construct four supplier-state outcomes: both available, only A, only B and neither. Give each a probability and calculate each supplier's marginal availability, joint outage and the chance that at least one serves the user. Compare with the result of multiplying marginals. Two tables can have the same individual availability but quite different joint shortage exposure.
+
+Then construct a finite daily-demand distribution and a replenishment-delay distribution. Explain how probabilities were estimated or elicited and what their data cannot establish. Delayed receiving analysis may be related to demand peaks or shared laboratory load, so assuming independence needs justification. Read the inventory book's complete probability/stochastic material and the graduate course's probability review. Later examples use exact fractions to make their assumptions visible; exact arithmetic removes rounding error, not uncertainty about the probability model itself.
+
+**Continue:** [Model the demand that occurs before replacement becomes usable](Demand-during-replenishment-and-the-meaning-of-safety-stock.lingua#r_7KV83BXJ1Q08JHFD9ZAC9ERTK6).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_7PMCMYCZV1W1VJ0Y9BHMKXPZ4N

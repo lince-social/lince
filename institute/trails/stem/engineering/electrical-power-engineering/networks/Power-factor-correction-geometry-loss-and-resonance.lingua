@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Power-factor correction, loss and resonance (@pe-power-factor: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #electrical-power-engineering "Three-phase-sequence-star-delta-and-total-power.lingua#r_7EQNME19CHB8DDTC5RNYVWGBGH") { r_7PF3WW4CWYA2BBF4FPZ1YZTJ4M
+**Read:** [AC Electrical Circuit Analysis — James M. Fiore](../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK), polyphase and power-factor correction development; [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), complete power-factor and harmonic guidance for the chosen edition.
+
+Specify whether correction is intended to reduce fundamental reactive flow, true RMS current, billed apparent demand or a particular voltage deviation. These are related but different objectives. For a sinusoidal fixed-P load, the required compensation to change displacement angle from φ₁ to φ₂ is P(tanφ₁−tanφ₂), with signs and the operating point stated.
+
+For an 8 kW load initially taking 6 kvar and corrected to zero fundamental reactive demand, an ideal capacitor supplies 6 kvar at the chosen voltage/frequency. A change in voltage changes capacitor reactive power approximately with V² in that linear model. Load variation can make fixed correction excessive. Include switching transients, discharge provisions, duty and actual ratings in a physical design.
+
+Study resonant interaction with network inductance and harmonic sources before selecting a bank. Detuned filters, active compensation and controlled converters solve different problems and introduce different control/loss limits. Compare before/after power, current, voltage and spectra with an instrument model. Do not equate an improved fundamental angle with a universally improved or compliant waveform. [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V) and the circuit course provide the complete practical/theoretical development.
+
+**Continue:** [Three-phase sequence, star, delta and total power](Three-phase-sequence-star-delta-and-total-power.lingua#r_7EQNME19CHB8DDTC5RNYVWGBGH).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7PF3WW4CWYA2BBF4FPZ1YZTJ4M

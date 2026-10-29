@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Criticism, revision and preserving thermal knowledge (@th-criticism: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/Open-Thermophysical-Library-Bell-and-Colleagues.lingua#r_33XEMZDJ2BMYZ0GDFGWDTV1C95", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "../study/Defend-a-thermal-account-and-continue-into-specialist-work.lingua#r_7ZKM09EFZAR3RQCG82W7E9GWZN") { r_0NPFJM00T5KPH7366B1EXKPZVC
+**Read:** [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), traceable reporting and uncertainty; [Open thermophysical property evaluation — Bell and colleagues](../sources/Open-Thermophysical-Library-Bell-and-Colleagues.lingua#r_33XEMZDJ2BMYZ0GDFGWDTV1C95), methods, versioned implementation and evidence; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), evolving interpretations across primary work.
+
+Ask a reviewer to challenge the question, boundaries, source interpretation, numerical method, experimental design and conclusion separately. Give them enough evidence to reproduce the important result, including failures and contrary observations. Identify which disagreements concern definitions, mathematics, measurement or physical scope.
+
+Recalculate or remeasure the claim most affected by the criticism. Compare the revised result with the original and explain the mechanism of change. If the evidence remains insufficient, preserve the unresolved alternatives and the observation that would discriminate them instead of converting uncertainty into a stronger conclusion.
+
+Maintain source editions, correction history, input and apparatus provenance, and the conditions under which the result was established. Continue through connected physics, engineering, material and computational Records as the question requires. Updating a source or model can reopen a scientific conclusion even after the reading programme is finished.
+
+**Continue:** [Defend a thermal account and continue into specialist work](../study/Defend-a-thermal-account-and-continue-into-specialist-work.lingua#r_7ZKM09EFZAR3RQCG82W7E9GWZN).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_0NPFJM00T5KPH7366B1EXKPZVC

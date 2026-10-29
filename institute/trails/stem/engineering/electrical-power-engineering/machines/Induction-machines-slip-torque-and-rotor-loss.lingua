@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Induction machines, slip, torque and rotor loss (@pe-induction: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #source "../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR", #source "../sources/Motor-Rewind-Study-and-Good-Practice-EASA-AEMT.lingua#r_3K38XSH8DWC79G20NF55ATKEJP", #electrical-power-engineering "Motor-starting-acceleration-load-and-network-response.lingua#r_00KT11Y3MXJ5BBNJF3T13MZ5R5") { r_5MZTZPZAN2H30QEHNC16H3PV0W
+**Read:** [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), chapters 8 and 10 in full; [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR), complete induction-motor/system-performance treatment; [Motor rewind studies and good practice — EASA/AEMT](../sources/Motor-Rewind-Study-and-Good-Practice-EASA-AEMT.lingua#r_3K38XSH8DWC79G20NF55ATKEJP), whole loss/test and method discussion.
+
+A rotating stator field induces rotor currents when rotor speed differs from synchronous speed. Define slip s = (ω_sync−ω_rotor)/ω_sync with compatible mechanical/electrical quantities. Derive the equivalent circuit and the torque-speed relation from a stated steady sinusoidal model; rotor frequency is related to slip in that model.
+
+Track air-gap power, rotor copper loss, developed mechanical power and mechanical/stray losses separately. In the elementary model, rotor copper loss is s times air-gap power and converted mechanical power is (1−s) times it. Starting, generating and braking occupy different states and signs; do not extrapolate one motor operating-point formula through every regime unchanged.
+
+Read the complete [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH) induction-design/control chapters and calculate parameters, torque, current and efficiency for a documented machine. Compare a nameplate, test-derived equivalent and changed voltage/frequency case. Actual slot geometry, skin effects, saturation, temperature and mechanical load can change the result. This connects field understanding to the next starting, drive, thermal, construction and repair studies rather than treating a motor as only an efficiency number.
+
+**Continue:** [Motor starting, acceleration, load and network response](Motor-starting-acceleration-load-and-network-response.lingua#r_00KT11Y3MXJ5BBNJF3T13MZ5R5).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5MZTZPZAN2H30QEHNC16H3PV0W

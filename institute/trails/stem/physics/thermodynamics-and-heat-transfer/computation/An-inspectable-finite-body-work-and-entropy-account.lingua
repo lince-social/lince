@@ -1,0 +1,90 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+An inspectable finite-body work and entropy account (@th-reservoir-example: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "../study/Explain-a-thermal-system-before-choosing-a-formula.lingua#r_07WVS4C6WEPKYQJ1TE7K6R72E8") { r_25XA3PWHWX32KGK07RCAXA5XR6
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), complete first/second-law and heat-capacity developments; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), complete reversible-machine and entropy reasoning; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), maximum work and constrained equilibrium.
+
+Two finite bodies begin at different positive temperatures. The composite is insulated from external heat; a reversible cyclic engine can extract work while they approach a common temperature. Each body's total heat capacity is C(T) = a + bT, with a in J/K and b in J/K². There is no phase change, other work mode or residual engine state change.
+
+Integrate energy and entropy explicitly: ΔU = a(T−T_i) + b(T²−T_i²)/2 and ΔS = a ln(T/T_i) + b(T−T_i). The reversible common temperature solves the sum of entropy changes equal to zero; maximum work is minus the total energy change. Direct thermal contact instead conserves total energy and produces entropy. Positive capacities make both scalar roots unique between the initial temperatures.
+
+For two constant 1 J/K capacities initially at 600 and 300 K, the reversible temperature is √180000 ≈ 424.264069 K, direct contact reaches 450 K, and maximum work is approximately 51.471863 J. Direct-contact entropy generation is ln(1.125) ≈ 0.117783 J/K. Infinite-reservoir Carnot efficiency alone does not give this finite-body result.
+
+The original program below uses only Python's standard library. Its deliberate domain is two bodies, 10–2000 K, 0.01–100 J/K for a, and 0–1 J/K² for b. Bisection exposes energy/entropy residuals; tiny signed values near equilibrium can reflect floating-point rounding. It predicts a reversible work bound, not rate, engine size or an actual machine's output.
+
+```python file=finite_thermal_bodies.py
+import json
+import math
+
+
+def bounded(value, low, high):
+    if type(value) not in (int, float):
+        raise ValueError("expected a finite real number")
+    try:
+        value = float(value)
+    except OverflowError:
+        raise ValueError("number is outside the model domain") from None
+    if not math.isfinite(value) or not low <= value <= high:
+        raise ValueError("number is outside the model domain")
+    return value
+
+
+def solve(bodies=((1.0, 0.0, 600.0), (1.0, 0.0, 300.0))):
+    if not isinstance(bodies, (list, tuple)) or len(bodies) != 2:
+        raise ValueError("provide two finite bodies")
+    checked = []
+    for body in bodies:
+        if not isinstance(body, (list, tuple)) or len(body) != 3:
+            raise ValueError("each body is (a, b, initial_temperature)")
+        a = bounded(body[0], 0.01, 100.0)
+        b = bounded(body[1], 0.0, 1.0)
+        temperature = bounded(body[2], 10.0, 2000.0)
+        checked.append((a, b, temperature))
+
+    def energy(temperature):
+        return math.fsum(
+            (temperature - initial) * (a + 0.5 * b * (temperature + initial))
+            for a, b, initial in checked
+        )
+
+    def entropy(temperature):
+        return math.fsum(
+            a * math.log1p((temperature - initial) / initial)
+            + b * (temperature - initial)
+            for a, b, initial in checked
+        )
+
+    def root(function):
+        low = min(body[2] for body in checked)
+        high = max(body[2] for body in checked)
+        for _ in range(100):
+            middle = low + 0.5 * (high - low)
+            if middle == low or middle == high:
+                break
+            if function(middle) > 0.0:
+                high = middle
+            else:
+                low = middle
+        return low + 0.5 * (high - low)
+
+    reversible = root(entropy)
+    direct = root(energy)
+    return {
+        "reversible_temperature_K": reversible,
+        "direct_temperature_K": direct,
+        "maximum_work_J": -energy(reversible),
+        "direct_entropy_generation_J_per_K": entropy(direct),
+        "reversible_entropy_residual_J_per_K": entropy(reversible),
+        "direct_energy_residual_J": energy(direct),
+    }
+
+
+if __name__ == "__main__":
+    print(json.dumps(solve(), sort_keys=True, allow_nan=False))
+```
+
+Independently derive the weighted geometric and arithmetic means for constant capacities. For variable capacities, solve with a higher-precision method using a different root strategy. Check equal temperatures, exchanged body labels, capacity scaling, energy/entropy closure and invalid domains before interpreting a new case.
+
+**Continue:** [Explain a thermal system before choosing a formula](../study/Explain-a-thermal-system-before-choosing-a-formula.lingua#r_07WVS4C6WEPKYQJ1TE7K6R72E8).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_25XA3PWHWX32KGK07RCAXA5XR6

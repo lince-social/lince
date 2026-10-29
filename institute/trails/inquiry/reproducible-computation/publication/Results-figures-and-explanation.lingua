@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Generate the report from the identified result and explain its limits (@rc-reporting: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Access-permissions-and-preservation.lingua#r_4DJGTXAFTXVJ9Z9ECAAGKTZYD2") { r_4CYNSA0PMKHVVM82W63AB23VFH
+**Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), chapter 6, Arrays and Plotting, in full; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), publishing and report-related material; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Guide for Communication and the relevant reproducible-publication discussions.
+
+A final table or figure is another transformation, with input results, reporting code, labels, scales, rounding, selections, and interpretation. Preserve that relationship so a correction to the analysis can regenerate the presentation. A manually edited label or spreadsheet cell can disconnect a polished figure from the computation described in the method.
+
+Start with the exact toy report. State the mass basis and units, distinguish yield from component recovery, and explain why the combined recovery uses total component masses rather than an unweighted average. If percentages are displayed, preserve the underlying fractions and specify rounding at presentation rather than discarding intermediate information. The figure caption should identify the hypothetical nature of the values.
+
+For an uncertainty or simulation report distinguish the quantity's distribution, uncertainty about a physical value, numerical simulation error, and the uncertainty of an estimated statistical summary. An error bar without its definition invites several incompatible interpretations. State population, model, comparison, and interval construction where they matter.
+
+**Work:** generate a compact table and an explained plot directly from report.json using saved reporting code. Independently check each aggregate and unit label. Change one input and regenerate from the beginning; verify that the visible values and accompanying input/method identities update together. Compare a normalized scientific result with the byte identity of a plot file that may contain incidental metadata.
+
+Write the claim supported by the report, then list its limitations and the evidence that would change it. A clear explanation should let another person question the model rather than merely admire the presentation. Follow [Read graphs, interpolate, and question a visual claim](../../quantitative-literacy/foundations/Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2) for the shared treatment of axes and interpretation, and complete the plotting chapter of the beginner book before relying on sophisticated visual defaults.
+
+**Continue:** [Distinguish authorized access, reuse rights, and reconstruction limits](Access-permissions-and-preservation.lingua#r_4DJGTXAFTXVJ9Z9ECAAGKTZYD2).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_4CYNSA0PMKHVVM82W63AB23VFH

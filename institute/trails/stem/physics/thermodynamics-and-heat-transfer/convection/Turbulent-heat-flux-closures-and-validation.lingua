@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Turbulent heat flux, closures and validation (@th-turbulence: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7", #thermodynamics-and-heat-transfer "Buoyancy-natural-convection-and-stability.lingua#r_152K4KYHQ9DP0V0CNJTDJAFKCE") { r_1PRM4GXETD6X6SSPGA2CV35NTN
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the complete turbulent convection treatment; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), turbulent momentum/thermal layers and enhancement; [Convecção e métodos numéricos — Maliska, UFSC](../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7), convection modelling and numerical comparison.
+
+Averaging the thermal equation introduces correlations between fluctuating velocity and temperature. A closure model represents information not supplied by the mean balance alone. Define the averaging, wall treatment, turbulent diffusivity assumptions and the conditions used to calibrate a correlation or closure.
+
+Compare Reynolds analogy-like arguments with their actual momentum/heat-transfer assumptions. Roughness, pressure gradients, strong property variation, low/high Prandtl number and buoyancy can change the relationship. A smooth-pipe result is not a general proof about a rough industrial passage.
+
+Use complete methods and benchmark data to compare predictions of wall flux, pressure loss and temperature distribution. Separate numerical discretization error from turbulence-model discrepancy. An apparently grid-independent CFD result can still be systematically wrong because of its closure or boundary inputs.
+
+**Continue:** [Buoyancy, natural convection and stability](Buoyancy-natural-convection-and-stability.lingua#r_152K4KYHQ9DP0V0CNJTDJAFKCE).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1PRM4GXETD6X6SSPGA2CV35NTN

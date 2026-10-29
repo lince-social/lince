@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Independent electromagnetic scholarship and revision (@em-research: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH", #source "../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69", #source "../sources/Meep-Original-Paper.lingua#r_6VNPZYYD3SYGHFATA6VKQ5QD8K", #electromagnetism "../study/Electromagnetic-understanding-and-demanding-completion.lingua#r_5V4JAZ01138S2ZPPTDY5J2B1G3") { r_5TR9B1MTPCC16K9KHJ5AVEGFHM
+**Read:** [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH), complete available graduate programme; [3D electromagnetic modelling and inversion — Oldenburg and colleagues](../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69), whole reproducibility and inverse-case analysis; [Meep — Oskooi and colleagues, 2010](../sources/Meep-Original-Paper.lingua#r_6VNPZYYD3SYGHFATA6VKQ5QD8K), entire authorized numerical-method article for a relevant comparison.
+
+Form a narrow question whose answer is not simply a worked textbook exercise: a model discrepancy, parameter ambiguity, boundary approximation, material response, inverse-method failure or a field/device interface. Review complete primary papers and substantial books, identify the actual current question and compare competing explanations. [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH) supplies a graduate baseline; it is not a claim that finishing course notes makes a research result novel.
+
+Choose evidence that could contradict the preferred explanation. Reconstruct the governing derivations, reproduce an authorized published benchmark and extend it with one justified change. Use independent analytical/numerical/measurement checks, quantify sensitivity and distinguish computation from actual physical experience. Preserve permitted source/version provenance and keep external books, articles, data, code collections and media outside this repository.
+
+Write a sustained scholarly argument with methods, results, limitations, counterarguments and revisions after informed criticism. A well-supported negative or non-identifiability result can be valuable. State how it changes the practical or theoretical understanding and what future measurement or derivation would resolve the remaining uncertainty. Update the shared explanations where the result warrants it. Research depth here is a habit of reconstructible reasoning and criticism, not a new authoring workflow or an asserted equivalence to a doctorate.
+
+**Continue:** [Electromagnetic understanding and demanding completion](../study/Electromagnetic-understanding-and-demanding-completion.lingua#r_5V4JAZ01138S2ZPPTDY5J2B1G3).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_5TR9B1MTPCC16K9KHJ5AVEGFHM

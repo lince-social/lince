@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Cycles, efficiency and useful output (@th-cycles: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #thermodynamics-and-heat-transfer "../entropy/Reversibility-reservoirs-and-physical-irreversibilities.lingua#r_4A9BNASZF5VTZYZ9WETP9N1QYY") { r_1FJ3QB261EXN8ET1NADXP55MQG
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), chapter 6 in full; [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), engines, refrigerators and heat pumps.
+
+A working substance returning to its initial state has zero net change of its state functions over a cycle. It may still exchange heat and work with several surroundings. The first-law sum constrains net transfers but does not decide which cycle is possible.
+
+For a heat engine, thermal efficiency is useful net work divided by supplied heat under a stated accounting boundary. For a refrigerator, COP_R is desired cooling divided by required work; a heat pump uses delivered heating in its numerator. For the same idealized two-reservoir device, COP_HP = COP_R+1.
+
+The cycle of the working fluid is not necessarily a cycle of the whole plant: fuel and exhaust, cooling water, wear, storage inventory and material replacement may change. Draw separate fluid-cycle and installation boundaries. Compare gross output, parasitic demand and net useful service without silently changing the denominator.
+
+**Continue:** [Reversibility, reservoirs and physical irreversibilities](../entropy/Reversibility-reservoirs-and-physical-irreversibilities.lingua#r_4A9BNASZF5VTZYZ9WETP9N1QYY).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1FJ3QB261EXN8ET1NADXP55MQG

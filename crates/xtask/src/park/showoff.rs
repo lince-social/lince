@@ -188,14 +188,11 @@ fn example(name: &str) -> Result<PathBuf> {
     let output = cargo_command()
         .args([
             "run",
-            "--release",
             "--locked",
             "--message-format=json",
             "-p",
-            "lince-park",
-            "--features",
-            "server-tests",
-            "--example",
+            "lince-park-clients",
+            "--bin",
             name,
             "--",
             "--help",
@@ -203,7 +200,7 @@ fn example(name: &str) -> Result<PathBuf> {
         .stderr(Stdio::inherit())
         .output()?;
     if !output.status.success() {
-        return Err(format!("Could not compile the release {name} probe").into());
+        return Err(format!("Could not compile the {name} probe").into());
     }
     String::from_utf8(output.stdout)?
         .lines()

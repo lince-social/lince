@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: analytical conduction, contact and spreading resistance (@th-study-conduction: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../../electromagnetism/sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_21BS27QJRKZ1BSP7TJYHYPFX9R
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete steady and multidimensional conduction chapters; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), complete analytical conduction and mathematical methods; [Vector Calculus — David Tong](../../electromagnetism/sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5), full field/integral calculus used in the derivation.
+
+Choose a two- or three-dimensional conduction problem with a defensible analytical reduction. Derive the field equation and all conditions, then solve by separation, superposition, a transform or a justified shape method. Include an interface, anisotropy or temperature-dependent property in a comparison model.
+
+Demonstrate energy closure and recover simpler plane/radial limits. Examine singular or steep-gradient regions and distinguish a mathematically sharp boundary from the actual physical geometry. Compare a resolved solution with a compact resistance network and identify the questions for which the reduction fails.
+
+Deliver derivations, independent numerical comparison and sensitivity to geometry/contact uncertainty. Extend the analysis to a real material or assembly whose measured or documented boundary conditions are available. Explain how a predicted internal maximum could be tested and how the observation itself might disturb the field.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_21BS27QJRKZ1BSP7TJYHYPFX9R

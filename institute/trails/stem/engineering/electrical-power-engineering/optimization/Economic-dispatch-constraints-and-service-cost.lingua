@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Economic dispatch, constraints and service cost (@pe-dispatch: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #source "../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA", #electrical-power-engineering "DC-power-flow-is-a-linearized-AC-model.lingua#r_6M4N4JTZ8K5KVRD8EAS9B67V7B") { r_667YJCFT9K4GYNNBY0Y8Z30X6W
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete OPF and constraint development; [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), entire background/formulation and examples; [Convex Optimization — Boyd and Vandenberghe](../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA), complete optimality/duality and constrained-optimization development.
+
+Define the decision, time period, demand/service requirement, generation capability and cost basis before minimizing anything. A single-period lossless economic dispatch balances output and demand under capacities and convex costs; its marginal-cost condition holds only where its assumptions and inactive constraints permit. Startup, reserve, ramp, network loss and time coupling create different problems.
+
+Derive the unconstrained marginal-cost balance and then capacity bounds for two sources. Include the actual network before interpreting a cheap generator as deliverable supply. A schedule can satisfy total MW while overloading a line or violating AC voltage/reactive constraints. Financial price, engineering cost and value of lost service are distinct quantities with assumptions and uncertainty.
+
+Use the original meshed three-bus example to expose electrical flow constraints and a binding limit. Compare an independent exact calculation, then the complete [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV) and [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99) formulations. Keep feasibility residuals, units, solver/model version and sensitivity with the result. A reported optimum is conditional on its physical model and objective; it is not a general claim that one allocation is socially or technically best under unmodelled conditions.
+
+**Continue:** [DC power flow is a linearized AC model](DC-power-flow-is-a-linearized-AC-model.lingua#r_6M4N4JTZ8K5KVRD8EAS9B67V7B).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_667YJCFT9K4GYNNBY0Y8Z30X6W

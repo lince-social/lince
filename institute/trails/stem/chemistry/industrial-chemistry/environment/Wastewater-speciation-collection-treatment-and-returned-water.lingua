@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Trace chemical constituents through wastewater collection, treatment and recovery (@ic-wastewater: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9", #source "../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #industrial-chemistry "Gases-vapors-diffuse-losses-capture-and-chemical-fate.lingua#r_7KTHFESRPTNWH9ZXEV12K27JW0") { r_4GAQKC90SG8M9C30PYNMP86KSH
+**Read:** [Common Waste Water and Waste Gas Treatment/Management Systems in the Chemical Sector, BREF CWW](../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9), the entire wastewater inventory, collection, characterization, treatment, sludge and return-water treatment; [Biochemical conversion of corn stover to ethanol — Humbird and colleagues](../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH), the complete wastewater and utility design/account sections; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the full relevant process-integrated water and residual case.
+
+Wastewater is a changing chemical mixture whose treatment depends on speciation, concentrations, phases, temperature, variability and intended destination. A total or surrogate measure such as organic load cannot identify every toxic, reactive, persistent or recoverable constituent. Sampling and analytical support define the quantity being inferred.
+
+Prevention, segregation, equalization, recovery, physical separation, chemical reaction and biological treatment perform different tasks. Removing a species from water can transfer it to air, sludge, a concentrated regenerant or recovered product. An apparently cleaner liquid therefore needs a complete constituent and residual account.
+
+Trace water quality and return to process. Recycling can reduce fresh demand while concentrating salts or other contaminants and changing equipment/product behavior. Compare actual loads and useful-quality requirements rather than simply counting a reused water volume as equivalent to fresh supply.
+
+**Work:** reconstruct the complete wastewater inventory and treatment/recovery train for one chemical route. Independently close water and at least two consequential constituents across all phases, with uncertainty and changing inventories. Compare a documented prevention/recovery alternative and identify the primary observation needed to test its effect on product, utilities and residuals elsewhere in the system.
+
+**Continue:** [Explain air releases through source chemistry, transport, measurement and actual treatment](Gases-vapors-diffuse-losses-capture-and-chemical-fate.lingua#r_7KTHFESRPTNWH9ZXEV12K27JW0).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4GAQKC90SG8M9C30PYNMP86KSH

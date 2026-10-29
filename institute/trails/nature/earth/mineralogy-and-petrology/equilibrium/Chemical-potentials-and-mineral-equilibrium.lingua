@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Derive phase equilibrium from chemical potentials and a defined system (@mp-chemical-potential: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #source "../../../../stem/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #mineralogy-and-petrology "../../../../stem/chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S") { r_3H5V4CVENHRRZAQ3RZ4RNB2PNN
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete thermodynamics and phase-diagram notes; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full thermodynamics/phase-diagram lectures and exercises; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the complete basic equilibrium/model explanation; [General chemistry](../../../../stem/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), Gibbs energy, equilibrium, activities, and constraints as needed.
+
+A petrological equilibrium calculation needs system components, amounts, phases/models, constraints, and thermodynamic data. At specified temperature and pressure a closed system minimizes appropriate Gibbs energy subject to mass balance and admissible phases. An open fluid or other externally constrained component changes the problem.
+
+Chemical potential is the change in Gibbs energy associated with a component amount under defined constraints. Coexisting phases must satisfy the relevant equality/reaction conditions. Bulk composition controls phase amounts and feasible assemblages; it is not identical to the composition of every phase.
+
+Reference states, units, component definitions, oxidation state, and activities belong to the model. A phase label in two software databases need not imply identical endmembers or mixing behavior. Numerical minimization can be correct for data/models that are inappropriate to the sample or conditions.
+
+**Work:** derive a simple two-phase exchange or reaction equilibrium using chemical potentials and mass balance. Identify independent components and distinguish an imposed chemical potential from a conserved amount. Compare a closed anhydrous calculation with a fluid-buffered version, explaining which observations could support either approximation for a real rock.
+
+Read the full petrological thermodynamics notes and model explanations, following shared chemistry preparation where needed. Continue through [Interpret vapor pressure, phase change, and a phase diagram](../../../../stem/chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S) for the shared phase-diagram foundation before the multicomponent phase rule and composition sections.
+
+**Continue:** [Interpret vapor pressure, phase change, and a phase diagram](../../../../stem/chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_3H5V4CVENHRRZAQ3RZ4RNB2PNN

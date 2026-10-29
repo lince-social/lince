@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+OpenFOAM Foundation — versioned methods and user guide (@fd-openfoam: 0, is #reference, #part-of @fd-sources) { r_6RVWPNB9VWAA4JDXH1HCXFDGQY
+OpenFOAM Foundation and CFD Direct. [Version 14 release, 14 July 2026](https://openfoam.org/release/14/) · [User-guide entrance](https://doc.cfd.direct/openfoam/user-guide/) · [Source and download choices](https://openfoam.org/download/).
+
+Use a pinned Foundation release and the matching guide for a complete case: fields, dimensions, material properties, initial/boundary conditions, mesh, numerics, controls and diagnostics. Inspect the selected model's source and compare its actual equations with [Turbulence Modeling Resource — model definitions and benchmarks](Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6). Carry the full case history into any independent reproduction.
+
+Foundation version 14 is GPLv3 software. The named distribution and version matter; tutorials for another distribution or release may describe different solvers and inputs. The user-guide entrance returned no readable text in the browsing tool, while official release metadata was available. No installation, tutorial run or broad redistribution licence for external manuals is claimed. Software, meshes and results remain external.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_6RVWPNB9VWAA4JDXH1HCXFDGQY

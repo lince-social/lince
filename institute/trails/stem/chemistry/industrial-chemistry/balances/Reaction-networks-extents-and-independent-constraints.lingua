@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Represent a reaction network with extents and independent chemical constraints (@ic-stoichiometry: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ", #source "../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV", #industrial-chemistry "../../general-chemistry/reactions/Yield-selectivity-and-material-accounting.lingua#r_73PW18H0EQATWC20EC95V9D9M3") { r_25NVZFRFZNBVKYDCXPAA04Z95X
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the entire stoichiometry chapter, independent/multiple reactions and computational examples; [Chemical and Biological Reaction Engineering — MIT 10.37](../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ), the full stoichiometry/mechanism and reaction-network problem material; [Graduate Numerical Methods Applied to Chemical Engineering — MIT 10.34](../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV), the relevant complete linear-algebra and conditioning treatment.
+
+Write a stoichiometric matrix N whose column j records the signed species changes in reaction j. For a closed reacting amount, n=n₀+Nξ defines the extents ξ. In a flowing unit, the same changes enter the species production terms alongside external flows and accumulation.
+
+The element matrix A obeys AN=0 for a balanced chemical network. Its independent conserved combinations constrain possible states. Dependent reaction equations do not create additional physical freedom: extents for a redundant network may be nonunique even when the resulting species changes are determined.
+
+Nonnegative species quantities and a balanced network describe feasibility, not kinetics or equilibrium. A formally admissible product distribution may require inaccessible pathways or violate the relevant equilibrium/operating conditions. Separate these questions and preserve reversible, parallel and consecutive reactions rather than assigning all disappearance to the desired transformation.
+
+**Work:** build the species/element matrices for a full public reaction family with at least one side reaction. Independently check every column, identify its rank/conserved combinations and derive a feasible extent range. Explain what additional equilibrium, rate or measurement information determines product distribution and what remains unidentifiable from the reported measurements.
+
+**Continue:** [Distinguish conversion, yield, selectivity, recovery, and purity](../../general-chemistry/reactions/Yield-selectivity-and-material-accounting.lingua#r_73PW18H0EQATWC20EC95V9D9M3).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_25NVZFRFZNBVKYDCXPAA04Z95X

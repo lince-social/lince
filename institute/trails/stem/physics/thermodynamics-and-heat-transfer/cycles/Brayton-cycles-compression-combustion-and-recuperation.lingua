@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Brayton cycles, compression and recuperation (@th-brayton: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "Ideal-piston-cycles-and-real-process-differences.lingua#r_1VQ06AYPVCJK33QSF33J1NHGVP") { r_7W9XHR7T2YXS48E15FA3F95GST
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), the full air-based and turbomachine cycle development; [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), compressor/turbine entropy and energy applications; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), efficiency and irreversibility accounting.
+
+For the idealized closed air-standard cycle, identify isentropic compression/expansion and constant-pressure heating/cooling. Then state how an open gas turbine differs: fuel and composition changes, combustion irreversibility, pressure loss, cooling flows and component maps.
+
+Under constant heat capacity and ideal reversible components, the pressure ratio controls a simple efficiency expression, but the net specific work and temperature limits add distinct constraints. Derive both rather than assuming that maximizing one maximizes the other. Recompute with temperature-dependent properties and actual isentropic efficiencies.
+
+Study recuperation, intercooling and reheat with the actual temperature ordering and finite heat-exchanger behavior. A recuperator cannot transfer heat from a colder turbine exhaust to a hotter compressor discharge without additional work. Include heat-exchanger pressure losses and useful duty in a defensible comparison.
+
+**Continue:** [Ideal piston cycles and real process differences](Ideal-piston-cycles-and-real-process-differences.lingua#r_1VQ06AYPVCJK33QSF33J1NHGVP).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7W9XHR7T2YXS48E15FA3F95GST

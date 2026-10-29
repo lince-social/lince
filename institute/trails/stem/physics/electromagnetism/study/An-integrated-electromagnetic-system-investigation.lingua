@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+An integrated electromagnetic-system investigation (@em-integrated: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #source "../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH", #electromagnetism "../research/Independent-electromagnetic-scholarship-and-revision.lingua#r_5TR9B1MTPCC16K9KHJ5AVEGFHM") { r_1FQW2ASX2WCT3JRXKKP4NB4HSN
+**Read:** [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), entire applicable engineering-system development; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), complete applicable method and evidence treatment; [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH), relevant complete graduate derivations/problems.
+
+Choose one physical system large enough to need connected reasoning: an electromagnetic actuator with a sensor, a material-characterization fixture, a guided-wave transition, an induction measurement or a radiating structure. Describe its function, geometry, state, source, return path and observable. Connect the actual material/process origin and operating services through [Ergon](../../../../ergon/Ergon.lingua#r_00000000000000000000002001) without treating every connected subject as a compulsory new detour.
+
+Develop a hierarchy from a simple analytical model through a refined field/circuit description to the measurement operator. Derive equations and boundaries, verify at least two independent limiting results and quantify numerical convergence. Include static/time-dependent energy, force or radiation where relevant, constitutive limits and a defensible uncertainty account. Compare alternatives and a changed condition that was not used to tune the model.
+
+Use suitable physical evidence or a fully documented literature/data reconstruction and state the distinction. Explain how operating frequency, temperature, material replacement, aging or maintenance alters the supported claim. The final work should join mathematics, physical understanding, computation and evidence into one inspectable argument. It should be possible to trace an engineering decision back to its field model, source assumptions, calibration and remaining uncertainty rather than trusting a device name or a simulation screenshot.
+
+**Continue:** [Independent electromagnetic scholarship and revision](../research/Independent-electromagnetic-scholarship-and-revision.lingua#r_5TR9B1MTPCC16K9KHJ5AVEGFHM).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_1FQW2ASX2WCT3JRXKKP4NB4HSN

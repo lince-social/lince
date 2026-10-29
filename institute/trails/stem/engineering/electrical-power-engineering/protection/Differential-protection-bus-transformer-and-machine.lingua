@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Differential protection of buses, transformers and machines (@pe-differential: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD", #source "../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6", #electrical-power-engineering "Relay-tests-functional-chains-and-evidence.lingua#r_1KPYCNB92Z0PT9E6HS9XM05AJW") { r_4NKP7N1CFA94NXZ0KVZE8D80C2
+**Read:** [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), all bus/transformer/generator differential lectures; [Protective relay operation, maintenance and tests — FIST 3-8](../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD), complete relevant field/functional test methods; [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6), whole data, change and evidence treatment.
+
+Differential protection compares appropriately referred currents at a zone boundary. Derive the expected balance from conservation and define polarity, ratios, phase compensation, tap effects and measurement locations. The ideal zero-difference model must be extended for real sensor error, saturation, charging, inrush or other permitted behavior.
+
+Compare an internal fault with an external through-fault that saturates one CT. Security and sensitivity require an evidence-based characteristic and logic, not merely a small numerical difference. Transformer winding connections and harmonic/inrush behavior differ from bus or rotating-machine cases; one generic setting cannot substitute for their actual models.
+
+Complete the bus, transformer and generator protection modules, then reconstruct a full measurement-to-trip test case. Include secondary circuits, auxiliary supplies, communications where used and end-to-end timing. Evaluate changed taps, replacement sensors, a wiring/polarity error and a minimum internal fault. The advanced protection study should demonstrate both intended operation and restraint for a plausible nonfault/through-fault condition, with uncertainty and the actual equipment response retained.
+
+**Continue:** [Relay tests, functional chains and evidence](Relay-tests-functional-chains-and-evidence.lingua#r_1KPYCNB92Z0PT9E6HS9XM05AJW).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4NKP7N1CFA94NXZ0KVZE8D80C2

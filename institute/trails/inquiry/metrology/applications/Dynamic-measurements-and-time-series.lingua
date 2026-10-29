@@ -1,0 +1,21 @@
+Import "../Metrology.lingua"
+
+Changing signals — response correction, sampling, and dependent noise (@met-dynamic: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #metrology "../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR", #fluid-dynamics "../../../stem/physics/fluid-dynamics/measurement/Pressure-lines-bandwidth-aliasing-and-fluctuating-flow.lingua#r_7774CKPZV59YNJP2EQ0R621544") { r_7VY283E2ZMNS2JTQ9Y7DNBW6KX
+**Read:** [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), differential-equation, time-dependent, and time-series models; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), a time-dependent worked example; [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), long-term variation and dependence-related guidance.
+
+A changing measurand requires a time-dependent measurement model and a definition of the reported quantity. An instantaneous value, interval average, peak, event time, and spectrum are different outputs. Acquisition filtering, sampling rate, response time, timebase, delay, and processing can affect both values and uncertainty.
+
+For an ideal first-order instrument τ dI/dt + I = x with unit static gain, the formal inverse is x = I + τ dI/dt. Differentiation amplifies high-frequency noise, and uncertainty in τ also contributes. An apparently simple inverse therefore needs a justified bandwidth, regularization or filtering strategy, and an uncertainty treatment that includes dependence between time samples.
+
+Sampling can alias unobserved fast variation into a slower apparent signal. Repeated points at high sampling rate are not necessarily independent measurements of a constant value. A low-noise average may conceal a short excursion relevant to a process limit. State the physical bandwidth and the statistical model, not only the file’s sample interval.
+
+**Work:** generate a labelled synthetic step or sinusoidal signal, apply a known first-order response, and compare the uncorrected and formally corrected estimates after adding small noise. Vary the sampling interval and a stated low-pass or smoothing method. Explain the tradeoff between noise and lost temporal information and retain the processing definition.
+
+Reconstruct one time-series example in the measurement-model or NIST sources. Identify what would be required to validate a dynamic correction using independent reference information. A stable numerical plot is not proof that an inverse model has recovered the actual unobserved signal.
+
+**Continue:** [Produce, preserve, transfer, and replace the references](../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in fluid dynamics:** [Pressure lines, bandwidth, aliasing and fluctuating flow](../../../stem/physics/fluid-dynamics/measurement/Pressure-lines-bandwidth-aliasing-and-fluctuating-flow.lingua#r_7774CKPZV59YNJP2EQ0R621544).
+} r_7VY283E2ZMNS2JTQ9Y7DNBW6KX

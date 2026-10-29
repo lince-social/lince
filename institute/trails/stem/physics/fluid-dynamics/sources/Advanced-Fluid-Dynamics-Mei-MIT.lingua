@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced fluid dynamics — Mei notes and MIT modules (@fd-mei: 0, is #reference, #part-of @fd-sources) { r_21NXVH78F0NYDPDVTG66PG261P
+Chiang C. Mei's notes and the MIT fluids modules. [Lecture-note archive](https://web.mit.edu/1.63/www/lecnote.html) · [Modular programme](https://web.mit.edu/fluids-modules/www/) · [Course context](https://web.mit.edu/1.63/www/).
+
+Follow complete relevant chapters on governing laws, creeping and high-Reynolds-number flow, dispersion, porous media, waves, rotation, stratification and instability. Use each module's own assumptions and mathematical preparation. Develop an analytical solution and a changed-condition test for each main approximation studied.
+
+The course landing page describes Spring 2014 instruction by T. R. Akylas, with Peko Hosoi, and notes by Mei. Individual notes include older dates, including 2002; neither date should be silently assigned to every file. The modules explicitly include unfinished areas. Public notes do not establish a complete video, assessment or software archive. Inspect linked items and their notices; no blanket OCW licence is inferred for this separate MIT site.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_21NXVH78F0NYDPDVTG66PG261P

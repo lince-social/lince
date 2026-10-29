@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Criticism, reproduction and revision of a fluid argument (@fd-criticism: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #fluid-dynamics "Defend-fluid-understanding-from-foundations-to-independent-work.lingua#r_6181DWMCZPGBKQJ98NFNW56C7W") { r_38H3CJYJMX9BVAETGBNYB50TKR
+**Read:** [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), independent verification and validation reasoning; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), uncertainty transparency; [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), critical project and presentation expectations.
+
+Give the complete study to someone who did not develop its model or computation. Ask them to reconstruct a central result, inspect assumptions and identify a plausible counterexample. If working alone initially, perform a genuinely different derivation, solver or measurement comparison and keep the need for outside criticism visible.
+
+Trace a disagreement to data meaning, equations, implementation, uncertainty or physical applicability. Correct errors openly and rerun affected calculations, without changing the research question solely to preserve a preferred result. Distinguish a failed reproduction caused by missing evidence from a contradiction of the physical conclusion.
+
+Publish a revised account with the evidence supporting each change and the remaining unresolved questions. Retain links and provenance for external books, articles, code, models and datasets. The point is to make knowledge easier to inspect and improve, including by the next person who operates or studies the system.
+
+**Continue:** [Defend fluid understanding from foundations to independent work](Defend-fluid-understanding-from-foundations-to-independent-work.lingua#r_6181DWMCZPGBKQJ98NFNW56C7W).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_38H3CJYJMX9BVAETGBNYB50TKR

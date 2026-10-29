@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Propagate uncertainty with sensitivities and covariance (@met-sensitivity: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK", #metrology "Coverage-and-degrees-of-freedom.lingua#r_5Q2X2FWBE479BM2WERZQNG9PCV") { r_0EF35BB106S2F2ATJBXBR49DFR
+**Read:** [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the combined-uncertainty treatment for correlated inputs; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), shared effects and statistical models; [Several output quantities — JCGM 102](../sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK), the covariance formulation.
+
+For a sufficiently smooth scalar model y = f(x₁,...,x_n), first-order propagation gives u²(y) ≈ Σ_i Σ_j c_i c_j cov(x_i,x_j), with c_i = ∂f/∂x_i evaluated at the input estimates. Each term must have output-unit squared. Under independence, covariance terms vanish, leaving the familiar sum of squared standard-uncertainty contributions.
+
+For a two-input difference y = x₁ − x₂, u²(y) = u₁² + u₂² − 2cov(x₁,x₂) in the exact linear model. With u₁ = u₂ = 1 unit and correlation 0.8, u(y) = √0.4, about 0.632 units. The sum instead has standard uncertainty √3.6, about 1.897 units. A shared contribution can cancel in one result and reinforce another.
+
+Do not infer independence merely because observations came from different files, operators, or dates. Common reference standards, coefficient fits, environmental corrections, conservation constraints, and shared preparation can create dependence. Conversely, a shared label does not determine the numerical correlation without a model.
+
+**Work:** derive sensitivities for a corrected length and for a ratio. Check them by finite perturbations over the relevant input ranges using [Small changes, derivatives, and first-order approximations](../../quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52) and [Sensitivity, cancellation, dependencies, and conditioning](../../quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T). Reproduce the correlated sum and difference results and compare a model that explicitly includes the common effect with one using a covariance matrix.
+
+A covariance matrix must be symmetric and positive semidefinite. For two inputs, |cov| ≤ u₁u₂; violating this is a mathematical inconsistency, not an unusual physical case. Retain a singular but valid covariance when a constraint makes outputs exactly dependent. Local linear propagation must also be checked against the nonlinear behavior studied next.
+
+**Continue:** [Standard uncertainty, expanded uncertainty, and coverage claims](Coverage-and-degrees-of-freedom.lingua#r_5Q2X2FWBE479BM2WERZQNG9PCV).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_0EF35BB106S2F2ATJBXBR49DFR

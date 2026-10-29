@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Pressure gradients, separation and integral methods (@fd-pressure-gradient: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "Jets-wakes-entrainment-and-free-shear-layers.lingua#r_50ENQJKN158A435N37YDR84562") { r_6SZR7KMJ0QJHB12ZVVGMZ254WA
+**Read:** [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter IX in full; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), Falkner–Skan and separation; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 3 pressure-gradient and momentum-integral notes.
+
+An adverse streamwise pressure gradient decelerates the outer flow and modifies the slower near-wall fluid strongly. In the simple steady two-dimensional boundary-layer picture, separation is associated with wall shear reaching zero and reverse flow developing. General unsteady or three-dimensional separation requires a more careful definition than this single scalar criterion.
+
+Integrate the momentum equation to obtain dθ/dx+(2+H)(θ/U_e)dU_e/dx=C_f/2, where H=δ*/θ and C_f uses local U_e. The equation is exact within the boundary-layer approximation but needs additional information to determine profile shape and wall shear. An assumed profile or empirical closure therefore carries physical content and uncertainty.
+
+Work one favorable and one adverse pressure-gradient case, comparing an integral approximation with a differential solution or primary measurements. Study the Falkner–Skan similarity family and the restrictions on its solutions rather than extrapolating flat-plate constants. Explain how separation changes downstream pressure, drag and the validity of a one-way outer-flow/boundary-layer coupling.
+
+**Continue:** [Jets, wakes, entrainment and free shear layers](Jets-wakes-entrainment-and-free-shear-layers.lingua#r_50ENQJKN158A435N37YDR84562).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_6SZR7KMJ0QJHB12ZVVGMZ254WA

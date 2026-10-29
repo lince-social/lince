@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Advanced adequacy, common cause and restoration (@pe-adequacy-study: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G", #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #source "../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC", #electrical-power-engineering "../study/An-integrated-electrical-power-system-investigation.lingua#r_06BN864FF9C0AN3EWZJE78Y6Y3") { r_5Q16K3W62BBDTYH5YKKTMS5NDJ
+**Read:** [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G), entire report and selected complete primary method; [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), whole relevant chronological/uncertainty and reserve methods; [Conduct of power operations and maintenance — FIST](../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC), complete applicable restoration/maintenance context.
+
+Read the whole [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G) report and a complete later primary method chosen for the actual risk question. Define resource, network, service, weather/event dependence, storage and restoration time models. Identify which probabilities/parameters are measured, inferred or assumed and what evidence supports each.
+
+Build a transparent small exact/enumerated benchmark before a chronological probabilistic study. Compare size, timing, duration and frequency of shortfall and expected unserved energy rather than treating one index as a full description. Test correlated outages/resource shortages, energy-limited support and interregional dependence. Preserve chronology and physical state through the scenarios.
+
+Compare a planning or maintenance alternative and its actual material, ramp, fuel, auxiliary, communication and repair constraints. Quantify sampling and model uncertainty and expose a plausible common-cause scenario that defeats nominal independent redundancy. Distinguish adequacy, dynamic security and restoration capability. The final study should support a limited service-risk conclusion and identify the most valuable additional data or physical test; an assumed reserve percentage or a large number of Monte Carlo samples does not by itself establish reliability.
+
+**Continue:** [An integrated electrical-power-system investigation](../study/An-integrated-electrical-power-system-investigation.lingua#r_06BN864FF9C0AN3EWZJE78Y6Y3).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5Q16K3W62BBDTYH5YKKTMS5NDJ

@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Use entropy changes with a defined system and a valid thermodynamic argument (@gc-entropy: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Gibbs-energy-and-chemical-direction.lingua#r_2YN613CG9VVK1CXP2XFHZMF9Z6", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/entropy/Entropy-transfer-generation-and-accumulation.lingua#r_0FC03677A8H7RVJCY8WKQRRTTP") { r_7HFVYJCY204C7WMHBKWEPEZFQB
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 16’s entropy, second-law, and third-law sections; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), Thermodynamics of chemical equilibrium and Understanding entropy; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), entropy and thermodynamic conventions.
+
+Entropy is a thermodynamic state quantity with statistical interpretations under explicit models. For a reversible path, dS = δq_rev/T. A real process can be analyzed through a suitable hypothetical reversible path to obtain a state difference, while total entropy production constrains actual irreversible change. Specify the system and surroundings used in the account.
+
+Simple “disorder” imagery is often too ambiguous for quantitative reasoning. Use distributions, energy exchange, mixing, accessible states, and actual thermodynamic definitions to explain a particular case. The third-law reference for a perfect crystal has assumptions about its ground state; residual entropy and phase/state information matter in detailed tables.
+
+A system's entropy can decrease while the surroundings increase enough for total entropy production to remain compatible with the second law. Heat flow, phase changes, reaction, and mixing require a complete boundary/constraint account. An isolated-system statement should not be applied to an open system with ignored exchanges.
+
+**Work:** calculate an entropy change for a specified reversible heating or phase-change model, identifying heat-capacity or transition assumptions. Combine system and surroundings for one hypothetical heat-transfer process and examine the sign of the total. Explain a chemical example without treating entropy as a visual description of messiness.
+
+Read the entire thermodynamics chapter and both Chem1 entropy treatments. Reconstruct one argument from equations and one from a molecular/statistical model, stating how they connect and where the model is limited. The next Record selects the thermodynamic potential appropriate to common chemical constraints.
+
+**Continue:** [Relate chemical direction to Gibbs energy under stated constraints](Gibbs-energy-and-chemical-direction.lingua#r_2YN613CG9VVK1CXP2XFHZMF9Z6).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in thermodynamics and heat transfer:** [Entropy transfer, generation and accumulation](../../../physics/thermodynamics-and-heat-transfer/entropy/Entropy-transfer-generation-and-accumulation.lingua#r_0FC03677A8H7RVJCY8WKQRRTTP).
+} r_7HFVYJCY204C7WMHBKWEPEZFQB

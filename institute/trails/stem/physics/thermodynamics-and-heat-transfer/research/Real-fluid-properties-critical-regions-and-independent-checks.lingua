@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: real-fluid properties and critical-region limitations (@th-study-properties: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #source "../sources/IAPWS-IF97-Industrial-Water-and-Steam.lingua#r_7THV30AN6Q693AJKH3W6ZSG13Y", #source "../sources/Open-Thermophysical-Library-Bell-and-Colleagues.lingua#r_33XEMZDJ2BMYZ0GDFGWDTV1C95", #source "../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_7T579Q9VKRZN1S0DJFKR4KX2ZV
+**Read:** [IAPWS-95 — fundamental water properties](../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z), the entire release and associated primary references; [IAPWS-IF97 — industrial water and steam](../sources/IAPWS-IF97-Industrial-Water-and-Steam.lingua#r_7THV30AN6Q693AJKH3W6ZSG13Y), the complete release and relevant supplementary equations; [Open thermophysical property evaluation — Bell and colleagues](../sources/Open-Thermophysical-Library-Bell-and-Colleagues.lingua#r_33XEMZDJ2BMYZ0GDFGWDTV1C95), the full methods paper; [CoolProp — thermophysical property models and methods](../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1), the complete applicable API/backend documentation.
+
+Extend [Compare fluid property models with primary data](../practice/Compare-water-and-fluid-property-models-with-primary-data.lingua#r_73W5C0HV0M8PZT25HEVJ0CMJJZ) into a reproducible comparison of a fundamental formulation, an industrial approximation and independent evaluated or experimental evidence. Include compressed liquid, vapour, coexistence and a carefully bounded near-critical investigation. Explain why a saturation state needs different independent information from a homogeneous state.
+
+Reconstruct selected derivatives from the fundamental potential and check them against thermodynamic identities. Examine the numerical effects of input-pair inversion, cancellation, branch selection and differing reference states. Make failed or ambiguous states explicit outputs of the investigation rather than silently discarding them.
+
+Deliver a state-domain map, independently checked release examples, uncertainty interpretation and a sensitivity study for a complete thermal process. Separate formulation agreement, implementation agreement and physical validation. Discuss how property uncertainty affects the process conclusion, especially where a small temperature or enthalpy difference is decisive.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7T579Q9VKRZN1S0DJFKR4KX2ZV

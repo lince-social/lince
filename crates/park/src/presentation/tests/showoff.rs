@@ -204,7 +204,6 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         "The GLB did not contribute visible colored pixels"
     );
     capture("flat", &before);
-    benchmark(&mut canvas, "flat");
     let (map, map_position, map_camera) = canvas
         .world_mut()
         .query::<(
@@ -637,7 +636,6 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         "The GLB disappeared when switching to 3D"
     );
     capture("spatial", &spatial_pixels);
-    benchmark(&mut canvas, "spatial");
     overview_case(&mut canvas, root, space, model);
     let geometry = canvas.probe_frame().unwrap().geometry.unwrap();
     if !geometry
@@ -1000,29 +998,6 @@ fn capture(name: &str, pixels: &[u8]) {
         image.extend_from_slice(&pixel[..3]);
     }
     std::fs::write(directory.join(format!("showoff-{name}.ppm")), image).unwrap();
-}
-
-fn benchmark(canvas: &mut Presentation, stage: &str) {
-    let Some(directory) = std::env::var_os("LINCE_PARK_TEST_ARTIFACTS") else {
-        return;
-    };
-    let mut samples = Vec::with_capacity(120);
-    for _ in 0..120 {
-        let start = std::time::Instant::now();
-        let frame = canvas.probe_frame().unwrap();
-        assert!(frame.ready().unwrap());
-        samples.push(start.elapsed().as_secs_f64() * 1000.0);
-    }
-    let average = samples.iter().sum::<f64>() / samples.len() as f64;
-    samples.sort_by(f64::total_cmp);
-    let report = serde_json::json!({"stage": stage, "frames": samples.len(), "average_ms": average,
-        "median_ms": samples[60], "p95_ms": samples[114], "maximum_ms": samples[119],
-        "throughput_fps": 1000.0 / average, "measurement": "native update, GPU rendering and fence completion; uncapped, no physical scanout"});
-    std::fs::write(
-        std::path::PathBuf::from(directory).join(format!("showoff-{stage}-timing.json")),
-        serde_json::to_vec_pretty(&report).unwrap(),
-    )
-    .unwrap();
 }
 
 fn descendant(world: &World, mut entity: Entity, parent: Entity) -> bool {

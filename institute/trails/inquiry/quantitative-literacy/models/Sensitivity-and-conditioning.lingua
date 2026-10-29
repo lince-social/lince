@@ -1,0 +1,23 @@
+Import "../Quantitative-literacy.lingua"
+
+Sensitivity, cancellation, dependencies, and conditioning (@ql-sensitivity: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-street, #source @ql-source-uncertainty, #source @ql-source-algebra, #quantitative-literacy "Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX", #reproducible-computation "../../reproducible-computation/numerics/Conditioning-and-stable-algorithms.lingua#r_5MC7MFQ2BE6S2JFMJXR1RJ45SY", #electrical-power-engineering "../../metrology/uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3", #thermodynamics-and-heat-transfer "../../metrology/uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3") { r_43NVV3KJX9W9R026T1NKCYMP3T
+**Read:** Street-Fighting Mathematics, Taking out the big part, in full; NIST TN 1297 sections 3–7 and appendix A. Return to Algebra and Trigonometry's functions when a transformation is unfamiliar. Distinguish a first-order approximation from an exact bound while working each example.
+
+For a small change in y = x^p, the relative response is approximately p times the relative input change. This can be derived by expanding (1 + ε)^p to first order, with the omitted terms assessed for the chosen ε. The local relative condition measure |x f′(x)/f(x)| formalizes the response where the derivative and ratios exist; the preceding power-law example introduces its meaning before a full calculus treatment.
+
+Subtraction can magnify relative uncertainty. If A = 100.0 ± 0.1 and B = 99.0 ± 0.1 in the same unit, independent hard bounds give A − B between 0.8 and 1.2. Tiny relative input intervals have produced a 20% interval relative to the nominal difference. A more precise calculator cannot repair uncertain inputs.
+
+For standard uncertainties and a differentiable measurement model y = f(x₁,...,x_n), the first-order variance expression is u²(y) ≈ Σ_i Σ_j c_i c_j cov(x_i,x_j), with sensitivity coefficients c_i = ∂f/∂x_i. Independent inputs remove covariance terms; a shared calibration offset may instead cancel in a difference. Hard bounds and standard uncertainties require different interpretations.
+
+**Work:** derive the relative sensitivity of cylinder volume to diameter and height and compare equal fractional input changes. Analyze the A − B example under independent errors and under an identical common offset. Explain the difference between an ill-conditioned question, an unstable computational method, and an invalid physical model. State a case where the first-order approximation is insufficient and identify what a nonlinear treatment would need.
+
+**Continue in reproducible computation:** [Distinguish a sensitive question from an unstable algorithm](../../reproducible-computation/numerics/Conditioning-and-stable-algorithms.lingua#r_5MC7MFQ2BE6S2JFMJXR1RJ45SY).
+
+**Continue:** [Discretization — approximate a changing process and check it](Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in electrical power engineering:** [Model discrepancy, double counting, and sensitivity to assumptions](../../metrology/uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3).
+
+**Continue in thermodynamics and heat transfer:** [Model discrepancy, double counting, and sensitivity to assumptions](../../metrology/uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3).
+} r_43NVV3KJX9W9R026T1NKCYMP3T

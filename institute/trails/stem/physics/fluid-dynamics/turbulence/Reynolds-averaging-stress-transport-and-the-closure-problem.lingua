@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Reynolds averaging, stress transport and the closure problem (@fd-rans: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #fluid-dynamics "Wall-units-inner-outer-scales-and-roughness.lingua#r_5R0RB1C4ZP85MKS4SJ8DPE2D9T") { r_2WR3KYF31R7RJSN20P6PKS0PM0
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 6 Reynolds-averaged equations; [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), closure and turbulence-energy budgets; [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), precise model equations and variants.
+
+Averaging the incompressible momentum equation produces the additional flux ρ⟨u′_i u′_j⟩. If moved to a stress-like right-hand side it appears with a minus sign. Derive that convention explicitly. The mean velocity and pressure equations contain new unknown correlations, and equations for those correlations introduce further higher-order terms.
+
+Derive the turbulent kinetic-energy budget, separating production by mean shear, transport, pressure effects and viscous dissipation. In a locally homogeneous incompressible form, production is −⟨u′_i u′_j⟩∂U_i/∂x_j. Identify which terms exchange energy among components, redistribute it in space or transfer it to internal energy.
+
+An eddy-viscosity model assumes a relation between anisotropic stress and mean strain. It is a constitutive approximation to averaged dynamics, not the molecular viscosity law. Compare it with a Reynolds-stress transport closure and explain why rotation, curvature, strong separation or anisotropy can challenge a scalar relation. Evaluate the actual selected model and variant rather than the acronym alone.
+
+**Continue:** [Wall units, inner and outer scales, and roughness](Wall-units-inner-outer-scales-and-roughness.lingua#r_5R0RB1C4ZP85MKS4SJ8DPE2D9T).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2WR3KYF31R7RJSN20P6PKS0PM0

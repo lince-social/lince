@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: heat exchange, storage and delivery duty (@th-study-exchanger: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_3K1JM0SXJXEM7H9D5XRWTMZ7VK
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete exchanger and applicable transport chapters; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), the full cycle and open-system accounts; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), complete relevant material/phase properties; [CoolProp — thermophysical property models and methods](../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1), actual property-method documentation.
+
+Begin with [An inspectable counterflow exchanger and limiting cases](../computation/An-inspectable-counterflow-exchanger-and-limiting-cases.lingua#r_2PWXETQRX007J85DKXCPCE7W71) and independently recover its temperature profiles and limiting cases. Then define a complete duty with variable inlet conditions, actual fluid properties, pressure loss and a required delivery temperature. Choose an exchanger arrangement and state the evidence behind its heat-transfer method.
+
+Add a thermal store with explicit charging, standby and discharge phases. Compare usable energy, exergy, power and cycling history. Examine fouling, flow maldistribution and uncertain property/contact terms before drawing a performance conclusion.
+
+Deliver a reconciled stream-by-stream account, independently checked reduced and detailed models, uncertainty and an inspectable proposal or performed test. Include utility demand, cleaning, replacement and return-to-service evidence. A nominal UA and energy capacity alone do not demonstrate a deliverable thermal service.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3K1JM0SXJXEM7H9D5XRWTMZ7VK

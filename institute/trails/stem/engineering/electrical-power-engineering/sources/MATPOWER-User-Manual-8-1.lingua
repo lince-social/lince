@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+MATPOWER User’s Manual, version 8.1 (@pe-matpower: 0, is #reference, #part-of @pe-sources) { r_5ANPNGQHP93EVQXR6FW357WSEV
+Ray D. Zimmerman and Carlos E. Murillo-Sánchez. MATPOWER User's Manual 8.1, 12 July 2025. [Complete 265-file-page manual](https://matpower.org/docs/MATPOWER-manual-8.1.pdf) · [Project](https://matpower.org/) · [Software licence](https://matpower.org/license/).
+
+Read the whole manual and reconstruct its models and applicable examples: branch/generator/load/shunt representations, AC/DC and distribution power flow, continuation, OPF, constraints, extensions and solver choices. Use a pinned version and compare independent calculations before a larger case.
+
+Title, date, contents and terms were inspected on 29 October 2026. The code uses BSD-3-Clause, but the manual retains PSerc copyright, cases are explicitly outside that software licence and optional solvers have separate terms. These distinctions matter when exporting a research package. The full steady-state formulation does not by itself provide time-domain stability or electromagnetic-transient simulation. No software, cases, solver or manual is bundled or claimed to have been run during trail assembly.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_5ANPNGQHP93EVQXR6FW357WSEV

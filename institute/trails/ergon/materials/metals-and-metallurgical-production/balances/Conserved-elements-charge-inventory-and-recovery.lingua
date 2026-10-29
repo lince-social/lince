@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Close conserved-element and inventory accounts before judging metallurgical performance (@metal-balance: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #metals-and-metallurgical-production "An-inspectable-three-feed-charge.lingua#r_3WVFHB258A1DYT3PE8KX78EGD5") { r_1B1CBH4MSY63JZCHDPZHCJ095E
+**Read:** [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the full material-balance sequence and worked extraction cases; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), one complete multi-stream metal-production case; [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), reuse measurement covariance, uncertainty, and model validation.
+
+Write the physical boundary, period, streams, components/species, units, and material states. In a reacting system, total elements are conserved even though species and phases change. A mass balance can include external oxygen, water, reductant, flux, electrodes, or dissolved material that a metal-only account omits.
+
+For a chosen element, input minus output equals accumulation when no nuclear transformation is involved. Distinguish dissolved, entrained, vaporized, dust-carried, slag-associated, and metallic forms where they matter. A measured recovery can be biased by timing, moisture, sampling, or unmeasured inventory rather than process chemistry.
+
+Separate a physically closed account, reconciled estimates under an uncertainty model, and actual evidence that the assumed boundary is complete. A good numerical fit does not identify a missing stream or correct a biased sample. Preserve raw observations and the model used to reconcile them.
+
+**Work:** reconstruct a full metallurgical case with several products and residual streams. Independently close at least the target element and a consequential impurity, identify inventory changes, and compare wet/dry and element/compound bases. Reconcile inconsistent measurements with stated uncertainty and investigate an alternative explanation. The next original exercise isolates a small charge-selection problem so its mathematical result can be checked exactly before larger plant models are used.
+
+**Continue:** [Choose a bounded three-feed charge with exact balances and a stated impurity limit](An-inspectable-three-feed-charge.lingua#r_3WVFHB258A1DYT3PE8KX78EGD5).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_1B1CBH4MSY63JZCHDPZHCJ095E

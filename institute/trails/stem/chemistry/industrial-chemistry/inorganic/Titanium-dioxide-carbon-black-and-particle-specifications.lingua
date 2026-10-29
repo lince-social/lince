@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Explain pigment and carbon products through route chemistry and particle evidence (@ic-pigment-carbon: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4", #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #industrial-chemistry "../organic/Carbon-feedstocks-molecular-mixtures-and-source-boundaries.lingua#r_0EB7JVAJMYYF2Z76CM4R0Z91PG") { r_55ZHS5ZZTXKHTGN92D6D77BHN4
+**Read:** [Large Volume Inorganic Chemicals — Solids and Others Industry, BREF LVIC-S](../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4), the whole titanium-dioxide and carbon-black chapters with generic product and environmental methods; [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the complete relevant specialty-pigment treatment; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the full titanium-dioxide example if using the authorized second edition.
+
+Titanium-dioxide and carbon-black production illustrate why chemical identity alone is insufficient for industrial solids. Crystal form, particle/aggregate distribution, surface treatment, impurities, color or optical behavior, and application performance can distinguish useful grades.
+
+For titanium dioxide, compare complete chloride and sulfate route descriptions through feed, intermediate chemistry, purification, product formation and residuals. For carbon black, distinguish controlled carbon-forming chemistry and product structure from indiscriminate combustion residue. Neither family is defined fully by a bulk elemental assay.
+
+Trace gases, acids/salts, heat, water, particles and surface-treatment substances through the process. Finishing and packaging can change contamination or physical distribution. A claimed change in yield or energy must be compared at the same actual grade/function and supporting measurement conditions.
+
+**Work:** reconstruct one complete detailed product chapter and a justified alternative route/grade using the primary technical methods. Independently close the target and consequential impurity accounts, compare utilities/residuals and explain the structural/surface observations linking production to application. Identify a further experiment capable of challenging the proposed causal explanation.
+
+**Continue:** [Define carbon feedstocks by composition, origin, variability and the intended transformation](../organic/Carbon-feedstocks-molecular-mixtures-and-source-boundaries.lingua#r_0EB7JVAJMYYF2Z76CM4R0Z91PG).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_55ZHS5ZZTXKHTGN92D6D77BHN4

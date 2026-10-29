@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Preserve spatial control from exploration observations to operating geometry (@mine-survey: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #mining-and-mineral-engineering "../../../../inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH") { r_1ZDJAQC4S016X5KHEY4RK8GKBE
+**Read:** [Engineering Geology Field Manual — U.S. Bureau of Reclamation](../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE), volume I mapping/documentation and volume II survey/core-handling methods in full; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete mine layout and survey-related sections; [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the full relevant geometry/layout lectures.
+
+Mine geometry depends on a defined spatial reference, survey control, instrument/method, uncertainty, and updates as workings change. Surface and underground coordinates, elevations, orientation references, and historical plans must be reconciled before combining observations or evaluating clearances and volumes.
+
+Survey precision, reference accuracy, interpolation, map generalization, and geological uncertainty are separate. A dense digital point cloud or a highly zoomed model cannot repair an incorrect datum, unmeasured hidden surface, or misidentified contact. Preserve control and transformation information.
+
+Mine plans connect observed workings, geological interpretations, equipment routes, utilities, ground conditions, and operating boundaries. A planned excavation and an as-built/surveyed excavation can differ. Record what was measured, inferred, approved for a particular purpose, or superseded.
+
+**Work:** reconstruct a published teaching survey/plan with explicit units, datums, control, and uncertainty. Independently check a distance, gradient, volume, or coordinate transformation. Compare a planned and observed geometry and explain what new observations would resolve a consequential mismatch.
+
+Read the full field/manual survey and documentation sections and the mine-layout course material. Practical surveying requires actual suitable instrument work; a document/CAD reconstruction demonstrates a different scope. Continue through [A specimen, a sampling target, and a result about a population](../../../../inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH) for shared sampling reasoning before defining a mine-specific sampling programme.
+
+**Continue:** [A specimen, a sampling target, and a result about a population](../../../../inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1ZDJAQC4S016X5KHEY4RK8GKBE

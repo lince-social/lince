@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Connect molecular orbitals with magnetism and extended electronic states (@gc-mo: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../states/Intermolecular-forces-and-collective-behavior.lingua#r_2QKWV1YDBB61H0GZN5A4GWRAYH") { r_726ETM9745704A826Y42QSVD0T
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 8’s molecular-orbital treatment and exercises; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), lectures 26–28 and 34; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the bonding tutorial including molecular orbitals and band ideas.
+
+Molecular-orbital descriptions combine suitable basis functions into states spread across a molecular system. Symmetry, relative energies, overlap, electron count, and occupation determine the model. Bonding and antibonding character depend on how a state changes electron distribution and energy for the specified system.
+
+For simple diatomic teaching models, compare occupied bonding/antibonding counts and derive a bond-order account. The familiar O₂ model has unpaired electrons and helps explain paramagnetism, while N₂ illustrates a different occupation and bond order. Treat the model's ordering and assumptions explicitly, especially when moving between species or to heteronuclear systems.
+
+As many interacting atoms are considered in a periodic solid, dense sets of electronic levels support a band description. Electron occupation, allowed states, structure, and defects help distinguish metallic, insulating, and semiconducting behavior. This is a conceptual entrance; transport, device behavior, and quantitative band theory remain deeper subjects.
+
+**Work:** construct selected diatomic orbital diagrams with justified electron counts and test predictions against stated magnetic/bonding evidence. Explain why one localized Lewis drawing misses an observation that the orbital model addresses. Then reconstruct the logic of MIT's lecture on metals and semiconductors without pretending that a band sketch specifies an entire manufactured device.
+
+Read the full molecular-orbital sections and later polyatomic/solid-state lectures. Keep a clear distinction between a useful approximate electronic model and a measured material property. This shared language will connect chemical bonding to catalysis, coordination, materials, mineral structure, and chip production.
+
+**Continue:** [Explain bulk properties through interactions and collective states](../states/Intermolecular-forces-and-collective-behavior.lingua#r_2QKWV1YDBB61H0GZN5A4GWRAYH).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_726ETM9745704A826Y42QSVD0T

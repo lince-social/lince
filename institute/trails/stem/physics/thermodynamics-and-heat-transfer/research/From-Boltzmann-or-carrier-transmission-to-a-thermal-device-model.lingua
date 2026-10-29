@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: kinetic transport and a thermal device model (@th-study-kinetic: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_5KM133WBJ8D6KSRXCHDEZW1270
+**Read:** [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), the entire available graduate programme; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), the entire review and selected full primary studies; [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), measurement interpretation where used.
+
+Complete MIT 2.57's available lectures, notes, homework, exams and project material. Derive a kinetic transport model and its continuum limit, keeping the microscopic and macroscopic boundary assumptions explicit. Compare scattering and geometry scales before choosing a reduced description.
+
+Solve a bounded ballistic-to-diffusive problem by independent methods or checked limits. Examine carrier distributions, spectral contributions, interface transmission and conservation. If a relaxation-time approximation is used, identify the physical information it discards and how that affects the intended observable.
+
+Deliver a reproducible study linked to a real thin film, interface, device or manufacturing material with inspectable evidence. Explain which temperature or effective property is experimentally meaningful. Compare the result with a Fourier description and state where a simpler continuum model remains adequate.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5KM133WBJ8D6KSRXCHDEZW1270

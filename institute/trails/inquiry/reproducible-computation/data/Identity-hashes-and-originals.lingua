@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Preserve originals and distinguish identity from location (@rc-identity: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #reproducible-computation "Provenance-and-assumptions.lingua#r_3SY3NX6PMTJVV8AKSKEC9YHFQB") { r_39P9KR6GAJ6ST89N2JXND7HBCX
+**Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), hashlib and filesystem reading; [Deterministic artifacts and environmental variation — Reproducible Builds](../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A), verification and checksums; [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), data and software identity recommendations.
+
+Keep original input bytes recoverable and write derived outputs separately. A URL or path locates material under current conditions; a cryptographic digest identifies a particular byte sequence with extremely strong collision resistance under the algorithm's assumptions. The two pieces of information serve different purposes. A digest without available bytes cannot restore a lost dataset.
+
+The teaching report includes SHA-256 digests of the exact input and analysis-script bytes. If a CSV row order changes, the input digest changes even when the calculated totals do not. If a source file's formatting changes, its code digest changes even if its mathematical behavior remains the same. These differences correctly report byte identity; interpret scientific equivalence separately.
+
+A digest does not authenticate an unknown source, establish permission to use it, prove that the reported script actually ran, or validate its scientific assumptions. Preserve acquisition provenance and appropriate authentication evidence as well as content identity. For mutable upstream resources, retain a permitted specific version in your own research storage or document the limits of relying on future access; this trail itself links sources externally.
+
+**Work:** compute a digest for the original teaching CSV, copy the file under another name, and confirm the digest is unchanged. Edit one whitespace character and inspect the change. Restore the original bytes and compare both the parsed scientific values and the digest. Explain why a checksummed publication can still contain a consistently mislabelled unit.
+
+During later reconstruction record which bytes were actually used, where an authorized copy can be obtained, and which edition or revision a reference describes. For a directory or composite artifact, specify the membership and ordering used to compute an identity rather than treating a directory name as a checksum.
+
+**Continue:** [Connect each result to its inputs, activity, and responsibility](Provenance-and-assumptions.lingua#r_3SY3NX6PMTJVV8AKSKEC9YHFQB).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_39P9KR6GAJ6ST89N2JXND7HBCX

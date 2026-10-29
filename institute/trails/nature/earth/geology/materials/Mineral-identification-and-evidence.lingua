@@ -1,0 +1,21 @@
+Import "../Geology.lingua"
+
+Identify a mineral through converging properties and context (@geo-mineral-id: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #source "../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z", #geology "Textures-structures-and-rock-classification.lingua#r_6YHWHD1G11JAT700N6FVMHVP5N", #mineralogy-and-petrology "../../mineralogy-and-petrology/foundations/Species-groups-varieties-and-materials.lingua#r_165HC53VTHME15GHWW142V3X7X") { r_4V80T5SEAWK0JPVQTJ29YSH6F4
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 2 in full and the mineral/rock review; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete Mineral Identification lab and guide; [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z), the complete mineral lab.
+
+Use several properties and the specimen's context to support a mineral identification. Crystal form, cleavage/fracture, hardness, density, optical behavior, composition, and other suitable observations constrain alternatives. A property test has a method and limitations; a weathered or composite specimen can produce misleading results.
+
+Distinguish cleavage from external crystal faces and fracture, and a grain from the surrounding rock. A mineral group's structure/composition can help explain diagnostic behavior. Named specimens and images are useful preparation, but a single photo seldom provides every property required to distinguish similar materials confidently.
+
+Use identified teaching specimens and appropriate laboratory procedures for practical tests. A proposed identification should state the observed property combination, alternatives, uncertainty, and any additional analytical evidence needed. An instrument result may refine composition or structure while introducing its own reference and interpretation requirements.
+
+**Work:** complete the full mineral-identification lab, record unknowns before consulting a key, and explain each decision. Compare two plausible identifications with overlapping visual properties. Reconstruct a mistake caused by weathering, a mixed grain, or an incorrect property interpretation and show how independent evidence resolves it.
+
+Read the complete mineral chapter and MIT guide rather than collecting names alone. Later mineralogy will deepen crystallography, optical/mineral analysis, phase relationships, and research; the general geology outcome is an evidence-based identification that can support a broader material and history interpretation.
+
+**Continue:** [Read a rock’s texture, structure, composition, and alteration together](Textures-structures-and-rock-classification.lingua#r_6YHWHD1G11JAT700N6FVMHVP5N).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+
+**Continue in mineralogy and petrology:** [Distinguish a mineral species from a group, variety, phase, or material name](../../mineralogy-and-petrology/foundations/Species-groups-varieties-and-materials.lingua#r_165HC53VTHME15GHWW142V3X7X).
+} r_4V80T5SEAWK0JPVQTJ29YSH6F4

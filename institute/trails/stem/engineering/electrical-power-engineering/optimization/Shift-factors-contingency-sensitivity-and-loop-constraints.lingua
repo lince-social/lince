@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Shift factors, contingency sensitivity and loops (@pe-network-sensitivity: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H", #electrical-power-engineering "../computation/An-inspectable-constrained-three-bus-dispatch.lingua#r_54G856GK2G38HP34VQS8TMK974") { r_4WYSCK4TH179602Y518AC6S7QJ
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete linear-shift-factor and network methods; [PowerModels.jl — formulations, methods and primary paper](../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H), full applicable AC/DC formulations and comparisons.
+
+Differentiate a stated network model to relate injection changes to angles, voltages or branch flows. In the linearized AC active-flow model, shift factors depend on network topology, branch parameters, reference/transaction definition and the balancing rule. They are not immutable properties of a named line or generator.
+
+Derive a small meshed example from its reduced Laplacian and verify both nodal and loop relations. Compare an injection transfer with a generator change balanced elsewhere. For line-outage sensitivity, identify the assumptions and detect islanding or singular cases where a simple formula no longer represents the changed system.
+
+Use [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV)'s full factor/model documentation and compare the result against directly resolving the changed network. Then compare with the nonlinear AC response as voltage, reactive flow or losses become important. Quantify the validity range rather than treating a small residual in the approximate model as physical accuracy. The later contingency and planning studies use these sensitivities as tools whose scope must remain attached to each conclusion.
+
+**Continue:** [An inspectable constrained three-bus dispatch](../computation/An-inspectable-constrained-three-bus-dispatch.lingua#r_54G856GK2G38HP34VQS8TMK974).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4WYSCK4TH179602Y518AC6S7QJ

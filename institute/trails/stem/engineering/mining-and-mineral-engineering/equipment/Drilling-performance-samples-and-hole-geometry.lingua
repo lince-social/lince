@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Interpret drilling through mechanics, material response, geometry, and observations (@mine-drilling: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE", #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #mining-and-mineral-engineering "Fragmentation-damage-and-measured-outcomes.lingua#r_7C30NWH7DEGACXKY6AETKPZH9Z") { r_5TSTAC4EF6KQJKKYW66XVSRNNJ
+**Read:** [Engineering Geology Field Manual — U.S. Bureau of Reclamation](../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE), the complete exploration-drilling, core-log, and handling sections; [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the full drilling/equipment context; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete drilling and related performance sections.
+
+Drilling serves exploration, investigation, access/services, production, or other purposes, with different hole quality and information requirements. Rotation, impact, thrust, flushing, tool/bit design, material structure, wear, and operating conditions interact. Penetration rate alone does not measure the full result.
+
+Separate torque/rotation work, axial work, fluid/pneumatic power, equipment losses, and time. In a simple invented rotational account, torque 100 N m at 2 revolutions s⁻¹ corresponds to P = 2πnτ ≈ 1.2566 kW. This is one mechanical term, not the total machine requirement or a recommended setting.
+
+Hole deviation, collar/reference position, recovery, cuttings mixing, contamination, depth measurement, and orientation affect information and later work. An exploration assay or geotechnical log inherits that observation chain; a fast hole with unsuitable quality can fail its intended purpose.
+
+**Work:** reconstruct a complete drilling/investigation method and compare measured performance/quality under stated conditions. Independently check the power example and a time/recovery account. Explain which observations distinguish material variability, wear, machine loss, or sampling error as the source of a discrepancy.
+
+Read full drilling/logging and equipment chapters. Practical competence includes the actual equipment, site, method, and professional operating context, while document/data studies should explain their own scope and uncertainty.
+
+**Continue:** [Evaluate fragmentation by its material, ground, and operating consequences](Fragmentation-damage-and-measured-outcomes.lingua#r_7C30NWH7DEGACXKY6AETKPZH9Z).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_5TSTAC4EF6KQJKKYW66XVSRNNJ

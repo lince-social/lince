@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Identify the interpreter and the code it actually imports (@rc-runtime: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Python-Environments-and-Packaging.lingua#r_5VVAF04TH8R3DRY9Z36308BH88", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Isolation-resolution-and-locks.lingua#r_5BEV7Q4J6K3CGCFRHANDW6JXRY") { r_135ETSE2H731NE6R14RF7XQ9VG
+**Read:** [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), modules, import behavior, sys, and command-line invocation; [Environments, dependency records, and packaging — PyPA](../sources/Python-Environments-and-Packaging.lingua#r_5VVAF04TH8R3DRY9Z36308BH88), virtual environments and installing packages; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Reproducible Environments.
+
+A command named python3 selects a program according to the launching environment. A notebook's kernel can use a different interpreter from its terminal. An installed distribution can coexist with a local module of the same import name. Record the executable, exact version, implementation, imported module locations/versions where relevant, and the selected environment rather than inferring them from a familiar command prompt.
+
+The analysis depends on language semantics and standard-library behavior as well as its own source. The examples are validated with the repository's Python 3.13 environment, whose exact patch version belongs in the verification account. Using only the standard library narrows the dependency set; it does not eliminate the interpreter, platform, or filesystem assumptions.
+
+Separate installed artifacts from declarations. A dependency file says what a tool was asked to obtain under a particular interpretation. Inspection of the running process says what it actually used. Both are useful. A local edited package, unexpected import search path, or stale notebook kernel can invalidate the inference that a declared environment describes an observed run.
+
+**Work:** print sys.executable, sys.version, and the file location of the imported analyze module in a fresh process. Compare them with the environment recorded for a notebook and a shell invocation. Introduce an innocently named local module that shadows an intended import in a disposable exercise directory, then diagnose the mismatch without changing the scientific formula.
+
+Define the smallest environment information needed for the project's claim, but retain enough to investigate a discrepancy. A successful reconstruction under a second interpreter version is evidence of agreement for the tested cases; it is not a guarantee for every operation or future release.
+
+**Continue:** [Distinguish isolation, dependency resolution, pins, and available artifacts](Isolation-resolution-and-locks.lingua#r_5BEV7Q4J6K3CGCFRHANDW6JXRY).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_135ETSE2H731NE6R14RF7XQ9VG

@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Use stereographic constructions and directional data with explicit conventions (@geo-stereonet: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "Balanced-sections-and-geological-restoration.lingua#r_4010RK1GC4QCECKQS9J3RWZ365") { r_380V6STKXAYNFT1AKQ6P6CK4YM
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), Stereographic Projection, Lab 3, and fold-analysis applications in full; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete stereonet exercise.
+
+A stereonet represents three-dimensional orientations on a two-dimensional projection. Identify equal-angle versus equal-area projection, hemisphere, line or pole representation, and the orientation convention before comparing marks. A plane is represented by a great circle or pole under the specified construction; a line uses a point.
+
+Intersections, angles, rotations, and fold-axis constructions connect graphical operations with spatial geometry. A concentration of poles may reflect a structure, sampling, measurement procedure, or a mixed population. Treating azimuths as ordinary scalar values fails at the wraparound: directions 359° and 1° do not average to 180°.
+
+Separate a measured orientation population from an inferred fold model. Bedding poles near a girdle can support an interpretation under appropriate geometry and geological context; scattered or mixed data may admit other explanations. Weighting repeated measurements from one small exposure as independent regional samples can distort the apparent population.
+
+**Work:** complete stereographic Lab 3 and the MIT exercise by construction, then compare selected results with vector calculations. Explain the apparent discrepancy produced by a hemisphere or strike-convention mismatch. Analyze an orientation dataset preserving observation identity, grouping, spatial distribution, and uncertainty; test whether one fold model is supported rather than forcing every point onto it.
+
+Read the complete projection and relevant fold-analysis sections. Use software as a reproducible implementation of known geometry, recording conventions and version. A plotted density maximum is an analysis result whose geological meaning still needs evidence.
+
+**Continue:** [Restore structures while testing conservation assumptions and nonuniqueness](Balanced-sections-and-geological-restoration.lingua#r_4010RK1GC4QCECKQS9J3RWZ365).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_380V6STKXAYNFT1AKQ6P6CK4YM

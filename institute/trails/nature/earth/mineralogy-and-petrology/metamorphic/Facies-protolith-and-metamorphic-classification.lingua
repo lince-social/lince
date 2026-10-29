@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Use facies and rock names without assigning a universal pressure-temperature point (@mp-facies: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #source "../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR", #mineralogy-and-petrology "Balance-reactions-and-read-petrogenetic-grids.lingua#r_2VYNSCYCWXZHBJNGVNHHKJPDSK") { r_0GDYP376EMTYS89VYE9BFH5AR7
+**Read:** [Rock Classification Scheme — British Geological Survey](../sources/BGS-Rock-Classification-Scheme.lingua#r_0715XKKA34SBMSRTCCZD3KJQEH), the complete metamorphic report; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the full metamorphic facies/grade notes; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the complete metamorphic classification and assemblage treatment; [O uso de pseudosseções em Petrologia Metamórfica — Gengo and colleagues](../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR), the full introductory system/phase discussion.
+
+Metamorphic rock names combine observed mineralogy, texture, composition, and sometimes inferred protolith under an identified scheme. A foliation or compositional band does not alone define every origin. Preserve descriptive observations when a protolith interpretation remains uncertain.
+
+Facies summarize characteristic mineral assemblages over ranges of conditions for appropriate bulk compositions and fluid/other constraints. They are not exact universal thermometer/barometer points. The same condition can produce different minerals in different protoliths, while different histories can preserve overlapping assemblages.
+
+Index minerals, zones, and metamorphic grade are useful under their regional/compositional context. An absent indicator phase may reflect chemistry, reaction progress, kinetics, or preservation rather than failure to reach one exact temperature. Distinguish a regional mapping label from a domain-specific quantitative calculation.
+
+**Work:** read the complete classification report and compare metapelite, metabasite, and carbonate-rich examples across a specified condition range. Explain which phases are predicted by chemistry and which observations constrain a facies interpretation. Classify an altered/deformed sample with uncertainty and compare a plausible alternative protolith.
+
+Read the full facies and rock-description sequence before the advanced methods. The later pseudosection study will retain these useful organizing ideas while explicitly solving for selected compositions, phases, models, and constraints rather than replacing them with an unqualified colored field.
+
+**Continue:** [Balance metamorphic reactions and interpret their equilibrium boundaries](Balance-reactions-and-read-petrogenetic-grids.lingua#r_2VYNSCYCWXZHBJNGVNHHKJPDSK).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_0GDYP376EMTYS89VYE9BFH5AR7

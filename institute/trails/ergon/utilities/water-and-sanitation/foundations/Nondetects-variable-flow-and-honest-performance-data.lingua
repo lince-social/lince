@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Nondetects, variable flow and honest performance data (@wu-data: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #water-and-sanitation "Explain-a-water-service-before-choosing-equipment.lingua#r_1W8ZYY57AZEJ50E80HZHN59QSW") { r_2W5V6AZSRSXK1CKFJ20BSAFN5F
+**Read:** [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), chapters 5–11, with complete worked examples and independent recalculation.
+
+A nondetect is bounded information tied to a method and sample, not a measured zero. Treating all nondetects as zero or as half a limit can distort means, loads, trends and apparent log reductions. State the censoring mechanism and use a method justified for the actual dataset.
+
+Removal based on concentration can differ from removal based on load. For 1000 m³/day at 200 mg/L, influent load is 200 kg/day. If clean dilution increases discharge to 2000 m³/day at 10 mg/L, effluent load is 20 kg/day: load reduction is 90%, while the unqualified concentration comparison gives 95%. The water account explains the difference.
+
+Keep original observations, quality flags, detection limits, flow records and processing decisions. Examine unusual events, missing data, seasonality and serial dependence before choosing an average or hypothesis test. Compare paired process observations on compatible time and residence-time bases; an inlet sample and simultaneous outlet sample may describe different parcels.
+
+**Continue:** [Explain a water service before choosing equipment](Explain-a-water-service-before-choosing-equipment.lingua#r_1W8ZYY57AZEJ50E80HZHN59QSW).
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+} r_2W5V6AZSRSXK1CKFJ20BSAFN5F

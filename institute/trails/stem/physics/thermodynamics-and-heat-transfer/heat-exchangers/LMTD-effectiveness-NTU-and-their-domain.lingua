@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+LMTD, effectiveness–NTU and their domain (@th-lmtd-ntu: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #thermodynamics-and-heat-transfer "../computation/An-inspectable-counterflow-exchanger-and-limiting-cases.lingua#r_2PWXETQRX007J85DKXCPCE7W71") { r_3251QEQQX1R6BSNHQAXZ9WHYNQ
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete LMTD and effectiveness–NTU derivations; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), energy and entropy accounts for open systems.
+
+The logarithmic mean temperature difference follows from integrating a particular constant-property exchanger model. Derive it with the declared flow arrangement and total conductance. The apparent singularity when the two end differences are equal has a finite limiting value.
+
+Effectiveness ε = Q/Q_max and NTU = UA/C_min provide another representation of the same restricted problem. The ratio C_min/C_max and flow arrangement determine the relation. A phase-changing stream, multipass geometry, bypass or strongly variable property may require another model or correction.
+
+Use [An inspectable counterflow exchanger and limiting cases](../computation/An-inspectable-counterflow-exchanger-and-limiting-cases.lingua#r_2PWXETQRX007J85DKXCPCE7W71) to compare effectiveness with an independently solved temperature-difference/energy account. Recover zero-conductance, equal-capacity-rate and large-area limits. Do not infer area from a single fitted UA without its actual area basis, flow state and fouling history.
+
+**Continue:** [An inspectable counterflow exchanger and limiting cases](../computation/An-inspectable-counterflow-exchanger-and-limiting-cases.lingua#r_2PWXETQRX007J85DKXCPCE7W71).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3251QEQQX1R6BSNHQAXZ9WHYNQ

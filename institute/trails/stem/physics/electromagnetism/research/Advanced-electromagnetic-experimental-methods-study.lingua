@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced electromagnetic experimental methods (@em-experimental-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Experimental-Physics-MIT-Junior-Lab.lingua#r_55H9HGYP31B14NSEEAZY27PW5E", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_6V7JSTPNM2G9CRC96YV3T2BMHD
+**Read:** [Experimental Physics I and II — MIT Junior Lab](../sources/Experimental-Physics-MIT-Junior-Lab.lingua#r_55H9HGYP31B14NSEEAZY27PW5E), entire applicable guide and experiment/reporting programme; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), complete applicable primary measurement method.
+
+Select an appropriate full [Experimental Physics I and II — MIT Junior Lab](../sources/Experimental-Physics-MIT-Junior-Lab.lingua#r_55H9HGYP31B14NSEEAZY27PW5E) noise/radio experiment or a complete material measurement from [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91). Read all apparatus, calibration, analysis and reporting material, plus the physical chapters it depends on. Identify whether a quantum/statistical extension is needed and develop that specific background rather than silently assuming it.
+
+Form a quantitative prediction before measurement, construct a signal-chain model and design controls that distinguish the proposed mechanism from competing explanations. Record geometry, bandwidth, reference plane, environmental influences, repeatability, systematic effects and correlated uncertainty. Use competent supervision and suitable facilities for physical work; a complete documentary reconstruction or analysis of authorized existing data should be labelled as such.
+
+Compare the result with an independently predicted condition or altered apparatus setting. Analyze negative results and deviations without tuning away all disagreement. State what the observation establishes about the model and what remains conditional. A report should include derivations, raw-evidence provenance, methods, analysis, uncertainty and a revised conclusion, sufficient for a knowledgeable reader to criticize or reproduce the reasoning. Practical competence requires actual appropriate physical experience beyond reading an apparatus guide.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_6V7JSTPNM2G9CRC96YV3T2BMHD

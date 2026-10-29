@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect maintenance strategy with condition evidence, work, and production (@mine-maintenance: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #mining-and-mineral-engineering "../utilities/Power-energy-carriers-and-mine-service-dependencies.lingua#r_4M4H1HKKB12X8XTAVE6Q8EM4SJ") { r_0T3Y0YNBQ4XF6C6J2Q8KQ70MXH
+**Read:** [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full maintenance and equipment-operation treatment; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant maintenance/reliability chapters; [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the full applicable current equipment/work responsibility context.
+
+Maintenance includes inspection, condition assessment, preventive/corrective work, diagnosis, repair, verification, records, and return to service. A calendar interval, sensor alarm, spare part, and qualified task are different pieces of an operating system. Define failure modes and consequences before selecting a strategy.
+
+Condition-based prediction needs calibrated measurements, duty/context, historical outcomes, uncertainty, and a tested decision rule. A model that fits past failures can fail under changed equipment, material, maintenance, or operating conditions. False alarms, missed events, lead time, and actual repair/spares constraints matter.
+
+Work planning connects access/isolation, people/skills, tools, parts, logistics, inspections, coordination, and verification. A reported repair duration may include or exclude waiting for these conditions. Returning nominally repaired equipment without demonstrated function or updated records can leave the original system uncertainty unresolved.
+
+**Work:** reconstruct a complete maintenance case from failure/condition evidence through work and verified return. Independently check a time/spares/capacity account. Compare two strategies under a documented duty and identify which observation or trial would discriminate their effectiveness. Explain the interface with production and safety responsibilities.
+
+Read full operation/maintenance chapters and applicable current primary guidance. Later machinery, reliability, supply, and maintenance trails deepen their generic methods, while this mine study preserves the actual duty and work context.
+
+**Continue:** [Account for power and service dependencies across the operating mine](../utilities/Power-energy-carriers-and-mine-service-dependencies.lingua#r_4M4H1HKKB12X8XTAVE6Q8EM4SJ).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0T3Y0YNBQ4XF6C6J2Q8KQ70MXH

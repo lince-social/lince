@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Moving loops, motional emf and reference frame (@em-moving-emf: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Self-mutual-inductance-and-magnetic-energy.lingua#r_4QR58S6KHFRSBV15QCCX7NA63E") { r_2J3AWCEN6GVBWXBS1PYYGAXT44
+**Read:** [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), moving media, emf and electromechanical examples; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), induction and moving circuits.
+
+For a moving material circuit, the force per unit charge includes E + u×B, where u is the local velocity of the circuit element. The moving-loop flux rule requires the actual moving boundary and surface. Applying a fixed-loop time derivative to a changing geometry omits part of the physics.
+
+Derive the emf Bℓv for an ideal sliding conducting bar in a uniform field. With a resistive loop, compute induced current, magnetic drag and mechanical power. Show that the mechanical input equals resistive dissipation in the steady ideal model. Identify the direction using the vector force and the selected loop orientation before invoking a verbal mnemonic.
+
+Consider what changes if the field region is finite, contact resistance is nonzero or the circuit inductance matters. A rotating disk generator needs a careful account of moving and stationary contacts; it cannot be reduced to an arbitrary imagined moving loop. Compare electric and magnetic descriptions in two inertial frames without treating one as the only real mechanism. Relativity later supplies the transformation rules underlying that comparison.
+
+**Continue:** [Self-inductance, mutual inductance and magnetic energy](Self-mutual-inductance-and-magnetic-energy.lingua#r_4QR58S6KHFRSBV15QCCX7NA63E).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_2J3AWCEN6GVBWXBS1PYYGAXT44

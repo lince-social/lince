@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Connect observations, particle models, and chemical symbols (@gc-models: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Formulas-names-and-charge.lingua#r_1CP96XH8H24BQWR2PEA3CT4H61") { r_1BMJ0JMYA9THS9B5K12C423YFC
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapters 1–2, including the examples; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the atom/formula introduction and model discussions.
+
+A chemical explanation moves between macroscopic observations, a model of particles/structure, and symbolic representations such as formulas and equations. Connect these deliberately. A precipitate is an observation; a proposed lattice is a structural model; an equation is an account of species and stoichiometric relations. None is interchangeable with the others.
+
+Representations omit information for a purpose. A formula can specify atom ratios without a three-dimensional structure. A Lewis diagram represents valence-electron bookkeeping, not a photograph of electrons. A phase diagram summarizes equilibrium relations under chosen variables and need not describe the speed of reaching equilibrium. A model's useful range comes from its assumptions and supporting evidence.
+
+Conservation supplies strong tests but not a complete explanation. An equation can conserve atoms and charge while describing a transformation that does not occur appreciably under the stated conditions. A numerical fit can reproduce observations without uniquely identifying a reaction mechanism. Later thermodynamics, kinetics, spectroscopy, and independent evidence distinguish these cases.
+
+**Work:** write an observation, particle sketch, and symbolic account for dissolving a familiar ionic solid in water. State what each representation leaves out. Compare “the solid disappeared” with the claim that its constituent atoms ceased to exist. Then compare two candidate particle explanations for a gas forming and describe evidence needed to select between them.
+
+Keep an explicit place for disagreement and revision in your notes. Read an alternate textbook explanation when a convenient analogy becomes misleading. The advanced work will ask you to criticize a model as well as calculate within it; that habit starts here rather than being postponed until a research project.
+
+**Continue:** [Read formulas and names without losing chemical identity](Formulas-names-and-charge.lingua#r_1CP96XH8H24BQWR2PEA3CT4H61).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_1BMJ0JMYA9THS9B5K12C423YFC

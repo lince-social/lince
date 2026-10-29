@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Predict waste chemistry from mineral reactions, transport, and time-dependent evidence (@mine-waste-geochemistry: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Preventing-Acid-and-Metalliferous-Drainage.lingua#r_7SDBPF4TAZV9GKDCTW9BTYJ43R", #source "../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM", #source "../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #mining-and-mineral-engineering "Waste-rock-landforms-physical-behavior-and-water-pathways.lingua#r_4VSZTXBD20D124TD4QXQY5TZVF") { r_0HBC5363VH97CNXM4N9SVGCV7Y
+**Read:** [Preventing acid and metalliferous drainage — leading-practice handbook](../sources/Preventing-Acid-and-Metalliferous-Drainage.lingua#r_7SDBPF4TAZV9GKDCTW9BTYJ43R), the complete handbook, including characterization, prediction, prevention, management, and monitoring examples; [Water stewardship — Australian leading-practice handbook](../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM), the full relevant water/constituent-system sections; [General chemistry](../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), reuse speciation, redox, buffering, equilibrium, and kinetics.
+
+Waste rock, tailings, and excavated surfaces expose minerals to new water, gas, temperature, and microbial conditions. Reactions, flow paths, and storage history determine what is released and when. Total sulfur or one bulk pH value cannot fully specify future drainage chemistry.
+
+For a simplified pyrite-to-ferric-hydroxide end state, FeS₂ + 15/4 O₂ + 7/2 H₂O → Fe(OH)₃ + 2 SO₄²⁻ + 4 H⁺. Check atoms, charge, and oxidation states. Actual intermediate iron/sulfur species, oxygen supply, microbial activity, buffering, precipitation, and transport can alter rates and measured acidity. Metal/metalloid release can remain important in near-neutral or saline drainage as well as acidic drainage.
+
+Distinguish mineral inventory, static screening, kinetic tests, field observations, and a transport/reaction prediction. Neutralization potential depends on which minerals can react under actual conditions and whether they contact the generated acidity. A favorable bulk ratio does not prove local or long-term behavior.
+
+**Work:** reconstruct a complete waste-characterization and drainage study with material domains and sampling support. Independently check reaction and water/constituent balances, compare static and kinetic interpretations, and test alternative exposure or flow scenarios. Explain time extrapolation, detection limits, uncertainty, and the observations that would invalidate the preferred prediction. Compare prevention, segregation, containment, and treatment through their full operating and post-closure demands.
+
+**Continue:** [Join waste-landform stability, water pathways, and chemical performance](Waste-rock-landforms-physical-behavior-and-water-pathways.lingua#r_4VSZTXBD20D124TD4QXQY5TZVF).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0HBC5363VH97CNXM4N9SVGCV7Y

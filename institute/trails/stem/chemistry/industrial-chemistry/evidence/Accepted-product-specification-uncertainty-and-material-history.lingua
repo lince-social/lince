@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect product acceptance with measured evidence and the material actually transferred (@ic-release: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #industrial-chemistry "../operation/Process-states-sensors-control-and-observed-production.lingua#r_6MEKD6GFRHQ8VXM92NC56D0Q3A") { r_6HX6NFZ58DCT2JJ3H8EDCWWMTE
+**Read:** [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the complete relevant product-quality, purity and handling treatment; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the whole pertinent product/isolation and quality-evidence context; [Production of Chlor-alkali, BREF CAK](../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the entire applicable product-conditioning and delivered-quality account.
+
+Acceptance evaluates a defined material against a specified requirement using a stated method and decision rule. Main-component assay, impurity limits, physical form, stability and function can require different evidence. A single passing result cannot establish all unmeasured properties or every later material state.
+
+Identify the batch/stream/time and sampling support, test conditions, calibration and uncertainty. A result near a limit can change classification under a different uncertainty treatment or decision rule. Different reported purity conventions may describe different measurands rather than a real product difference.
+
+Follow identity through isolation, rework/blending, filling, storage and transfer. A certificate belongs to the material and conditions actually represented by the measurements. A changed container, prolonged storage or additional processing may need new evidence because it can alter the qualified state.
+
+**Work:** reconstruct a genuine public product requirement and its actual analytical/functional test basis. Compare two documented process outputs with uncertainty and trace history preserved. Explain which differences are supported, which attributes were not established, and what further observation would determine whether a changed feed, isolation or transfer arrangement still supplies the required useful product.
+
+**Continue:** [Connect measured process states and control actions with actual chemical behavior](../operation/Process-states-sensors-control-and-observed-production.lingua#r_6MEKD6GFRHQ8VXM92NC56D0Q3A).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6HX6NFZ58DCT2JJ3H8EDCWWMTE

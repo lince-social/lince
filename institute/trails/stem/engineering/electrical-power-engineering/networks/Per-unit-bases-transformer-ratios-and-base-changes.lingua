@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Per-unit bases, transformer ratios and base changes (@pe-per-unit: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #electrical-power-engineering "One-line-diagrams-topology-and-actual-connections.lingua#r_413DWSGDZ7840QHZTC4CQ81RB3") { r_7FMPYRBXVHDAC31RKAKB7292BE
+**Read:** [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), polyphase and machine base conventions; [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete per-unit and component normalization treatment.
+
+Per-unit values divide physical quantities by declared bases. For a balanced three-phase system with total apparent-power base S_B and line-to-line RMS voltage base V_B, I_B = S_B/(sqrt(3)V_B) and Z_B = V_B²/S_B. A per-phase impedance is normalized by this same Z_B when the phase voltage/current bases are chosen consistently.
+
+At 10 MVA and 10 kV line-to-line, base impedance is 10 Ω and base line current approximately 577.350 A. Change to another base using the full power and squared-voltage ratio; do not compare reactance percentages from two nameplates until they share a basis. Carry ideal transformer voltage ratios into the voltage bases and retain actual taps/phase shifts in the model.
+
+Recover SI quantities after a calculation and verify the total three-phase power independently. Per-unit normalization can improve scale and interpretation but does not remove dimensional meaning or uncertainty. A nameplate percent impedance usually describes a specified test and base, not every component of a dynamic or sequence model. Document bases with each bus/voltage region so that imported data, measured results and solver outputs can be checked consistently.
+
+**Continue:** [One-line diagrams, topology and actual connections](One-line-diagrams-topology-and-actual-connections.lingua#r_413DWSGDZ7840QHZTC4CQ81RB3).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7FMPYRBXVHDAC31RKAKB7292BE

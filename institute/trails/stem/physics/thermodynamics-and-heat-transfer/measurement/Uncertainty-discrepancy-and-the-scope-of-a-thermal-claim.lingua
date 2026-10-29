@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Uncertainty, discrepancy and the scope of a thermal claim (@th-uncertainty: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #source "../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #thermodynamics-and-heat-transfer "Design-an-experiment-to-separate-thermal-mechanisms.lingua#r_00AM5RFVW5P8HMGF76ZR2TDH1A") { r_0CQRV60W4KYW8JS1G7F5MYHA3J
+**Read:** [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), the complete uncertainty account; [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), parameter sensitivity and independent-property uncertainty; [IAPWS-95 — fundamental water properties](../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z), formulation validity and uncertainty distinctions.
+
+Separate numerical error, uncertain inputs, parameter estimation, material variability and model discrepancy. A refined mesh addresses discretization; it does not correct an omitted contact resistance or an inappropriate radiation boundary. An accurately known sensor calibration does not establish its installation error.
+
+Propagate coupled input uncertainties through the actual measurement or design equation, retaining correlations. Compare linear sensitivities with a nonlinear calculation near phase boundaries, small temperature differences or strongly temperature-dependent radiation. Declare the reference state and validity range of every property model.
+
+Use independent observations to challenge the physical assumptions. State a claim with its operating domain and unresolved alternatives: for example, predicted peak temperature under a bounded load and cooling condition. Report extrapolation openly. A narrow agreement at one condition is weaker evidence than prediction across deliberately changed conditions that probe competing mechanisms.
+
+**Continue:** [Design an experiment that separates thermal mechanisms](Design-an-experiment-to-separate-thermal-mechanisms.lingua#r_00AM5RFVW5P8HMGF76ZR2TDH1A).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_0CQRV60W4KYW8JS1G7F5MYHA3J

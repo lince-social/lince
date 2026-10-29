@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Spectral, directional and material radiative properties (@th-spectral: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Radiance-Temperature-Calibrations-NIST.lingua#r_1ZZFTRWTTE4RBKGANZJMEYQ0WE", #thermodynamics-and-heat-transfer "View-factors-reciprocity-enclosure-and-geometry.lingua#r_6R7DAPAD6KRCX3JMS0APKE0CKY") { r_1T6NWNQHCCRB4G30A1NGQ7C33E
+**Read:** [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), complete surface, film, particle and material-response lectures; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), radiative properties and their definitions; [Radiance temperature calibrations — NIST SP 250-43](../sources/Radiance-Temperature-Calibrations-NIST.lingua#r_1ZZFTRWTTE4RBKGANZJMEYQ0WE), source/spectral measurement conditions.
+
+Reflectance, absorptance, transmittance and emissivity depend on wavelength, angle, polarization, temperature and material state. Use energy closure and the proper reciprocity/equilibrium assumptions. Kirchhoff-type equality concerns matching spectral/directional conditions; it does not justify assigning one arbitrary emissivity to every wavelength or geometry.
+
+Connect the shared Fresnel/interface model to absorbing solids, films and rough surfaces, then identify where coherent wave effects, scattering or temperature-dependent response matter. Total hemispherical properties involve weighted integration and can change with source or surface temperature.
+
+Compare a coating's visible appearance with its thermal-infrared behavior. For a chosen surface, trace the property measurement and uncertainty. A camera setting, handbook table and actual oxidized or contaminated component may represent different surfaces and bands.
+
+**Continue:** [View factors, reciprocity and enclosure geometry](View-factors-reciprocity-enclosure-and-geometry.lingua#r_6R7DAPAD6KRCX3JMS0APKE0CKY).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1T6NWNQHCCRB4G30A1NGQ7C33E

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Interface conductance, ballistic transport and size-dependent response (@th-interfaces-nano: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #thermodynamics-and-heat-transfer "Ultrafast-heating-two-temperature-models-and-local-equilibrium.lingua#r_1EESE8HZWNCWPC2AFRVBGWP832") { r_263NEZC8KR6RHTPERH8AZ8NATX
+**Read:** [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), complete interface and ballistic/diffusive transport lectures; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), complete review plus one primary study; [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), film/interface sensitivity and inference.
+
+A thermal boundary can sustain a temperature discontinuity between locally equilibrated regions. Define the interface conductance, its area convention and the temperatures used. Compare this phenomenological relation with carrier transmission models, specifying scattering, polarization and equilibrium assumptions.
+
+Film thickness, grain boundaries, roughness, defects, bonding and spectral transmission can affect thermal transport. Apparent size-dependent conductivity can also arise from a measurement model's inappropriate boundary or spatial averaging. Separate material, interface and instrument contributions where observations permit.
+
+Reconstruct a complete published nanoscale measurement or calculation from [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG) and its primary source. Test sensitivity to thickness, spot size, interface parameters and substrate response. Distinguish ballistic transmission from a Fourier model with an arbitrarily fitted conductivity; both may fit a single observation yet predict different changed conditions.
+
+**Continue:** [Ultrafast heating, two-temperature models and local equilibrium](Ultrafast-heating-two-temperature-models-and-local-equilibrium.lingua#r_1EESE8HZWNCWPC2AFRVBGWP832).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_263NEZC8KR6RHTPERH8AZ8NATX

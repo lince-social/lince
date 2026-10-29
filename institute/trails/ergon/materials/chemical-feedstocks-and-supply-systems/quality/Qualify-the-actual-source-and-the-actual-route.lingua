@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Qualify a supplier through the material and route they actually control (@cs-supplier: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F", #source "../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME", #chemical-supply-systems "Receive-a-physical-delivery-before-releasing-a-material.lingua#r_6TX7C86D26AMZDW2V07MYVJ8NZ") { r_61RKSTFXH4ZXAD0069T2SCMM6X
+**Read:** [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the entire procurement, quality, documentation and contract discussion; [Supply Chain Resilience: Guide for Water and Wastewater Utilities — EPA](../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F), the complete supplier-management section and cases; [Caustic Soda Handbook — OxyChem](../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME), the complete actual grade and analytical-method evidence for the chosen comparison.
+
+List the claims needed to accept a source: product identity/function, consistent quality, representative evidence, packaging/transport capability, continuity and communication of changes. Identify whether the organisation manufactures, obtains, blends, repacks or merely sells the material. A supplier list does not show how many independent production routes are available.
+
+Build a qualification study for one chemical using actual public product and method documents. Compare initial evaluation, a small documented trial, repeated deliveries and continuing performance. Separate a producer's capability from a distributor's control over the downstream history. Ask how the proposed supplier learns of an upstream source change and how that information reaches the user.
+
+Evaluate two plausible sources on the same intended-use requirement and disclose missing evidence. Certificates, audits and accreditation have scopes; determine what the particular evidence covers rather than ranking suppliers by the presence of a logo. Include analytical turnaround and technical support, minimum campaign quantities, maintenance and alternative supply arrangements. Later advanced studies should defend an evidence-based decision and describe how it changes when a product, route, contact material or user process changes. Literature-only work should state which supplier claims remain untested.
+
+**Continue:** [Connect receiving observations to the material that will be used](Receive-a-physical-delivery-before-releasing-a-material.lingua#r_6TX7C86D26AMZDW2V07MYVJ8NZ).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_61RKSTFXH4ZXAD0069T2SCMM6X

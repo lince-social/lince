@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Use general chemistry to understand a biological chemical question (@gc-biochemistry: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Nuclides-decay-and-nuclear-change.lingua#r_0Y7ZKCD61XN1RHC4HKMBDZPK35") { r_4HJ5BAQ365QCET6G4EB9X56JG8
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), the biological/macromolecular applications across chapters 14, 17, 19, and 20; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), Lecture 35 and its coordination context; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the physiological and biological redox applications.
+
+Biological systems reuse chemical equilibria, reaction networks, molecular recognition, energy transfer, and transport under particular organizational constraints. A molecule's biological role depends on structure, environment, concentrations, regulation, and interactions. The same physical/chemical laws support the explanation without reducing an organism to one isolated reaction vessel.
+
+Connect protonation and metal coordination with binding, solubility, and catalysis. Enzyme rates and selectivity require a model, observations, and assumptions; a chemical equation alone does not establish the whole network behavior. Coupled reactions and open boundaries can maintain states far from the equilibrium of one selected reaction.
+
+Distinguish a reaction's standard free-energy value from its actual driving force at cellular composition and conditions. A common phrase about “high-energy bonds” needs a full reaction account including products, solvent, and coupled changes. Energy is transferred and conserved through a system, rather than stored as a universal property of one drawn bond independent of context.
+
+**Work:** choose one textbook biological example involving a buffer, metal complex, or coupled reaction. Identify species, structure, model, amount/energy account, and measurements supporting the interpretation. Explain which part uses shared general chemistry and which requires specialized biological knowledge.
+
+Read the relevant whole-book biological examples and MIT's metal-in-biology lecture. A dedicated biochemistry and wider life-science programme will deepen their unique evidence and mechanisms. This general foundation should enable informed questions and useful crossings without making one biological example stand in for those fields.
+
+**Continue:** [Distinguish nuclear change from ordinary chemical transformation](Nuclides-decay-and-nuclear-change.lingua#r_0Y7ZKCD61XN1RHC4HKMBDZPK35).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_4HJ5BAQ365QCET6G4EB9X56JG8

@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Use Henry’s law only after identifying its convention and scope (@gc-henry-model: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Henry-Law-Sander.lingua#r_4HW63C2ZE42PFRFC294FDPTYWH", #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../states/Surfaces-colloids-and-dispersions.lingua#r_76DY10T2QGJP6FASSEXZGDMM73") { r_72CFKEPYR9QEVHN4KETB2Q220N
+**Read:** [Compilation of Henry’s law constants, version 5.0.0 — Rolf Sander](../sources/Henry-Law-Sander.lingua#r_4HW63C2ZE42PFRFC294FDPTYWH), definitions, conversions, temperature dependence, and one selected entry/source; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 11’s gas-solubility discussion; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), gas dissolution and solution behavior.
+
+A Henry-type relation describes dilute gas/solution partition under specified conditions. Several quantities are called a Henry constant, including c/p, p/c, and dimensionless ratios with different definitions. Write the actual relation and units before using a tabulated value. A numerical constant without that convention can reverse or rescale the prediction.
+
+For a hypothetical c = H_cp p with H_cp = 1.0×10⁻⁵ mol m⁻³ Pa⁻¹ and a specified component partial pressure of 2.0×10⁴ Pa, the predicted dissolved concentration is 0.20 mol m⁻³, or 2.0×10⁻⁴ mol L⁻¹. The selected gas species, temperature, solvent, dilute regime, and any chemical reactions must match the model. Total gas pressure cannot replace component pressure without a composition account.
+
+Dissolution followed by acid/base change or complexation can make total dissolved concentration differ from the concentration of the neutral dissolved species in the Henry relation. Open and closed gas/liquid systems also impose different balances. Salinity and nonideality can require further treatment.
+
+**Work:** convert between a stated c/p convention, its reciprocal, and a dimensionless gas/liquid ratio using compatible temperature and gas assumptions. Reproduce the teaching result independently. Then inspect one entry in Sander's compilation, following its original reference, temperature dependence, and evaluation notes rather than copying a number from a search snippet.
+
+Use this focused source comparison to practice scholarly chemical data use. Atmospheric chemistry, water treatment, geochemistry, and gas processing will reuse the same convention checks while adding their unique reactions and transport conditions.
+
+**Continue:** [Recognize when surfaces and dispersed phases change the question](../states/Surfaces-colloids-and-dispersions.lingua#r_76DY10T2QGJP6FASSEXZGDMM73).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_72CFKEPYR9QEVHN4KETB2Q220N

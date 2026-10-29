@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Keep bulk chemistry, mineral modes, and calculated norms distinct (@mp-bulk: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #mineralogy-and-petrology "../equilibrium/Chemical-potentials-and-mineral-equilibrium.lingua#r_3H5V4CVENHRRZAQ3RZ4RNB2PNN") { r_5VR788G2X2J6VYBART77S5X1HQ
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete mineral/rock chemistry and quantitative examples; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the full relevant bulk/modal/normative treatment; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full composition and mass-balance exercises.
+
+Bulk chemistry averages a sampled/prepared material; modal data describe observed phase proportions; a normative calculation allocates chemistry into hypothetical phases under rules. None can silently substitute for another. Match sample population, support volume, preparation, compositional basis, and uncertainty before combining them.
+
+Weight fractions, mole fractions, volume fractions, oxide equivalents, dry/volatile-bearing bases, and normalized subsets answer different questions. If a rock contains 20 volume percent of a dense phase, its mass fraction need not be 20 percent. Renormalizing after excluding water or carbonate changes the denominator and can change apparent trends.
+
+Element/oxide mass balance joins mineral analyses with modes under stated densities and proportions. Mismatches can reveal sampling, alteration, missing phases, measurement bias, or inappropriate assumptions. Solving the balance exactly does not prove the selected minerals or event history are unique.
+
+**Work:** build a hypothetical two-mineral mass/volume/element balance with independently checked units. Compare a published bulk analysis with observed mode and mineral compositions, preserving analytical totals and missing components. Test a plausible alternative involving an accessory phase or local alteration; identify a discriminating observation rather than forcing a calculated norm to equal the observed rock.
+
+Read the full rock-chemistry and modal/chemical classification material. Later phase and source models require a clearly defined effective bulk composition and component system, not simply whichever normalized spreadsheet columns are most convenient.
+
+**Continue:** [Derive phase equilibrium from chemical potentials and a defined system](../equilibrium/Chemical-potentials-and-mineral-equilibrium.lingua#r_3H5V4CVENHRRZAQ3RZ4RNB2PNN).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_5VR788G2X2J6VYBART77S5X1HQ

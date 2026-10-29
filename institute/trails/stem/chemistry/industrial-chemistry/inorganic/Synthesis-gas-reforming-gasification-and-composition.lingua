@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Explain synthesis gas through feed chemistry, reaction paths and product requirements (@ic-syngas: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #source "../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74", #source "../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ", #industrial-chemistry "Water-gas-shift-separation-and-synthesis-feed-adjustment.lingua#r_2T84DMWN3FA6P8Q4GJNAEM70Y1") { r_54CH7SW9WFFBJ00FMN2BVRTCMQ
+**Read:** [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the complete synthesis-gas, reforming, gasification and oxo-process units; [Chemical Technology I — Indra Deo Mall, NPTEL](../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74), the entire fuel/industrial-gas and coal-chemical sequence where available; [Haber–Bosch ammonia in an energy landscape — Smith, Hill and Torrente-Murciano](../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ), the full relevant feed-generation and purification account.
+
+Synthesis gas denotes a useful reacting gas mixture, commonly involving hydrogen and carbon monoxide, with composition suited to a downstream transformation. Reforming, gasification and partial oxidation differ in feed, oxygen/steam supply, thermal duties, species distribution and impurities. The name alone does not define a usable product.
+
+For idealized methane steam reforming, CH₄+H₂O⇌CO+3H₂. Combining complete water-gas shift gives CH₄+2H₂O→CO₂+4H₂. These balanced relations establish atom accounts; actual equilibrium, rates, side reactions, heat supply and gas cleanup determine what a real unit produces.
+
+Track sulfur, particulates, condensable compounds and other contaminants through feed preparation, hot-gas processing, cooling and purification. A change from fossil to biological feed can alter variability and cleanup needs even when the target gas ratio is similar. Oxygen and steam supplies connect the route with other industries.
+
+**Work:** reconstruct a complete reforming or gasification route from actual feed characterization to a specified synthesis feed. Independently close carbon/hydrogen/oxygen, utility and impurity accounts, then compare a second route on the same usable output. Identify which thermodynamic, kinetic or measured operating evidence most limits the comparison.
+
+**Continue:** [Adjust a synthesis feed while preserving reaction, separation and impurity accounts](Water-gas-shift-separation-and-synthesis-feed-adjustment.lingua#r_2T84DMWN3FA6P8Q4GJNAEM70Y1).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_54CH7SW9WFFBJ00FMN2BVRTCMQ

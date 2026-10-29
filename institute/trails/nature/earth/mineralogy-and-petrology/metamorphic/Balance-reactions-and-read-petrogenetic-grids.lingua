@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Balance metamorphic reactions and interpret their equilibrium boundaries (@mp-reactions: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #mineralogy-and-petrology "Thermometry-barometry-and-calibration-assumptions.lingua#r_52CQD7G1AWVW9FMT5B50S7NTXY") { r_2VYNSCYCWXZHBJNGVNHHKJPDSK
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete metamorphic reactions, phase-rule, and triangular-plot notes; [O uso de pseudosseções em Petrologia Metamórfica — Gengo and colleagues](../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR), the full theoretical/topological treatment; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the full relevant endmember/reaction model and original reference.
+
+A reaction account conserves the chosen components and relates phase changes to conditions and chemical potentials. Balance composition before assigning process meaning. Mg₂SiO₄ + SiO₂ → 2MgSiO₃ is a simple idealized forsterite–quartz–enstatite balance; it does not establish that those endmembers equilibrated in every natural sample.
+
+Fluid-producing/consuming reactions require their fluid component and constraint. CaCO₃ + SiO₂ → CaSiO₃ + CO₂ connects an ideal decarbonation balance with fluid behavior; imposed CO₂ chemical potential, finite fluid, and open transfer can shift the relevant equilibrium problem.
+
+For a specified first-order equilibrium transition, the Clapeyron relation dP/dT = ΔS/ΔV connects a boundary slope with reaction entropy and volume under the appropriate assumptions. Invented ΔS = 10 J mol⁻¹ K⁻¹ and ΔV = 2×10⁻⁶ m³ mol⁻¹ give 5 MPa K⁻¹. Signs and reaction direction matter.
+
+**Work:** derive/check both balances and the slope units, then analyze a complete petrogenetic-grid example. Distinguish a reaction line, a possible path, and evidence that a natural sample crossed it. Explain how solid-solution composition, fluid conditions, or metastable persistence could alter a simple pure-endmember interpretation.
+
+Read the full reaction/phase-rule notes and primary model treatment. Later calculated sections and thermobarometry require the same explicit component, reference-state, and geological-domain account.
+
+**Continue:** [Infer conditions from calibrated mineral relations with their uncertainty](Thermometry-barometry-and-calibration-assumptions.lingua#r_52CQD7G1AWVW9FMT5B50S7NTXY).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_2VYNSCYCWXZHBJNGVNHHKJPDSK

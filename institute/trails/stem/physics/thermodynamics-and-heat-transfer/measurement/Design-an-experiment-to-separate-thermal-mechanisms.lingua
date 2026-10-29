@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Design an experiment that separates thermal mechanisms (@th-experiment-design: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Heat-Transfer-in-Fins-and-Bars-UFSC.lingua#r_3HAWSMZM80J3ZMZK362ED9E3C1", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "../practice/Build-measure-and-revise-a-bounded-thermal-apparatus.lingua#r_3JS9RWTNYGKVFJ0ZZG8RKQN6M0") { r_00AM5RFVW5P8HMGF76ZR2TDH1A
+**Read:** [Transferência de calor em barras — UFSC LABOPE](../sources/Heat-Transfer-in-Fins-and-Bars-UFSC.lingua#r_3HAWSMZM80J3ZMZK362ED9E3C1), the actual apparatus description; [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), complete experimental design and specimen treatment; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), full relevant analytical models and exercises.
+
+Start with the unknown relation and the measurements capable of distinguishing it. Vary a boundary, length, time scale, orientation or flow while preserving the information needed to compare runs. A single equilibrium temperature generally cannot separate heat input, convection, radiation and several contact losses.
+
+Predict the responses under competing models before collecting data. Choose sensor positions and sampling times for informative sensitivity rather than attractive plots. Include equilibrium criteria, repeat observations, reference checks, specimen preparation and records of changes. Deliberately test a condition held out from parameter fitting.
+
+For a fin or composite wall, compare changes in length, imposed power and surroundings against a model with separately constrained radiation/contact terms. Use the UFSC laboratory as an institutional example of a real measurement arrangement; its brief web description does not supply a complete build manual or a dataset. Obtain the full applicable procedure before claiming replication.
+
+**Continue:** [Build, measure and revise a bounded thermal apparatus](../practice/Build-measure-and-revise-a-bounded-thermal-apparatus.lingua#r_3JS9RWTNYGKVFJ0ZZG8RKQN6M0).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_00AM5RFVW5P8HMGF76ZR2TDH1A

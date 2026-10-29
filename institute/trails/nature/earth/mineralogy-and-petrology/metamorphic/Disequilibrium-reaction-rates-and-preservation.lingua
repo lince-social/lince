@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Test equilibrium interpretations against kinetics and preservation (@mp-kinetic: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #mineralogy-and-petrology "../methods/Experimental-petrology-calibration-and-transfer-to-nature.lingua#r_36V798SPKFZBP76EH1J1YCN2TC") { r_79G1ER9M053Q0F1E4KPGTYP959
+**Read:** [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the full equilibrium/domain/model review and selected complete kinetic primary references; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the full relevant reaction/textural-history treatment; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete relevant metamorphic mechanism notes.
+
+Equilibrium is a useful approximation whose applicability depends on reaction, transport, domain, and time. Nucleation barriers, sluggish diffusion, limited fluids, reaction interfaces, deformation, and changing conditions can preserve phases or compositions that a simple equilibrium calculation would replace.
+
+Different mineral pairs or chemical components can equilibrate over different scales and intervals. A preserved texture may retain relative event information while its composition has partly changed, or the reverse. One successful thermometer does not establish that every phase in a section shared full equilibrium.
+
+Kinetic explanations should produce testable consequences rather than serve as an unfalsifiable excuse for any disagreement. Grain/domain sizes, reaction fronts, orientation effects, zoning profiles, inclusion relations, experimental timescales, and chronology can constrain an account. Numerical equilibrium mismatch can also arise from wrong composition, data, or identification.
+
+**Work:** compare an equilibrium and a specific kinetic/history model for a documented assemblage. Identify their distinct predictions and test an independent observation. Explain how a chosen experimental or diffusion calibration transfers to geological conditions and where extrapolation remains uncertain. Propose a feasible measurement or experiment that could change the interpretation.
+
+Read the full advanced review and the complete original kinetic papers relevant to the chosen question. Independent research should retain these competing mechanisms explicitly instead of choosing whichever narrative makes the preferred phase diagram look correct.
+
+**Continue:** [Evaluate experimental constraints and the limits of transferring them to natural rocks](../methods/Experimental-petrology-calibration-and-transfer-to-nature.lingua#r_36V798SPKFZBP76EH1J1YCN2TC).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_79G1ER9M053Q0F1E4KPGTYP959

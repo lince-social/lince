@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Calibration of digital multimeters — EURAMET cg-15 (@met-electrical: 0, is #reference, #part-of @met-sources) { r_33E8Y5E35FDF0Y2RA4PSZ2H47R
+EURAMET Technical Committee for Electricity and Magnetism. Guidelines on the Calibration of Digital Multimeters, cg-15, version 3.0, February 2015. English. ISBN 978-3-942992-35-0.
+
+[Official catalogue and PDF download, No. 15](https://www.euramet.org/publications-media-centre/calibration-guidelines).
+
+Read all sections and appendix A, especially preliminary checks, sequence, measurement operations, uncertainty, and certificate contents. Distinguish as-found calibration, adjustment, and as-left calibration. The guide’s specified scope includes common DC, low-frequency AC, current, and resistance functions; it is not a comprehensive high-frequency or every-instrument procedure.
+
+The document was accessible and its contents inspected on 28 October 2026. EURAMET retains copyright; its notice restricts reproduction and extracts and requires permission for translation. Keep this an authorized external reference. Reading the guide does not require performing hazardous electrical calibration.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_33E8Y5E35FDF0Y2RA4PSZ2H47R

@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Slack, PV and PQ buses, controls and limits (@pe-bus-types: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #electrical-power-engineering "Newton-Jacobians-continuation-and-solver-evidence.lingua#r_2KM2RZT4E5AY1HNQWXJGBXBQ6H") { r_5RQME23KX22XW5NGAWMEXDWEKD
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete AC power-flow and generator-limit treatment; [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), operating equilibria and source-control models.
+
+Bus categories specify which quantities are prescribed and which must be solved. A PQ bus fixes active/reactive injection in the selected model. A PV bus fixes active power and voltage magnitude while reactive power is solved subject to capability. A reference/slack choice fixes phase reference and supplies the remaining balancing quantities under the chosen formulation.
+
+Separate a mathematical angle reference from a physical generator/control assumption. A network's losses are not known before solving the AC state; an unrealistic balancing source can conceal insufficient generation or reserve. Reactive limits can change a PV bus's operating model, and a tap or shunt controller adds a discrete/continuous control condition.
+
+Solve a small case with and without a binding reactive limit, then trace the changed voltage and balance. Model disconnected islands with their actual sources and references. A source that cannot form voltage/frequency in an island is not made capable by assigning it a slack label. Include controller, capability, participation and limit logic in the model/evidence, and distinguish the solved state from a controller's ability to reach or maintain it dynamically.
+
+**Continue:** [Newton, Jacobians, continuation and solver evidence](Newton-Jacobians-continuation-and-solver-evidence.lingua#r_2KM2RZT4E5AY1HNQWXJGBXBQ6H).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5RQME23KX22XW5NGAWMEXDWEKD

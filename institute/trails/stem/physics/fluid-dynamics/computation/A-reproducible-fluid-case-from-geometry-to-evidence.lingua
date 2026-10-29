@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+A reproducible fluid case from geometry to evidence (@fd-reproducible-case: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/OpenFOAM-Foundation-Methods-and-User-Guide.lingua#r_6RVWPNB9VWAA4JDXH1HCXFDGQY", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #fluid-dynamics "../practice/Build-and-measure-a-bounded-fluid-system.lingua#r_0QRH0SSZEVW15WY3H5YEDXQB4T") { r_2PAK85R8DRMK4F04X4049NE49W
+**Read:** [OpenFOAM Foundation — versioned methods and user guide](../sources/OpenFOAM-Foundation-Methods-and-User-Guide.lingua#r_6RVWPNB9VWAA4JDXH1HCXFDGQY), version-matched complete case workflow; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), whole practical computational programme; [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), methods underlying the selected solver.
+
+Preserve the geometry source, dimensions, mesh generation, material model, boundary and initial conditions, numerical algorithms, solver/version, execution settings and postprocessing definitions as one inspectable calculation. Identify which inputs come from measurements, theory, conventions or fitted models. Pin an actual software distribution rather than relying on a tutorial for a different release.
+
+Run a small verified case before scaling it, retaining logs, convergence evidence and independent conservation checks. Define how a restarted calculation relates to an uninterrupted one. Track deterministic and statistical expectations separately; parallel execution may change rounding paths without invalidating a statistically assessed prediction.
+
+Keep external software, meshes and datasets in an appropriate external archive with provenance and terms, referenced from the Record. Treat imported scripts as code to inspect and resource use as a measured part of the workflow. A second reader should be able to rebuild the case, regenerate its figures and identify the assumptions behind every claimed comparison.
+
+**Continue:** [Build and measure a bounded fluid system](../practice/Build-and-measure-a-bounded-fluid-system.lingua#r_0QRH0SSZEVW15WY3H5YEDXQB4T).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2PAK85R8DRMK4F04X4049NE49W

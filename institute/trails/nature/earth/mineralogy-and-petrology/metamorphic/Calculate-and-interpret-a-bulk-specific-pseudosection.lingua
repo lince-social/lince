@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Build a bulk-specific phase section and test its geological interpretation (@mp-pseudosection: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR", #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #source "../sources/Perple-X-Methods-and-Documentation.lingua#r_39E8B7CK16VF55MXWKSXMNN4Z6", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #source "../sources/MAGEMin-Riel-2022.lingua#r_7JK9DVER7XW4ESPJ27K7H9K29S", #mineralogy-and-petrology "Mineral-zoning-growth-diffusion-and-reaction-progress.lingua#r_0HQFK46WKVZYYG564EAZ05BTFJ") { r_1MQ5QE3WH0VR3P4BWSWPVG93AC
+**Read:** [O uso de pseudosseções em Petrologia Metamórfica — Gengo and colleagues](../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR), the complete article; [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the complete review; [Perple_X — Connolly, phase-equilibrium methods and examples](../sources/Perple-X-Methods-and-Documentation.lingua#r_39E8B7CK16VF55MXWKSXMNN4Z6), the full selected tutorial, data/model definitions, and limitation/benchmark material; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the full relevant model/data papers; [MAGEMin, an efficient Gibbs energy minimizer — Riel and colleagues](../sources/MAGEMin-Riel-2022.lingua#r_7JK9DVER7XW4ESPJ27K7H9K29S), the complete method/tests if used as an independent implementation.
+
+A pseudosection represents calculated equilibrium relations for an identified bulk composition and selected variables/constraints. State components, amounts, oxidation state, fluid treatment, phases, solution models, data versions, pressure-temperature units, and numerical resolution. A diagram for one composition is not a universal facies map.
+
+Predicted assemblages, phase amounts, and compositional isopleths are model outputs. Compare them with independently described texture/domain observations and calibrated mineral analyses. The same observations used to select the model cannot serve as the entire independent validation of it.
+
+Read the full Portuguese article, English review, and chosen program tutorial. Their discussion of topology, data, composition, and equilibrium assumptions matters as much as completing the commands. Confirm numerical convergence separately from sensitivity to bulk composition, water, ferric iron, phase suppression, and solution-model choices.
+
+**Work:** reproduce one authorized teaching or published section with all settings and inputs preserved outside the repository. Check mass balance, limiting relations, and a selected independent model benchmark. Compare at least two geologically defensible component/domain choices and quantify their effect on a consequential interpretation. Identify a new measurement that could discriminate them.
+
+Read complete primary model/calibration papers for the chosen system. A reproducible calculation establishes what the specified model predicts; evidence that the rock recorded those conditions needs the geological tests developed throughout this sequence.
+
+**Continue:** [Read mineral zoning as a record modified by growth, transport, and later events](Mineral-zoning-growth-diffusion-and-reaction-progress.lingua#r_0HQFK46WKVZYYG564EAZ05BTFJ).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_1MQ5QE3WH0VR3P4BWSWPVG93AC

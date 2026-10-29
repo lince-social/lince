@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Read an alloy phase diagram with its basis, constraints, and processing question (@metal-phase-diagrams: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "Ellingham-predominance-and-reaction-potential-diagrams.lingua#r_5A36GMP668XNSSNDRF6XQ79GTC") { r_1PP21D2BEFX4GRAHT6RKQJE0B0
+**Read:** [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the complete equilibrium, iron-carbon, and precipitation chapters; [pycalphad — Otis and Liu, paper and computational thermodynamics](../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR), the complete original paper and exact equilibrium/database methods used; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the full alloy-diagram and graduate computation material.
+
+A binary or multicomponent phase diagram is a representation of equilibria under defined variables and constraints. State pressure, temperature, composition basis, allowed phases, and whether a plot is a section, projection, isopleth, or other construction. A familiar-looking line in different representations can have different meanings.
+
+Use the shared tie-line and phase-amount balance to distinguish phase composition from phase fraction. For an alloy described by mass fractions, phase amounts must use a compatible basis; conversion to volume requires densities. Metastable diagrams, suppressed phases, and open gas/component reservoirs require explicit explanations.
+
+Compare the equilibrium account with actual processing time, diffusion, nucleation, heat flow, segregation, and stored deformation. A composition passing through a two-phase field does not imply a uniform equilibrium structure at every point in a casting or heat-treated part. The later kinetic and solidification work explains these differences quantitatively.
+
+**Work:** reconstruct one complete experimentally assessed alloy diagram and one multicomponent section used in a real processing study. Trace their source evidence, calculate phase fractions on a stated basis, and test an alternative phase/model assumption. Compare predicted phase states with independent observations of a documented material history. Identify which discrepancy could be kinetic, compositional, observational, or a weakness of the thermodynamic assessment.
+
+**Continue:** [Derive potential diagrams without confusing thermodynamic possibility with process performance](Ellingham-predominance-and-reaction-potential-diagrams.lingua#r_5A36GMP668XNSSNDRF6XQ79GTC).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_1PP21D2BEFX4GRAHT6RKQJE0B0

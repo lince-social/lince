@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Compare primary fluid results through their assumptions and evidence (@fd-scholarly-comparison: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #fluid-dynamics "An-independent-fluid-dynamics-research-question.lingua#r_3E8DPHG6DWB1FPCNXXM1NC6HJD") { r_767M1Y5BHBXPSSAA7S1X7D8Q0G
+**Read:** [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), primary reports underlying a selected model comparison; [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), the complete review and selected cited primary investigations; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), uncertainty reasoning for comparing field evidence; [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), constitutive examples and their assumptions.
+
+Choose a precise dispute or discrepancy, such as a transition mechanism, turbulent closure, interfacial boundary condition, rheological law or interpretation of a transient. Read the complete primary works and the source methods/data they require. Reconstruct each author's definition of the measured or predicted quantity before deciding that the results disagree.
+
+Compare geometry, material state, boundary and initial conditions, nondimensionalization, averaging, numerical method, instrument response and uncertainty. Reproduce a decisive calculation or figure from authorized evidence and distinguish transcription or normalization differences from a physical disagreement. Seek a counterexample to the preferred account.
+
+Write a reasoned comparison that states what the evidence resolves and what remains open. Preserve publication and dataset versions, rights and access limits in source references. A textbook summary or a literature search is preparation; the advanced result is a defensible argument based on the complete methods and evidence relevant to the question.
+
+**Continue:** [An independent fluid-dynamics research question](An-independent-fluid-dynamics-research-question.lingua#r_3E8DPHG6DWB1FPCNXXM1NC6HJD).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_767M1Y5BHBXPSSAA7S1X7D8Q0G

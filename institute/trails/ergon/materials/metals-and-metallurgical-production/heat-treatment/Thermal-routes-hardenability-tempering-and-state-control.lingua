@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Design a heat-treatment argument from actual material state and measured thermal history (@metal-heat-treatment: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/Steels-Structure-Properties-and-Design.lingua#r_5CB9R75MR8424M7VJ5Y33FY0QF", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #metals-and-metallurgical-production "Surface-hardening-coatings-interfaces-and-product-performance.lingua#r_48FRMQXVGEHE602798AGZTTHAB") { r_676TY8604ZTWBXDDYMQ8637613
+**Read:** [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the complete heat-treatment, hardenability, tempering, precipitation, and advanced steel material; [Steels: Structure, Properties, and Design — Bhadeshia and Honeycombe](../sources/Steels-Structure-Properties-and-Design.lingua#r_5CB9R75MR8424M7VJ5Y33FY0QF), all corresponding full chapters, when available; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the complete transformation and worked-example progression; [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), all relevant thermal and dimensional-scaling work.
+
+Annealing, normalizing, solution/age treatment, quenching, tempering, and other thermal routes serve different phase/defect/property purposes. A time/temperature recipe detached from alloy, initial structure, dimensions, atmosphere, transfer, and cooling conditions is not a complete treatment definition.
+
+Reuse equilibrium, kinetics, diffusion, nucleation, transformation, and heat-transfer knowledge to predict possible states and their spatial distributions. Hardenability and measured hardness are different concepts. Tempering or aging can change solute, particles, dislocations, retained phases, toughness, stability, and service behavior together.
+
+Compare controlled/observed thermal histories with actual specimen and product temperatures. Distortion, residual stress, oxidation/decarburization, local phase differences, and damage can accompany a favorable average property. A laboratory coupon does not automatically establish every location or every production transition of a full part.
+
+**Work:** reconstruct two complete treatment/state routes for a defined alloy/function using full primary methods. Independently derive/check thermal and transformation limits, compare predictions with structural and mechanical evidence, and validate on another size or initial state. Investigate a discrepancy through competing thermal, chemical, and kinetic explanations. Practical treatment work uses appropriate facilities and procedures; a literature/supplied-data study states the evidence actually obtained.
+
+**Continue:** [Connect surface treatments with depth, phases, interfaces, and service evidence](Surface-hardening-coatings-interfaces-and-product-performance.lingua#r_48FRMQXVGEHE602798AGZTTHAB).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_676TY8604ZTWBXDDYMQ8637613

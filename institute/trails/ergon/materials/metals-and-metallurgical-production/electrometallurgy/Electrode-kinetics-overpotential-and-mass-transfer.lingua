@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Separate equilibrium potential, electrode kinetics, and mass-transfer limits (@metal-electrode-kinetics: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Environmental-Degradation-of-Materials-NPTEL.lingua#r_06WSRAYJJKWNTT146BKY5BN4QQ", #metals-and-metallurgical-production "Cell-voltage-charge-energy-heat-and-geometry.lingua#r_6Y3CD4F9VN7TNTJ0MVKS5ABK3K") { r_3SJ6Y5KK3T5J69KMTGSNE2P9VR
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete electrometallurgical theory; [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), all electrochemical extraction/refining material; [Environmental Degradation of Materials — Kallol Mondal, NPTEL](../sources/Environmental-Degradation-of-Materials-NPTEL.lingua#r_06WSRAYJJKWNTT146BKY5BN4QQ), the full relevant polarization and transport treatment.
+
+After the shared Nernst step, define the electrode reaction, potential reference, current sign, surface state, local activities, and equilibrium potential. Overpotential measures departure from that equilibrium under stated conditions; it is not the same as the whole cell voltage or an uncompensated instrument reading.
+
+Charge transfer, diffusion/migration/convection, nucleation/growth, adsorption, gas evolution, and changing surface area can contribute to measured polarization. A Butler–Volmer or Tafel relation has assumptions and a fitting domain. A straight region in a logarithmic plot is not sufficient to identify every elementary reaction or remove solution-resistance effects.
+
+For a simple film model of a depositing ion, limiting current density can be written j_lim = nF k_m c_bulk as the surface concentration approaches zero, with a defined concentration basis and mass-transfer coefficient. Derive the relation from molar flux and charge. Changing mixing or geometry can change k_m; this is not an intrinsic universal current limit for a metal.
+
+**Work:** reconstruct a complete electrode/polarization study with reference calibration, solution composition, resistance treatment, surface preparation/history, and transport evidence. Compare kinetic and transport explanations on independent conditions. Derive a limiting case, test units, and identify what additional observation could separate competing mechanisms. Explain consequences for useful deposit quality and competing reactions rather than treating current alone as production performance.
+
+**Continue:** [Account for an electrolytic cell through electrochemical, electrical, and thermal terms](Cell-voltage-charge-energy-heat-and-geometry.lingua#r_6Y3CD4F9VN7TNTJ0MVKS5ABK3K).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_3SJ6Y5KK3T5J69KMTGSNE2P9VR

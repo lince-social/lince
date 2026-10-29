@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Thermal, dielectric, short-circuit and continuity ratings (@pe-ratings: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #source "../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2", #source "../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4", #electrical-power-engineering "../analysis/AC-power-flow-voltage-current-and-nonlinear-balance.lingua#r_1152R24GG899A9DD2S3PY2Q5D2") { r_49KSGDVVC0CVT7PFP254KC0YYZ
+**Read:** [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), whole applicable rating/selection guidance; [Medium Voltage Technical Guide — Schneider Electric](../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2), complete relevant short-circuit, insulation and service-condition sections; [Maintenance of Power Circuit Breakers — FIST 3-16](../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4), equipment-rating review and complete relevant breaker sections.
+
+Translate a functional requirement into the separate capabilities needed by each component: normal current/voltage, temperature rise, insulation withstand, making/breaking duty, fault-time mechanical/thermal stress and required continuity. A single apparent-power label cannot represent all of them. Include actual altitude, ambient, contamination, cooling and duty where applicable.
+
+For a small design case, assemble a consistent rating/evidence table with the intended operating states and the source of each value. Link the network's prospective fault to the equipment's stated interruption/withstand conditions, not merely its nominal current. A protective-device current rating is not its short-circuit breaking capability.
+
+Compare manufacturer data, type/routine tests and installation evidence, and identify the applicable authority/edition. The detailed values must come from the actual apparatus and requirements, not a generic textbook table. Investigate how changed upstream strength, a new parallel source or a cable replacement changes duties and coordination. This is a continuing engineering account: a component that fitted an earlier network can become inadequate after a legitimate system change.
+
+**Continue:** [AC power flow and nonlinear balance](../analysis/AC-power-flow-voltage-current-and-nonlinear-balance.lingua#r_1152R24GG899A9DD2S3PY2Q5D2).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_49KSGDVVC0CVT7PFP254KC0YYZ

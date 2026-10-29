@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Relate crossed-polarized observations to thickness, birefringence, and orientation (@mp-xpl: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E", #mineralogy-and-petrology "Uniaxial-indicatrices-and-interference-figures.lingua#r_3PTF28NPQE0WGQ1S0GWBAV8GZ5") { r_6EJ7RHWMKX81AVKDEB45Q1WGZ5
+**Read:** [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full retardation, interference-color, extinction, and compensator sections; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete crossed-polarized and anomalous-color treatment; [Optical Mineralogy — Brock University course and laboratory material](../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E), birefringence and extinction material in full.
+
+Crossed polarizers reveal orientation-dependent interference, extinction, twinning, and other features under suitable conditions. Retardation is the optical path difference t Δn for the relevant thickness and directional refractive-index difference. A color chart cannot establish birefringence without thickness, orientation, spectral, and observation assumptions.
+
+For an ideal monochromatic nonabsorbing plate between ideal crossed polarizers, I/I₀ = sin²(2φ) sin²(πtΔn/λ), where φ locates the plate's vibration directions relative to the polarizer. This model separates orientation extinction from retardation; white-light interference colors require the wavelength-dependent response.
+
+With invented t = 30 μm, Δn = 0.010, and λ = 600 nm, retardation is 300 nm. At φ = 45° the ideal transmitted fraction is 1; at φ = 0° it is 0. Halving thickness at 45° gives 0.5. These are monochromatic teaching values, not named mineral colors.
+
+**Work:** derive/check the example and inspect a suitable known grain through stage rotation. Distinguish extinction, an isotropic phase, unfavorable orientation, opacity, and an instrument issue as possible reasons for darkness. Compare several grains before estimating a maximum birefringence, preserving thickness and anomalous-color limitations.
+
+Read the complete retardation/interference treatment and its charts, then the relevant compensation/measurement procedure. Identification should combine these observations with plane-light properties and independent evidence.
+
+**Continue:** [Interpret uniaxial optics through geometry and suitable observations](Uniaxial-indicatrices-and-interference-figures.lingua#r_3PTF28NPQE0WGQ1S0GWBAV8GZ5).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_6EJ7RHWMKX81AVKDEB45Q1WGZ5

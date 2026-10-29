@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Apply mineral and rock evidence to planetary samples with their actual histories (@mp-planetary: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/NASA-Lunar-Samples-and-Astromaterials.lingua#r_0G134FXVGFCP2KPGXK4Q2W93B3", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #mineralogy-and-petrology "../research/A-sustained-mineralogy-and-petrology-programme.lingua#r_0CW5J4TVZGG1T3K1JE8ZZ2412X") { r_13MYWX75DMQXVM5XFE1ZSG9YMR
+**Read:** [Lunar Sample Compendium and Astromaterials 3D — NASA ARES](../sources/NASA-Lunar-Samples-and-Astromaterials.lingua#r_0G134FXVGFCP2KPGXK4Q2W93B3), the full introduction and one complete identified sample record with its original papers; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete relevant mineral/structural descriptions; [Introduction to Geochronology — Pieter Vermeesch](../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the full relevant dating/exposure method.
+
+Lunar rocks, meteorites, regolith, and other returned materials can record crystallization, impacts, shock, brecciation, alteration, surface exposure, and later handling. Similar mineral names do not imply identical planetary composition, redox, pressure-temperature path, or history.
+
+Preserve sample/sub-sample identifiers, collection context, preparation, textures, mineral domains, chemistry, structural data, and chronological evidence. A whole breccia can combine clasts and matrix with different origins; one measured domain cannot automatically date or characterize the entire composite sample.
+
+Shock-related phases, deformation, melt, and transformation features need structural/textural and experimental support. Metastable preservation or later overprinting can affect a pressure/time interpretation. Comparison with terrestrial rocks is useful when the relevant differences in conditions and history remain explicit.
+
+**Work:** read one complete lunar sample record and its original petrographic/analytical papers, using an identified digital specimen view as an additional observation where useful. Reconstruct at least two event stages and test an alternative involving inheritance, impact mixing, or later modification. Explain which observations constrain each conclusion and what the digital view cannot establish.
+
+Read the compendium introduction/disclaimer and full relevant methods. Specialist planetary science will deepen planetary settings and exploration; this step shows how the same mineral/rock methods transfer through an evidence-specific account rather than a new disconnected foundation.
+
+**Continue:** [Complete the substantial book, lecture, and analytical-method reading](../research/A-sustained-mineralogy-and-petrology-programme.lingua#r_0CW5J4TVZGG1T3K1JE8ZZ2412X).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_13MYWX75DMQXVM5XFE1ZSG9YMR

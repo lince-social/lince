@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Reference materials, certificates, and their scope — NIST (@met-reference-materials: 0, is #reference, #part-of @met-sources) { r_6M66GJE1X11ZY0R3517A3VEYM3
+NIST Standard Reference Materials programme. [Official reference-material service and educational material](https://www.nist.gov/srm).
+
+Select an individual authorized certificate for a material relevant to a measurement question and read it completely, including the certified properties, uncertainty statements, methods, minimum sample, homogeneity, handling, storage, validity, and noncertified values. Record its material identifier, lot, issue date, authors or issuing organization, and exact certificate address in the study. A catalogue title alone is not evidence for a particular result.
+
+Compare a material intended for calibration with one used as an independent check. A certified value for one property or matrix does not certify all possible properties or guarantee suitability after inappropriate subsampling or storage.
+
+The official programme and access routes were checked on 28 October 2026. Material purchases, availability, and certificates can change; consult the specific current certificate. NIST federal information and any separate material/software terms retain their own notices. This is a reference workflow, not an ingestion of the catalogue.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_6M66GJE1X11ZY0R3517A3VEYM3

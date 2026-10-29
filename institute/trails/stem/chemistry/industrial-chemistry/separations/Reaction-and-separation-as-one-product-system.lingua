@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Design a separation argument around the complete reaction and product account (@ic-separation-trains: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #industrial-chemistry "Distillation-volatility-stages-reflux-and-energy.lingua#r_03PTYEGR2X76HT9RBYBK813RVS") { r_06SY3Y27KN4FR3EW1WFX3V1BZ0
+**Read:** [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the complete isolation, solvent/recovery and batch process-account treatment; [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the full reaction/separation and recycle sections of a selected process chapter; [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), the entire relevant separation module sequence.
+
+A reactor outlet is rarely the final useful product. Unreacted feed, solvents, carriers, catalysts, side products, water and traces must be separated or assigned to other streams. A separation train changes composition, amount, phase and energy requirements; it can return material to reaction and alter the effective process boundary.
+
+Define recovery and purity separately. Recovering nearly all desired material can produce a dilute or contaminated product, while making a very pure small fraction can hide large losses. Several successive recoveries multiply: three independent steps each retaining 0.90 of the target retain 0.90³=0.729 overall, before reaction selectivity or acceptance is considered.
+
+Choose operations from actual phase and transport properties, stability and specification. A sequence may remove bulk carriers first and trace contaminants later, or deliberately change chemical form to enable isolation. Reaction/separation coupling can improve one duty while increasing solvent, heat, regeneration or contamination elsewhere.
+
+**Work:** reconstruct the entire isolation train of a public chemical route, closing target and consequential impurity accounts. Compare two plausible sequences on accepted output, energy, solvent, loss, maintenance and uncertainty. Explain which physical/chemical evidence determines the order and where a proposed simplification would move rather than remove a problem.
+
+**Continue:** [Connect distillation with phase behavior, finite stages, recovery and heat duties](Distillation-volatility-stages-reflux-and-energy.lingua#r_03PTYEGR2X76HT9RBYBK813RVS).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_06SY3Y27KN4FR3EW1WFX3V1BZ0

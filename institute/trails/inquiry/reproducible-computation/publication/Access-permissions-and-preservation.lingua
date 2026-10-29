@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Distinguish authorized access, reuse rights, and reconstruction limits (@rc-rights: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/FAIR-Principles.lingua#r_1DJWX0MM8DMEK300ZF8PHGQVB9", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Citations-editions-and-provenance.lingua#r_5A3TFYE7G3XCFYY4MJNK2VKB2R") { r_4DJGTXAFTXVJ9Z9ECAAGKTZYD2
+**Read:** [FAIR Guiding Principles — Wilkinson and colleagues](../sources/FAIR-Principles.lingua#r_1DJWX0MM8DMEK300ZF8PHGQVB9), the complete paper and publisher updates; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Licensing, Open Research, and relevant ethical-data material.
+
+An accessible article, an openly licensed textbook, a public code repository, a restricted dataset, and a commercial executable offer different possibilities for reconstruction and reuse. Record the relevant edition, source, licence or access condition, and component notices rather than equating a working download link with permission to redistribute or adapt everything it contains.
+
+This trail links authorized books, manuals, and papers externally. The original examples and explanations are authored in these Records. A learner may retain permitted materials in appropriate personal or institutional storage for their project, preserving notices and identities. Downloaded PDFs, book collections, external datasets, and dependency images do not belong in this repository merely because a reading uses them.
+
+Scientific openness has several dimensions: inspectable method, available code, accessible observations, declared environment, and practical ability to rerun. A project can improve one while retaining a constraint in another. State the actual access boundary and provide an authorized access procedure or an independently useful small example where a source cannot be shared. Do not present invented replacement observations as the original study's evidence.
+
+**Work:** make an access/reuse table for the actual sources and artifacts in your project. Distinguish the publication licence from separately credited images, data, software, and third-party components. Identify which materials can be redistributed, which can be linked or accessed under conditions, and which dependencies limit independent reconstruction. Consult the actual governing notices when a reuse decision matters.
+
+Compare the result with the FAIR paper and Turing Way licensing chapter. Findability, accessibility, interoperability, and reusability need concrete supporting arrangements; none automatically establishes unrestricted public access or scientific correctness. The aim is an honest, usable account that preserves the strongest reconstruction and critique the available rights permit.
+
+**Continue:** [Cite the particular work and version that supports the method](Citations-editions-and-provenance.lingua#r_5A3TFYE7G3XCFYY4MJNK2VKB2R).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_4DJGTXAFTXVJ9Z9ECAAGKTZYD2

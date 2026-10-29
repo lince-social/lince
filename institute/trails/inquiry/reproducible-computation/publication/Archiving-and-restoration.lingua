@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Preserve a reconstructible study and test restoration (@rc-archive: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #source "../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #reproducible-computation "Independent-reproduction-review.lingua#r_64PY9JV0XV95ZA0SE54TYNBQWN") { r_1MKF7WR9CNMVP8WG4EJ5HZ05W7
+**Read:** [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Research Compendia, Research Data Management, and environments; [Deterministic artifacts and environmental variation — Reproducible Builds](../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A), verification and unavailable/environmental inputs; [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), preservation and availability recommendations.
+
+Preservation begins by identifying what would be needed after the original working environment disappears. Separate original observations, scientific source, configuration, dependency declarations/resolved inputs, tests, documentation, and generated results. State where each is retained under appropriate access rights and what identities connect them. A link to an online service is weaker than an independently tested restoration path when the service is the only place the work exists.
+
+Archive the particular method and input versions underlying a result, not just the newest development branch. Include the command or workflow and the known comparison criteria. Retain a small independent benchmark that can diagnose reconstruction failures before a long computation. If a binary environment is preserved, explain whether and how it can also be rebuilt from available authorized inputs.
+
+An archive's identifier and metadata help a reader find it; restore it to test whether its content is sufficient. Recreate the environment in a fresh location, run the checks and workflow, compare outputs, and document unavailable inputs or manual rescue steps. An archive file that opens successfully has passed only a storage-format check.
+
+**Work:** prepare an authorized reconstruction package for your personal project, set the original working area aside, and restore in a fresh location. Test an offline run after any explicitly documented acquisition/setup stage. Distinguish data/media retained in your research storage from the external source references in the Lince trail. Do not copy books or collections into this repository to satisfy the exercise.
+
+Repeat restoration after a meaningful environment change or preservation event, recording new evidence and necessary corrections. Do not promise indefinite availability from one successful test. The practical goal is a maintained reconstruction path with known boundaries, enough independent checks to expose failures, and a scientific explanation that remains intelligible even if a particular tool becomes unavailable.
+
+**Continue:** [Let an unfamiliar reader test the reconstruction and the claim](Independent-reproduction-review.lingua#r_64PY9JV0XV95ZA0SE54TYNBQWN).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_1MKF7WR9CNMVP8WG4EJ5HZ05W7

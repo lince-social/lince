@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced fluid-network and machine-operating study (@fd-advanced-network: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT", #source "../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05", #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #fluid-dynamics "Advanced-pipe-transient-and-sensor-response-study.lingua#r_0Z3TEDK7V0YXFMBXNHRP80DTVA") { r_1721PJY51WQF9T9JVXT0E3VX7S
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), internal-flow and network balances; [Advanced Hydraulics — Suresh A. Kartha](../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT), machine momentum and hydraulic applications; [Water-flow calibration — NIST SP 250-98](../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05), installed flow measurement; [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), limits of steady operation analysis.
+
+Build a steady network account with multiple users, branches, elevations and at least one real pump or fan characteristic. Preserve each branch's geometric and loss definitions. Solve node continuity and branch head relations, compare with an independently reduced small case, and use [An inspectable pump-and-pipe operating point](../computation/An-inspectable-pump-and-pipe-operating-point.lingua#r_0C8QS68GNNJFF403GENEXJARPC) as one inspectable single-branch reference.
+
+Investigate changed demand, a loaded filter, a different reservoir level and an isolated branch. Compare predicted flow distribution and power with measured or independently documented equipment behavior. Distinguish changes in resistance from changes in machine performance and quantify uncertainty in roughness, coefficients and sensing.
+
+Deliver a defended service operating envelope with the data needed to reproduce it. Identify which findings require transient, compressible, multiphase or thermal analysis beyond the steady model. Include a physical observation or qualified primary dataset; the fact that nonlinear equations have converged does not establish installed network behavior.
+
+**Continue:** [Advanced pipe-transient and sensor-response study](Advanced-pipe-transient-and-sensor-response-study.lingua#r_0Z3TEDK7V0YXFMBXNHRP80DTVA).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1721PJY51WQF9T9JVXT0E3VX7S

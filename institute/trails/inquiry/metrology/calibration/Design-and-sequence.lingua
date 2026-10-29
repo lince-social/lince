@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Design a calibration that can reveal its own weaknesses (@met-calibration-design: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R", #metrology "Response-and-regression.lingua#r_182XY9TP839DMYS0DM3ZEGQ3BH") { r_1DM0C485A4H25DSVDR611QZPXC
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 2.3’s designs and instrument-calibration sections; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 7–8 and 11.4; [Calibration of digital multimeters — EURAMET cg-15](../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R), the complete calibration sequence.
+
+Choose reference levels, replication, order, reversals, settling observations, and independent checks to address the intended range and likely influences. More readings at one convenient point cannot establish a slope, distinguish curvature, or test a new range. A design should allow plausible competing explanations to produce different observable patterns.
+
+A useful initial design spans the range, includes repeated levels, and avoids confounding level with elapsed time. If the reference is increased monotonically while the instrument warms up, drift can imitate a scale error. Interleaving or randomized order can reduce that confounding where the physical procedure permits; a hysteretic instrument may also require explicitly ordered ascending and descending runs.
+
+Allocate reference uncertainty, environmental observation, and replication with the decision in mind. Ten extra repetitions may do little when the dominant contribution comes from an uncertain common reference. Reserve observations or independent standards for checking a relation not chosen from those same observations.
+
+**Work:** design two paper calibrations for the same hypothetical device: a weak two-point sequence and an improved multipoint sequence with repeated and check levels. Draw the predicted observation patterns for an offset, scale error, drift, curvature, and hysteresis. Explain which patterns each design could distinguish and which remain confounded.
+
+Define invalid-reading criteria before examining the fit, and retain observations excluded by those criteria with their reasons. Equipment faults can justify repeating a run, but silently deleting an inconvenient point can manufacture apparent accuracy. A full advanced design includes sample-size reasoning, instrument-specific conditions, uncertainty of the references, and a plan for analysing residuals and validating the intended use.
+
+**Continue:** [Fit a response relation and inspect what the residuals say](Response-and-regression.lingua#r_182XY9TP839DMYS0DM3ZEGQ3BH).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_1DM0C485A4H25DSVDR611QZPXC

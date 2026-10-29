@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Translate geological history into an explicit ground model for infrastructure questions (@geo-engineering: 0, is #chapter, #part-of @geology, #source "../sources/Groundwater-Freeze-Cherry.lingua#r_6P2FK74P9MC2672X94GE1S0NZB", #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #source "../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N", #geology "Geological-hazards-exposure-and-uncertainty.lingua#r_1V21CQDPEZDJGW6NW1C0ABNJ4X") { r_0MTDARJP2G6GFXB1Y5HNT00BJ8
+**Read:** [Groundwater — Freeze and Cherry, preserved authorized edition](../sources/Groundwater-Freeze-Cherry.lingua#r_6P2FK74P9MC2672X94GE1S0NZB), chapter 10 Groundwater and Geotechnical Problems in full; [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), the complete engineering/land-use application treatment; [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N), the chosen materials/ground-process regional sections.
+
+Engineering geology connects materials, structure, weathering, groundwater, geomorphology, and history with how ground may behave under an identified project. A ground model should distinguish observed units/properties, inferred geometry, uncertainty, processes, and the loads or interventions relevant to the question.
+
+Rock mass and intact specimen behavior differ because joints, faults, bedding, weathering, scale, and fluids affect response. Soil description/classification is not a complete measurement of strength, compressibility, permeability, or time-dependent behavior. A laboratory value needs sampling, disturbance, preparation, test conditions, and applicability to the field.
+
+Excavation, dewatering, fill, loading, drainage change, and operation alter boundaries and stresses. Existing voids, soluble materials, swelling or collapsible ground, seismic effects, contamination, and slope processes may require different investigations. Identify plausible mechanisms from the actual geology rather than using a universal checklist as the site's explanation.
+
+**Work:** build a conceptual ground model for an authorized bridge, tunnel, reservoir, road, or facility case. Draw a section with observed/inferred contacts, groundwater conditions, process histories, and competing interpretations. Explain which additional investigation would reduce the uncertainty controlling a specific question and how observations during construction could revise the model.
+
+Read the groundwater/geotechnical chapter and applicable regional material. The later geotechnical and construction trails deepen investigation, analysis, design, execution, and monitoring. A geological study here demonstrates interpretation and appropriate limits; it does not claim that a real structure has been designed or its ground performance certified.
+
+**Continue:** [Distinguish geological process, hazard, exposure, vulnerability, and risk](Geological-hazards-exposure-and-uncertainty.lingua#r_1V21CQDPEZDJGW6NW1C0ABNJ4X).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_0MTDARJP2G6GFXB1Y5HNT00BJ8

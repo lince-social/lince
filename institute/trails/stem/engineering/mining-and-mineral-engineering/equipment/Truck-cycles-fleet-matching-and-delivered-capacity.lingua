@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Compare fleet capacity with the connected loading, route, and destination system (@mine-trucks: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS", #mining-and-mineral-engineering "Haul-roads-traction-drainage-and-maintained-performance.lingua#r_7CW1YAKDG3G207SF15106RQC5S") { r_1P7SQVMSZSPG118GWYDH7JAG2P
+**Read:** [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the complete shovel/dumper and transport lectures; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full haulage, capacity, and equipment context; [A Review of Operations Research in Mine Planning — Newman and colleagues](../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS), the complete equipment/dispatch method selected.
+
+A truck cycle includes loading, travel, unloading, return, and defined delays. Payload, material/road conditions, gradients, traffic, energy/thermal limits, work practice, and equipment condition affect its elements. A manufacturer's nominal payload or speed is not a complete measured duty cycle.
+
+For an invented productive cycle of 20 minutes and payload 50 t, one truck's ideal operating rate is 150 t h⁻¹; four sum to 600 t h⁻¹ under those assumptions. A loader limited to 500 t h⁻¹ caps the ideal connected throughput before queues, unavailable work, or other constraints are added.
+
+Availability and utilization need compatible conditional denominators. Their product can convert a defined operating rate to an accounting average, but separately averaged component capacities do not guarantee synchronized system performance. Correlated failures, queues, route conflicts, and changing destinations matter.
+
+**Work:** derive/check the ideal example, then reconstruct a full cycle/fleet case with observed distributions rather than only averages. Compare an added truck with a changed loading/route constraint and explain when additional equipment mainly adds waiting. Identify the event/state data needed to test the conclusion.
+
+Read full haulage, equipment, and scheduling sources. The later queue/reliability and operating studies require independently checked system models before treating simulated throughput as an actual production forecast.
+
+**Continue:** [Connect road geometry and condition with transport work and operating evidence](Haul-roads-traction-drainage-and-maintained-performance.lingua#r_7CW1YAKDG3G207SF15106RQC5S).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1P7SQVMSZSPG118GWYDH7JAG2P

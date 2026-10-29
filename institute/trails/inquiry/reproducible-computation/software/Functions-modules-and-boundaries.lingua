@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Separate scientific transformations from their surroundings (@rc-modules: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Python-Environments-and-Packaging.lingua#r_5VVAF04TH8R3DRY9Z36308BH88", #reproducible-computation "Arguments-and-configuration.lingua#r_0AH1JA9H4RCTT1T4S876V0N674") { r_78TTB7C486WRJJGY0W3GR7H1WQ
+**Read:** [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), the program-organization, functions, and packaging chapters; [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), Write decoupled code completely; [Environments, dependency records, and packaging — PyPA](../sources/Python-Environments-and-Packaging.lingua#r_5VVAF04TH8R3DRY9Z36308BH88), distribution package versus import package.
+
+In the worked program, calculate receives interpreted values and returns quantities. load_rows owns the tabular contract. build_report owns output meaning and serialization preparation. run owns filesystem interaction, and main owns the command-line interface. These boundaries let another implementation or test exercise the mathematics without reproducing the shell or directory layout.
+
+Importing analyze must not run the command or overwrite a report. The main guard makes invocation explicit. A module's top-level state still matters: imported dependencies can have side effects and module constants can conceal parameters. Inspect rather than assuming every import is inert. Use a small public interface and keep the meaning of its inputs stable during an analysis.
+
+Decomposition should reveal decisions. A helper called process_data hides more than one called dry_component_mass if its role is a specific physical conversion. Conversely, splitting each arithmetic operator into a separate module makes the scientific relationship harder to inspect. Compare candidate boundaries by asking whether a reader can independently check the actual transformation and whether failures identify a useful part of the work.
+
+**Work:** import analyze in a fresh interpreter and call calculate with exact fractions for a single lot. Verify that no files appear. Then replace the CSV reader with a reader for an explicitly documented alternative format while keeping calculate unchanged. Compare results for equivalent inputs and identify what the format adapter is responsible for validating.
+
+Read the complete organization and function material in the research-software book, and the handbook's decoupling chapter. Extend the project into a small package only when several modules or callers justify it. Learn the official packaging distinction between an import package and a distribution package before treating an installed distribution's name as proof of which source code was imported.
+
+**Continue:** [Expose parameters and make their interpretation reproducible](Arguments-and-configuration.lingua#r_0AH1JA9H4RCTT1T4S876V0N674).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_78TTB7C486WRJJGY0W3GR7H1WQ

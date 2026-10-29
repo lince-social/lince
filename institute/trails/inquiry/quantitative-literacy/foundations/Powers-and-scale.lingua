@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Exponents, scientific notation, and orders of magnitude (@ql-powers: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-prealgebra, #source @ql-source-algebra, #source @ql-source-si, #quantitative-literacy "Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_55FCWM0V49GJXKV3YN0KYGE006
+**Read:** Prealgebra 2e chapter 10's exponent rules and scientific notation, especially Integer Exponents and Scientific Notation. Continue with Algebra and Trigonometry 2e chapter 1's exponent and radical sections. Consult the SI Brochure prefix table alongside the numerical work.
+
+An exponent describes repeated multiplication or its extension. In scientific notation a nonzero value is written a × 10^n with 1 ≤ |a| < 10. Multiplication adds exponents; addition first needs compatible powers. Write the unit outside the numerical exponent expression so a power of ten cannot be confused with a power of the unit.
+
+One micrometre is 10^−6 m and one nanometre is 10^−9 m: their ratio is 1000. One square micrometre is 10^−12 m². The area conversion must square the length conversion; this is a frequent error when interpreting surface densities or drawing scales.
+
+An order-of-magnitude estimate states a scale and the approximation being made. It does not mean every factor near one is negligible. A factor of two can be decisive near a specification limit. Distinguish “within a factor of ten,” “one significant figure,” and a quantified measurement interval.
+
+**Work:** put an ore shipment, a laboratory specimen, a machine feature, and a thin-film thickness on one length-or-mass scale using clearly labelled hypothetical values. Convert 2.5 × 10^8 nm into metres, and 6 mm² into m². Show why (10^3)² differs from 10^(3²). Explain the difference between SI decimal prefixes and binary storage prefixes before comparing kB and KiB.
+
+**Continue:** [Units, dimensions, and equations that can make sense](Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_55FCWM0V49GJXKV3YN0KYGE006

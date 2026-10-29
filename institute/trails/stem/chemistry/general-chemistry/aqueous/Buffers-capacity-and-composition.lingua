@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Understand a buffer through equilibrium and finite material amounts (@gc-buffers: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "Titrations-endpoints-and-inference.lingua#r_0K70T8KMZHSEXC6SDCJ0JSCG2V") { r_5D2PT65E1JNFFB35PCBXFE0M6X
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 14’s buffer treatment; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), buffers, capacity, and exact-solution material; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), equilibrium and titrimetric buffer discussions.
+
+A buffer contains species whose equilibria moderate pH change over a useful range. Its response depends on actual amounts, concentration, solvent, temperature, and competing chemistry. The activity relation pH = pK_a + log₁₀(a_A⁻/a_HA) follows from the defined acid equilibrium. Replacing activities with analytical amount ratios introduces additional approximations.
+
+Buffer capacity concerns a response to added acid/base under specified conditions and can be expressed through a derivative of added amount with respect to pH. A favorable ratio alone does not specify capacity. Dilution can preserve an approximate ratio while changing capacity and the importance of water, activity coefficients, or other equilibria.
+
+Before using an approximate ratio, account for the stoichiometric addition, total volume, conserved components, counterions, and remaining finite amounts. Adding enough base or acid can move the system outside a useful buffer regime. Another reaction or an open gas reservoir can change the account even when an initial pH is familiar.
+
+**Work:** design a labelled hypothetical HA/A⁻ mixture, predict its response to several stated additions, and compare the approximation with complete charge/mass-balance solutions. Compare two buffers with the same ratio but different total concentrations. Derive a local capacity expression or obtain a well-resolved numerical derivative with a documented accuracy check.
+
+Read the full buffer lessons and exercises, then connect them with the numerical titration example. Biology, analytical chemistry, and industrial water treatment will reuse this shared reasoning with their own species, media, and practical constraints.
+
+**Continue:** [Treat a titration as chemical inference from a controlled addition](Titrations-endpoints-and-inference.lingua#r_0K70T8KMZHSEXC6SDCJ0JSCG2V).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_5D2PT65E1JNFFB35PCBXFE0M6X

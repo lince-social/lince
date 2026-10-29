@@ -79,6 +79,13 @@ pub(super) fn capture_button(canvas: &mut Presentation, command: &str) -> Entity
     button
 }
 
+pub(super) fn pixel_pointer(canvas: &mut Presentation, point: [f32; 2]) {
+    let logical = canvas.input_mapping().logical_point(point.map(f64::from));
+    let origin = canvas.output_view.as_ref().map_or([0.0; 2], |output|
+        std::array::from_fn(|axis| output.bounds.origin()[axis] + canvas.render_origin[axis]));
+    canvas.pointer(std::array::from_fn(|axis| (logical[axis] - origin[axis]) as f32)).unwrap();
+}
+
 pub(super) fn click_with_keys(
     canvas: &mut Presentation,
     entity: Entity,
@@ -97,12 +104,13 @@ pub(super) fn click_with_keys(
             && position.y >= 0.0
             && position.x < size[0] as f32
             && position.y < size[1] as f32,
-        "control outside viewport: {position:?}"
+        "control outside viewport: entity={entity:?}, label={:?}, position={position:?}, size={size:?}",
+        world.get::<bevy::a11y::AccessibilityNode>(entity).and_then(|node| node.label())
     );
     if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
         assert!(clip.clip.contains(position), "control center is clipped");
     }
-    canvas.pointer(position.to_array()).unwrap();
+    pixel_pointer(canvas, position.to_array());
     settle(canvas);
     canvas.button(MouseButton::Left, true).unwrap();
     settle(canvas);

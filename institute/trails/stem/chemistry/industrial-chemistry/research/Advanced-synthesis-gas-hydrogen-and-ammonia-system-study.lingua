@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Defend an integrated gas-to-ammonia system through chemistry, separation and operating evidence (@ic-gas-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_5JFJ9ZNP6VSC54MM8QVGQMYJV7
+**Read:** [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the complete ammonia, feed and associated utility/process chapters; [Haber–Bosch ammonia in an energy landscape — Smith, Hill and Torrente-Murciano](../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ), the whole paper and supplement with all central assumptions reproduced; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full relevant equilibrium, catalytic and nonisothermal reactor cases; [Quantitative isotope controls for ammonia claims — Andersen and colleagues](../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST), the complete corrected primary evidence for evaluating an alternative small-product claim.
+
+Reconstruct an integrated hydrogen/synthesis-feed/ammonia case using complete public technical and primary scholarly evidence. Begin with actual feed and required delivered product, then connect preparation, gas chemistry, catalyst/kinetics, equilibrium, separation, recycle/purge, heat/work and supporting utilities.
+
+Independently derive the element/species and inventory accounts, reproduce a substantial equilibrium/reactor/loop result and test it with a second method. Compare ideal limits with measured or explicitly modeled finite-rate and separation behavior. Preserve contaminant, catalyst-service and variable-operating questions rather than assuming a steady pure-feed case settles them.
+
+Compare a justified alternative hydrogen/feed or process arrangement on the same qualified product, pressure, availability and system boundary. Test the most influential property, rate, separation, energy and time assumptions. Distinguish established observations, conceptual design and future projections.
+
+**Work:** deliver a full technical/scholarly account with primary methods, complete bibliography, derivations, original reproducible calculations, uncertainty, alternatives and independent challenge. Explain a consequential discrepancy and propose the observation most likely to discriminate the competing explanation. Report which actual laboratory/pilot/operating evidence exists and which further practical work is still required.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_5JFJ9ZNP6VSC54MM8QVGQMYJV7

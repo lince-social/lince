@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Develop a fine-chemical route from reaction evidence to repeatable isolated product (@ic-fine-chemicals: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #source "../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT", #industrial-chemistry "Chiral-selectivity-biocatalysis-and-product-evidence.lingua#r_0D53A6RMV288PCA6GV5GA14E0G") { r_5SV6W0SB837C7Q1TZ07SMRV697
+**Read:** [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the entire multipurpose/batch production reference and complete relevant process examples; [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the whole reaction-development, experimental and scale guide; [The E factor 25 years on — Roger A. Sheldon](../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT), the complete perspective and actual metric definitions/examples.
+
+Fine-chemical production often combines several reactions and isolations in batch or multipurpose equipment. Step yield, selectivity, impurity formation, solvent/reagent recovery, physical product state and cycle time influence the whole route. A successful analytical reaction sample is different evidence from repeatable isolated product of the required specification.
+
+Compare alternative sequences with compatible starting materials and outputs. Protecting groups, stoichiometric reagents, catalyst retention, workup and solvent exchanges can change material intensity and practical complexity. Multiplying isolated step yields reveals a route penalty that a sequence of separately reported high conversions can conceal.
+
+Scale introduces mixing, thermal, addition, phase and handling histories that need actual primary methods. Cleaning/changeover, analytical validation, material identity and service state influence repeatability. Public literature may leave important proprietary details unresolved; identify those gaps without treating a guessed recipe as demonstrated knowledge.
+
+**Work:** reconstruct a complete authorized primary synthesis/process-development study and its supporting methods. Independently close all consequential reagent, solvent, intermediate and impurity quantities, then compare a justified alternative on accepted product over a full cycle. Explain the strongest competing mechanism or scale explanation and what actual observation would discriminate it.
+
+**Continue:** [Distinguish chemical yield, stereochemical composition and useful selective synthesis](Chiral-selectivity-biocatalysis-and-product-evidence.lingua#r_0D53A6RMV288PCA6GV5GA14E0G).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_5SV6W0SB837C7Q1TZ07SMRV697

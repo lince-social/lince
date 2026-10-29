@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Distinguish nuclear change from ordinary chemical transformation (@gc-nuclear: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/Atomic-Weights-and-Isotopes.lingua#r_1HF97SGP3GF6YJDRH0D81PQ3S3", #general-chemistry "../../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ", #geology "../../../../nature/earth/geology/time/Age-equations-and-closed-system-assumptions.lingua#r_57HA3QBG1CN50ESWCFE98EM9NQ") { r_0Y7ZKCD61XN1RHC4HKMBDZPK35
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 21 in full with exercises; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), Lecture 36 and its prerequisite context; [Atomic weights, isotopes, and the periodic table — CIAAW and IUPAC](../sources/Atomic-Weights-and-Isotopes.lingua#r_1HF97SGP3GF6YJDRH0D81PQ3S3), nuclide, isotope, and radioactive-element notes.
+
+Nuclear reactions change nuclides and may change elemental identity; ordinary chemical reactions reorganize electronic/chemical states while preserving nuclei under their usual model. Conserve the relevant nuclear counts, charge, and energy with the appropriate reaction description. Mass-number bookkeeping and measured nuclear masses have different roles.
+
+Radioactive decay uses a statistical model. For a simple isolated parent with constant decay probability and no replenishment, expected population follows N(t) = N₀exp(−λt), with half-life ln 2/λ. The same exponential mathematics as first-order kinetics does not make the underlying physical process identical. Decay chains, branching, detection efficiency, and background require additional models.
+
+Distinguish activity as decay rate from amount, absorbed energy/dose quantities, and detector counts. A count-rate observation needs efficiency, geometry, background, timing, and decay/specimen information before it supports a quantitative inference. Nuclear handling and measurements require the actual authorized facilities and trained supervision.
+
+**Work:** balance selected textbook decay/reaction equations, derive the simple decay relation, and reconstruct an identified published-data age or activity calculation with its assumptions. Explain how contamination, an open boundary, a decay chain, or an uncertain initial state would change that inference. Use data and calculations without acquiring or handling radioactive material.
+
+Read the entire nuclear chapter and MIT's application lecture. Nuclear physics, radiochemistry, medicine, and energy engineering retain their deeper specialist studies; this Record supplies the general chemical language and measurement distinctions necessary to approach them.
+
+**Continue:** [Chemical measurements — matrix, recovery, selectivity, and reference material](../../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in geology:** [Derive a numerical age and state what event it dates](../../../../nature/earth/geology/time/Age-equations-and-closed-system-assumptions.lingua#r_57HA3QBG1CN50ESWCFE98EM9NQ).
+} r_0Y7ZKCD61XN1RHC4HKMBDZPK35

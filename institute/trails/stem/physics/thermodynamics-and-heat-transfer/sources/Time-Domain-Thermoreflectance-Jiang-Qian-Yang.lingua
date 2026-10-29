@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Time-domain thermoreflectance — Jiang, Qian and Yang (@th-tdtr: 0, is #reference, #part-of @th-sources) { r_7ZHR7DG99WYCCG8J21HTKE9TMS
+Puqing Jiang, Xin Qian and Ronggui Yang. Tutorial: Time-domain thermoreflectance (TDTR) for thermal property characterization of bulk and thin film materials, 2018. [Author preprint and full text](https://arxiv.org/abs/1807.01258) · [Journal article](https://doi.org/10.1063/1.5046944).
+
+Read the entire tutorial: physical signal generation, multilayer heat-flow model, fitting, sensitivity, configurations, uncertainty and limitations. Reconstruct a selected model and ask whether the observations distinguish conductivity, interface conductance and heat capacity. Vary spot size, frequency or thickness as an identification question rather than assuming a unique fitted result.
+
+Distinguish the submitted author version from the journal version and check their actual notices. The tutorial's date is not a claim to cover all later methods. [Thermoreflectance methods — September 2026 review](Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW) provides a separately dated later comparison; the source PDFs, signals and apparatus data remain external.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_7ZHR7DG99WYCCG8J21HTKE9TMS

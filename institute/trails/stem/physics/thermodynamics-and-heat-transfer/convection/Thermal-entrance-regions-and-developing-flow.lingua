@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Thermal entrance regions and developing flow (@th-entrance: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "Turbulent-heat-flux-closures-and-validation.lingua#r_1PRM4GXETD6X6SSPGA2CV35NTN") { r_2KZYT693T9F7TPRA1TYJZ9FFFV
+**Read:** [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), the full thermal entrance-region treatment; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), constant-temperature/constant-flux entry problems; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), developing internal convection.
+
+At an inlet or a change in heating condition, thermal and velocity profiles develop over finite distances. Establish inlet profiles and the relative entrance lengths before using a fully developed coefficient. Short channels and localized device heating can be dominated by entrance behavior.
+
+Study the Graetz-type problem or the corresponding complete analytical/numerical treatment. Compare local transfer and average duty as axial position changes. A discontinuous ideal boundary input may create a local singular behavior that a finite sensor or source footprint averages differently.
+
+Reconstruct a developing-flow example, then change only the inlet condition. Check axial energy balance, mesh resolution and the assumptions about axial conduction. Explain whether the measured outlet state can distinguish the inlet-development model from a fitted overall coefficient.
+
+**Continue:** [Turbulent heat flux, closures and validation](Turbulent-heat-flux-closures-and-validation.lingua#r_1PRM4GXETD6X6SSPGA2CV35NTN).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_2KZYT693T9F7TPRA1TYJZ9FFFV

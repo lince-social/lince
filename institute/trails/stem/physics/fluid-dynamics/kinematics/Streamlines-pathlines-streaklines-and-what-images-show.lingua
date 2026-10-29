@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Streamlines, pathlines, streaklines and what images show (@fd-paths: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "../../electromagnetism/mathematics/Gradient-divergence-curl-and-integral-theorems.lingua#r_05M47N16QDCC5B927TEYXAMMA4") { r_5YN2AA06C9HWVJG4C7QP2S7QBN
+**Read:** [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), Eulerian/Lagrangian descriptions and flow visualization with complete notes; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 1 streamlines and material motion; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), measurement-chain and tracer limitations.
+
+A streamline is tangent to the instantaneous velocity field. A pathline is the trajectory of one material marker. A streakline collects markers that have passed through a specified injection location. These constructions coincide under steady conditions with consistent injection and tracing; they generally differ in an unsteady flow.
+
+Describe how a photograph was made before interpreting its curves. Dye released continuously, particles photographed with long exposure and an instantaneous velocity-field reconstruction need not display the same object. Tracers may settle, diffuse, respond slowly or alter a small flow.
+
+Draw each construction for a flow whose direction changes with time. State the release time and observation interval. Compare a visual hypothesis about recirculation or mixing with a quantitative measurement. A smooth-looking line neither proves laminar motion nor establishes that fluid parcels are well mixed across the passage.
+
+**Continue:** [Gradient, divergence, curl and integral theorems](../../electromagnetism/mathematics/Gradient-divergence-curl-and-integral-theorems.lingua#r_05M47N16QDCC5B927TEYXAMMA4).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5YN2AA06C9HWVJG4C7QP2S7QBN

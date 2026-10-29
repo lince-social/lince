@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Coordinate chemical production and distribution without losing process feasibility (@cs-production-planning: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Enterprise-wide-Optimization-Grossmann.lingua#r_4XD1X5QN83H40RBMGJVSZY9Y8V", #source "../sources/Process-Industry-Supply-Chain-Management-Liu.lingua#r_5W74Q34MKEJAWVS30JV4QH01YQ", #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #chemical-supply-systems "Orders-consumption-visibility-and-feedback-across-parties.lingua#r_7Q48XAW5X86H5DGJ3QW9XV6CAR") { r_6PQ79DBR4J7WBVMCB30J1HN4C9
+**Read:** [Enterprise-wide Optimization: A New Frontier in Process Systems Engineering — Grossmann](../sources/Enterprise-wide-Optimization-Grossmann.lingua#r_4XD1X5QN83H40RBMGJVSZY9Y8V), the entire paper and primary model references selected for the case; [Supply chain management for the process industry — Songsong Liu](../sources/Process-Industry-Supply-Chain-Management-Liu.lingua#r_5W74Q34MKEJAWVS30JV4QH01YQ), complete planning/scheduling and integrated-production chapters; [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the full published coordination/optimisation assignments.
+
+Connect a user's delivery requirements to batch campaigns, continuous production, co-products, shared equipment and changeovers. A planning model that treats every product as an independent instantaneous supply can propose a schedule the plant cannot execute. Include the time needed for cleaning, grade change, analysis and release where it matters.
+
+Read the whole Grossmann paper and the relevant complete chapters of Liu's thesis. Reconstruct a small multiproduct example using material balances, capacity, state and sequence-dependent time. State exactly which decisions are continuous, integer or logical and which constraints represent demonstrated physical limits.
+
+Compare a short-term feasible schedule with a longer-term inventory/distribution plan. A large order can change campaign timing upstream; co-product demand can constrain available output; and a customer's inability to receive can obstruct a planned dispatch. Investigate how information and decision horizons are coordinated. Solve a transparent small case independently before adopting a solver for a larger study. Later chemical/process engineering and operations-research subjects deepen the algorithms; this pathway requires the correct interface between produced, released, transported and usable quantities.
+
+**Continue:** [Explain how replenishment decisions change the information seen upstream](Orders-consumption-visibility-and-feedback-across-parties.lingua#r_7Q48XAW5X86H5DGJ3QW9XV6CAR).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_6PQ79DBR4J7WBVMCB30J1HN4C9

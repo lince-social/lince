@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Heat and mass transfer, analogy and diffusion (@th-mass-transfer: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "Humid-air-evaporation-drying-and-moisture-storage.lingua#r_5SWJJWAQVW3VXJT5N7SAR7GTMX") { r_7Y3SYSB181GZ401PFKJ3JY32DC
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the complete mass-transfer treatment; [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), mass-transfer analogy and phase-change tutorials; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), diffusion forces and coupled transport.
+
+Mass diffusion can transport species and their enthalpy, while temperature and composition jointly affect phase equilibrium and buoyancy. Define mass or molar fluxes, mixture reference velocity and diffusion driving forces. An analogy with heat transfer requires matching equation form and boundary assumptions.
+
+Derive a dilute diffusion problem and compare its dimensionless groups with thermal transport. Stefan flow, unequal diffusivities, reaction, nonideal chemical potentials or large transfer rates can invalidate a simple analogy. A concentration boundary is not automatically equivalent to a temperature boundary at a changing phase interface.
+
+Read the complete mass-transfer chapter in [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD) and the full coupled-transport development in [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC). Check species and energy closure in a selected evaporation or membrane example. Specialized separation processes build on these shared relations without requiring the entire industrial chemistry route first.
+
+**Continue:** [Humid air, evaporation, drying and moisture storage](Humid-air-evaporation-drying-and-moisture-storage.lingua#r_5SWJJWAQVW3VXJT5N7SAR7GTMX).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7Y3SYSB181GZ401PFKJ3JY32DC

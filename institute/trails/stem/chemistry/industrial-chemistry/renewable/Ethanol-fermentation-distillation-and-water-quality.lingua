@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect fermentation chemistry with recovery, dehydration and the actual ethanol product (@ic-ethanol: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Industria-Alcooleira-Castro.lingua#r_1CNHDZJD6MQ66YERF52Q0PTPPE", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH", #source "../sources/Bebidas-Fermentacao-Castro.lingua#r_6488KNYGN4C5BVD8HDZ914XCAF", #industrial-chemistry "Biorefineries-platform-molecules-and-competing-carbon-paths.lingua#r_30F0DVM1F2QC6XQX5R34HDHJ8A") { r_4VFKS4BW7QKG9G9AQHMCNQPNWF
+**Read:** [Indústria alcooleira — Heizir F. de Castro](../sources/Industria-Alcooleira-Castro.lingua#r_1CNHDZJD6MQ66YERF52Q0PTPPE), the complete alcohol-industry apostila; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the full fermentation/ethanol sequence; [Biochemical conversion of corn stover to ethanol — Humbird and colleagues](../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH), the whole conversion, product-recovery, utility and wastewater design report; [Bebidas — Heizir F. de Castro](../sources/Bebidas-Fermentacao-Castro.lingua#r_6488KNYGN4C5BVD8HDZ914XCAF), the complete comparative fermentation and quality introduction.
+
+For ideal glucose fermentation, C₆H₁₂O₆→2C₂H₅OH+2CO₂ provides a theoretical stoichiometric yield. Actual biological conversion includes cells, maintenance, side products, unconverted feed and changing conditions. A theoretical reaction account is not the measured ethanol yield or a complete feedstock-to-product process.
+
+Preparation, fermentation, distillation, further water removal, product specification and residual treatment form one connected system. Dilution and impurity profiles influence recovery and energy. The product may need a different water/contaminant and denaturing context for its intended industrial use; an assay alone does not establish interchangeability.
+
+Follow gases, biomass, recovered water, salts, heat and co-products on compatible boundaries. Biological feed source, upstream pretreatment and utility supply can change the comparison substantially. Distinguish conceptual design assumptions, laboratory evidence and demonstrated plant operation.
+
+**Work:** reconstruct the whole public fermentation/recovery route and independently close carbon, water and major heat quantities. Compare a documented feed or recovery alternative at equal accepted ethanol product. Quantify influential uncertainty and explain which biological, phase, analytical or operating observation would discriminate competing claims about yield or energy use.
+
+**Continue:** [Compare renewable chemical routes through complete feed, conversion and recovery systems](Biorefineries-platform-molecules-and-competing-carbon-paths.lingua#r_30F0DVM1F2QC6XQX5R34HDHJ8A).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4VFKS4BW7QKG9G9AQHMCNQPNWF

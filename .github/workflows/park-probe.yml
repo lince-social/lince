@@ -1,0 +1,54 @@
+name: Park native fixture
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  fixture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+      - name: Verify revision
+        env:
+          CANDIDATE_REVISION: ${{ inputs.revision }}
+        run: |
+          [[ "$CANDIDATE_REVISION" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_REVISION"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.96.0
+      - name: Build existing native fixture
+        run: |
+          mkdir -p "$RUNNER_TEMP/park-native-fixture/src"
+          cp crates/park/examples/session_probe.rs "$RUNNER_TEMP/park-native-fixture/src/main.rs"
+          cat > "$RUNNER_TEMP/park-native-fixture/Cargo.toml" <<'EOF'
+          [package]
+          name = "park-native-fixture"
+          version = "0.1.0"
+          edition = "2024"
+          [dependencies]
+          wayland-client = "=0.31.15"
+          wayland-protocols = { version = "=0.32.13", features = ["client", "server", "staging"] }
+          rustix = { version = "=1.1.4", features = ["event", "time", "fs", "process", "net", "rand"] }
+          tempfile = "=3.27.0"
+          EOF
+          RUSTFLAGS='-D warnings' cargo build --release --manifest-path "$RUNNER_TEMP/park-native-fixture/Cargo.toml"
+          mkdir -p fixture
+          cp "$RUNNER_TEMP/park-native-fixture/target/release/park-native-fixture" fixture/session-probe
+          git rev-parse HEAD > fixture/revision
+      - uses: actions/upload-artifact@v4
+        with:
+          name: park-native-fixture
+          path: fixture/*
+          if-no-files-found: error
+          retention-days: 7

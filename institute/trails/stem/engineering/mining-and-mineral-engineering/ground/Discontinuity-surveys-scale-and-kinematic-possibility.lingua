@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Measure structures and distinguish kinematic possibility from stability (@mine-discontinuities: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE", #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #source "../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08", #mining-and-mineral-engineering "Strength-criteria-effective-stress-and-calibration.lingua#r_60HM2VGMVX6V6HNKQG8K238QGZ") { r_09SPXAY2V59ZXX3XA7PFFAFMMT
+**Read:** [Engineering Geology Field Manual — U.S. Bureau of Reclamation](../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE), chapters 5–7 and the full relevant core/logging material; [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the full discontinuity strength, classification, and structurally controlled instability chapters; [Pillar and Roof Span Design Guidelines for Underground Stone Mines — NIOSH](../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08), the complete discontinuity/roof mechanism account.
+
+Discontinuity orientation, spacing, persistence, roughness, aperture, infill, weathering, water, connectivity, and relation to the excavation influence possible ground behavior. Preserve survey support, exposure, method, orientation convention, sampling bias, and uncertainty. A convenient face may not represent the whole rock mass.
+
+Geometric/kinematic analysis asks whether movement is possible under specified geometry and constraints. It does not by itself establish forces, strength, probability, or time of movement. Persistence, rock bridges, water, stress, and sequence can change a simple structural interpretation.
+
+Directional populations and incomplete exposures need appropriate analysis. Apparent spacing in a scanline or section differs from true spacing under a geometric account, and censored persistence observations do not become complete lengths by averaging them. Several mapped segments may or may not be connected at depth.
+
+**Work:** complete the full discontinuity-survey and structural-instability methods with a documented dataset. Check an orientation/spacing or geometric construction independently. Compare two plausible connectivity/persistence models and explain how their consequences differ for a slope, roof, or excavation. Identify a targeted field/subsurface observation that could discriminate them.
+
+Read complete method/assumption sections rather than importing one stereonet diagram as a stability conclusion. Practical surveys require appropriate actual observation; document-based exercises should retain their more limited evidential scope.
+
+**Continue:** [Use strength models with the material, conditions, and data that support them](Strength-criteria-effective-stress-and-calibration.lingua#r_60HM2VGMVX6V6HNKQG8K238QGZ).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_09SPXAY2V59ZXX3XA7PFFAFMMT

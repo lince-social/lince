@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Shear-dependent viscosity, power laws and yield models (@fd-generalized-newtonian: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Relaxation-creep-and-linear-viscoelastic-spectra.lingua#r_19B5S842D5P8Q3JM8R37V5XGEC") { r_05PD745REMMP6X02K2S3A78KYK
+**Read:** [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), topics 2 and 3 in full with available problems; [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), generalized Newtonian, pipe and yield calculations; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), constitutive distinctions in chapter 6.
+
+A generalized Newtonian model relates instantaneous deviatoric stress to strain rate through a viscosity depending on a stated scalar invariant. In simple shear, a power law τ=K|γ̇|^(n−1)γ̇ describes a restricted range, with n<1 giving shear thinning. Its singular or unrealistic low/high-rate limits motivate plateau models or a limited declared fit interval.
+
+Derive pressure-driven pipe flow from the radial shear-stress distribution before substituting the constitutive relation. For a yield-stress idealization, locate the region where stress does not exceed yield and determine how a plug can move while its local shear rate vanishes. A fitted yield stress depends on the model and test protocol and can be confused with slow time-dependent deformation.
+
+Compare at least two models against data spanning the actual operating range. Preserve units of K, temperature, sample history and wall-slip checks. A good steady shear fit does not establish elastic, extensional or transient behavior; those require distinct material functions and observations.
+
+**Continue:** [Relaxation, creep and linear viscoelastic spectra](Relaxation-creep-and-linear-viscoelastic-spectra.lingua#r_19B5S842D5P8Q3JM8R37V5XGEC).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_05PD745REMMP6X02K2S3A78KYK

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Distinguish solute redistribution scales and test how processing changes them (@metal-macrosegregation: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "Casting-molds-feeding-inclusions-gases-and-defects.lingua#r_1Q2NKXMA98SM3CYSAV1YZ5M82E") { r_1BJ8TWB2PXSX0CSVPAB9XW84A7
+**Read:** [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), the complete finite-diffusion, flow, and solidification material; [A Guide to the Solidification of Steels — Jernkontoret](../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM), all relevant experimental and alloy chapters; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the entire diffusion and solidification derivations; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the full macrosegregation and homogenization/thermal-history discussions used.
+
+Microsegregation reflects local partition and transport during solidification; macrosegregation also involves large-scale movement, feeding, deformation, shrinkage, or other transport of compositionally different material. A local constant-k Scheil calculation does not by itself predict whole-ingot composition patterns.
+
+Connect phase/growth histories with fluid flow, density differences, porous/mushy transport, solid motion, and heat. Sampling support matters: local analysis, line/map measurements, bulk coupons, and whole-product inventories represent different scales. A visually uniform section does not establish chemical uniformity throughout a casting.
+
+Homogenization can reduce some local gradients through diffusion under an actual thermal/phase history. It cannot automatically erase every large-scale segregation, defect, or compositionally missing region. Treatment can also change precipitates/phases, grain structure, oxidation, and damage; a generic time/temperature label is not enough.
+
+**Work:** reconstruct a complete casting/segregation and subsequent-treatment study. Independently check target/impurity inventories, derive a representative transport or diffusion scale, and compare local and large-scale models with independent observations. Test an alternative flow, sampling, or phase explanation for the pattern. Defend the process change using measured chemical/structural and property consequences rather than one favorable micrograph.
+
+**Continue:** [Connect casting design with heat, flow, material quality, and independent defect evidence](Casting-molds-feeding-inclusions-gases-and-defects.lingua#r_1Q2NKXMA98SM3CYSAV1YZ5M82E).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_1BJ8TWB2PXSX0CSVPAB9XW84A7

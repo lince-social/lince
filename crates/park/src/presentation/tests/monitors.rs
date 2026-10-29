@@ -221,6 +221,10 @@ fn monitor_chords_preserve_workspace_editor_follow_and_geometry_through_bar_chan
         targets[&OutputId(40)].2
     );
     canvas.outputs(reserved).unwrap();
+    assert_eq!(canvas.app.world().resource::<bevy::input_focus::InputFocus>().get(), Some(targets[&OutputId(40)].1));
+    assert_eq!(canvas.output_state.assignments.pending_restorations().count(), 1);
+    canvas.focus_output(OutputId(10)).unwrap();
+    assert_eq!(canvas.output_state.assignments.pending_restorations().count(), 0);
     canvas.focus_output(OutputId(40)).unwrap();
     settle(&mut canvas);
     assert!(native::layout::desktop::focus::following(

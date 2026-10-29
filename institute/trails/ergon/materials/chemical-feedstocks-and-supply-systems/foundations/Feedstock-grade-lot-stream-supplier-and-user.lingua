@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Use the language of material, organisations and transfers precisely (@cs-language: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Gestao-de-Operacoes-e-Logistica-Rosa.lingua#r_6J7SWGEMAKMNVKVNGATZW4EB2J", #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #chemical-supply-systems "Chemical-function-is-the-start-of-a-supply-requirement.lingua#r_723VQJP39Z1GF4MFJXHJC3S8VY") { r_3A7JR8G06NM9Q3X29D8Z8B1623
+**Read:** [Gestão de Operações e Logística I — Rodrigo de Alvarenga Rosa](../sources/Gestao-de-Operacoes-e-Logistica-Rosa.lingua#r_6J7SWGEMAKMNVKVNGATZW4EB2J), the complete service, order and purchasing discussion; [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), Introduction and sections 1, 4, 6–7 and 12 in full.
+
+A feedstock/matéria-prima is an input relative to a chosen process; the same substance can be another process's finished product. An intermediate/intermediário is a product used in a further transformation. A grade/grau identifies a defined product offering and its requirements; it is not a universal ordering from “bad” to “good.” A lot/lote identifies a bounded production or handling history, while a continuous stream/corrente requires a time interval and boundary to say what has been represented.
+
+Distinguish manufacturer/fabricante, distributor/distribuidor, carrier/transportador, receiving organisation/destinatário and final user/usuário. Repacking, blending, purification or changing contact equipment may alter the material and the evidence needed for its next use. Calling every party a supplier hides these differences.
+
+Build a bilingual glossary for the chosen chemical, with one actual example per term. Add specification/especificação, certificate of analysis/certificado de análise, safety data sheet/ficha com dados de segurança, release/liberação, quarantine/quarentena, shelf life/prazo de validade and lead time/prazo de reposição. Explain how each word changes a decision. Compare a safety document, a sales description and a test report without expecting them to answer the same question.
+
+**Continue:** [Define the chemical function before selecting a supplied product](Chemical-function-is-the-start-of-a-supply-requirement.lingua#r_723VQJP39Z1GF4MFJXHJC3S8VY).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_3A7JR8G06NM9Q3X29D8Z8B1623

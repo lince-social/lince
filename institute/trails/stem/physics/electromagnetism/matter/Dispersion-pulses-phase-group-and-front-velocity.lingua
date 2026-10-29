@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Dispersion, pulses and three meanings of velocity (@em-dispersion: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "Causal-response-Kramers-Kronig-and-sum-rule-limits.lingua#r_7Q2917ZCYG5ERX5WJDW3RXX8GY") { r_62MGEANY8E8CA374CPVJ5H203D
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), waves and dispersion in matter; [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), dispersive propagation and pulses.
+
+A pulse superposes frequencies whose phases and attenuations can evolve differently. Phase velocity ω/k describes a harmonic phase in an appropriate regime. Group velocity dω/dk describes a narrowband envelope when the expansion and attenuation assumptions hold. The velocity of a causal front concerns the earliest response to a genuinely new disturbance and cannot be inferred from an arbitrary fitted envelope maximum.
+
+Expand k(ω) about a carrier to derive group delay and second-order pulse spreading. State the spectral width, propagation distance and neglected higher derivatives. In absorbing or anomalously dispersive bands, reshaping can move a peak in ways that do not represent information travelling at that peak velocity. Compare input/output waveforms and the actual excitation history.
+
+Measure phase versus frequency with a calibrated reference plane and unwrap it with continuity assumptions; a whole-cycle ambiguity changes inferred delay. A pulse propagation claim requires amplitude as well as phase response. Distinguish energy velocity from group velocity when material storage and loss matter. The material-model and causal-response Records provide the conditions under which a frequency-domain fit can be turned into a credible time-domain prediction.
+
+**Continue:** [Causal response, Kramers–Kronig and finite-band limits](Causal-response-Kramers-Kronig-and-sum-rule-limits.lingua#r_7Q2917ZCYG5ERX5WJDW3RXX8GY).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_62MGEANY8E8CA374CPVJ5H203D

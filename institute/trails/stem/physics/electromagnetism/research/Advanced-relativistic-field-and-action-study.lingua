@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced relativistic fields, action and conservation (@em-relativity-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_1PN7ASKXD515XZCY9T1FDPJCP5
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), complete relativity, covariant and action sections; [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH), full applicable graduate course work; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), complete relativistic electrodynamics chapters.
+
+Work the full relativity/covariant-field/action treatment in [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), the corresponding [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H) chapters and the complete relevant [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH) lecture/problem sequence. Reconstruct Lorentz transformations, four-current conservation, tensor field equations and the vacuum energy-momentum tensor with one declared metric and SI convention.
+
+Choose a moving charge/current distribution or crossed-field particle problem. Solve it in two inertial frames, transform sources, simultaneity, fields, particle motion and energy/momentum, and compare the same physical observable. Verify both field invariants and the ordinary component Maxwell equations. An algebraic tensor identity alone is not enough; the source geometry and boundary conditions must be transformed too.
+
+Derive the action variation and explain gauge invariance and source work for the chosen complete system. Compare at least two textbook sign/unit conventions by explicit conversion. Extend the problem until a quasistatic approximation breaks down or radiation becomes relevant, and identify the needed extra treatment. Present enough intermediate reasoning for a reader to distinguish a physical contradiction from a coordinate, normalization or simultaneity error. This study supplies graduate classical depth without pretending to finish quantum field theory or gravitation.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_1PN7ASKXD515XZCY9T1FDPJCP5

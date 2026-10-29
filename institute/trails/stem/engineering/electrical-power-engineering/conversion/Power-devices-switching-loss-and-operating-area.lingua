@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Power devices, switching loss and operating area (@pe-power-devices: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #source "../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2", #electrical-power-engineering "Buck-boost-conversion-ripple-and-operating-modes.lingua#r_1SQ4C9GKMGQE9SRW2H8CYCJSBV") { r_4KQJVPTWE8CATNA6D9VW39QVC3
+**Read:** [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), complete semiconductor, switching and power-stage development; [Medium Voltage Technical Guide — Schneider Electric](../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2), relevant complete equipment/service-condition context.
+
+A power semiconductor is not an ideal switch at every voltage, current, temperature and transition speed. Compare conduction characteristics, blocking, switching energy, capacitance/charge, recovery, gate-drive needs and thermal impedance. Data depend on the specified test circuit and state; combining unrelated best-case numbers can create an impossible device model.
+
+Draw the complete commutation path, including parasitic inductance, freewheel path, gate loop and measurement reference. Explain why changing switching speed can alter overvoltage, loss, electromagnetic interference and control behavior. A rated current alone does not establish an acceptable operating point or short-circuit response.
+
+Read the complete device/stage treatment in [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526) and actual authorized manufacturer data for a chosen study. Derive a bounded loss/temperature estimate and compare it with a suitable supervised test or complete published case. Keep material/device fabrication knowledge connected through [Resources and materials — feedstocks, useful properties, production, and recovery](../../../../ergon/materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D) and the later semiconductor subjects without pretending that a terminal model explains the entire manufacturing chain. Converter design must join device physics, circuit paths, control, cooling and protection evidence.
+
+**Continue:** [Buck/boost conversion, ripple and operating modes](Buck-boost-conversion-ripple-and-operating-modes.lingua#r_1SQ4C9GKMGQE9SRW2H8CYCJSBV).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4KQJVPTWE8CATNA6D9VW39QVC3

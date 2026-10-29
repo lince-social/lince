@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Transformer loss, temperature, inrush and condition (@pe-transformer-condition: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Transformer-Maintenance-and-Diagnostics-FIST.lingua#r_5Y3NB9GQFCVNJ8QVR9BC53JS32", #source "../sources/Electrical-Maintenance-Scheduling-FIST-2026.lingua#r_4Q5B4NW1XVGXWXY6SHP16KKN89", #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #electrical-power-engineering "../../../physics/electromagnetism/currents/Drift-diffusion-relaxation-and-Ohm-law.lingua#r_3P3417NJ3B753K217S24RZY08D") { r_6AZVVD8G0EGYV5RTBBGN66WQ6R
+**Read:** [Transformer maintenance and diagnostics — FIST 3-30 and 3-31](../sources/Transformer-Maintenance-and-Diagnostics-FIST.lingua#r_5Y3NB9GQFCVNJ8QVR9BC53JS32), both whole manuals and applicable complete diagnostic methods; [Maintenance Scheduling for Electrical Equipment — FIST 4-1B](../sources/Electrical-Maintenance-Scheduling-FIST-2026.lingua#r_4Q5B4NW1XVGXWXY6SHP16KKN89), complete applicable scope and schedule conditions; [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), complete magnetic loss and material development.
+
+Distinguish winding copper loss, core loss, stray loss and auxiliary cooling demand. Winding resistance changes with temperature; flux density depends on voltage/frequency and excitation history. A rated efficiency or impedance at one test condition is not a full account of temperature rise, insulation aging or permissible duty.
+
+Explain how switching point and residual core flux can produce magnetizing inrush, and why a steady linear equivalent cannot reproduce it. Saturation changes current and waveform, interacting with supply impedance and protection. A thermal model needs loss, ambient, cooling paths and time constants, not only a nameplate kVA.
+
+Read both complete [Transformer maintenance and diagnostics — FIST 3-30 and 3-31](../sources/Transformer-Maintenance-and-Diagnostics-FIST.lingua#r_5Y3NB9GQFCVNJ8QVR9BC53JS32) manuals and compare oil/gas, dielectric, electrical and mechanical condition evidence with a defined failure hypothesis. Separate an alarm threshold from a diagnosis and a maintenance decision. Check how changes in load, cooling, material or service history affect interpretation. The catalogue's newer scheduling guidance overrides equipment-manual intervals within Reclamation's own system; it is a useful example of keeping technical methods, schedules and actual applicability distinct.
+
+**Continue:** [Drift, diffusion, relaxation and Ohm law](../../../physics/electromagnetism/currents/Drift-diffusion-relaxation-and-Ohm-law.lingua#r_3P3417NJ3B753K217S24RZY08D).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6AZVVD8G0EGYV5RTBBGN66WQ6R

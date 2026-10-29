@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect biological production with feed, growth, reaction and downstream recovery (@ic-bioreaction: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH", #industrial-chemistry "../../general-chemistry/measurement/Separations-and-distribution.lingua#r_7AKDFABRZJJ53MR6EQQZ8GAW2G") { r_4EYZCGRS2W6887Y0YMPS6YW4SM
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete relevant biological/particulate reactor and balance treatment; [Chemical and Biological Reaction Engineering — MIT 10.37](../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ), the whole enzymatic, cell-growth and biological reactor programme; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete fermentation process-family sequence; [Biochemical conversion of corn stover to ethanol — Humbird and colleagues](../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH), the entire conversion, recovery and integrated utility design account.
+
+A biological reactor transforms materials through cells, enzymes and their environment. Product formation, growth, maintenance and byproducts need distinct accounts. An apparent yield can change with feed, oxygen transfer, inhibition, organism state, contamination or the period over which the inventory is measured.
+
+Define the chemical/element basis of biomass and products, the actual growth or kinetic model and how observations estimate its parameters. A simple Monod relation is a useful model under stated conditions, not a complete molecular mechanism or a guarantee of behavior at changed scale. Sterility, sampling and measurement can alter both inference and production.
+
+Downstream recovery can dominate the useful-product account: cells, water, salts, solvents and dilute products may require substantial separation and cleaning. A favorable fermentation yield cannot be compared fairly with a chemical synthesis route if the final product quality and isolation boundaries differ.
+
+**Work:** reconstruct a complete biological chemical-production case with growth/product, element/energy, gas transfer and isolation evidence. Compare an enzyme/cell route with a justified chemical alternative on the same accepted product. Identify the experiments and facilities needed to test the model, and distinguish a supplied-data analysis from biological laboratory work actually performed.
+
+**Continue:** [Account for what a separation distributes, removes, and leaves behind](../../general-chemistry/measurement/Separations-and-distribution.lingua#r_7AKDFABRZJJ53MR6EQQZ8GAW2G).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4EYZCGRS2W6887Y0YMPS6YW4SM

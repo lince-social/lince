@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Adjust a synthesis feed while preserving reaction, separation and impurity accounts (@ic-shift: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #source "../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ", #industrial-chemistry "Ammonia-synthesis-catalyst-loop-and-separated-product.lingua#r_09GK01EQW7RQJEYZ325VRHWNV0") { r_2T84DMWN3FA6P8Q4GJNAEM70Y1
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete equilibrium, catalytic and energy-account material relevant to the shift system; [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the full gas-generation and adjustment treatment; [Haber–Bosch ammonia in an energy landscape — Smith, Hill and Torrente-Murciano](../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ), the complete synthesis-feed and purification analysis.
+
+The water-gas shift reaction CO+H₂O⇌CO₂+H₂ changes the hydrogen/carbon-monoxide relation and chemical form of carbon. Temperature, activities, kinetics and catalyst state affect the accessible state. Separating carbon dioxide afterward changes the delivered mixture and creates another material stream that needs a defined fate.
+
+Distinguish a reaction that changes composition from an operation that removes a component. A hydrogen purification train can include several such steps, each with finite recovery, heat and utility demands. A reported hydrogen percentage without dry/wet basis or carbon-monoxide measurement is insufficient for many downstream uses.
+
+Follow residual carbon species, water, sulfur and possible catalyst poisons. Small remaining concentrations can matter to a sensitive synthesis catalyst while having little effect on a bulk balance. Recycle and purge can magnify the consequence of a contaminant that appears minor in fresh feed.
+
+**Work:** derive a complete shift-plus-separation account for an actual public synthesis route. Compare equilibrium and measured finite-conversion behavior, close carbon and hydrogen independently, and test the effect of one recovery or impurity assumption. Explain the evidence needed to establish that the resulting feed is suitable for the next synthesis rather than merely rich in hydrogen.
+
+**Continue:** [Reconstruct ammonia production as a reaction, separation and circulating-gas system](Ammonia-synthesis-catalyst-loop-and-separated-product.lingua#r_09GK01EQW7RQJEYZ325VRHWNV0).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_2T84DMWN3FA6P8Q4GJNAEM70Y1

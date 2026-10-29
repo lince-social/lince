@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Linear momentum, pressure and support reactions (@fd-momentum: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #fluid-dynamics "Angular-momentum-torque-and-the-fluid-machine-interface.lingua#r_4X2TD7FV2EMXZ2MQ9ADZGCPJMB") { r_7FY6ME92TRJG5C9SAHKGNYTMEH
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 7 momentum balances and problems; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), control-volume applications; [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), momentum and forces in flowing systems.
+
+The rate of stored momentum plus the outward momentum flux equals the external force on the fluid in the chosen inertial frame. Include pressure traction, viscous traction, gravity and other relevant forces. At an idealized uniform port, the momentum crossing rate is mass flow times velocity, with the vector direction retained.
+
+Analyze a bent pipe by drawing the control surface and the force exerted by each pressure field. Solve for the force of the pipe on the fluid, then use the opposite force when asking about the support load. Do not confuse that action–reaction step with changing the sign of a pressure reference midway through the balance.
+
+When a velocity profile is nonuniform, integrate its momentum flux or justify an appropriate correction factor. Check whether unsteady storage matters during startup. A scalar energy balance alone cannot supply all components of the support force.
+
+**Continue:** [Angular momentum, torque and the fluid-machine interface](Angular-momentum-torque-and-the-fluid-machine-interface.lingua#r_4X2TD7FV2EMXZ2MQ9ADZGCPJMB).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7FY6ME92TRJG5C9SAHKGNYTMEH

@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Reconstruct and test a coupled mine-service and environmental system (@mine-ventilation-project: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY", #source "../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM", #source "../sources/NIOSH-Dust-Control-in-Mining.lingua#r_12DGN33X5RSS7664BNT1QM5C52", #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #mining-and-mineral-engineering "Advanced-beneficiation-flowsheet-and-scale-up-study.lingua#r_6BB9750AHHZD2MVN5AVHSXBSER") { r_1ZJPJ6F2Z70ZF8JQ2BZ4B1QYRT
+**Read:** [Subsurface Ventilation Engineering — Malcolm J. McPherson](../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY), the complete book and full primary methods used; [Water stewardship — Australian leading-practice handbook](../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM), the complete water-stewardship handbook; [Handbook for Dust Control in Mining — NIOSH](../sources/NIOSH-Dust-Control-in-Mining.lingua#r_12DGN33X5RSS7664BNT1QM5C52), all relevant control and measurement chapters; [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the current complete relevant official text and annexes, with revision/date recorded.
+
+Read the complete McPherson book, then select a documented network/survey with enough airway geometry, conditions, fan data, measurements, and operational context to test a model. Reproduce the original small parallel-network example and its independent analytic solution before extending to networks with loops, density/heat changes, leakage, or natural pressure effects.
+
+Derive continuity and energy/pressure relations with reference conditions, sign conventions, friction/local losses, fan curves, and environmental terms. Independently test junction and loop closure, network solvability, units, limiting cases, and numerical tolerance. Compare alternative ways to infer resistances from uncertain observations; explain what the survey can and cannot identify.
+
+Connect the airflow model with heat/moisture and a documented contaminant-source/transport model. Add the relevant dewatering, power, and operational dependencies on matched time boundaries. A pressure/flow solution alone does not establish acceptable environmental conditions. Read the complete applicable occupational technical methods and the current official requirements used in the study.
+
+**Work:** calibrate on one survey/operating state and validate on another. Compare a material network/service modification with changed boundaries or a documented interruption scenario. Report environmental and energy consequences, sensor uncertainty, unmodeled source terms, operating limits, and the actual human monitoring/maintenance work. Defend the next measurements from the competing explanations rather than assuming that more model complexity resolves missing evidence.
+
+**Continue:** [Defend a beneficiation flowsheet through independent characterization and test evidence](Advanced-beneficiation-flowsheet-and-scale-up-study.lingua#r_6BB9750AHHZD2MVN5AVHSXBSER).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1ZJPJ6F2Z70ZF8JQ2BZ4B1QYRT

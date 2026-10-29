@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Use plane-polarized observations as measured evidence for identification (@mp-ppl: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #mineralogy-and-petrology "Interference-retardation-and-extinction.lingua#r_6EJ7RHWMKX81AVKDEB45Q1WGZ5") { r_5ZS4G6V7VWX08CA643X2HAJ5M9
+**Read:** [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full plane-light, morphology, relief, and measurement sections; [Optical Mineralogy — Brock University course and laboratory material](../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E), the complete Becke Line and Refractive Index lab and property lectures; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full plane-polarized property treatment.
+
+In plane-polarized light observe grain boundaries, morphology, cleavage, relief, color, pleochroism, inclusions, alteration, and relations to neighboring phases. State stage orientation and settings. A colored hand specimen can be much paler in a thin section, and grain color can vary with orientation without a change in species.
+
+Relief depends on refractive-index contrast under the observation conditions. A Becke-line or immersion method needs an explicit focus/index procedure, reference material, wavelength/temperature where relevant, and suitable specimen geometry. An apparently high-relief rim may instead involve preparation, alteration, or adjacent material.
+
+Pleochroism describes direction-dependent absorption. Record the relationship to grain orientation and available crystallographic/optical directions rather than assigning a species from a single shade. Fine inclusions, oxidation, staining, and illumination can complicate the observation.
+
+**Work:** complete the refractive-index/Becke-line lab and compare known isotropic/anisotropic specimens. Record several orientations of the same grain and independently reproduce a relative-index observation. For an unknown image/specimen, distinguish the observed properties from the candidate identity and identify the next useful crossed-light or analytical check.
+
+Read the whole plane-light/property treatment and practical procedures. Include unfavorable orientations and altered grains in later study so the identification method does not depend only on unusually perfect textbook examples.
+
+**Continue:** [Relate crossed-polarized observations to thickness, birefringence, and orientation](Interference-retardation-and-extinction.lingua#r_6EJ7RHWMKX81AVKDEB45Q1WGZ5).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_5ZS4G6V7VWX08CA643X2HAJ5M9

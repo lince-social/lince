@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Use a container as an explicit environment experiment (@rc-envcontainers: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Containers-and-System-Dependencies.lingua#r_6KC0T0B4V0BQ768092K6BN2N4J", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Declarative-inputs-and-reconstruction.lingua#r_0ZQPPGS35DE7H5522P9PYENNPW") { r_5CD44P15ZM4A7PWESZGQP3QB6B
+**Read:** [Containers, base-image identity, and build inputs — Docker documentation](../sources/Containers-and-System-Dependencies.lingua#r_6KC0T0B4V0BQ768092K6BN2N4J), the whole build-best-practices guide and the exact instruction/run references used; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), the container/environment discussions.
+
+A container image supplies a filesystem and execution configuration. A mutable tag locates an image under current registry state; a digest identifies a particular image artifact under the registry's model. Preserve the build recipe and its actual inputs as well as the image identity when the project claims to be rebuildable. Reusing an image and rebuilding it are different experiments.
+
+Read the complete official build guide before selecting a base image, copying a build context, installing packages, or relying on a cache. Identify network retrievals and mutable package sources. A recipe that downloads whatever a server currently supplies can rebuild a different environment despite unchanged text. A pinned base does not pin every subsequent installation.
+
+The host still supplies a kernel and may supply CPU/GPU behavior, drivers, mounted data, clocks, network services, and credentials. Decide which influences are part of the analysis contract. Provide input mounts and output destinations deliberately so the reconstruction cannot accidentally read a host file that was omitted from the publication's dependency account.
+
+**Work:** construct a small containerized version of your personal teaching project using an identified base and documented dependencies. Run the independent checks, record the image identity, and compare the report with the noncontainer run. Rebuild in a fresh context and inspect which artifacts changed. Then disable network access during analysis and explain whether any undeclared dependency is revealed.
+
+Compare the evidence with [Native libraries, operating systems, and hardware can change a computation](System-libraries-and-hardware.lingua#r_6MEK7DSTADH24AV1NAQBG5SR61) and [Distinguish isolation, dependency resolution, pins, and available artifacts](Isolation-resolution-and-locks.lingua#r_5BEV7Q4J6K3CGCFRHANDW6JXRY). The practical result is an explained reconstruction method with a tested boundary, not a claim that a container makes every computation deterministic or scientifically correct. Keep external images and downloaded dependencies in your own appropriate research storage; the trail supplies reading and original exercises rather than image files.
+
+**Continue:** [Declare environment inputs and test what the declaration covers](Declarative-inputs-and-reconstruction.lingua#r_0ZQPPGS35DE7H5522P9PYENNPW).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_5CD44P15ZM4A7PWESZGQP3QB6B

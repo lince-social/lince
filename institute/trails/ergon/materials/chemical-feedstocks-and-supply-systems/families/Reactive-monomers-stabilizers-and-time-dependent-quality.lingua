@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Follow reactive feed quality through its time and state history (@cs-stabilized-feed: 0, is #chapter, #part-of @chemical-supply-systems, #source "../../../../stem/chemistry/industrial-chemistry/sources/Polymer-Production-BREF.lingua#r_01PXATYT6P16206KQ3VDX34K1F", #source "../../../../stem/chemistry/industrial-chemistry/sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #chemical-supply-systems "Specialty-formulations-catalysts-and-small-critical-inputs.lingua#r_32JN23ZZEZDHFYXPE6TKRHDB5E") { r_5J8TPATDB139W139N6T056K0FZ
+**Read:** [Production of Polymers, BREF POL](../../../../stem/chemistry/industrial-chemistry/sources/Polymer-Production-BREF.lingua#r_01PXATYT6P16206KQ3VDX34K1F), complete relevant monomer, processing and storage chapters; [Production of Large Volume Organic Chemicals, BREF LVOC](../../../../stem/chemistry/industrial-chemistry/sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), complete chosen intermediate/product chapter; [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), complete state, documentation and change-related sections as an institutional comparison.
+
+After the shared monomer chemistry, ask what makes a stored and delivered reactive feed usable. Its identity and initial assay are insufficient if inhibitor/stabiliser content, temperature, atmosphere, contaminant exposure or time changes the state before use. The acceptable storage/transport envelope must come from the actual product and technical evidence.
+
+Choose one documented monomer or reactive intermediate and read the complete relevant production and product-handling material. Draw its history from finishing through package/tank, carrier, user store and feed preparation. Identify which requirements preserve the intended chemistry and which measurements can detect a departure. A generic rule such as keeping all products under an inert atmosphere can conflict with a particular stabilisation system; derive the case from the actual material's method.
+
+Develop a model of release and re-evaluation that preserves original lot identity while recording changed condition. Compare a short direct route and a slower distribution route, including delays before use. State what data would justify the proposed time limits and what remains unknown. This is a study of actual reactive material and evidence, with qualified handling work distinguished from a literature reconstruction or a classroom inventory calculation.
+
+**Continue:** [Account for small-volume inputs that can determine the whole process](Specialty-formulations-catalysts-and-small-critical-inputs.lingua#r_32JN23ZZEZDHFYXPE6TKRHDB5E).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_5J8TPATDB139W139N6T056K0FZ

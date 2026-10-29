@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Explain coordination and structural families through geometry and chemistry (@mp-structures: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #source "../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #mineralogy-and-petrology "Solid-solution-sites-and-coupled-substitution.lingua#r_1R0GKK33GS38M1Y82GQ1XYF850") { r_6EWCCTQS683WGT6WSBQSGG1FXP
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full crystal-chemistry, coordination, and structural-family material; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), the complete selected mineral entries and their original structures; [Crystallography Open Database — structures, citations, and CIF records](../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG), selected structure records with measurement conditions.
+
+Coordination describes the local arrangement around an identified atom/site under a defined neighbor criterion. Polyhedra summarize useful geometry, but bonds and distortions need chemical and structural evidence. A radius-ratio rule is an approximation with conditions, not an exact universal structure predictor.
+
+Connect cation charge, size, bonding, anion arrangement, polyhedral sharing, and composition. Corner-, edge-, and face-sharing arrangements affect possible distances and connectivity; a schematic drawing can omit distortions or different occupancies. The same coordination number can occur in structurally and chemically different materials.
+
+Structural families help explain shared properties and substitution possibilities across mineral groups. They do not imply identical hardness, cleavage, spectra, stability, or industrial behavior. Defects, trace constituents, fluids, and later alteration can matter at scales hidden by a simple ideal structure.
+
+**Work:** compare two mineral structures using complete book treatments and original referenced records. Draw local polyhedra and the extended connectivity, check formula/site contents, and relate an observed property to a defensible structural argument. Identify one feature not predicted quantitatively by the schematic model and the measurement needed to establish it.
+
+Read the full structural-chemistry and silicate/non-silicate framework sections. Later group studies reuse this account rather than beginning a disconnected catalogue of mineral names. The next substitution step makes the chemical constraints on a structural family more precise.
+
+**Continue:** [Balance substitution through composition, sites, and charge](Solid-solution-sites-and-coupled-substitution.lingua#r_1R0GKK33GS38M1Y82GQ1XYF850).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_6EWCCTQS683WGT6WSBQSGG1FXP

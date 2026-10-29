@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Unbalanced loads, neutrals and phase models (@pe-unbalance: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #electrical-power-engineering "Symmetrical-components-sequence-networks-and-limits.lingua#r_4BYZNGXQMGZC9KWP1RDN3FCP6A") { r_3J51437Q016XSNEWYZN051Q7Q4
+**Read:** [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B), complete component/phase-model development; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), polyphase and unbalanced examples.
+
+A three-phase system can have unequal magnitudes, angles, impedances and loads. A balanced per-phase equivalent suppresses that information. In a four-wire system, neutral current is the vector/time-domain sum of phase currents with consistent orientations. For nonlinear single-phase loads, triplen harmonics can add in the neutral even when fundamental phase loads appear balanced.
+
+Solve an unequal star load with a solid neutral, then with a finite neutral impedance and finally a floating star point. Derive the changed phase-to-neutral voltages rather than assigning the source's ideal phase voltage to every load in every connection. Include protective-earth and unintended parallel return paths only through an actual model.
+
+Develop phase-domain line/transformer impedance matrices and mutual terms before approximating them by independent phases. Compare the full result with a sequence or balanced reduction and quantify the error in the requested voltage/current/protection observable. [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B) supplies a complete later programme, including detailed Newton methods and state estimation. Physical phase connectivity and the distinction between neutral and protective conductor remain essential throughout the numerical model.
+
+**Continue:** [Symmetrical components, sequence networks and limits](Symmetrical-components-sequence-networks-and-limits.lingua#r_4BYZNGXQMGZC9KWP1RDN3FCP6A).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3J51437Q016XSNEWYZN051Q7Q4

@@ -5,9 +5,82 @@ use tract_onnx::prelude::*;
 pub type Point = [f32; 2];
 type Model = std::sync::Arc<TypedRunnableModel>;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HandObservation {
+    pub center: Point,
+    pub pointer: Point,
+    pub pinched: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PointerGesture {
+    Hover(Point),
+    Begin(Point),
+    Update(Point),
+    End(Point),
+    Cancel,
+}
+
+#[derive(Default)]
+pub struct PointerTracker {
+    active: bool,
+    blocked: bool,
+    previous: Option<Point>,
+    candidate: Option<(bool, u8)>,
+}
+
+impl PointerTracker {
+    pub fn disarm(&mut self) {
+        let _ = self.cancel();
+        self.blocked = true;
+    }
+
+    pub fn cancel(&mut self) -> Option<PointerGesture> {
+        let active = std::mem::take(&mut self.active);
+        self.blocked |= active || self.candidate.is_some_and(|(pinched, _)| pinched);
+        self.previous = None;
+        self.candidate = None;
+        active.then_some(PointerGesture::Cancel)
+    }
+
+    pub fn update(&mut self, hands: &[HandObservation]) -> Option<PointerGesture> {
+        let hand = hands.iter().filter(|hand| {
+            hand.center.iter().chain(hand.pointer.iter()).all(|value| value.is_finite() && (0.0..=1.0).contains(value))
+        }).max_by(|a, b| a.center[0].total_cmp(&b.center[0]));
+        let Some(hand) = hand else { return self.cancel(); };
+        if self.active && self.previous.is_some_and(|point| (point[0] - hand.center[0]).hypot(point[1] - hand.center[1]) > 0.15) {
+            return self.cancel();
+        }
+        if self.blocked {
+            if hand.pinched { return None; }
+            self.blocked = false;
+        }
+        self.previous = Some(hand.center);
+        let active = self.active;
+        if hand.pinched == active {
+            self.candidate = None;
+        } else {
+            let count = self.candidate.filter(|(state, _)| *state == hand.pinched)
+                .map_or(1, |(_, count)| count.saturating_add(1));
+            self.candidate = Some((hand.pinched, count));
+            if count >= 2 {
+                self.active = hand.pinched;
+                self.candidate = None;
+            }
+        }
+        Some(match (active, self.active) {
+            (false, false) => PointerGesture::Hover(hand.pointer),
+            (false, true) => PointerGesture::Begin(hand.pointer),
+            (true, true) => PointerGesture::Update(hand.pointer),
+            (true, false) => PointerGesture::End(hand.pointer),
+        })
+    }
+}
+
 pub struct HandTracker {
     palm: Model,
     hand: Model,
+    face: Model,
 }
 
 impl HandTracker {
@@ -15,10 +88,38 @@ impl HandTracker {
         Ok(Self {
             palm: load(&directory.join("palm_detection_mediapipe_2023feb.onnx"))?,
             hand: load(&directory.join("handpose_estimation_mediapipe_2023feb.onnx"))?,
+            face: load(&directory.join("face_detection_yunet_2023mar.onnx"))?,
         })
     }
 
+    pub fn head(&self, image: &RgbImage) -> Result<Option<Point>, String> {
+        if image.width() == 0 || image.height() == 0 {
+            return Err("Empty camera frame".into());
+        }
+        let resized = image::imageops::resize(image, 320, 320, image::imageops::FilterType::Triangle);
+        let mut pixels = vec![0.0f32; 3 * 320 * 320];
+        for (index, pixel) in resized.pixels().enumerate() {
+            pixels[index] = f32::from(pixel[2]);
+            pixels[320 * 320 + index] = f32::from(pixel[1]);
+            pixels[2 * 320 * 320 + index] = f32::from(pixel[0]);
+        }
+        let input = Tensor::from_shape(&[1, 3, 320, 320], &pixels).map_err(|error| error.to_string())?;
+        let output = self.face.run(tvec!(input.into())).map_err(|error| error.to_string())?;
+        let values: Vec<Vec<f32>> = output.iter().map(|value| {
+            value.try_as_plain_ram().and_then(|value| value.as_slice::<f32>().map(|slice| slice.to_vec())).map_err(|error| error.to_string())
+        }).collect::<Result<_, _>>()?;
+        decode_head(&values)
+    }
+
     pub fn open_hand(&self, image: &RgbImage) -> Result<Option<Point>, String> {
+        Ok(self.open_hands(image)?.into_iter().next())
+    }
+
+    pub fn open_hands(&self, image: &RgbImage) -> Result<Vec<Point>, String> {
+        Ok(self.observe_hands(image)?.into_iter().filter(|hand| !hand.pinched).map(|hand| hand.center).collect())
+    }
+
+    pub fn observe_hands(&self, image: &RgbImage) -> Result<Vec<HandObservation>, String> {
         if image.width() == 0 || image.height() == 0 {
             return Err("Empty camera frame".into());
         }
@@ -28,55 +129,96 @@ impl HandTracker {
         if outputs.len() != 2 || outputs[0].len() != 2016 * 18 || outputs[1].len() != 2016 {
             return Err("Unexpected palm model outputs".into());
         }
-        let best = outputs[1]
+        let mut candidates: Vec<_> = outputs[1]
             .iter()
             .enumerate()
             .filter(|(_, score)| score.is_finite() && **score > 0.8473)
-            .max_by(|(_, a), (_, b)| a.total_cmp(b));
-        let Some((index, _)) = best else {
-            return Ok(None);
-        };
-        let anchor = anchor(index);
-        let values = &outputs[0][index * 18..(index + 1) * 18];
-        let mut palm = [[0.0; 2]; 7];
-        for (landmark, pair) in palm.iter_mut().zip(values[4..].chunks_exact(2)) {
-            *landmark = [
-                (anchor[0] + pair[0] / 192.0 - 0.5) * side + center[0],
-                (anchor[1] + pair[1] / 192.0 - 0.5) * side + center[1],
+            .collect();
+        candidates.sort_by(|(_, a), (_, b)| b.total_cmp(a));
+        let mut regions: Vec<(Point, f32)> = Vec::new();
+        let mut hands = Vec::new();
+        for (index, _) in candidates {
+            let anchor = anchor(index);
+            let values = &outputs[0][index * 18..(index + 1) * 18];
+            let mut palm = [[0.0; 2]; 7];
+            for (landmark, pair) in palm.iter_mut().zip(values[4..].chunks_exact(2)) {
+                *landmark = [
+                    (anchor[0] + pair[0] / 192.0 - 0.5) * side + center[0],
+                    (anchor[1] + pair[1] / 192.0 - 0.5) * side + center[1],
+                ];
+            }
+            let Some((center, right, side)) = hand_crop(&palm) else {
+                continue;
+            };
+            if regions.iter().any(|(other, size)| {
+                (center[0] - other[0]).hypot(center[1] - other[1]) < side.min(*size) * 0.35
+            }) {
+                continue;
+            }
+            regions.push((center, side));
+            if regions.len() > 8 {
+                break;
+            }
+            let outputs = run(&self.hand, crop(image, center, right, side, 224), 224)?;
+            if outputs.len() != 4 || outputs[0].len() != 63 || outputs[1].len() != 1 || outputs[2].len() != 1 {
+                return Err("Unexpected hand model outputs".into());
+            }
+            if !outputs[1][0].is_finite() || outputs[1][0] < 0.8 {
+                continue;
+            }
+            let mut landmarks = [[0.0; 3]; 21];
+            for (landmark, values) in landmarks.iter_mut().zip(outputs[0].chunks_exact(3)) {
+                landmark.copy_from_slice(values);
+            }
+            let pinched = is_pinched(&landmarks);
+            if !(is_open(&landmarks) || pinched) || !palm_facing_camera(&landmarks, outputs[2][0]) {
+                continue;
+            }
+            let palm_center = [0, 5, 9, 13, 17].map(|i| landmarks[i]);
+            let x = palm_center.iter().map(|p| p[0]).sum::<f32>() / 5.0;
+            let y = palm_center.iter().map(|p| p[1]).sum::<f32>() / 5.0;
+            let down = [-right[1], right[0]];
+            let map = |x: f32, y: f32| [
+                (center[0] + (x / 224.0 - 0.5) * side * right[0] + (y / 224.0 - 0.5) * side * down[0]) / image.width() as f32,
+                (center[1] + (x / 224.0 - 0.5) * side * right[1] + (y / 224.0 - 0.5) * side * down[1]) / image.height() as f32,
             ];
+            let point = map(x, y);
+            let pointer = map(landmarks[8][0], landmarks[8][1]);
+            if point.iter().chain(pointer.iter()).all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+            {
+                hands.push(HandObservation { center: point, pointer, pinched });
+                if hands.len() == 2 {
+                    break;
+                }
+            }
         }
-        let Some((center, right, side)) = hand_crop(&palm) else {
-            return Ok(None);
-        };
-        let outputs = run(&self.hand, crop(image, center, right, side, 224), 224)?;
-        if outputs.len() != 4 || outputs[0].len() != 63 || outputs[1].len() != 1 {
-            return Err("Unexpected hand model outputs".into());
-        }
-        if !outputs[1][0].is_finite() || outputs[1][0] < 0.8 {
-            return Ok(None);
-        }
-        let mut landmarks = [[0.0; 3]; 21];
-        for (landmark, values) in landmarks.iter_mut().zip(outputs[0].chunks_exact(3)) {
-            landmark.copy_from_slice(values);
-        }
-        if !is_open(&landmarks) {
-            return Ok(None);
-        }
-        let palm_center = [0, 5, 9, 13, 17].map(|i| landmarks[i]);
-        let x = palm_center.iter().map(|p| p[0]).sum::<f32>() / 5.0;
-        let y = palm_center.iter().map(|p| p[1]).sum::<f32>() / 5.0;
-        let down = [-right[1], right[0]];
-        let point = [
-            (center[0] + (x / 224.0 - 0.5) * side * right[0] + (y / 224.0 - 0.5) * side * down[0])
-                / image.width() as f32,
-            (center[1] + (x / 224.0 - 0.5) * side * right[1] + (y / 224.0 - 0.5) * side * down[1])
-                / image.height() as f32,
-        ];
-        Ok(point
-            .iter()
-            .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
-            .then_some(point))
+        Ok(hands)
     }
+}
+
+fn decode_head(values: &[Vec<f32>]) -> Result<Option<Point>, String> {
+    if values.len() != 12 { return Err("Unexpected face model outputs".into()); }
+    let mut best: Option<(f32, Point)> = None;
+    for (level, stride) in [8usize, 16, 32].into_iter().enumerate() {
+        let grid = 320 / stride;
+        let count = grid * grid;
+        if values[level].len() != count || values[level + 3].len() != count || values[level + 6].len() != count * 4 {
+            return Err("Unexpected face model output shapes".into());
+        }
+        for index in 0..count {
+            let cls = values[level][index];
+            let object = values[level + 3][index];
+            if !cls.is_finite() || !object.is_finite() { continue; }
+            let score = (cls.clamp(0.0, 1.0) * object.clamp(0.0, 1.0)).sqrt();
+            if score < 0.85 || best.as_ref().is_some_and(|(old, _)| *old >= score) { continue; }
+            let bbox = &values[level + 6][index * 4..index * 4 + 4];
+            let point = [((index % grid) as f32 + bbox[0]) * stride as f32 / 320.0, ((index / grid) as f32 + bbox[1]) * stride as f32 / 320.0];
+            if point.iter().all(|v| v.is_finite() && (0.0..=1.0).contains(v)) {
+                best = Some((score, point));
+            }
+        }
+    }
+    Ok(best.map(|(_, point)| point))
 }
 
 fn load(path: &Path) -> Result<Model, String> {
@@ -202,6 +344,33 @@ fn is_open(points: &[[f32; 3]; 21]) -> bool {
     })
 }
 
+fn palm_facing_camera(points: &[[f32; 3]; 21], handedness: f32) -> bool {
+    if !handedness.is_finite() || !(0.0..=1.0).contains(&handedness)
+        || (0.2..0.8).contains(&handedness)
+        || points.iter().flatten().any(|value| !value.is_finite())
+    {
+        return false;
+    }
+    let index = vector(points[0], points[5]);
+    let little = vector(points[0], points[17]);
+    let cross = index[0] * little[1] - index[1] * little[0];
+    let length = norm(index) * norm(little);
+    length > 1.0 && cross.abs() / length > 0.25 && cross * (handedness - 0.5) > 0.0
+}
+
+fn is_pinched(points: &[[f32; 3]; 21]) -> bool {
+    if points.iter().flatten().any(|value| !value.is_finite()) { return false; }
+    let width = norm(vector(points[5], points[17]));
+    width > 1.0
+        && norm(vector(points[4], points[8])) < width * 0.35
+        && [9, 13, 17].into_iter().all(|base| {
+            let proximal = vector(points[base], points[base + 1]);
+            let distal = vector(points[base + 1], points[base + 3]);
+            let length = norm(proximal) * norm(distal);
+            length > 1.0 && dot(proximal, distal) / length > 0.75
+        })
+}
+
 fn vector(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     [b[0] - a[0], b[1] - a[1], b[2] - a[2]]
 }
@@ -212,6 +381,62 @@ fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
 
 fn norm(a: [f32; 3]) -> f32 {
     dot(a, a).sqrt()
+}
+
+#[derive(Default)]
+pub struct HeadRelativePan {
+    previous: Option<(Point, f64)>,
+}
+
+impl HeadRelativePan {
+    pub fn reset(&mut self) {
+        self.previous = None;
+    }
+
+    pub fn update(&mut self, head: Option<Point>, hands: &[Point], seconds: f64) -> Point {
+        let valid = |point: &Point| {
+            point
+                .iter()
+                .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+        };
+        let Some(head) = head.filter(valid) else {
+            self.reset();
+            return [0.0; 2];
+        };
+        let Some(hand) = hands
+            .iter()
+            .filter(|point| valid(point))
+            .max_by(|a, b| a[0].total_cmp(&b[0]))
+        else {
+            self.reset();
+            return [0.0; 2];
+        };
+        if !seconds.is_finite() {
+            self.reset();
+            return [0.0; 2];
+        }
+        let axis = |v: f32| {
+            let magnitude = ((v.abs() - 0.08) / 0.25).clamp(0.0, 1.0);
+            v.signum() * magnitude
+        };
+        let target = [axis(hand[0] - head[0]), axis(hand[1] - head[1])];
+        let Some((previous, timestamp)) = self.previous else {
+            self.previous = Some((target, seconds));
+            return [0.0; 2];
+        };
+        let dt = seconds - timestamp;
+        if dt <= 0.0 || dt > 0.35 {
+            self.reset();
+            return [0.0; 2];
+        }
+        let alpha = (1.0 - (-dt / 0.09).exp()) as f32;
+        let filtered = [
+            previous[0] + (target[0] - previous[0]) * alpha,
+            previous[1] + (target[1] - previous[1]) * alpha,
+        ];
+        self.previous = Some((filtered, seconds));
+        [filtered[0] * dt as f32 * 0.6, filtered[1] * dt as f32 * 0.6]
+    }
 }
 
 #[derive(Default)]

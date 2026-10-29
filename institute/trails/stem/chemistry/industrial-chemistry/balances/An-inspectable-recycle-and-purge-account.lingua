@@ -1,0 +1,66 @@
+Import "../Industrial-chemistry.lingua"
+
+Verify a recycle and purge account with exact quantities and independent balances (@ic-recycle-example: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Heat-work-phase-change-and-reaction-energy.lingua#r_7XJ8R69XAXCCCTMAEXWPSKXEP0") { r_7DBH60P2MM84PVRAC802SEW9KZ
+**Read:** [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), the whole recycle/purge module sequence with worked examples; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete connected material-account and reactor-balance derivations.
+
+This original standard-library calculation implements the ideal A→B isomerization account in [Explain why recycle, purge and fresh-feed accounts must be solved together](Recycle-purge-and-accumulation-in-a-process-loop.lingua#r_4JBQH57WVMDA799QCG1KNDRQGV). Fresh flows are in kmol/h; A and B have the same molecular formula, the inert is conserved, all B is removed after reaction, and the remaining A/inert mixture is split into purge and recycle without composition change. Single-pass conversion is imposed rather than predicted from a physical reactor.
+
+Copy the program to a temporary study directory and run it with Python 3.13. The returned rational values are exact for the explicitly converted decimal inputs. Allowed fresh A is 10⁻⁶–10⁶, inert 0–10⁶, and conversion/purge 10⁻⁴–1. A zero purge is deliberately outside this finite steady-state calculation. No external modules, files, network, operating recipe or plant data are required.
+
+```python file=recycle_purge.py
+from fractions import Fraction
+import json
+import math
+
+
+def value(number, low, high, name):
+    if isinstance(number, bool) or not isinstance(number, (int, float)):
+        raise ValueError(name + " must be a finite numeric value")
+    try:
+        number = float(number)
+    except (OverflowError, ValueError) as error:
+        raise ValueError(name + " is outside the numeric domain") from error
+    if not math.isfinite(number) or not low <= number <= high:
+        raise ValueError(name + " is outside the stated domain")
+    return Fraction(str(number))
+
+
+def solve(fresh_a=100, fresh_inert=1, conversion=0.2, purge=0.02):
+    a = value(fresh_a, 0.000001, 1000000, "fresh A")
+    inert = value(fresh_inert, 0, 1000000, "fresh inert")
+    x = value(conversion, 0.0001, 1, "single-pass conversion")
+    p = value(purge, 0.0001, 1, "purge fraction")
+    reactor_a = a / (1 - (1 - p) * (1 - x))
+    reactor_inert = inert / p
+    product = x * reactor_a
+    purge_a = p * (1 - x) * reactor_a
+    purge_inert = p * reactor_inert
+    recycle = reactor_a + reactor_inert - a - inert
+    return {
+        "reactor_a": reactor_a,
+        "reactor_inert": reactor_inert,
+        "product_b": product,
+        "purge_a": purge_a,
+        "purge_inert": purge_inert,
+        "overall_a_conversion": product / a,
+        "reactor_inert_fraction": reactor_inert / (reactor_a + reactor_inert),
+        "recycle_to_fresh_ratio": recycle / (a + inert),
+        "a_closure": a - product - purge_a,
+        "inert_closure": inert - purge_inert,
+        "total_amount_closure": a + inert - product - purge_a - purge_inert,
+    }
+
+
+if __name__ == "__main__":
+    print(json.dumps(solve(), default=str, sort_keys=True))
+
+```
+
+For the defaults, reactor A is 12500/27 kmol/h, reactor inert is 50, product B is 2500/27 and A purge is 200/27. Overall A conversion is 25/27 while single-pass conversion remains 1/5; all three closure residuals are zero.
+
+**Work:** obtain these results by a separate equation solution and geometric recycle-series argument. Test no recycle, full conversion, zero inert, changed fresh-feed scale and altered purge. Explain the divergent inert limit and the additional equations/data a real synthesis loop requires. Preserve rejected/nonfinite inputs and model limitations in the study report.
+
+**Continue:** [Build a chemical-process energy account from states, reactions and work](Heat-work-phase-change-and-reaction-energy.lingua#r_7XJ8R69XAXCCCTMAEXWPSKXEP0).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_7DBH60P2MM84PVRAC802SEW9KZ

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Scalar/vector potentials and gauge choice (@em-gauge: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Special-relativity-electric-and-magnetic-fields.lingua#r_789H7ACJDQAKVB8H10HXAM09PC") { r_0BW4D2YAXHAFYBP2ZPVZZ9XEBX
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), potentials, gauges and wave equations; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), gauge transformations and retarded potentials.
+
+Write B = ∇×A and E = −∇φ − ∂A/∂t. The transformation A′ = A + ∇χ and φ′ = φ − ∂χ/∂t leaves both fields unchanged. Verify this directly with commuting derivatives before selecting a gauge for a calculation.
+
+Coulomb and Lorenz gauges organize source and propagation equations differently. The Lorenz condition ∇·A + (1/c²)∂φ/∂t = 0 produces wave equations for the potentials in vacuum. Boundary/initial conditions and residual gauge freedom still matter. An apparently instantaneous scalar-potential contribution in one representation does not establish superluminal physical signalling; the complete E field includes the vector-potential term.
+
+Construct two representations of the same simple field and show identical force and energy observables. Derive the retarded Green solution and contrast it with advanced or time-symmetric mathematical solutions whose selection requires physical boundary conditions. A numerical gauge choice can affect conditioning and constraint handling without changing exact observables. Keep potentials, gauge-dependent intermediate quantities and measured field responses distinct throughout later radiation and inverse studies.
+
+**Continue:** [Special relativity joins electric and magnetic fields](Special-relativity-electric-and-magnetic-fields.lingua#r_789H7ACJDQAKVB8H10HXAM09PC).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_0BW4D2YAXHAFYBP2ZPVZZ9XEBX

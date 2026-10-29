@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+PROV — entities, activities, and responsibility — W3C (@rc-prov: 0, is #reference, #part-of @rc-sources) { r_41T4TPCSCESX7SDK9BY4YQZX15
+Paul Groth and Luc Moreau, editors, with the W3C Provenance Working Group. PROV-Overview, Working Group Note, 30 April 2013, and the linked PROV Primer, data model, ontology, notation, and constraints. [Official document family and roadmap](https://www.w3.org/TR/prov-overview/).
+
+Read the overview and primer completely, then the model and constraint material needed to describe a project’s actual provenance. Distinguish a nonnormative introductory Note from the corresponding Recommendations. Begin with a simple named relationship between an input, a transformation, an output, and a responsible person or process before choosing a serialization.
+
+Use the conceptual model to identify missing provenance and to compare records across tools. A syntactically valid provenance graph does not prove that an activity occurred or that its source data are scientifically adequate.
+
+The W3C document-use and component notices apply. Official document status, editors, and linked family checked on 29 October 2026. Reference only; no new provenance feature in Lince is required by the learning material.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_41T4TPCSCESX7SDK9BY4YQZX15

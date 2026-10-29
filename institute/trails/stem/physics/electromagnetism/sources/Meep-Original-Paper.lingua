@@ -1,0 +1,11 @@
+Import "../Electromagnetism.lingua"
+
+Meep — Oskooi and colleagues, 2010 (@em-oskooi: 0, is #reference, #part-of @em-sources) { r_6VNPZYYD3SYGHFATA6VKQ5QD8K
+Ardavan F. Oskooi, David Roundy, Mihai Ibanescu, Peter Bermel, J. D. Joannopoulos and Steven G. Johnson. Meep: A flexible free-software package for electromagnetic simulations by the FDTD method. Computer Physics Communications 181(3), 687–702, March 2010. DOI 10.1016/j.cpc.2009.11.008. [Publisher record](https://www.sciencedirect.com/science/article/pii/S001046550900383X).
+
+Read the entire authorized paper alongside the current manual. Separate the original numerical design and benchmarks from later implementation changes. Reproduce one accessible published test and examine both discretization and model errors.
+
+Publisher metadata and abstract were available on 29 October 2026; an attempted MIT author-file route returned 502. Full-article inspection or a specific open-article licence is not claimed. Obtain a permitted complete copy before making a method claim depending on it. GPL software availability is not evidence that the publisher's article is identically licensed. No article is bundled.
+
+**Return:** [Electromagnetic sources — complete books, courses, methods and research](../Sources.lingua#r_6XW0N80NM6WSDWED10N8N7WX3P).
+} r_6VNPZYYD3SYGHFATA6VKQ5QD8K

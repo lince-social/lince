@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Cavitation, nucleation, bubble dynamics and pressure history (@fd-cavitation-dynamics: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578", #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../../thermodynamics-and-heat-transfer/sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #fluid-dynamics "../multiphase/Particle-response-settling-Brownian-motion-and-deposition.lingua#r_4HE4FR5RX1H2Z2H18573WWM5MV") { r_3N65MAD5CF80Q2W5Q82GJG167S
+**Read:** [Cavitation and Bubble Dynamics — Christopher E. Brennen](../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578), complete nucleation and spherical-dynamics chapters, then the relevant flow chapters; [Fundamentals of Multiphase Flow — Christopher E. Brennen](../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM), bubble and interphase dynamics; [IAPWS-95 — fundamental water properties](../../thermodynamics-and-heat-transfer/sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z), water-state and saturation definitions.
+
+Vapor formation in a liquid depends on local thermodynamic conditions, nuclei, dissolved gas and the pressure history. A vapor-pressure comparison is an important first estimate, but an onset prediction also involves the physical population of nuclei and the time available for growth. Gauge pressure alone is insufficient for a phase-state calculation.
+
+For an isolated spherical bubble in a simple incompressible Newtonian liquid, study the Rayleigh–Plesset balance R R̈+(3/2)Ṙ²=[p_B−p_∞−2σ/R−4μṘ/R]/ρ, with the bubble-pressure model stated separately. Derive its assumptions and compare inertial, viscous, capillary and gas/thermal effects. Near a violent collapse, incompressibility, spherical shape and simple thermal response can fail.
+
+Relate the local pressure field in a pump inlet, valve or vortex to the bubble model and to measurable acoustic/visual evidence. Distinguish inception, developed cavities and erosion mechanisms. A head-margin criterion for a particular machine is not interchangeable with a universal absence-of-bubbles condition. Use the complete cavitation text for the deeper limits and experimental interpretation.
+
+**Continue:** [Particle response, settling, Brownian motion and deposition](../multiphase/Particle-response-settling-Brownian-motion-and-deposition.lingua#r_4HE4FR5RX1H2Z2H18573WWM5MV).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3N65MAD5CF80Q2W5Q82GJG167S

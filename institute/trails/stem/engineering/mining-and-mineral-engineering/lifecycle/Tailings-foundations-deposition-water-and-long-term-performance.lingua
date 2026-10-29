@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Understand tailings facilities as evolving ground, water, structures, and responsibilities (@mine-tailings-engineering: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tailings-Management-Leading-Practice.lingua#r_40NN1207ZCBP7RVX690CP4G7HZ", #source "../sources/Global-Industry-Standard-on-Tailings-Management.lingua#r_2S0TS7YDGRXD4EFA14DWNQ351S", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #mining-and-mineral-engineering "Plan-closure-from-the-first-design-and-revise-with-evidence.lingua#r_5JNBRXVEJ85P5ZK044HDSF2KRC") { r_1VMWZQHKZME5MT61YCEG415GA4
+**Read:** [Tailings management — Australian leading-practice handbook](../sources/Tailings-Management-Leading-Practice.lingua#r_40NN1207ZCBP7RVX690CP4G7HZ), the complete handbook with technical and operating examples; [Global Industry Standard on Tailings Management — Global Tailings Review](../sources/Global-Industry-Standard-on-Tailings-Management.lingua#r_2S0TS7YDGRXD4EFA14DWNQ351S), the full standard and its definitions/requirements; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the entire tailings/barragem de rejeitos chapter.
+
+Tailings properties depend on mineralogy, particle distribution, process history, density, chemistry, and water. Deposited material can segregate, consolidate, drain, or retain pore pressure. The facility includes foundations, containment, drainage, water storage/returns, deposition history, instrumentation, and the people maintaining and interpreting its records.
+
+For saturated material, distinguish total stress, pore pressure, and effective stress; explain how changes in drainage and loading can alter strength and deformation. A static stability calculation alone does not settle deformation, internal erosion, seismic response, or liquefaction susceptibility. Each mechanism requires its own material model, observations, and applicability evidence.
+
+Compare slurry, thickened, paste, filtered, and other storage arrangements through the whole lifecycle, actual material/climate conditions, water/energy, constructability, operation, landform, and failure consequences. A label such as filtered or dry does not remove geotechnical, water, dust, or continuing maintenance questions.
+
+**Work:** reconstruct a complete published facility case and identify its foundation, material, deposition, water, and monitoring evidence. Trace one physical failure scenario through model assumptions and observations; compare an alternative arrangement with equivalent boundaries and uncertainty. Read the complete GISTM and map technical design evidence, accountable roles, operating records, review, emergency preparation, closure, and affected people to the actual case. State which evidence is unavailable rather than claiming a complete design from a public summary.
+
+**Continue:** [Make closure an evolving physical and working design throughout the mine life](Plan-closure-from-the-first-design-and-revise-with-evidence.lingua#r_5JNBRXVEJ85P5ZK044HDSF2KRC).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1VMWZQHKZME5MT61YCEG415GA4

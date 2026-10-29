@@ -1,0 +1,21 @@
+Import "../Metrology.lingua"
+
+Advanced project — nonlinear estimates, joint outputs, and numerical validation (@met-nonlinear-project: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4", #source "../sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK", #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0", #source "../sources/Uncertainty-Software.lingua#r_0JJ7DQ8KRD6ACMN16THF87F3PW", #metrology "Sampling-and-comparison-project.lingua#r_2BTPTEFXQ5H490KJA3C7AEC1KN") { r_6DDE8J43JQFVSPHW3CDEX0EE6X
+**Read:** [Propagation of distributions using Monte Carlo — JCGM 101](../sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4), the whole guide; [Several output quantities — JCGM 102](../sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK), the whole guide; [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the nonlinear passages with the complete amendment; [Worked measurement examples — JCGM GUM-5:2026](../sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0), the whole volume in stages; [Uncertainty Machine and its numerical methods — Lafarge and Possolo](../sources/Uncertainty-Software.lingua#r_0JJ7DQ8KRD6ACMN16THF87F3PW), the full manual.
+
+Complete the GUM Monte Carlo and multivariate guides, the 2026 amendment, GUM-6, and the GUM-5 examples. Read TN 1900 and the uncertainty-software manual as independent technical treatments. Reconstruct the mathematics rather than using a software output as the source of the conclusion.
+
+**Exact benchmark study:** derive the squared-normal and squared-uniform results from [Nonlinearity can change the estimated value as well as its uncertainty](../uncertainty/Nonlinearity-and-bias.lingua#r_7RZPX9400CJWKT2SH1S8WGFWMW) and [Propagate joint distributions and control the numerical approximation](../uncertainty/Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E). Compare the estimate obtained by substituting mean inputs, the actual output mean and median, first-order variance, a valid higher-order calculation where appropriate, and the propagated distribution. Explain the conditions and the differing meanings of the summaries.
+
+**Joint-output study:** derive the covariance for a constrained two-component composition and a two-coordinate or complex-valued measurement. Write the component covariance sums and the Jacobian expression, transform one result to a different coordinate representation, and verify that the physical relation is preserved. Explain singular covariance caused by a true constraint and reject an invalid covariance matrix for a different reason.
+
+**Numerical study:** implement or independently reproduce joint propagation with documented distributions, dependence construction, model, software/version, numerical settings, and convergence checks. Validate a linear correlated case exactly before the nonlinear one. Compare independent runs and sample sizes and quantify the numerical stability of a tail interval at the digits reported. Preserve all invalid-model evaluations and explain the model response to them.
+
+**Published reconstruction:** choose one complete vector or nonlinear example from JCGM or TN 1900 and reproduce a substantive result with its actual model and assumptions. Compare the independent technical treatments, identify any approximation or edition difference, and trace the references controlling that difference. Apply the 2026 amendment where it affects the base-guide treatment.
+
+Present a substantial report with derivations, numerical checks, figures, covariance or equivalent joint information, source locations, limitations, and revision after criticism. The achievement is an advanced understanding of which result is supported and why; matching a software screenshot without understanding the input model is not completion.
+
+**Continue:** [Advanced project — sampling, validation, and comparison across a material chain](Sampling-and-comparison-project.lingua#r_2BTPTEFXQ5H490KJA3C7AEC1KN).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_6DDE8J43JQFVSPHW3CDEX0EE6X

@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Distinguish a mineral species from a group, variety, phase, or material name (@mp-definition: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #mineralogy-and-petrology "Composition-sites-and-charge-accounting.lingua#r_559FNR7H67KS8GMHM91CX3DQ4F") { r_165HC53VTHME15GHWW142V3X7X
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete definition, species/variety, and classification material; [Mineral names and classification reports — IMA-CNMNC](../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH), the selected list edition and full relevant nomenclature report; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), the explanatory guide and complete selected entries.
+
+A mineral name can refer to a defined species, a group, a solid-solution series, a variety, or an informal material. Preserve which claim is intended. A commercial stone name or a color variety is not automatically an independently defined mineral species, and a compositional group label may leave important structural differences unresolved.
+
+Mineral definitions and nomenclature have a documented history. Use an identified IMA-CNMNC list/report for current classification and the specimen's original label for provenance. A later change in terminology should not erase the observation or confuse an old published analysis with a newly characterized material.
+
+Composition and structure work together. The same elemental formula can occur with different structures, while a structural family can accommodate compositional variation under specified site/charge constraints. Natural, synthetic, altered, amorphous, and mixed materials need appropriate descriptions rather than forcing every object into a familiar mineral label.
+
+**Work:** compare a species, group/series, variety, and industrial material using complete book explanations and their authoritative definitions. Reconstruct one nomenclature revision through its report, identifying what changed in the evidence or definition. Explain what additional structural or chemical observation would be needed to improve a tentative specimen label.
+
+Read the relevant full classification accounts. The purpose is clear communication and testable identity, not memorizing an unlimited list before learning the properties and methods that make an identification defensible.
+
+**Continue:** [Connect a mineral formula with atoms, sites, charge, and measured composition](Composition-sites-and-charge-accounting.lingua#r_559FNR7H67KS8GMHM91CX3DQ4F).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_165HC53VTHME15GHWW142V3X7X

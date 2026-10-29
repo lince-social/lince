@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Compare wave models with the same physical observations (@fd-wave-evidence: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #fluid-dynamics "../interfaces/Surface-tension-curvature-and-interfacial-stress.lingua#r_45KBS33PK1WK235BRBFHAACN9W") { r_7TT23QCCMNDSDZHPCBT4TNHM4D
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), complete waves chapter with unfamiliar problems; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), the corresponding complete wave module; [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), dynamic response and uncertainty methods.
+
+Choose a wave observation and formulate at least two plausible models: for example a shallow-water approximation and a finite-depth potential solution, or an isentropic acoustic model and one including attenuation. Specify the variables, boundary conditions, amplitudes, wavelengths and frequencies needed to compare them.
+
+Predict phase, group behavior and a conserved or dissipated quantity, then identify what the measurement actually resolves. Use a common coordinate and timing reference. Fit only the parameters supported by the observation, reserve independent data for comparison, and examine whether apparent agreement comes from an adjustable offset or amplitude rather than the claimed physics.
+
+Produce a derivation, numerical implementation where needed, uncertainty account and a reasoned choice of model for a stated purpose. Explain a failure case and a measurement that would distinguish the competing accounts. This prepares a more extensive research study without pretending that one educational wave example validates a full hydraulic or acoustic service.
+
+**Continue:** [Surface tension, curvature and interfacial stress](../interfaces/Surface-tension-curvature-and-interfacial-stress.lingua#r_45KBS33PK1WK235BRBFHAACN9W).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7TT23QCCMNDSDZHPCBT4TNHM4D

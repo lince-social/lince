@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Thermal response, feedback and the operating envelope (@th-thermal-control: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Introduction-to-Loop-Heat-Pipes-Semenov.lingua#r_6WFJ8TNG86GRTFSKSXD319J97D", #thermodynamics-and-heat-transfer "Installation-maintenance-and-continuing-thermal-performance.lingua#r_6P3MDPMFQPNNZFDECV0BCDR6SD") { r_4ZNGRXMHDQVHKMC80MZVZ3NDMR
+**Read:** [Differential Equations — MIT 18.03SC](../sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE), complete first-order, systems and transform units; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), transient response and coupled boundaries; [Introduction to Loop Heat Pipes — Sergey Semenov](../sources/Introduction-to-Loop-Heat-Pipes-Semenov.lingua#r_6WFJ8TNG86GRTFSKSXD319J97D), complete temperature-control and startup/shutdown account.
+
+A thermal plant, sensor and actuator each has dynamics. Derive a reduced model from energy storage and transfer, then include measured sensor lag, sampling, delay and actuator bounds. A controller responding to a delayed surface temperature may not protect an unobserved internal hot spot.
+
+Compare open-loop response with feedback under a load disturbance. Distinguish settling time, overshoot, steady error, energy consumption and spatial uniformity. State where a linear approximation is valid and examine saturation, altered flow and changing radiation or material properties.
+
+The full control-engineering subject develops controller synthesis and proof. Here establish the thermal model and the physical evidence needed for that work. Check loss of cooling, changed contact or a failed sensor against a documented operating envelope. Automatic regulation and independent protection perform different functions and require separate evidence in real equipment.
+
+**Continue:** [Installation, maintenance and continuing thermal performance](Installation-maintenance-and-continuing-thermal-performance.lingua#r_6P3MDPMFQPNNZFDECV0BCDR6SD).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_4ZNGRXMHDQVHKMC80MZVZ3NDMR

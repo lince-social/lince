@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Equations, Tables, and Charts for Compressible Flow — NACA 1135 (@fd-naca1135: 0, is #reference, #part-of @fd-sources) { r_5V6PTWHXNJS515S6PMX7BN2ZHM
+Ames Research Staff. Equations, Tables, and Charts for Compressible Flow, NACA Report 1135, 1953. [NASA repository and full report](https://ntrs.nasa.gov/citations/19930091059).
+
+Read the complete governing relations and the tables applicable to each compressible-flow study. Reconstruct one-dimensional isentropic relations, normal/oblique shocks and Prandtl–Meyer expansion from their assumptions before checking a numerical result. Distinguish calorically perfect-gas examples from the report's treatments of caloric imperfection.
+
+The report was published in 1953; the accession number and 2013 acquisition date are not publication dates. NASA identifies it as a US-government work with public use permitted. Preserve table definitions and normalization. The report and tables remain external references.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_5V6PTWHXNJS515S6PMX7BN2ZHM

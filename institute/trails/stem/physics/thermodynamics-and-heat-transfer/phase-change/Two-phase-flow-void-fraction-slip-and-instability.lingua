@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Two-phase flow, void fraction, slip and instability (@th-two-phase-flow: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../coupled/Heat-and-mass-transfer-analogy-and-diffusion.lingua#r_7Y3SYSB181GZ401PFKJ3JY32DC", #thermodynamics-and-heat-transfer "../research/Boiling-condensation-and-the-evidence-for-a-transfer-limit.lingua#r_7D7D3GS454M9Z5NRPJJ3CNBDCJ") { r_4D94B26FDN2W31SAGSKBYHJHJD
+**Read:** [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), the complete two-phase equations and boiling sequence; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), flow boiling and phase-change limits; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), equilibrium quality and phase properties.
+
+Mass quality, void fraction and phase velocities are different quantities. A homogeneous equilibrium flow approximation imposes relations among them; separated or nonequilibrium models require additional information and closure. Define the averaging and phase-change terms before writing a two-phase energy account.
+
+Pressure loss, heat input, compressibility and changing phase fraction can couple strongly. Flow regimes and instabilities affect wall wetting, transfer rates and measurement interpretation. A steady local correlation can miss an oscillating or dryout-prone system.
+
+Compare a homogeneous model with a more detailed documented method for one bounded case. Check mass, energy and pressure behavior, and identify the required slip, interfacial-area or transfer closure. Boiler, evaporator and multiphase process design continue in the full engineering routes.
+
+**Continue:** [Heat and mass transfer, analogy and diffusion](../coupled/Heat-and-mass-transfer-analogy-and-diffusion.lingua#r_7Y3SYSB181GZ401PFKJ3JY32DC) · [Advanced study: boiling, condensation and transfer limits](../research/Boiling-condensation-and-the-evidence-for-a-transfer-limit.lingua#r_7D7D3GS454M9Z5NRPJJ3CNBDCJ).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_4D94B26FDN2W31SAGSKBYHJHJD

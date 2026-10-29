@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Reconstruct diagenesis through textures, reactions, fluids, and burial constraints (@mp-diagenesis: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #mineralogy-and-petrology "Clay-minerals-mixed-layers-and-treatment-evidence.lingua#r_1YK3X2Z2EPXKF4P85R27T8A6FF") { r_4RF28CK89JY6YNRYSP4E0PW79Y
+**Read:** [Sedimentary Geology — John Southard, MIT 12.110](../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM), all siliciclastic and carbonate diagenesis notes; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full relevant texture/measurement sections; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the complete relevant alteration/reaction treatment.
+
+Diagenesis changes sediment/rock after deposition through physical, chemical, and biological processes under an identified history. Compaction, dissolution, cementation, replacement, recrystallization, and authigenesis can interact. A convenient boundary between diagenesis and metamorphism is descriptive/contextual, not a claim that the natural processes stop abruptly at one universal temperature.
+
+Separate porosity amount, pore geometry/connectivity, and permeability. Cement can fill pores or stabilize a framework; dissolution can create pores without establishing a connected flow network. A thin-section image is a selected two-dimensional observation requiring complementary measurements for many flow/engineering claims.
+
+Cross-cutting cements, overgrowths, grain contacts, replacement fronts, inclusions, and chemistry can order events. A textural sequence needs age/temperature/fluid constraints before becoming a quantitative burial history. Later fluids can overprint earlier signals selectively rather than reset every phase together.
+
+**Work:** reconstruct a documented diagenetic sequence from the full methods and observations, distinguishing direct relationships, inferred stages, and unresolved ordering. Compare two fluid/burial histories and test a consequential mass-balance or porosity claim. Explain the additional measurements required to connect the interpretation with groundwater flow, storage, aggregate durability, or another material use.
+
+Read the complete siliciclastic and carbonate diagenesis notes. The advanced sedimentary project will require a sustained history rather than a list of recognized cements.
+
+**Continue:** [Identify clay phases with structural, chemical, and preparation evidence](Clay-minerals-mixed-layers-and-treatment-evidence.lingua#r_1YK3X2Z2EPXKF4P85R27T8A6FF).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_4RF28CK89JY6YNRYSP4E0PW79Y

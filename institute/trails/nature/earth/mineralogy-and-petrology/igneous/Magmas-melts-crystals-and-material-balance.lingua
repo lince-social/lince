@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Distinguish magma, melt, crystals, and the system being sampled (@mp-magma: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #mineralogy-and-petrology "Classify-igneous-rocks-from-mode-chemistry-and-context.lingua#r_0JPXPD7GZVPEWCDV26V55PX439") { r_2MNYJC6NDNW704DEW47KJGR76V
+**Read:** [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the complete magma/igneous foundations; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full igneous composition/phase lecture sequence; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete introductory igneous texture and magma notes.
+
+A magma can contain melt, crystals, bubbles/fluids, and entrained or inherited material. A whole-rock analysis, glass analysis, crystal composition, and model equilibrium liquid therefore represent different quantities. An erupted rock may not equal a liquid composition that existed at one pressure and temperature.
+
+Connect heat, composition, phase relations, pressure, volatiles, transport, and time. Cooling can change crystal and melt proportions, compositions, and rheology; crystallization can fractionate material only if the relevant phases are separated under an identified mechanism. Mixing and assimilation require material and energy accounts.
+
+Textures and mineral populations provide evidence of nucleation/growth, resorption, transport, accumulation, and later alteration. A large crystal is not automatically a phenocryst grown entirely from its host melt, and a fine groundmass does not establish the full deep storage history.
+
+**Work:** reconstruct a published or teaching magma account distinguishing whole-rock, melt, crystal, and volatile information. Draw the sampled system and transfers. Compare an equilibrium crystallization interpretation with an accumulation or mixed-population alternative, identifying a discriminating chemical/textural observation.
+
+Read the full introductory igneous lectures and book treatment. The following classification and process calculations use explicit compositional bases and reference states, then develop increasingly demanding comparisons of natural systems through the complete undergraduate and graduate course material.
+
+**Continue:** [Use igneous classification without turning a name into an origin proof](Classify-igneous-rocks-from-mode-chemistry-and-context.lingua#r_0JPXPD7GZVPEWCDV26V55PX439).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_2MNYJC6NDNW704DEW47KJGR76V

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect secondary steel treatment with measured chemistry, inclusions, and required performance (@metal-secondary-steel: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #metals-and-metallurgical-production "Stainless-alloy-steels-and-cast-iron-route-differences.lingua#r_24G8BGM2R0SY1EYFR56E5GF4X9") { r_4KWHT49WZJGRRP09VB93RD52HA
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), all secondary treatment, vacuum, stirring, inclusion, and tundish lectures; [Steel Making — Dipak Mazumdar and Satish Ch. Koria, NPTEL](../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ), the complete secondary-refining theory and worked cases; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), the whole relevant secondary-metallurgy/transfer and casting context.
+
+Secondary treatment can adjust composition/temperature, remove or manage gases/impurities, homogenize, modify inclusions, and prepare metal for casting. Each duty needs a defined chemical, thermal, transport, and observation model. Low bulk impurity concentration and useful cleanliness are related but different descriptions.
+
+Distinguish dissolved elements, oxide/sulfide/nitride phases, inclusion populations, entrainment, and contamination introduced during handling. Number, size, chemistry, morphology, and location of inclusions can affect processing and service. A single total-oxygen or point-analysis value does not fully characterize that population.
+
+Gas/slag/metal reactions, mixing, vacuum conditions where used, refractory interactions, residence history, sampling, and reoxidation/transfer control influence actual outcomes. A thermodynamic target is not a guarantee of uniform final material or successful removal before casting.
+
+**Work:** reconstruct a complete ladle/refining/transfer case with original methods and observations. Independently check element and heat accounts, derive a relevant distribution/gas relation, and compare a kinetic/contact or contamination alternative. Validate a claimed quality improvement with independent inclusion/property evidence and uncertainty. Connect the final liquid state and handling history with the later solidification/defect study rather than ending the account at a favorable ladle sample.
+
+**Continue:** [Explain why stainless steels, alloy steels, and cast irons need distinct processing evidence](Stainless-alloy-steels-and-cast-iron-route-differences.lingua#r_24G8BGM2R0SY1EYFR56E5GF4X9).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_4KWHT49WZJGRRP09VB93RD52HA

@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Maintain models, settings, measurements and understanding (@pe-knowledge: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6", #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Hybrid-Symbolic-Numeric-Power-Models-Cui.lingua#r_7XTYA62FQ8W2X448XXVFNPA7AK", #electrical-power-engineering "../study/A-full-practical-and-graduate-power-engineering-programme.lingua#r_762ATXJ9563BT8M3229MP1G1FR") { r_3TSK7HPCDW0DKMHEPFB3SQE0DW
+**Read:** [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6), entire change/evidence and communication work examples; [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete model/version and case/solver notice context; [Hybrid Symbolic-Numeric Framework — Cui, Li and Tomsovic](../sources/Hybrid-Symbolic-Numeric-Power-Models-Cui.lingua#r_7XTYA62FQ8W2X448XXVFNPA7AK), entire reproducible model/method comparison.
+
+A power-system model is a maintained technical claim tied to actual equipment, topology, state, material, settings and measurements. Record units, bases, sign conventions, versions, uncertainty and the source of each consequential parameter. A file named final does not establish that it still represents the installed system after a change.
+
+Trace one decision from physical requirements through books/methods, model, independent calculation, test and service evidence. Identify what must be rechecked after changing a transformer, source, control, protection setting, solver version or operating duty. Preserve the disagreement and revision when an observation contradicts the earlier account.
+
+Keep original explanations and independent teaching examples here, with complete authorized external sources. A free-readable book, open-licensed text, proprietary guide, standard, open-source solver and case dataset have distinct rights and evidence. Share generic quantitative, field, metrology and computational knowledge through their existing Records; keep power-specific reasoning where it explains the actual system. This supports continuous learning and maintenance without requiring every reader to traverse every connected field before asking a useful electrical question.
+
+**Continue:** [A full practical and graduate power-engineering programme](../study/A-full-practical-and-graduate-power-engineering-programme.lingua#r_762ATXJ9563BT8M3229MP1G1FR).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3TSK7HPCDW0DKMHEPFB3SQE0DW

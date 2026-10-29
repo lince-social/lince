@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Ultrafast heating, two-temperature models and local equilibrium (@th-ultrafast: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #source "../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW", #thermodynamics-and-heat-transfer "../practice/Thermal-expansion-stress-and-material-change.lingua#r_42B1ZP9ZZENC5AM43MDX21V08K", #thermodynamics-and-heat-transfer "../research/Thermoreflectance-film-interface-and-transducer-identification.lingua#r_6WKF41FT551WE99MNFMFH6YASP") { r_1EESE8HZWNCWPC2AFRVBGWP832
+**Read:** [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), nonequilibrium transport and short-time limits; [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), complete time-domain method; [Thermoreflectance methods — September 2026 review](../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW), comparative transient and modulated techniques.
+
+A short excitation can deposit energy into one subsystem before electrons, phonons or other degrees of freedom equilibrate. Separate a model's subsystem temperatures, heat capacities, transport terms and coupling coefficient. Temperature itself requires a sufficiently meaningful distribution within the subsystem.
+
+Derive the coupled energy equations and their sum; internal exchange must cancel from the total account. Compare pulse duration, thermalization, coupling and diffusion times before adopting a two-temperature model. An empirical fit cannot establish local equilibrium at every resolved instant.
+
+Study a complete time-resolved method, including optical absorption, pulse response, transducer assumptions and the measured observable. Compare predictions over changed delay or frequency ranges, and identify which parameters remain poorly determined. This connects thermal science to laser processing and chip-scale devices without replacing their full optical, materials or manufacturing methods.
+
+**Continue:** [Thermal expansion, stress and material change](../practice/Thermal-expansion-stress-and-material-change.lingua#r_42B1ZP9ZZENC5AM43MDX21V08K) · [Advanced study: thermoreflectance of films and interfaces](../research/Thermoreflectance-film-interface-and-transducer-identification.lingua#r_6WKF41FT551WE99MNFMFH6YASP).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1EESE8HZWNCWPC2AFRVBGWP832

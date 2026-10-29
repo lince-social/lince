@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced turbulence-closure verification and validation study (@fd-advanced-rans: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #fluid-dynamics "Advanced-resolved-turbulence-and-filtering-study.lingua#r_5RBD4WBYMYYMR54BDK1X22SZQV") { r_6S38T31W8P5CSNRDF9Y77KPYF7
+**Read:** [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), complete selected model definition, verification and validation documentation; [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), turbulence and numerical methods; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), full verification/validation tutorial.
+
+Select an exact named model variant from [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6) and derive its mean-flow and additional transport equations, constants, wall conditions and limiting behavior. Check an implementation against the published verification case using systematic grids and a documented solver version. Verify the closure equations before interpreting their physical success.
+
+Compare the verified model with independent validation evidence for an attached flow and a more demanding separated, curved or otherwise relevant flow. Match measured observables and boundary conditions. Investigate sensitivity to inlet turbulence, wall treatment, discretization, convergence and uncertain material/geometry inputs.
+
+Contrast a second closure without tuning both to erase the same discrepancy. Deliver a reasoned explanation of model-form differences and their impact on the intended prediction. Preserve failure evidence and the domain of supported use. An accurate implementation and small residual do not guarantee an adequate turbulent-stress model.
+
+**Continue:** [Advanced resolved-turbulence and filtering study](Advanced-resolved-turbulence-and-filtering-study.lingua#r_5RBD4WBYMYYMR54BDK1X22SZQV).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_6S38T31W8P5CSNRDF9Y77KPYF7

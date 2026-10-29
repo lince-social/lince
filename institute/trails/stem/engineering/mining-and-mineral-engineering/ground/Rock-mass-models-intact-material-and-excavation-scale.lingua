@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Build a ground model from material, structures, water, stress, and scale (@mine-rock-mass: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #source "../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #mining-and-mineral-engineering "Discontinuity-surveys-scale-and-kinematic-possibility.lingua#r_09SPXAY2V59ZXX3XA7PFFAFMMT") { r_1DMB4100MSM5KM3XE6FT4MADKF
+**Read:** [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the full material, rock-mass, stress, and design-acceptance sequence; [Engineering Geology Field Manual — U.S. Bureau of Reclamation](../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE), the complete rock/discontinuity, mapping, drilling, and logging methods; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full rock-mechanics and ground-control chapters.
+
+A rock mass includes intact material, discontinuities, weathering/alteration, water, stress, geometry, and history. An intact laboratory specimen does not reproduce every mechanism controlling an excavation, slope, pillar, or support system. Define the question and scale before choosing properties or a model.
+
+Combine mapped/logged observations with uncertainty and alternative geological interpretations. Identify which features are directly observed and which extend through unexposed ground. The same rock name can contain very different structures and mechanical behavior; classification is useful communication rather than a substitute for the investigation.
+
+Distinguish a continuum approximation, discontinuity-controlled model, empirical classification/design relation, and observed response. Each has an applicability domain and parameters requiring evidence. A detailed numerical mesh does not establish that the constitutive model, boundary, or ground geometry is correct.
+
+**Work:** reconstruct a complete ground model for a teaching mine/excavation case. Relate material tests, structure survey, water/stress information, and actual geometry to candidate failure/deformation mechanisms. Compare an alternative model and identify the observation that would distinguish it before selecting an analysis method.
+
+Read the full practical rock-engineering book and field methods progressively. Later studies apply this evidence to specific mine geometries and operations; specialist rock/geotechnical engineering develops its unique theory and design depth using the same shared observations.
+
+**Continue:** [Measure structures and distinguish kinematic possibility from stability](Discontinuity-surveys-scale-and-kinematic-possibility.lingua#r_09SPXAY2V59ZXX3XA7PFFAFMMT).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1DMB4100MSM5KM3XE6FT4MADKF

@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Explain temperature dependence and interpret an activation model (@gc-arrhenius: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "Mechanisms-intermediates-and-identifiability.lingua#r_5ASWQH1QT4Z4Z2PWK425QBE2WJ") { r_69Y6QZ24G1QTE9TAJJM4A6WGDJ
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 12’s collision, activation, and temperature sections; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), activation energy and Arrhenius treatment; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), the corresponding Unit V lectures.
+
+The Arrhenius form k = A exp(−E_a/RT) describes many reaction-rate constants over a useful range. Identify which constant, units, reaction regime, and temperature interval are being fitted. The parameters are model quantities; an observed activation energy need not equal a single bond dissociation energy or one elementary barrier in a complex mechanism.
+
+A temperature change can alter mechanism, phase, transport, catalyst state, or equilibrium composition as well as an elementary rate. A straight segment in ln k versus 1/T is evidence for a bounded empirical description, with uncertainty and possible correlations. Extrapolating far outside its range requires additional justification.
+
+Connect the activation idea with molecular-energy distributions and reaction pathways. A collision model and transition-state description organize different levels of approximation. The full statistical/physical-chemistry theories will deepen them; the general treatment should already distinguish a rate parameter from a thermodynamic reaction energy.
+
+**Work:** derive the two-temperature rate-constant ratio under the constant-parameter model, using absolute temperature and compatible energy units. Fit a small labelled hypothetical dataset, inspect residuals, and estimate how uncertainty in temperature affects the inferred slope. Propose observations that would expose a change in regime rather than forcing all points onto one line.
+
+Read the full activation/collision treatment and MIT kinetics lectures. Return to the energy and molecular-distribution Records when an analogy conflates energy conservation with the probability of a reactive event.
+
+**Continue:** [Test a reaction mechanism against more than the overall equation](Mechanisms-intermediates-and-identifiability.lingua#r_5ASWQH1QT4Z4Z2PWK425QBE2WJ).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_69Y6QZ24G1QTE9TAJJM4A6WGDJ

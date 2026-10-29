@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+FiPy — conservative finite-volume modelling (@th-fipy: 0, is #reference, #part-of @th-sources) { r_5C155DKGJ5WYGV18EJ1SC41G0Q
+NIST FiPy developers. [Official manual](https://pages.nist.gov/fipy/en/stable/) · [Numerical approach](https://pages.nist.gov/fipy/en/stable/numerical/discret.html) · [Terms of use](https://pages.nist.gov/fipy/en/stable/LICENSE.html).
+
+Study the full numerical approach and relevant transient diffusion, convection and coupled/phase-field examples, then reconstruct the discrete conservation statement. Check face interpolation, boundary terms, time integration, nonlinear convergence, mesh refinement and property dependence against analytical or independently computed limits. Read [FiPy: Partial Differential Equations with Python](FiPy-Partial-Differential-Equations-with-Python.lingua#r_0CA1GV7T9X876WS57M2KH93SZB) alongside the manual.
+
+The inspected documentation identifies version 4.0.3 and redirects from the older ctcms.nist.gov host. NIST software terms and dependency licences must be checked separately. This is a linked method/tool route, not a claim that FiPy has been installed or all its examples executed here. The original small teaching program has its own independent verification.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_5C155DKGJ5WYGV18EJ1SC41G0Q

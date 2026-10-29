@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Interpret flood evidence and probability without mistaking a return period for a schedule (@geo-floods: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N", #source "../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK", #geology "../water/Groundwater-head-conductivity-and-flow.lingua#r_104ZRDJ685JFSD9E3RDJVN8NQB") { r_6X18FVTY53Q50RK2NNKMZ7B01K
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), the complete flooding and floodplain material in chapter 13; [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N), the complete relevant regional water/landscape discussion; [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK), purpose, scale, and limitations of associated mapped interpretations.
+
+Floodplains, terraces, abandoned channels, deposits, and instrumental records preserve different windows into river behavior. Their age, spatial extent, preservation, measurement method, and alteration matter. A flood mapped for one condition does not define every later event or a permanent channel boundary.
+
+A stated annual exceedance probability depends on an identified quantity, threshold, site, model, and observation period. A nominal 100-year return period is commonly associated with annual probability 0.01 under a stationary annual-exceedance model; it does not mean one event occurs every hundred years. Under independent years the probability of at least one exceedance in 30 years is 1−0.99³⁰, about 0.2603.
+
+Changing land cover, channel works, climate, regulation, sediment, and measurement practices can affect applicability of historical estimates. Geological evidence may extend the record but introduces its own preservation and dating uncertainties. Distinguish statistical estimation from hydraulic inundation modeling and consequences.
+
+**Work:** independently derive the toy probability and explain why its assumptions need testing for a real river. Compare a historical floodplain interpretation with a versioned official map/report, tracing the evidence, reference levels, and uncertainty. Identify information needed to assess a bridge, storage facility, or settlement question rather than inferring it from the return-period label alone.
+
+Read the complete stream/flood discussion with the regional source. Later hydrology, probability, hydraulics, and risk studies deepen the quantitative methods while reusing the geological record and observation discipline.
+
+**Continue:** [Derive a groundwater-flow account from head, properties, and boundaries](../water/Groundwater-head-conductivity-and-flow.lingua#r_104ZRDJ685JFSD9E3RDJVN8NQB).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_6X18FVTY53Q50RK2NNKMZ7B01K

@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Excitation Systems for Hydroelectric Units — FIST 3-14 (@pe-fist-excitation: 0, is #reference, #part-of @pe-sources) { r_725R40RX14YMRTQNWKGHY12JCN
+U.S. Bureau of Reclamation. Excitation Systems for Hydroelectric Units, FIST 3-14, January 2026 catalogue revision. [Official catalogue](https://www.usbr.gov/power/data/fist_pub.html) · [Complete linked manual](https://www.usbr.gov/power/data/fist/FIST_3-14_%2801-2026%29.pdf).
+
+Read the whole manual during excitation/control study. Relate the synchronous-machine model, voltage/reactive control, limits, equipment, measurements and maintenance/testing evidence. Compare a simplified regulator block diagram with the installed sensing, limiters, auxiliary supplies and failure behavior.
+
+The official catalogue identifies this current listed revision; checked on 29 October 2026. Direct retrieval timed out, so complete contents/page inspection and a precise internal issue history are not claimed. Preserve the actual file's notices and check newer revisions when applying it. Reclamation/hydroelectric context matters; an introductory transfer function is not a complete commissioning or protection method. No manual, controller model, settings or test data is copied here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_725R40RX14YMRTQNWKGHY12JCN

@@ -1,0 +1,17 @@
+Import "../Geology.lingua"
+
+Construct sections that distinguish observations, geometry, and assumptions (@geo-sections: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #source "../sources/QGIS-Training-Manual.lingua#r_65XJEHNY3P1ESW5KF5V0871SFQ", #geology "../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8") { r_22PW66CWPDPGQ9VEP3V28GQGV6
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), Lab 2 Cross-sections and Three-point Problems and the full supporting sections; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete map-reading exercise; [QGIS Training Manual — QGIS project](../sources/QGIS-Training-Manual.lingua#r_65XJEHNY3P1ESW5KF5V0871SFQ), profile and spatial-data operations actually used.
+
+A cross-section combines surface observations, topography, subsurface constraints, and a geological interpretation along a specified trace. Define its horizontal reference, scale, elevation datum, projection rules, vertical exaggeration, and source information. Data away from the trace cannot be projected arbitrarily without assumptions about lateral continuity and structure.
+
+True and apparent dip differ. For a planar surface of true dip δ, an oblique section at horizontal angle θ from the dip direction has signed tan(δ_app) = tan(δ) cos(θ) under consistent directional conventions. A section along strike gives zero apparent dip; one along dip gives the true dip. Curved or changing surfaces need a more local treatment.
+
+For planar parallel beds crossing level ground, a horizontal outcrop width L measured perpendicular to strike gives true thickness t = L sin(δ). Invented L = 100 m and δ = 30° gives 50 m. A vertical borehole through those beds has intercept t/cos(δ), about 57.735 m. Sloping terrain, faults, and nonparallel boundaries change the geometry.
+
+**Work:** derive these relations with sketches, then complete Lab 2. Draw a section distinguishing observed intersections from inferred contacts. Make a second admissible section and propose a new observation that would discriminate it. Use [Build a numerical validation argument across several kinds of evidence](../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8) before the original numerical plane calculation; its geological continuation returns here to quantitative geometry.
+
+**Continue:** [Build a numerical validation argument across several kinds of evidence](../../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_22PW66CWPDPGQ9VEP3V28GQGV6

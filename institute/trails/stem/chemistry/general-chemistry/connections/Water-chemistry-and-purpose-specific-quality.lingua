@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Define water quality through species, use, and a measurement chain (@gc-water: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Henry-Law-Sander.lingua#r_4HW63C2ZE42PFRFC294FDPTYWH", #general-chemistry "../research/A-complete-general-chemistry-course.lingua#r_3JB6YE4WHPJS0YH8W2FGAY3AM4") { r_4KTZB3C20MY7CC4ZKG7ZS3B2AG
+**Read:** [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the complete aqueous and carbonate applications; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), sampling, equilibrium, and method validation for the chosen question; [Compilation of Henry’s law constants, version 5.0.0 — Rolf Sander](../sources/Henry-Law-Sander.lingua#r_4HW63C2ZE42PFRFC294FDPTYWH), gas-partition conventions where relevant.
+
+Water used for a chemical experiment, a cooling system, irrigation, drinking, or sensitive manufacture can face different requirements. State the use, target quantities, species/basis, conditions, measurement method, and evidence required to assess suitability. A clear appearance or a single conductivity measurement cannot establish every possible quality claim.
+
+Connect dissolved ions, gases, acid/base equilibria, mineral saturation, organic material, colloids, surfaces, and biological contributions according to the actual question. A treatment can transfer a component to a solid, concentrate it in another stream, change its chemical form, or remove it from a selected boundary. Preserve the destinations and the supporting energy/reagent/material flows.
+
+A reported elemental total, free-ion activity, organic identity, particle count, and microbial observation answer different questions. Sampling, storage, contamination, time, temperature, and procedure can change the interpretation. The general chemical foundation should help recognize these differences without inventing a universal safe-water threshold.
+
+**Work:** choose a defined nonmedical study such as a hypothetical scaling/corrosion or reagent-water comparison. Write the component/equilibrium and measurement account, identify the actual use-specific requirements from an authoritative source, and compare what different observations can establish. Use a labelled model or authorized data; do not infer potability or a clinical decision from a general-chemistry exercise.
+
+Read the corresponding equilibrium, analytical, and carbonate sources in full at the appropriate scale. Later water, environmental, agricultural, health, and semiconductor trails will deepen their own requirements and practical systems while reusing the same shared chemical reasoning.
+
+**Continue:** [Sustained study — complete the first course and revisit its models critically](../research/A-complete-general-chemistry-course.lingua#r_3JB6YE4WHPJS0YH8W2FGAY3AM4).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_4KTZB3C20MY7CC4ZKG7ZS3B2AG

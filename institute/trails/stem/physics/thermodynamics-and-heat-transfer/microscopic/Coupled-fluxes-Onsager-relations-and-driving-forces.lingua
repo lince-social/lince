@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Coupled fluxes, Onsager relations and driving forces (@th-coupled: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #thermodynamics-and-heat-transfer "../properties/Fundamental-property-models-derivatives-and-verification.lingua#r_764YPYD3A83WPVMG0N594Y9W71", #thermodynamics-and-heat-transfer "../research/Coupled-fluxes-entropy-production-and-nonlinear-limits.lingua#r_3NKXVB8QJD92YT4FARHAN5D599") { r_6Z9NJX0N7J73Q2KHB8R7DNSNSB
+**Read:** [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), the complete near-equilibrium coupled-transport treatment; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), carrier transport and thermoelectric connections.
+
+Near equilibrium, appropriate fluxes may be expressed as linear combinations of thermodynamic driving forces. Heat, matter and charge transport can be coupled. Define the flux convention and conjugate forces so their products form the entropy-production rate.
+
+Onsager reciprocity requires its microscopic/time-reversal assumptions, with the appropriate changes in fields or time-reversal parity. Positivity constrains the dissipative transport matrix. Neither relation is permission to use an arbitrary symmetric matrix for far-from-equilibrium behavior.
+
+Derive a two-flux example, check nonnegative entropy production and compare constrained measurements such as zero-current and open-circuit thermal behavior. Thermoelectric, thermodiffusive and electrokinetic applications connect to distinct electronic and electrochemical engineering without changing the shared conservation and thermodynamic reasoning.
+
+**Continue:** [Fundamental property models, derivatives and verification](../properties/Fundamental-property-models-derivatives-and-verification.lingua#r_764YPYD3A83WPVMG0N594Y9W71) · [Advanced study: coupled fluxes and nonequilibrium limits](../research/Coupled-fluxes-entropy-production-and-nonlinear-limits.lingua#r_3NKXVB8QJD92YT4FARHAN5D599).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6Z9NJX0N7J73Q2KHB8R7DNSNSB

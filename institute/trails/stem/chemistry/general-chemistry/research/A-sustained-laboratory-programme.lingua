@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Practical programme — obtain, interpret, and defend chemical observations (@gc-practicum: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/ACS-Academic-Laboratories.lingua#r_1GAGRBYCJGJAY86HQCNE9S66EP", #source "../sources/ACS-Laboratory-Safety-Textbook.lingua#r_7TD6AG2TZZ0GS0EWJMC8KC9SB0", #source "../sources/Prudent-Practices.lingua#r_3RPEFRP5NBW53ECS7EFQX6D6ZK", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "An-advanced-speciation-study.lingua#r_6GQB2QBSJ0BJ4YYVNCAP1AF0V6") { r_537CX8QFHX4Q7HR6W795QNCY76
+**Read:** [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the whole manual and the selected complete activities; [Safety in Academic Chemistry Laboratories — ACS, eighth edition](../sources/ACS-Academic-Laboratories.lingua#r_1GAGRBYCJGJAY86HQCNE9S66EP), the whole booklet; [Laboratory Safety for Chemistry Students — Hill and Finster, third edition](../sources/ACS-Laboratory-Safety-Textbook.lingua#r_7TD6AG2TZZ0GS0EWJMC8KC9SB0), the full textbook as the programme develops; [Prudent Practices in the Laboratory — National Research Council](../sources/Prudent-Practices.lingua#r_3RPEFRP5NBW53ECS7EFQX6D6ZK), the complete book, including applicable corrections; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), the complete method chapters actually used.
+
+Develop sustained experimental work in an appropriate supervised laboratory, with current procedure-specific preparation, equipment, training, risk controls, waste management, and emergency arrangements. Read the UNILA manual completely and the full safety references as the work develops. Select a coherent sequence covering solution preparation/standardization, composition or gravimetry, titration/equilibrium, calorimetry, kinetics, and electrochemical observations.
+
+For each study state the chemical question, species/phase/basis, reaction or transfer model, planned observations, independent checks, and conditions needed to interpret them. Preserve original measurements, calibration/reference information, deviations, failed attempts, derived calculations, and uncertainty. A clean report should not erase the history needed to understand a discrepancy.
+
+Compare repeated observations with evidence addressing systematic effects. Include blanks, an independent preparation or check, a relevant reference, and a method/condition comparison suited to the actual question. Explain sampling and specimen preparation rather than treating the instrument's displayed precision as the full uncertainty.
+
+**Demonstrate:** competent performance assessed in the actual laboratory; a reasoned analysis with mass/charge/energy accounts as appropriate; an explained discrepancy and correction; and a report another reader can reconstruct. Discuss what the experiments establish and what would require another method or deeper domain knowledge.
+
+Published-data reconstruction, virtual work, and paper plans can develop much of the theory and analysis when laboratory access is unavailable. Identify that evidence honestly and retain the practical work as a learning demand rather than claiming that simulated manipulation demonstrated physical competence. These are expectations for learning the subject, not a new software gate or authoring requirement in Lince.
+
+**Continue:** [Advanced project — coupled equilibria, activities, and model criticism](An-advanced-speciation-study.lingua#r_6GQB2QBSJ0BJ4YYVNCAP1AF0V6).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_537CX8QFHX4Q7HR6W795QNCY76

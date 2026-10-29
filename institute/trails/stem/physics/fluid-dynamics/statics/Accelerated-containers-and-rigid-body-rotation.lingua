@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Accelerated containers and rigid-body rotation (@fd-rigid-motion: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "../../../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J") { r_6JVXB2M9DRSZ6GP1WJCH6ZF73M
+**Read:** [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), rotational hydrostatics; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 8 rigid rotation solution; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), rotating-flow demonstrations and notes.
+
+A fluid may have no relative deformation while the entire container accelerates or rotates. Analyze the balance in a declared frame. For uniform translational acceleration a, the effective body acceleration in the container frame is g−a. A free surface at uniform external pressure is normal to that effective acceleration.
+
+For steady rigid rotation with angular speed Ω about a vertical axis, the radial pressure gradient is ρΩ²r. Combining it with vertical hydrostatic balance gives a parabolic free surface z(r)=constant+Ω²r²/(2g), for uniform density and negligible capillary corrections. In the inertial frame, fluid particles have centripetal acceleration even though their speed at a fixed radius is constant.
+
+Explain why this rotating fluid has vorticity but no local shear deformation in rigid rotation. Distinguish the final state from the viscous spin-up process that establishes it. Check volume conservation when finding the free-surface level in a finite container.
+
+**Continue:** [Vectors, coordinate systems, and spatial meaning](../../../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_6JVXB2M9DRSZ6GP1WJCH6ZF73M

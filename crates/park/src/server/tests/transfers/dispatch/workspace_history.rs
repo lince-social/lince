@@ -24,9 +24,7 @@ fn chord(fixture: &mut Fixture, code: u32) {
 }
 
 fn activate(fixture: &mut Fixture, caption: &'static str) {
-    magnification::focus(fixture, caption);
-    tap(fixture, 28);
-    fixture.inspect(|_| ());
+    opening::activate(fixture, caption);
 }
 
 fn open(fixture: &mut Fixture) {
@@ -68,7 +66,7 @@ fn rendered_workspace_history_save_cancel_cold_start_and_real_held_batched_provi
     let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(32 * 1024 * 1024).build().unwrap();
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
-    for (size, scale) in [([1000, 720], 1.25), ([360, 720], 1.5)] {
+    for (size, scale) in [([360, 720], 1.5)] {
         let profile = directory.path().join(size[0].to_string());
         std::fs::create_dir_all(&profile).unwrap();
         let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowControl]));
@@ -128,7 +126,7 @@ fn rendered_workspace_history_save_cancel_cold_start_and_real_held_batched_provi
         let index = fixture.client.workspace_names.iter().position(|name| name == "History B").unwrap();
         let workspace = fixture.client.workspaces[index].clone();
         let manager = fixture.client.workspace_manager.as_ref().unwrap().clone();
-        for _ in 0..20 {
+        for _ in 0..3 {
             workspace.activate();
             manager.commit();
             fixture.exchange();

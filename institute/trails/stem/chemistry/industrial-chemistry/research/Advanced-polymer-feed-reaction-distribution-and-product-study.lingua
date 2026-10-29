@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Investigate a complete industrial polymer route with distribution and product evidence (@ic-polymer-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Polymer-Production-BREF.lingua#r_01PXATYT6P16206KQ3VDX34K1F", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_03ZX0535XC3P3AD00BJK58BYGQ
+**Read:** [Production of Polymers, BREF POL](../sources/Polymer-Production-BREF.lingua#r_01PXATYT6P16206KQ3VDX34K1F), the whole generic reference and complete selected polymer-family chapters; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the entire pertinent monomer, polymer, elastomer/fibre manufacturing sequence; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete relevant polymer/particulate and transport/energy models.
+
+Read the complete public polymer-family chapter, full university manufacturing treatment and primary chemistry/characterization studies for one defined product. Reconstruct monomer quality, initiator/catalyst and pathway, reactor phases, heat/transport, distributions, isolation, finishing, utilities and residuals.
+
+Independently derive representative conversion, molecular/population and energy/material relations. Reproduce a substantial primary result and test it against an independent limiting calculation or complementary observation. A correct average molecular quantity must be related to actual distributions and product performance.
+
+Compare a documented feed, chemistry or reactor/finishing alternative on the same usable material/function. Trace water, residual monomer, solvent, catalyst and consequential contaminants. Test whether a difference attributed to mechanism could instead follow from phase, transport, sampling or thermal history.
+
+**Work:** deliver a complete technical/research argument with primary methods, full bibliography, derivations, inspectable original calculations, observed or clearly identified external evidence, uncertainty and independent criticism. Explain the observations that would establish or challenge the proposed route advantage and identify which deeper polymer/material/fabrication questions remain for their specialist studies.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_03ZX0535XC3P3AD00BJK58BYGQ

@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Build a regional geological synthesis from maps, materials, and history (@geo-regional: 0, is #chapter, #part-of @geology, #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #source "../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N", #source "../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #geology "../applications/Geological-resources-deposit-processes-and-material-needs.lingua#r_43YQNWZP626XZAQTWAQ9PFJVY1") { r_7ET2YMFD4GHD3RY95ZZRQ55DYX
+**Read:** [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), the complete book; [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N), the complete book and the separately identified associated map; [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK), the full guide during advanced synthesis; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 21 as a full comparison.
+
+A regional synthesis should connect mapped units, structures, ages, basins, magmatism, metamorphism, landscapes, water, and resources through evidence. Begin with the region's actual map/report, scale, legend, authors, editions, and sources. A regional name is an organizational aid rather than an explanation of every rock inside its boundary.
+
+Use Geodiversidade do Brasil as a whole-book Portuguese companion and the Rio Grande do Sul volume as a complete regional case. Compare its shield, basin, volcanic, and coastal records through the authors' evidence rather than copying unit names into an untested narrative. Keep the book's edition and associated map's separate identity/scale explicit.
+
+Regional mapping involves correlation, missing exposure, changing nomenclature, and interpretation at scale. A new numerical age or revised boundary can alter a model without erasing every older field observation. Preserve what was actually measured or mapped when reconciling editions.
+
+**Work:** read both complete books and the selected map's explanatory material. Produce an original geological chronology and section, marking observations, inferred connections, alternative interpretations, and uncertainties. Compare one part with the western Canadian synthesis to identify shared processes and genuine regional differences. Explain the evidence required to narrow a regional statement to a proposed infrastructure site.
+
+Read the entire SGB geodiversity-method guide during the advanced map project. The regional account should demonstrate integration of the earlier geology, not introduce a new requirement to complete an unrelated field before following an ordinary Record link.
+
+**Continue:** [Connect geological concentration with the materials infrastructure requires](../applications/Geological-resources-deposit-processes-and-material-needs.lingua#r_43YQNWZP626XZAQTWAQ9PFJVY1).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_7ET2YMFD4GHD3RY95ZZRQ55DYX

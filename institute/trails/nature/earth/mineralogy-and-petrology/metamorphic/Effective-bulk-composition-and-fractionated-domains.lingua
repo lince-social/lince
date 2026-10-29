@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Define the composition that actually participates in the modeled reaction (@mp-effective-bulk: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #source "../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #mineralogy-and-petrology "Calculate-and-interpret-a-bulk-specific-pseudosection.lingua#r_1MQ5QE3WH0VR3P4BWSWPVG93AC") { r_2XN684WEWC9RSCNV7ZMGMDD6GX
+**Read:** [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the complete effective-composition and equilibrium-domain discussion with primary references; [O uso de pseudosseções em Petrologia Metamórfica — Gengo and colleagues](../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR), the full composition/system preparation; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), the full relevant quantitative-map and composition treatment.
+
+A bulk-rock analysis samples one material support; an effective reacting composition describes the components available to the modeled domain/event. They can differ because of inherited cores, sequestration in growing phases, melt/fluid loss, reaction fronts, transport, or incomplete equilibration.
+
+Choose a domain through mapped textures, composition, spatial relationships, and process evidence. Removing a grain fraction from a spreadsheet needs a material/chemical justification and a consistent balance. The remaining composition may depend on assumed density, mode, zoning, or component transfer.
+
+Uncertainty in effective composition can shift phase fields and inferred conditions more than numerical refinement. Selecting a composition only because it makes a desired assemblage fit risks circular inference. Compare independent observations and plausible domain histories instead of tuning unmeasured components without exposing the choice.
+
+**Work:** reconstruct a published effective-composition calculation from full methods, modes/maps, and mineral chemistry. Independently close a component balance and compare a whole-rock, core-excluded, or fluid-modified alternative as appropriate. State which data support each and how the choice changes the inferred assemblage or conditions.
+
+Read the entire domain/model review and Portuguese calculation principles. The following pseudosection should display not just a preferred diagram but the sensitivity of conclusions to geologically plausible changes in the reacting system.
+
+**Continue:** [Build a bulk-specific phase section and test its geological interpretation](Calculate-and-interpret-a-bulk-specific-pseudosection.lingua#r_1MQ5QE3WH0VR3P4BWSWPVG93AC).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_2XN684WEWC9RSCNV7ZMGMDD6GX

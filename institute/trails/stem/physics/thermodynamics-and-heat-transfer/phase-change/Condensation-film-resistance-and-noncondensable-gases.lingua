@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Condensation, film resistance and noncondensable gases (@th-condensation: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Melting-solidification-and-the-Stefan-interface-balance.lingua#r_1FJMT54DXEM5N77VMH5WQ0QJ25") { r_3S9E90CHJX1DJK9VPST9393QYA
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete condensation analysis; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), condensation and phase-change transport; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), phase equilibrium and mixture conditions.
+
+Condensation couples latent energy, mass transfer and liquid-film or droplet behavior. A film adds a conduction resistance while gravity, shear, geometry and surface state determine its flow and thickness. Dropwise performance depends on maintaining a particular surface condition.
+
+Derive a classical laminar-film result under its assumptions and compare the roles of sensible cooling, vapour shear, inundation and property variation. Noncondensable gases introduce diffusion and interface-composition effects that a pure-vapour heat-transfer formula omits.
+
+Use complete methods to analyse a condenser with defined vapour composition, pressure, coolant conditions and drainage. Check total latent/sensible duty and pressure effects. Distinguish a local clean-surface experiment from sustained operation with fouling or changed wetting.
+
+**Continue:** [Melting, solidification and the Stefan interface balance](Melting-solidification-and-the-Stefan-interface-balance.lingua#r_1FJMT54DXEM5N77VMH5WQ0QJ25).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3S9E90CHJX1DJK9VPST9393QYA

@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Self-inductance, mutual inductance and magnetic energy (@em-inductance: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #electromagnetism "Motors-generators-transformers-and-energy-accounts.lingua#r_3G4DF28F72Y3GD5QRG19CD75W8", #electrical-power-engineering "../../../engineering/electrical-power-engineering/apparatus/Transformers-equivalent-circuits-and-terminal-tests.lingua#r_5CFB3YRV16NZYCS9WN4JSACBFR") { r_4QR58S6KHFRSBV15QCCX7NA63E
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 14 in full; [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), inductance, energy and coupled systems.
+
+In a linear quasistatic system, flux linkages can be written λ_i = ΣL_ij I_j. Self and mutual inductances depend on geometry, material and the current-return arrangement. Reciprocity yields a symmetric matrix under the appropriate linear reciprocal assumptions. Positive magnetic energy constrains coupling; for two coils, |M| ≤ sqrt(L₁L₂).
+
+Derive U = (1/2)Σ I_i λ_i and compare with the field integral when its material assumptions apply. For an ideal long solenoid, recover L = μN²A/ℓ while identifying fringing, leakage and saturation limits. Changing geometry alters the coefficient and can exchange mechanical energy; changing μ through hysteresis is not represented by one constant L.
+
+Choose winding orientation and dot convention explicitly. Derive the induced terminal relation with a declared passive sign convention rather than confusing a circulating emf with a voltage drop. Compare an ideal coupled-coil model with a measured frequency response including winding loss, core response and parasitic capacitance. A transformer transfers power under load through fields and coupled circuit conditions; mutual inductance alone is not a complete device specification.
+
+**Continue:** [Motors, generators, transformers and energy accounts](Motors-generators-transformers-and-energy-accounts.lingua#r_3G4DF28F72Y3GD5QRG19CD75W8).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in electrical power engineering:** [Transformers, equivalent circuits and terminal tests](../../../engineering/electrical-power-engineering/apparatus/Transformers-equivalent-circuits-and-terminal-tests.lingua#r_5CFB3YRV16NZYCS9WN4JSACBFR).
+} r_4QR58S6KHFRSBV15QCCX7NA63E

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Antennas, gain, aperture, efficiency and reciprocity (@em-antennas: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #source "../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ", #electromagnetism "Scattering-polarizability-Rayleigh-and-resonant-response.lingua#r_6FYBVTP1TQ9W5HZWNEBBQ9GP30") { r_1578RDNQH3K3RR4GWDMHGP292K
+**Read:** [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), complete antenna and radiation sections; [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ), complete applicable antenna, aperture and reciprocity chapters.
+
+An antenna couples a guided/source system to radiative modes. Define a reference plane, accepted input power, radiated power and angular intensity. Directivity describes concentration relative to an isotropic pattern with the same total radiation; gain also includes efficiency. A high directivity need not mean a well-matched or efficient device.
+
+Derive radiation resistance for a specified electrically small current distribution and distinguish it from material/ohmic resistance. Define polarization matching, effective aperture and receive voltage under stated load conditions. Reciprocity connects transmitting and receiving patterns for linear reciprocal media, but biased nonreciprocal devices require a separate analysis.
+
+Use far-field separation and a valid propagation environment before applying a link-budget formula. Multipath, near-field coupling, finite ground planes and cable common-mode currents can change a laboratory result. A measured pattern needs angular calibration, distance, background and uncertainty. Compare an analytical short-source limit with a finite numerical model and an experiment or complete published measurement. The full communications/electronic-engineering routes extend systems design; this subject supplies the field and evidence foundations.
+
+**Continue:** [Scattering, polarizability and resonant response](Scattering-polarizability-Rayleigh-and-resonant-response.lingua#r_6FYBVTP1TQ9W5HZWNEBBQ9GP30).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_1578RDNQH3K3RR4GWDMHGP292K

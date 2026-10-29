@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+DC links, energy balance, capacitors and protection (@pe-dc-link: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #electrical-power-engineering "Switching-averaged-small-signal-and-sampled-models.lingua#r_6QM2FBM0SS5FKXF9YBJN5FR1HJ") { r_6VS9NHR8PRDF0PG5E1E6GEJQPH
+**Read:** [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), complete energy-storage, converter and protection context; [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), full storage state/boundary modelling; [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), whole applicable DC/auxiliary-equipment and protection guidance.
+
+A DC link couples converter stages through finite stored energy and electrical/thermal limits. For an ideal capacitor, stored energy is CV²/2 and its rate equals net power entering it under the correct sign convention. Small capacitance, source impedance and controller dynamics determine voltage response; a nominal DC-voltage label does not establish a stiff infinite source.
+
+Derive a power-imbalance transient, including capacitor current and voltage limits. Compare a motor-drive braking event, an active front end and a storage-connected converter. Identify where excess energy can go: back to a capable source, into storage, a braking/dissipative path or rising voltage. Each path has actual ratings and controls.
+
+Include ripple, equivalent series resistance, lifetime/temperature, precharge and discharge behavior in a documented design. Fault isolation and interruption on DC differ from assuming a convenient AC current zero. Use suitable qualified physical methods or a complete published case, and state what was actually demonstrated. The later storage, HVDC and restoration studies retain this finite-energy account rather than treating every DC-connected resource as an unlimited power buffer.
+
+**Continue:** [Switched, averaged, small-signal and sampled models](Switching-averaged-small-signal-and-sampled-models.lingua#r_6QM2FBM0SS5FKXF9YBJN5FR1HJ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6VS9NHR8PRDF0PG5E1E6GEJQPH

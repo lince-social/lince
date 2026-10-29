@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Anisotropic and effective thermal conductivity (@th-anisotropy: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "../transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3", #thermodynamics-and-heat-transfer "../research/Analytical-conduction-contact-and-spreading-resistance.lingua#r_21BS27QJRKZ1BSP7TJYHYPFX9R") { r_1XZTF53M6A8RRVB1NRK5AKEJHH
+**Read:** [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), anisotropy, composite structures and interfaces; [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), anisotropic configurations and sensitivity; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), conduction constitutive laws.
+
+For an anisotropic conductor, heat flux is related to the temperature-gradient vector through a conductivity tensor. Its components depend on coordinate orientation; flux need not point exactly opposite the gradient. Derive the rotation relation and the positivity condition associated with dissipation.
+
+An effective conductivity for a composite or porous body depends on microstructure, direction, contacts and scale separation. Series and parallel bounds are useful controlled examples, not proof that an arbitrary mixture is described by one arithmetic average.
+
+Compare in-plane and cross-plane measurements and ask whether a specimen thickness, contact or internal structure changes the inferred value. For a representative model, recover isotropy and material-exchange limits. Read the complete selected measurement method before interpreting a single fitted number as a material constant.
+
+**Continue:** [Lumped capacity, Biot number and response time](../transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3) · [Advanced study: analytical conduction, contact and spreading resistance](../research/Analytical-conduction-contact-and-spreading-resistance.lingua#r_21BS27QJRKZ1BSP7TJYHYPFX9R).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1XZTF53M6A8RRVB1NRK5AKEJHH

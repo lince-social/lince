@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Distributed lines, return conductors and telegrapher equations (@em-transmission: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "Reflections-input-impedance-standing-waves-and-pulses.lingua#r_2JK690XGY5MS28SAX3QQ9ZGFR9") { r_3XY92DMB6E0C5HB0YYNQTDGRES
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), chapter 3 in full; [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), distributed systems and transmission lines.
+
+A transmission line has an electromagnetic field distributed along a signal/return structure. Derive per-length R, L, G and C from a small section under the stated modal approximation. The time-domain equations are ∂V/∂z = −RI − L∂I/∂t and ∂I/∂z = −GV − C∂V/∂t. Lossless propagation speed is 1/√(LC) and characteristic impedance √(L/C).
+
+For L = 250 nH/m and C = 100 pF/m, the ideal impedance is 50 Ω and speed 2 × 10⁸ m/s. These values describe a line model, not every cable bearing a nominal impedance label. Geometry, dielectric response, conductor loss and mode content matter.
+
+Distinguish source impedance, characteristic impedance and load impedance. A line's wave impedance does not mean a finite unloaded line is a 50 Ω DC resistor. Sketch E/B fields and the return-current path; explain why a reference conductor is part of the structure. Later electronic interconnects, power transmission and communications use different scales and constraints, but reuse this same field/circuit connection rather than requiring separate physical laws.
+
+**Continue:** [Reflections, input impedance and pulses](Reflections-input-impedance-standing-waves-and-pulses.lingua#r_2JK690XGY5MS28SAX3QQ9ZGFR9).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3XY92DMB6E0C5HB0YYNQTDGRES

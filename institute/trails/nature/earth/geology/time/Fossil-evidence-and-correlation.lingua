@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Use fossils as evidence of organisms, environments, and time (@geo-fossils: 0, is #chapter, #part-of @geology, #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #geology "Preservation-reworking-and-an-incomplete-record.lingua#r_4DSNG8J9Y7W9MCWAQRAS1PYQ5D") { r_0YNZERMMTK6T3TCC0X2XTHMV49
+**Read:** [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete fossil vocabulary, evidence, and historical applications; [International Stratigraphic Guide, abridged version — ICS](../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J), Biostratigraphic Units in full; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 8’s fossil-based dating.
+
+Fossils can constrain biological history, environments, relative age, and correlation when identity, occurrence, preservation, and context are established. Distinguish an organism's inferred range from the observed range in a sampled record. Absence from one exposure may reflect sampling, preservation, ecology, or an actual temporal boundary.
+
+Biostratigraphic inference uses assemblages, ranges, succession, and relationships under specified regional/global frameworks. An identification needs diagnostic evidence and appropriate expertise; a visually similar specimen does not automatically establish one species or age. Reworking can place an older fossil into younger sediment.
+
+Body fossils, trace fossils, and other biological evidence answer different questions. Their spatial association and relationship with sedimentary structures can help interpret a deposit, while a single transported specimen can support a narrower conclusion. Tie interpretations to a documented specimen/observation and stratigraphic position.
+
+**Work:** read a complete textbook fossil/correlation example and reconstruct its reasoning. Design an original hypothetical range/correlation table, including one sampling gap and one possible reworked occurrence. State which conclusions are supported and which need additional evidence.
+
+Read the historical-geology fossil chapters in full and the guide's complete biostratigraphic section. Dedicated paleontology and biological evolution will deepen taxonomy, taphonomy, phylogeny, and research; general geology should already support critical use of fossil evidence rather than memorized index-fossil labels.
+
+**Continue:** [Treat preservation and missing evidence as part of the model](Preservation-reworking-and-an-incomplete-record.lingua#r_4DSNG8J9Y7W9MCWAQRAS1PYQ5D).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_0YNZERMMTK6T3TCC0X2XTHMV49

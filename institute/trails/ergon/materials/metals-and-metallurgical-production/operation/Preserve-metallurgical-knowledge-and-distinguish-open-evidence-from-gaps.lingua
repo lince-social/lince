@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Keep metallurgical knowledge reconstructable through sources, methods, versions, and challenges (@metal-knowledge: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #source "../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #source "../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR", #metals-and-metallurgical-production "../research/A-sustained-metallurgical-theory-and-practice-programme.lingua#r_1SHGMZ8VHVSK4XT13EPK5P2EEJ") { r_3ZXQYN51HZ74NR2HH24M5XGZQ5
+**Read:** [Reproducible computational work](../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), reuse reproducibility, numerical/stochastic validation, versioning, and preservation; [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), reuse traceability, measurement models, calibration, and uncertainty; [pycalphad — Otis and Liu, paper and computational thermodynamics](../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR), the complete paper and actual model/database/version documentation used.
+
+Distinguish a general physical principle, a measured empirical relation, an assessed database, a supplier's process claim, a confidential detail, and an unresolved research question. Modern metal production combines public and restricted knowledge. An inaccessible detail is recorded as a gap with its consequence, not replaced by a confident invented method.
+
+Preserve external source editions, material/sample identity, units/reference states, methods, calibration, original observations, model/code/data versions, parameters, uncertainty, revisions, and connections to decisions. Keep raw observations distinct from reconciled or fitted results. Source books, standards, datasets, images, and external software remain at their authorized sources; original explanations and calculations connect them.
+
+Tacit operational/repair skill, failed cases, inspection, maintenance, and interpretation need actual demonstrations and evidence when responsibility changes. A drawing, book, or simulation helps transfer understanding without proving that a new team can perform every task. Protect actual private/confidential information while preserving an inspectable public learning argument.
+
+**Work:** produce a complete evidence chain for a consequential result in the chosen metal study. Have another reader reproduce a numerical claim and challenge a physical assumption using the cited material. Compare their result, preserve disagreement, and revise the explanation when evidence warrants it. Identify the next experiment or authorized knowledge transfer that would most improve the account.
+
+**Continue:** [Complete substantial metallurgical books, university work, and connected process cases](../research/A-sustained-metallurgical-theory-and-practice-programme.lingua#r_1SHGMZ8VHVSK4XT13EPK5P2EEJ).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_3ZXQYN51HZ74NR2HH24M5XGZQ5

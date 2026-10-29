@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Read smelting as chemical transformation and separation among interacting phases (@metal-smelting: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7", #metals-and-metallurgical-production "Slag-chemistry-activities-viscosity-and-physical-state.lingua#r_5K9C7AGZASB27TFJ1JT6NJYD8Q") { r_4XPTBQS5K69GFK94HP2B1RM6Y1
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), all smelting, matte/conversion, and associated theory; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the complete matte/reduction smelting exercises; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), a whole smelting chapter/case and its alternatives; [Extractive Metallurgy of Copper — Schlesinger, Sole, Davenport, and Alvear Flores](../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7), complete chapters 4–10 for an additional copper comparison, when available.
+
+Smelting creates or uses liquid phases to transform and separate a feed. Metal, matte, slag, gas, dust, and entrained droplets can have different compositions and roles. A liquid slag is not simply all material that lacks the desired metal; its chemistry and physical behavior influence both reactions and separation.
+
+State the phase model, temperature, gas/potential conditions, feed constituents, fluxes, and physical flow/contact. Reaction, dissolution, settling, entrainment, emulsification, and tapping/transfer histories can affect measured outcomes. Equilibrium phase distribution is distinguished from mechanical carryover and incomplete separation.
+
+Close whole-system material and energy accounts, including oxygen/reductant, flux, electrodes, recycled dust, and internal returns. Stage recovery alone can conceal valuable material circulating or leaving in another form. Compare phases and streams through compatible analytical/support evidence.
+
+**Work:** reconstruct a complete matte- or reduction-smelting case with its original quantitative basis. Independently check target/impurity balances and a substantial heat calculation. Compare a chemical-distribution explanation for an observed loss with a physical entrainment explanation, identifying a discriminating observation. Evaluate an alternative smelting/separation arrangement with product quality, residuals, utilities, maintenance, and uncertainty retained.
+
+**Continue:** [Connect slag chemistry with activities, phases, transport, and actual separation](Slag-chemistry-activities-viscosity-and-physical-state.lingua#r_5K9C7AGZASB27TFJ1JT6NJYD8Q).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_4XPTBQS5K69GFK94HP2B1RM6Y1

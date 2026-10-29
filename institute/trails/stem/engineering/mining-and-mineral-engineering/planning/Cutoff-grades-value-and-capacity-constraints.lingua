@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Analyze cutoff decisions with explicit costs, recovery, quality, and constraints (@mine-value: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS", #source "../sources/Resource-and-Reserve-Reporting-CRIRSCO-CBRR.lingua#r_2CZZ64T1W8VC542VCNCH2E6DSR", #mining-and-mineral-engineering "Dilution-loss-selectivity-and-the-mining-unit.lingua#r_4WZ9FG4HQHY0FRBQK0N2GKFZ07") { r_2D0X3JWGVJ02492M19S11CBP25
+**Read:** [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the complete cutoff/evaluation sequence; [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the full cutoff, phases, and systems lectures; [A Review of Operations Research in Mine Planning — Newman and colleagues](../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS), the complete review and relevant original planning methods; [Resources, reserves, and technical-study definitions — CRIRSCO and CBRR](../sources/Resource-and-Reserve-Reporting-CRIRSCO-CBRR.lingua#r_2CZZ64T1W8VC542VCNCH2E6DSR), the full economic/technical assumption context.
+
+A cutoff or destination rule classifies material under an identified engineering/economic account. It depends on payable/recoverable product, processing, mining/handling, capacity, quality, penalties, time, and other constraints. A deposit does not have one universal economic boundary independent of those assumptions.
+
+An incremental processing comparison differs from a full mine/project-value account. Costs already incurred, costs changed by the choice, opportunity cost of constrained capacity, and future access can matter differently. Average cost or metal price alone cannot establish the correct marginal decision.
+
+Use invented or versioned documented values for learning calculations and state units, currency/date where applicable, and the material basis. Do not treat historical textbook prices or a benchmark block value as current market facts. Engineering feasibility and uncertain processing response remain separate tests.
+
+**Work:** derive a simple marginal feed/destination comparison with a checked material/recovery account and explicit assumptions. Compare a freely available capacity case with a capacity-constrained one, explaining the changed decision. Test sensitivity to recovery, impurity penalties, and an alternative geological/processing domain.
+
+Read the full course/handbook evaluation treatment and operations-research review. The later schedule study will show why maximizing isolated block value, immediate grade, and whole-system performance can produce different choices under precedence and capacity constraints.
+
+**Continue:** [Account for dilution, loss, and selectivity on a consistent material basis](Dilution-loss-selectivity-and-the-mining-unit.lingua#r_4WZ9FG4HQHY0FRBQK0N2GKFZ07).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_2D0X3JWGVJ02492M19S11CBP25

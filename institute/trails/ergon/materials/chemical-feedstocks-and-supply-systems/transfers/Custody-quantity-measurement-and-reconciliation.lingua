@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Reconcile quantities across a material transfer (@cs-measurement-transfer: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME", #source "../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA", #source "../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10", #chemical-supply-systems "Road-rail-and-route-dependent-material-delivery.lingua#r_3NH0Y0JD5MEAMZYP451VM55A2H") { r_5YJA6RTG07SBRX9C6H2Q6YRDD4
+**Read:** [Caustic Soda Handbook — OxyChem](../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME), the complete billing, concentration and relevant property sections; [Validation of Measurement Procedures that Include Sampling — Eurachem](../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA), the complete integrated measurement/uncertainty discussion; [Warehouse & Distribution Science — Bartholdi and Hackman](../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10), the complete material-flow and receiving/shipping accounts.
+
+Choose one delivery measured at dispatch and receipt. State the quantity basis, instrument, calibration/traceability, temperature/density correction, sampling and uncertainty for each result. Distinguish a genuine loss, a basis difference, a material-state change and measurement disagreement. A discrepancy is a question to investigate, not automatically evidence of wrongdoing.
+
+For a transparent example, compare dispatch and receipt mass estimates of 20,000 kg and 19,970 kg with independent standard uncertainties of 20 kg each. The difference is 30 kg and its combined standard uncertainty is √800≈28.284 kg under those independence assumptions. Correlation or a shared calibration can change that comparison. Neither the difference alone nor a simple overlap test establishes the cause.
+
+Draw all material destinations: accepted stock, residual heel, sample, returned quantity, spill/loss if evidenced and remaining vehicle contents. Close the account and preserve unexplained residuals. Use the shared metrology and balance Records for the methods, and the complete producer billing/quantity sections for the actual chemical basis. Extend to continuous supply by defining the integration period and time alignment of flow, concentration and inventory evidence.
+
+**Continue:** [Compare road and rail deliveries through the complete receiving system](Road-rail-and-route-dependent-material-delivery.lingua#r_3NH0Y0JD5MEAMZYP451VM55A2H).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_5YJA6RTG07SBRX9C6H2Q6YRDD4

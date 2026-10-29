@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Build, measure and revise a bounded thermal apparatus (@th-bench-study: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Heat-Transfer-in-Fins-and-Bars-UFSC.lingua#r_3HAWSMZM80J3ZMZK362ED9E3C1", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #thermodynamics-and-heat-transfer "../microscopic/Carrier-distributions-Boltzmann-transport-and-the-diffusive-limit.lingua#r_56YMTX9EKB6BF03EA8HR0ED9EQ", #thermodynamics-and-heat-transfer "../research/A-performed-thermal-investigation-and-independent-review.lingua#r_1CSKEWRQ0E4Y7DPRWPXP424RN3") { r_3JS9RWTNYGKVFJ0ZZG8RKQN6M0
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete applicable conduction and experimental problems; [Transferência de calor em barras — UFSC LABOPE](../sources/Heat-Transfer-in-Fins-and-Bars-UFSC.lingua#r_3HAWSMZM80J3ZMZK362ED9E3C1), a comparison with the described institutional experiment; [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), complete measurement-model reasoning.
+
+Choose a modest apparatus with a well-defined thermal question: an insulated calorimeter, a low-temperature fin, or a layered sample with controlled boundaries. Prepare a dimensioned drawing, material and sensor specifications, an electrical/thermal power account and a justified operating envelope. Use suitable supervision and procedures for the energy source and equipment involved.
+
+Before construction, predict response times, expected temperatures, parasitic losses and measurement resolution. During assembly, record actual dimensions, contacts, fastening, sensor placement and material condition. Measure input independently where possible. Acquire a transient and a steady dataset, then change one condition that tests the model rather than only refitting it.
+
+Deliver raw observations, calibration/response evidence, uncertainty, balance residuals and a comparison with pre-test predictions. Revise the apparatus or model and repeat the discriminating case. A documentary reconstruction may establish analytical understanding, but label it as such; practical completion requires evidence of work actually performed and decisions supported by that work.
+
+**Continue:** [Carrier distributions, Boltzmann transport and the diffusive limit](../microscopic/Carrier-distributions-Boltzmann-transport-and-the-diffusive-limit.lingua#r_56YMTX9EKB6BF03EA8HR0ED9EQ) · [Advanced study: a performed thermal investigation](../research/A-performed-thermal-investigation-and-independent-review.lingua#r_1CSKEWRQ0E4Y7DPRWPXP424RN3).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3JS9RWTNYGKVFJ0ZZG8RKQN6M0

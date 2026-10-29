@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Capillary, gravitational and shear-driven instabilities (@fd-interface-instability: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "Cavitation-nucleation-bubble-dynamics-and-pressure-history.lingua#r_3N65MAD5CF80Q2W5Q82GJG167S") { r_7TRXVRKVKPRGWSQ6XHPCTY0CMG
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 5 interfacial instabilities; [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), jets, sheets and instability notes; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 5 discontinuous shear and chapter 7.b.
+
+Surface tension can oppose short-wavelength deformation of a planar interface, yet a sufficiently long disturbance of a cylindrical jet can reduce surface area by breaking the column into drops. Derive the geometric and energetic reasoning for the Rayleigh–Plateau instability before solving its growth-rate problem. The fastest-growing mode depends on the retained inertia, viscosity and surrounding phase.
+
+For superposed fluids, compare Rayleigh–Taylor instability driven by an unfavorable density arrangement with Kelvin–Helmholtz instability driven by relative motion. Write the base state, perturbation and interfacial conditions explicitly. Gravity and surface tension alter the dispersion relation and unstable range; an ideal discontinuous shear layer also has limitations.
+
+Predict wavelength and growth rate for one bounded case, then compare with independent data or a resolved simulation. Separate the initial linear stage from nonlinear breakup, coalescence and entrainment. Numerical surface tension, interface thickness and mesh orientation can influence a simulated pattern and need their own checks.
+
+**Continue:** [Cavitation, nucleation, bubble dynamics and pressure history](Cavitation-nucleation-bubble-dynamics-and-pressure-history.lingua#r_3N65MAD5CF80Q2W5Q82GJG167S).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7TRXVRKVKPRGWSQ6XHPCTY0CMG

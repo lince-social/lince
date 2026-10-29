@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Interpret pillar and roof behavior through mechanisms and the calibration domain (@mine-pillars: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08", #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #mining-and-mineral-engineering "Support-systems-load-transfer-and-installation-evidence.lingua#r_3Y7GF2FJXMPKQDN0JZ50C86SSH") { r_7VXWZ4QX9JABNDM55QRGAJP3VP
+**Read:** [Pillar and Roof Span Design Guidelines for Underground Stone Mines — NIOSH](../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08), the complete report, observational basis, examples, and limits; [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the complete strength, structure, stress, and underground chapters; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the full relevant pillar/roof methods for the selected mine type.
+
+Pillars and roof spans interact with material, structure, stress, geometry, excavation sequence, support, water, and time. Distinguish intact strength from pillar/rock-mass behavior and a local opening from the loading system created by adjacent workings.
+
+Pillar size/shape relations and empirical criteria come from identified datasets and assumptions. Weak beds, large discontinuities, roof/floor behavior, multiple seams/levels, and induced stresses can change applicability. A successful calculation under one relation is not independent evidence that its domain matches the mine.
+
+Roof behavior can involve bending, buckling, blocks/wedges, fracture, delamination, or other mechanisms. An ideal elastic beam scaling can help check sensitivity—under fixed uniform load per length and flexural rigidity, span doubling multiplies the model deflection by sixteen—but does not establish the behavior of a jointed natural roof.
+
+**Work:** read the entire stone-mine guideline and reconstruct one complete method/example with its data and limitations. Compare an alternative mechanism or material/structure account and explain why transferring the relation to another mine type requires new evidence. Independently check a stated scaling/geometry result and identify a field observation that could challenge the model.
+
+Read complete ground/support material before the laboratory/design study. Preserve what is empirical, analytical, observed, or inferred so later users can judge the strength and limits of the evidence.
+
+**Continue:** [Explain support through load transfer, ground interaction, and verified work](Support-systems-load-transfer-and-installation-evidence.lingua#r_3Y7GF2FJXMPKQDN0JZ50C86SSH).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_7VXWZ4QX9JABNDM55QRGAJP3VP

@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Balance usable, quarantined, expired and returned chemical quantities (@cs-inventory-account: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10", #source "../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D", #chemical-supply-systems "Demand-timing-lead-time-release-time-and-service.lingua#r_64XA779F0M4495F9C2AECCWHHZ") { r_24JXC52Y2G46R68RA3PSN276CV
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), Inventory Systems in full; [Warehouse & Distribution Science — Bartholdi and Hackman](../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10), complete material-flow and information-system chapters; [Good storage and distribution practices for medical products — WHO](../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D), the complete stock-control, rotation and status requirements.
+
+After the shared material-balance Record, define inventory states that correspond to physical and evidential conditions. Separate stock on site, accepted usable stock, material awaiting release, allocated stock, expired/rejected material and open orders. A purchasing system's inventory position can include orders in transit while a tank's current usable contents do not.
+
+Write a period balance on one conserved basis: closing stock = opening stock + receipts + accepted returns − issues − outgoing returns − documented losses/disposals, with transfers between internal status categories shown separately. Expiry can move material from usable to unusable without moving it off site. Changing a status should not create or destroy physical mass.
+
+Develop a ledger for four periods and two lots with different release and expiry dates. Reconcile the total physical amount, the amount legally/technically available for the intended use, and unfulfilled demand. A quarantine delay changes service even when the gross balance closes. Compare a stocktake with recorded transactions, including sample withdrawals and residual heels where material. Preserve unexplained differences rather than silently correcting a closing number. The original example later provides an exact, deliberately limited version of this account.
+
+**Continue:** [Define when a chemical is needed and what a successful supply means](Demand-timing-lead-time-release-time-and-service.lingua#r_64XA779F0M4495F9C2AECCWHHZ).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_24JXC52Y2G46R68RA3PSN276CV

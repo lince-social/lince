@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Derive a numerical age and state what event it dates (@geo-age: 0, is #chapter, #part-of @geology, #source "../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #geology "Isochrons-concordance-and-geological-scatter.lingua#r_3PQG5KP1KCX3PNN8FDAA1TK8M5") { r_57HA3QBG1CN50ESWCFE98EM9NQ
+**Read:** [Introduction to Geochronology — Pieter Vermeesch](../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), Basic Notions and Simple Parent-Daughter Pairs in full; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete Geochronology lab; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 8’s isotopic dating.
+
+For a simple isolated parent with constant decay coefficient λ, N_P(t) = N_P(0)exp(−λt). With an appropriate radiogenic daughter account and initial daughter contribution separated, t = ln(1+D*/P)/λ under the specified parent/daughter model. The arithmetic requires compatible amounts and units; it does not establish that the mineral remained a closed system.
+
+For an invented system with half-life 1 Myr, initial radiogenic daughter zero, and observed D*/P = 3, the model age is 2 Myr. These are exact teaching assumptions rather than a particular natural isotope's constant or a measured specimen. A parent fraction of one quarter gives the same result independently.
+
+Identify the event the system can record: crystallization, growth, cooling through a closure behavior, alteration, deposition constraints from inherited grains, or another specified process. Initial composition, loss/gain, inheritance, analytical fractionation, calibration, and decay-constant information can matter. A precise apparent age can be an inadequate interpretation of the event asked about.
+
+**Work:** derive the equation, check the teaching example by two methods, and propagate stated hypothetical input information with its correlations. Compare an inherited-grain age with the age of deposition and explain the direction of the resulting bound. Distinguish radiocarbon conventions/calibration from a naive universal decay-to-calendar conversion when reading that method.
+
+Read the complete basic/parent-daughter chapters and MIT lab. Then examine multiple ratios, isochrons, concordance, and thermal history instead of treating one formula as the whole of geological dating.
+
+**Continue:** [Interpret several isotopic observations with covariance and geological alternatives](Isochrons-concordance-and-geological-scatter.lingua#r_3PQG5KP1KCX3PNN8FDAA1TK8M5).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_57HA3QBG1CN50ESWCFE98EM9NQ

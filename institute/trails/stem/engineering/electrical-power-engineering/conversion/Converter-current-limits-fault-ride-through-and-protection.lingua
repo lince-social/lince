@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Converter current limits, ride-through and protection (@pe-converter-limits: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/UNIFI-Grid-Forming-Specifications-Version-2.lingua#r_5SF91JRQ8TE46HXTXRK16P9KBZ", #source "../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF", #source "../sources/Brazilian-Distribution-and-Network-Requirements.lingua#r_447WGES28KC2NYSCXTRQSWN82Y", #electrical-power-engineering "../dynamics/Interacting-controls-impedance-modes-and-model-range.lingua#r_3CZ22PYNGW6Q3RW0E0KFRDZJ2N") { r_55R9RQZYP7XRAM99BVHRF182VZ
+**Read:** [UNIFI grid-forming specifications, version 2](../sources/UNIFI-Grid-Forming-Specifications-Version-2.lingua#r_5SF91JRQ8TE46HXTXRK16P9KBZ), whole specification and plant/unit functional distinctions; [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF), complete protection and fault/recovery sections; [Brazilian distribution and network requirements — ANEEL and ONS](../sources/Brazilian-Distribution-and-Network-Requirements.lingua#r_447WGES28KC2NYSCXTRQSWN82Y), complete relevant issued connection/operating requirements.
+
+During faults or severe voltage disturbances, a converter's measured terminal behavior depends on synchronization, current limits, sequence priorities, DC energy, device protection and control transitions. An unlimited sinusoidal current source or ideal voltage source is not a complete fault model. A steady short-circuit ratio does not encode all of these dynamics.
+
+Define the particular ride-through/capability requirement, observable and timing before modelling it. Compare a balanced disturbance with an unbalanced one and trace positive/negative/zero-sequence paths through transformer/filter connections. Check current angle and magnitude as well as power and voltage recovery. Unit-level capability and a plant's combined response are different claims.
+
+Use complete methods/specifications from [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF) and [UNIFI grid-forming specifications, version 2](../sources/UNIFI-Grid-Forming-Specifications-Version-2.lingua#r_5SF91JRQ8TE46HXTXRK16P9KBZ), plus the actual applicable interconnection text and device/control data. Compare RMS and EMT representations where their retained dynamics differ. Test whether existing overcurrent, distance or differential assumptions remain valid. A passed ideal controller simulation cannot establish an installed plant's protection coordination or requirement compliance without matching the real limits, sensors, delays and test conditions.
+
+**Continue:** [Interacting controls, impedance and model range](../dynamics/Interacting-controls-impedance-modes-and-model-range.lingua#r_3CZ22PYNGW6Q3RW0E0KFRDZJ2N).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_55R9RQZYP7XRAM99BVHRF182VZ

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Investigate an unresolved industrial-chemistry question with independent scholarly evidence (@ic-research: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT", #source "../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV", #source "../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST", #industrial-chemistry "Completion-and-continuing-industrial-chemical-studies.lingua#r_5AR6GZ0RNNSAZ54RAT57S4XN6S") { r_2AFDW6CYMWA4997TYYY2ZYNVRN
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete relevant advanced models and parameter/experimental-evidence methods; [Graduate Chemical Engineering Thermodynamics — MIT 10.40](../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT), the full pertinent graduate thermodynamic theory and problems; [Graduate Numerical Methods Applied to Chemical Engineering — MIT 10.34](../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV), the entire applicable numerical/programming and validation work; [Quantitative isotope controls for ammonia claims — Andersen and colleagues](../sources/Ammonia-Isotope-Protocol-Andersen.lingua#r_6HZE6EB62D0Z20SG5XFRNTDVST), the complete corrected primary example of method, controls and disputed production evidence.
+
+Choose an unresolved chemical/process question from the sustained investigations and build its complete primary literature, technical-method and practical-evidence history. Separate an established result, a mechanism proposal, a proprietary or missing detail, a disputed interpretation and an untested extrapolation.
+
+Derive the competing claims' actual physical/chemical consequences. Reproduce a substantial published result independently, then obtain or rigorously analyze a new observation, changed condition or theoretical calculation that discriminates between them. Preserve measurement and numerical uncertainty, failed predictions and the actual conditions supporting the inference.
+
+The scope can be laboratory, instrument, pilot, operating, numerical or theoretical, but the claim must match what was demonstrated. A literature comparison alone does not establish new plant operation; a successful experiment at one condition does not settle every scale or product question.
+
+**Work:** produce an original scholarly argument with complete primary bibliography/methods, derivations, inspectable original calculations or observation analysis, alternatives, uncertainty and independently supported conclusions. Invite criticism and reproduction of its central claim, revise from evidence and explain precisely what changed in understanding. Identify the most consequential remaining question and the practical/academic work that could decide it.
+
+**Continue:** [Explain, calculate, investigate and defend industrial chemical production at substantial depth](Completion-and-continuing-industrial-chemical-studies.lingua#r_5AR6GZ0RNNSAZ54RAT57S4XN6S).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_2AFDW6CYMWA4997TYYY2ZYNVRN

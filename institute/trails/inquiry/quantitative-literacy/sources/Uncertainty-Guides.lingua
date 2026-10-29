@@ -1,0 +1,13 @@
+Import "../Quantitative-literacy.lingua"
+
+Uncertainty guides — Taylor, Kuyatt, and JCGM (@ql-source-uncertainty: 0, is #reference, #part-of @ql-sources) { r_11PDFVNTH65FKFVZVHMHMAF6CH
+Barry N. Taylor and Chris E. Kuyatt. Guidelines for Evaluating and Expressing the Uncertainty of NIST Measurement Results, NIST Technical Note 1297, 1994 edition. [Complete official web text](https://www.nist.gov/pml/nist-technical-note-1297) · [PDF](https://physics.nist.gov/cuu/pdf/tn1297.pdf) · [DOI](https://doi.org/10.6028/NIST.tn.1297).
+
+Read sections 1–7 in sequence; appendix A supplies the propagation formula and appendix D clarifies terminology and modelling. This concise older guide is a worked entry into uncertainty reporting. NIST-authored federal material is generally public domain in the United States; retain attribution and identify separately credited material.
+
+For the current conceptual introduction use JCGM GUM-1:2023, Guide to the expression of uncertainty in measurement — Part 1: Introduction, [DOI](https://doi.org/10.59161/JCGMGUM-1-2023). The [official GUM publication register](https://www.bipm.org/en/committees/jc/jcgm/publications) identifies later parts, supplements, and amendments. The JCGM documents have their own copyright and reproduction terms; freely readable is not an unrestricted adaptation licence.
+
+The first measurement Record assigns the short introduction and reporting guidance. The later study assigns TN 1297 in full, including the mathematical assumptions. Official availability and edition metadata checked on 28 October 2026. All PDFs remain external references.
+
+**Return:** [Quantitative literacy sources — books, standards, and articles](../Sources.lingua#r_7MMXWNA1B4YGA271KMHPPJEK9Q).
+} r_11PDFVNTH65FKFVZVHMHMAF6CH

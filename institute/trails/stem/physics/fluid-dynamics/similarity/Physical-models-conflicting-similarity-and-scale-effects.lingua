@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Physical models, conflicting similarity and scale effects (@fd-model-similarity: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "Dominant-balances-small-parameters-and-singular-limits.lingua#r_7SWMXVAX4WWEGQPEDHHHNJT8AR") { r_4YXMPWTHM9X4WSM304JNBWVS37
+**Read:** [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), dimensional analysis and physical modelling problems; [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), similarity and experimental modelling; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), similarity, waves and low-Reynolds-number demonstrations.
+
+A scaled experiment must preserve the dimensionless controls relevant to the conclusion. Matching geometry alone is insufficient. With the same liquid and gravity, reducing a free-surface model's length and matching Froude number changes Reynolds and Weber numbers; all three generally cannot remain unchanged at once.
+
+State which forces dominate and estimate the unmatched terms. A model may still answer a bounded question if the mismatch has a demonstrated small effect. Surface roughness, inlet disturbance, wall compliance, gas content and measurement resolution can introduce additional scale effects.
+
+Plan two model sizes or operating conditions that test the proposed similarity. Collapse the observations using declared scales and display where they fail to collapse. A fitted dimensionless curve does not prove that omitted physics is irrelevant beyond the observed range.
+
+**Continue:** [Dominant balances, small parameters and singular limits](Dominant-balances-small-parameters-and-singular-limits.lingua#r_7SWMXVAX4WWEGQPEDHHHNJT8AR).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4YXMPWTHM9X4WSM304JNBWVS37

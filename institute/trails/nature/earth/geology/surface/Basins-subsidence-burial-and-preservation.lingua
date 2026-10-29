@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Explain basin fill through accommodation, sediment supply, and burial history (@geo-basins: 0, is #chapter, #part-of @geology, #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Groundwater-Freeze-Cherry.lingua#r_6P2FK74P9MC2672X94GE1S0NZB", #geology "River-systems-discharge-and-material-flux.lingua#r_0N807QB20NWJ99VJJ2EJA4F9EQ") { r_21MG6SKX54ZFC5K93YK8NHJNFH
+**Read:** [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the full basin, sedimentary-history, and unconformity treatments; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapters 6, 9, and regional-history applications; [Groundwater — Freeze and Cherry, preserved authorized edition](../sources/Groundwater-Freeze-Cherry.lingua#r_6P2FK74P9MC2672X94GE1S0NZB), burial/material properties relevant to the chosen example.
+
+A sedimentary basin's preserved fill reflects subsidence/uplift, sediment delivery, erosion, water level, compaction, diagenesis, and tectonic history. Accommodation describes potential space under a reference; it is not identical to deposited thickness or sediment supply. A basin can remain underfilled or lose part of its record.
+
+Distinguish measured thickness, true stratigraphic thickness, decompacted thickness, and inferred burial depth. Compaction and cementation change porosity and volume; erosion removes evidence. A simple thickness/age average does not measure every interval's sedimentation rate and can hide long gaps or short intense events.
+
+Thermal and fluid histories influence maturation, mineral alteration, cementation, permeability, and mechanical behavior. Correlation between a present depth and temperature does not establish the full past maximum temperature or timing. Integrate ages, facies, structures, and appropriate thermal indicators.
+
+**Work:** draw a burial/subsidence history for a published teaching example, keeping observed section/ages separate from decompaction and erosion assumptions. Compare a tectonic and a sediment-supply explanation for a thickness pattern. Identify evidence that constrains an unconformity's duration and the range of material removed.
+
+Read the full basin/environment material and connect it with isostasy, thermal models, and stratigraphic correlation. The practical aim is a defensible historical model useful for groundwater, resources, and infrastructure questions, with the specialized reservoir, geochemistry, and basin-analysis methods left available for further depth.
+
+**Continue:** [Connect river form, discharge, sediment, and landscape change](River-systems-discharge-and-material-flux.lingua#r_0N807QB20NWJ99VJJ2EJA4F9EQ).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_21MG6SKX54ZFC5K93YK8NHJNFH

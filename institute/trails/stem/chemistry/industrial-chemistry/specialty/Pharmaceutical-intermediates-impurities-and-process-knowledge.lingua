@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Understand pharmaceutical chemical production through identity, impurities and evidence (@ic-pharma-intermediates: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT", #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #industrial-chemistry "Dyes-pigments-color-chemistry-and-physical-product-state.lingua#r_2668NZW8A96QW17CXA02TTSRMB") { r_6YE0HMCQ9S8Z7341AA854P4M7M
+**Read:** [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the complete applicable pharmaceutical and multipurpose-production process treatment; [The E factor 25 years on — Roger A. Sheldon](../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT), the full pharmaceutical/fine-chemical examples and metric boundaries; [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the complete relevant batch-development and thermal-assessment methods.
+
+Chemical production of a pharmaceutical intermediate or active substance connects synthesis, isolation, impurity fate, physical form and material history. Understanding that production chemistry is distinct from establishing clinical benefit, prescribing treatment or demonstrating the complete regulatory/quality status of a medicinal product.
+
+Trace starting-material and process impurities, residual solvents, catalysts/metals, stereochemical forms and possible transformation during storage or formulation. An assay of the main compound cannot establish all relevant quality attributes. A complete process argument needs the actual methods, detection capability, sampling support and defined material state.
+
+Compare route changes on the same qualified chemical output and evidence boundary. A new reagent, solvent, catalyst or isolation may improve one yield while creating a different impurity or physical-form question. Published methods and public technical references can support deep understanding while leaving proprietary or untested manufacturing details unresolved.
+
+**Work:** reconstruct one full authorized process-development case with complete analytical and isolation methods. Independently trace consequential impurities and material/solvent quantities, compare a documented alternative and propose a discriminating study. State exactly which chemical/analytical evidence is available and which further practical or specialist pharmaceutical work would be required for a broader claim.
+
+**Continue:** [Connect color-producing chemistry with composition, physical form and application](Dyes-pigments-color-chemistry-and-physical-product-state.lingua#r_2668NZW8A96QW17CXA02TTSRMB).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6YE0HMCQ9S8Z7341AA854P4M7M

@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Read a technical claim all the way back to its quantities (@ql-claim: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #source @ql-source-street, #source @ql-source-si, #source @ql-source-data, #quantitative-literacy "Stock-and-process-study.lingua#r_6AJ0D56F46SY1AFC4DGJXFD7RJ", #quantitative-literacy "Draw-and-measure-study.lingua#r_5T0JG8AMM1T2N0KY48SNYBHZ5Y") { r_2QQHDYD4PQCPQ2CQY3BC53MHP9
+**Read:** The Art of Insight in full, including the problems and the later Spring models chapter. Revisit the SI Brochure's complete writing guidance and the data-organization paper. Begin Street-Fighting Mathematics as the additional advanced reading, using its actual PDF contents rather than the older OCW page-number table.
+
+Choose a published technical table, graph, specification sheet, or open research article with enough methods to reconstruct one quantitative claim. Record author or organization, title, edition or revision, date, and exact location. A search result and a marketing summary are leads; the actual document is the evidence being examined.
+
+**Reconstruction:** name the measured or predicted quantity, its numerator and denominator, units, conditions, population or batch, and system boundary. Recreate one calculation with conversions shown. Identify whether each number is observed, defined, estimated, fitted, specified, or copied from another work. Follow the important upstream citation when its meaning controls the result.
+
+**Criticism:** try a limiting case, a dimensional check, and an independent estimate. Identify omitted losses, incompatible time bases, an unsupported extrapolation, or a possible sampling issue. Report an actual limitation supported by the document rather than accusing it of every imaginable weakness. Explain what the claim establishes and what further question would need another observation or model.
+
+**Result:** produce an annotated page and a calculation another reader can repeat. Include the original passage location and a short correction if a conclusion changes when its basis is made explicit. A claim that survives the checks is a useful outcome. The aim is to make the reasoning inspectable, not to find an error at all costs.
+
+**Continue:** [Study a material process from receipts to usable output](Stock-and-process-study.lingua#r_6AJ0D56F46SY1AFC4DGJXFD7RJ) · [Study a part from a drawing through a measurement report](Draw-and-measure-study.lingua#r_5T0JG8AMM1T2N0KY48SNYBHZ5Y).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_2QQHDYD4PQCPQ2CQY3BC53MHP9

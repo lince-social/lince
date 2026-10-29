@@ -1,16 +1,20 @@
-use std::path::PathBuf;
+use std::{hash::{Hash, Hasher}, path::PathBuf};
 
 fn main() {
     sensei::teach(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     println!("cargo:rerun-if-changed=src/grammar.rs");
     let output = PathBuf::from(std::env::var_os("OUT_DIR").expect("OUT_DIR"));
+    let mut generator = std::collections::hash_map::DefaultHasher::new();
+    std::fs::read(std::env::current_exe().expect("parser generator path"))
+        .expect("parser generator identity").hash(&mut generator);
+    let generator = generator.finish().to_string();
     for grammar in rust_sitter_tool::generate_grammars(&PathBuf::from("src/grammar.rs")) {
         let name = grammar["name"].as_str().expect("grammar name").to_string();
         let directory = output.join(&name);
         let grammar = grammar.to_string();
         let inputs = [
             include_str!("build.rs"),
-            include_str!("../../Cargo.lock"),
+            &generator,
             &grammar,
         ]
         .join("\0");

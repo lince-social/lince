@@ -1,0 +1,249 @@
+Import "sources/Advanced-Hydraulics-Kartha.lingua"
+Import "sources/Gas-Dynamics-Kulkarni.lingua"
+Import "sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua"
+Import "sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua"
+Import "sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua"
+Import "sources/University-Physics-Volume-1.lingua"
+Import "sources/Elementary-Fluid-Dynamics-McDonough.lingua"
+Import "sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua"
+Import "sources/Fluid-Mechanics-Tong.lingua"
+Import "sources/Intermediate-Fluid-Mechanics-Liburdy.lingua"
+Import "sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua"
+Import "sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua"
+Import "sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua"
+Import "sources/Interfacial-Phenomena-MIT-18-357.lingua"
+Import "sources/Turbulence-McDonough.lingua"
+Import "sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua"
+Import "sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua"
+Import "sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua"
+Import "sources/Notes-on-CFD-Greenshields-Weller.lingua"
+Import "sources/OpenFOAM-Foundation-Methods-and-User-Guide.lingua"
+Import "sources/Turbulence-Modeling-Resource.lingua"
+Import "sources/CFD-Verification-and-Validation-NPARC.lingua"
+Import "sources/Compressible-Flow-NACA-1135.lingua"
+Import "sources/Water-Flow-Calibration-NIST-SP-250-98.lingua"
+Import "sources/PIV-Uncertainty-Sciacchitano.lingua"
+Import "sources/Johns-Hopkins-Turbulence-Databases.lingua"
+Import "sources/Experimental-Methods-in-Fluids-Mondal.lingua"
+Import "sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua"
+Import "sources/Microfluidic-Physics-Squires-Quake.lingua"
+Import "sources/NCFMF-Fluid-Mechanics-Films.lingua"
+Import "foundations/Read-fluid-dynamics-from-zero.lingua"
+Import "foundations/Observe-a-fluid-and-the-service-it-provides.lingua"
+Import "foundations/Fluid-quantities-units-and-English-Portuguese-vocabulary.lingua"
+Import "foundations/Material-properties-and-the-state-of-the-fluid.lingua"
+Import "foundations/Continuum-fields-molecular-scales-and-relaxation.lingua"
+Import "statics/Pressure-reference-stress-and-a-pressure-measurement.lingua"
+Import "statics/Hydrostatic-balance-gravity-and-density-variation.lingua"
+Import "statics/Manometers-layered-fluids-and-connected-pressure-paths.lingua"
+Import "statics/Pressure-forces-moments-and-the-centre-of-pressure.lingua"
+Import "statics/Buoyancy-floating-equilibrium-and-small-displacements.lingua"
+Import "statics/Accelerated-containers-and-rigid-body-rotation.lingua"
+Import "mathematics/Coordinates-fields-and-local-versus-material-change.lingua"
+Import "kinematics/Streamlines-pathlines-streaklines-and-what-images-show.lingua"
+Import "mathematics/Velocity-gradients-strain-rate-and-local-rotation.lingua"
+Import "mathematics/Fluxes-oriented-surfaces-and-coordinate-measures.lingua"
+Import "kinematics/Material-volumes-deformation-maps-and-density.lingua"
+Import "mathematics/Differential-equations-boundary-data-and-a-solvable-flow-model.lingua"
+Import "balances/Systems-control-volumes-and-the-Reynolds-transport-theorem.lingua"
+Import "balances/Integral-and-local-conservation-of-mass.lingua"
+Import "balances/Linear-momentum-pressure-and-support-reactions.lingua"
+Import "balances/Angular-momentum-torque-and-the-fluid-machine-interface.lingua"
+Import "balances/Pressure-work-kinetic-energy-head-and-dissipation.lingua"
+Import "constitutive/Stress-traction-and-the-local-momentum-equation.lingua"
+Import "constitutive/Newtonian-viscosity-bulk-response-and-dissipation.lingua"
+Import "constitutive/Close-the-Navier-Stokes-model-and-count-its-unknowns.lingua"
+Import "constitutive/Wall-inlet-outlet-and-fluid-interface-conditions.lingua"
+Import "kinematics/Reference-frames-rotating-motion-and-consistent-forces.lingua"
+Import "constitutive/Incompressibility-low-Mach-limits-and-changing-density.lingua"
+Import "similarity/Choose-physical-scales-and-read-the-dimensionless-equations.lingua"
+Import "similarity/Physical-models-conflicting-similarity-and-scale-effects.lingua"
+Import "similarity/Dominant-balances-small-parameters-and-singular-limits.lingua"
+Import "inviscid/Euler-motion-Bernoulli-and-the-assumptions-behind-a-head.lingua"
+Import "inviscid/Streamline-curvature-pressure-gradients-and-fluid-acceleration.lingua"
+Import "study/Defend-a-fluid-balance-before-selecting-a-solution.lingua"
+Import "viscous/Plane-Couette-Poiseuille-and-combined-flow.lingua"
+Import "viscous/Circular-pipe-flow-wall-stress-and-the-fourth-power.lingua"
+Import "viscous/Starting-oscillating-and-pulsatile-viscous-flow.lingua"
+Import "viscous/Creeping-flow-reversibility-and-a-translating-sphere.lingua"
+Import "viscous/Thin-gaps-lubrication-and-the-pressure-that-carries-load.lingua"
+Import "viscous/Porous-flow-Darcy-flux-and-the-scale-of-a-permeability.lingua"
+Import "vortical/Vorticity-transport-stretching-diffusion-and-baroclinicity.lingua"
+Import "vortical/Circulation-Kelvins-theorem-and-material-loops.lingua"
+Import "inviscid/Potential-flow-superposition-and-physical-boundaries.lingua"
+Import "inviscid/Circulation-lift-and-the-viscous-selection-of-a-flow.lingua"
+Import "inviscid/Unsteady-potential-flow-added-mass-and-fluid-impulse.lingua"
+Import "computation/Boundary-integrals-panel-methods-and-singular-kernels.lingua"
+Import "internal/Entrance-development-hydraulic-diameter-and-section-shape.lingua"
+Import "internal/Pipe-resistance-roughness-and-Darcy-versus-Fanning.lingua"
+Import "internal/Fittings-bends-junctions-and-what-a-loss-coefficient-means.lingua"
+Import "internal/Pump-curves-operating-points-and-connected-fluid-networks.lingua"
+Import "internal/Pipe-transients-wave-speed-and-rapid-flow-changes.lingua"
+Import "boundary-layers/Boundary-layer-scaling-displacement-and-wall-shear.lingua"
+Import "boundary-layers/The-Blasius-similarity-solution-and-its-normalization.lingua"
+Import "boundary-layers/Pressure-gradients-separation-and-integral-methods.lingua"
+Import "boundary-layers/Jets-wakes-entrainment-and-free-shear-layers.lingua"
+Import "instability/Perturbations-normal-modes-and-what-linear-stability-proves.lingua"
+Import "instability/Transition-disturbance-amplitude-and-transient-growth.lingua"
+Import "turbulence/Means-fluctuations-correlations-and-sampling.lingua"
+Import "turbulence/Reynolds-averaging-stress-transport-and-the-closure-problem.lingua"
+Import "turbulence/Wall-units-inner-outer-scales-and-roughness.lingua"
+Import "turbulence/Energy-cascades-spectra-and-the-limits-of-scaling-laws.lingua"
+Import "turbulence/DNS-LES-RANS-and-what-the-computation-resolves.lingua"
+Import "compressible/Sound-speed-acoustic-impedance-and-linear-waves.lingua"
+Import "compressible/Static-stagnation-and-critical-states.lingua"
+Import "compressible/Area-Mach-relations-choking-and-nozzle-regimes.lingua"
+Import "compressible/Normal-shocks-conservation-and-entropy-selection.lingua"
+Import "compressible/Oblique-shocks-expansion-fans-and-flow-turning.lingua"
+Import "compressible/Friction-heat-addition-and-compressible-duct-limits.lingua"
+Import "compressible/Characteristics-nonlinear-steepening-and-Riemann-problems.lingua"
+Import "compressible/Variable-properties-relaxation-and-rarefied-flow.lingua"
+Import "waves/Free-surface-kinematic-and-dynamic-conditions.lingua"
+Import "waves/Gravity-capillary-dispersion-phase-and-group-velocity.lingua"
+Import "waves/Depth-averaged-mass-and-momentum-in-shallow-water.lingua"
+Import "waves/Specific-energy-critical-depth-and-hydraulic-jumps.lingua"
+Import "geophysical/Stable-stratification-buoyancy-frequency-and-internal-waves.lingua"
+Import "geophysical/Boussinesq-flow-natural-convection-plumes-and-instability.lingua"
+Import "geophysical/Rotating-flow-Rossby-number-and-geostrophic-balance.lingua"
+Import "geophysical/Potential-vorticity-Rossby-Kelvin-and-inertia-gravity-waves.lingua"
+Import "study/Compare-wave-models-with-the-same-physical-observations.lingua"
+Import "interfaces/Surface-tension-curvature-and-interfacial-stress.lingua"
+Import "interfaces/Wetting-contact-lines-hysteresis-and-coating.lingua"
+Import "interfaces/Capillary-gravitational-and-shear-driven-instabilities.lingua"
+Import "interfaces/Cavitation-nucleation-bubble-dynamics-and-pressure-history.lingua"
+Import "multiphase/Particle-response-settling-Brownian-motion-and-deposition.lingua"
+Import "multiphase/Volume-fractions-slip-interphase-exchange-and-model-choice.lingua"
+Import "multiphase/Suspension-stress-concentration-migration-and-granular-limits.lingua"
+Import "complex-fluids/Shear-dependent-viscosity-power-laws-and-yield-models.lingua"
+Import "complex-fluids/Relaxation-creep-and-linear-viscoelastic-spectra.lingua"
+Import "complex-fluids/Objective-constitutive-laws-normal-stress-and-extension.lingua"
+Import "complex-fluids/History-dependence-thixotropy-and-elastic-instability.lingua"
+Import "measurement/Rheometry-from-instrument-torque-to-material-response.lingua"
+Import "transport/Advection-diffusion-reaction-and-conservative-scalar-balances.lingua"
+Import "transport/Mixing-stretching-diffusion-and-Taylor-dispersion.lingua"
+Import "transport/Microfluidic-actuation-electric-fields-and-small-scale-transport.lingua"
+Import "coupled/Fluid-structure-interaction-compliance-and-oscillating-boundaries.lingua"
+Import "study/Choose-a-fluid-model-when-several-physical-mechanisms-compete.lingua"
+Import "measurement/Flow-rate-calibration-density-and-the-installed-meter.lingua"
+Import "measurement/Velocity-pressure-and-probe-interference.lingua"
+Import "measurement/Pressure-lines-bandwidth-aliasing-and-fluctuating-flow.lingua"
+Import "measurement/Flow-visualization-PIV-and-uncertainty-in-derived-fields.lingua"
+Import "measurement/Flow-facilities-boundaries-blockage-and-inlet-quality.lingua"
+Import "measurement/An-experiment-that-can-distinguish-two-fluid-explanations.lingua"
+Import "measurement/Infer-flow-properties-with-identifiability-and-independent-data.lingua"
+Import "measurement/Separate-input-numerical-sampling-and-model-uncertainty.lingua"
+Import "computation/Conservative-finite-volumes-and-cancelling-face-fluxes.lingua"
+Import "computation/Advection-schemes-boundedness-diffusion-and-shock-capture.lingua"
+Import "computation/Incompressible-pressure-velocity-coupling-and-the-nullspace.lingua"
+Import "computation/Computational-inlets-outlets-walls-and-open-domains.lingua"
+Import "computation/Mesh-geometry-resolution-and-spatial-convergence.lingua"
+Import "computation/Time-steps-CFL-stability-and-temporal-accuracy.lingua"
+Import "computation/Verify-fluid-code-before-comparing-it-with-an-experiment.lingua"
+Import "computation/Validate-a-defined-prediction-against-independent-physical-evidence.lingua"
+Import "computation/A-reproducible-fluid-case-from-geometry-to-evidence.lingua"
+Import "practice/Build-and-measure-a-bounded-fluid-system.lingua"
+Import "practice/Fluid-services-connect-machines-materials-energy-and-people.lingua"
+Import "practice/Keep-a-fluid-system-understood-through-change-and-maintenance.lingua"
+Import "computation/An-inspectable-pump-and-pipe-operating-point.lingua"
+Import "computation/An-inspectable-nozzle-with-an-internal-normal-shock.lingua"
+Import "computation/An-inspectable-Blasius-boundary-layer-calculation.lingua"
+Import "computation/An-inspectable-conservative-wet-shallow-water-solver.lingua"
+Import "study/A-sustained-book-and-graduate-course-programme.lingua"
+Import "research/Advanced-hydrostatic-load-and-inverse-density-study.lingua"
+Import "research/Advanced-creeping-flow-reciprocity-and-confinement-study.lingua"
+Import "research/Advanced-lubrication-coating-and-contact-line-study.lingua"
+Import "research/Advanced-fluid-network-and-machine-operating-study.lingua"
+Import "research/Advanced-pipe-transient-and-sensor-response-study.lingua"
+Import "research/Advanced-potential-flow-panel-and-force-study.lingua"
+Import "research/Advanced-boundary-layer-similarity-separation-and-drag-study.lingua"
+Import "research/Advanced-linear-stability-transient-growth-and-transition-study.lingua"
+Import "research/Advanced-turbulent-statistics-spectra-and-energy-budget-study.lingua"
+Import "research/Advanced-turbulence-closure-verification-and-validation-study.lingua"
+Import "research/Advanced-resolved-turbulence-and-filtering-study.lingua"
+Import "research/Advanced-nozzle-shock-and-compressible-duct-study.lingua"
+Import "research/Advanced-free-surface-wave-and-hydraulic-transition-study.lingua"
+Import "research/Advanced-rotating-stratified-flow-and-potential-vorticity-study.lingua"
+Import "research/Advanced-interfacial-shape-wetting-and-instability-study.lingua"
+Import "research/Advanced-bubble-dynamics-and-cavitation-evidence-study.lingua"
+Import "research/Advanced-dispersed-flow-closure-and-phase-account-study.lingua"
+Import "research/Advanced-rheometry-constitutive-inference-and-processing-flow-study.lingua"
+Import "research/Advanced-advection-diffusion-dispersion-and-mixing-study.lingua"
+Import "research/Advanced-fluid-structure-or-field-coupling-study.lingua"
+Import "practice/A-sustained-fluid-experimental-programme.lingua"
+Import "research/A-complete-fluid-service-investigation.lingua"
+Import "research/Compare-primary-fluid-results-through-their-assumptions-and-evidence.lingua"
+Import "research/An-independent-fluid-dynamics-research-question.lingua"
+Import "research/Criticism-reproduction-and-revision-of-a-fluid-argument.lingua"
+Import "research/Defend-fluid-understanding-from-foundations-to-independent-work.lingua"
+Import "Sources.lingua"
+Import "../thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua"
+
+Fluid dynamics — motion, forces, transport and evidence (@fluid-dynamics: 0, is #chapter, #fluid-dynamics "foundations/Read-fluid-dynamics-from-zero.lingua#r_1JWVG3WSPPTZW4BP2N1BZPPZ12") { r_7PQW1WDHK708BFV23MD8ET61VZ
+Start with [Read fluid dynamics from zero](foundations/Read-fluid-dynamics-from-zero.lingua#r_1JWVG3WSPPTZW4BP2N1BZPPZ12) and an ordinary stream of water or air. Learn to identify the fluid, its boundaries, the forces and the observations needed to explain what moves. Work from amounts and pressure to fields, conservation laws and the assumptions behind a useful flow model.
+
+Whole books and increasingly demanding questions develop the subject. The shared mathematical, thermodynamic and measurement steps appear where they are used and retain their other continuations. Ordinary references to related fields do not make completing those entire subjects a prerequisite.
+
+**Foundations:** [Read fluid dynamics from zero](foundations/Read-fluid-dynamics-from-zero.lingua#r_1JWVG3WSPPTZW4BP2N1BZPPZ12) · [Observe a fluid and the service it provides](foundations/Observe-a-fluid-and-the-service-it-provides.lingua#r_2N3M0S840BRKVXMQ7QPNK77X5Z) · [Fluid quantities, units and English–Portuguese vocabulary](foundations/Fluid-quantities-units-and-English-Portuguese-vocabulary.lingua#r_1GH7DF6D8NAQCMZ44VPZ506VV3) · [Material properties and the state of the fluid](foundations/Material-properties-and-the-state-of-the-fluid.lingua#r_5875X8MW02A7JNF72S8MDJSANN) · [Continuum fields, molecular scales and relaxation](foundations/Continuum-fields-molecular-scales-and-relaxation.lingua#r_52W3FJ90C69MPGFW3QNYXA6Q80).
+
+**Statics:** [Pressure reference, stress and a pressure measurement](statics/Pressure-reference-stress-and-a-pressure-measurement.lingua#r_5KKK4Q5KPBS1CCXVZ72RYBJMKK) · [Hydrostatic balance, gravity and density variation](statics/Hydrostatic-balance-gravity-and-density-variation.lingua#r_0BMK5JN8XP72JR1WQG5B52PFMS) · [Manometers, layered fluids and connected pressure paths](statics/Manometers-layered-fluids-and-connected-pressure-paths.lingua#r_5C2HW614FRPGT2H6QD3RY30G0J) · [Pressure forces, moments and the centre of pressure](statics/Pressure-forces-moments-and-the-centre-of-pressure.lingua#r_3ZK38BANREQ9K4KZ4YZ3NZQCYX) · [Buoyancy, floating equilibrium and small displacements](statics/Buoyancy-floating-equilibrium-and-small-displacements.lingua#r_4BR14XK13BE96AV41F3P76D8GK) · [Accelerated containers and rigid-body rotation](statics/Accelerated-containers-and-rigid-body-rotation.lingua#r_6JVXB2M9DRSZ6GP1WJCH6ZF73M).
+
+**Mathematics:** [Coordinates, fields and local versus material change](mathematics/Coordinates-fields-and-local-versus-material-change.lingua#r_3ZSP7RX2565ZAA91ZD418BAEVN) · [Velocity gradients, strain rate and local rotation](mathematics/Velocity-gradients-strain-rate-and-local-rotation.lingua#r_37ABTXR3GBSJXJ39FACENFATQ6) · [Fluxes, oriented surfaces and coordinate measures](mathematics/Fluxes-oriented-surfaces-and-coordinate-measures.lingua#r_67DWMZBFCRCW464EP31KR60ZV9) · [Differential equations, boundary data and a solvable flow model](mathematics/Differential-equations-boundary-data-and-a-solvable-flow-model.lingua#r_5HKW1NTEG39SPQQ5PF9THNHCMX).
+
+**Kinematics:** [Streamlines, pathlines, streaklines and what images show](kinematics/Streamlines-pathlines-streaklines-and-what-images-show.lingua#r_5YN2AA06C9HWVJG4C7QP2S7QBN) · [Material volumes, deformation maps and density](kinematics/Material-volumes-deformation-maps-and-density.lingua#r_1R8TG4FSEVRSMJRH25WAX6128Z) · [Reference frames, rotating motion and consistent forces](kinematics/Reference-frames-rotating-motion-and-consistent-forces.lingua#r_5SB0X4AF38MZ5W9V6TX733B6BN).
+
+**Balances:** [Systems, control volumes and the Reynolds transport theorem](balances/Systems-control-volumes-and-the-Reynolds-transport-theorem.lingua#r_2K8N085T7ET89K52K52W8QASMT) · [Integral and local conservation of mass](balances/Integral-and-local-conservation-of-mass.lingua#r_788QM37A7NFT52RQGTMS01Q89Q) · [Linear momentum, pressure and support reactions](balances/Linear-momentum-pressure-and-support-reactions.lingua#r_7FY6ME92TRJG5C9SAHKGNYTMEH) · [Angular momentum, torque and the fluid-machine interface](balances/Angular-momentum-torque-and-the-fluid-machine-interface.lingua#r_4X2TD7FV2EMXZ2MQ9ADZGCPJMB) · [Pressure work, kinetic energy, head and dissipation](balances/Pressure-work-kinetic-energy-head-and-dissipation.lingua#r_7HQS960HZ708YJQVV7BA16JVMA).
+
+**Constitutive:** [Stress, traction and the local momentum equation](constitutive/Stress-traction-and-the-local-momentum-equation.lingua#r_7CCBAA58W97CSN9A250DXPZNVJ) · [Newtonian viscosity, bulk response and dissipation](constitutive/Newtonian-viscosity-bulk-response-and-dissipation.lingua#r_7669C29E0HBC127Y4NJ2JT6QEY) · [Close the Navier–Stokes model and count its unknowns](constitutive/Close-the-Navier-Stokes-model-and-count-its-unknowns.lingua#r_0DT1PYJ1ZG1VMZRXH100M388GD) · [Wall, inlet, outlet and fluid-interface conditions](constitutive/Wall-inlet-outlet-and-fluid-interface-conditions.lingua#r_1CRP84TQ0EED7784XC3NCV3WFR) · [Incompressibility, low-Mach limits and changing density](constitutive/Incompressibility-low-Mach-limits-and-changing-density.lingua#r_27TKZTP9HJ4S3SMD31KQF5ABKN).
+
+**Similarity:** [Choose physical scales and read the dimensionless equations](similarity/Choose-physical-scales-and-read-the-dimensionless-equations.lingua#r_7W3D4FHAFRQJVC08KK9Q0V4BKP) · [Physical models, conflicting similarity and scale effects](similarity/Physical-models-conflicting-similarity-and-scale-effects.lingua#r_4YXMPWTHM9X4WSM304JNBWVS37) · [Dominant balances, small parameters and singular limits](similarity/Dominant-balances-small-parameters-and-singular-limits.lingua#r_7SWMXVAX4WWEGQPEDHHHNJT8AR).
+
+**Inviscid:** [Euler motion, Bernoulli and the assumptions behind a head](inviscid/Euler-motion-Bernoulli-and-the-assumptions-behind-a-head.lingua#r_2JK0RXSRKF2STTY52STQFQCHPS) · [Streamline curvature, pressure gradients and fluid acceleration](inviscid/Streamline-curvature-pressure-gradients-and-fluid-acceleration.lingua#r_3DBWSSFEFA8V9KBFFAYXHYZW9G) · [Potential flow, superposition and physical boundaries](inviscid/Potential-flow-superposition-and-physical-boundaries.lingua#r_5PBT5A52N3W72XZSJMP9WKPVA2) · [Circulation, lift and the viscous selection of a flow](inviscid/Circulation-lift-and-the-viscous-selection-of-a-flow.lingua#r_16GKKW380EKZDXK81MZ78J0VB6) · [Unsteady potential flow, added mass and fluid impulse](inviscid/Unsteady-potential-flow-added-mass-and-fluid-impulse.lingua#r_42431P3X28AY1G8BQAPA3RM1XR).
+
+**Study:** [Defend a fluid balance before selecting a solution](study/Defend-a-fluid-balance-before-selecting-a-solution.lingua#r_7FCXY6QVV016AZ59EC6E0DS3QB) · [Compare wave models with the same physical observations](study/Compare-wave-models-with-the-same-physical-observations.lingua#r_7TT23QCCMNDSDZHPCBT4TNHM4D) · [Choose a fluid model when several physical mechanisms compete](study/Choose-a-fluid-model-when-several-physical-mechanisms-compete.lingua#r_43864KY2VCBNKWX8VEGNPA2HCR) · [A sustained book and graduate-course programme](study/A-sustained-book-and-graduate-course-programme.lingua#r_4P4AF2QKRVED55XXYWDRFD47B3).
+
+**Viscous:** [Plane Couette, Poiseuille and combined flow](viscous/Plane-Couette-Poiseuille-and-combined-flow.lingua#r_6PPBMTFDM4X0DXRTFRMG2VPA9B) · [Circular pipe flow, wall stress and the fourth power](viscous/Circular-pipe-flow-wall-stress-and-the-fourth-power.lingua#r_2YEKAMXH5749FPWMEQDTZGBGFN) · [Starting, oscillating and pulsatile viscous flow](viscous/Starting-oscillating-and-pulsatile-viscous-flow.lingua#r_5R7D7KW6HKKQPJ88VM9TDX3E2N) · [Creeping flow, reversibility and a translating sphere](viscous/Creeping-flow-reversibility-and-a-translating-sphere.lingua#r_2NCJ64J8EHE6G7NWVKGK5DC3ZA) · [Thin gaps, lubrication and the pressure that carries load](viscous/Thin-gaps-lubrication-and-the-pressure-that-carries-load.lingua#r_5ZAVCSV2QTPX1DATNVCF9EHJ9V) · [Porous flow, Darcy flux and the scale of a permeability](viscous/Porous-flow-Darcy-flux-and-the-scale-of-a-permeability.lingua#r_6F57YVHJSPPTDA0FGV79KTX1QY).
+
+**Vortical:** [Vorticity transport, stretching, diffusion and baroclinicity](vortical/Vorticity-transport-stretching-diffusion-and-baroclinicity.lingua#r_0T941GM8MCPAABF9AFXBV21TJZ) · [Circulation, Kelvin’s theorem and material loops](vortical/Circulation-Kelvins-theorem-and-material-loops.lingua#r_4W25ZRVXG4JG4XXY8YHBM2WVR3).
+
+**Computation:** [Boundary integrals, panel methods and singular kernels](computation/Boundary-integrals-panel-methods-and-singular-kernels.lingua#r_5P780W86MVPRSPSFG1YNRFMS4X) · [Conservative finite volumes and cancelling face fluxes](computation/Conservative-finite-volumes-and-cancelling-face-fluxes.lingua#r_680N35BTK54VZEA3DZ3Z0EGQ9N) · [Advection schemes, boundedness, diffusion and shock capture](computation/Advection-schemes-boundedness-diffusion-and-shock-capture.lingua#r_0XH17KPCTVWEZATGC9DTC9PGFN) · [Incompressible pressure–velocity coupling and the nullspace](computation/Incompressible-pressure-velocity-coupling-and-the-nullspace.lingua#r_3DYC1KZFBT3WBPFKTWEZAT0MRN) · [Computational inlets, outlets, walls and open domains](computation/Computational-inlets-outlets-walls-and-open-domains.lingua#r_1KEP8G46P15AT3CZZRJJJVHKCJ) · [Mesh geometry, resolution and spatial convergence](computation/Mesh-geometry-resolution-and-spatial-convergence.lingua#r_7A7VK8TFZMZ370MVT6QZGPT08C) · [Time steps, CFL stability and temporal accuracy](computation/Time-steps-CFL-stability-and-temporal-accuracy.lingua#r_60M0VT0DEYA3P6E9DC371K6PQT) · [Verify fluid code before comparing it with an experiment](computation/Verify-fluid-code-before-comparing-it-with-an-experiment.lingua#r_56BN593RTAZZVHY7S5VT2EJRKK) · [Validate a defined prediction against independent physical evidence](computation/Validate-a-defined-prediction-against-independent-physical-evidence.lingua#r_6H9AXRJ7C8KS3CQKVAPK0BW0GV) · [A reproducible fluid case from geometry to evidence](computation/A-reproducible-fluid-case-from-geometry-to-evidence.lingua#r_2PAK85R8DRMK4F04X4049NE49W) · [An inspectable pump-and-pipe operating point](computation/An-inspectable-pump-and-pipe-operating-point.lingua#r_0C8QS68GNNJFF403GENEXJARPC) · [An inspectable nozzle with an internal normal shock](computation/An-inspectable-nozzle-with-an-internal-normal-shock.lingua#r_1759XXT97JP6XN6H6HS5DMHRSW) · [An inspectable Blasius boundary-layer calculation](computation/An-inspectable-Blasius-boundary-layer-calculation.lingua#r_7X6RYA08VQGEBYKV786AT13CPJ) · [An inspectable conservative wet shallow-water solver](computation/An-inspectable-conservative-wet-shallow-water-solver.lingua#r_0WT5RWX37GNCS5RSRFAKTFHYBV).
+
+**Internal:** [Entrance development, hydraulic diameter and section shape](internal/Entrance-development-hydraulic-diameter-and-section-shape.lingua#r_2ZV9PF833DSR5B56KY11SZ86A0) · [Pipe resistance, roughness and Darcy versus Fanning](internal/Pipe-resistance-roughness-and-Darcy-versus-Fanning.lingua#r_4428A6CTA9J8GD9VSXPVJTHKBD) · [Fittings, bends, junctions and what a loss coefficient means](internal/Fittings-bends-junctions-and-what-a-loss-coefficient-means.lingua#r_44H4W4CTXATB85WBAMMY1BN8WK) · [Pump curves, operating points and connected fluid networks](internal/Pump-curves-operating-points-and-connected-fluid-networks.lingua#r_38PV7C2PG9F67V9SENTE32AD5Y) · [Pipe transients, wave speed and rapid flow changes](internal/Pipe-transients-wave-speed-and-rapid-flow-changes.lingua#r_64ZR22XA5Z4K5JXRRM1XHQMRVY).
+
+**Boundary layers:** [Boundary-layer scaling, displacement and wall shear](boundary-layers/Boundary-layer-scaling-displacement-and-wall-shear.lingua#r_1K0S71RQ25E0PJBAXKXW7GNPDW) · [The Blasius similarity solution and its normalization](boundary-layers/The-Blasius-similarity-solution-and-its-normalization.lingua#r_2WRXBS1GA1GTV3S24SCF5PBQTM) · [Pressure gradients, separation and integral methods](boundary-layers/Pressure-gradients-separation-and-integral-methods.lingua#r_6SZR7KMJ0QJHB12ZVVGMZ254WA) · [Jets, wakes, entrainment and free shear layers](boundary-layers/Jets-wakes-entrainment-and-free-shear-layers.lingua#r_50ENQJKN158A435N37YDR84562).
+
+**Instability:** [Perturbations, normal modes and what linear stability proves](instability/Perturbations-normal-modes-and-what-linear-stability-proves.lingua#r_48XANNJ6W3VYE8XSV9358W16AW) · [Transition, disturbance amplitude and transient growth](instability/Transition-disturbance-amplitude-and-transient-growth.lingua#r_3YVWXR0JBV81JE1W6E58FB6F6A).
+
+**Turbulence:** [Means, fluctuations, correlations and sampling](turbulence/Means-fluctuations-correlations-and-sampling.lingua#r_28QSWBMS4143WE5A6NHQQJXZEY) · [Reynolds averaging, stress transport and the closure problem](turbulence/Reynolds-averaging-stress-transport-and-the-closure-problem.lingua#r_2WR3KYF31R7RJSN20P6PKS0PM0) · [Wall units, inner and outer scales, and roughness](turbulence/Wall-units-inner-outer-scales-and-roughness.lingua#r_5R0RB1C4ZP85MKS4SJ8DPE2D9T) · [Energy cascades, spectra and the limits of scaling laws](turbulence/Energy-cascades-spectra-and-the-limits-of-scaling-laws.lingua#r_0KK7VWV52ZQZHS4DJ7QS9WJQ50) · [DNS, LES, RANS and what the computation resolves](turbulence/DNS-LES-RANS-and-what-the-computation-resolves.lingua#r_7J730ZRGKC9B6BVVHTZK9D2YYE).
+
+**Compressible:** [Sound speed, acoustic impedance and linear waves](compressible/Sound-speed-acoustic-impedance-and-linear-waves.lingua#r_66QA17NADDVJNJWKZKFJF9TX7N) · [Static, stagnation and critical states](compressible/Static-stagnation-and-critical-states.lingua#r_13W8RXAZ6EQG83R7AKRJF965S9) · [Area–Mach relations, choking and nozzle regimes](compressible/Area-Mach-relations-choking-and-nozzle-regimes.lingua#r_3K6DQDVFKBHGSE3XNF57J8C04N) · [Normal shocks, conservation and entropy selection](compressible/Normal-shocks-conservation-and-entropy-selection.lingua#r_3MN97APMW4SJQJ4G5GZF4JSSFX) · [Oblique shocks, expansion fans and flow turning](compressible/Oblique-shocks-expansion-fans-and-flow-turning.lingua#r_5WCHS2S4QN94C8N89S54YH0478) · [Friction, heat addition and compressible duct limits](compressible/Friction-heat-addition-and-compressible-duct-limits.lingua#r_1R8Q2YYRFR7SFY4KXJ84MA52R5) · [Characteristics, nonlinear steepening and Riemann problems](compressible/Characteristics-nonlinear-steepening-and-Riemann-problems.lingua#r_79Y00P32FGZZC1W2JN17JC0NQ2) · [Variable properties, relaxation and rarefied flow](compressible/Variable-properties-relaxation-and-rarefied-flow.lingua#r_7Y5K4F9AE60ZFKJFJXHYE4F5A8).
+
+**Waves:** [Free-surface kinematic and dynamic conditions](waves/Free-surface-kinematic-and-dynamic-conditions.lingua#r_4WNYCBSPDTH0TQ2J47HWMS2C91) · [Gravity–capillary dispersion, phase and group velocity](waves/Gravity-capillary-dispersion-phase-and-group-velocity.lingua#r_058JA47C7PH8ER8Y6YGQ4WQ2R9) · [Depth-averaged mass and momentum in shallow water](waves/Depth-averaged-mass-and-momentum-in-shallow-water.lingua#r_719NEXPHYB8DCJPKVZ3QKNSCXX) · [Specific energy, critical depth and hydraulic jumps](waves/Specific-energy-critical-depth-and-hydraulic-jumps.lingua#r_5R5PG02RW7F1B7X6QWCR4MVZHN).
+
+**Geophysical:** [Stable stratification, buoyancy frequency and internal waves](geophysical/Stable-stratification-buoyancy-frequency-and-internal-waves.lingua#r_691GN8PDCYCW2BN2T3ETWSNC4B) · [Boussinesq flow, natural convection, plumes and instability](geophysical/Boussinesq-flow-natural-convection-plumes-and-instability.lingua#r_3D346A9GVA8D8T39K4KHG0X3W0) · [Rotating flow, Rossby number and geostrophic balance](geophysical/Rotating-flow-Rossby-number-and-geostrophic-balance.lingua#r_6X74505055WATA2XZ7CD18HQYZ) · [Potential vorticity, Rossby, Kelvin and inertia–gravity waves](geophysical/Potential-vorticity-Rossby-Kelvin-and-inertia-gravity-waves.lingua#r_1MDK0YBKQ7V8JBHGPYPFZ8KX6Y).
+
+**Interfaces:** [Surface tension, curvature and interfacial stress](interfaces/Surface-tension-curvature-and-interfacial-stress.lingua#r_45KBS33PK1WK235BRBFHAACN9W) · [Wetting, contact lines, hysteresis and coating](interfaces/Wetting-contact-lines-hysteresis-and-coating.lingua#r_0QBZZTX53DYHBPJTHRAH7YTK1D) · [Capillary, gravitational and shear-driven instabilities](interfaces/Capillary-gravitational-and-shear-driven-instabilities.lingua#r_7TRXVRKVKPRGWSQ6XHPCTY0CMG) · [Cavitation, nucleation, bubble dynamics and pressure history](interfaces/Cavitation-nucleation-bubble-dynamics-and-pressure-history.lingua#r_3N65MAD5CF80Q2W5Q82GJG167S).
+
+**Multiphase:** [Particle response, settling, Brownian motion and deposition](multiphase/Particle-response-settling-Brownian-motion-and-deposition.lingua#r_4HE4FR5RX1H2Z2H18573WWM5MV) · [Volume fractions, slip, interphase exchange and model choice](multiphase/Volume-fractions-slip-interphase-exchange-and-model-choice.lingua#r_16W07EWTERB3C53SMKY5XJKD20) · [Suspension stress, concentration, migration and granular limits](multiphase/Suspension-stress-concentration-migration-and-granular-limits.lingua#r_2YSMF4GB2EBRBZ20F4Z7S586GQ).
+
+**Complex fluids:** [Shear-dependent viscosity, power laws and yield models](complex-fluids/Shear-dependent-viscosity-power-laws-and-yield-models.lingua#r_05PD745REMMP6X02K2S3A78KYK) · [Relaxation, creep and linear viscoelastic spectra](complex-fluids/Relaxation-creep-and-linear-viscoelastic-spectra.lingua#r_19B5S842D5P8Q3JM8R37V5XGEC) · [Objective constitutive laws, normal stress and extension](complex-fluids/Objective-constitutive-laws-normal-stress-and-extension.lingua#r_0B3J7Q6R99JJHRQCCETNB4TH52) · [History dependence, thixotropy and elastic instability](complex-fluids/History-dependence-thixotropy-and-elastic-instability.lingua#r_50D2X9FX0CF87WVGH3WT85M8ET).
+
+**Measurement:** [Rheometry from instrument torque to material response](measurement/Rheometry-from-instrument-torque-to-material-response.lingua#r_4WYS6QXWBP6XESABJZPJ7H1TSA) · [Flow-rate calibration, density and the installed meter](measurement/Flow-rate-calibration-density-and-the-installed-meter.lingua#r_2AVBCMG4JY9YW3BW5GWA1J40Y1) · [Velocity, pressure and probe interference](measurement/Velocity-pressure-and-probe-interference.lingua#r_350KWVSRBR55T06BP45HY4B22C) · [Pressure lines, bandwidth, aliasing and fluctuating flow](measurement/Pressure-lines-bandwidth-aliasing-and-fluctuating-flow.lingua#r_7774CKPZV59YNJP2EQ0R621544) · [Flow visualization, PIV and uncertainty in derived fields](measurement/Flow-visualization-PIV-and-uncertainty-in-derived-fields.lingua#r_1TH2QT61KGJF0Z9VGGY192G6VD) · [Flow facilities, boundaries, blockage and inlet quality](measurement/Flow-facilities-boundaries-blockage-and-inlet-quality.lingua#r_36W31R46PFWQP6483RTVS3404Z) · [An experiment that can distinguish two fluid explanations](measurement/An-experiment-that-can-distinguish-two-fluid-explanations.lingua#r_15XFDRGDYQY3VKWT8X5V9SXNN9) · [Infer flow properties with identifiability and independent data](measurement/Infer-flow-properties-with-identifiability-and-independent-data.lingua#r_3N09ZV623SWF4TRBTXH6AYY085) · [Separate input, numerical, sampling and model uncertainty](measurement/Separate-input-numerical-sampling-and-model-uncertainty.lingua#r_4RNG06S89GFF2HKSX4SSMNPWCK).
+
+**Transport:** [Advection, diffusion, reaction and conservative scalar balances](transport/Advection-diffusion-reaction-and-conservative-scalar-balances.lingua#r_1K58Z7J4TJTKSNRNK4ENXN4YPM) · [Mixing, stretching, diffusion and Taylor dispersion](transport/Mixing-stretching-diffusion-and-Taylor-dispersion.lingua#r_59FDSTWHQQ1P5GFEGPR0DG3Y54) · [Microfluidic actuation, electric fields and small-scale transport](transport/Microfluidic-actuation-electric-fields-and-small-scale-transport.lingua#r_1N19HX89Z4CQFB7SSXW9TRFVHX).
+
+**Coupled:** [Fluid–structure interaction, compliance and oscillating boundaries](coupled/Fluid-structure-interaction-compliance-and-oscillating-boundaries.lingua#r_12QYK1JNCA4K7MNAKG8F4CXSZQ).
+
+**Practice:** [Build and measure a bounded fluid system](practice/Build-and-measure-a-bounded-fluid-system.lingua#r_0QRH0SSZEVW15WY3H5YEDXQB4T) · [Fluid services connect machines, materials, energy and people](practice/Fluid-services-connect-machines-materials-energy-and-people.lingua#r_14C278NFN0ZBZ903RME1NGZGBS) · [Keep a fluid system understood through change and maintenance](practice/Keep-a-fluid-system-understood-through-change-and-maintenance.lingua#r_0VA875G7B5W9ZKP27DG3ZGPXTY) · [A sustained fluid experimental programme](practice/A-sustained-fluid-experimental-programme.lingua#r_44MEVXT1S9AQTHW3NM4R6WET66).
+
+**Research:** [Advanced hydrostatic load and inverse-density study](research/Advanced-hydrostatic-load-and-inverse-density-study.lingua#r_4ANS8VPM2VV66Y3FVSW7TZ5SDJ) · [Advanced creeping-flow, reciprocity and confinement study](research/Advanced-creeping-flow-reciprocity-and-confinement-study.lingua#r_7DYBFCG2MSETSKYGRJ6X853P7X) · [Advanced lubrication, coating and contact-line study](research/Advanced-lubrication-coating-and-contact-line-study.lingua#r_513PA04VA1YKK29DVXBJM363VB) · [Advanced fluid-network and machine-operating study](research/Advanced-fluid-network-and-machine-operating-study.lingua#r_1721PJY51WQF9T9JVXT0E3VX7S) · [Advanced pipe-transient and sensor-response study](research/Advanced-pipe-transient-and-sensor-response-study.lingua#r_0Z3TEDK7V0YXFMBXNHRP80DTVA) · [Advanced potential-flow, panel and force study](research/Advanced-potential-flow-panel-and-force-study.lingua#r_3Z6H3AEH79V2ABNYJF4PZE11Y6) · [Advanced boundary-layer similarity, separation and drag study](research/Advanced-boundary-layer-similarity-separation-and-drag-study.lingua#r_3HJ4ZSH1RBJCTQ98VZ4VE3QEYX) · [Advanced linear stability, transient growth and transition study](research/Advanced-linear-stability-transient-growth-and-transition-study.lingua#r_0WHDHE2BSBQ7ZMTW2EXS3D2MBN) · [Advanced turbulent statistics, spectra and energy-budget study](research/Advanced-turbulent-statistics-spectra-and-energy-budget-study.lingua#r_0460VC6BHC9TM4E3HRAS38M2XH) · [Advanced turbulence-closure verification and validation study](research/Advanced-turbulence-closure-verification-and-validation-study.lingua#r_6S38T31W8P5CSNRDF9Y77KPYF7) · [Advanced resolved-turbulence and filtering study](research/Advanced-resolved-turbulence-and-filtering-study.lingua#r_5RBD4WBYMYYMR54BDK1X22SZQV) · [Advanced nozzle, shock and compressible-duct study](research/Advanced-nozzle-shock-and-compressible-duct-study.lingua#r_71ATSDF27111JJ8AAM358JS35K) · [Advanced free-surface wave and hydraulic-transition study](research/Advanced-free-surface-wave-and-hydraulic-transition-study.lingua#r_7D92P33JB08JEJ18AW6GX5H46J) · [Advanced rotating, stratified flow and potential-vorticity study](research/Advanced-rotating-stratified-flow-and-potential-vorticity-study.lingua#r_22XTETXW1TXM3J0TRQB6HJ9Q8Y) · [Advanced interfacial shape, wetting and instability study](research/Advanced-interfacial-shape-wetting-and-instability-study.lingua#r_7HESDAWAFEZPSA3GX8P27H9XSN) · [Advanced bubble dynamics and cavitation-evidence study](research/Advanced-bubble-dynamics-and-cavitation-evidence-study.lingua#r_09Z0ZDBDWHCA7ABKPVDMCNT5H1) · [Advanced dispersed-flow closure and phase-account study](research/Advanced-dispersed-flow-closure-and-phase-account-study.lingua#r_4QBZV9Q9Z7CFSZPHAPHZ75NV9A) · [Advanced rheometry, constitutive inference and processing-flow study](research/Advanced-rheometry-constitutive-inference-and-processing-flow-study.lingua#r_49DVK2ND92ZB7EN3P0V4R1BJ71) · [Advanced advection, diffusion, dispersion and mixing study](research/Advanced-advection-diffusion-dispersion-and-mixing-study.lingua#r_2MZ7ZF2GP6SNSGEV4H9BEC9WKD) · [Advanced fluid–structure or field-coupling study](research/Advanced-fluid-structure-or-field-coupling-study.lingua#r_64X1S719WFMBMAEZY9J0WVR3Q3) · [A complete fluid-service investigation](research/A-complete-fluid-service-investigation.lingua#r_688VD7S50KPEC6CY2Y8KY3K0F5) · [Compare primary fluid results through their assumptions and evidence](research/Compare-primary-fluid-results-through-their-assumptions-and-evidence.lingua#r_767M1Y5BHBXPSSAA7S1X7D8Q0G) · [An independent fluid-dynamics research question](research/An-independent-fluid-dynamics-research-question.lingua#r_3E8DPHG6DWB1FPCNXXM1NC6HJD) · [Criticism, reproduction and revision of a fluid argument](research/Criticism-reproduction-and-revision-of-a-fluid-argument.lingua#r_38H3CJYJMX9BVAETGBNYB50TKR) · [Defend fluid understanding from foundations to independent work](research/Defend-fluid-understanding-from-foundations-to-independent-work.lingua#r_6181DWMCZPGBKQJ98NFNW56C7W).
+
+[Fluid dynamics sources — books, courses, methods and physical evidence](Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG) identifies the complete readings, specialist methods, access conditions and primary evidence. Return to [Physics — fields, matter, motion and physical evidence](../Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W), [Engineering — systems, design, construction, and operation](../../engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68), [STEM — mathematics, science, and engineering](../../STEM.lingua#r_4B137J3ZBVM7TD2NA797H2CZ7E), [Inquiry — shared ways to understand and investigate](../../../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB) and [Ergon](../../../ergon/Ergon.lingua#r_00000000000000000000002001) as the physical problem connects with other work. Questions about explanation, evidence and purpose connect with [Philosophy](../../../philosophy/Philosophy.lingua#r_00000000000000000000001001). Water services, machinery, thermal engineering, rheology, atmospheric/ocean science, vacuum systems and semiconductor manufacturing can reuse this fluid foundation while keeping their specialist scope.
+
+**Continue:** [Read fluid dynamics from zero](foundations/Read-fluid-dynamics-from-zero.lingua#r_1JWVG3WSPPTZW4BP2N1BZPPZ12).
+} r_7PQW1WDHK708BFV23MD8ET61VZ
+
+Extension @fluid-dynamics "lince.vocabulary" {
+ definitions {
+  fluid-dynamics "Continue through fluid motion, balances, physical evidence, analytical and numerical methods, and deeper investigation."
+ }
+}

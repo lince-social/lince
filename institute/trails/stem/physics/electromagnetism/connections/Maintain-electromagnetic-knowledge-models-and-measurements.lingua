@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Maintain electromagnetic knowledge, models and measurements (@em-knowledge: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69", #source "../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX", #electromagnetism "../study/A-complete-practical-and-academic-programme.lingua#r_4XEMVM6SXP5T369FTCJ14H53YX") { r_5XFHFENEPD49TNR8MNAEEFXWHA
+**Read:** [3D electromagnetic modelling and inversion — Oldenburg and colleagues](../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69), complete discussion of reproducibility and collaboration; [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX), release/version information and method documentation.
+
+A useful field model depends on a continuing chain of geometry, material measurements, standards, calculation methods, source versions, calibration and interpretation. Record which evidence supports a parameter and which assumption supplies an unmeasured value. Retain actual units and conventions with every result rather than storing disconnected numbers.
+
+For one component, trace a design claim from a textbook approximation through a refined solver to a measurement and a maintenance decision. Identify what changes after replacing material, fixture, software release or operating frequency. Revalidate the affected claim at that interface; a new source date does not invalidate all earlier physics, and an old successful test does not prove a changed apparatus.
+
+Keep an original explanation and derivation in these Records, with authorized external readings and specific continuations. A freely readable book, an openly licensed book, a commercial text and an open-source solver have different access/reuse conditions. Sources and ordinary references support exploration while the selected learning assertions delimit this route. Share generic mathematical, computational and metrological knowledge through existing Records so that later power, electronics and manufacturing subjects can reuse it without duplicating or hiding their foundations.
+
+**Continue:** [A complete practical and academic programme](../study/A-complete-practical-and-academic-programme.lingua#r_4XEMVM6SXP5T369FTCJ14H53YX).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_5XFHFENEPD49TNR8MNAEEFXWHA

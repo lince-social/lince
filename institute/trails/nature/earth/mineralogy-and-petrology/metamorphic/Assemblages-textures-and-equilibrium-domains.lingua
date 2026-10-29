@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Define a metamorphic assemblage through spatial and temporal relationships (@mp-assemblages: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #mineralogy-and-petrology "Facies-protolith-and-metamorphic-classification.lingua#r_0GDYP376EMTYS89VYE9BFH5AR7") { r_329FT3EHXC5DZT6P5THMYDCREY
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the full metamorphic texture and assemblage notes; [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the complete equilibrium/domain interpretation review; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full reaction, inclusion, fabric, and deformation observation sections.
+
+A rock can contain inherited, peak, retrograde, metasomatic, or disequilibrium phases together. A list of every mineral in the section is not automatically an equilibrium assemblage. Identify which domains and textural relationships support coexistence during the event being investigated.
+
+Grain boundaries, inclusions, reaction rims, coronas, foliations, pseudomorphs, zoning, and cross-cutting features constrain different stages. The presence of a phase inside a host can reflect a relative relation but may not establish unchanged peak composition. Several reactions and deformation events can overlap within one specimen.
+
+Choose the chemical/physical domain represented by a phase calculation. An equilibrium approximation can be locally useful even when the entire rock did not equilibrate uniformly. Conversely, selecting a convenient small domain does not justify ignoring component exchange or incompatible textures.
+
+**Work:** describe a complete published or teaching metamorphic section before assigning pressure/temperature. Separate candidate assemblages and stages, explain the evidence for their relationships, and construct an alternative sequence. Identify what additional chemical mapping, structural, or chronological observation could distinguish the accounts.
+
+Read the entire metamorphic texture and equilibrium-domain treatment. The following facies/reaction/calculation work depends on this context; sophisticated minimization cannot compensate for combining minerals that never shared the equilibrium event being inferred.
+
+**Continue:** [Use facies and rock names without assigning a universal pressure-temperature point](Facies-protolith-and-metamorphic-classification.lingua#r_0GDYP376EMTYS89VYE9BFH5AR7).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_329FT3EHXC5DZT6P5THMYDCREY

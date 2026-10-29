@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Explain coordination, color, magnetism, and metal speciation (@gc-transition: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "Carbon-structure-and-functional-groups.lingua#r_38833EZY8VJXQ3VJKMCWFTWJSV") { r_626J6NPKQF5BAM5EDFSN37RMTN
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 19 in full; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), lectures 29–33 and 35; [Nomenclature of Inorganic Chemistry — IUPAC Red Book and brief guide](../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J), the relevant complete coordination-nomenclature chapters; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), complexation examples revisited.
+
+Transition-metal chemistry connects electronic states, oxidation-state accounts, ligands, geometry, and chemical environment. Identify the actual coordination entity, counterions, ligand charge/denticity, and formula before interpreting a name or an assay. Coordination number and oxidation state describe different quantities.
+
+Crystal/ligand-field and molecular-orbital models help explain splitting, occupation, color, and magnetic behavior under assumptions. Geometric isomers and spin-state alternatives can have different properties even with closely related formulas. Observations such as spectra or magnetic response constrain a proposed description rather than following from a naming rule alone.
+
+Complex formation, ligand substitution, electron transfer, and precipitation can couple. A thermodynamically favored complex can exchange ligands slowly; “stable” therefore needs a stated thermodynamic or kinetic meaning. An elemental concentration does not specify every oxidation state or coordination species present.
+
+**Work:** name and analyze several textbook coordination entities, checking charge and electron/ligand accounts. Use a field model to predict a qualitative magnetic or spectral feature and compare with identified evidence. Derive a simple equilibrium speciation account and distinguish it from a substitution-rate argument.
+
+Read the full transition/coordination chapter, the relevant Red Book material, and MIT 5.112's complete coordination sequence. Later inorganic chemistry, catalysis, metallurgy, biological chemistry, and analytical methods will deepen their unique systems. Keep the common structural and equilibrium reasoning reusable across them.
+
+**Continue:** [Recognize carbon structures, isomers, and functional-group questions](Carbon-structure-and-functional-groups.lingua#r_38833EZY8VJXQ3VJKMCWFTWJSV).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_626J6NPKQF5BAM5EDFSN37RMTN

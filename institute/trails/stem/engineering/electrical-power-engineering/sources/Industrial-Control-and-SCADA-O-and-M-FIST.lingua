@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Industrial control and SCADA operation/maintenance — FIST 3-33 (@pe-fist-scada: 0, is #reference, #part-of @pe-sources) { r_1REAMQSK7H73C2DY277VJW2ZTB
+U.S. Bureau of Reclamation. Industrial Control Systems Including Supervisory Control and Data Acquisition Systems Operations and Maintenance, FIST 3-33, August 2018. [Official catalogue and complete linked manual](https://www.usbr.gov/power/data/fist_pub.html).
+
+Read the whole applicable manual for the control/communication system supporting a power facility: models, equipment interfaces, operations, changes, maintenance and retained evidence. Compare its functions with physical protection, local autonomous control and supervisory dispatch. Document what still operates when communication or a central server fails.
+
+Primary catalogue title/date were checked on 29 October 2026; complete-page inspection is not claimed. The document is a dated institutional account, not current universal cybersecurity guidance. Compare newer primary OT-security guidance and actual equipment/vendor information. Preserve revision and component notices. No control-system configuration, internal network information, software or manual is copied here; studies use authorized public cases or suitable local educational systems.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_1REAMQSK7H73C2DY277VJW2ZTB

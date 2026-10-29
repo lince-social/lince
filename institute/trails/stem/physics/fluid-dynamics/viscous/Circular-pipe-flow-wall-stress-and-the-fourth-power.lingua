@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Circular pipe flow, wall stress and the fourth power (@fd-poiseuille: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Starting-oscillating-and-pulsatile-viscous-flow.lingua#r_5R7D7KW6HKKQPJ88VM9TDX3E2N") { r_2YEKAMXH5749FPWMEQDTZGBGFN
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), complete internal laminar-flow treatment; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 3 pipe flow; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), differential conservation and cylindrical coordinates.
+
+For steady, axisymmetric, fully developed Newtonian flow in a straight circular pipe of radius R, u(r)=G(R²−r²)/(4μ), where G is the positive pressure drop per length after accounting for gravity. The volume flow is Q=πG R⁴/(8μ), the mean speed is G R²/(8μ), and the centreline speed is twice the mean. The wall-shear magnitude is G R/2.
+
+Derive these results from the cylindrical momentum balance, including regularity at r=0 and no slip at r=R. Define the Darcy friction factor by Δp=f_D(L/D)ρU²/2; the solution gives f_D=64/Re with Re=ρUD/μ. The Fanning factor is one quarter of the Darcy factor. A reported factor without its definition is insufficient to reproduce a pressure drop.
+
+At prescribed pressure drop, doubling radius multiplies this ideal laminar flow by sixteen. It also changes Reynolds number, so the same regime need not persist. At prescribed flow, a small radius error strongly affects inferred viscosity or pressure drop. Propagate dimensional uncertainty and check entrance length, temperature and fittings before interpreting a physical capillary as this model.
+
+**Continue:** [Starting, oscillating and pulsatile viscous flow](Starting-oscillating-and-pulsatile-viscous-flow.lingua#r_5R7D7KW6HKKQPJ88VM9TDX3E2N).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2YEKAMXH5749FPWMEQDTZGBGFN

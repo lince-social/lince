@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Publish a geological map whose evidence, identities, and revisions can be followed (@geo-map-data: 0, is #chapter, #part-of @geology, #source "../sources/GeMS-Map-Schema.lingua#r_6JP32YH79HZAV8JYYKVV1WER0J", #source "../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK", #source "../sources/QGIS-Training-Manual.lingua#r_65XJEHNY3P1ESW5KF5V0871SFQ", #source "../sources/Geologic-Map-Symbolization.lingua#r_7DHXSTN5K3KF1EPTPG18RM5K1K", #geology "Geological-models-uncertainty-and-independent-tests.lingua#r_5CM8MEVHEFDCX3H9YZ0S60FRPR") { r_0YXQJE013HS4Y1978966K3352W
+**Read:** [GeMS — Geologic Map Schema — USGS](../sources/GeMS-Map-Schema.lingua#r_6JP32YH79HZAV8JYYKVV1WER0J), the complete specification; [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK), the complete guide; [QGIS Training Manual — QGIS project](../sources/QGIS-Training-Manual.lingua#r_65XJEHNY3P1ESW5KF5V0871SFQ), the full basic/vector/raster/layout/projection/analysis training sequence and relevant processing logs; [Digital Cartographic Standard for Geologic Map Symbolization — FGDC/USGS](../sources/Geologic-Map-Symbolization.lingua#r_7DHXSTN5K3KF1EPTPG18RM5K1K), all conventions used in the original map.
+
+A geological publication should preserve observation locations, methods, map units, contacts, orientations, sections, source references, and the distinction between measured and interpreted elements. Coordinates and persistent observation/sample identities connect these parts. A visually complete layout cannot compensate for missing provenance or contradictory unit relations.
+
+Study GeMS as a specification for representing geological maps, not as proof that a dataset is geologically correct. Compare its observations, descriptions, map units, confidence, and references with the chosen regional method. Schema validation and substantive geological review answer different questions.
+
+Use GIS with explicit coordinate systems, transformations, scale, source dates, processing steps, and versions. Record original observations separately from edits and derived geometry. A later revised interpretation should remain connected to the evidence and the earlier explanation rather than overwriting their identity.
+
+**Work:** complete the QGIS training modules and publish an original small interpretive map/section in your own study workspace. Include a readable legend, evidence/source account, coordinate reference, scale, observed/inferred distinctions, and uncertainty. Reopen it in a fresh workspace and independently check selected coordinates, orientations, contacts, and unit relationships. Compare its content with the full GeMS specification and SGB guide, explaining differences in purpose.
+
+Keep original field data and licensed external source maps distinct. The Lince trail only references these studies and sources through ordinary Records; it does not require a new map importer, a publication manifest, or a bundled GIS/data service.
+
+**Continue:** [Test a geological interpretation beyond goodness of fit](Geological-models-uncertainty-and-independent-tests.lingua#r_5CM8MEVHEFDCX3H9YZ0S60FRPR).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_0YXQJE013HS4Y1978966K3352W

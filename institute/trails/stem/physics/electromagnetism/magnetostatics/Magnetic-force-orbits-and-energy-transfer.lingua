@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Magnetic force, orbits and energy transfer (@em-magnetic-force: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Biot-Savart-fields-of-steady-currents.lingua#r_2K157JSDFF7RY1VAPJKJ82VKFA") { r_34G06XMD2AYC7EC9ADQQNQFA0R
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 11 in full; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), Lorentz force and charged motion.
+
+The Lorentz force is q(E + v×B). The magnetic contribution is perpendicular to velocity, so it does no instantaneous work on an isolated point charge: v·(qv×B) = 0. It can change trajectory while electric fields or collisions exchange kinetic energy. A magnetic device can transfer mechanical energy without contradicting this particle-level result.
+
+For nonrelativistic motion perpendicular to uniform B, derive radius mv/(|q|B) and angular frequency |q|B/m. Add a parallel velocity component to obtain a helix, then identify the assumptions of negligible radiation reaction and uniform fields. A crossed-field velocity selector has an undeflected velocity set by force cancellation, with direction as well as magnitude specified.
+
+Derive the force on a current-carrying straight segment only from an appropriate distribution of moving charges, and retain the mechanical supports and return conductor. Compare laboratory and moving frames without assuming a wire's charge density is the same in both. Relativity later unifies electric and magnetic descriptions. A classical orbit is not a model of a stable atomic electron state.
+
+**Continue:** [Biot–Savart fields of steady currents](Biot-Savart-fields-of-steady-currents.lingua#r_2K157JSDFF7RY1VAPJKJ82VKFA).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_34G06XMD2AYC7EC9ADQQNQFA0R

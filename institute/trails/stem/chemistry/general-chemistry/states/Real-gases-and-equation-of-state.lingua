@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Check gas nonideality instead of extending the ideal law by habit (@gc-realgas: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #general-chemistry "Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S") { r_018876A9YYB1MX6CGYXB1KAZ2N
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 9’s real-gas treatment; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the complete real-gas lesson; [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP), guide and the chosen thermophysical-property source.
+
+The compressibility factor Z = pV_m/(RT) compares a molar volume with an ideal-gas prediction under stated conditions. Values different from one reflect departures from that model. They do not by themselves identify one unique interaction potential or justify a particular empirical equation of state.
+
+Read how finite molecular size and attractions enter simple real-gas models. A van der Waals equation is instructive for competing effects and qualitative phase behavior, but its accuracy is condition- and species-dependent. Virial expansions and evaluated equations of state have their own parameter ranges, reference data, and limitations.
+
+For amount or density calculations, identify the equation/data source, composition, temperature, pressure, units, and uncertainty. A coefficient copied from one unit convention into another can produce a plausible but wrong result. Near condensation or a critical region, departures can be substantial and numerical/physical branch selection matters.
+
+**Work:** compare ideal and one identified real-gas prediction for a species at several stated conditions using authorized data. Plot Z and explain the validity range of the model. Independently check a low-pressure limit, a unit conversion, and the root-selection rule if solving a nonlinear state relation.
+
+Use [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP) for a focused property consultation and preserve its underlying references. This general foundation prepares a reader for industrial gases, vacuum, compression, and reaction equilibria without replacing the deeper thermodynamics and engineering needed to design those systems.
+
+**Continue:** [Interpret vapor pressure, phase change, and a phase diagram](Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_018876A9YYB1MX6CGYXB1KAZ2N

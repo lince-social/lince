@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Water-flow calibration — NIST SP 250-98 (@fd-flow-standard: 0, is #reference, #part-of @fd-sources) { r_0PB8TSYF24VJ8QVCE1DP7SVY05
+Jodie G. Pope and colleagues. Liquid Flow Meter Calibrations with NIST's 15 kg/s Water Flow Standard, NIST SP 250-98, 15 June 2021. [Publication and complete report](https://www.nist.gov/publications/liquid-flow-meter-calibrations-nists-15-kgs-water-flow-standard). DOI 10.6028/NIST.SP.250-98.
+
+Read the whole measurement model, uncertainty account, supporting measurements and example report. Reconstruct dynamic gravimetric flow from the rate of collected mass and the corrections relating it to the meter's conditions. Separate the standard's uncertainty from the meter's reproducibility and the installed system's uncertainty.
+
+The described facility covers 0.22–15 kg/s. Its quoted performance belongs to that realized standard and conditions; it cannot be assigned to a reader's apparatus. Public NIST technical text and credited third-party components retain their applicable notices. Use it with shared metrology rather than as a substitute for an actual calibration.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_0PB8TSYF24VJ8QVCE1DP7SVY05

@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Connect silicon chemistry with the difference between a material and a device (@gc-silicon: 0, is #chapter, #part-of @general-chemistry, #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Mineral-Commodities-USGS.lingua#r_1MSRN5WRD5DQT6Y6B7SDYZ8KWW", #general-chemistry "Water-chemistry-and-purpose-specific-quality.lingua#r_4KTZB3C20MY7CC4ZKG7ZS3B2AG") { r_6CYS8V4BW9720F3X8134GYZR3Y
+**Read:** [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), Lecture 34 and its bonding prerequisites; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), silicon/solid-state/descriptive material and the relevant quantitative chapters; [Mineral Commodity Summaries 2026 and silicon information — USGS](../sources/Mineral-Commodities-USGS.lingua#r_1MSRN5WRD5DQT6Y6B7SDYZ8KWW), the silicon commodity account and its definitions.
+
+Silicon in silica/silicates, elemental silicon, a silicon alloy, a silicone polymer, and a semiconductor structure have different chemical identities and roles. Preserve these distinctions before reading a production or supply statistic. A bulk element amount does not specify electronic-grade purity, crystal quality, composition profile, surface state, or device function.
+
+Use an ideal overall SiO₂ + 2C → Si + 2CO equation as a stoichiometric teaching account, checking elements and oxidation states. It does not supply a full industrial mechanism, energy requirement, side-reaction/phase model, equipment design, or procedure. Those need actual process evidence and the deeper specialist trails.
+
+Bonding, extended electronic states, defects, impurities, interfaces, reaction/selectivity, gases, purification, and measurement connect this material with technology. A small concentration can be desirable as an intentionally controlled constituent or undesirable as contamination, depending on identity, distribution, and intended function. “More pure” alone is an incomplete device-quality specification.
+
+**Work:** combine MIT's metals/semiconductors lecture with identified general-chemistry and commodity sources to explain a conceptual silica-to-element-to-controlled-material progression. Derive a labelled hypothetical component balance and identify what each proposed measurement establishes. Distinguish elemental assay, chemical speciation, structure, electrical response, and manufacturing conformance.
+
+The resulting explanation should connect chemistry with geology, refining, industrial gases, energy, materials, clean manufacturing, and device physics. Semiconductor fabrication and its supporting infrastructure remain substantial specialist studies; this general foundation supplies the shared chemical concepts needed to understand their questions.
+
+**Continue:** [Define water quality through species, use, and a measurement chain](Water-chemistry-and-purpose-specific-quality.lingua#r_4KTZB3C20MY7CC4ZKG7ZS3B2AG).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_6CYS8V4BW9720F3X8134GYZR3Y

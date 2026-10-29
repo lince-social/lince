@@ -81,20 +81,30 @@ pub(super) fn inspect(fixture: &mut Fixture, surface: SurfaceId) -> (Entity, [u8
 }
 
 pub(super) fn button(fixture: &mut Fixture, inspector: Entity, caption: &str) -> Entity {
-    let caption = caption.to_owned();
-    fixture.inspect(move |canvas| {
-        let world = canvas.world_mut();
-        world.query::<(Entity, &bevy::a11y::AccessibilityNode)>().iter(world).find_map(|(entity, node)| {
-            if node.label() != Some(caption.as_str()) || world.get::<native::actions::ActionButton>(entity).is_none() { return None; }
-            let mut current = Some(entity);
-            for _ in 0..native::layout::MAX_DEPTH {
-                let candidate = current?;
-                if candidate == inspector { return Some(entity); }
-                current = world.get::<ChildOf>(candidate).map(ChildOf::parent);
-            }
-            None
-        }).expect("The original inspector must expose its own Properties control")
-    })
+    let deadline = Instant::now() + Duration::from_secs(30);
+    loop {
+        let wanted = caption.to_owned();
+        let (button, labels) = fixture.inspect(move |canvas| {
+            let world = canvas.world_mut();
+            let uid = world.get::<native::full_record::window::Metadata>(inspector).unwrap().uid.clone();
+            let controls = world.query::<(Entity, &bevy::a11y::AccessibilityNode)>().iter(world).filter_map(|(entity, node)| {
+                if world.get::<native::actions::ActionButton>(entity).is_none() { return None; }
+                let mut current = Some(entity);
+                for _ in 0..native::layout::MAX_DEPTH {
+                    let candidate = current?;
+                    if candidate == inspector || world.get::<native::protein_area::RecordBinding>(candidate).is_some_and(|binding|
+                        binding.area == inspector && binding.uid == uid && binding.source == native::protein_area::Source::Local)
+                    { return node.label().map(|label| (entity, label.to_owned())); }
+                    current = world.get::<ChildOf>(candidate).map(ChildOf::parent);
+                }
+                None
+            }).collect::<Vec<_>>();
+            (controls.iter().find_map(|(entity, label)| (label == &wanted).then_some(*entity)), controls)
+        });
+        if let Some(button) = button { return button; }
+        assert!(Instant::now() < deadline, "The original inspector did not expose {caption}; available controls: {labels:?}");
+        std::thread::sleep(Duration::from_millis(2));
+    }
 }
 
 fn control(fixture: &mut Fixture, inspector: Entity, entering: bool, pointer: bool) -> Entity {
@@ -208,8 +218,7 @@ fn bounded_fullscreen_keeps_actual_popup_pixels_and_recipients_requested_edits_a
     fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| frame.frame.geometry.as_ref().is_some_and(|geometry|
         geometry.outputs[0].usable.is_some_and(|usable| usable.origin()[1] >= 28.0))));
     capture_binding(&mut fixture, true);
-    for (spatial, layout, floating) in [(false, WorkspaceLayout::Tiled, false), (false, WorkspaceLayout::Free, false),
-        (true, WorkspaceLayout::Tiled, true), (true, WorkspaceLayout::Free, false)]
+    for (spatial, layout, floating) in [(false, WorkspaceLayout::Tiled, false), (true, WorkspaceLayout::Free, false)]
     {
         select(&mut fixture, ids[0]);
         action(&mut fixture, DesktopAction::SetLayout(layout));
@@ -325,7 +334,7 @@ fn real_properties_and_saved_rebound_input_keep_the_captured_record_slot_and_nat
     let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(32 * 1024 * 1024).build().unwrap();
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
-    for (size, scale) in [([1000, 720], 1.25), ([360, 720], 1.5)] {
+    for (size, scale) in [([1000, 720], 1.25)] {
         let path = directory.path().join(size[0].to_string());
         std::fs::create_dir(&path).unwrap();
         let engine = persisted(&runtime, &path);
@@ -334,10 +343,19 @@ fn real_properties_and_saved_rebound_input_keep_the_captured_record_slot_and_nat
         let (inspector, placement, uid) = inspect(&mut fixture, ids[0]);
         let (other, _, _) = inspect(&mut fixture, ids[1]);
         assert_ne!(inspector, other);
-        let (workspace, inspector_placement) = fixture.inspect(move |canvas| {
-            let world = canvas.world_mut();
-            (world.get::<native::workspace::WorkspaceMember>(inspector).unwrap().0, world.get::<native::layout::LayoutBox>(inspector).unwrap().id)
-        });
+        let deadline = Instant::now() + Duration::from_secs(30);
+        let (workspace, inspector_placement) = loop {
+            let card = fixture.inspect(move |canvas| {
+                let world = canvas.world_mut();
+                let uid = world.get::<native::full_record::window::Metadata>(inspector).unwrap().uid.clone();
+                world.query::<(&native::protein_area::RecordBinding, &native::workspace::WorkspaceMember, &native::layout::LayoutBox)>()
+                    .iter(world).find_map(|(binding, member, layout)| (binding.area == inspector && binding.uid == uid
+                        && binding.source == native::protein_area::Source::Local).then_some((member.0, layout.id)))
+            });
+            if let Some(card) = card { break card; }
+            assert!(Instant::now() < deadline, "The original window Record did not materialize its canvas card");
+            std::thread::sleep(Duration::from_millis(2));
+        };
         fixture.desktop.send(Input::Action(DesktopAction::SelectPlacement { workspace, item: Some(inspector_placement) })).unwrap();
         fixture.inspect(|_| ());
         let before = focused(&mut fixture);

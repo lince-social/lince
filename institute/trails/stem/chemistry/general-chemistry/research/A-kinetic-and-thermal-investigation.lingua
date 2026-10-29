@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Advanced project — infer a kinetic model from chemical and measurement evidence (@gc-kinetics-project: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #general-chemistry "A-material-chain-investigation.lingua#r_6SFGRF77RYT053P9K1XNMQP37V") { r_71VHHPY63F3DGW1PJ5K8HDSYQB
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 12 completely revisited; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the whole kinetics unit and experimental discussion; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 13 and the relevant method/uncertainty context; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the complete applicable activities.
+
+Investigate a reaction or transformation with authorized published observations or an appropriate supervised experimental study. Define the species and signal relation, boundary/volume, temperature, initial conditions, sampling, and possible competing reactions or transport. Derive candidate rate/observation models before fitting.
+
+Read the complete kinetics sources and the relevant analytical/laboratory method. Build original hypothetical benchmark data only to validate the inference algorithm, explicitly separating it from real evidence. Check parameter recovery in a known case, observation noise, baseline/calibration, time response, and numerical approximation. Then analyze the actual observations without editing inconvenient points into agreement.
+
+Compare at least two chemically plausible explanations using residuals, independent conditions or predictions, uncertainty, and identifiability. Examine concentration, temperature, catalyst, mixing, or geometry where the question warrants it. Distinguish a fitted apparent activation parameter from a claimed elementary mechanism. Include an energy/thermal model if temperature changes during the observation.
+
+**Produce:** mathematical derivations, traceable data and constants, reproducible code/configuration, independent benchmarks, parameter and model-sensitivity evidence, a practical resource account, and a report whose conclusion matches the observations. Preserve negative results and explain whether a discrepancy concerns measurement, calculation, or chemistry.
+
+Seek criticism from a reader capable of questioning the chemical interpretation as well as the computation. Revise the study with evidence. The later specialist kinetics/catalysis and chemical-engineering trails deepen their unique theory and apparatus; this general-chemistry project should already demand a substantial independent argument rather than one fitted straight line.
+
+**Continue:** [Advanced project — trace one material’s chemical and physical production requirements](A-material-chain-investigation.lingua#r_6SFGRF77RYT053P9K1XNMQP37V).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_71VHHPY63F3DGW1PJ5K8HDSYQB

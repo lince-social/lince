@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Water quantities, units and English–Portuguese language (@wu-quantities: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #source "../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE", #water-and-sanitation "Water-quality-is-related-to-a-use-and-a-place.lingua#r_3WKPW5Q04M3S2KF8EPB2K0FTDK") { r_6TB0A6YZ5C8E890HQ1BYSFE0F3
+**Read:** [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), chapter 2, flow and loading; [Manual de Saneamento — Funasa, fifth edition](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), water and sewerage vocabulary in chapters 3–4.
+
+Distinguish volume/volume, flow rate/vazão, pressure/pressão, head/carga hidráulica, concentration/concentração and load/carga de massa. A tank stores a volume; a pipe carries volume per time; a chemical load crosses a boundary as mass per time. State whether a concentration refers to dissolved material, total material, a named element or an analytical equivalent.
+
+For dilute water expressed as Q in m³/day and C in mg/L, the transported load is 0.001 QC kg/day. A flow of 2500 m³/day carrying 8 mg/L therefore transports 20 kg/day. This conversion is dimensional arithmetic, not a claim that the constituent behaves conservatively. A reading in µg/L differs by a factor of one thousand from the same number in mg/L.
+
+Make a bilingual drawing that labels raw water/água bruta, treated water/água tratada, drinking water/água potável, sewage/esgoto sanitário, effluent/efluente, sludge/lodo and reuse/reúso. Potability describes suitability under applicable health requirements; treatment describes processes that have occurred. One word does not establish the other.
+
+**Continue:** [Water quality is related to a use and a place](Water-quality-is-related-to-a-use-and-a-place.lingua#r_3WKPW5Q04M3S2KF8EPB2K0FTDK).
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+} r_6TB0A6YZ5C8E890HQ1BYSFE0F3

@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Compare the reserve that can bridge an outage with the work needed to restore supply (@cs-continuity-window: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #source "../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D", #chemical-supply-systems "An-inspectable-two-source-reservation-under-disruption.lingua#r_6PEV0QE2D79GFD3EFVD6X5B84D") { r_5XFMY0T36NG3KX9SZGGB44A1A9
+**Read:** [Supply Chain Resilience: Guide for Water and Wastewater Utilities — EPA](../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F), the entire supplier, partnership and operational-flexibility guide; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), complete inventory/service and lead-time teaching; [Good storage and distribution practices for medical products — WHO](../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D), the complete storage/status and rotation sections.
+
+Start with a declared usable reserve and a demand trajectory. For constant demand d and accessible reserve s, the simple reserve time s/d holds only while grade, condition and delivery equipment remain suitable. Include pending release, minimum tank contents, expiry, peak demand and shared equipment before applying it to an actual chemical user.
+
+Describe restoration as work over time: diagnose the cause, obtain material/equipment, repair or qualify the route, transport, receive, analyse and release. A repaired producer is not necessarily the same as a restored supply at the user's operation. Some tasks overlap and some depend on the outcome of others.
+
+For a transparent case, 60 usable tonnes at 10 tonnes/day gives six days before the simple quantity is exhausted. If effective replacement is available after eight days, the model has a 20-tonne requirement not covered by that reserve. Then add a one-day release delay, a variable operating schedule and a partial alternative supply. Compare stock, demand management, qualified alternatives and shortening restoration work. Report physical service loss separately from monetary consequences and state where real observations are needed. The advanced continuity study should defend the chronology and its uncertainty, not merely quote a reserve number.
+
+**Continue:** [Optimise a small supply reservation with explicit joint disruption states](An-inspectable-two-source-reservation-under-disruption.lingua#r_6PEV0QE2D79GFD3EFVD6X5B84D).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_5XFMY0T36NG3KX9SZGGB44A1A9

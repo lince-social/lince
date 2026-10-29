@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Make a release decision with an explicit uncertainty and consequence (@cs-release: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA", #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D", #chemical-supply-systems "../traceability/Lots-stream-intervals-blending-splitting-and-repacking.lingua#r_02433VTTSE10EK51S7YEJ9KJ5Y") { r_26JB8E5GXQDGWZJ406RDA6T14N
+**Read:** [Validation of Measurement Procedures that Include Sampling — Eurachem](../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA), the complete fitness-for-purpose, uncertainty and quality-control discussion; [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the complete nonconforming, returned-goods and documentation sections; [Good storage and distribution practices for medical products — WHO](../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D), the complete relevant release/rotation and quality sections.
+
+After the shared conformity Record, separate the material's physical presence from its disposition. An acceptance decision concerns a specified target and requirement with finite evidence. Quarantined, rejected, expired, returned and conditionally accepted materials need distinct inventory states so that a planning model does not silently allocate them as usable feed.
+
+For one impurity limit, compare a measured value with its stated uncertainty and a declared decision rule. Explain the tradeoff between accepting an unsuitable material and rejecting suitable material; do not turn a reporting threshold into certainty. Then consider identity, packaging or history requirements that cannot be reduced to that single numerical test.
+
+Develop three receiving cases: a conforming result with complete identification, a borderline result and an apparently good result with broken sample/lot linkage. State what each case establishes and what further work would resolve the uncertainty. Include the time and resources for re-sampling, technical review or returning material. A technical release should retain its basis and authorised purpose. Later changes in grade, analytical evidence or intended use can require re-evaluation even when the physical stock has not moved.
+
+**Continue:** [Preserve the genealogy of material that is split, blended or repacked](../traceability/Lots-stream-intervals-blending-splitting-and-repacking.lingua#r_02433VTTSE10EK51S7YEJ9KJ5Y).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_26JB8E5GXQDGWZJ406RDA6T14N

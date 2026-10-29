@@ -1,0 +1,56 @@
+Import "../Electromagnetism.lingua"
+
+An inspectable lossless dielectric stack (@em-layer-example: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ", #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #electromagnetism "../transmission/Waveguide-modes-cutoff-and-field-boundaries.lingua#r_3G14MTZDHF8SK3T0BEFQ8HPFP3") { r_2B5TPEKP76WN8CJ5EE31FVREY8
+**Read:** [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ), complete layered-wave method; [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), normal-incidence amplitudes and powers.
+
+This original normalized example computes normal-incidence electric-field reflection/transmission through up to eight nonmagnetic, lossless, homogeneous dielectric layers. Index, thickness and frequency are bounded positive/nonnegative real inputs. With exp(−iωt), forward propagation has exp(+ikz). The matrix maps right-boundary fields back to the left; composition follows the physical layer order.
+
+Use normalized vacuum speed 1 and thickness/frequency scales whose product is dimensionless. The zero-frequency input is a mathematical limiting check of this harmonic formulation, not a claim that static electric/magnetic powers propagate as a zero-frequency plane wave.
+
+```python file=dielectric_stack.py
+import json
+import math
+
+def bounded(value, low, high):
+    if type(value) not in (int, float) or not low <= value <= high:
+        raise ValueError("finite real value outside declared bounds")
+    return float(value)
+
+def stack(n0, ns, layers, frequency):
+    n0 = bounded(n0, 1.0, 4.0)
+    ns = bounded(ns, 1.0, 4.0)
+    frequency = bounded(frequency, 0.0, 4.0)
+    if not isinstance(layers, (list, tuple)) or len(layers) > 8:
+        raise ValueError("zero to eight layers required")
+    matrix = ((1.0 + 0j, 0j), (0j, 1.0 + 0j))
+    for layer in layers:
+        if not isinstance(layer, (list, tuple)) or len(layer) != 2:
+            raise ValueError("each layer requires index and thickness")
+        index = bounded(layer[0], 1.0, 4.0)
+        thickness = bounded(layer[1], 0.0, 4.0)
+        phase = 2.0 * math.pi * frequency * index * thickness
+        cosine, sine = math.cos(phase), math.sin(phase)
+        transfer = ((cosine, -1j * sine / index), (-1j * index * sine, cosine))
+        matrix = tuple(tuple(sum(matrix[i][k] * transfer[k][j] for k in range(2)) for j in range(2)) for i in range(2))
+    a = matrix[0][0] + ns * matrix[0][1]
+    b = matrix[1][0] + ns * matrix[1][1]
+    denominator = n0 * a + b
+    reflection = (n0 * a - b) / denominator
+    transmission = 2.0 * n0 / denominator
+    reflected = abs(reflection) ** 2
+    transmitted = ns / n0 * abs(transmission) ** 2
+    return {"r": reflection, "t": transmission, "R": reflected, "T": transmitted, "closure": reflected + transmitted - 1.0}
+
+if __name__ == "__main__":
+    result = stack(1.0, 2.25, ((1.5, 1.0 / 6.0),), 1.0)
+    print(json.dumps({key: [value.real, value.imag] if isinstance(value, complex) else value for key, value in result.items()}, sort_keys=True, allow_nan=False))
+```
+
+The default quarter-wave layer has r approximately zero, t approximately (2/3)i and T approximately 1. The bare 1-to-1.5 interface gives R = 0.04 and T = 0.96. Do not clip conservation residuals before inspecting them.
+
+Verify with an independent right-to-left Fresnel scattering recursion, zero/half-wave and index-matched limits, energy conservation, reversed-stack transmission reciprocity and compensating frequency/thickness scaling. This bounded transfer method is not offered as a numerically robust solver for arbitrarily thick absorbing or evanescent stacks. Those require appropriate scattering formulations, actual dispersion and more general boundary conditions.
+
+**Continue:** [Waveguide modes, cutoff and field boundaries](../transmission/Waveguide-modes-cutoff-and-field-boundaries.lingua#r_3G14MTZDHF8SK3T0BEFQ8HPFP3).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_2B5TPEKP76WN8CJ5EE31FVREY8

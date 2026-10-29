@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced creeping-flow, reciprocity and confinement study (@fd-advanced-creeping: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "Advanced-lubrication-coating-and-contact-line-study.lingua#r_513PA04VA1YKK29DVXBJM363VB") { r_7DYBFCG2MSETSKYGRJ6X853P7X
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), complete Stokes-flow and swimming sections; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), complete slow-flow notes for the selected problem; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), low-Reynolds-number consequences.
+
+Derive the Stokes solution and drag for a translating sphere, then formulate a reciprocal-theorem calculation for a second motion or force. Account for fluid dissipation and demonstrate how changing the imposed motion reverses the ideal response. Identify the domain in which neglected inertia remains small, including the far field.
+
+Add a physical complication such as a nearby wall, two interacting bodies or a nonspherical particle. Use a controlled analytical approximation or independently verified numerical method, then compare a force or settling observation with documented geometry and fluid state. Separate wall correction, particle size/shape uncertainty and viscosity uncertainty.
+
+Defend which aspects of the unbounded solution survive. For a locomotion extension, analyze a nonreciprocal sequence of shape changes and compare it with a reciprocal one; state what kinematic and hydrodynamic assumptions are necessary. The result should explain a mechanism through equations and evidence, not only reproduce the familiar drag formula.
+
+**Continue:** [Advanced lubrication, coating and contact-line study](Advanced-lubrication-coating-and-contact-line-study.lingua#r_513PA04VA1YKK29DVXBJM363VB).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7DYBFCG2MSETSKYGRJ6X853P7X

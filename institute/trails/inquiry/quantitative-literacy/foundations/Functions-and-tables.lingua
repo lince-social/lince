@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Functions, tables, domains, and inverse questions (@ql-functions: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-algebra, #quantitative-literacy "Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2") { r_0F4KMKK6ET8T22RG617S1RDZS2
+**Read:** Algebra and Trigonometry 2e chapters 3–4 completely. Include domain and range, transformations, composition, inverses, and linear models. Use the chapter reviews to move between a verbal description, table, equation, and graph.
+
+A function specifies one output for each input within a stated domain. The model y = ax + b contains a slope and offset; a nonzero offset means the model is not proportional. Its domain may be restricted by the experiment or by physics. A fitted straight line outside the observed range is an extrapolation, not a new observation.
+
+Suppose a teaching sensor reads 0.2 V at 0 units and 4.2 V at 100 units. A linear conversion is x = 25(V − 0.2 V) in the corresponding numerical-unit convention. State the resulting units explicitly and verify both endpoints. This calculation does not establish linearity between them, temperature stability, resolution, or calibration traceability.
+
+An inverse question asks which input could produce an observed output. A saturating sensor may map several inputs to the same displayed maximum. Then the inverse is not uniquely determined by that reading. A tabulated relation also needs its interpolation rule, conditions, and valid interval.
+
+**Work:** produce tables and graphs for a proportional conversion, an offset conversion, and a capacity-limited process. Write their domains, identify where an inverse exists, and show a misleading extrapolation. Compare a verbal unit statement with the symbols in the formula. Keep the distinction between a definition, a physical law, and an empirical fit visible in the accompanying explanation.
+
+**Continue:** [Read graphs, interpolate, and question a visual claim](Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_0F4KMKK6ET8T22RG617S1RDZS2

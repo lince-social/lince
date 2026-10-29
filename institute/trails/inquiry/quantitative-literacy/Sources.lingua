@@ -1,0 +1,37 @@
+Import "Quantitative-literacy.lingua"
+Import "sources/Math-for-Trades-1.lingua"
+Import "sources/Math-for-Trades-2.lingua"
+Import "sources/Math-for-Trades-3.lingua"
+Import "sources/Prealgebra.lingua"
+Import "sources/Algebra-and-Trigonometry.lingua"
+Import "sources/SI-Brochure.lingua"
+Import "sources/Blueprint-Reading.lingua"
+Import "sources/Art-of-Insight.lingua"
+Import "sources/Street-Fighting-Mathematics.lingua"
+Import "sources/Measurement-Vocabulary.lingua"
+Import "sources/Uncertainty-Guides.lingua"
+Import "sources/Data-Organization.lingua"
+
+Quantitative literacy sources — books, standards, and articles (@ql-sources: 0, is #chapter, #part-of @quantitative-literacy) { r_7MMXWNA1B4YGA271KMHPPJEK9Q
+The reading spine uses complete technical-mathematics books, then drawing, unit, measurement, and modelling references. Each source Record identifies author, edition, language, assigned scope, authorized access, and known reuse terms. English readings are complemented by Portuguese SI and metrology vocabulary.
+
+- [Math for Trades, Volume 1 — Flinn and Overgaard](sources/Math-for-Trades-1.lingua#r_6Y3242WPAXXCT6D8WY7Q312DQ0).
+- [Math for Trades, Volume 2 — Flinn and Overgaard](sources/Math-for-Trades-2.lingua#r_1ZNA6BX80YPB0DAYSAED5F6E9X).
+- [Math for Trades, Volume 3 — Overgaard and Flinn](sources/Math-for-Trades-3.lingua#r_6KYSHDH6J34JT1PY43V5SYW30Q).
+- [Prealgebra 2e — Marecek, Anthony-Smith, and Mathis](sources/Prealgebra.lingua#r_36KCS76R5ZTWZMVPV5B11Y3BKS).
+- [Algebra and Trigonometry 2e — Abramson and contributors](sources/Algebra-and-Trigonometry.lingua#r_7FKH7S2VNZT97STHJ10KB186YX).
+- [The International System of Units — BIPM and Inmetro](sources/SI-Brochure.lingua#r_0QS0FQDWGM0BE9ZM4099FGRXED).
+- [Basic Blueprint Reading — Costin and Linn-Benton](sources/Blueprint-Reading.lingua#r_3BSMCZ60NQ4ESQ5YK6K2JAB7F5).
+- [The Art of Insight in Science and Engineering — Mahajan](sources/Art-of-Insight.lingua#r_2YTYM3AC7KGP77Q5W1TT7S88KR).
+- [Street-Fighting Mathematics — Mahajan](sources/Street-Fighting-Mathematics.lingua#r_082F9E0A0TMB43HS5DHW4PZHSA).
+- [International vocabulary of metrology — JCGM and Inmetro](sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH).
+- [Uncertainty guides — Taylor, Kuyatt, and JCGM](sources/Uncertainty-Guides.lingua#r_11PDFVNTH65FKFVZVHMHMAF6CH).
+- [Data Organization in Spreadsheets — Broman and Woo](sources/Data-Organization.lingua#r_6AXFG9QT0X74W3DRDE58RP470M).
+
+
+All books and papers remain external references. Use the publisher's authorized downloads for a personally retained copy. The learning explanations, original worked examples, and links are the content developed here.
+
+Publisher pages and source metadata were checked on 28 October 2026. The Blueprint host intermittently blocks automated access; its source Record states the inspected scope. Current web notices and older distributed editions can differ, especially for OpenStax. Preserve the actual edition's notice when retaining or reusing a work; do not infer an unrestricted licence from free access.
+
+**Return:** [Quantitative and technical literacy](Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_7MMXWNA1B4YGA271KMHPPJEK9Q

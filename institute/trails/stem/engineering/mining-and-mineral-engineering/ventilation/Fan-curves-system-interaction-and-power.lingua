@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Find an operating point from compatible fan and system models (@mine-fans: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #mining-and-mineral-engineering "An-inspectable-fan-and-parallel-network.lingua#r_41GACPE0VDBCVS9MGQ765E9FYE") { r_4AENEE3DAAX9N3N9KHVE0RBX4G
+**Read:** [Subsurface Ventilation Engineering — Malcolm J. McPherson](../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY), the complete fans, system interaction, similarity, and power chapters; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full relevant fan/ventilation examples.
+
+A fan operates through interaction between its characteristic and the connected system under specified density, speed, installation, and condition. A rated flow/pressure pair cannot be selected independently of the network. Curves, efficiencies, motors/drives, losses, controls, and measurement require consistent definitions.
+
+For a stated useful fluid-power account, power is QΔp and required input includes the identified efficiency. Fan static/total pressure, measurement locations, and velocity contributions need the actual convention. A simplified curve does not represent all operating regions, transients, or stability behavior.
+
+Similarity relations such as flow proportional to speed and pressure proportional to density times speed squared apply under their homologous-model assumptions. They are not a universal correction for every geometry, operating regime, installation, or changing network.
+
+**Work:** reconstruct a complete fan/system example with source curve, conditions, network, efficiency, and observations. Independently check pressure, flow, and power units and the intersection. Compare a changed resistance or speed/density assumption and explain which data are needed to test the predicted change.
+
+Read full fan and network chapters plus the actual appropriate equipment documentation. The next original exercise uses one quadratic fan, a shared branch, and two parallel branches so conservation and the numerical result can be checked analytically; it does not prescribe a real ventilation setting.
+
+**Continue:** [Solve a small ventilation network and check flow, pressure, and power independently](An-inspectable-fan-and-parallel-network.lingua#r_41GACPE0VDBCVS9MGQ765E9FYE).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_4AENEE3DAAX9N3N9KHVE0RBX4G

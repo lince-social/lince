@@ -1,0 +1,11 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Water-treatment chemical supply-chain profiles — EPA (@cs-epa-profiles: 0, is #reference, #part-of @cs-sources) { r_0E09Q6T7CC9HNWZB3N84E7K21A
+US EPA. Water Treatment Chemical Supply Chain Profiles, companion to the 2022/2023 disruption study. [Official report and profile access](https://www.epa.gov/waterutilityresponse/risk-disruptions-supply-water-treatment-chemicals) · [Complete sodium hydroxide example](https://www.epa.gov/system/files/documents/2023-03/Sodium%20Hydroxide%20Supply%20Chain%20Profile.pdf).
+
+Read complete profiles for the actual acid, alkali, salt, coagulant, oxidant or carbon-feed cases. Reconstruct the named precursor and competing-user connections, manufacturing/transfer evidence, dated production/trade account and stated uncertainty. Broaden across the companion collection to compare families rather than treating one product's pattern as universal.
+
+Collection scope and the official sodium-hydroxide profile were checked on 29 October 2026. Assessments, trade data and illustrative shelf-life claims have their stated dates and domains; none is an unconditional current supplier specification. The complete collection was not individually inspected. Publication/component notices apply and the referenced documents stay external.
+
+**Return:** [Chemical supply sources — books, methods, complete cases and research](../Sources.lingua#r_76J82CV79QKHQ2CSCT63MFYJYN).
+} r_0E09Q6T7CC9HNWZB3N84E7K21A

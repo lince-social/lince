@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced turbulent statistics, spectra and energy-budget study (@fd-advanced-statistics: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "Advanced-turbulence-closure-verification-and-validation-study.lingua#r_6S38T31W8P5CSNRDF9Y77KPYF7") { r_0460VC6BHC9TM4E3HRAS38M2XH
+**Read:** [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), complete statistical and scaling development; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), complete turbulence chapter; [Johns Hopkins Turbulence Databases — numerical flow evidence](../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE), dataset methods and cited primary simulation; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), uncertainty in measured statistics.
+
+Use a fully documented numerical turbulence dataset or physical time/space measurements to reconstruct means, Reynolds stresses, correlations, spectra and an appropriate energy budget. Preserve normalization, filtering, forcing, resolution and sampling choices. Reproduce one independently published statistic before asking a new question.
+
+Test stationarity, record length, spatial sampling and effective independent sample count. Compare scale estimates and inertial-range hypotheses with the actual accessible range. Evaluate at least one third-order or transport relation where its assumptions apply, and identify the influence of anisotropy, inhomogeneity or finite Reynolds number.
+
+Report sampling uncertainty and systematic limits separately. Explain how alternative estimators or observation filters change the result and which conclusions remain robust. For [Johns Hopkins Turbulence Databases — numerical flow evidence](../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE), retain the selected simulation and access-method metadata; a publicly accessible DNS is numerical evidence with its own model and resolution limits, not a universal experimental ground truth.
+
+**Continue:** [Advanced turbulence-closure verification and validation study](Advanced-turbulence-closure-verification-and-validation-study.lingua#r_6S38T31W8P5CSNRDF9Y77KPYF7).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0460VC6BHC9TM4E3HRAS38M2XH

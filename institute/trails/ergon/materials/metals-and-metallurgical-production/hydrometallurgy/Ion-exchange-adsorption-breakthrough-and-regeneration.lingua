@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect sorption selectivity with finite capacity, kinetics, and a complete operating cycle (@metal-ion-exchange: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Extracao-de-Ouro-CETEM.lingua#r_5TP6BXRQ7NWKZQZ94WCBQRR8PN", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #metals-and-metallurgical-production "Precipitation-cementation-purity-and-product-separation.lingua#r_6FAVZYK3GT4M5NA2AP2KXG3WEA") { r_7PHGXPMGDNZSVGJ33PXN6MA5DF
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete ion-exchange, adsorption, and solution-recovery sequence; [Extração de Ouro: Princípios, Tecnologia e Meio Ambiente — CETEM](../sources/Extracao-de-Ouro-CETEM.lingua#r_5TP6BXRQ7NWKZQZ94WCBQRR8PN), whole relevant adsorption/recovery chapters and their primary methods; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), a complete applicable solution-treatment/recovery case.
+
+Ion exchange and adsorption involve material-specific sites, solution chemistry, speciation, competing constituents, and transport. An equilibrium isotherm on a selected feed does not alone predict a column's breakthrough or the purity of a recovered product. Capacity needs a defined constituent, basis, state, and test condition.
+
+Separate equilibrium uptake, film/intraparticle transport, flow/contact, axial dispersion, and the moving concentration profile. Time-to-breakthrough depends on the chosen criterion and outlet measurement support. A fit may not distinguish mass-transfer limitations from changing feed speciation or site competition.
+
+Loading, washing, elution/regeneration, material loss/degradation, and recovery form a full cycle. Reagent, water, energy, residuals, and product contamination must be accounted for on that boundary. A high loading-stage removal can coexist with poor recoverable yield or an unsuitable eluate.
+
+**Work:** reconstruct a complete adsorption/ion-exchange case with original equilibrium/kinetic or breakthrough observations. Independently reconcile constituent inventories through the cycle, compare two defensible models and an alternative feed condition, and assess identifiability/uncertainty. Explain which observations distinguish chemical competition, transport, and material aging. Connect the eluate or recovered product to its next purification/conversion duty.
+
+**Continue:** [Evaluate solution recovery through speciation, reaction, kinetics, and final product evidence](Precipitation-cementation-purity-and-product-separation.lingua#r_6FAVZYK3GT4M5NA2AP2KXG3WEA).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_7PHGXPMGDNZSVGJ33PXN6MA5DF

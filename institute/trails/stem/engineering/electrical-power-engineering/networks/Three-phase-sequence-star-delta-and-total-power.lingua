@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Three-phase sequence, star, delta and total power (@pe-three-phase: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #electrical-power-engineering "Unbalanced-loads-neutral-paths-and-phase-models.lingua#r_3J51437Q016XSNEWYZN051Q7Q4") { r_7EQNME19CHB8DDTC5RNYVWGBGH
+**Read:** [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), chapter 3 in full; [AC Electrical Circuit Analysis — James M. Fiore](../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK), complete polyphase chapter.
+
+Construct three equal sinusoidal phase voltages separated by 120 degrees, choosing positive phase order and an explicit angular reference. For a balanced star load, line current equals phase current and line-to-line voltage magnitude is sqrt(3) times phase-to-neutral magnitude. A balanced delta has equal line/branch voltage magnitude and line-current magnitude sqrt(3) times branch-current magnitude; its phase angle also changes.
+
+Derive rather than memorize these relations by subtracting phasors. Then obtain total balanced power P = sqrt(3)V_LL I_L cosφ and Q = sqrt(3)V_LL I_L sinφ. At 400 V line-to-line, 10 A line current and 0.8 displacement factor, total active power is approximately 5.54256 kW. These are illustrative inputs, not a prescribed voltage or current limit.
+
+Compare three single-phase measurements, a two-wattmeter arrangement under its conditions and a complete power-analyser measurement. Phase order affects rotating fields and sequence-sensitive protection. Identify what the per-phase equivalent assumes about balance, neutral and return paths. The next unbalanced and sequence treatments extend those conditions rather than treating every three-wire drawing as a balanced system.
+
+**Continue:** [Unbalanced loads, neutrals and phase models](Unbalanced-loads-neutral-paths-and-phase-models.lingua#r_3J51437Q016XSNEWYZN051Q7Q4).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7EQNME19CHB8DDTC5RNYVWGBGH

@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Account for what a separation distributes, removes, and leaves behind (@gc-separations: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #general-chemistry "Validate-a-chemical-method.lingua#r_35SBSG78BYDMNMGSEKHB7PGZBR", #industrial-chemistry "../../industrial-chemistry/separations/Reaction-and-separation-as-one-product-system.lingua#r_06SY3Y27KN4FR3EW1WFX3V1BZ0") { r_7AKDFABRZJJ53MR6EQQZ8GAW2G
+**Read:** [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 7 in full and the relevant complete separation/gravimetric treatment in chapters 8 and 12; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), solution, phase, and solubility applications; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the corresponding separation/preparation activities.
+
+A separation exploits differences in phase behavior, size, interactions, mobility, or reaction under a chosen procedure. Specify the component, phases, boundary, mechanism/model, and measured outputs. Filtration, extraction, distillation, precipitation, and chromatography answer different questions and can combine in one preparation chain.
+
+For a hypothetical nonreacting two-phase extraction with distribution ratio D = c_org/c_aq = 2, a 100 mL aqueous phase contacted with 100 mL fresh organic phase leaves one third of the component in water under the simple equilibrium/additive-volume model. Two fresh 50 mL contacts leave one quarter. Derive these fractions from material balances and the stated distribution relation. No actual solvent or practical procedure is specified by this calculation.
+
+A distribution ratio based on analytical totals can be conditional on pH, speciation, and medium. It differs from a thermodynamic activity constant for a specified transfer reaction. Emulsions, incomplete equilibration, adsorption, chemical change, or transfer losses can change an experimental recovery.
+
+**Work:** derive the teaching account, check both phases' component amounts, and extend to a different stated volume split. Compare separation recovery, enrichment, purity, and selectivity. Trace an analytical preparation from original specimen to measured solution, identifying where bias or an unmeasured loss can enter.
+
+Read the full relevant gravimetric and separation chapters/sections, using original or authorized data. Mineral processing, chemical engineering, industrial purification, and analytical chemistry will deepen the unique equipment and mechanisms; the generic accounting remains shared.
+
+**Continue:** [Judge a chemical method for a specified use and specimen](Validate-a-chemical-method.lingua#r_35SBSG78BYDMNMGSEKHB7PGZBR).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in industrial chemistry:** [Design a separation argument around the complete reaction and product account](../../industrial-chemistry/separations/Reaction-and-separation-as-one-product-system.lingua#r_06SY3Y27KN4FR3EW1WFX3V1BZ0).
+} r_7AKDFABRZJJ53MR6EQQZ8GAW2G

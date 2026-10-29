@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced hydrostatic load and inverse-density study (@fd-advanced-static: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #fluid-dynamics "Advanced-creeping-flow-reciprocity-and-confinement-study.lingua#r_7DYBFCG2MSETSKYGRJ6X853P7X") { r_4ANS8VPM2VV66Y3FVSW7TZ5SDJ
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), complete hydrostatic chapter and problems; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), hydrostatics and compressible equilibrium; [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), pressure and geometric measurement.
+
+Investigate a layered or compressible fluid column supporting a surface whose load and moment matter. Derive the pressure field from a declared thermodynamic/compositional model, integrate force and moment over the actual geometry, and recover the uniform-density limit. Include a floating or accelerating configuration to test whether the same force reasoning transfers.
+
+Determine what pressure and interface-height observations can identify about density and geometry. Construct an uncertainty account with common pressure references and correlated dimensions. Compare an independently calculated resultant with an accessible bounded experiment or a documented primary dataset, distinguishing the measurement from any reconstruction assumptions.
+
+Deliver the complete derivation, reproducible integration and raw/processed evidence with an explanation of disagreement. A table of buoyant forces is insufficient: defend equilibrium, stability to a declared small perturbation, and the conditions under which the density model or rigid-body approximation would need revision.
+
+**Continue:** [Advanced creeping-flow, reciprocity and confinement study](Advanced-creeping-flow-reciprocity-and-confinement-study.lingua#r_7DYBFCG2MSETSKYGRJ6X853P7X).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4ANS8VPM2VV66Y3FVSW7TZ5SDJ

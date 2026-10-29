@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Convert mass, amount of substance, and numbers of specified entities (@gc-amount: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Precision-uncertainty-and-chemical-claims.lingua#r_25GXFBHM1573BAYA8PFWH0YW97") { r_5FWGQX84V6GZGC1RABD34ZKE04
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 3’s mass/amount and composition material in full; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the complete atom/mole/formula/equation unit; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), amount and composition definitions.
+
+Amount of substance counts a specified kind of entity through n = N/N_A. The entity might be an atom, molecule, ion, electron, or formula unit; write it explicitly. The mole is not a unit of mass or volume. With an appropriate molar mass M, n = m/M connects a specimen's mass to amount under the stated composition and purity assumptions.
+
+Using the rounded teaching value M(NaCl) = 58.44 g mol⁻¹, a hypothetical 5.844 g pure anhydrous sample corresponds to 0.1000 mol of formula units. Dissolution into separated Na⁺ and Cl⁻ gives a different count of specified ionic entities under the complete-dissociation model. Distinguish that model from counting intact NaCl molecules in an aqueous solution.
+
+Keep quantity equations independent of the numerical unit choice. Converting grams to kilograms changes a numerical value and the compatible molar-mass unit, not the number of entities described. A concentration or reaction calculation that mixes those conventions can be wrong by a large factor while retaining plausible-looking digits.
+
+**Work:** convert between mass, amount, and specified entity counts for several textbook species, identifying hydration and purity. Use N_A = 6.02214076×10²³ mol⁻¹ as the SI-defined constant and distinguish its exactness from rounded measured inputs. Construct a deliberately inconsistent-unit calculation and diagnose it with dimensional analysis.
+
+Read the complete composition chapter and its worked problems. For an actual specimen explain whether a formula molar mass is sufficient or whether composition, assay, or isotope information is missing. These quantities recur in minerals, gases, biological solutions, process streams, and semiconductor dopants; share their meaning instead of inventing separate field-specific versions of the same conversion.
+
+**Continue:** [Let measurement information determine the precision of a chemical claim](Precision-uncertainty-and-chemical-claims.lingua#r_25GXFBHM1573BAYA8PFWH0YW97).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_5FWGQX84V6GZGC1RABD34ZKE04

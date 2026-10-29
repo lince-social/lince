@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A water-sampling plan that answers a defined question (@wu-sampling: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #source "../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD", #water-and-sanitation "../../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ") { r_2017E3G9XVF21MMQHJYNDQ2S7W
+**Read:** [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), chapters 3–4 in full; [Water safety plan manual — WHO and IWA, second edition](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD), operational and compliance-monitoring examples.
+
+Start from the decision: describe source variation, compare a process, verify a delivery point or investigate an event. Then choose locations, times, sample types and replication. A convenient tap is not automatically representative of the water or exposure in question.
+
+Distinguish a grab sample from time-proportional or flow-proportional composites. For loads, concentration and flow must represent the same interval and boundary. Short peaks can disappear in an average; a composite can also be inappropriate for constituents changed by storage or for the required microbiological assessment.
+
+Specify the actual method's container, preservation, holding time and handling requirements, along with blanks, duplicates and traceable identification. Separate spatial variability, temporal variability and analytical uncertainty. Design one sampling programme for ordinary operation and a second for a defined change; explain what each could fail to observe.
+
+**Continue:** [Chemical measurements — matrix, recovery, selectivity, and reference material](../../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ).
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+} r_2017E3G9XVF21MMQHJYNDQ2S7W

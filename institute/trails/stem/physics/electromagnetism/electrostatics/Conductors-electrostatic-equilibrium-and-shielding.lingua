@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Conductors, electrostatic equilibrium and shielding (@em-conductors: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Poisson-Laplace-and-boundary-data.lingua#r_2ED6JFNCPEGRT1P8KTP2Y7WPZG") { r_137AR1F19ABQJW33AB60E4ANFD
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), conductors in electrostatic equilibrium; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), conducting boundaries and electrostatic shielding.
+
+A connected ideal conductor at electrostatic equilibrium is an equipotential, with zero electric field in its conducting bulk. Excess free charge lies at its boundaries. The normal field immediately outside a smooth vacuum boundary is related to surface charge; sharp geometry can concentrate the field. These statements assume equilibrium and sufficient charge mobility, not every situation containing metal.
+
+Analyze a conductor containing an empty cavity, then place a specified charge inside the cavity. Track induced charges and grounding separately. Grounding supplies a charge reservoir and a reference potential; it does not mean that charge has disappeared from the larger physical system. A closed electrostatic shield and a practical enclosure with apertures or high-frequency currents are different models.
+
+Draw charge and field for isolated, grounded and connected conductors. Identify what is prescribed: charge, potential or a circuit relation. Compare shielding electric fields with shielding static magnetic fields; an ordinary nonmagnetic conductor does not simply exclude all static B. Later skin depth, induction and boundary conditions explain how frequency and material alter the result. Verify a proposed shield by an observable inside it rather than by its name.
+
+**Continue:** [Poisson, Laplace and boundary data](Poisson-Laplace-and-boundary-data.lingua#r_2ED6JFNCPEGRT1P8KTP2Y7WPZG).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_137AR1F19ABQJW33AB60E4ANFD

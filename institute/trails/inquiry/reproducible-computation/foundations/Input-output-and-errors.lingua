@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Input, output, and errors are part of the method (@rc-io: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "First-saved-calculation.lingua#r_6QDSCHW072VRCTMYHQGXZG3SBE") { r_2QVCXPVQAFX2MASMBWC80KNWV8
+**Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), chapter 5 in full, including exercises; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), input/output, exceptions, csv, json, and argparse.
+
+Reading a file turns bytes into text and then into values under a declared interpretation. Specify encoding, delimiter, column names, decimal conventions, and missing-value rules. A number parsed successfully can still be outside the physical model's domain. A failed conversion should identify the offending field and stop before publishing a plausible-looking partial answer.
+
+Separate reading, validation, calculation, and writing so each stage can be inspected. The calculation should receive meaningful values; the reader should reject malformed structure; the writer should serialize a complete result. Later the two-lot program will show these boundaries explicitly. A short program needs no elaborate framework to maintain them.
+
+An exception reports a condition that interrupts ordinary execution. Catch an expected input problem where a useful diagnostic can be supplied, but do not conceal every failure and substitute a default result. Success means that the requested operation completed under its stated conditions. A missing file, missing column, or impossible mass balance should never be silently recast as a successful measurement of zero.
+
+**Work:** complete the book's input and error chapter. Build three tiny inputs: one valid, one with a text value in a mass column, and one missing a required field. Write down the expected result or diagnostic before running them. Preserve an existing correct output, then attempt a failing run and verify that the old output remains intact and clearly belongs to its old inputs.
+
+Read the exact csv and json contracts while designing interchange, and argparse when making command-line options. A file's extension is a hint; content, structure, and interpretation need their own verification. Return to the remaining beginner-book chapters until you can explain every operation in the worked pipeline without treating its code as magic.
+
+**Continue:** [Run a first saved calculation and check it independently](First-saved-calculation.lingua#r_6QDSCHW072VRCTMYHQGXZG3SBE).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_2QVCXPVQAFX2MASMBWC80KNWV8

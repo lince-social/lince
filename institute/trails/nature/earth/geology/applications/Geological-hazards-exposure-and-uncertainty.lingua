@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Distinguish geological process, hazard, exposure, vulnerability, and risk (@geo-hazards: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK", #source "../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N", #geology "Geological-heritage-land-use-and-material-consequences.lingua#r_7KX1F44N6ER90NB6QY4KKG10BF") { r_1V21CQDPEZDJGW6NW1C0ABNJ4X
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), the full hazard-related sections of chapters 4, 11, 13, 15, and 17; [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK), purpose, scale, confidence, and application of mapped units; [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N), the complete chosen regional ground-process account.
+
+A geological process becomes a hazard statement through an identified event or intensity, place, interval, model, and uncertainty. Exposure describes what is present, and vulnerability describes response or susceptibility to consequences under the chosen account. Hazard and risk maps can therefore represent different quantities even when their colors resemble one another.
+
+Past-event inventories require completeness, dating, location, classification, and preservation assessment. Absence from a short or selectively preserved record is not proof of impossibility. A regional susceptibility map is not automatically an event forecast or a site-specific design assessment.
+
+Under an invented stationary Poisson event model with rate 0.01 yr⁻¹, the probability of at least one event in 30 years is 1−exp(−0.3), about 0.2592. This differs slightly from the independent annual Bernoulli example because the event model differs. Neither calculation establishes that a real geological process follows the chosen model.
+
+**Work:** compare two official hazard/ground-process products with different purposes or scales. Identify quantity, event window, inputs, model assumptions, validation, uncertainty, and what a user might incorrectly infer. Derive the toy probability independently and explain which observations would challenge stationarity or independence. Connect an identified process with exposed infrastructure without collapsing all consequences into the hazard label.
+
+Read the full relevant textbook and regional-method material. Later hazard, risk, and engineering trails deepen models and decisions, reusing geological process/history evidence rather than treating quantitative output as a substitute for its quality.
+
+**Continue:** [Connect geological knowledge with land use, preservation, and material consequences](Geological-heritage-land-use-and-material-consequences.lingua#r_7KX1F44N6ER90NB6QY4KKG10BF).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_1V21CQDPEZDJGW6NW1C0ABNJ4X

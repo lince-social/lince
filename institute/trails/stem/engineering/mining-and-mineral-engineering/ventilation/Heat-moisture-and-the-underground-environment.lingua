@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Join heat and moisture balances with actual environmental observations (@mine-heat: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY", #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #source "../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #mining-and-mineral-engineering "Contaminant-sources-transport-controls-and-measurement.lingua#r_6GA2GJ59H9XBYGTFCS9NZGXQ9N") { r_2PDZHZRMAKXHKNGVK8T6MA018F
+**Read:** [Subsurface Ventilation Engineering — Malcolm J. McPherson](../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY), the complete heat, psychrometric, thermal-environment, and relevant refrigeration sequence; [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the complete applicable current heat/work provisions and references; [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), the relevant full thermal/humidity measurement treatment.
+
+Mine heat/moisture conditions reflect rock, air compression, equipment, water, reactions, people, ventilation, refrigeration, and exchanges along the system. Sensible temperature change, humidity, enthalpy, wet/dry measurement, and human exposure indices describe different quantities.
+
+For an invented sensible-only steady account, heat 150 kW into air at density 1.2 kg m⁻³, heat capacity 1,005 J kg⁻¹ K⁻¹, and flow 50 m³ s⁻¹ gives ΔT ≈ 2.488 K. This ignores latent heat, changing properties, exchanges, sources along the route, and many environmental factors; it is not a heat-exposure criterion.
+
+Psychrometric and thermodynamic models need pressure, water-vapor basis, state, and conditions. A dry-air mass basis differs from a moist-air volumetric basis. Measured temperature alone cannot establish the full heat/moisture balance or performance of cooling and ventilation.
+
+**Work:** derive/check the teaching estimate, then reconstruct a full book heat/psychrometric example with sources, moisture, pressure, and observations. Compare a plausible equipment/water or airflow change and identify an independent measurement. Explain how uncertainty in the sources or boundary affects the conclusion.
+
+Read the complete environmental/thermal and refrigeration chapters. Current occupational assessment uses its own identified methods and primary guidance; the engineering balance supports that investigation without replacing the actual exposure and work context.
+
+**Continue:** [Connect sources and transport with measured conditions and effective controls](Contaminant-sources-transport-controls-and-measurement.lingua#r_6GA2GJ59H9XBYGTFCS9NZGXQ9N).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_2PDZHZRMAKXHKNGVK8T6MA018F

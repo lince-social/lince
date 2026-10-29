@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Reference frames, rotating motion and consistent forces (@fd-frames: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #fluid-dynamics "../../thermodynamics-and-heat-transfer/entropy/Local-entropy-production-and-transport-assumptions.lingua#r_0XE4QFR9SE1KBW2RDHYPVVJZZE") { r_5SB0X4AF38MZ5W9V6TX733B6BN
+**Read:** [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), rotating-fluid and coordinate treatments; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), rotating-fluid modules; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), rotating shallow-water development after the basic equations.
+
+An inertial-frame equation and a rotating-frame equation can describe the same motion. Transform velocity and acceleration consistently. A uniformly rotating frame introduces Coriolis and centrifugal terms; a changing rotation rate also introduces an Euler acceleration term. The frame choice is not an additional measured force acting in isolation.
+
+Uniform translation does not change the physical deformation rate of a fluid element. Rigid-body rotation changes component descriptions while the material law must retain its physical meaning. This requirement becomes especially important for constitutive models with memory.
+
+Write the same simple rotating-container balance in both frames and recover the same pressure field. Identify the difference between a rotating coordinate system and an actual solid boundary that transfers angular momentum during spin-up. Reserve planetary or rotor-specific simplifications for the scale analysis that justifies them.
+
+**Continue:** [Local entropy production and transport assumptions](../../thermodynamics-and-heat-transfer/entropy/Local-entropy-production-and-transport-assumptions.lingua#r_0XE4QFR9SE1KBW2RDHYPVVJZZE).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5SB0X4AF38MZ5W9V6TX733B6BN

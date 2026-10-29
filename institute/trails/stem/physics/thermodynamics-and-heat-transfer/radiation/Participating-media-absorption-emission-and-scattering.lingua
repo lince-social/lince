@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Participating media: absorption, emission and scattering (@th-participating: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "Discrete-ordinates-Monte-Carlo-and-radiative-verification.lingua#r_216T0G36037GGTX33RMZ497B52") { r_3G1ZW62CXVQ7NWRNPE2Q2YZ3P2
+**Read:** [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), complete gas-property and participating-media equation lectures; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), gas radiation and zonal furnace analysis; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), participating radiation treatment.
+
+Gases, particles and semitransparent solids can absorb, emit and scatter within the volume. The radiative-transfer equation describes the change of directional spectral intensity along paths with source and loss terms. Define absorption/scattering coefficients, phase function and local-emission assumptions.
+
+Optical thickness organizes particular approximations but does not alone determine the angular or spectral behavior. Molecular bands, soot/particles and temperature variation can make a single grey coefficient inadequate. A surface-only view-factor model omits volumetric exchange.
+
+Derive a one-dimensional absorbing/emitting slab limit and check transparent and optically thick behavior. Integrate over directions/frequencies to recover the radiative source term in the material energy equation. Distinguish an imposed radiation field from a coupled medium whose temperature changes in response.
+
+**Continue:** [Discrete ordinates, Monte Carlo and radiative verification](Discrete-ordinates-Monte-Carlo-and-radiative-verification.lingua#r_216T0G36037GGTX33RMZ497B52).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3G1ZW62CXVQ7NWRNPE2Q2YZ3P2

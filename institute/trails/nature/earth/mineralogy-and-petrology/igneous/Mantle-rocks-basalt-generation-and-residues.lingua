@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Interpret mantle and basalt histories through minerals, experiments, and balances (@mp-mantle: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #mineralogy-and-petrology "Crustal-magmas-granitoids-and-plutonic-assemblies.lingua#r_6R54EHAY8Y81XH9MW6H0JW9PV3") { r_1VA4KEHC0R7MV9RHYR6A2BYPKZ
+**Read:** [Advanced Igneous Petrology — Timothy Grove, MIT 12.490](../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF), the full relevant mantle/basalt case, labs, and original readings; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full ultramafic/basaltic rock and melting studies; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the complete relevant mantle and igneous-process treatment.
+
+Mantle rocks and basaltic products connect source composition, pressure-temperature path, melting, extraction, reactions, crystallization, and later alteration. An exposed peridotite or xenolith is a transported and potentially modified sample, not an unfiltered view of an entire mantle reservoir.
+
+Mineral modes/chemistry, textures, isotopes, trace elements, and experimental phase relations provide complementary evidence. Depletion, enrichment, melt-rock reaction, and accumulation can produce overlapping compositional signatures. A source inference should respect which phases and components remain in the residual material.
+
+Compare experiments with natural observations under their actual compositions, pressure, temperature, fluids/redox, equilibration, and analytical conditions. A phase boundary from one synthetic composition cannot automatically fix conditions for every natural basalt. A calculated pressure also depends on the calibration/domain and equilibrium argument.
+
+**Work:** complete an advanced mantle/basalt case from the course and its full primary papers. Reconstruct source–melt–residue balances and evaluate a melting versus reactive/infiltration interpretation. Use an independent mineral or experimental observation to test the preferred account and identify remaining nonuniqueness.
+
+Read the entire case sequence, not only its final tectonic diagram. The later geochemistry, experimental petrology, and geodynamics subjects deepen their own data and physical models while reusing the mineral and phase accounts developed here.
+
+**Continue:** [Explain crustal igneous diversity without reducing it to one source model](Crustal-magmas-granitoids-and-plutonic-assemblies.lingua#r_6R54EHAY8Y81XH9MW6H0JW9PV3).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_1VA4KEHC0R7MV9RHYR6A2BYPKZ

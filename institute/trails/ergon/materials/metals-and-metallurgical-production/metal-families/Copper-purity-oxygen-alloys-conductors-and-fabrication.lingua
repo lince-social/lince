@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect copper product quality with refining, gas chemistry, structure, and use (@metal-copper-products: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/Metais-Nao-Ferrosos-e-Suas-Ligas-Barbosa.lingua#r_0FJ1378X0JMVHYVBFAXGK2399D", #source "../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7", #metals-and-metallurgical-production "Nickel-cobalt-and-multimetal-feed-separation.lingua#r_1GQF94K58HKQ23PKPYK2XT94CH") { r_3SAWE0GBR52FS13AHT520Z5CH2
+**Read:** [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), complete copper refining, recycled-feed, casting, and quality material; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the complete relevant nonferrous, deformation, annealing, and joining discussions; [Metais Não Ferrosos e suas Ligas — Cassio Barbosa](../sources/Metais-Nao-Ferrosos-e-Suas-Ligas-Barbosa.lingua#r_0FJ1378X0JMVHYVBFAXGK2399D), the full copper/alloy chapter, when available; [Extractive Metallurgy of Copper — Schlesinger, Sole, Davenport, and Alvear Flores](../sources/Extractive-Metallurgy-of-Copper.lingua#r_47NCQVYD4J2DXH9AV48XDMNHJ7), the complete refining, casting, recycling, and side-stream chapters, when available.
+
+Copper purity, specific impurities, oxygen/hydrogen-related behavior, inclusions, structure, and processing history affect conductivity, forming, joining, and service. A generic purity number or the word copper is insufficient for every conductor, brazed assembly, alloy, or electronic-related application.
+
+Trace refining and melt handling through casting, hot/cold work, annealing, surface state, and inspection. Impurity distribution, gas/oxide behavior, segregation, defects, and texture can matter even when a bulk composition lies in a nominal range. Brass, bronze, and other copper alloys need their own phase/treatment and quality evidence.
+
+Compare primary and secondary routes on actual accepted output and the impurity inventory. Separation or dilution may preserve one product class while making another difficult. Recovered side constituents and residual treatment have their own chemistry, infrastructure, and work requirements.
+
+**Work:** reconstruct a complete conductor or other specified copper-product case and one alloy case. Independently reconcile feed, impurity, and product quantities, then connect structure/property observations with the actual refining/fabrication history. Test an alternative explanation for a conductivity, formability, or joining discrepancy. Identify the evidence needed for transfer into a more demanding high-purity or electronic-material application rather than assuming generic copper is sufficient.
+
+**Continue:** [Compare nickel and cobalt routes through feed chemistry and multimetal recovery](Nickel-cobalt-and-multimetal-feed-separation.lingua#r_1GQF94K58HKQ23PKPYK2XT94CH).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_3SAWE0GBR52FS13AHT520Z5CH2

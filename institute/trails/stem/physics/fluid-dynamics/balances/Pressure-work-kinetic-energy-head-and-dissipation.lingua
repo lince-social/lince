@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Pressure work, kinetic energy, head and dissipation (@fd-mechanical-energy: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #fluid-dynamics "../constitutive/Stress-traction-and-the-local-momentum-equation.lingua#r_7CCBAA58W97CSN9A250DXPZNVJ") { r_7HQS960HZ708YJQVV7BA16JVMA
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapters 7 and 8 energy and mechanical/thermal distinctions; [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), energy balances and head-loss interpretations; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter III Bernoulli reasoning.
+
+For an incompressible flow, energy per unit weight can be expressed as head: elevation, pressure head and kinetic-energy head. Derive the mechanical-energy account from the full balances, preserving shaft work and conversion to internal energy. A head loss is a decrease in recoverable mechanical energy, not disappearance of total energy.
+
+The kinetic-energy flux contains a velocity-cubed integral; its correction factor is not the same as the momentum-flux correction. State the reference velocity and profile assumption. Include heat and variable properties in the full energy equation when they affect the physical state, rather than hiding them in one empirical loss term.
+
+Construct both an energy-grade and a pressure-head sketch for a simple system. Explain why a contraction can lower static pressure while leaving total head approximately unchanged under ideal conditions. Compare the estimated hydraulic power with the actual input power and identify where the difference is expected to go.
+
+**Continue:** [Stress, traction and the local momentum equation](../constitutive/Stress-traction-and-the-local-momentum-equation.lingua#r_7CCBAA58W97CSN9A250DXPZNVJ).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7HQS960HZ708YJQVV7BA16JVMA

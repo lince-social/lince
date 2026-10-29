@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced retarded fields, radiation and antennas (@em-radiation-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_0AYMD9A6TZ9TFTAD9YFZZRP45E
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), all radiation sections; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), complete localized/accelerated-source radiation chapters; [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ), full relevant antenna methods.
+
+Work the complete radiation chapters of [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1) and [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), then the whole applicable [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ) antenna development. Choose an explicitly conserved localized source distribution. Derive retarded potentials and fields, identify near/induction/radiative terms and obtain a multipole approximation with a quantified size/frequency domain.
+
+Calculate angular pattern, polarization, total radiated power and source power balance. Compare the small-source limit with a finite-source integral or independent converged numerical solution. If using an antenna port, include feed current distribution, accepted power, radiation resistance, loss and mismatch; distinguish directivity from gain and efficiency.
+
+Use a complete measurement case or appropriate supervised apparatus to compare at least one power/pattern observable, with distance, reference plane and uncertainty. Examine a source symmetry that suppresses the leading multipole and predict which term then dominates. In a charged-particle variant, derive the nonrelativistic limit and investigate relativistic beaming with the proper transformed trajectory. The explanation must show which approximations control the result and where microscopic/quantum or self-force physics lies beyond the selected classical model.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_0AYMD9A6TZ9TFTAD9YFZZRP45E

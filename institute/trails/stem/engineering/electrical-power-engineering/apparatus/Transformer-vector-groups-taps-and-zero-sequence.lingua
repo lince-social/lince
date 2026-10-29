@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Transformer vector groups, taps and zero sequence (@pe-tap-vector: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B", #electrical-power-engineering "Transformer-loss-temperature-inrush-and-condition.lingua#r_6AZVVD8G0EGYV5RTBBGN66WQ6R") { r_7WW7P8NTHFDPGZ3D3VVT1GXV48
+**Read:** [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete transformer and sequence-network treatment; [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), sequence apparatus modelling and transformer protection; [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B), complete transformer/phase models.
+
+A three-phase transformer's winding connection sets line/phase relationships, relative phase shift and possible zero-sequence paths. Draw the actual winding polarities and terminals, derive the phasors and compare with its stated vector group. A line-to-line ratio alone is not a complete connection model.
+
+Analyze grounded-star, ungrounded-star and delta arrangements for a specified zero-sequence excitation. A delta can support circulating components that do not appear as the same line current outside it. Parallel operation requires compatible ratio, phase relation, impedance and operating conditions; nominal voltage labels alone are insufficient. Model tap position and tap-changing control separately from the fixed winding connection.
+
+Work a phase-domain case and compare its positive/negative/zero-sequence representation. Retain current-transformer placement/polarity and phase compensation when interpreting differential protection. For a changed tap or replacement transformer, trace effects on normal flow, voltage control, circulating current, fault paths and settings. Actual testing and as-built connection evidence are necessary to establish which model applies to the installed apparatus.
+
+**Continue:** [Transformer loss, temperature, inrush and condition](Transformer-loss-temperature-inrush-and-condition.lingua#r_6AZVVD8G0EGYV5RTBBGN66WQ6R).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7WW7P8NTHFDPGZ3D3VVT1GXV48

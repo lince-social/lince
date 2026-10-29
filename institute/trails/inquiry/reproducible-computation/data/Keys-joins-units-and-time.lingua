@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Join records without inventing or losing observations (@rc-joins: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #reproducible-computation "Identity-hashes-and-originals.lingua#r_39P9KR6GAJ6ST89N2JXND7HBCX") { r_49F957J1ZP9JVG5KQSET12P4PH
+**Read:** [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), project organization and decoupled transformations; [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), data organization, programming, and collaboration sections.
+
+A join combines records according to a key and a declared relationship. A one-to-one lot table and assay table require unique keys on both sides. A one-to-many relationship may be valid for repeated specimens, but summing the duplicated lot mass afterwards would invent material. Inspect cardinality rather than accepting a library's default join as the scientific method.
+
+Count rows and distinct identities before and after a join. Examine unmatched keys, duplicate keys, and columns with the same name but different meanings. A lot sampled twice needs an explicit model for combining assays or treating specimens separately. The row count alone does not establish representativeness or correct weighting.
+
+Units, time, and basis can function like hidden keys. Matching a pressure value with a temperature measured an hour later may violate a supposedly simultaneous correction. A local timestamp needs its offset or time-zone interpretation for cross-site work. A mass reported in tonnes must be converted deliberately before combination with kilograms. A dry-basis assay should not be merged with wet mass without its conversion information.
+
+**Work:** split the teaching CSV into a lot table and an assay table. Introduce a duplicate assay and an unmatched lot. State expected counts and rejection rules before joining them, then show how a careless join would change the total component mass. Reconstruct one corrected join manually. Add timestamps and specify the time relation necessary for a defensible association.
+
+For a large scientific table, encode these expectations in checks that fail with interpretable diagnostics. Preserve the mapping of original identities even if a publication uses anonymized keys. The scientific question determines the association; a convenient common text column does not.
+
+**Continue:** [Preserve originals and distinguish identity from location](Identity-hashes-and-originals.lingua#r_39P9KR6GAJ6ST89N2JXND7HBCX).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_49F957J1ZP9JVG5KQSET12P4PH

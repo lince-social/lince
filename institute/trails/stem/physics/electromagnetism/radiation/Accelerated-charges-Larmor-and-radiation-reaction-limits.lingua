@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Accelerated charges, Larmor and reaction limits (@em-accelerated-charge: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Antennas-gain-aperture-efficiency-and-reciprocity.lingua#r_1578RDNQH3K3RR4GWDMHGP292K") { r_19J7GRVJRGWX97DXT5S7P5G5MS
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), accelerated charges and relativistic radiation; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), radiation, energy balance and classical limits.
+
+For a nonrelativistic point charge in vacuum, instantaneous Larmor power is q²a²/(6π ε₀c³). It describes a radiative loss in a classical model with an appropriate smooth trajectory. Derive it from the far acceleration field and angular integration before extending the result to relativistic motion.
+
+Distinguish velocity and acceleration field terms in the Liénard–Wiechert construction and account for retarded direction/time. Relativistic beaming and frequency changes require the actual relativistic formulas; adding a guessed γ factor to the nonrelativistic expression is not a derivation. Compare the energy supplied by an external force with radiated and near-field energy.
+
+Radiation reaction introduces subtle issues including self-energy, reduction of order and the domain of a point-particle approximation. Analyze the limitations of a chosen equation rather than treating runaway or preacceleration solutions as ordinary predictions for all scales. Classical radiation does not explain stable atomic spectra. Connect to quantum/radiation-physics subjects where photon emission and microscopic structure matter, while preserving the classical domain useful for antennas, beams and macroscopic radiation measurements.
+
+**Continue:** [Antennas, gain, aperture, efficiency and reciprocity](Antennas-gain-aperture-efficiency-and-reciprocity.lingua#r_1578RDNQH3K3RR4GWDMHGP292K).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_19J7GRVJRGWX97DXT5S7P5G5MS

@@ -15,6 +15,7 @@ fn launch_with_cell(directory: &Path, size: [u32; 2], scale: f64, cell: Option<n
     if !connected { canvas.world_mut().insert_resource(native::workspace::WorkspaceFile::new(directory.join("interface.json"))); }
     let mut server = crate::server::Server::new(size.map(|value| value as i32)).unwrap();
     server.configure_scaled_outputs(&[crate::server::Monitor { id: OutputId(1), name: "configuration-fixture".into(), origin: [0, 0], size: size.map(|value| value as i32) }], &BTreeMap::from([(OutputId(1), scale)])).unwrap();
+    settle(&mut canvas);
     canvas.outputs(server.output_viewports().into_iter().map(|(name, viewport)| Output { name, viewport }).collect()).unwrap();
     let (sender, receiver) = std::sync::mpsc::sync_channel(32);
     canvas.host_requests(sender);

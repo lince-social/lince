@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced microscopic and macroscopic matter comparison (@em-micro-macro-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Feynman-Lectures-Volume-II.lingua#r_436GYN2CVWCERX7EXFDTWX28XT", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_5HN81SGXA3VBCNETQYY3X7EHJ9
+**Read:** [The Feynman Lectures on Physics, Volume II](../sources/Feynman-Lectures-Volume-II.lingua#r_436GYN2CVWCERX7EXFDTWX28XT), whole relevant Volume II matter chapters; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), complete electromagnetic-matter development; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), complete corresponding response chapters.
+
+Read the complete applicable matter chapters of [The Feynman Lectures on Physics, Volume II](../sources/Feynman-Lectures-Volume-II.lingua#r_436GYN2CVWCERX7EXFDTWX28XT), [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1) and [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H). Choose a dielectric, magnetic or conducting response whose simple macroscopic law has a well-defined useful range. Explain the spatial/time averaging and the separation of free/bound charge or current used to build that law.
+
+Derive a tractable microscopic/effective model, then identify what requires quantum states, spin, band structure, statistics or collective interactions. Compare response limits, temperature/frequency trends and a primary measurement method. Do not present a classical oscillator as a literal complete microscopic description of every solid, nor dismiss its effective predictions merely because its mechanism is simplified.
+
+Investigate local-field, anisotropy, interface or nonlocal effects and state the evidence needed to distinguish them. Use actual material data only through authorized external sources, preserving state/history and uncertainty. Relate the resulting model to conductivity, polarization or magnetization in a concrete infrastructure component. The finished comparison should bridge physical scales with explicit assumptions and expose which specialist quantum/condensed-matter knowledge would deepen it, without silently claiming completion of those full subjects.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_5HN81SGXA3VBCNETQYY3X7EHJ9

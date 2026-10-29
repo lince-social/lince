@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Boundary work, quasistatic paths and irreversibility (@th-boundary-work: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../../../chemistry/general-chemistry/states/Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863") { r_3FJYGFE1APRF36P7GC0QZYCW0P
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), closed systems and irreversibility; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), work, reversible paths and free expansion.
+
+Mechanical boundary work depends on the actual external force/displacement. For an appropriate piston model it is an integral of external pressure against volume change. Substituting the system's equilibrium pressure requires the relevant quasistatic mechanical conditions; a free expansion does not deliver the reversible isothermal work.
+
+For a fixed ideal-gas amount undergoing a reversible isothermal expansion, W = nRT ln(V₂/V₁). With nR = 1 J/K, T = 300 K and V₂/V₁ = 2, W is about 207.944 J and Q equals W. The same ideal gas expanding freely into a vacuum in an isolated rigid outer vessel does no boundary work and has no heat transfer, although its entropy increases.
+
+A slow process can still dissipate through friction, finite temperature differences or other mechanisms. Quasistatic and reversible are not interchangeable. Draw the entire system and surroundings needed to decide whether both can be restored without another net change.
+
+**Continue:** [Use a gas model with defined pressure, temperature, volume, and composition](../../../chemistry/general-chemistry/states/Gas-amount-pressure-and-mixtures.lingua#r_6SXC8H8YSR9B739R9H8K2KF863).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3FJYGFE1APRF36P7GC0QZYCW0P

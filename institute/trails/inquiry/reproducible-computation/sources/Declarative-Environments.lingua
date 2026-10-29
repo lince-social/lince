@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+Declarative environments and pinned inputs — Nix documentation (@rc-nix: 0, is #reference, #part-of @rc-sources) { r_4RZDRCZGB1NQ9119G6RNSWPT2W
+Nix community and documentation contributors. nix.dev tutorials and reference material. [Official tutorials](https://nix.dev/tutorials/).
+
+Complete the first-step tutorials on ad hoc environments, reproducible interpreted scripts, declarative shell environments, and pinning Nixpkgs. Read language basics, impurities, derivations, local inputs, package parameters, and the relevant environment-management material as the advanced project develops. Compare a recorded environment with a declared and tested reconstruction of it.
+
+A pin identifies chosen inputs; it does not automatically preserve every remote artifact, eliminate all environmental influence, or prove the scientific result correct. Document the available source or binary inputs and test the declared scope. Use this as one concrete environment method rather than a prerequisite for reading all the content.
+
+Preserve the documentation’s actual licence and component notices. Tutorial structure and official access checked on 29 October 2026. No external package collection is mirrored into the trail.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_4RZDRCZGB1NQ9119G6RNSWPT2W

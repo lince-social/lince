@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+Containers, base-image identity, and build inputs — Docker documentation (@rc-containers: 0, is #reference, #part-of @rc-sources) { r_6KC0T0B4V0BQ768092K6BN2N4J
+Docker documentation contributors. Build best practices and connected container reference material. [Official build guide](https://docs.docker.com/build/building/best-practices/).
+
+Read the complete guide, then the exact reference for the instructions and execution options used in the project. Examine base-image identity, mutable tags versus digests, build context, package installation, user and filesystem configuration, caches, and environment variables. Test the resulting environment with a small known computation.
+
+Compare image identity with the information needed to rebuild and rerun a scientific calculation. Kernel, CPU/GPU behavior, mounted data, network services, permissions, and external state can still matter. An image hash identifies bytes; it is not an uncertainty analysis or independent validation of the contained method.
+
+Official guide and relevant topics checked on 29 October 2026. Preserve Docker documentation/software and every image component’s terms when using them. The trail links the documentation and develops its own examples; no image or external dependency is stored here.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_6KC0T0B4V0BQ768092K6BN2N4J

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: power, refrigeration and heat recovery with exergy (@th-study-cycles: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_2ZR3C2WQWDCT24TMZEKT9MCTFV
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), the whole book, with full steam and air cycle chapters; [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), complete property and balance chapters; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), whole-process and exergy reasoning; [IAPWS-95 — fundamental water properties](../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z), complete relevant property formulation.
+
+Read the entire Cleynen book and derive at least one vapour cycle and one gas or refrigeration cycle from component balances. Use actual property models and declared reference surroundings. Account for pumps/compressors, pressure changes, exchanger approaches, leakage or losses at the level justified by evidence.
+
+Compare energy performance and exergy destruction by component and for the complete service. Examine a change in ambient conditions, delivery temperature or load, rather than optimizing only a nominal point. Explain which tradeoff is thermodynamic and which arises from finite equipment or operation.
+
+Submit full state tables, independent conservation checks, uncertainty and a technically argued improvement. Include heat rejected, water or cooling demand and auxiliaries. A reversible bound cannot substitute for an equipment map, and a cycle model alone does not establish the design or safe operation of a complete plant.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_2ZR3C2WQWDCT24TMZEKT9MCTFV

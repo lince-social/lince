@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Grid-forming voltage behavior, droop and energy (@pe-grid-forming: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF", #source "../sources/UNIFI-Grid-Forming-Specifications-Version-2.lingua#r_5SF91JRQ8TE46HXTXRK16P9KBZ", #source "../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #electrical-power-engineering "Converter-current-limits-fault-ride-through-and-protection.lingua#r_55R9RQZYP7XRAM99BVHRF182VZ") { r_4VKDJXXE9G6QABBCNQ0GB2KAMH
+**Read:** [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF), entire report and modelling/research questions; [UNIFI grid-forming specifications, version 2](../sources/UNIFI-Grid-Forming-Specifications-Version-2.lingua#r_5SF91JRQ8TE46HXTXRK16P9KBZ), entire versioned specification; [Feedback Systems — Åström and Murray](../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833), complete applicable nonlinear/local-control limitations.
+
+A grid-forming resource provides controlled voltage-related behavior under its actual state and limits. Droop, oscillator, virtual-machine and other implementations can have different equations and responses despite sharing the label. Derive the selected model and define the measurable behavior at both unit and plant boundaries.
+
+Connect voltage/frequency response to finite converter current, DC-link/source energy, filters, delays and protection. A virtual-inertia coefficient does not create physical energy; a requested transient response must be supplied within actual storage/headroom limits. Current limiting can change a voltage-source-like behavior into another mode and alter stability or fault detection.
+
+Read all of [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF) and [UNIFI grid-forming specifications, version 2](../sources/UNIFI-Grid-Forming-Specifications-Version-2.lingua#r_5SF91JRQ8TE46HXTXRK16P9KBZ), then compare one complete published model/test with the functional specification. Investigate sharing, synchronization, islanded operation, grid connection and an appropriate disturbance under the stated scope. Check interactions with synchronous and grid-following resources instead of evaluating one ideal controller in isolation. The advanced converter study must make limits, energy, initialization and independent evidence explicit before a general system-level claim.
+
+**Continue:** [Converter current limits, ride-through and protection](Converter-current-limits-fault-ride-through-and-protection.lingua#r_55R9RQZYP7XRAM99BVHRF182VZ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4VKDJXXE9G6QABBCNQ0GB2KAMH

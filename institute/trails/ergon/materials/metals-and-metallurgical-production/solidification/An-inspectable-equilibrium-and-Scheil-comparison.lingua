@@ -1,0 +1,59 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Check equilibrium and Scheil limits with distinct instantaneous and mean-solid compositions (@metal-segregation-example: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #metals-and-metallurgical-production "Microsegregation-macrosegregation-flow-and-homogenization.lingua#r_1BJ8TWB2PXSX0CSVPAB9XW84A7") { r_303TRCDBJ49TR1RA2H9B13CTDA
+**Read:** [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), all constant-partition, no-solid-diffusion, and finite-diffusion work; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the complete solidification derivations; [Reproducible computational work](../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), reuse independent numerical evidence, bounds, and model validation.
+
+This invented single-solute constant-k mass-basis model assumes a closed total mass, mixed liquid, compatible phase quantities, and no extra phases. It compares complete equilibrium with the Scheil limit of no diffusion in previously formed solid. It does not calculate temperature, predict real phase boundaries, or validate a casting process.
+
+```python file=segregation_limits.py
+import json
+import math
+
+def finite(value, lower, upper):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("supply a finite numerical value")
+    try:
+        number = float(value)
+    except (ValueError, OverflowError) as error:
+        raise ValueError("supply a bounded numerical value") from error
+    if not math.isfinite(number) or not lower <= number <= upper:
+        raise ValueError("number outside exercise bounds")
+    return number
+
+def compare(initial=0.04, partition=0.5, solid=0.75):
+    initial = finite(initial, 0, 0.4)
+    partition = finite(partition, 0.05, 3)
+    solid = finite(solid, 0, 0.99)
+    if 0 < initial < 1e-6 or 0 < solid < 1e-8:
+        raise ValueError("positive amount below the exercise scale")
+    logarithm = math.log1p(-solid)
+    scheil_liquid = initial*math.exp((partition-1)*logarithm)
+    scheil_next = partition*scheil_liquid
+    scheil_mean = None if solid == 0 else -initial*math.expm1(partition*logarithm)/solid
+    equilibrium_liquid = initial/(1-(1-partition)*solid)
+    equilibrium_solid = partition*equilibrium_liquid
+    compositions = [scheil_liquid,scheil_next,equilibrium_liquid,equilibrium_solid]
+    if scheil_mean is not None:
+        compositions.append(scheil_mean)
+    if any(not 0 <= value <= 1 for value in compositions):
+        raise ValueError("the assumed one-solute phase model left physical composition bounds")
+    return {"initial_solute_fraction":initial,"solid_mass_fraction":solid,
+            "scheil_liquid_fraction":scheil_liquid,"scheil_next_solid_fraction":scheil_next,
+            "scheil_mean_solid_fraction":scheil_mean,
+            "equilibrium_liquid_fraction":equilibrium_liquid,
+            "equilibrium_solid_fraction":None if solid == 0 else equilibrium_solid,
+            "scheil_solute_balance":(1-solid)*scheil_liquid+solid*(scheil_mean or 0),
+            "equilibrium_solute_balance":(1-solid)*equilibrium_liquid+solid*equilibrium_solid}
+
+if __name__ == "__main__":
+    print(json.dumps(compare(),sort_keys=True,allow_nan=False))
+```
+
+At the default f = 3/4 and k = 1/2, Scheil gives liquid 0.08, next-solid composition 0.04, and mean-solid composition 2/75. Equilibrium gives liquid 8/125 and solid 4/125. Both close the original solute fraction 0.04. At f = 0 the bulk solid composition is undefined and returned as null; the Scheil next-solid value describes the model's incipient interface product.
+
+**Work:** independently check the results with exact fractions and high-precision powers/integrals. Test k = 1, k below/above one, zero solute, f = 0, monotonic enrichment/depletion, conservation, valid boundaries, and rejected inconsistent/nonfinite inputs. Compare with finite solid diffusion and additional phases in a documented case. Exercise bounds are numerical/model limits, not alloy acceptance or process criteria.
+
+**Continue:** [Distinguish solute redistribution scales and test how processing changes them](Microsegregation-macrosegregation-flow-and-homogenization.lingua#r_1BJ8TWB2PXSX0CSVPAB9XW84A7).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_303TRCDBJ49TR1RA2H9B13CTDA

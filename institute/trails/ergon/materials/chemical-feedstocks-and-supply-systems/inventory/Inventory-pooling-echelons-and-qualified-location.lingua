@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Place stock where it can actually serve the intended users (@cs-multi-echelon: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #source "../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10", #chemical-supply-systems "../planning/Campaigns-changeovers-co-products-and-user-demand.lingua#r_6PQ79DBR4J7WBVMCB30J1HN4C9") { r_77Y5FHTM1GC958YEAYT4MR0KHN
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the entire Multi-echelon Inventory Systems chapter; [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the full pooling, inventory-placement and coordination work; [Warehouse & Distribution Science — Bartholdi and Hackman](../sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10), the complete distribution and flow analysis.
+
+Read Rossi's whole multi-echelon chapter and the graduate planning material. Distinguish manufacturer stock, a regional terminal, distributor inventory and stock at the user. Quantity at an upstream location is useful only if the grade, transport, equipment, time and release process can make it available before it is needed.
+
+Compare central pooling with local reserves for two chemical users. State demand dependence, lead times, common hazards/quality, transfer feasibility and who can access the stock. Derive a small example before a large model. Apparent pooling benefits can disappear if the users need incompatible grades, if one terminal is a common failure point or if a transfer requires a qualification not represented in the arithmetic.
+
+Measure the same service and full inventory cost under each arrangement. Account for aging, minimum shipment, reusable packaging, testing and the labour needed to maintain reserve readiness. Examine a delayed upstream supply and a failed local lot separately. The extended network study should connect location and inventory with physical quality and continuity evidence, retaining a clear boundary between modelled possibilities and suppliers or transfers demonstrated in the actual setting.
+
+**Continue:** [Coordinate chemical production and distribution without losing process feasibility](../planning/Campaigns-changeovers-co-products-and-user-demand.lingua#r_6PQ79DBR4J7WBVMCB30J1HN4C9).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_77Y5FHTM1GC958YEAYT4MR0KHN

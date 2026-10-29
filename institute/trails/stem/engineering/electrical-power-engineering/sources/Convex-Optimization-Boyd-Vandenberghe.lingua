@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Convex Optimization — Boyd and Vandenberghe (@pe-convex: 0, is #reference, #part-of @pe-sources) { r_54EB992HDGH8YV8BEV5PT5CYHA
+Stephen Boyd and Lieven Vandenberghe. Convex Optimization, Cambridge University Press. [Complete author-hosted book, slides, examples and errata](https://web.stanford.edu/~boyd/cvxbook/).
+
+Read the entire book for the sustained advanced optimization study, reconstructing convex sets/functions, duality, optimality, approximation and numerical methods. Relate every variable and constraint to a power-system quantity and distinguish an exactly convex engineering model from a relaxation of a nonconvex AC problem.
+
+The author page explicitly states that Cambridge holds copyright and permits the complete book to remain freely available on the web; checked on 29 October 2026. That permission is different from an open adaptation licence. Some solution resources are instructor-only; linked modelling software has separate licences. No book, examples collection or solver is installed or copied here. Use small independently solved benchmarks before treating a reported solver optimum as a verified physical decision.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_54EB992HDGH8YV8BEV5PT5CYHA

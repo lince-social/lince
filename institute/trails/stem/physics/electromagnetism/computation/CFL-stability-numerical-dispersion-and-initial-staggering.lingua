@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+CFL stability, dispersion and initial staggering (@em-stability: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM", #source "../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX", #electromagnetism "An-inspectable-periodic-Yee-wave.lingua#r_7HQHSXPAZ45JWXAC5G48DC8D10") { r_4MZK1WY80NXBHV1245D8SHYA0S
+**Read:** [Understanding the Finite-Difference Time-Domain Method — John B. Schneider](../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM), stability, numerical dispersion and initialization; [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX), resolution, time stepping and convergence guidance.
+
+For the one-dimensional uniform normalized Yee scheme, let s = Δt/Δx. A Fourier mode with grid phase k obeys sin(ω_d/2) = s sin(k/2). Stability requires an appropriate Courant bound; the three-dimensional bound also depends on the spacings in every direction and the relevant wave speed. A safe one-dimensional step is not automatically safe on another mesh.
+
+Even below the stability bound, numerical phase speed depends on k and s. Resolve the shortest important wavelength and compare phase/group error over the entire propagation distance, not merely one cell. A stable computation can have unacceptable phase error. Nonuniform/dispersive media and their update equations introduce further conditions.
+
+Initialization matters because E and H occupy different times. For the next periodic standing-wave example, use H at −Δt/2 consistently with a zero-continuum-time magnetic field to second order. Setting both staggered arrays to an arbitrary same-time state can create a first-order error or the wrong physical initial data. Compare the exact discrete mode first, then a fixed-physical-time continuum refinement. Energy must also be evaluated with the actual staggered variables rather than a superficially familiar simultaneous formula.
+
+**Continue:** [An inspectable periodic Yee wave](An-inspectable-periodic-Yee-wave.lingua#r_7HQHSXPAZ45JWXAC5G48DC8D10).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_4MZK1WY80NXBHV1245D8SHYA0S

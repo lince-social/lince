@@ -1,4 +1,5 @@
 use super::super::{Result, cargo_command};
+use crate::file_sha256 as digest;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -78,7 +79,7 @@ const CAPTURE_RENDER_TESTS: &[&str] = &[
 const CAPTURE_CLIENT_TEST: &str = "server::tests::transfers_tests::dispatch::privacy::real_output_capture_keeps_public_updates_and_excludes_private_windows_and_owned_popups";
 const CAPTURE_LIFETIME_TESTS: &[&str] = &[
     "server::tests::transfers_tests::dispatch::capture_lifetime::peers::disconnecting_an_independent_capturer_cannot_write_its_retained_readback_or_retire_the_ordinary_application",
-    "server::tests::transfers_tests::dispatch::capture_lifetime::peers::twenty_actual_capture_session_resize_stop_and_disconnect_cycles_retire_gpu_resources_and_return_to_quiet_owner_input",
+    "server::tests::transfers_tests::dispatch::capture_lifetime::peers::three_actual_capture_session_resize_stop_and_disconnect_cycles_retire_gpu_resources_and_return_to_quiet_owner_input",
     "server::tests::transfers_tests::dispatch::capture_lifetime::peers::retained_cursor_and_drag_artwork_cannot_inherit_a_replacement_origin_without_a_fresh_authorized_request",
 ];
 const CAPTURE_RETAINED_TESTS: &[&str] = &[
@@ -135,7 +136,7 @@ const COMPACT_MODEL_TESTS: &[&str] = &[
     "native::layout::desktop::compact::chooser::tests::a_replacement_modal_retains_keyboard_focus_when_the_old_chooser_receives_a_late_action",
 ];
 const COMPACT_CLIENT_TESTS: &[&str] = &[
-    "server::tests::transfers_tests::dispatch::compact::workflow::rendered_compact_properties_chooser_header_and_saved_rebound_actions_keep_the_captured_members_at_scaled_widths",
+    "server::tests::transfers_tests::dispatch::compact::workflow::rendered_compact_properties_chooser_header_and_saved_rebound_actions_keep_the_captured_members_at_fractional_scale",
     "server::tests::transfers_tests::dispatch::compact::workflow::ordinary_native_group_save_and_actual_cell_restart_restore_content_identity_order_and_active_member_without_reseeding",
     "server::tests::transfers_tests::dispatch::compact::clients::actual_compact_clients_keep_popup_ime_drag_transfer_and_queued_capture_ownership_without_hidden_input_or_neighbour_configure_loops",
     "server::tests::transfers_tests::dispatch::compact::lifetime::queued_compact_confirmation_refuses_closed_replaced_modal_output_and_locked_owners_then_fresh_choices_recover",
@@ -734,38 +735,16 @@ fn executable(program: &Path) -> Result<PathBuf> {
     Ok(candidate)
 }
 
-fn digest(path: &Path) -> Result<String> {
-    let mut file = File::open(path).map_err(error)?;
-    let mut hash = Sha256::new();
-    let mut buffer = [0; 65536];
-    loop {
-        let count = file.read(&mut buffer).map_err(error)?;
-        if count == 0 {
-            return Ok(hash
-                .finalize()
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect());
-        }
-        hash.update(&buffer[..count]);
-    }
-}
 
 fn bounded(command: &mut Command, deadline: Duration) -> Result<(ExitStatus, u128)> {
     let start = Instant::now();
-    let mut child = command.spawn().map_err(error)?;
+    let mut children = Children(vec![ManagedChild::spawn(command)?]);
     loop {
-        if let Err(error) = check_interruption() {
-            let _ = child.kill();
-            let _ = child.wait();
-            return Err(error);
-        }
-        if let Some(status) = child.try_wait().map_err(error)? {
+        check_interruption()?;
+        if let Some(status) = children.0[0].child.try_wait().map_err(error)? {
             return Ok((status, start.elapsed().as_millis()));
         }
         if start.elapsed() >= deadline {
-            let _ = child.kill();
-            let _ = child.wait();
             return Err(format!("Phase exceeded {} seconds", deadline.as_secs()));
         }
         thread::sleep(Duration::from_millis(50));
@@ -811,7 +790,7 @@ fn copy_dependency_source(source: &Path, destination: &Path, relative: &Path, ha
 }
 
 fn prepare_smithay_source(directory: &Path) -> Result<String> {
-    let root = fs::canonicalize(Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")).map_err(error)?;
+    let root = env::current_dir().map_err(error)?;
     let destination = directory.join("smithay-dependency");
     let mut hashes = BTreeMap::new();
     copy_dependency_source(&root.join("crates/vendor/smithay"), &destination, Path::new(""), &mut hashes)?;
@@ -847,7 +826,6 @@ fn preparation_step_with_environment(
             "LINCE_PARK_TEST_ARTIFACTS",
             directory.join("native-captures"),
         );
-    deny_warnings(&mut command);
     logged(&mut command, &directory.join(format!("{name}.log")))?;
     let (status, _) = bounded(&mut command, Duration::from_secs(3600))?;
     if !status.success() {
@@ -1035,22 +1013,23 @@ fn toolkit_results(log: &str) -> Result<()> {
 }
 
 fn prepare_capture_probe(directory: &Path) -> Result<String> {
+    if let Some(probe) = prebuilt_probe("capture-probe")? {
+        let target = directory.join("bin/capture-probe");
+        fs::copy(probe, &target).map_err(error)?;
+        return digest(&target);
+    }
     let mut command = cargo_command();
     command.args([
         "run",
-        "--release",
         "--locked",
         "--message-format=json",
         "-p",
-        "lince-park",
-        "--features",
-        "server-tests",
-        "--example",
+        "lince-park-clients",
+        "--bin",
         "capture_probe",
         "--",
         "--help",
     ]);
-    deny_warnings(&mut command);
     let output = command.output().map_err(error)?;
     fs::write(directory.join("prepare-capture-probe.log"), &output.stderr).map_err(error)?;
     if !output.status.success() {
@@ -1071,8 +1050,11 @@ fn prepare_capture_probe(directory: &Path) -> Result<String> {
     digest(&target)
 }
 
-fn deny_warnings(command: &mut Command) {
-    command.env("RUSTFLAGS", super::warning_flags());
+fn prebuilt_probe(name: &str) -> Result<Option<PathBuf>> {
+    let Some(directory) = env::var_os("LINCE_PARK_VALIDATION_BINARIES") else { return Ok(None); };
+    let directory = PathBuf::from(directory);
+    if !directory.is_absolute() { return Err("LINCE_PARK_VALIDATION_BINARIES must be absolute".into()); }
+    Ok(Some(executable(&directory.join(name))?))
 }
 
 pub(super) fn inspect_build(executable: &Path) -> Result<serde_json::Value> {
@@ -2508,7 +2490,6 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
             "--",
             "--build-info",
         ]);
-        deny_warnings(&mut command);
         let output = command.output().map_err(error)?;
         fs::write(directory.join("prepare-executable.log"), &output.stderr).map_err(error)?;
         if !output.status.success() {
@@ -2528,28 +2509,25 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
     }
     let build_info = inspect_build(&target)?;
     let process_executable = process_executable(&target)?;
+    let probe = if let Some(probe) = prebuilt_probe("session-probe")? { probe } else {
     let mut probe = cargo_command();
     probe.args([
         "run",
-        "--release",
         "--locked",
         "--message-format=json",
         "-p",
-        "lince-park",
-        "--features",
-        "server-tests",
-        "--example",
+        "lince-park-clients",
+        "--bin",
         "session_probe",
         "--",
         "--help",
     ]);
-    deny_warnings(&mut probe);
     let output = probe.output().map_err(error)?;
     fs::write(directory.join("prepare-probe.log"), &output.stderr).map_err(error)?;
     if !output.status.success() {
         return Err("Preparing the native session probe failed".into());
     }
-    let probe = output
+    output
         .stdout
         .split(|byte| *byte == b'\n')
         .filter_map(|line| serde_json::from_slice::<serde_json::Value>(line).ok())
@@ -2558,7 +2536,8 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
         })
         .filter_map(|value| value["executable"].as_str().map(PathBuf::from))
         .last()
-        .ok_or("Cargo did not report the session probe executable")?;
+        .ok_or("Cargo did not report the session probe executable")?
+    };
     fs::copy(probe, directory.join("bin/session-probe")).map_err(error)?;
     let capture_sha256 = prepare_capture_probe(&directory)?;
     let capture_data = directory.join("nested-capture-data");

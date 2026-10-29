@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect backfill material behavior with water, placement, and extraction history (@mine-backfill: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #mining-and-mineral-engineering "Monitor-ground-response-and-update-the-model.lingua#r_031R2XG88PEQPGZH6A41J50TY4") { r_64BKQ5MJZMC6HK1J3DQ4ESZPCS
+**Read:** [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant backfill and ground-interaction chapters; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the full particle, slurry, thickening, and related material treatment; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the complete relevant characterization and dewatering procedures.
+
+Backfill can influence ground behavior, access, extraction sequence, material recovery, and waste placement. Hydraulic, paste, rock, cemented, and other fills have different particle, water, binder, transport, placement, drainage, curing, and mechanical accounts. One fill label does not specify performance.
+
+Material properties depend on sampling, preparation, density, gradation, water chemistry/content, binder reactions, stress path, time, and conditions. A laboratory strength specimen and a placed underground mass can differ in structure, drainage, segregation, and loading. Preserve the evidence connecting them.
+
+Fill, barricades/retaining systems, openings, ground, water, and later extraction form an interacting sequence. A mass balance must include solids, water, binder, returns/losses, and storage. Nominal plant capacity does not guarantee that fill of the required condition can be delivered when needed.
+
+**Work:** reconstruct a complete backfill case with its material characterization, lab/field methods, transport/placement account, sequence, uncertainty, and observations. Independently check a bounded solids/water or capacity account. Compare a changed feed/binder/water or sequence assumption and explain the data required to assess its consequence.
+
+Read the full appropriate handbook chapters and CETEM particle/dewatering methods. Later materials, slurry transport, and geotechnical subjects deepen their unique models while reusing this connected ground/material evidence.
+
+**Continue:** [Design observations that can test a ground model and inform a response](Monitor-ground-response-and-update-the-model.lingua#r_031R2XG88PEQPGZH6A41J50TY4).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_64BKQ5MJZMC6HK1J3DQ4ESZPCS

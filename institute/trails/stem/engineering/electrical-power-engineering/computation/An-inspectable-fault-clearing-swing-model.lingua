@@ -1,0 +1,60 @@
+Import "../Electrical-power-engineering.lingua"
+
+An inspectable fault-clearing swing model (@pe-swing-example: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #source "../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ", #source "../sources/Power-System-Stability-and-Control-Kundur-Malik.lingua#r_5Y16A8DP62RPS6C0N6QXSWN1SB", #electrical-power-engineering "../dynamics/Voltage-solvability-dynamics-and-load-recovery.lingua#r_7VQ11DKY04F2G6E8XVGQS3PMDZ") { r_33KE9HBQFMC4GZJ7817WVHX21C
+**Read:** [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), complete swing, energy and numerical-integration development; [ANDES — dynamic modelling and analysis manual](../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ), complete applicable initialization and time-domain methods; [Power System Stability and Control — Kundur and Malik](../sources/Power-System-Stability-and-Control-Kundur-Malik.lingua#r_5Y16A8DP62RPS6C0N6QXSWN1SB), the whole relevant classical stability method when using this optional companion.
+
+Use a normalized classical single-machine/infinite-bus model with pre/post-fault transfer sinδ, constant mechanical input p in (0,1), no damping or controller and coefficient M multiplying δ''. Initially δ₀=asin(p), speed deviation zero. During a fault with zero electrical transfer, δ and speed advance analytically; after clearing, the original transfer is restored.
+
+The unstable post-fault equilibrium is δ_u=π−δ₀. Its potential-energy barrier gives cosδ_c=−cosδ₀+p(δ_u−δ₀), then critical clearing time sqrt(2M(δ_c−δ₀)/p). This is a first-swing result for this precise model, not a relay setting or a general multimachine/converter result. M must match the time and power basis; if physical time is seconds and power shares the machine base, the classical coefficient is 2H/ω_sync. Rescaling time changes M.
+
+```python file=fault_clearing_swing.py
+import json
+import math
+
+def bounded(value, low, high):
+    if type(value) not in (int, float) or not low <= value <= high:
+        raise ValueError("finite real input outside declared bounds")
+    return float(value)
+
+def run(mechanical=0.5, inertia=1.0, clearing=1.0, step=0.01, steps=500):
+    mechanical = bounded(mechanical, 0.05, 0.95)
+    inertia = bounded(inertia, 0.1, 10.0)
+    clearing = bounded(clearing, 0.0, 6.0)
+    step = bounded(step, 0.001, 0.02)
+    if type(steps) is not int or not 0 <= steps <= 4096:
+        raise ValueError("zero to 4096 post-fault steps required")
+    initial_angle = math.asin(mechanical)
+    unstable_angle = math.pi - initial_angle
+    critical_angle = math.acos(-math.cos(initial_angle) + mechanical * (unstable_angle - initial_angle))
+    critical_time = math.sqrt(2.0 * inertia * (critical_angle - initial_angle) / mechanical)
+    angle = initial_angle + mechanical * clearing * clearing / (2.0 * inertia)
+    speed = mechanical * clearing / inertia
+    def energy(position, velocity):
+        return 0.5 * inertia * velocity * velocity - mechanical * position - math.cos(position)
+    initial_energy = energy(angle, speed)
+    barrier = -mechanical * unstable_angle - math.cos(unstable_angle)
+    margin = barrier - initial_energy
+    inside = angle < unstable_angle
+    verdict = "boundary" if inside and abs(margin) <= 1e-10 else "bounded-first-swing" if inside and margin > 0.0 else "outside-first-swing-region"
+    trajectory = [(0.0, angle, speed)]
+    drift = 0.0
+    for j in range(steps):
+        half_speed = speed + 0.5 * step * (mechanical - math.sin(angle)) / inertia
+        angle += step * half_speed
+        speed = half_speed + 0.5 * step * (mechanical - math.sin(angle)) / inertia
+        drift = max(drift, abs(energy(angle, speed) - initial_energy))
+        trajectory.append(((j + 1) * step, angle, speed))
+    return {"critical_angle": critical_angle, "critical_time": critical_time, "energy_margin": margin, "first_swing_model": verdict, "initial_energy": initial_energy, "final_energy": energy(angle, speed), "maximum_energy_drift": drift, "trajectory": trajectory}
+
+if __name__ == "__main__":
+    print(json.dumps(run(), sort_keys=True, allow_nan=False))
+```
+
+Verify the clearing state with the exact fault-on solution, the critical boundary with an independent equal-area integral/root, and post-fault trajectories with a separate higher-order integration. The original velocity-Verlet update should exhibit second-order step refinement and bounded small-step energy error over a declared interval; it does not conserve the continuous energy exactly.
+
+Test zero clearing, both sides of the boundary, inertia/time scaling, stable and escaping trajectories, step sensitivity and rejected inputs. A finite simulated time without an escape is not by itself proof of stability. The energy result, numerical trajectory and physical validity of the classical model are separate pieces of evidence; later complete dynamic/controller/EMT cases test the broader system.
+
+**Continue:** [Voltage solvability, dynamics and load recovery](../dynamics/Voltage-solvability-dynamics-and-load-recovery.lingua#r_7VQ11DKY04F2G6E8XVGQS3PMDZ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_33KE9HBQFMC4GZJ7817WVHX21C

@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Plan fieldwork around a question, access, conditions, and evidence (@geo-fieldwork: 0, is #chapter, #part-of @geology, #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK", #geology "Field-records-and-specimen-identity.lingua#r_3FKHJDJF9DDFFMVTVQJN7PAX34") { r_3KBKETGY3QZKFDHPF0H0NAF5GA
+**Read:** [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete field-trip preparation and mapping exercise; [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), Lab 9 Field Mapping and its prerequisite sections; [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK), the full field/observation methodology.
+
+Fieldwork should be designed to test a geological question with suitable observations. Choose an appropriate accessible area, base information, working scale, route, equipment, observation methods, time, communication arrangements, and the actual terrain/weather/site conditions. A good plan remains revisable as exposures and evidence change.
+
+Practical field competence includes navigation, orientation, accurate descriptions, specimen/observation identity, method checks, and sound decisions in the actual setting. Respect access permissions, conservation, and the relevant local rules. Use appropriate guidance and supervision for unfamiliar or demanding terrain rather than treating an online field-trip description as preparation for every site.
+
+Distinguish direct outcrop evidence from float, transported material, fill, weathered surfaces, remote images, or an older report. The provenance of an observation affects what it can establish about location and history. A promising-looking specimen is not automatically representative of the mapped body.
+
+**Work:** prepare a field plan from the complete MIT field material and the structural mapping lab, stating question, expected competing interpretations, observations, checks, and conditions. Carry out suitable supervised/local work where available, preserving deviations and unexpected findings. A document or virtual reconstruction can develop interpretation first; state which practical abilities it has not observed.
+
+Return from fieldwork with evidence that another person can inspect, including missing exposure and negative observations relevant to the question. The later sustained programme requires actual practical demonstration for its practical claims, while ordinary readers remain free to study or reuse any Record without additional authorization machinery.
+
+**Continue:** [Keep a field record that survives reinterpretation and transfer](Field-records-and-specimen-identity.lingua#r_3FKHJDJF9DDFFMVTVQJN7PAX34).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_3KBKETGY3QZKFDHPF0H0NAF5GA

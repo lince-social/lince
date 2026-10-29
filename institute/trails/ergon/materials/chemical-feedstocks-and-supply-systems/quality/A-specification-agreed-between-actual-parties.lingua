@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Turn a useful-material definition into an explicit supply agreement (@cs-agreement: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA", #source "../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME", #chemical-supply-systems "../foundations/Draw-material-information-money-and-responsibility-separately.lingua#r_12722F6QK2K31GCEZEJYMYSP5H") { r_3J12DD0DDF2HT8EJXNRC7NSE3E
+**Read:** [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the complete quality, procurement, documentation and contract sections; [Validation of Measurement Procedures that Include Sampling — Eurachem](../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA), the entire purpose, target-uncertainty and integrated-measurement discussion; [Caustic Soda Handbook — OxyChem](../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME), actual producer grade/specification and analytical-method material.
+
+After the shared product-specification Record, describe the actual agreement between a supplier and a receiving user. State the product, quantity basis, impurity panel, physical state, analytical methods, representative sample, reporting uncertainty where relevant, acceptance decision and response to a nonconforming delivery. The specification needs to identify whose operation will be affected and which evidence will be available when.
+
+Use one hypothetical impurity with a maximum limit. Compare a producer's batch average, a terminal tank sample and a package sample at receipt: these can represent different targets even when the method is identical. Specify how a changed feed source, process, packaging material or distribution route will be communicated and evaluated. A sales label such as technical, analytical or electronic does not replace this content.
+
+Write two plausible agreements for the same nominal chemical and explain their tradeoffs. One may require an additional contaminant measurement and a release delay; another may permit a qualified producer's report under continuing evidence of performance. Neither should promise impossible certainty. Distinguish technical acceptance from title, payment and liability provisions, and use appropriate commercial/legal sources when those provisions become part of the actual case.
+
+**Continue:** [Draw the boundaries and the different flows across them](../foundations/Draw-material-information-money-and-responsibility-separately.lingua#r_12722F6QK2K31GCEZEJYMYSP5H).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_3J12DD0DDF2HT8EJXNRC7NSE3E

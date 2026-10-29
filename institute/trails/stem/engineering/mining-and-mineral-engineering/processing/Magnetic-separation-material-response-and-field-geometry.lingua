@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Relate magnetic separation to measured mineral response and field conditions (@mine-magnetic: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #mining-and-mineral-engineering "Electrical-separation-surfaces-charging-and-environment.lingua#r_6VETYWKH3MXQFWRTD8NFWVVY2T") { r_5E1CZ1RK5DXVQR4QH20X2FM3H1
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete magnetic-separation chapter; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the full applicable magnetic-characterization/separation procedures; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), a complete relevant case and its original references.
+
+Magnetic separation depends on mineral/particle response, field and gradient geometry, particle size/association, competing forces, fluid/motion, and equipment conditions. Magnetic susceptibility or a hand-magnet observation is useful evidence within a method, not a complete prediction of a plant split.
+
+Different magnetic behaviors and field conditions require appropriate models. A high field magnitude alone does not specify the force/selectivity on every particle. Shape, aggregation, coatings, moisture, feed presentation, and liberation can alter the response observed in a simple mineral test.
+
+Assess product yield, grade, recovery, size/mineral losses, impurities, throughput, energy, and maintenance with compatible boundaries. A recovered magnetic fraction can contain entrained or locked non-target material; a clean-looking product may still fail a chemical or physical specification.
+
+**Work:** reconstruct a complete test/plant case from mineral characterization through apparatus, conditions, stream sampling, and results. Independently close a constituent account and explain a stated force/response model with units and assumptions. Compare a plausible association or field/feed alternative and design a discriminating test.
+
+Read full theory and laboratory procedures. Later electromagnetism, materials, and separator-design studies deepen the unique physics while reusing the measured mineral/population evidence.
+
+**Continue:** [Explain electrical separation through particle properties and actual conditions](Electrical-separation-surfaces-charging-and-environment.lingua#r_6VETYWKH3MXQFWRTD8NFWVVY2T).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_5E1CZ1RK5DXVQR4QH20X2FM3H1

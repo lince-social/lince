@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Measure and interpret hardness with the actual scale, specimen, and influence model (@metal-hardness-testing: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Rockwell-Hardness-Measurement-NIST.lingua#r_00QNYTS0KD4Y8SCJR68K1JECFM", #source "../sources/ASM-Mechanical-Testing-and-Evaluation.lingua#r_1VW327STC5YQGRAPNRAPQSZQNG", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "Fracture-impact-specimen-constraint-and-structural-meaning.lingua#r_2007KW2CS5BSW54WT8ZHAQQJ18") { r_23KBCN29CE7WNS4Y2QJC9ZEHD1
+**Read:** [Rockwell Hardness Measurement of Metallic Materials — Samuel R. Low, NIST](../sources/Rockwell-Hardness-Measurement-NIST.lingua#r_00QNYTS0KD4Y8SCJR68K1JECFM), the entire guide and full relevant references; [Mechanical Testing and Evaluation — ASM Handbook, volume 8](../sources/ASM-Mechanical-Testing-and-Evaluation.lingua#r_1VW327STC5YQGRAPNRAPQSZQNG), all complete relevant hardness/instrumented methods, when available; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), full structure/property and quantitative observation material used.
+
+Hardness methods create and measure a local response under specified indenter, force/time, geometry, and analysis conditions. Rockwell, Vickers, Knoop, Brinell, and instrumented indentation do not all define the same quantity or probe the same support. Scale conversion and strength inference require an applicable empirical/material basis.
+
+Read the whole NIST Rockwell guide. Connect machine/indenter verification, reference blocks, support, surface preparation, thickness/spacing, curvature, force/time behavior, uncertainty, and reporting. A changed measurement can result from the instrument/specimen system as well as a metallurgical state change.
+
+Compare hardness with phase/defect observations and independently measured properties. Local heterogeneity, surface layers, residual stress, texture, and scale can influence the relation. A high local hardness does not automatically establish toughness, fatigue resistance, or satisfactory whole-part performance.
+
+**Work:** reconstruct a complete hardness study with calibration/reference and representative sampling. Independently check a measurement/uncertainty account, compare at least two possible explanations for a spatial or treatment-related difference, and validate with a complementary structural/property method. Identify the limits of a proposed hardness-to-strength or cross-scale conversion and explain the evidence needed for the actual product decision.
+
+**Continue:** [Separate impact energy, fracture mechanics, mechanism, and whole-structure performance](Fracture-impact-specimen-constraint-and-structural-meaning.lingua#r_2007KW2CS5BSW54WT8ZHAQQJ18).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_23KBCN29CE7WNS4Y2QJC9ZEHD1

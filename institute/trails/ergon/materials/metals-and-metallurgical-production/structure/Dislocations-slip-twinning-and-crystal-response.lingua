@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect crystal deformation mechanisms with measured material response (@metal-dislocations: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #source "../sources/Principles-of-Metal-Forming-NPTEL.lingua#r_7V0FT0Q67E19BFVTK57QABNPX8", #metals-and-metallurgical-production "Grain-boundaries-interfaces-texture-and-spatial-connectivity.lingua#r_5VHXEDBRYBAFTQV0G49KQ1GV5Z") { r_20235H2JPMBC98V0BGH00ZTMHM
+**Read:** [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the complete deformation/crystallography, crystal-plasticity, and metals/alloys material used; [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), all plasticity, dislocation/twinning, strengthening, and relevant problem sets; [Principles of Metal Forming Technology — Pradeep Kumar Jha, NPTEL](../sources/Principles-of-Metal-Forming-NPTEL.lingua#r_7V0FT0Q67E19BFVTK57QABNPX8), the complete stress/strain and material-flow introduction.
+
+Dislocations, slip systems, lattice resistance, interactions, and interfaces help explain plastic deformation in crystals. Twinning and other mechanisms can also contribute under particular material/temperature/rate conditions. Burgers vector, line character, resolved shear, and geometry describe distinct features; a macroscopic strain curve does not directly identify them all.
+
+Derive a simple resolved-shear argument with an explicit crystal/loading geometry, then distinguish single-crystal from polycrystal constraints. A favorable slip orientation does not alone predict the full yield stress, hardening, localization, or failure of a processed alloy. Grain constraints, phases, solutes, particles, rate, and temperature affect the comparison.
+
+Connect mechanism claims with crystallographic and microscopic observations, including preparation and measurement limits. Changes inferred from a fitted strengthening coefficient need independent support. Avoid treating a visually appealing dislocation sketch as a quantitative model without the actual assumptions and parameters.
+
+**Work:** reconstruct a complete primary deformation-mechanism study. Independently calculate one geometric/resolved-shear result, compare two candidate mechanisms against structural and mechanical evidence, and test a changed temperature, rate, or orientation condition. Explain which aspects are directly observed and which depend on a model. The later graduate mechanics study extends these arguments across scales and competing failure modes.
+
+**Continue:** [Treat interfaces and orientation populations as material structure with measurable consequences](Grain-boundaries-interfaces-texture-and-spatial-connectivity.lingua#r_5VHXEDBRYBAFTQV0G49KQ1GV5Z).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_20235H2JPMBC98V0BGH00ZTMHM

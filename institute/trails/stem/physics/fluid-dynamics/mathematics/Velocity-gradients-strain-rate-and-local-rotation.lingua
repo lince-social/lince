@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Velocity gradients, strain rate and local rotation (@fd-tensors: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Fluxes-oriented-surfaces-and-coordinate-measures.lingua#r_67DWMZBFCRCW464EP31KR60ZV9") { r_37ABTXR3GBSJXJ39FACENFATQ6
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 5 deformation and vorticity; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter II mathematical tools and VII viscous motion; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), Cartesian tensor appendix and constitutive relations.
+
+Choose the convention Lᵢⱼ=∂uᵢ/∂xⱼ. Split L into a symmetric deformation-rate tensor D=(L+Lᵀ)/2 and an antisymmetric local-rotation tensor W=(L−Lᵀ)/2. The trace of D is the volumetric expansion rate ∇·u. Tensor notation records how components transform; it does not add a new physical force.
+
+For planar shear u=(γy,0,0), both deformation and local rotation are present. For rigid rotation u=(−Ωy,Ωx,0), D vanishes and the vorticity is 2Ω in the axial direction. A nonzero velocity gradient is therefore not sufficient evidence of viscous shear stress in a Newtonian fluid.
+
+Follow a small marked square over a short interval and calculate its side lengths, angles and orientation. Separate translation, rotation and deformation in the drawing. Verify that a change of orthonormal coordinates changes the tensor components while preserving scalar quantities such as D:D and tr(D).
+
+**Continue:** [Fluxes, oriented surfaces and coordinate measures](Fluxes-oriented-surfaces-and-coordinate-measures.lingua#r_67DWMZBFCRCW464EP31KR60ZV9).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_37ABTXR3GBSJXJ39FACENFATQ6

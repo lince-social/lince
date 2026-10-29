@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Cite the particular work and version that supports the method (@rc-citation: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Computational-Provenance.lingua#r_41T4TPCSCESX7SDK9BY4YQZX15", #source "../sources/FAIR-Principles.lingua#r_1DJWX0MM8DMEK300ZF8PHGQVB9", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #reproducible-computation "Archiving-and-restoration.lingua#r_1MKF7WR9CNMVP8WG4EJ5HZ05W7") { r_5A3TFYE7G3XCFYY4MJNK2VKB2R
+**Read:** [PROV — entities, activities, and responsibility — W3C](../sources/Computational-Provenance.lingua#r_41T4TPCSCESX7SDK9BY4YQZX15), provenance and attribution relationships; [FAIR Guiding Principles — Wilkinson and colleagues](../sources/FAIR-Principles.lingua#r_1DJWX0MM8DMEK300ZF8PHGQVB9), identification and reuse principles; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), publishing and citation material.
+
+A citation lets another reader locate and interpret a contribution. Give author or responsible project, title, edition/version, publication identity or persistent identifier, authorized location, and the specific section used where relevant. A mutable documentation landing page is useful for discovery, but a version-specific method claim needs the consulted version and date or source revision.
+
+Distinguish a paper describing a method, the implementation used, the particular software release, a dataset edition, and the environment that ran it. Citing a numerical library's general paper does not specify which algorithm option produced your result. Citing a textbook does not transfer its authority to an unrelated implementation that has not been checked.
+
+Connect each derived result with its actual inputs and transformations. A content digest adds byte identity; a bibliographic identity preserves meaning and attribution. The report and provenance account need both when reconstruction depends on particular data or code. Preserve corrections and edition differences rather than silently replacing a cited original with the latest mutable page.
+
+**Work:** select one figure in your project and trace every external factual or methodological contribution. Provide specific citations and identify the code/input versions actually used. Ask another reader to resolve them and distinguish what can be obtained, what is merely described, and what remains ambiguous. Repair the account based on that evidence.
+
+Use the source Records as examples of useful bibliographic description, with whole-book assignments early and precise passages for a later question. Follow the actual publication's citation and component notices. Citation is part of the scientific explanation and attribution, not a substitute for permission, available artifacts, or independent numerical validation.
+
+**Continue:** [Preserve a reconstructible study and test restoration](Archiving-and-restoration.lingua#r_1MKF7WR9CNMVP8WG4EJ5HZ05W7).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_5A3TFYE7G3XCFYY4MJNK2VKB2R

@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Electrical standards, edition and jurisdiction (@pe-standards: 0, is #reference, #part-of @pe-sources) { r_169QEF26N0C345MKSRWQY6KD90
+Use the issuing bodies' actual catalogues: [IEC Webstore](https://webstore.iec.ch/), [IEEE Standards Association](https://standards.ieee.org/) and [ABNT Catálogo](https://www.abntcatalogo.com.br/).
+
+Investigate the actual applicable editions/corrigenda of the relevant rotating-machine, transformer, short-circuit, insulation, protection-relay and installation series; IEC 60034, 60076, 60909, 60071, 60255 and 60364 are useful starting families. For Brazilian installation work, identify the applicable NBR 5410, 14039 and 5419 documents and local supply requirements. IEEE grounding, arc-flash, harmonic and interconnection standards address distinct questions; choose by actual scope.
+
+These are reference routes to standards, not a claim that all full standards are freely licensed or supplied here. Many require licensed/library access. Do not infer current edition, binding applicability or universal numerical limits from a family name or a manufacturer's summary. The surrounding primary sources were checked on 29 October 2026; resolve the exact authority, document and date during the study. No standards, excerpts, tables or unofficial mirrors are bundled.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_169QEF26N0C345MKSRWQY6KD90

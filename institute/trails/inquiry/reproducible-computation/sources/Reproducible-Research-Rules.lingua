@@ -1,0 +1,11 @@
+Import "../Reproducible-computation.lingua"
+
+Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues (@rc-rules: 0, is #article, #part-of @rc-sources) { r_5WNPQ4CBNZFM416E5TTNSKKPQG
+Geir Kjetil Sandve, Anton Nekrutenko, James Taylor, and Eivind Hovig. “Ten Simple Rules for Reproducible Computational Research.” PLOS Computational Biology 9(10), e1003285, 2013. [Authorized article](https://doi.org/10.1371/journal.pcbi.1003285).
+
+Read the full paper. Reconstruct how a figure or result in your own study is connected to inputs, code, parameters, versions, and any manual actions. In later work compare its historical advice with current random-stream, environment, workflow, and preservation documentation; a short rule is a starting point for an implemented method, not a complete specification.
+
+The publisher identifies the article as open access under Creative Commons Attribution terms. Retain authors, title, publication, DOI, and notices before reuse. Author list, citation, and access checked on 29 October 2026. No article PDF is bundled.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_5WNPQ4CBNZFM416E5TTNSKKPQG

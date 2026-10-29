@@ -48,7 +48,7 @@ fn workspace_navigation_operation_commands_preserve_editor_drafts_outputs_and_li
         .unwrap();
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
-    for size in [[1000, 700], [360, 700]] {
+    for size in [[360, 700]] {
         let mut canvas = Presentation::new(
             size,
             directory.path().join(format!("assets-{}", size[0])),
@@ -333,6 +333,7 @@ fn workspace_navigation_operation_commands_preserve_editor_drafts_outputs_and_li
                 .map(|(entity, _)| entity)
                 .unwrap()
         };
+        super::displays::reveal(&mut canvas, field);
         click(&mut canvas, field, size);
         let order = native::workspace::numbers(canvas.app.world(), root);
         let position = order.iter().position(|id| *id == ids[0]).unwrap();

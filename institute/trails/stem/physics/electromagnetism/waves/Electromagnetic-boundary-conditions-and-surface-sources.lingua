@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Wave boundary conditions and surface sources (@em-wave-boundary: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Fresnel-reflection-refraction-and-Brewster-angle.lingua#r_5X8JFEWJNR27PDCQQX5CG9WWA9") { r_7CZ3214B64A21KWWVG6HM2DKBN
+**Read:** [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), reflection/transmission and conducting boundaries; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), wave boundary conditions.
+
+Derive interface conditions from small loops and pillboxes in Maxwell's integral equations. Normal B is continuous; normal D jumps by free surface charge. Tangential E is continuous under finite-field assumptions; tangential H jumps with free surface current, using a declared normal from medium 1 to medium 2. Ideal singular sheets require their explicit generalized source model.
+
+At a perfect electric conductor in an ideal frequency-domain problem, tangential E vanishes, and induced surface charge/current supply the other field discontinuities. A good finite conductor has penetration, dissipation and a surface impedance over a restricted regime. An ideal boundary is not a material specification valid at every frequency or field amplitude.
+
+Use phase matching along a planar interface to obtain the reflected and transmitted tangential wave-vector components. Then solve amplitudes by the actual boundary conditions. Assigning intensity conservation first cannot determine all phases or polarizations. Check conservation, limiting identical media and the conductor limit. Roughness, thin coatings, spatial dispersion and near fields may require a richer interface description than a single sharp homogeneous boundary.
+
+**Continue:** [Fresnel reflection, refraction and Brewster angle](Fresnel-reflection-refraction-and-Brewster-angle.lingua#r_5X8JFEWJNR27PDCQQX5CG9WWA9).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_7CZ3214B64A21KWWVG6HM2DKBN

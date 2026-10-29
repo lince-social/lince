@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Files, paths, processes, and the working directory (@rc-files: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Unix-Shell.lingua#r_5YJ6K2A69H1D45AADES3QR94AX", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Shell-arguments-and-failure.lingua#r_1R8YM93EXAYPW48D0CEWQ3QXJB") { r_2AEWQC548X1MYJGK7RSQKDD96K
+**Read:** [The Unix Shell — Software Carpentry](../sources/Unix-Shell.lingua#r_5YJ6K2A69H1D45AADES3QR94AX), Navigating Files and Directories and Working With Files and Directories, with exercises; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), pathlib and the tutorial on input/output.
+
+A file contains bytes; its name and location help a process find them. A relative path is interpreted from some base, often the process's current working directory. An absolute path names a location within a particular filesystem. Neither is a permanent identity for scientific data. Copying a project to another directory exposes assumptions that were invisible in its original location.
+
+A running interpreter has a version, arguments, environment variables, open files, and a current directory. It may inherit values from the shell, a graphical launcher, or a notebook server. Standard input, standard output, and standard error are streams; a printed number is not automatically a saved result. The process exit status tells a caller whether the program reported success under its contract.
+
+Create a personal exercise directory with inputs, analysis code, and results distinguished by their purpose. A particular directory layout is a convenience, not a definition of a trail or a condition for following these Records. Use names that reveal meaning and keep generated outputs reconstructible from identified inputs. Do not use the only copy of real observations for path experiments.
+
+**Work:** save a small text input and a script, run them from their own directory, and then invoke the script from its parent. Record which relative paths changed meaning. Move a copy into a directory containing spaces and repeat using explicit arguments. Explain why a program should not guess its input from whichever unrelated file happens to share a familiar name.
+
+For later reconstruction, write the command, input locations or resolvable references, and the expected output location. Preserve the actual input bytes separately from this location information. Return to this distinction when a cloud notebook, container mount, or archived publication offers a link that no longer resolves to the original data.
+
+**Continue:** [Use the shell to run an explicit procedure](Shell-arguments-and-failure.lingua#r_1R8YM93EXAYPW48D0CEWQ3QXJB).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_2AEWQC548X1MYJGK7RSQKDD96K

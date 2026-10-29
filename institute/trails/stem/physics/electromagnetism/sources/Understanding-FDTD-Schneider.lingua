@@ -1,0 +1,11 @@
+Import "../Electromagnetism.lingua"
+
+Understanding the Finite-Difference Time-Domain Method — John B. Schneider (@em-schneider: 0, is #reference, #part-of @em-sources) { r_3BTKKSTADJQXT1XD3S4WZVBMYM
+John B. Schneider, Washington State University. Understanding the Finite-Difference Time-Domain Method. [Author's book, chapters, code and corrections](https://eecs.wsu.edu/~schneidj/ufdtd/index.html) · [Complete current PDF](https://eecs.wsu.edu/~schneidj/ufdtd/ufdtd.pdf) · [Author repository](https://github.com/john-b-schneider/uFDTD).
+
+Read the complete available fourteen-chapter progression and follow the derivations and substantial examples: the Yee grid, sources, numerical dispersion, boundaries, multidimensional fields and associated methods. Compare published/in-progress chapters and implement independently chosen checks before using a solver as evidence.
+
+The author supplies a 2010 citation for an evolving text and states CC BY-SA 4.0; checked on 29 October 2026. Its introductory chapters and unfinished portions have explicit limitations. Code and linked dependencies retain their own notices. No book, code collection or external solver is added to Lince by this reference.
+
+**Return:** [Electromagnetic sources — complete books, courses, methods and research](../Sources.lingua#r_6XW0N80NM6WSDWED10N8N7WX3P).
+} r_3BTKKSTADJQXT1XD3S4WZVBMYM

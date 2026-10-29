@@ -1,0 +1,25 @@
+Import "../Quantitative-literacy.lingua"
+
+Discretization — approximate a changing process and check it (@ql-discretization: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #source @ql-source-street, #quantitative-literacy "Observation-and-identifiability.lingua#r_5J7K2N4XB97BQSJBCXCMCJVC5W", #reproducible-computation "../../reproducible-computation/numerics/Convergence-and-tolerances.lingua#r_1D7K129GJSMBAB3WR7Z1KJFXXK", #electromagnetism "../../../stem/physics/electromagnetism/computation/Field-discretization-equations-boundaries-and-observables.lingua#r_3HYVJQ7HP9QQG81XSQ8B5EDV3P", #thermodynamics-and-heat-transfer "../../../stem/physics/thermodynamics-and-heat-transfer/computation/Conservative-discretization-time-steps-and-material-interfaces.lingua#r_5P6TT8JGHD2QA2KZ8TNFEPYFKP", #fluid-dynamics "../../../stem/physics/fluid-dynamics/computation/Conservative-finite-volumes-and-cancelling-face-fluxes.lingua#r_680N35BTK54VZEA3DZ3Z0EGQ9N") { r_5FA5RGRRQHG8P107F8AVJ2SGEX
+**Read:** The Art of Insight, Lumping and Easy cases; Street-Fighting Mathematics, Lumping, in full. Read their examples as explicit approximations and identify the features discarded. A later calculus and differential-equations study supplies the general theory; these exercises make the numerical issue visible now.
+
+A time grid replaces continuous change with updates. For a stock x whose rate is modelled as −kx, a forward update is x_(n+1) = (1 − kΔt)x_n. Here k has units of inverse time. The update follows from treating the starting rate as constant during one step; that is an approximation, not the original physical law.
+
+When kΔt > 1 the update gives a negative next stock from a positive input. When kΔt > 2 the magnitude grows in alternating signs. The exact exponential x(t) = x₀ exp(−kt) for this model stays positive and decreases. An apparently sophisticated simulation can therefore fail because of its step choice even when its algebra and units look valid.
+
+**Work:** use hypothetical x₀ = 100 units and k = 0.2 h^−1. Estimate x after 5 h using steps of 1 h, 0.5 h, and 0.25 h; compare with 100 exp(−1). Plot the differences. Then try an excessively large step over a longer interval and explain the nonphysical result. A spreadsheet suffices; no programming is required.
+
+Grid refinement is evidence about numerical approximation under this model. Agreement between two grids does not establish that −kx describes the real process, nor does it include input uncertainty. Keep numerical error, uncertain parameters, and discrepancy between model and reality separate. State a desired accuracy and show why the chosen approximation is adequate for that purpose rather than reporting whichever digits the software printed.
+
+**Continue in reproducible computation:** [Refine an approximation and justify its numerical accuracy](../../reproducible-computation/numerics/Convergence-and-tolerances.lingua#r_1D7K129GJSMBAB3WR7Z1KJFXXK).
+
+**Continue:** [What do the observations actually determine?](Observation-and-identifiability.lingua#r_5J7K2N4XB97BQSJBCXCMCJVC5W).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in electromagnetism:** [Field discretization, boundaries and observables](../../../stem/physics/electromagnetism/computation/Field-discretization-equations-boundaries-and-observables.lingua#r_3HYVJQ7HP9QQG81XSQ8B5EDV3P).
+
+**Continue in thermodynamics and heat transfer:** [Conservative discretization, time steps and material interfaces](../../../stem/physics/thermodynamics-and-heat-transfer/computation/Conservative-discretization-time-steps-and-material-interfaces.lingua#r_5P6TT8JGHD2QA2KZ8TNFEPYFKP).
+
+**Continue in fluid dynamics:** [Conservative finite volumes and cancelling face fluxes](../../../stem/physics/fluid-dynamics/computation/Conservative-finite-volumes-and-cancelling-face-fluxes.lingua#r_680N35BTK54VZEA3DZ3Z0EGQ9N).
+} r_5FA5RGRRQHG8P107F8AVJ2SGEX

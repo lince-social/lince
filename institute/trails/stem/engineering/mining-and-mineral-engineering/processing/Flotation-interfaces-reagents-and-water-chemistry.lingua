@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Explain flotation selectivity through interfaces, reagents, and the actual water (@mine-surface-chemistry: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/Principles-of-Mineral-Processing-SME.lingua#r_71VWXMG9R3MYJ2QWA8QKEPPGMY", #mining-and-mineral-engineering "Flotation-kinetics-residence-time-and-parameter-evidence.lingua#r_0FGGNJEAT08S8WDCECHNVJBNS0") { r_2A20JQZ9TPGPJ30NF01PC6QVP6
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete flotation-fundamentals chapter and relevant full application chapter; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), complete conditioning, characterization, and flotation procedures; [Principles of Mineral Processing — Fuerstenau and Han](../sources/Principles-of-Mineral-Processing-SME.lingua#r_71VWXMG9R3MYJ2QWA8QKEPPGMY), the full applicable flotation/interfacial theory chapter, when available.
+
+Flotation joins particle-bubble encounters, attachment/detachment, transport through the pulp, and recovery through a changing froth. Hydrophobicity is one part of that system. Liberation, surface oxidation/coatings, particle size, bubble population, hydrodynamics, water chemistry, and conditioning history also affect the observed streams.
+
+Distinguish collectors, frothers, modifiers, activators, depressants, and dispersing/aggregating behavior by their demonstrated role in the chosen mineral-water system. A reagent name or bulk pH does not alone specify adsorption, surface coverage, reaction history, selectivity, or environmental consequences. Recycled water can alter ion concentrations and interfacial response without changing the nominal fresh reagent dose.
+
+For an ideal smooth homogeneous solid at an equilibrium contact line, Young's relation connects the three interfacial tensions and contact angle. A real rough, heterogeneous, reacting mineral surface and a dynamic flotation cell do not satisfy all of that model's assumptions. Compare contact-angle/electrokinetic observations, chemical evidence, and actual flotation results rather than treating one measurement as a complete mechanism.
+
+**Work:** read a complete mineral-specific flotation study and its method. Map the proposed interfacial mechanism to independent surface/solution evidence, conditioning history, and balanced streams. Distinguish measured effects from inferred mechanisms and alternative entrainment/aggregation explanations. Propose an experiment that separates water-chemistry and liberation effects while retaining representative feed.
+
+**Continue:** [Derive flotation recovery models and test what their parameters can explain](Flotation-kinetics-residence-time-and-parameter-evidence.lingua#r_0FGGNJEAT08S8WDCECHNVJBNS0).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_2A20JQZ9TPGPJ30NF01PC6QVP6

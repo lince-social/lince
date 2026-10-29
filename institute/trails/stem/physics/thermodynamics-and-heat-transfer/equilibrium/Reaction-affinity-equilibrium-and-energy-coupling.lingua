@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Reaction affinity, equilibrium and energy coupling (@th-reaction: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #thermodynamics-and-heat-transfer "Phase-coexistence-Clapeyron-and-phase-rules.lingua#r_4RC5M920WZB08JG03SSHM0DQTQ") { r_00J4FSQC2N8B22QHW83H4KMH71
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), reactions, equilibrium and electrochemical chapters; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), affinity, reaction progress and nonequilibrium mass action; [General chemistry](../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), the relevant shared reaction and equilibrium explanations.
+
+Write reaction progress with stoichiometric coefficients and conserved elements. The reaction Gibbs-energy change is a sum of stoichiometric chemical potentials under the stated constraints. Equilibrium, direction and rate are distinct: a favorable affinity does not supply the kinetic law or the actual heat-transfer rate.
+
+Connect equilibrium constants with activities and standard states, keeping their dimensionless definition explicit. Temperature dependence follows consistent thermodynamic relations and property data. In an adiabatic reacting control volume, both composition and temperature may need to be solved together from equilibrium or kinetics and the energy balance.
+
+Reconstruct a simple reaction/separation account and identify the evidence that would justify an ideal, equilibrium or finite-rate approximation. The full specialized reaction, industrial chemistry and electrochemical subjects continue through their own Records; the shared thermodynamic constraints remain the same.
+
+**Continue:** [Phase coexistence, Clapeyron slopes and phase rules](Phase-coexistence-Clapeyron-and-phase-rules.lingua#r_4RC5M920WZB08JG03SSHM0DQTQ).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_00J4FSQC2N8B22QHW83H4KMH71

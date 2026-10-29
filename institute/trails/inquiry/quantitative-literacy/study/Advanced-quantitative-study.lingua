@@ -1,0 +1,21 @@
+Import "../Quantitative-literacy.lingua"
+
+Advanced study — derive, compare, test, and revise a model (@ql-advanced: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-street, #source @ql-source-insight, #source @ql-source-uncertainty, #source @ql-source-algebra, #quantitative-literacy "Completion.lingua#r_2C68EEJZH5KY4Z0DAPKBQEAAZ0") { r_6G38PYR8GVPZNZ16CNJ31VN259
+**Sustained reading:** complete Street-Fighting Mathematics, all six chapters and their further problems, using the published 2010 PDF identified in its source Record. Complete The Art of Insight, including Probabilistic reasoning and Spring models. Read NIST TN 1297 in full, including appendices, alongside JCGM GUM-1:2023. Return to the assigned algebra and trigonometry sections whenever a derivation assumes an unfamiliar operation. The whole Algebra and Trigonometry 2e book is the mathematical continuation for readers who need all of that precalculus preparation.
+
+An advanced claim requires more than recognizing the examples. Work through the mathematical steps, explain the approximation and its domain, reproduce a result independently, and test where it fails. Choose a physical or material-accounting question whose governing assumptions can be stated with the mathematics developed here.
+
+**Derivation study:** reconstruct the dimensionless-group argument by writing and solving the exponent constraints. Show why a dimensionless coefficient and additional dimensionless variables remain undetermined. Build a second model with the same dimensions and an incompatible prediction; state what experiment or physical reasoning would choose between them.
+
+**Measurement study:** define a measurand and a differentiable calculation model, identify input quantities and their dependence, and construct an uncertainty budget with justified evaluations. Derive first-order sensitivities and compare their approximate prediction with direct perturbation over the relevant input range. Discuss a near-cancellation example and one case where first-order propagation is inadequate. Unsupported independence and automatic 95% interpretations are errors to repair.
+
+**Approximation study:** derive the finite-step stock-decay update, investigate its nonnegative and stable parameter ranges, and compare progressively smaller steps with the exponential solution. Explain numerical approximation, parameter uncertainty, and model discrepancy separately. Connect the result with the book's lumping or easy-case reasoning.
+
+**Research comparison:** find two independently authored technical treatments of the chosen question, including at least one open academic article or university technical report. Follow their references, compare variable definitions, conditions, and modelling choices, and reconstruct one substantive result from each. These additional sources depend on the actual question; record exact citations and access rather than claiming that a search index is the reading.
+
+Produce a substantial report with derivations, calculations, data or clearly labelled teaching inputs, figures, source locations, limitations, and a revision responding to a serious objection. A reader should be able to challenge an assumption and see which conclusion changes. Full graduate specialization in analysis, inference, metrology, or a physical discipline continues through those subjects; the present achievement is a defensible advanced command of shared quantitative technical reasoning.
+
+**Continue:** [What completing quantitative and technical literacy means](Completion.lingua#r_2C68EEJZH5KY4Z0DAPKBQEAAZ0).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_6G38PYR8GVPZNZ16CNJ31VN259

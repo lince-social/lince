@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Close the Navier–Stokes model and count its unknowns (@fd-navier-stokes: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Wall-inlet-outlet-and-fluid-interface-conditions.lingua#r_1CRP84TQ0EED7784XC3NCV3WFR") { r_0DT1PYJ1ZG1VMZRXH100M388GD
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 8 complete differential balances; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 3 Navier–Stokes equation; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), incompressible and compressible equation sets.
+
+Combine continuity, momentum and an appropriate stress law. For constant-density, constant-viscosity incompressible motion, ∇·u=0 and ∂u/∂t+(u·∇)u=−∇p/ρ+ν∇²u+b. Pressure participates in enforcing the volume constraint and needs compatible boundary information and a reference level.
+
+Compressible motion also requires an energy equation and material relations connecting density, pressure, temperature and composition. Species balances may add unknowns. Equations of state, transport laws and reaction models are different parts of closure; one material table cannot replace all of them.
+
+List the fields, equations, material relations and data for a proposed problem. Identify every simplifying assumption used to reduce it. Check whether the resulting system conserves the intended quantities and admits the required equilibrium. A familiar equation name does not determine which physical terms an implementation actually retained.
+
+**Continue:** [Wall, inlet, outlet and fluid-interface conditions](Wall-inlet-outlet-and-fluid-interface-conditions.lingua#r_1CRP84TQ0EED7784XC3NCV3WFR).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0DT1PYJ1ZG1VMZRXH100M388GD

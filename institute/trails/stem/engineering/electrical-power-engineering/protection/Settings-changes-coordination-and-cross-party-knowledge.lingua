@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Settings changes, coordination and cross-party knowledge (@pe-setting-changes: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6", #source "../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD", #electrical-power-engineering "../../../physics/electromagnetism/matter/Magnetization-bound-currents-H-and-hysteresis.lingua#r_1H8D8KMFTHN04KYDW84T64CQ2J") { r_0TME03Z1QSWTXQDE4TCN62NV84
+**Read:** [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6), entire document and both work-example appendices; [Protective relay operation, maintenance and tests — FIST 3-8](../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD), complete relevant operating/test interface.
+
+A protection setting embodies a conclusion about topology, source/fault behavior, load, sensors, apparatus and timing. Retain the model and evidence that justify it. A replacement cable, new generator, transformer change or control update can alter fault currents or clearing needs even if the protected equipment itself has not changed.
+
+Study all of [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6), including its concrete work examples and boundary with the separate testing manual. Trace a proposed change through the affected short-circuit/protection model, independent technical criticism, coordination with connected entities, actual implementation and test evidence.
+
+Compare the documented intended settings with the actual installed/tested state. Identify what happens if a communication delay, outdated data or an unrecorded local change leaves two parties with different assumptions. Preserve discrepancies and the reason for a revised conclusion. The wider Ergon question is how technical knowledge remains attached to real operating systems across people and time, so that a valid earlier analysis does not quietly become an invalid current one.
+
+**Continue:** [Magnetization, bound currents, H and hysteresis](../../../physics/electromagnetism/matter/Magnetization-bound-currents-H-and-hysteresis.lingua#r_1H8D8KMFTHN04KYDW84T64CQ2J).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_0TME03Z1QSWTXQDE4TCN62NV84

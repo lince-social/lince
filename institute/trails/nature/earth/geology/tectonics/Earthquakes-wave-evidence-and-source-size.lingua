@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Separate earthquake location, source size, shaking, and geological interpretation (@geo-earthquakes: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #source "../sources/Discovering-Geology-BGS.lingua#r_5ZRRQ0YYJEH16ZR7172P1PE4VC", #geology "../structures/Stress-strain-and-deformation-history.lingua#r_4TM454JHNMW1X3RF37NBDRXTXT") { r_4BNPETFQMFN0C0W0Q3H3TMT044
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 11 in full; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete seismicity exercise and associated notes; [Discovering Geology — British Geological Survey](../sources/Discovering-Geology-BGS.lingua#r_5ZRRQ0YYJEH16ZR7172P1PE4VC), the complete earthquake explanation pages used.
+
+An earthquake source, propagating waves, a recording instrument, and local ground conditions are different parts of the observation chain. Distinguish hypocenter from epicenter, source magnitude from location-specific intensity, and a travel-time observation from its interpreted source depth and location. Network geometry and the velocity model affect resolution.
+
+Fault slip can be related to seismic moment through an idealized M₀ = μ A d, with rigidity μ, rupture area A, and average slip d. For invented μ = 30 GPa, area 10 km by 5 km, and slip 1 m, M₀ = 1.5 × 10¹⁸ N m. This is a source-scale calculation, not a prediction of damage or local shaking.
+
+Using Mw = (2/3)(log₁₀(M₀ in N m) − 9.1), this example gives about 6.05. The units and adopted convention belong in the relation. Magnitude scales and intensity classifications answer different questions; numerical similarity does not make them interchangeable.
+
+**Work:** derive the example with units and check it independently. Complete the MIT seismicity exercise, explaining how depth patterns constrain a tectonic interpretation. Compare source, path, and site influences for a textbook case. Identify why a regional seismic map cannot by itself establish a building's behavior.
+
+Read the whole earthquake chapter, including measurement and hazard context. This prepares later seismology/geophysics and engineering without claiming that a general geological exercise replaces their instrumentation, inversion, or design work.
+
+**Continue:** [Distinguish force, stress, strain, and the history producing a structure](../structures/Stress-strain-and-deformation-history.lingua#r_4TM454JHNMW1X3RF37NBDRXTXT).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4BNPETFQMFN0C0W0Q3H3TMT044

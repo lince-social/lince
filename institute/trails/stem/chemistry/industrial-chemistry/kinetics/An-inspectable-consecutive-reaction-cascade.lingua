@@ -1,0 +1,58 @@
+Import "../Industrial-chemistry.lingua"
+
+Verify consecutive-reaction yield in a series of well-mixed reactors (@ic-cascade-example: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ", #source "../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV", #industrial-chemistry "../reactors/Batch-semi-batch-addition-and-changing-inventories.lingua#r_0XQR509GVT9DHKFW280V98DMAJ") { r_6PCPV66ZAVPT85HWCSPVED46HY
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete stirred/flow-reactor, consecutive-reaction and nonideal-reactor treatments; [Chemical and Biological Reaction Engineering — MIT 10.37](../sources/Reaction-Engineering-MIT-10-37.lingua#r_67AEXD9K1DJ46SV942PAZHZ4BZ), the full reactor-comparison and residence-distribution work; [Graduate Numerical Methods Applied to Chemical Engineering — MIT 10.34](../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV), the complete relevant numerical-verification and discretization reasoning.
+
+This original calculation solves steady material balances for pure-A feed through equal-volume ideal stirred tanks in series, with A→B→C, first-order irreversible reactions, constant density/temperature and equal molecular formula for the isomer labels. Total mean residence time is held fixed as the number of tanks changes. It predicts a simplified composition, not actual reactor temperatures, equipment or process performance.
+
+For a stage residence h, A_out=A_in/(1+k₁h), B_out=(B_in+k₁hA_out)/(1+k₂h), and C_out=C_in+k₂hB_out. The last equation accumulates formed C directly rather than subtracting nearly equal numbers. Rates/residence accept finite numbers from zero to ten in compatible units; stage count is an integer 1–128.
+
+```python file=consecutive_cascade.py
+import json
+import math
+
+
+def scalar(value, name):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(name + " must be finite and numeric")
+    try:
+        value = float(value)
+    except (OverflowError, ValueError) as error:
+        raise ValueError(name + " is outside the domain") from error
+    if not math.isfinite(value) or not 0 <= value <= 10:
+        raise ValueError(name + " must lie between zero and ten")
+    return value
+
+
+def solve(first=1, second=0.5, residence=2, stages=1):
+    first = scalar(first, "first rate constant")
+    second = scalar(second, "second rate constant")
+    residence = scalar(residence, "total mean residence time")
+    if isinstance(stages, bool) or not isinstance(stages, int) or not 1 <= stages <= 128:
+        raise ValueError("stages must be an integer from one to 128")
+    interval = residence / stages
+    a, b, c = 1.0, 0.0, 0.0
+    profile = []
+    for _ in range(stages):
+        a = a / (1 + first * interval)
+        b = (b + first * interval * a) / (1 + second * interval)
+        c = c + second * interval * b
+        profile.append((a, b, c))
+    return {"a": a, "b": b, "c": c,
+            "amount_closure": math.fsum((a, b, c)) - 1,
+            "stage_profile": profile}
+
+
+if __name__ == "__main__":
+    print(json.dumps(solve(), sort_keys=True))
+
+```
+
+Run Python 3.13 from a temporary study directory. No files, network, plant data or external modules are needed. The default one-tank fractions are (1/3,1/3,1/3); two tanks give (1/4,7/18,13/36). Compare the many-stage limit with the independently derived plug-flow solution in [Connect competing reaction pathways with residence history and product isolation](Parallel-consecutive-reactions-and-where-to-stop.lingua#r_499NJSB210KGRFY8AFS5PE131S).
+
+**Work:** verify each stage against a separate exact linear-equation solution, test conservation/positivity and zero-rate/time limits, and study convergence as stages increase. Derive why the one-tank and plug-flow B optima differ. Explain the additional kinetic, thermal, mixing and separation evidence needed for a real process decision.
+
+**Continue:** [Model batch and semi-batch chemistry with feed history, inventory and thermal response](../reactors/Batch-semi-batch-addition-and-changing-inventories.lingua#r_0XQR509GVT9DHKFW280V98DMAJ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6PCPV66ZAVPT85HWCSPVED46HY

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Multipoles, origin choice and far-field error (@em-multipoles: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Capacitance-matrices-energy-and-coupled-conductors.lingua#r_5YD0CB4H4ZCG21KKZKWERD77YK") { r_6WSMWK4DFGSGKMGH6WTQJGB19H
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), multipole and dipole sections; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), multipole expansion and angular methods.
+
+Expand a localized source's potential when observation distance exceeds source size. The monopole is total charge; the dipole is the first charge-weighted position moment. If total charge is zero, the dipole is independent of translating the origin. Higher moments and truncated expressions depend on convention and origin in ways that must be retained.
+
+For charges +q and −q separated by vector d, derive the far potential p·r/(4π ε₀r³), with p = qd. Compare the exact two-source potential on and perpendicular to the axis. Determine an error against distance rather than declaring a fixed multiple of source size universally adequate. The leading nonzero moment and the chosen observable change the error.
+
+Recover field, torque and interaction energy of a dipole in an external slowly varying field. Distinguish a permanent dipole from an induced dipole whose moment changes with the field, where the energy expression needs that response. Work a source with zero monopole and dipole so that a quadrupole leads. This develops a controlled hierarchy of approximations rather than an inventory of named shapes.
+
+**Continue:** [Capacitance matrices, energy and coupled conductors](Capacitance-matrices-energy-and-coupled-conductors.lingua#r_5YD0CB4H4ZCG21KKZKWERD77YK).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_6WSMWK4DFGSGKMGH6WTQJGB19H

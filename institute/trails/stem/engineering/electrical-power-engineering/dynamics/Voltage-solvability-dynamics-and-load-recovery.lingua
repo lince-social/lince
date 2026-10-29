@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Voltage solvability, dynamics and load recovery (@pe-voltage-stability: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #source "../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF", #electrical-power-engineering "Differential-algebraic-models-initialization-and-events.lingua#r_4EW7VDSRDD2E5S2VR886XWW2PZ") { r_7VQ11DKY04F2G6E8XVGQS3PMDZ
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), chapter 5 and complete relevant control/capability treatment; [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), whole applicable stability/operating model development; [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF), full voltage-control and recovery/modelling discussion.
+
+A power-flow fold describes loss of a steady mathematical solution branch under the chosen loading/control model. Dynamic voltage instability concerns the evolution of physical/control states and can involve load recovery, taps, excitation limits, motors and converter controls. The two accounts are related but not identical.
+
+Trace a loading branch with complete limits and explain a simple two-bus discriminant geometrically. Then introduce a dynamic load/controller and compare behavior before, near and beyond the steady-model boundary. A sensitivity that grows near singularity is evidence about that model, not an exact universal distance to failure in a real network.
+
+Read the complete continuation methods in [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), the relevant [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ) development and appropriate full primary studies. Investigate how changed reactive limits, source strength, load dependence or tap timing alters the result. Predict an independent measurement/response and quantify model uncertainty. A calculated maximum transfer should not be advertised as secure usable capacity without the corresponding thermal, protection, contingency and dynamic evidence.
+
+**Continue:** [Differential-algebraic models, initialization and events](Differential-algebraic-models-initialization-and-events.lingua#r_4EW7VDSRDD2E5S2VR886XWW2PZ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7VQ11DKY04F2G6E8XVGQS3PMDZ

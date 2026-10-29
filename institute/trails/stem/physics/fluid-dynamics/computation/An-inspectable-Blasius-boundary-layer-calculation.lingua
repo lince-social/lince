@@ -1,0 +1,83 @@
+Import "../Fluid-dynamics.lingua"
+
+An inspectable Blasius boundary-layer calculation (@fd-blasius-example: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #fluid-dynamics "An-inspectable-conservative-wet-shallow-water-solver.lingua#r_0WT5RWX37GNCS5RSRFAKTFHYBV") { r_7X6RYA08VQGEBYKV786AT13CPJ
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 3 boundary-layer similarity; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapters VIII and IX; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), separate discretization and domain checks.
+
+This original standard-library example solves the normalization in [The Blasius similarity solution and its normalization](../boundary-layers/The-Blasius-similarity-solution-and-its-normalization.lingua#r_2WRXBS1GA1GTV3S24SCF5PBQTM): f‴+(f f″)/2=0, f(0)=f′(0)=0 and f′(∞)=1. It integrates with fourth-order Runge–Kutta and shoots on the positive wall gradient. Infinity is replaced by η_max, so integration error and domain-truncation error must be examined separately. The default is η_max=10 with 1,000 uniform intervals.
+
+Two extra differential quantities integrate displacement and momentum thickness coefficients. The returned local skin-friction coefficient multiplied by √Re_x is 2f″(0); it is not the plate-averaged coefficient. Recover δ*=D√(νx/U), θ=Θ√(νx/U) and H=D/Θ from the reported dimensionless integrals. The far-boundary shear is an additional diagnostic of the finite-domain approximation.
+
+The public solve function bounds η_max to 4–30, interval count to 100–20,000, and spacing to at most 0.05. An accepted coarse or short-domain input is a calculable approximation, not a certificate of accuracy. A deliberately short η_max should produce a measurable domain error. The helper integration function is the internal shooting implementation and expects the already established domain and wall-gradient bracket.
+
+Run the file, then compare separately refined spacing and domain. Check the approximate wall gradient 0.332057336, displacement coefficient 1.72078766 and momentum coefficient 0.66411467 only after understanding the normalization. Independently solve the unit-initial-curvature problem and use Töpfer scaling with a different integration method; verify the momentum-integral identity as well. The flat-plate assumptions still exclude transition, imposed pressure gradient, leading-edge detail and compressibility.
+
+
+```python file=blasius.py
+import json
+import math
+
+
+def profile(wall_gradient, eta_max, steps):
+    step = eta_max / steps
+    state = (0.0, 0.0, wall_gradient, 0.0, 0.0)
+
+    def derivative(values):
+        f, velocity, shear, _, _ = values
+        return (velocity, shear, -0.5 * f * shear,
+                1.0 - velocity, velocity * (1.0 - velocity))
+
+    def shifted(values, slope, scale):
+        return tuple(a + scale * b for a, b in zip(values, slope))
+
+    for _ in range(steps):
+        a = derivative(state)
+        b = derivative(shifted(state, a, step / 2.0))
+        c = derivative(shifted(state, b, step / 2.0))
+        d = derivative(shifted(state, c, step))
+        state = tuple(value + step * (aa + 2.0 * bb + 2.0 * cc + dd) / 6.0
+                      for value, aa, bb, cc, dd in zip(state, a, b, c, d))
+    if not all(math.isfinite(value) for value in state):
+        raise ValueError("nonfinite integration result")
+    return state
+
+
+def solve(eta_max=10.0, steps=1000):
+    if isinstance(eta_max, bool) or not isinstance(eta_max, (int, float)):
+        raise ValueError("eta_max")
+    if not math.isfinite(eta_max) or not 4.0 <= eta_max <= 30.0:
+        raise ValueError("eta_max")
+    if isinstance(steps, bool) or not isinstance(steps, int):
+        raise ValueError("steps")
+    if not 100 <= steps <= 20000 or eta_max / steps > 0.05:
+        raise ValueError("steps or integration spacing")
+    low, high = 0.0, 1.0
+    for _ in range(55):
+        wall_gradient = (low + high) / 2.0
+        if profile(wall_gradient, eta_max, steps)[1] > 1.0:
+            high = wall_gradient
+        else:
+            low = wall_gradient
+    wall_gradient = (low + high) / 2.0
+    f, velocity, shear, displacement, momentum = profile(wall_gradient, eta_max, steps)
+    return {
+        "eta_max": eta_max,
+        "steps": steps,
+        "wall_gradient": wall_gradient,
+        "f_at_edge": f,
+        "velocity_at_edge": velocity,
+        "shear_at_edge": shear,
+        "displacement_coefficient": displacement,
+        "momentum_coefficient": momentum,
+        "shape_factor": displacement / momentum,
+        "local_skin_friction_coefficient_times_sqrt_Re": 2.0 * wall_gradient,
+    }
+
+
+if __name__ == "__main__":
+    print(json.dumps(solve(), sort_keys=True))
+```
+
+**Continue:** [An inspectable conservative wet shallow-water solver](An-inspectable-conservative-wet-shallow-water-solver.lingua#r_0WT5RWX37GNCS5RSRFAKTFHYBV).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7X6RYA08VQGEBYKV786AT13CPJ

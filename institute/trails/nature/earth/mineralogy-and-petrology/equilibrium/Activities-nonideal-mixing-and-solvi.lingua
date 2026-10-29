@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Relate solid-solution thermodynamics to activities, ordering, and exsolution (@mp-solid-solution: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #mineralogy-and-petrology "Fluid-components-redox-and-open-system-constraints.lingua#r_6QCQEWZVFBMQNVYP5H5ZBGMXRR") { r_5PPNHA0XQ09N8BVJVN816PJDMF
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete solution/mixing and relevant phase-diagram notes; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the full relevant solution-model description and original paper; [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the complete review’s model/data and equilibrium discussion.
+
+An ideal solution's mixing energy has a specific entropy/model form; a nonideal model adds interactions, ordering, site mixing, or other contributions. Activity is defined relative to a reference state and model, not automatically equal to a reported oxide percentage or a simple endmember proportion.
+
+For an illustrative symmetric regular solution, G_mix = RT[x ln x+(1−x)ln(1−x)] + W x(1−x). Curvature and common tangents distinguish local instability, metastability, and coexistence under the model. The symmetric critical condition T_c = W/(2R) follows from the curvature at x = 0.5; it is not a universal feldspar temperature.
+
+With invented W = 10,000 J mol⁻¹ and R = 8.314462618 J mol⁻¹ K⁻¹, that model gives about 601.36 K. Real mineral solution models can be asymmetric, multisite, ordered, pressure-dependent, and calibrated over limited conditions. Exsolution textures also require a kinetic/cooling history.
+
+**Work:** derive the curvature/critical relation and check units independently. Compare ideal, symmetric regular, and a documented natural-mineral model, identifying data and assumptions. Explain why a negative local curvature, coexistence boundary, and observed fine intergrowth answer related but different questions.
+
+Read the full activity/mixing treatment and the complete primary model paper used in a later calculation. Preserve model and dataset compatibility before interpreting a computed phase boundary as evidence for a natural pressure-temperature history.
+
+**Continue:** [Specify water, carbon, redox, and open-system constraints in a phase model](Fluid-components-redox-and-open-system-constraints.lingua#r_6QCQEWZVFBMQNVYP5H5ZBGMXRR).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_5PPNHA0XQ09N8BVJVN816PJDMF

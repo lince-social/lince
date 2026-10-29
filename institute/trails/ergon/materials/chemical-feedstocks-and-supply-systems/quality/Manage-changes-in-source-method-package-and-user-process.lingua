@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Evaluate a change through the requirement it could affect (@cs-changes: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0", #source "../sources/High-Purity-Polymer-Delivery-Components-SEMI.lingua#r_4CJR70PGX15X3VQENBZ0S1RA25", #chemical-supply-systems "Substitution-requires-function-quality-and-infrastructure.lingua#r_2KSS24YHT3ZQB43PJP45RD0HMG") { r_7WRJMB59KQVTMQ59Y92BZMD1K4
+**Read:** [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), complete quality, documentation and contractual sections; [Methanol Safe Handling Manual — Methanol Institute](../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0), the complete management-of-change and operating-readiness discussion; [High-purity polymer materials and chemical-delivery components — SEMI F57](../sources/High-Purity-Polymer-Delivery-Components-SEMI.lingua#r_4CJR70PGX15X3VQENBZ0S1RA25), complete authorized component-qualification methods for the electronic case.
+
+List changes that can occur without changing a chemical's familiar name: feed origin, manufacturing site/process, analytical method, contact polymer, stabiliser, package, storage route, transport equipment and the user's intended operation. Connect each change to a physical, evidential or continuity hypothesis. Some changes are immaterial for a use; others require new qualification.
+
+Develop a documented before/after comparison for one source change. Preserve the old and new specifications, methods, sample targets and operating histories. Identify the smallest study that can answer the actual question while retaining all consequential interfaces. A successful concentration comparison does not answer an unmeasured trace-contamination or stability question.
+
+Compare changes initiated by the producer, distributor and user. Explain who must communicate, what evidence is needed before use and how existing stock is identified. Include schedule and inventory consequences: a nominal backup source can be unavailable in practice until a method, receiving tank or process trial is completed. Revisit the original agreement and traceability study. The advanced change project will require full primary methods, alternatives, uncertainty and a defensible revision of the supply arrangement.
+
+**Continue:** [Decide when an alternate source or material is actually usable](Substitution-requires-function-quality-and-infrastructure.lingua#r_2KSS24YHT3ZQB43PJP45RD0HMG).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_7WRJMB59KQVTMQ59Y92BZMD1K4

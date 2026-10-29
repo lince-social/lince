@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Define carbon feedstocks by composition, origin, variability and the intended transformation (@ic-carbon-feed: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6", #source "../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5", #industrial-chemistry "Crude-oil-natural-gas-assays-and-preparation.lingua#r_20QTCCSMNX870QFEKSP7A83Z3B") { r_0EB7JVAJMYYF2Z76CM4R0Z91PG
+**Read:** [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete raw-material and natural/synthetic industry introduction; [Refining of Mineral Oil and Gas, BREF REF](../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6), the full feed-characterization and relevant conversion context; [Química verde no Brasil: 2010–2030 — MCT/CGEE](../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5), the complete introductory and pertinent biochemical/thermochemical feed chapters.
+
+Industrial carbon can arrive as hydrocarbons, coal-derived mixtures, biological material, carbon dioxide or intermediate chemicals. Its source does not determine the whole process outcome. Molecular structure, water, oxygen, sulfur/nitrogen, inorganic constituents and physical state affect reactivity, separation and useful products.
+
+Distinguish an elemental carbon account from a molecular pathway. A feed carrying the same carbon amount can require different hydrogen, oxygen, heat, catalyst and purification duties. Dilute or highly variable sources may need substantial conditioning before reaching a nominal synthesis feed.
+
+Compare the complete source-to-product boundary and actual evidence. A renewable origin does not by itself establish low energy use, negligible residuals or consistent product quality; a recovered carbon stream is not automatically available at the required purity/pressure. Changes outside the reaction unit can dominate the comparison.
+
+**Work:** characterize two documented carbon feeds producing the same useful chemical. Independently close carbon, hydrogen, oxygen and consequential impurity accounts through preparation and conversion. Compare observed, modeled and projected data, identify the most influential uncertainty and explain which additional sampling, kinetic or separation evidence could change the preferred route.
+
+**Continue:** [Connect crude and gas characterization with the actual chemical processing route](Crude-oil-natural-gas-assays-and-preparation.lingua#r_20QTCCSMNX870QFEKSP7A83Z3B).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_0EB7JVAJMYYF2Z76CM4R0Z91PG

@@ -1,0 +1,17 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Flow fields, advection and the fluid energy equation (@th-fluid-energy: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #source "../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7", #thermodynamics-and-heat-transfer "../../../../inquiry/quantitative-literacy/models/Dimensionless-groups.lingua#r_7R4PTGBX4NTZWXQGPC09C1F7ZQ", #fluid-dynamics "../../fluid-dynamics/transport/Advection-diffusion-reaction-and-conservative-scalar-balances.lingua#r_1K58Z7J4TJTKSNRNK4ENXN4YPM") { r_2WC51KRYYZ7BRAT3ASQRMTKTDT
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the complete convection introduction and energy-equation development; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), governing convection equations; [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), thermal energy balance and boundary layers; [Convecção e métodos numéricos — Maliska, UFSC](../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7), the convection course foundations.
+
+A moving material parcel changes state through both local time variation and motion through spatial gradients. Introduce the material derivative, then derive mass and energy balances consistently with momentum and constitutive assumptions. Advection moves energy with matter; conduction remains a separate flux.
+
+For an incompressible constant-property approximation with negligible viscous heating, the familiar thermal equation contains ρc(∂T/∂t+u·∇T) and ∇·(k∇T). Compressibility, pressure work, species diffusion, reaction and deformation can require additional terms or another thermodynamic variable. State why each omitted contribution is small.
+
+Connect a resolved temperature field to a convective coefficient defined from a wall flux and an appropriate fluid temperature. The coefficient summarizes a boundary-value problem; it is not generally a material constant independent of speed, geometry or heating condition. Derive a simple flowing energy account before using a correlation.
+
+**Continue:** [Dimensionless groups and the limits of dimensional reasoning](../../../../inquiry/quantitative-literacy/models/Dimensionless-groups.lingua#r_7R4PTGBX4NTZWXQGPC09C1F7ZQ).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Continue in fluid dynamics:** [Advection, diffusion, reaction and conservative scalar balances](../../fluid-dynamics/transport/Advection-diffusion-reaction-and-conservative-scalar-balances.lingua#r_1K58Z7J4TJTKSNRNK4ENXN4YPM).
+} r_2WC51KRYYZ7BRAT3ASQRMTKTDT

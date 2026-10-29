@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Account for electrical charge, chemical amount, and competing electrode products (@gc-electrolysis: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #general-chemistry "Corrosion-passivation-and-environment.lingua#r_5HRF141YG6H9FJ8F3HKNGCA4NC", #metals-and-metallurgical-production "../../../../ergon/materials/metals-and-metallurgical-production/electrometallurgy/Faraday-account-current-efficiency-and-accepted-product.lingua#r_4YKAZ56DZSGM8JH2H033S1SMK5") { r_769ZEZ2WVT6XC6RT11VM55WEAT
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 17’s electrolysis and quantitative examples; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), electrolytic cells and electrolysis; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the complete electrochemistry activity.
+
+Electrical charge passed is q_el = ∫I dt. For a specified electrode reaction transferring z electrons per reaction event, the ideal amount relation is n = q_el/(zF) on the chosen stoichiometric basis. Current efficiency accounts for the defined fraction producing a desired change; it needs a measurement and chemical-product account rather than a guessed correction.
+
+For invented M = 63.5 g mol⁻¹, z = 2, constant current 2.00 A for 3600 s, and current efficiency 0.90, the desired deposited mass is about 2.132 g. This is a numerical Faraday-law exercise, not an instruction for a particular electrolyte or apparatus. Actual products depend on thermodynamics, kinetics, composition, transport, electrode material, and conditions.
+
+Distinguish current efficiency, energy efficiency, conversion, recovery, and product purity. A high charge-to-product efficiency does not by itself imply low energy use or a pure stable product. Cell voltage under operation can exceed the reversible requirement through several physical contributions.
+
+**Work:** derive the mass relation with units and independently check the example. Add a competing hypothetical electrode reaction and close the electron/element account. Explain what collected-product and electrical measurements would be needed to determine the selected efficiency and uncertainty.
+
+Read the entire electrolysis treatment and the corresponding laboratory activity. Practical experiments require their appropriate supervised electrical/chemical arrangements and waste management. Later refining, electrochemical manufacture, batteries, and corrosion work will deepen the material-specific pathways and apparatus.
+
+**Continue:** [Explain corrosion through coupled electrochemical and material processes](Corrosion-passivation-and-environment.lingua#r_5HRF141YG6H9FJ8F3HKNGCA4NC).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in metals and metallurgical production:** [Connect charge with recovered metal while preserving efficiency and quality definitions](../../../../ergon/materials/metals-and-metallurgical-production/electrometallurgy/Faraday-account-current-efficiency-and-accepted-product.lingua#r_4YKAZ56DZSGM8JH2H033S1SMK5).
+} r_769ZEZ2WVT6XC6RT11VM55WEAT

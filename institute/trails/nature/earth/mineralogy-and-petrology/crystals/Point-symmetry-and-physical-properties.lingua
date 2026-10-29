@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Connect point symmetry with shape, structure, and property constraints (@mp-symmetry: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Space-groups-settings-and-structural-models.lingua#r_104E10F1QWN2HXBB7V0XRSW3B4") { r_2KSSZ1DBRR07M3YX82HAAAZ1PM
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete morphology and point-symmetry chapters; [Crystallographic teaching pamphlets — IUCr](../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the complete matrix/symmetry pamphlet and Hartmann’s An introduction to crystal physics.
+
+A symmetry operation maps an identified object or property description onto an equivalent one. Point symmetry concerns operations leaving a point fixed. Distinguish a crystal's external morphology, its atomic structural symmetry, and the symmetry of an observed physical property; growth conditions can obscure or distort visible shape.
+
+Rotations, reflections, inversion, and combinations can be represented by matrices acting under a stated coordinate convention. Operation order matters. The familiar crystallographic restrictions arise from periodic lattice compatibility, not a universal ban on every possible nonperiodic arrangement or apparent shape.
+
+Symmetry constrains property tensors but does not supply their numerical values. Optical, elastic, electrical, and other responses depend on structure/composition and conditions. A physical anisotropy measurement may constrain an interpretation without uniquely determining every atomic arrangement.
+
+**Work:** construct a small set of symmetry operations, compose them, and check closure/inverses for an identified simple point group. Compare a distorted crystal drawing with its possible underlying symmetry. Use the crystal-physics pamphlet to explain one allowed/forbidden property relationship and identify what still needs measurement.
+
+Read the full morphology/point-symmetry and matrix treatments. Learn to recognize the logic of the conventional crystal-system/point-group classification, while keeping its assumptions explicit. Space groups add translations and operations not captured by external shape alone.
+
+**Continue:** [Interpret a space-group model with translations, settings, and evidence](Space-groups-settings-and-structural-models.lingua#r_104E10F1QWN2HXBB7V0XRSW3B4).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_2KSSZ1DBRR07M3YX82HAAAZ1PM

@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Read orbitals and electron configurations as quantum models (@gc-quantum: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Periodic-patterns-and-their-limits.lingua#r_1JPAXST3A4ZTBAZQWJKCJR8AZW") { r_4B0D7XPCFSZAW46VKG2NE7B54P
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 6 in full with exercises; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), lectures 1–11 and their identified readings; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the complete quantum primer and atomic-structure unit.
+
+A wavefunction represents a quantum state under a specified model; its squared magnitude supports probability predictions with the appropriate normalization and variables. An orbital is a one-electron state or function used in describing electronic structure. Spin introduces intrinsic angular momentum and additional state labels. A drawn orbital boundary represents a chosen visualization convention.
+
+For the hydrogenic model, quantum numbers organize allowed states and their angular/radial structure. Many-electron atoms add electron interactions, the Pauli principle, and approximation. Learn the electron-configuration rules with their conditions and exceptions rather than treating a filling mnemonic as a universal derivation of measured energies.
+
+Connect a configuration with observables such as ionization behavior, spectra, and magnetic response. Neutral atoms and ions can require different configurations; removing electrons is not always equivalent to reversing a memorized filling order. Energies and their ordering belong to the actual system under discussion.
+
+**Work:** explain allowed quantum-number sets and count the corresponding states for simple shells/subshells. Construct selected atomic/ionic configurations and compare textbook exceptions with their physical interpretation. For an advanced treatment follow the hydrogenic derivation in MIT 5.112, identifying the mathematical assumptions and the role of normalization.
+
+Use the first textbook for an accessible entrance, then read the full advanced course's electronic-structure lectures. Calculus and quantum mechanics deepen the theory in their own subjects; introduce the meaning of a derivative, probability density, and normalization where the derivation uses them. The chemical task is to explain which structural conclusions the model supports and how those conclusions connect to evidence.
+
+**Continue:** [Explain periodic trends through structure and competing effects](Periodic-patterns-and-their-limits.lingua#r_1JPAXST3A4ZTBAZQWJKCJR8AZW).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_4B0D7XPCFSZAW46VKG2NE7B54P

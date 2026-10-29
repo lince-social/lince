@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Derive a finite flash split before using it as a process calculation (@ic-flash: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #source "../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "An-inspectable-fixed-ratio-flash.lingua#r_4C2KA2E8NSHG5XJGQM45H58FQV") { r_039ZZ8B6081VHRGSP5Y23KBX2W
+**Read:** [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), the full flash-separation, phase-equilibrium and lever-rule modules; [Graduate Chemical Engineering Thermodynamics — MIT 10.40](../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT), the complete finite phase/material-constraint and mixture/stability treatment; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete equilibrium/material-account reasoning needed for a coupled reaction/separation problem.
+
+Let z_i be the normalized feed mole fractions, β the vapor fraction and K_i the supplied equilibrium ratios y_i/x_i. Combining the component balance z_i=(1−β)x_i+βy_i gives x_i=z_i/[1+β(K_i−1)] and y_i=K_ix_i. For two present phases, normalization yields the Rachford–Rice equation Σ_i z_i(K_i−1)/[1+β(K_i−1)]=0.
+
+With positive fixed K_i, the residual is nonincreasing over β in [0,1]. Its endpoint signs distinguish an interior split from a single-phase result in this simplified model. When all active components have K_i=1, the phase fraction is indeterminate: a program must not invent a unique split. A nonexistent phase has no finite stream composition to use in a flow balance.
+
+Actual equilibrium ratios depend on temperature, pressure, composition and the chosen thermodynamics. An isothermal fixed-K flash is neither an adiabatic flash nor a complete nonideal stability calculation. A meaningful process account must add energy and property equations and check whether its assumed phases are appropriate.
+
+**Work:** derive the scalar equation from component closure, solve a binary case independently, and explain bubble/dew and single-phase limits. Compare a real mixture with justified K/property evidence before using a flash result to size or evaluate any physical operation. The next original program makes the simplified solve and its limitations explicit.
+
+**Continue:** [Verify a bounded flash calculation with independent phase and component checks](An-inspectable-fixed-ratio-flash.lingua#r_4C2KA2E8NSHG5XJGQM45H58FQV).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_039ZZ8B6081VHRGSP5Y23KBX2W

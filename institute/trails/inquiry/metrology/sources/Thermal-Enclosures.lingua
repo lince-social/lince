@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Calibration of temperature and humidity enclosures — EURAMET cg-20 (@met-thermal: 0, is #reference, #part-of @met-sources) { r_4A4JXBQPJ1SXY82FVV367HSN70
+EURAMET Technical Committee for Thermometry. Guidelines on the Calibration of Temperature and/or Humidity Controlled Enclosures, cg-20, version 5.0, September 2017. English.
+
+[Official catalogue and PDF download, No. 20](https://www.euramet.org/publications-media-centre/calibration-guidelines). The same catalogue lists thermocouple guide 8, version 3.1, February 2020, and temperature-block guide 13, version 4.0, September 2017, for follow-up.
+
+Read cg-20 completely. Separate indication error, temporal instability, spatial distribution, loading, radiation, and the specified working volume. A sensor certificate alone does not establish the uncertainty of a sample temperature inside an enclosure.
+
+Official catalogue identity and the accessible cg-20 PDF were checked on 28 October 2026. EURAMET retains copyright and document-specific reproduction/translation terms. Keep the guides and their technical examples external rather than copying them into the repository.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_4A4JXBQPJ1SXY82FVV367HSN70

@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Connect a mineral or rock description with chemical and structural meaning (@geo-materials: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z", #geology "../../../../stem/chemistry/general-chemistry/states/Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA") { r_2P5P9KNPDD1FZCAVSWP5PVVRYC
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 2 and the rock-cycle introduction; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete minerals and rock-cycle parts; [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z), the introductory mineral/rock concepts.
+
+A mineral description connects chemical composition, internal structure, properties, and geological occurrence under the adopted definitions. A rock can contain several minerals, glass, pores, fluids, and structures produced by different events. The bulk elemental account and the mineral/species account answer different questions.
+
+Solid solution, defects, hydration, alteration, and phase relationships can matter to an actual specimen. A formula used as an ideal end member should not be silently substituted for a complete chemical assay. Likewise, two materials sharing a formula can differ in structure and properties. Keep the model, observed features, and identification confidence explicit.
+
+Use chemical foundations where they become relevant: charge balance, amount/composition, bonding, crystal geometry, phases, reactions, and measurement. These connect geology with materials, extraction, water, and living systems. A geological history additionally requires spatial/temporal evidence; chemistry alone does not locate or date an event.
+
+**Work:** describe the difference between an element concentration, a mineral identification, a rock classification, and an inferred formation environment for a textbook specimen. Identify which observations support each and what information remains missing. Compare an ideal formula with a compositionally variable material using identified references.
+
+Follow [Connect crystal structure, defects, and composition with material properties](../../../../stem/chemistry/general-chemistry/states/Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA) for the existing crystal/defect/composition foundation. Its geology continuation returns to mineral identification. The full mineralogy/petrology trail will deepen its unique characterization and theoretical methods rather than duplicating the generic chemistry here.
+
+**Continue:** [Connect crystal structure, defects, and composition with material properties](../../../../stem/chemistry/general-chemistry/states/Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_2P5P9KNPDD1FZCAVSWP5PVVRYC

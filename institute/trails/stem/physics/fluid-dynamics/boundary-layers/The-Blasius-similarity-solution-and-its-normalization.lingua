@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+The Blasius similarity solution and its normalization (@fd-blasius: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "Pressure-gradients-separation-and-integral-methods.lingua#r_6SZR7KMJ0QJHB12ZVVGMZ254WA") { r_2WRXBS1GA1GTV3S24SCF5PBQTM
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), Blasius derivation and boundary-layer discussion; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter VIII similarity solution; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), high-speed boundary-layer notes.
+
+For a steady laminar incompressible boundary layer on a stationary flat plate with uniform external speed U, choose η=y√[U/(νx)] and streamfunction ψ=√(νUx) f(η). Continuity is then satisfied, and the boundary-layer equation becomes f‴+(f f″)/2=0, with f(0)=f′(0)=0 and f′(∞)=1. Other normalizations move factors of two; compare the definition of η before comparing constants.
+
+The numerical value f″(0) is approximately 0.332057336. Thus the local skin-friction coefficient, referenced to ρU²/2, is approximately 0.664114672/√Re_x. Integrating the similarity profile gives the displacement and momentum thicknesses and an independent momentum-integral relation. These quantities offer stronger checks than one plotted profile.
+
+Derive the reduction, solve the shooting or boundary-value problem, and vary both numerical spacing and the finite approximation to infinity. Recover the near-wall series and the far-field slope. The result assumes the stated laminar, zero-pressure-gradient, thin-layer regime; neither the leading-edge singular idealization nor a downstream transition is resolved by the similarity solution.
+
+**Continue:** [Pressure gradients, separation and integral methods](Pressure-gradients-separation-and-integral-methods.lingua#r_6SZR7KMJ0QJHB12ZVVGMZ254WA).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2WRXBS1GA1GTV3S24SCF5PBQTM

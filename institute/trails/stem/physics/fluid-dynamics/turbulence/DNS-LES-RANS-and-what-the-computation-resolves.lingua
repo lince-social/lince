@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+DNS, LES, RANS and what the computation resolves (@fd-les-dns: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #source "../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE", #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #fluid-dynamics "../../thermodynamics-and-heat-transfer/properties/Fundamental-property-models-derivatives-and-verification.lingua#r_764YPYD3A83WPVMG0N594Y9W71") { r_7J730ZRGKC9B6BVVHTZK9D2YYE
+**Read:** [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), numerical approaches and modelling; [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), verification versus validation cases; [Johns Hopkins Turbulence Databases — numerical flow evidence](../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE), DNS provenance; [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), turbulence modelling and numerical methods.
+
+Direct numerical simulation seeks to resolve the relevant continuum dynamics without a turbulence closure, but still has numerical, domain and sampling errors. Large-eddy simulation filters the equations and models unresolved transport. Reynolds-averaged modelling predicts averages through closure assumptions. These are different mathematical targets, not merely low, medium and high mesh counts.
+
+Derive the filtered stress and compare it with Reynolds stress. Explain the filter, grid and model dependence, wall treatment and inflow content of a chosen LES. For DNS, assess the smallest spatial/time scales and statistical duration in the actual flow. For RANS, identify the meaning of steady convergence when the physical flow is unsteady.
+
+Choose a benchmark with documented observables and compare at least two modelling levels against independent evidence. Track numerical convergence and statistical convergence separately. An apparently converged force from a model can remain physically biased; a changing instantaneous field can nevertheless yield a statistically converged mean. Relate the required computational cost to the question being asked.
+
+**Continue:** [Fundamental property models, derivatives and verification](../../thermodynamics-and-heat-transfer/properties/Fundamental-property-models-derivatives-and-verification.lingua#r_764YPYD3A83WPVMG0N594Y9W71).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7J730ZRGKC9B6BVVHTZK9D2YYE

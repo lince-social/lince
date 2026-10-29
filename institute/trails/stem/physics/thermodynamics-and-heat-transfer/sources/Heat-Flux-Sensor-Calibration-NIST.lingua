@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Heat-flux sensor calibration — NIST SP 250-65 (@th-heat-flux: 0, is #reference, #part-of @th-sources) { r_6RP9VC0545310FNGXY9B50PN16
+Benjamin K. Tsai, Charles E. Gibson, M. V. Annageri, D. P. DeWitt and Robert D. Saunders. Heat-Flux Sensor Calibration, NIST SP 250-65, 2004, DOI 10.6028/NIST.SP.250-65. [Publication and full download route](https://www.nist.gov/publications/heat-flux-sensor-calibration).
+
+Read the whole method and uncertainty treatment. Identify the sensor's calibration quantity, spectral/angular conditions, convection/radiation contributions, mounting and response time. A calibration under one source arrangement does not remove heat-flow disturbance or spectral mismatch in a later experiment.
+
+The official publication date is 1 January 2004. Read it as a documented measurement method and compare the current laboratory context, sensor specification and actual use conditions. Source material remains external; a reconstructed calibration calculation is not a performed traceable calibration.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_6RP9VC0545310FNGXY9B50PN16

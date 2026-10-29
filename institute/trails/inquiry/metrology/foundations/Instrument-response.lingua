@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Range, sensitivity, loading, bandwidth, and response time (@met-response: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #source "../../quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2", #metrology "Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH") { r_07SCGP3DGSTJ27T288T3G50J8H
+**Read:** [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 7, 9–10 and the time-dependent model discussion; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), sections 4–7 and E7 Thermistor Calibration; [Functions, tables, domains, and inverse questions](../../quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2), the whole Record and its assigned preparation.
+
+A measuring system transforms a quantity into indications. A static model I = ax + b describes sensitivity and offset over a stated range; it does not automatically describe response to changing inputs. Saturation, hysteresis, nonlinearity, drift, and loading can remain hidden when only a few points are inspected.
+
+A simple dynamic model τ dI/dt + I = Kx relates indication to input under assumptions. For a step input and first-order response, the indicated change approaches its final value as 1 − exp(−t/τ). At t = τ it has reached about 63.2% of the final change, not completed the measurement. Reading too early can produce a bias that repetition at the same delay will not remove.
+
+The instrument can change what it measures. A probe exchanges heat with an object; a voltmeter draws current through a finite input resistance; a contact probe applies force. The relevant measurand may be the unperturbed quantity or the quantity under the specified measurement procedure. State which model is intended.
+
+**Work:** use a hypothetical first-order response with τ = 5 s and calculate the remaining response difference at 5, 15, and 25 s. Determine a waiting criterion relative to an allowed contribution instead of declaring “three time constants” universally adequate. Sketch a static range with saturation and show why its inverse cannot uniquely recover an out-of-range input.
+
+Connect a device specification to the intended signal: range, bandwidth, input loading, and environmental conditions must agree. A high digit count can coexist with inadequate bandwidth or a changing specimen. Detailed sensor design belongs in the relevant instrumentation discipline; this Record establishes the shared questions a calibration and uncertainty model must answer.
+
+**Continue:** [A specimen, a sampling target, and a result about a population](Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_07SCGP3DGSTJ27T288T3G50J8H

@@ -1,0 +1,19 @@
+Import "../Quantitative-literacy.lingua"
+
+Follow a quantitative account across an infrastructure chain (@ql-infrastructure: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #source @ql-source-data, #source @ql-source-si, #source @ql-source-vim, #quantitative-literacy "Advanced-quantitative-study.lingua#r_6G38PYR8GVPZNZ16CNJ31VN259") { r_1SPNJTQF61CBZ3V6H0NPM7SD0E
+**Read:** The Art of Insight in full if not already completed. Revisit the material and drawing studies and Broman and Woo's complete paper. Use the SI and VIM sources as working references throughout the account.
+
+Choose one object: a machine component, cable assembly, laboratory vessel, or electronic module. Draw an explicitly scoped chain from raw material to transformed material, component, assembly, testing, delivery, use, and recovery. Name the material, information, energy, and custody that pass across each boundary. This is a quantitative study of an object, not a claim to have designed every upstream industry.
+
+For each transition record input and usable-output definitions, stated or hypothetical quantities, losses, reuse, stock change, time interval, energy terms, and the documents a receiver would need. Keep the units consistent while allowing item definitions to change. A kilogram of refined material is not an item count until geometry, composition, manufacturing loss, and acceptance definitions connect them.
+
+Build an inspectable calculation linking at least three successive transformations. Compute usable-output fractions and resource use per accepted final item. Include a shared service such as electricity or water and state how its quantity is allocated. Separate actual sourced data from invented demonstration values. Never fill gaps with plausible industrial figures presented as facts.
+
+**Deepen:** compare two routes under the same functional output and boundary, test a limiting case, and identify the largest uncertainty or missing observation. Discuss transport, storage, maintenance, and rejected work where they affect the quantities. Track internal recycling separately so a circulating mass is not repeatedly counted as newly extracted material.
+
+The resulting drawing, calculation, source table, and critique become reusable shared Records if useful. Specialized mining, chemistry, machinery, power, and semiconductor material will supply the detailed mechanisms. This account supplies the common language that lets those bodies of knowledge connect and lets a reader see which link in a proposed chain is still unsupported.
+
+**Continue:** [Advanced study — derive, compare, test, and revise a model](Advanced-quantitative-study.lingua#r_6G38PYR8GVPZNZ16CNJ31VN259).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_1SPNJTQF61CBZ3V6H0NPM7SD0E

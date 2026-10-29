@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Storage power, energy, state and converter interfaces (@pe-storage: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #source "../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF", #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #electrical-power-engineering "Flexible-demand-process-state-and-service.lingua#r_3G55HWZEJR23DRDAS5RQDYJ5FW") { r_558Q64EG1RKH177QHXP6RYXA98
+**Read:** [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), complete storage, time coupling and uncertainty methods; [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF), whole storage/resource-control and limit discussion; [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), complete relevant bidirectional conversion and energy-state development.
+
+A storage resource has separate power and energy limits, losses, state, rate/temperature constraints and a converter/control interface. A 1 MW label does not state how long it can support a service. For a declared energy model, integrate charge/discharge power with the appropriate directional efficiencies and limits; do not add an efficiency twice or reverse its denominator.
+
+Compare a short frequency-support action, an energy-shifting schedule, black-start support and fault/auxiliary duty. Their time scales, power quality and reserve requirements differ. A state-of-charge estimate is model/measurement dependent and does not by itself reveal battery condition or available power under every temperature/aging state.
+
+Read the full [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99) storage/time-coupling formulation and the resource/control interfaces in [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF). Work an original chronological example with initial/terminal state and an independent energy balance. Identify what cell/pack chemistry, thermal management, manufacturing and lifetime information must come from the separate full electrochemical-storage subject. Here the maintained electrical interface, capability and evidence must be explicit without treating a finite device as an unlimited ideal source.
+
+**Continue:** [Flexible demand, process state and service](Flexible-demand-process-state-and-service.lingua#r_3G55HWZEJR23DRDAS5RQDYJ5FW).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_558Q64EG1RKH177QHXP6RYXA98

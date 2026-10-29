@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Sound speed, acoustic impedance and linear waves (@fd-sound: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "Static-stagnation-and-critical-states.lingua#r_13W8RXAZ6EQG83R7AKRJF965S9") { r_66QA17NADDVJNJWKZKFJF9TX7N
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4, sound waves, thermodynamics and damping; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), compressible equations and small disturbances; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), wave module.
+
+Small disturbances in a compressible fluid couple mass, momentum and a thermodynamic response. For an equilibrium isentropic disturbance, c²=(∂p/∂ρ)_s; for a calorically perfect ideal gas c=√(γRT). A temperature derivative at fixed pressure is not interchangeable with this derivative. Composition and relaxation time can change the appropriate physical response.
+
+Linearize about a uniform state and obtain the wave equation and the characteristic speeds U±c in a moving medium. For a one-dimensional progressive acoustic wave in a stationary medium, pressure and particle-velocity perturbations are related through the impedance ρc with a direction-dependent sign. A standing wave has a different local pressure/velocity relation.
+
+Derive reflection and transmission at a simple impedance change using the interface conditions. Compare phase velocity, group velocity and damping when diffusion, dispersion or relaxation is retained. Relate an actual microphone or pressure-transducer record to its response bandwidth and the flow field, rather than calling every pressure fluctuation sound.
+
+**Continue:** [Static, stagnation and critical states](Static-stagnation-and-critical-states.lingua#r_13W8RXAZ6EQG83R7AKRJF965S9).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_66QA17NADDVJNJWKZKFJF9TX7N

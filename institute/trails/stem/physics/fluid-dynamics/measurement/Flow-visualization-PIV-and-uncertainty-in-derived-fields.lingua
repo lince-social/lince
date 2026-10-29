@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Flow visualization, PIV and uncertainty in derived fields (@fd-piv-methods: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "Flow-facilities-boundaries-blockage-and-inlet-quality.lingua#r_36W31R46PFWQP6483RTVS3404Z") { r_1TH2QT61KGJF0Z9VGGY192G6VD
+**Read:** [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), the complete review and the primary uncertainty method chosen for the investigation; [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), flow visualization and micro-PIV lessons; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), visualizations interpreted with their accompanying notes.
+
+A dye line, illuminated particle sheet or schlieren image represents a particular optical and material process. Decide whether it records a trajectory, streak, concentration field or refractive-index gradient. Its apparent shape cannot be read as an instantaneous streamline without the required conditions.
+
+For particle image velocimetry, connect seeding, particle response, illumination, calibration, imaging, timing and correlation to displacement and then velocity. Interrogation windows and overlap impose spatial filtering. Out-of-plane motion, reflections, peak ambiguity and validation/replacement choices affect the inferred field. Stereo or volumetric methods add calibration and reconstruction assumptions.
+
+Propagate uncertainty into vorticity, strain, stresses or pressure only with the correlations and differentiation/integration method made explicit. Compare the integral of a measured profile with independent flow or force data. Publish the processing parameters and retain the unmodified measurement evidence in an appropriate external archive so a revised interpretation can be checked.
+
+**Continue:** [Flow facilities, boundaries, blockage and inlet quality](Flow-facilities-boundaries-blockage-and-inlet-quality.lingua#r_36W31R46PFWQP6483RTVS3404Z).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1TH2QT61KGJF0Z9VGGY192G6VD

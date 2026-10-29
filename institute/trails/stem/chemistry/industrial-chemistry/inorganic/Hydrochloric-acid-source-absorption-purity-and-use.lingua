@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Distinguish hydrochloric-acid production routes, recovered acid and usable specification (@ic-hydrochloric: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #source "../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3", #industrial-chemistry "Soda-ash-bicarbonate-recycles-and-salt-residuals.lingua#r_5YS41NVFSA5SM9XM36JEQ37Z35") { r_7KZQ2C95YVJ7756T1757N507KH
+**Read:** [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the complete hydrochloric-acid manufacturing and absorption treatment; [Production of Chlor-alkali, BREF CAK](../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the full connected chlorine/hydrogen product and conditioning context; [Chemical-industry process descriptions and emission factors — EPA AP-42](../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3), the entire hydrochloric-acid process/factor and background sections.
+
+Hydrochloric acid can enter a production chain through direct synthesis and absorption, as a co-product of other chemical transformations, or through recovery/regeneration. The same nominal acid concentration does not identify its impurity profile, energy account or fitness for a sensitive use.
+
+For direct synthesis, H₂+Cl₂→2HCl defines an atom relation. Absorption into water, heat removal, gas conditioning, entrainment and final concentration require further physical and chemical models. A co-product route must retain the original reaction's selectivity and contaminants rather than treating the acid as an unconnected free input.
+
+Follow water, chlorine-containing species, residual organics, metals and contact-material effects as appropriate to the actual route. Storage/transfer and changing temperature can alter delivered concentration or introduce contamination. Trace recovery and disposal streams through the connected plant account.
+
+**Work:** reconstruct two complete authorized public acid-source routes for the same downstream requirement. Independently close chlorine/hydrogen/water and energy, compare impurity and purification evidence, and explain which observation would establish interchangeability. Include actual useful output and associated co-products/residuals in the comparison rather than selecting only the most favorable source boundary.
+
+**Continue:** [Follow sodium carbonate and bicarbonate through reactions, recycle and finishing](Soda-ash-bicarbonate-recycles-and-salt-residuals.lingua#r_5YS41NVFSA5SM9XM36JEQ37Z35).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_7KZQ2C95YVJ7756T1757N507KH

@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Explain mineral optics through polarization and directional optical response (@mp-light: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #mineralogy-and-petrology "Plane-polarized-observations-and-refractive-index.lingua#r_5ZS4G6V7VWX08CA643X2HAJ5M9") { r_56E0Q648CAJ85CMJN64KK39KBM
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete optical-mineralogy theory; [Optical Mineralogy — Brock University course and laboratory material](../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E), all light, refraction, indicatrix, and birefringence lectures; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full optical-principle material.
+
+Light–mineral interaction depends on wavelength, direction, polarization, structure, composition, and conditions. Refraction, absorption, birefringence, dispersion, and scattering are distinct effects. A single observed color or refractive index cannot represent every orientation and wavelength of an anisotropic mineral.
+
+The optical indicatrix summarizes refractive-index behavior under a model and convention. Isotropic, uniaxial, and biaxial descriptions connect with symmetry but need the appropriate optical definition. Vibration directions and propagation directions are not interchangeable labels in an anisotropic account.
+
+Understand ordinary/extraordinary or principal-index notation in the chosen text before comparing formulas. A two-dimensional section through the indicatrix depends on propagation direction. A grain viewed along a special direction can show little apparent birefringence even when other orientations have a substantial value.
+
+**Work:** derive a simple isotropic refraction example with explicit angle/index conventions. Draw the indicatrix section for selected propagation directions and explain how it changes the observed behavior. Compare two grain orientations without changing their chemical identity and identify which measurement would constrain an index or optical sign.
+
+Read the full light/indicatrix treatment before learning interference figures by appearance. The practical guide supplies methodical observation, while the mineralogy and Brock sections develop the theoretical relationships. Later optical interpretation should remain connected to this physical account rather than a color catalogue.
+
+**Continue:** [Use plane-polarized observations as measured evidence for identification](Plane-polarized-observations-and-refractive-index.lingua#r_5ZS4G6V7VWX08CA643X2HAJ5M9).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_56E0Q648CAJ85CMJN64KK39KBM

@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Record the run without letting incidental metadata obscure the result (@rc-logs: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Computational-Provenance.lingua#r_41T4TPCSCESX7SDK9BY4YQZX15", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #reproducible-computation "Continuous-checks-and-revalidation.lingua#r_43P1VCG8ZN9VCRKEWYZBFVB00M") { r_4YAY9ZW1Y3FMHZ952XHD6DYZ4W
+**Read:** [PROV — entities, activities, and responsibility — W3C](../sources/Computational-Provenance.lingua#r_41T4TPCSCESX7SDK9BY4YQZX15), overview, primer, and the provenance relationships used; [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), all rules reviewed against the recorded run; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), logging and error-handling material.
+
+A useful execution account identifies what was attempted, which inputs/method/environment were used, how it was invoked, whether it completed, and where its outputs can be checked. Record relevant parameters and diagnostic evidence. Preserve enough information to explain a failure without treating every incidental log line as scientific provenance.
+
+Separate deterministic scientific artifacts from variable run metadata when that helps comparison. The toy report includes code/input digests, method identity, units, and exact quantities, but omits current time and absolute paths. An associated execution note records runtime identity, command, working directory, start/end observations if needed, status, output digest, and the comparison performed. This separation makes its byte-equality claim inspectable.
+
+Logs are observations of a process under a logging configuration. They may omit events, buffer output, or report claims supplied by the process itself. A message saying “validated” is weaker than an inspectable independent check. Preserve the actual failure input and expected behavior when diagnosing a discrepancy; an enormous unsorted terminal transcript may be less useful than a minimal reproducing example.
+
+**Work:** write the execution account for the relocation experiment. Another reader should be able to identify the unchanged inputs, the changed conditions, the output comparison, and the limits of what was established. Compare it with the PROV concepts and note which relationships remain assertions rather than independently witnessed facts.
+
+For a longer workflow, correlate activity identities across logs and outputs and explain retry/restart behavior. Avoid accidental disclosure of secrets or restricted input content in a published account; include the information needed to reconstruct authorized access and method without publishing credentials. This is a concrete publication responsibility, not a reason to leave the scientific procedure undocumented.
+
+**Continue:** [Keep the computation checkable as its surroundings change](Continuous-checks-and-revalidation.lingua#r_43P1VCG8ZN9VCRKEWYZBFVB00M).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_4YAY9ZW1Y3FMHZ952XHD6DYZ4W

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Thermodynamic potentials, natural variables and constraints (@th-potentials: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Termodinamica-Lesche-UFJF.lingua#r_0ABCKSRZBN8T4Y4FV1FQPWNY4Z", #thermodynamics-and-heat-transfer "Maxwell-relations-response-functions-and-consistency.lingua#r_2R3VH7BBR9QTY25J55ZQHHJ8Q7") { r_6V58CVPWD0BEY8MEKZQCVK1RHM
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), chapter 5 in full and multicomponent equilibrium; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), fundamental relations and potentials; [Termodinâmica — Bernhard Lesche, UFJF](../sources/Termodinamica-Lesche-UFJF.lingua#r_0ABCKSRZBN8T4Y4FV1FQPWNY4Z), the complete available potentials chapter.
+
+For a simple compressible mixture at equilibrium, write the fundamental differential with the actual work modes and species variables. Under the usual restricted mechanical model, dU = T dS−p dV+Σμ_i dn_i. Additional electrical, surface, elastic or magnetic terms require explicit definitions.
+
+Legendre transforms exchange natural variables: H = U+pV, F = U−TS and G = U+pV−TS. Their differentials reveal which derivatives yield temperature, pressure, entropy, volume and chemical potentials. A minimum-potential criterion applies under its matching constraints and contact with the specified reservoirs, not under every process condition.
+
+Derive the four differentials and use one consistent state model to calculate the same measurable response in two representations. Explain why minimizing G at fixed temperature/pressure is different from conserving energy in an isolated system. The shared chemical-direction Record provides the first concrete example of this broader structure.
+
+**Continue:** [Maxwell relations, response functions and consistency](Maxwell-relations-response-functions-and-consistency.lingua#r_2R3VH7BBR9QTY25J55ZQHHJ8Q7).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6V58CVPWD0BEY8MEKZQCVK1RHM

@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Protection, control, SCADA and communication boundaries (@pe-communications: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Industrial-Control-and-SCADA-O-and-M-FIST.lingua#r_1REAMQSK7H73C2DY277VJW2ZTB", #source "../sources/Operational-Technology-Security-NIST-800-82.lingua#r_760JSBVFVK2NXS6RE3HQJKK8P5", #source "../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC", #electrical-power-engineering "OT-security-physical-consequences-and-recovery.lingua#r_4FYWTTY77657GYNWGGAVEM0F26") { r_251RXEWC13723V5N98WDFFHN0Y
+**Read:** [Industrial control and SCADA operation/maintenance — FIST 3-33](../sources/Industrial-Control-and-SCADA-O-and-M-FIST.lingua#r_1REAMQSK7H73C2DY277VJW2ZTB), entire applicable manual; [Guide to Operational Technology Security — NIST SP 800-82r3](../sources/Operational-Technology-Security-NIST-800-82.lingua#r_760JSBVFVK2NXS6RE3HQJKK8P5), complete relevant architecture, control and operational sections; [Conduct of power operations and maintenance — FIST](../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC), whole applicable operating-state/evidence context.
+
+Separate fast local protection, local equipment control, plant coordination, supervisory monitoring and system dispatch. Their timing, failure response, data and authority differ. A communication link that supports monitoring may not meet the latency, availability or time-reference needs of a protection/control function.
+
+Draw the physical system, sensors/actuators, local controllers, auxiliary supplies, communication paths and supervisory services. State what continues autonomously when a server, time source or network segment fails. Include buffering, stale values, command/indication distinction, sequence of events and restart behavior where they affect a physical claim.
+
+Read the entire relevant [Industrial control and SCADA operation/maintenance — FIST 3-33](../sources/Industrial-Control-and-SCADA-O-and-M-FIST.lingua#r_1REAMQSK7H73C2DY277VJW2ZTB) manual and compare it with the current primary [Guide to Operational Technology Security — NIST SP 800-82r3](../sources/Operational-Technology-Security-NIST-800-82.lingua#r_760JSBVFVK2NXS6RE3HQJKK8P5) guidance. Model an authorized public or local educational case and test a communication delay, lost reference and rejected/missing command. Relate the result to actual power-system response rather than only packet delivery. The full communication, computing and control subjects deepen their generic methods; here the engineering interface must make physical consequences, retained evidence and recovery conditions explicit.
+
+**Continue:** [OT security, physical consequences and recovery](OT-security-physical-consequences-and-recovery.lingua#r_4FYWTTY77657GYNWGGAVEM0F26).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_251RXEWC13723V5N98WDFFHN0Y

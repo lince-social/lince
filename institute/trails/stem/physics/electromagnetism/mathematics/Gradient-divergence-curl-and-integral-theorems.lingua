@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Gradient, divergence, curl and integral theorems (@em-calculus: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "../../../../inquiry/quantitative-literacy/practice/Rates-and-accumulation.lingua#r_0NTXN5E5ZJ1A8C149BQF4G2YCZ", #fluid-dynamics "../../fluid-dynamics/mathematics/Velocity-gradients-strain-rate-and-local-rotation.lingua#r_37ABTXR3GBSJXJ39FACENFATQ6") { r_05M47N16QDCC5B927TEYXAMMA4
+**Read:** [Vector Calculus — David Tong](../sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5), complete notes and examples; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), delta functions, differential identities and potential methods.
+
+Gradient describes spatial change of a scalar, divergence the local net outward flux of a vector, and curl its local circulation. Their dimensions differ from the original field by one inverse length. The divergence and Stokes theorems connect local differential equations to finite volumes and loops; they are the reason the integral and differential field laws agree when regularity and boundary conditions permit.
+
+Work first with V = ax², giving E = −2ax in the x direction, and with a uniform vector field having zero divergence and curl. For E = k r/r³ away from the origin, calculate zero divergence locally but a nonzero flux through a sphere enclosing the source. The singular origin requires distributional treatment, not a claim that Gauss's law fails.
+
+Reconstruct the integral theorems, product rules, the Laplacian in the coordinate systems actually used, and integration by parts. Solve representative first/second-order differential equations and harmonic boundary problems. Read the full [Vector Calculus — David Tong](../sources/Vector-Calculus-Tong.lingua#r_2YD2PDK99N62GBWKXXCBY69PP5); borrow the shared quantitative Records for small changes and accumulation as needed. Later tensor, spectral and complex-variable methods should be introduced with derivations at the problems that use them.
+
+**Continue:** [Rates, accumulation, and the boundary of an account](../../../../inquiry/quantitative-literacy/practice/Rates-and-accumulation.lingua#r_0NTXN5E5ZJ1A8C149BQF4G2YCZ).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in fluid dynamics:** [Velocity gradients, strain rate and local rotation](../../fluid-dynamics/mathematics/Velocity-gradients-strain-rate-and-local-rotation.lingua#r_37ABTXR3GBSJXJ39FACENFATQ6).
+} r_05M47N16QDCC5B927TEYXAMMA4

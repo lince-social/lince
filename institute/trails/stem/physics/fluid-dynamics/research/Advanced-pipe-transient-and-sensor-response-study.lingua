@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced pipe-transient and sensor-response study (@fd-advanced-transient: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #source "../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578", #fluid-dynamics "Advanced-potential-flow-panel-and-force-study.lingua#r_3Z6H3AEH79V2ABNYJF4PZE11Y6") { r_0Z3TEDK7V0YXFMBXNHRP80DTVA
+**Read:** [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), the complete review and its cited primary model/experiment relevant to the chosen case; [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), pressure and dynamic-response methods; [Cavitation and Bubble Dynamics — Christopher E. Brennen](../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578), when the liquid-column assumptions fail.
+
+Derive the one-dimensional liquid-pipe wave equations with a specified wall response and boundary conditions. Obtain characteristic relations and recover the rapid-change pressure estimate as a limit. Implement a conservative or characteristic calculation for a documented valve, reservoir or junction event, identifying the time resolution of the imposed motion.
+
+Compare steady and unsteady friction treatments, wave-speed uncertainty and one additional mechanism such as trapped gas or wall viscoelasticity. Model the measurement chain sufficiently to distinguish true attenuation/reflection from sensor and connecting-line response. Use independently documented transient data or appropriately controlled apparatus.
+
+Check arrival times, extrema, waveform evolution and integral accounts across several locations. Defend any inferred parameter with independent evidence and show a failed model case. A final report should separate physical, numerical and observational explanations for discrepancies and specify what new measurement would resolve them.
+
+**Continue:** [Advanced potential-flow, panel and force study](Advanced-potential-flow-panel-and-force-study.lingua#r_3Z6H3AEH79V2ABNYJF4PZE11Y6).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0Z3TEDK7V0YXFMBXNHRP80DTVA

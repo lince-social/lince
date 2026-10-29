@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+CIPM MRA, CMCs, and key comparisons — BIPM (@met-mra: 0, is #reference, #part-of @met-sources) { r_3VVRRP0PY4YGAGTB7M22VNGDJ1
+BIPM. CIPM Mutual Recognition Arrangement and the Key Comparison Database. [Arrangement and official supporting documents](https://www.bipm.org/en/cipm-mra) · [KCDB](https://www.bipm.org/kcdb/).
+
+Read the Arrangement’s introductory account, then inspect one published Calibration and Measurement Capability and its scope, conditions, and uncertainty. Follow an associated comparison report in the relevant technical area and read its method, reference-value construction, uncertainty, and conclusions. Record the actual report’s authors, identifier, date, and passages; the database is a route to those individual documents, not itself the whole assignment.
+
+CMCs concern specified capabilities of participating institutes. A database entry does not automatically establish the uncertainty of a particular customer result or confer blanket recognition on every supplier. Compare the specified quantity, range, and conditions.
+
+Official explanatory pages were checked on 28 October 2026. Each report or dataset retains its publisher’s copyright and use terms. The trail does not ingest the database or copy its contents into the repository.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_3VVRRP0PY4YGAGTB7M22VNGDJ1

@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Distribution networks, phase detail and loss (@pe-distribution: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B", #source "../sources/OpenDSS-Distribution-Modeling-Manual.lingua#r_1192RYEP2NRARXYCHHJDZGXNGN", #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #electrical-power-engineering "Harmonics-RMS-neutral-current-resonance-and-power-quality.lingua#r_0FX1YMFYJBNA78QNS5ZRKSGPE6") { r_5JDYMJDX74TPPDT59SCKNH0YZ3
+**Read:** [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B), the complete modelling/flow programme; [OpenDSS — distribution modelling and reference manual](../sources/OpenDSS-Distribution-Modeling-Manual.lingua#r_1192RYEP2NRARXYCHHJDZGXNGN), complete applicable manual and component/control documentation; [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete distribution power-flow section.
+
+A radial feeder's tree structure permits efficient current/power summation methods, while meshed systems require their loop/network conditions. Derive a small radial branch-flow account with explicit loss and voltage drop, then compare it with a full nodal AC solution. A lossless or fixed-voltage approximation should be judged by its error in the chosen observable.
+
+Retain phase/neutral connectivity, mutual impedances, transformer connections, unbalanced and voltage-dependent loads, regulators, capacitors and distributed sources when they matter. Aggregating a feeder to one balanced load can preserve total P while missing end-voltage, neutral current, protection and phase-specific thermal constraints.
+
+Read the complete relevant [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B) progression and [OpenDSS — distribution modelling and reference manual](../sources/OpenDSS-Distribution-Modeling-Manual.lingua#r_1192RYEP2NRARXYCHHJDZGXNGN) or [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV) distribution methods. Reproduce an independently solved small case before using a large external feeder. State time resolution, control iteration and the state represented by each time-series point. Test topology, a controller limit and a changed phase connection; compare losses, bus balances and phase voltages. A steady distribution model alone cannot establish fault behavior or the capability of an islanded source/control system.
+
+**Continue:** [Harmonics, RMS current, resonance and power quality](Harmonics-RMS-neutral-current-resonance-and-power-quality.lingua#r_0FX1YMFYJBNA78QNS5ZRKSGPE6).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5JDYMJDX74TPPDT59SCKNH0YZ3

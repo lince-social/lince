@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Explain corrosion through coupled electrochemical and material processes (@gc-corrosion: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "../descriptive/Representative-elements-and-real-substances.lingua#r_5TFA3E8JYT5GP6EGP68R4381E1") { r_5HRF141YG6H9FJ8F3HKNGCA4NC
+**Read:** [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), electrochemical corrosion completely; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 17’s corrosion and applications; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), electrochemical method interpretation where used.
+
+Corrosion involves chemical/electrochemical change of a material under its actual environment and microstructure. Couple anodic and cathodic reactions with charge transport, solution chemistry, and mass transfer. A favorable reaction energy identifies an allowed direction under conditions; it does not by itself specify a service-life rate.
+
+Passivating films can change kinetics and transport, while defects, composition, chloride, pH, oxygen supply, geometry, or galvanic coupling can change the local system. A single standard-potential ordering cannot predict every outcome for coated, alloyed, or heterogeneous real materials. Localized corrosion can be significant even when an average mass-loss measure appears small.
+
+Choose measurements that match the question: mass change, dissolved species, surface/phase evidence, potential/current behavior, or mechanical consequences provide different information. Preserve specimen preparation, exposed area, environment, time, and reference conventions when comparing tests. A polished illustration of a corrosion mechanism still needs evidence from the actual material.
+
+**Work:** write coupled reaction/balance accounts for a textbook corrosion example, identify environmental variables, and propose observations distinguishing two plausible rate controls. Compare a protective strategy's mechanism with the assumptions it requires. Use a published or supervised study rather than inferring a structural safety decision from an elementary potential table.
+
+Read the full corrosion lesson and connect acid/base, complexation, oxygen transport, and solid-state structure where needed. The dedicated corrosion/material-protection scope remains a deeper trail; this foundation lets readers recognize its chemical connections and ask informed questions.
+
+**Continue:** [Connect representative-element patterns with actual chemical substances](../descriptive/Representative-elements-and-real-substances.lingua#r_5TFA3E8JYT5GP6EGP68R4381E1).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_5HRF141YG6H9FJ8F3HKNGCA4NC

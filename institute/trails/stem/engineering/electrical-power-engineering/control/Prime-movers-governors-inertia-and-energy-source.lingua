@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Prime movers, governors, inertia and energy source (@pe-governor: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #source "../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8", #electrical-power-engineering "../systems/Generation-energy-sources-conversion-and-supporting-services.lingua#r_1ZSHRTZEF2Z3TVEZGG1YN7VAHQ") { r_6YV9SD6REY3CDQ5RSFE9K3S06D
+**Read:** [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), complete mechanical/prime-mover and governor modelling; [Mechanical and Electrical Design of Hydroelectric Power Plants — USACE](../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8), whole applicable plant and mechanical/electrical interface chapters.
+
+A governor controls mechanical input through a prime mover with finite energy, ramp, delay and operating limits. Hydroturbines, steam/gas systems and other sources have distinct dynamics. A generic first-order block may be useful over a declared range, but it is not a complete substitute for water, thermal, mechanical or fuel constraints.
+
+Derive rotor kinetic energy and relate mechanical/electrical power imbalance to speed/angle acceleration. Introduce inertia constant H on a stated machine/system base and transform it consistently when aggregating resources. Inertia exchanges stored energy during a disturbance; it is not a continuing supply that replaces the prime mover.
+
+Compare droop, governor/turbine response and secondary regulation with an explicit load disturbance. Include deadband, saturation, rate and source-energy limits where relevant. Read the complete [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ) development and the plant interfaces in [Mechanical and Electrical Design of Hydroelectric Power Plants — USACE](../sources/Hydroelectric-Mechanical-and-Electrical-Design-USACE.lingua#r_1N0D32HTSXMVJ1VRW9TNTYV9P8). Use the later frequency/adequacy studies to distinguish transient support, sustained reserve and available energy. A satisfactory ideal frequency trace alone does not establish that a physical turbine or energy supply can deliver the assumed response.
+
+**Continue:** [Generation, energy sources and supporting services](../systems/Generation-energy-sources-conversion-and-supporting-services.lingua#r_1ZSHRTZEF2Z3TVEZGG1YN7VAHQ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6YV9SD6REY3CDQ5RSFE9K3S06D

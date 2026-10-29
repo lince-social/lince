@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Fluid quantities, units and English–Portuguese vocabulary (@fd-vocabulary: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6", #fluid-dynamics "Material-properties-and-the-state-of-the-fluid.lingua#r_5875X8MW02A7JNF72S8MDJSANN") { r_1GH7DF6D8NAQCMZ44VPZ506VV3
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 1, especially physical quantities and units; [University Physics Volume 1 — OpenStax](../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), density, pressure, flow rate and viscosity sections.
+
+Connect the vocabulary to a measured quantity. Massa específica is mass density ρ in kg/m³; vazão volumétrica is volume flow rate Q in m³/s; vazão mássica is mass flow rate in kg/s. Pressão is pressure in Pa; tensão de cisalhamento is shear stress, also in Pa. Viscosidade dinâmica μ has units Pa·s and viscosidade cinemática ν=μ/ρ has units m²/s.
+
+A quantity with the same unit can have a different physical meaning. Pressure and shear stress act differently on a surface. Energy density and pressure share units, but a pressure reading does not measure every form of energy in a volume. Distinguish discharge from speed: Q is a surface integral of normal velocity, not a velocity at one point.
+
+Write the units and reference state beside every input. Convert a volume flow only after specifying whether it describes the actual fluid conditions or a stated reference condition. Record whether a quoted friction factor is Darcy or Fanning before using a pressure-loss equation.
+
+**Continue:** [Material properties and the state of the fluid](Material-properties-and-the-state-of-the-fluid.lingua#r_5875X8MW02A7JNF72S8MDJSANN).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1GH7DF6D8NAQCMZ44VPZ506VV3

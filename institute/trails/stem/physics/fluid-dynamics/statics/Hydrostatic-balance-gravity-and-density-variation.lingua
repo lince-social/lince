@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Hydrostatic balance, gravity and density variation (@fd-hydrostatics: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Manometers-layered-fluids-and-connected-pressure-paths.lingua#r_5C2HW614FRPGT2H6QD3RY30G0J") { r_0BMK5JN8XP72JR1WQG5B52PFMS
+**Read:** [University Physics Volume 1 — OpenStax](../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), hydrostatic pressure and its applications; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 4 hydrostatics; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), hydrostatic pressure and compressible equilibrium sections.
+
+Balance the forces on a small stationary fluid element. With gravity vector g, equilibrium requires ∇p=ρg. For a vertical coordinate z increasing upward and constant gravitational magnitude, dp/dz=−ρg. For constant density, a depth h below a surface adds ρgh to its pressure.
+
+For an illustrative liquid of density 1,000 kg/m³ with g=9.81 m/s², a depth of 2 m adds 19,620 Pa. State the surface pressure separately. If density varies with pressure, temperature or composition, integrate the actual relation instead of replacing it with one unexplained average. A static ideal-gas column also needs a temperature model.
+
+Draw the pressure distribution and explain why container shape does not appear in the local balance. The total support force still depends on the surfaces and their orientation. Use a pressure reading at one height to predict another and identify which assumptions a disagreement would test.
+
+**Continue:** [Manometers, layered fluids and connected pressure paths](Manometers-layered-fluids-and-connected-pressure-paths.lingua#r_5C2HW614FRPGT2H6QD3RY30G0J).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0BMK5JN8XP72JR1WQG5B52PFMS

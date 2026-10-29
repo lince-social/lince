@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Free-surface kinematic and dynamic conditions (@fd-free-surface: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #fluid-dynamics "Gravity-capillary-dispersion-phase-and-group-velocity.lingua#r_058JA47C7PH8ER8Y6YGQ4WQ2R9") { r_4WNYCBSPDTH0TQ2J47HWMS2C91
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 surface-wave equations; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), surface waves; [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), stress conditions and surface waves.
+
+A material free surface moves with the fluid's normal velocity. If it is represented by z=η(x,y,t), its kinematic condition is η_t+uη_x+vη_y=w at the surface. The dynamic condition balances traction, including exterior pressure, viscous stresses and surface tension where retained. The unknown boundary is part of the problem, not a fixed wall with zero pressure.
+
+Linearize a small-amplitude wave about a flat equilibrium surface only after identifying the expansion parameter and background state. Apply the boundary conditions at the consistent reference level to the retained order. For an inviscid irrotational region, the bulk potential and its surface conditions produce a coupled evolution.
+
+Compare the predicted surface displacement with particle motion below it. Account for bottom conditions, contact with walls and imposed disturbances. A surface-height record alone may not determine the full velocity field without a justified model. Retain both kinematic and dynamic conditions in an analytical or numerical reconstruction.
+
+**Continue:** [Gravity–capillary dispersion, phase and group velocity](Gravity-capillary-dispersion-phase-and-group-velocity.lingua#r_058JA47C7PH8ER8Y6YGQ4WQ2R9).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4WNYCBSPDTH0TQ2J47HWMS2C91

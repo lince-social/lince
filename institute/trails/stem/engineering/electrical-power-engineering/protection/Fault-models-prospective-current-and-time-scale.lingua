@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Fault models, prospective current and time scale (@pe-faults: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Electrical-Standards-Edition-and-Jurisdiction.lingua#r_169QEF26N0C345MKSRWQY6KD90", #electrical-power-engineering "../../../physics/electromagnetism/induction/Quasistatic-limits-diffusion-and-skin-depth.lingua#r_7RSC1KG4B4DNB7C7319F691MSW") { r_4FV98NRVV0M3JYR5WG3X2E8KVS
+**Read:** [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete fault and component models; [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), all sequence/fault and apparatus lectures; [Electrical standards, edition and jurisdiction](../sources/Electrical-Standards-Edition-and-Jurisdiction.lingua#r_169QEF26N0C345MKSRWQY6KD90), complete applicable short-circuit method, edition and scope.
+
+A fault calculation predicts current/voltage under a specified abnormal connection, source state and time scale. Define fault type/location/impedance, prefault operating state, network topology and source models. A bolted three-phase fault is one ideal case; actual arcing, earth and intermittent faults can behave differently.
+
+For a simple positive-sequence Thévenin model, initial symmetrical fault current is determined by prefault source voltage divided by the stated source/network/fault impedance. Generator subtransient, transient and steady behavior differ, and converter limits cannot automatically be represented by the same source reactance. Include motors or other connected sources where they contribute.
+
+Compare maximum and minimum credible fault currents for different source/topology/operating conditions. Equipment interruption/withstand and relay sensitivity impose different questions; the largest current is not the only important case. Check units, per-unit bases, phase connections, earth/neutral return paths and current-transformer measurements. A steady fault equivalent does not reproduce DC offset, current-zero timing or a travelling surge, which the next transient and apparatus Records address separately.
+
+**Continue:** [Quasistatic limits, diffusion and skin depth](../../../physics/electromagnetism/induction/Quasistatic-limits-diffusion-and-skin-depth.lingua#r_7RSC1KG4B4DNB7C7319F691MSW).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4FV98NRVV0M3JYR5WG3X2E8KVS

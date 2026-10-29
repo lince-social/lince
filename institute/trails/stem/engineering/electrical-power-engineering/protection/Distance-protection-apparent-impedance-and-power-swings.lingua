@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Distance protection, apparent impedance and power swings (@pe-distance: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD", #electrical-power-engineering "Differential-protection-bus-transformer-and-machine.lingua#r_4NKP7N1CFA94NXZ0KVZE8D80C2") { r_3NJRHD64WCEAAMRH5PSHKGKW1J
+**Read:** [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), all distance, pilot, power-swing and out-of-step modules; [Protective relay operation, maintenance and tests — FIST 3-8](../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD), complete applicable functional/measurement testing.
+
+Distance protection interprets measured voltage/current as an apparent impedance under a specified fault and measurement model. That ratio is not automatically the physical line impedance: infeed, fault resistance, mutual coupling, load, transformer response and measurement transients can change it. Phase/earth loops need the correct compensation and reference conventions.
+
+Derive a simple fault-loop measurement, then compare it with a case including remote infeed or an earth-return path. Map intended zones and timing against actual line/adjacent-system conditions. Explain load encroachment and how a power swing can enter an impedance characteristic without being the intended fault. Blocking, out-of-step and pilot schemes address different operating cases.
+
+Work the complete [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE) distance, pilot and power-swing modules and test an independent scenario. Compare voltage-transformer/CT transients and filtering with the relay's decision window. A plotted characteristic alone is not a complete protection study. Preserve source/topology states, settings, communication and breaker response with the resulting claim, and compare a changed network or converter source before retaining old settings.
+
+**Continue:** [Differential protection of buses, transformers and machines](Differential-protection-bus-transformer-and-machine.lingua#r_4NKP7N1CFA94NXZ0KVZE8D80C2).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3NJRHD64WCEAAMRH5PSHKGKW1J

@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Connect river form, discharge, sediment, and landscape change (@geo-rivers: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #source "../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z", #geology "Floodplains-extremes-and-changing-boundaries.lingua#r_6X18FVTY53Q50RK2NNKMZ7B01K") { r_0N807QB20NWJ99VJJ2EJA4F9EQ
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 13 in full with exercises; [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), river, water, and landscape context; [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z), the complete stream/topographic interpretation exercises.
+
+A river is a changing flow and material-transfer system in a catchment. Channel geometry, gradient, discharge regime, sediment, banks, vegetation, bedrock, and human alterations influence its behavior. A present channel is evidence within a history, not a fixed shape that fully represents its possible flows.
+
+Discharge is an area integral of velocity normal to a cross-section. With an invented area of 2 m² and a suitable section-mean velocity of 0.3 m s⁻¹, Q = 0.6 m³ s⁻¹. If suspended concentration is uniformly 0.020 kg m⁻³ under this toy model, suspended mass flux is 0.012 kg s⁻¹. Bed load and dissolved transport are separate components.
+
+Sampling must account for cross-section, depth, timing, and event variation. Multiplying a long-term average discharge by an average concentration does not generally give average mass flux: their covariance matters. A few convenient low-flow samples can miss a substantial event-driven transfer.
+
+**Work:** derive the example with units and identify its uniformity assumptions. Complete the stream exercises and construct a catchment material account including storage and transfers. Compare an observed channel/terrace pattern with two histories involving incision, deposition, uplift, or changing supply, and identify independent dating or field evidence.
+
+Read the entire stream chapter. Relate fluvial geology to water supply, bridges, aggregate, floodplains, reservoirs, and coastal sediment budgets, keeping site measurements and engineering decisions tied to their actual scales and conditions.
+
+**Continue:** [Interpret flood evidence and probability without mistaking a return period for a schedule](Floodplains-extremes-and-changing-boundaries.lingua#r_6X18FVTY53Q50RK2NNKMZ7B01K).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_0N807QB20NWJ99VJJ2EJA4F9EQ

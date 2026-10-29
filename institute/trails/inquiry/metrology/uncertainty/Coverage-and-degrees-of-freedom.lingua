@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Standard uncertainty, expanded uncertainty, and coverage claims (@met-coverage: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../../quantitative-literacy/sources/Uncertainty-Guides.lingua#r_11PDFVNTH65FKFVZVHMHMAF6CH", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #metrology "Nonlinearity-and-bias.lingua#r_7RZPX9400CJWKT2SH1S8WGFWMW") { r_5Q2X2FWBE479BM2WERZQNG9PCV
+**Read:** [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), expanded uncertainty, reporting, and coverage annexes; [Uncertainty guides — Taylor, Kuyatt, and JCGM](../../quantitative-literacy/sources/Uncertainty-Guides.lingua#r_11PDFVNTH65FKFVZVHMHMAF6CH), sections 6–7 and coverage guidance; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), section 8 and interval examples.
+
+A standard uncertainty summarizes dispersion in standard-deviation form. An expanded uncertainty U = ku_c uses a coverage factor under a stated interpretation. A coverage interval or region needs a probability statement and the model supporting it. A confidence interval from a repeated-sampling procedure and a probabilistic state-of-knowledge interval are not interchangeable merely because their endpoints look similar.
+
+For a normal output distribution with sufficiently well-known parameters, an interval of ±1.96 standard deviations has approximately 95% probability. Using k = 2 can be a convenient approximation in suitable conditions; it is not a universal 95% rule for skewed outputs, small effective degrees of freedom, or invalid input assumptions.
+
+For independent contributions under the applicable GUM approximation, effective degrees of freedom can be estimated as ν_eff = u_c⁴/Σ[(c_i u_i)⁴/ν_i]. Read the assumptions before applying a Student-t coverage factor. Infinite degrees of freedom for a contribution is an evaluation assumption, not a reward for calling it Type B.
+
+**Work:** compare an independent normal-mean example using a known standard deviation with one estimating it from a small sample. State the corresponding interval interpretation and degrees of freedom. Then examine a bounded or strongly skewed output where a symmetric expanded interval is a poor summary. Explain why a shortest interval and an equal-tail interval can both have the same coverage but different endpoints.
+
+Report k, coverage probability when justified, method, relevant distribution assumptions, and enough information to reconstruct the result. Keep the unrounded calculation while presenting a sensible number of digits. A recipient cannot interpret “±0.1” reliably without knowing whether it is a tolerance, bound, standard uncertainty, or expanded uncertainty.
+
+**Continue:** [Nonlinearity can change the estimated value as well as its uncertainty](Nonlinearity-and-bias.lingua#r_7RZPX9400CJWKT2SH1S8WGFWMW).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_5Q2X2FWBE479BM2WERZQNG9PCV

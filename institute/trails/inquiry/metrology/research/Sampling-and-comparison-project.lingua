@@ -1,0 +1,23 @@
+Import "../Metrology.lingua"
+
+Advanced project — sampling, validation, and comparison across a material chain (@met-sampling-project: 0, is #chapter, #part-of @metrology, #source "../sources/Sampling-Uncertainty.lingua#r_3Q0NEPSBDFX8Z1JWAG3C3HRHJM", #source "../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #source "../sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS", #source "../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1", #metrology "Independent-research.lingua#r_3S2V3ZCFMX40WZ7QMMEZ1E66V3") { r_2BTPTEFXQ5H490KJA3C7AEC1KN
+**Read:** [Measurement uncertainty arising from sampling — Ramsey, Ellison, and Rostron](../sources/Sampling-Uncertainty.lingua#r_3Q0NEPSBDFX8Z1JWAG3C3HRHJM), the complete guide with corrections; [The Fitness for Purpose of Analytical Methods — Eurachem](../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), the whole guide and statistical annexes; [Quantifying Uncertainty in Analytical Measurement — Eurachem/CITAC](../sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS), the whole guide and relevant examples; [CIPM MRA, CMCs, and key comparisons — BIPM](../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1), a full relevant comparison report.
+
+Choose a target property relevant to a material or environmental chain: moisture or composition of a delivery, a water-body property over a specified interval, or a production-lot characteristic. Specify target, specimen, preparation, analytical or physical method, and result interpretation. Use published or clearly labelled simulated observations when real sampling is unavailable or inappropriate.
+
+Read the sampling guide and its corrections completely, the full Eurachem validation and uncertainty guides, and an independent measurement-process treatment. Include a real comparison report and a relevant reference certificate. Distinguish the actual source data from invented teaching data and preserve source locations.
+
+**Design:** choose a hierarchy that can identify the intended sampling, preparation, and analysis components. Explain which levels are nested or crossed and which effects remain confounded. Include a plausible matrix, storage, or target-variation effect and a plan for examining it. Choose an informative design rather than merely increasing instrument repetitions.
+
+**Analysis:** for a simplified random-effects model y_ij = μ + a_i + ε_ij with n independently selected samples and r independent analyses per sample, derive what the within- and between-sample mean squares estimate. Under the simple independent equal-variance assumptions, within-sample mean square estimates σ²_analysis and between-sample mean square estimates σ²_analysis + rσ²_sampling. The inferred uncertainty for a target mean differs from that for one reported sample result. State the assumptions and evaluate whether the observations support them.
+
+Compare that simplified analysis with the actual guide’s design and treatment, including nonnormality, unbalanced observations, or uncertainty factors where relevant. Assess a thresholded or near-zero case without silently substituting arbitrary values. Avoid counting variation already included in validation a second time as independent effects.
+
+**Transfer and decision:** report the target result, uncertainty, composition or moisture basis, sample identity/history, reference evidence, and an explicitly defined acceptance rule or comparison question. Separate a result for the delivered aliquot from the stronger claim about the whole target. Examine what changes when a receiver uses a different sampling definition or decision rule.
+
+Produce a report that a second reader can reproduce and challenge, with derivations, data hierarchy, source comparisons, uncertainty reasoning, limitations, and a revision. This brings the generic measurement foundation into the material supply chain without replacing the chemistry or engineering methods particular to the chosen substance and process.
+
+**Continue:** [Scholarly study — investigate and improve a measurement method](Independent-research.lingua#r_3S2V3ZCFMX40WZ7QMMEZ1E66V3).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_2BTPTEFXQ5H490KJA3C7AEC1KN

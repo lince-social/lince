@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Measurement uncertainty arising from sampling — Ramsey, Ellison, and Rostron (@met-sampling: 0, is #book, #part-of @met-sources) { r_3Q0NEPSBDFX8Z1JWAG3C3HRHJM
+M. H. Ramsey, S. L. R. Ellison, and P. D. Rostron, editors. Measurement uncertainty arising from sampling: A guide to methods and approaches, second edition, 2019. Eurachem/EUROLAB/CITAC/Nordtest/AMC. [Official guide, downloads, translations, and corrections](https://www.eurachem.org/index.php/publications/guides/musamp).
+
+Read the entire guide through the later sampling study. Begin with the definition of the sampling target and the whole measurement process, then compare empirical duplicate designs with modelling approaches. Include the uncertainty-factor treatment and numerical examples; use the linked corrections when reproducing results.
+
+The guide distinguishes a measurand concerning the target from one concerning only the specimen delivered to a laboratory. That distinction is central to raw materials, water, bulk powder, and production-lot comparisons.
+
+Authorized free downloads are available under the publisher’s own copyright and translation/reproduction terms. Title, second-edition identity, editor citation, and public availability checked on 28 October 2026. Neither the guide nor its examples’ source data are copied into the repository.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_3Q0NEPSBDFX8Z1JWAG3C3HRHJM

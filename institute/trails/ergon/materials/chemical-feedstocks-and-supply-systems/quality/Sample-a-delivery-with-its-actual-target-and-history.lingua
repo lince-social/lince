@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Extend representative sampling across the supplier-to-user transfer (@cs-receiving-sampling: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA", #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #chemical-supply-systems "Assay-impurity-panels-method-domains-and-reference-evidence.lingua#r_5T3VFPT56JKWAN8CA437H2EXH4") { r_1VK6CJ1S37DSVXSBAZ5XQDXDMR
+**Read:** [Validation of Measurement Procedures that Include Sampling — Eurachem](../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA), the whole guide, both worked examples and cited sampling methods; [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the complete relevant handling and documentation sections.
+
+After the shared sampling foundation, define the target that this acceptance measurement is intended to represent. A manufacturer's production batch, a distributor's tank after mixing, a compartment in transit and a package at receipt can have different composition/history. Name the spatial and temporal boundaries before choosing increments, containers or analytical replicates.
+
+Read the full VaMPIS guide and reproduce the logic of its two worked studies. Develop a chemical-delivery sampling plan that includes heterogeneity, collection, container contact, preservation, transport, delay and laboratory preparation. Separate variation between sampling locations from repeated measurement of one homogenised laboratory portion. Repeating an analysis cannot recover material that was excluded by an unrepresentative primary sample.
+
+Design a comparison between producer and receiver measurements. State the measurand, method, basis and uncertainty for each and identify plausible reasons for disagreement. The material may have changed, the targets may differ or a method may be biased. Choose observations that discriminate these explanations. If no physical sampling is undertaken, use the guide's supplied-data examples and describe the result as a methodological reconstruction, then specify the field evidence needed to extend it.
+
+**Continue:** [Read the analytical method behind a reported chemical property](Assay-impurity-panels-method-domains-and-reference-evidence.lingua#r_5T3VFPT56JKWAN8CA437H2EXH4).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_1VK6CJ1S37DSVXSBAZ5XQDXDMR

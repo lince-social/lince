@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Entrance development, hydraulic diameter and section shape (@fd-entrances: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Pipe-resistance-roughness-and-Darcy-versus-Fanning.lingua#r_4428A6CTA9J8GD9VSXPVJTHKBD") { r_2ZV9PF833DSR5B56KY11SZ86A0
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), complete internal-flow and entrance treatment; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), developing viscous-flow problems; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), boundary conditions and differential balances.
+
+A nominally uniform inlet profile develops wall layers as it enters a duct. Fully developed flow means that the dimensionless axial profile no longer changes downstream under the stated steady geometry and properties; it does not mean zero velocity gradient everywhere. Pressure and velocity must supply the wall shear and any developing momentum flux.
+
+Define hydraulic diameter as four times flow area divided by wetted perimeter. It is a geometric scale, not proof that every noncircular duct obeys the circular laminar friction law. Solve or consult the exact shape-dependent solution for a rectangular or annular passage and compare profile, flux and wall stress with the circular case.
+
+Estimate the developing length for the actual flow class using a cited correlation and then test its applicability. Distinguish momentum development from thermal or concentration development. Place measurement sections and computational boundaries so that the interpretation of a pressure gradient does not silently mix entrance losses, fully developed resistance and local disturbances.
+
+**Continue:** [Pipe resistance, roughness and Darcy versus Fanning](Pipe-resistance-roughness-and-Darcy-versus-Fanning.lingua#r_4428A6CTA9J8GD9VSXPVJTHKBD).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2ZV9PF833DSR5B56KY11SZ86A0

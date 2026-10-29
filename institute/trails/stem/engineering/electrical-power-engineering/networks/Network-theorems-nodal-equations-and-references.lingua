@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Network theorems, nodal equations and references (@pe-circuits: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/DC-Electrical-Circuit-Analysis-Fiore.lingua#r_4A9FXBXKNPS4JV50QQ3TVPS2GV", #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #electrical-power-engineering "../../../physics/electromagnetism/currents/Complex-amplitude-frequency-and-sign-conventions.lingua#r_5TBWGB70EQDF2DWG4NAWA8QRBK") { r_7RGN8XXYAZ6CDM7DMZJCNA19V6
+**Read:** [DC Electrical Circuit Analysis — James M. Fiore](../sources/DC-Electrical-Circuit-Analysis-Fiore.lingua#r_4A9FXBXKNPS4JV50QQ3TVPS2GV), complete network theorem, nodal and mesh development; [AC Electrical Circuit Analysis — James M. Fiore](../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK), complete AC network methods; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), chapter 1 in full.
+
+Reconstruct Kirchhoff balances from the relevant field/conservation assumptions, then use nodal or mesh equations with a stated reference. Include sources, dependent elements and the actual return path. A floating ideal network needs a reference constraint; an unmodelled neutral or earth path cannot be repaired simply by choosing a numerical ground.
+
+Derive Thévenin/Norton equivalents at a port, stating linearity and frequency conditions. Check open-circuit voltage, short-circuit current and the independent source impedance. Maximum power transfer and high efficiency are different objectives: a resistively matched source dissipates as much in its internal resistance as in the load in that ideal case.
+
+Solve the same small network by direct equations, an equivalent and an independent power balance. Introduce AC complex impedances only after the DC meaning is clear. A nonlinear regulated load, saturation or a switching stage needs its actual local/dynamic model rather than one universal equivalent. This circuit foundation connects the shared electromagnetic network Record to later bus matrices, load flow, fault equivalents and terminal tests of real power apparatus.
+
+**Continue:** [Complex amplitude, frequency and sign conventions](../../../physics/electromagnetism/currents/Complex-amplitude-frequency-and-sign-conventions.lingua#r_5TBWGB70EQDF2DWG4NAWA8QRBK).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_7RGN8XXYAZ6CDM7DMZJCNA19V6

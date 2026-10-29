@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Defend a metamorphic history with domain, phase, and chronological tests (@mp-metamorphic-project: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR", #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #source "../sources/Perple-X-Methods-and-Documentation.lingua#r_39E8B7CK16VF55MXWKSXMNN4Z6", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #source "../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #mineralogy-and-petrology "An-advanced-mineral-to-feedstock-study.lingua#r_0DWP2N35XZ7YJN6DEXCGMA5T0X") { r_7P5KPCH145YG8XYV124C723F73
+**Read:** [O uso de pseudosseções em Petrologia Metamórfica — Gengo and colleagues](../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR), the complete article; [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the complete review and relevant original papers; [Perple_X — Connolly, phase-equilibrium methods and examples](../sources/Perple-X-Methods-and-Documentation.lingua#r_39E8B7CK16VF55MXWKSXMNN4Z6), the complete selected tutorial, method, data/model, and benchmark discussions; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the full relevant model/calibration papers; [Introduction to Geochronology — Pieter Vermeesch](../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the full relevant advanced notes and practicals.
+
+Read the entire Portuguese pseudosection article, Lanari/Duesterhoeft review, relevant advanced time notes, and original model/calibration/case papers. Choose a problem with enough domain, chemistry, texture, age, and method information to test a history rather than merely reproduce a preferred phase field.
+
+Reconstruct assemblages and relative events before calculating conditions. Define effective composition, component system, water/redox constraints, phase/solution models, data, and numerical settings. Independently check a benchmark and component balances, then distinguish numerical convergence from geological/model sensitivity.
+
+Test a plausible alternative involving domain choice, inheritance/resetting, fractionated composition, fluid transfer, disequilibrium, or a different event correlation. Compare an independent observation and preserve correlated systematic uncertainty when combining ages or calibrated conditions. Explain what is a point estimate, range, bound, ordering, or model-dependent duration.
+
+**Work:** produce a research-level pressure-temperature-time/deformation interpretation with original domain/texture documentation, reproducible calculations, complete source reading, alternative model, uncertainty, and a feasible next investigation. Demonstrate how one new observation could alter the interpretation. Defend the account to a critical reader and publish an evidence-linked revision.
+
+Actual instrument/field/experimental competence requires the appropriate supervised work; a supplied-data reproduction should state its scope. The result should connect mineral records into a constrained history without turning software output or a set of unrelated ages into automatic proof.
+
+**Continue:** [Build a mineralogical handoff from geological material to a production requirement](An-advanced-mineral-to-feedstock-study.lingua#r_0DWP2N35XZ7YJN6DEXCGMA5T0X).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_7P5KPCH145YG8XYV124C723F73

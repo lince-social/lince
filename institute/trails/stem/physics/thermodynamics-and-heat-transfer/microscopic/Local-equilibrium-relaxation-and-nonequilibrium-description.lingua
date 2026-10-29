@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Local equilibrium, relaxation and nonequilibrium description (@th-nonequilibrium: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "Coupled-fluxes-Onsager-relations-and-driving-forces.lingua#r_6Z9NJX0N7J73Q2KHB8R7DNSNSB") { r_3HB6VPZW5TWMC0HQMDANS7NM1C
+**Read:** [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), nonequilibrium assumptions and entropy-production development; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), transport regimes and carrier relaxation; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), size and time-scale limitations.
+
+A single local temperature presumes the relevant internal degrees of freedom equilibrate fast enough for the question. Rapid pulsed heating can place electrons, vibrations or subsystems out of mutual equilibrium. A fitted “temperature” then needs a stated operational and model meaning.
+
+Compare a continuum diffusion time, a carrier relaxation time and a mean-free-path transit scale. Adding spatial resolution to Fourier's law does not repair a constitutive model outside its regime. Ballistic, nonlocal or memory effects require appropriate additional equations and boundary conditions.
+
+Read the complete nonequilibrium development and choose one case where the local-equilibrium approximation is controlled and one where it is doubtful. Define the actual observable that would distinguish the descriptions, including measurement response and uncertainty. The later microscopic transport and thin-film investigations carry this comparison further.
+
+**Continue:** [Coupled fluxes, Onsager relations and driving forces](Coupled-fluxes-Onsager-relations-and-driving-forces.lingua#r_6Z9NJX0N7J73Q2KHB8R7DNSNSB).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3HB6VPZW5TWMC0HQMDANS7NM1C

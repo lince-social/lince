@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Fluid–structure interaction, compliance and oscillating boundaries (@fd-fluid-structure: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "../study/Choose-a-fluid-model-when-several-physical-mechanisms-compete.lingua#r_43864KY2VCBNKWX8VEGNPA2HCR") { r_12QYK1JNCA4K7MNAKG8F4CXSZQ
+**Read:** [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), compliant and coupled small-scale motion; [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), wall response and transient pressure models; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), unsteady flow and added-mass foundations.
+
+A deformable boundary changes the fluid domain while fluid traction changes the boundary motion. Couple kinematic compatibility with traction balance and an explicit solid model. Added mass, damping, elasticity and external forcing can all influence a coupled oscillation; a prescribed-wall fluid calculation omits feedback from load to motion.
+
+Derive a reduced compliant-tube or oscillating-body example and compare its uncoupled limits. Define which part of the wall stress is internal material response and which is imposed fluid pressure/shear. In a numerical partitioned method, check the interface work and time coupling; numerical instability can arise from the coupling even when each isolated solver is stable.
+
+Use a measured displacement/pressure or force/velocity pair to test the coupled prediction. Keep structural parameters and fluid properties independently supported where possible. Biological circulation, flexible machinery, wind-excited structures and pipe transients share some mechanisms but have different geometry, material laws and operating demands that need dedicated study.
+
+**Continue:** [Choose a fluid model when several physical mechanisms compete](../study/Choose-a-fluid-model-when-several-physical-mechanisms-compete.lingua#r_43864KY2VCBNKWX8VEGNPA2HCR).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_12QYK1JNCA4K7MNAKG8F4CXSZQ

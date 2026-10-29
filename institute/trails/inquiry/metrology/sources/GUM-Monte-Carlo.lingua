@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Propagation of distributions using Monte Carlo — JCGM 101 (@met-monte: 0, is #book, #part-of @met-sources) { r_79V20QP3T2KZ6GD07SK5TGZ1J4
+JCGM 101:2008. Evaluation of measurement data — Supplement 1 to the GUM — Propagation of distributions using a Monte Carlo method. [Official edition DOI](https://doi.org/10.59161/JCGM101-2008) · [Catalogue](https://www.bipm.org/en/committees/jc/jcgm/publications).
+
+Read clauses 5–6 first, including conditions and input-distribution assignment. Continue through implementation, summary and coverage calculations, numerical control, and the worked examples. The complete guide is required by the later nonlinear project, including its assumptions and numerical checks.
+
+A large simulated sample does not validate a chosen measurement model or input distribution. Keep the method’s numerical approximation distinct from the measurement uncertainty being propagated and compare an analytically solvable case before using a complex one.
+
+JCGM makes the document available without charge and retains its copyright and reproduction/translation terms. Metadata, contents, and access checked on 28 October 2026. This Record links the authorized guide; it does not bundle a PDF or software.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_79V20QP3T2KZ6GD07SK5TGZ1J4

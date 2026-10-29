@@ -1,6 +1,5 @@
 use super::Result;
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     env,
@@ -275,6 +274,7 @@ pub(super) fn helper(args: &[OsString]) -> Result<()> {
                     .arg("--image")
                     .arg(run.join("scene.ppm"))
                     .args(["--application", "firefox"]);
+                if run.join("terminal.request").exists() { command.args(["--minimum-applications", "2"]); }
                 command
             }
         }
@@ -363,6 +363,7 @@ impl Options {
                 "--ownership",
                 "--save-failure",
                 "--reopen-sandbox",
+                "--terminal-check",
             ]
             .contains(&arg)
             {
@@ -381,6 +382,7 @@ impl Options {
                         "--lifecycle-rounds",
                         "--firefox",
                         "--terminal",
+                        "--terminal-arguments",
                     ]
                     .contains(&arg),
                     format!("Unknown argument {arg}"),
@@ -640,23 +642,7 @@ fn live_work(
     } else {
         PathBuf::from(executable)
     };
-    let mut file = File::open(&payload).map_err(err)?;
-    let mut digest = Sha256::new();
-    let mut bytes = [0u8; 65536];
-    loop {
-        let n = file.read(&mut bytes).map_err(err)?;
-        if n == 0 {
-            break;
-        }
-        digest.update(&bytes[..n]);
-    }
-    result["executable_sha256"] = json!(
-        digest
-            .finalize()
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>()
-    );
+    result["executable_sha256"] = json!(crate::file_sha256(&payload)?);
     result["executable"] = json!(executable);
     result["payload"] = json!(payload);
     let own = env::current_exe().map_err(err)?;
@@ -741,6 +727,15 @@ fn live_work(
         .ok_or("Missing WebDriver session ID")?
         .into();
     driver.video_ready()?;
+    if options.flag("--terminal-check") {
+        let terminal_arguments: Vec<String> = options.values.get("--terminal-arguments").map(|value| serde_json::from_str(value)).transpose().map_err(err)?.unwrap_or_default();
+        ensure(terminal_arguments.len() <= 128 && terminal_arguments.iter().all(|value| value.len() <= 8192 && !value.contains('\0')), "Invalid literal terminal arguments")?;
+        let mut terminal = configured(options.get("--terminal"), &inner, run);
+        terminal.args(&terminal_arguments);
+        settings_environment(&mut terminal, run);
+        children.push(launch(&mut terminal, &run.join("terminal.log"))?);
+        fs::write(run.join("terminal.request"), []).map_err(err)?;
+    }
     result["browser"] = response["capabilities"].clone();
     let element = driver.post("/element", json!({"using":"css selector","value":"input"}))?;
     let id = element["element-6066-11e4-a52e-4f735466cecf"]
@@ -765,6 +760,10 @@ fn live_work(
             format!("Capture probe failed: {capture}"),
         )?;
         result["capture"] = capture;
+        if options.flag("--terminal-check") {
+            ensure(result["capture"]["applications"].as_array().is_some_and(|applications| applications.iter().filter_map(|application| application["app_id"].as_str()).collect::<std::collections::BTreeSet<_>>().len() >= 2), "The terminal and browser did not both map on Park")?;
+            result["terminal_window"] = json!("Mapped alongside the browser on the private display");
+        }
     }
     driver.post(&format!("/element/{id}/value"), json!({"text":"\u{e00c}"}))?;
     lifecycle(options, run, driver, &mut children[0], pid, result)?;
@@ -804,6 +803,23 @@ fn live_work(
         trace.get(offset..).ok_or("Session log was truncated")?,
     )
     .map_err(err)?;
+    if options.flag("--plain") && options.number("--lifecycle-rounds")? == 3 {
+        driver.post("/url", json!({"url":"about:blank"}))?;
+        pause(3.0)?;
+        let offset = fs::metadata(run.join("session.log")).map_err(err)?.len() as usize;
+        let before = resources(pid, 0.0)?;
+        let idle = Instant::now();
+        pause(10.0)?;
+        alive(&mut children[0])?;
+        let after = resources(pid, idle.elapsed().as_secs_f64())?;
+        let trace = fs::read(run.join("session.log")).map_err(err)?;
+        let trace = trace.get(offset..).ok_or("Session log was truncated")?;
+        fs::write(run.join("idle.log"), trace).map_err(err)?;
+        let submissions = String::from_utf8_lossy(trace).lines().filter(|line| line.starts_with("Park frame nested-submit:")).count();
+        let fps = submissions as f64 / idle.elapsed().as_secs_f64();
+        result["idle"] = json!({"seconds":idle.elapsed().as_secs_f64(),"submissions":submissions,"fps":fps,"before":before,"after":after,"passed":fps <= 5.0});
+        ensure(fps <= 5.0, "The static ordinary workspace kept repainting above five frames per second")?;
+    }
     if options.flag("--ownership") {
         for mode in ["--park-nested", "--park"] {
             let contender = output(
@@ -897,6 +913,15 @@ fn lifecycle(
         pause(1.0)?;
         result["client_lifecycle"]["rounds"].as_array_mut().ok_or("Invalid lifecycle report")?.push(json!({"round":index+1,"seconds":round.elapsed().as_secs_f64(),"maximized":maximized,"fullscreen":fullscreen,"requested_restore":requested,"actual_restore":restored,"resources":resources(pid,started.elapsed().as_secs_f64())?}));
     }
+    if rounds >= 3 {
+        let samples: Vec<_> = result["client_lifecycle"]["rounds"].as_array().ok_or("Missing lifecycle samples")?.iter().map(|round| &round["resources"]).collect();
+        let descriptors: Vec<_> = samples.iter().map(|sample| sample["descriptors"].as_u64().ok_or_else(|| "Missing lifecycle descriptor count".to_owned())).collect::<Result<_>>()?;
+        let rss: Vec<_> = samples.iter().map(|sample| sample["rss"].as_str().and_then(|rss| rss.split_whitespace().next()?.parse::<u64>().ok()).ok_or_else(|| "Missing lifecycle RSS".to_owned())).collect::<Result<_>>()?;
+        let growing = |values: &[u64], allowance: u64| values.windows(2).all(|pair| pair[1] > pair[0]) && values.last().unwrap().saturating_sub(values[0]) > allowance;
+        let passed = !growing(&descriptors, 4) && !growing(&rss, 32 * 1024);
+        result["client_lifecycle"]["resource_summary"] = json!({"descriptors":descriptors,"rss_kib":rss,"passed":passed,"scope":"Three settled samples detect obvious accumulation, not a long-term leak guarantee; capture-owner queues are checked separately by the capture fixture."});
+        ensure(passed, "Closed application windows show obvious accumulating resources")?;
+    }
     result["client_lifecycle"]["status"] = json!("passed");
     Ok(())
 }
@@ -953,6 +978,24 @@ fn provider(
             control(name)?;
             pause(1.0)?;
         }
+    }
+    if provider.get("clipboard_read").is_some() && provider.get("clipboard_write").is_some() {
+        let element = driver.post("/element", json!({"using":"css selector","value":"input"}))?;
+        let id = element["element-6066-11e4-a52e-4f735466cecf"].as_str().ok_or("Missing clipboard input element")?;
+        driver.post(&format!("/element/{id}/click"), json!({}))?;
+        driver.post(&format!("/element/{id}/value"), json!({"text":"\u{e009}ac\u{e000}"}))?;
+        wait(10, || {
+            let mut command = program(&provider["clipboard_read"])?;
+            command.env_clear().envs(&*inner).current_dir(run);
+            let text = String::from_utf8(checked(&mut command, 5)?).map_err(err)?;
+            ensure(text.trim_end() == "Park typed 67", "External provider did not receive the browser's clipboard text")
+        })?;
+        control("clipboard_write")?;
+        pause(0.5)?;
+        driver.post(&format!("/element/{id}/value"), json!({"text":"\u{e009}av\u{e000}"}))?;
+        let expected = provider["clipboard_text"].as_str().ok_or("Set clipboard_text to the selected provider's fixture text")?;
+        wait(10, || ensure(driver.js("return document.querySelector('input').value")? == expected, "Browser did not receive the provider's clipboard text"))?;
+        result["clipboard_roundtrip"] = json!("passed");
     }
     result["bar_placement"] = json!("passed");
     result["provider_permissions"] = provider["capabilities"].clone();

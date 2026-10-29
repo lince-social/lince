@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Small-signal stability, eigenvalues and modal meaning (@pe-small-signal: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #source "../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ", #source "../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #electrical-power-engineering "Rotor-angle-stability-fault-clearing-and-energy.lingua#r_4AC2ECYZT3VXFCNPKQB9V0THJ0") { r_3FK0KQ9D1RFM86085BWMQF2VJN
+**Read:** [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), all modal, linear-system and stability-analysis work; [ANDES — dynamic modelling and analysis manual](../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ), complete applicable equations, linearization and eigenvalue tutorials; [Feedback Systems — Åström and Murray](../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833), whole relevant local-stability and robustness development.
+
+Linearize a complete dynamic/algebraic model about a consistent equilibrium with its operating control/limit state. Eigenvalues characterize local modes under the stated reduction and reference constraints. Distinguish a physical instability from a redundant angle/reference mode or an incorrectly initialized algebraic state.
+
+Derive a small machine/controller example, compare analytic and numerical Jacobians and relate mode frequency/damping to physical state combinations. Participation/residue measures depend on normalization and the input/output question; a large state component alone does not prove causation. A locally stable model can still lose synchronism or enter an unacceptable limit under a large disturbance.
+
+Read the full [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ) analysis and inspect the actual [ANDES — dynamic modelling and analysis manual](../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ) model/eigenvalue methods. Change a network/control parameter, predict a mode shift and test it in a time response using a sufficiently small perturbation. Include uncertainty and unmodelled delays before designing a stabilizing action. The advanced study should compare at least two plausible models and explain which measurements would distinguish their predicted modes, rather than presenting an eigenvalue plot as a complete stability certificate.
+
+**Continue:** [Rotor-angle stability, clearing and energy](Rotor-angle-stability-fault-clearing-and-energy.lingua#r_4AC2ECYZT3VXFCNPKQB9V0THJ0).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3FK0KQ9D1RFM86085BWMQF2VJN

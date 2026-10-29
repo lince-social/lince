@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Connect sedimentary rocks with production, transport, deposition, and later change (@geo-sedimentary: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z", #geology "Metamorphism-protolith-and-pressure-temperature-history.lingua#r_3P42J3NDC118QXFD1G1ME5SGTG") { r_4116Y9BEZTG63XA8QKJT6FWK0X
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 6 in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete sedimentary-rock and sequence parts; [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z), the complete sedimentary-rock lab.
+
+Sedimentary materials preserve selected evidence of source, weathering, transport, deposition, biological/chemical processes, burial, and diagenesis. Grain size, sorting, roundness, composition, structures, fossils, and field relationships constrain an interpretation together. A single texture is rarely a unique environmental label.
+
+Clastic, chemical, and biological contributions can mix. Distinguish depositional features from later cementation, compaction, replacement, dissolution, or deformation. A mineral now present in a rock may have formed after deposition. An observed pore network or strength also reflects that history and later alteration.
+
+Layered records contain gaps, reworking, lateral changes, and sampling/exposure limitations. A thick interval need not represent continuous accumulation at one rate. Correlation requires attention to facies, timing, and independent markers rather than matching a convenient color or grain size across distant sections.
+
+**Work:** describe a complete textbook sedimentary example and propose competing depositional/diagenetic histories. Identify observations distinguishing them, including features requiring an outcrop or thin section. Construct a simple hypothetical sediment/component balance and state why it does not uniquely reconstruct transport or depositional environment.
+
+Read the full sedimentary chapter and historical sequence material. The later sedimentary-environment, basin, stratigraphic, fossil, and time Records deepen this account. Dedicated geological specialties will add their unique quantitative and analytical methods, while the common observation and balance reasoning remains shared.
+
+**Continue:** [Infer metamorphic history from reactions, fabrics, and context](Metamorphism-protolith-and-pressure-temperature-history.lingua#r_3P42J3NDC118QXFD1G1ME5SGTG).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4116Y9BEZTG63XA8QKJT6FWK0X

@@ -1,0 +1,13 @@
+Nature — Earth, living systems, and their relationships (@nature-map: 0, is #chapter, #nature "earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH", #nature "medicine/Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65", #nature "farming/Farming.lingua#r_13YG8DNJGT3QRX08G4BAMD92F3") { r_5DAMNRQZX9M2PRPHVJB673XX21
+Study Earth, living systems, and their relationships through observations, processes, histories, and practical questions. [Earth — materials, processes, and geological history](earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH) begins with [Geology — Earth materials, processes, history, and investigation](earth/geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06), from materials and maps to geological history, water, resources, and advanced investigation.
+
+[Medicine — understanding the body and its care](medicine/Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65) develops the body, shared medical language, movement, and the shoulder. [Farming](farming/Farming.lingua#r_13YG8DNJGT3QRX08G4BAMD92F3) connects organisms, soils, water, cultivation, and the work of sustaining food/land systems. A useful connection between subjects does not require completing every neighboring field first.
+
+Return to [Philosophy](../philosophy/Philosophy.lingua#r_00000000000000000000001001) for questions about evidence, explanation, and values, [STEM — mathematics, science, and engineering](../stem/STEM.lingua#r_4B137J3ZBVM7TD2NA797H2CZ7E) and [Inquiry — shared ways to understand and investigate](../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB) for shared methods, and [Ergon](../ergon/Ergon.lingua#r_00000000000000000000002001) for material infrastructure and the work maintaining it. Follow ordinary Record links and the learning assertions used by each subject.
+} r_5DAMNRQZX9M2PRPHVJB673XX21
+
+Extension @nature-map "lince.vocabulary" {
+ definitions {
+  nature "A useful reading connection into Earth, living systems, and their relationships."
+ }
+}

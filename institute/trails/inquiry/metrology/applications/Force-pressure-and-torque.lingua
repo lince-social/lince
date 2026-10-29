@@ -1,0 +1,23 @@
+Import "../Metrology.lingua"
+
+Force, pressure, and torque — reference geometry and load history (@met-force-pressure: 0, is #chapter, #part-of @metrology, #source "../sources/Force-and-Pressure.lingua#r_5VJQR5MWS25V13ZAQZ03TVH3PH", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #metrology "../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR", #metals-and-metallurgical-production "../../../ergon/materials/metals-and-metallurgical-production/testing/Tension-compression-strain-measures-and-test-system-evidence.lingua#r_5ARM33P0NFFGJ20F97BH5BXD2S", #fluid-dynamics "../../../stem/physics/fluid-dynamics/statics/Pressure-reference-stress-and-a-pressure-measurement.lingua#r_5KKK4Q5KPBS1CCXVZ72RYBJMKK") { r_20DYJT66R1TCW9M8X96TH7KGHT
+**Read:** [Force, pressure, and torque calibration — EURAMET](../sources/Force-and-Pressure.lingua#r_5VJQR5MWS25V13ZAQZ03TVH3PH), the full force and manometer guides, then the selected specialist guide; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), the physical-effect and model-extension treatment.
+
+Mechanical comparisons involve the force direction, point of application, mounting, loading history, temperature, and reference geometry. A mass artefact does not become a force standard by multiplying by an unexamined nominal gravitational acceleration. A stated conventional value and a local measured acceleration serve different purposes.
+
+For a simple force realization F = mg, distinguish the intended force and any buoyancy or alignment corrections. A pressure model can relate force and effective area, with head corrections and a stated absolute, gauge, or differential reference. Torque magnitude from a lever model is FL sin θ, requiring the relevant arm, direction, and geometry rather than an assumed nominal length alone.
+
+Hysteresis, creep, zero recovery, reversal, orientation, and loading rate can be significant. A result after increasing load can differ from a result at the same nominal load after decreasing it. The comparison sequence therefore belongs to the result’s definition and interpretation.
+
+**Work:** read the force and manometer guides in full. Reconstruct one model and uncertainty budget, then compare a simplified F/A pressure with the guide’s effective-area and reference treatment. Use a hypothetical lever calculation to derive sensitivities to force, length, and angle and check the small-angle assumptions. A paper study is sufficient for these derivations.
+
+For an advanced mechanical project read the complete relevant pressure-balance or torque guide and a published calibration report. State the scope of the reference and the conditions transferred to the customer. High loads, pressure systems, and specialized deadweight equipment require their dedicated engineering facilities and procedures.
+
+**Continue:** [Produce, preserve, transfer, and replace the references](../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in metals and metallurgical production:** [Interpret tension and compression through specimen, machine, strain measure, and material state](../../../ergon/materials/metals-and-metallurgical-production/testing/Tension-compression-strain-measures-and-test-system-evidence.lingua#r_5ARM33P0NFFGJ20F97BH5BXD2S).
+
+**Continue in fluid dynamics:** [Pressure reference, stress and a pressure measurement](../../../stem/physics/fluid-dynamics/statics/Pressure-reference-stress-and-a-pressure-measurement.lingua#r_5KKK4Q5KPBS1CCXVZ72RYBJMKK).
+} r_20DYJT66R1TCW9M8X96TH7KGHT

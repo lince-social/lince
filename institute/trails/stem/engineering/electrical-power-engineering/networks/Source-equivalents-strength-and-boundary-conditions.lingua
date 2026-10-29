@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Source equivalents, strength and boundaries (@pe-equivalents: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF", #electrical-power-engineering "Bus-admittance-models-topology-and-taps.lingua#r_08GZBJE51AJ1MMX05MJRY1EXHJ") { r_1Y39223NHJKG5R37K1FESAWZZY
+**Read:** [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), network equivalents and synchronous-machine models; [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF), whole relevant source/control and modelling discussion.
+
+A Thévenin source behind impedance is useful only over the frequency, state and disturbance range in which it approximates the supplying system. An infinite bus fixes voltage magnitude, phase reference and frequency as an ideal boundary; a finite generator/inverter has dynamics and limits. A short-circuit strength number does not fully describe its control interactions.
+
+Derive the port equivalent of a small linear network and compare it before/after an outage or tap change. State whether the source model applies to normal power flow, an initial short circuit, electromechanical dynamics or an electromagnetic transient. Machine subtransient, transient and steady reactances answer different time-scale questions. Converter fault current may be control-limited and angle-dependent rather than a simple voltage behind a constant reactance.
+
+Use independently available operating/fault information to estimate parameters and report uncertainty. A reduced network can preserve one observable while distorting another. Compare voltage sensitivity, fault level and dynamic response before claiming that a reduction is adequate. Later source-control and stability Records revisit the same physical boundary with explicit state variables rather than treating one equivalent as universally valid.
+
+**Continue:** [Bus admittance models, topology and taps](Bus-admittance-models-topology-and-taps.lingua#r_08GZBJE51AJ1MMX05MJRY1EXHJ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_1Y39223NHJKG5R37K1FESAWZZY

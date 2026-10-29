@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Understand a polymer as chemistry, architecture, and a distribution (@gc-polymers: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "Chemical-principles-in-living-systems.lingua#r_4HJ5BAQ365QCET6G4EB9X56JG8") { r_1ZHVMRMJPS4B7PRPH1GDJ25GHB
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 20’s polymer and macromolecular sections; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the polymers/plastics and condensed-state material; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), relevant characterization principles when comparing a proposed measurement.
+
+A polymeric material involves repeat-unit chemistry, chain architecture, composition, molar-mass distribution, morphology, additives, and processing/history. A repeat-unit formula alone cannot determine its full properties. Chain-growth and step-growth descriptions organize different reaction accounts whose specific mechanisms require deeper study.
+
+Distinguish number-average and mass-average molar mass. For chain counts N_i and molar masses M_i, M_n = ΣN_iM_i/ΣN_i and M_w = ΣN_iM_i²/ΣN_iM_i. Their ratio describes one aspect of distribution breadth. For invented equal numbers of 10,000 and 30,000 g mol⁻¹ chains, M_n = 20,000 and M_w = 25,000 g mol⁻¹, giving a ratio 1.25.
+
+Intermolecular interactions, crystallinity, crosslinking, temperature, solvents, and degradation can connect chemistry with material response. A “plastic” label can conceal a mixture whose recycling or durability depends on several components. Preserve the actual identity and specification of the material being discussed.
+
+**Work:** derive the averaging formulas and independently check the hypothetical mixture. Compare two distributions sharing the same number average but differing in mass average. Explain a proposed property change through a stated chemical/structural model and identify the observation needed to test it.
+
+Read the polymer sections in the general texts, connecting reactions, intermolecular forces, phases, and distributions. The dedicated polymer/material trails will deepen synthesis, characterization, processing, and performance; the shared foundation already prevents a single nominal molar mass from standing in for an entire material.
+
+**Continue:** [Use general chemistry to understand a biological chemical question](Chemical-principles-in-living-systems.lingua#r_4HJ5BAQ365QCET6G4EB9X56JG8).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_1ZHVMRMJPS4B7PRPH1GDJ25GHB

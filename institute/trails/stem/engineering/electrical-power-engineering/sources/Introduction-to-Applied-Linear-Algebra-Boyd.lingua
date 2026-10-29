@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Introduction to Applied Linear Algebra — Boyd and Vandenberghe (@pe-linear-algebra: 0, is #reference, #part-of @pe-sources) { r_3684D74C735KQS61ST3EH0XKZW
+Stephen Boyd and Lieven Vandenberghe. Introduction to Applied Linear Algebra: Vectors, Matrices, and Least Squares. Cambridge University Press. [Author's complete book and course resources](https://web.stanford.edu/~boyd/vmls/).
+
+Read the whole book when developing the matrix foundation for power-flow linearization, networks, parameter estimation and optimization. Work vector/matrix, least-squares, rank, conditioning and constrained-approximation examples, then connect them to actual bus, measurement and parameter meanings. Reconstruct calculations with a small independent problem before using a large package.
+
+The author page supplies a complete authorized downloadable book and links its Stanford/UCLA courses; checked on 29 October 2026. Publisher copyright and the author's permission to host a free copy do not automatically create a CC licence. Companion code and exercise/solution resources have their own notices and availability. Nothing is bundled.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_3684D74C735KQS61ST3EH0XKZW

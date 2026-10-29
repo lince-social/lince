@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Account for washing and desliming through the material actually removed (@mine-washing: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #mining-and-mineral-engineering "Calcination-transformations-heat-and-processing-boundaries.lingua#r_13PQDG6YPAFH3MW1DABBX0G2YG") { r_1HND71J50J4FJZ25ZB7XYWRQMJ
+**Read:** [Introduction to Mineral Processing — Arun Kumar Majumder, NPTEL](../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD), the entire iron-ore washing sequence and the earlier particle/fluid-motion material; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), complete applicable washing, classification, and water-treatment discussions; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the full preparation and size/separation methods used.
+
+Washing, scrubbing, attrition, and desliming alter surface coatings, aggregates, clay associations, and size distributions. They are not synonymous, and fine material is not automatically waste. Valuable minerals, impurities, adsorbed species, and process-water constituents can follow the removed fraction.
+
+Describe the feed state, proposed removal mechanism, apparatus, water/energy duty, and resulting populations. Compare liberation of a coating or weak aggregate with breakage of useful particles. Slurry viscosity, settling behavior, chemical environment, and later separation response can change after a seemingly simple preparation stage.
+
+Close solids, valuable/deleterious constituents, and water through washed product, fines, returns, and any treatment system. Evaluate quality requirements on their actual wet/dry and particle-size bases. A decrease in one impurity percentage may come partly from rejecting valuable mass or changing the denominator.
+
+**Work:** use a complete iron-ore or industrial-mineral washing case. Reconstruct size-by-size and constituent-by-constituent balances, compare with an alternative preparation route, and account for the generated fine slurry and water reuse. Explain which measurements establish actual coating removal and which only show a bulk composition change. Design a representative feed campaign that includes the troublesome material domains.
+
+**Continue:** [Connect thermal preparation with reaction, phase change, heat, and product quality](Calcination-transformations-heat-and-processing-boundaries.lingua#r_13PQDG6YPAFH3MW1DABBX0G2YG).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1HND71J50J4FJZ25ZB7XYWRQMJ

@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Technical competence, impartiality, and a laboratory’s actual scope (@met-laboratory-competence: 0, is #chapter, #part-of @metrology, #source "../sources/Laboratory-Competence.lingua#r_0RT4JM2Q799A0FYNA35H1Q8Y2Z", #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #metrology "Measurement-network-and-transfers.lingua#r_61QE5K586RSSFJ7DW1B82KXSW3") { r_6XCCPCRJ4W0533QRFZR7A58WZ6
+**Read:** [Laboratory competence — ISO/IEC 17025 and open technical guidance](../sources/Laboratory-Competence.lingua#r_0RT4JM2Q799A0FYNA35H1Q8Y2Z), the official scope/preview, and the full current edition where authorized; [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), the full checklist; [The Fitness for Purpose of Analytical Methods — Eurachem](../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), the complete planning and reporting treatment; [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), measurement control and calibration chapters.
+
+A laboratory capability depends on people, facilities, equipment, references, methods, data handling, and demonstrated performance. A complete uncertainty formula does not establish that the measurement was performed correctly or that the laboratory can maintain that performance over time.
+
+Distinguish competence, accreditation for a stated scope, metrological traceability of a particular result, and conformity of a product. A recognized organization can issue a result outside a particular accredited scope. A scope entry also does not automatically determine the uncertainty of every job under every condition.
+
+Use the open technical sources to assemble evidence for a proposed capability: defined measurand and range, suitable facilities, characterized equipment and references, validated or verified methods, trained personnel, control observations, comparison results, calculation checks, and interpretable reporting. Questions of impartiality, responsibility, review, and handling deviations affect whether the evidence can be trusted.
+
+**Work:** write a technical capability description for a hypothetical modest length-comparison or temperature-indication service. State what equipment, reference chain, procedures, environmental observations, skills, and continuing evidence would be necessary. Separate demonstrated facts from proposed resources. Review an actual published capability or accreditation scope and compare the level of specificity.
+
+Read the full applicable laboratory standard through authorized access when establishing an actual service. The freely available catalogue description and these open technical guides support learning but do not reproduce all normative requirements. A completed reading project is assessed by its reasoning and evidence; it should not be represented as an accredited laboratory or a personal professional credential.
+
+**Continue:** [Maintain the measurement network that production relies on](Measurement-network-and-transfers.lingua#r_61QE5K586RSSFJ7DW1B82KXSW3).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_6XCCPCRJ4W0533QRFZR7A58WZ6

@@ -9313,6 +9313,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "lince-park-clients"
+version = "0.8.0"
+dependencies = [
+ "rustix 1.1.4",
+ "serde_json",
+ "tempfile",
+ "wayland-client",
+ "wayland-protocols",
+]
+
+[[package]]
 name = "lince-plugin-activitypub"
 version = "0.8.0"
 dependencies = [

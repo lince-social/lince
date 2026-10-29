@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Select and test property models against the material state and evidence (@ic-property-models: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT", #source "../sources/Cantera-Models-and-Documentation.lingua#r_4ZMEMBQGEYE25NZVYTPNXAGENT", #source "../../general-chemistry/sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44", #industrial-chemistry "../separations/A-flash-split-with-supplied-equilibrium-ratios.lingua#r_039ZZ8B6081VHRGSP5Y23KBX2W") { r_78B24XST7VWY2R1H9F0HRWSPHB
+**Read:** [Graduate Chemical Engineering Thermodynamics — MIT 10.40](../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT), the complete constitutive-model and mixture/stability assignments relevant to the case; [Cantera — chemical thermodynamics, kinetics and reactor models](../sources/Cantera-Models-and-Documentation.lingua#r_4ZMEMBQGEYE25NZVYTPNXAGENT), the full thermodynamic model, phase and data documentation actually used; [NIST-JANAF Thermochemical Tables — fourth-edition reference data](../../general-chemistry/sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44), the exact reference entries and stated validity intervals.
+
+A property package joins equations of state, mixture/activity models, heat capacities, phase transitions, enthalpies and often transport correlations. Its numerical convenience is separate from its physical adequacy. A set of parameters fitted to one composition/temperature region may extrapolate poorly into another phase, pressure or impurity regime.
+
+Check units, standard states, component identities, reference temperatures and the exact parameter/data revision. A simulator can combine inconsistent entries or silently choose a phase model that changes a predicted separation. A converged calculation may still violate a conservation equation, return an unstable state or depend strongly on initialization.
+
+Use measured values, limiting laws, thermodynamic consistency and independent methods together. Report where the evidence supports interpolation, where it requires extrapolation and where an alternative model changes a consequential process decision. Property uncertainty can dominate an apparently precise solver tolerance.
+
+**Work:** build a small documented comparison for an industrial reaction/separation mixture. Reproduce the chosen data, test at least two justified descriptions, check physical limits and quantify the effect on product and utility accounts. Version the external models/databases and preserve their actual rights. [Reproducible computational work](../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ) supplies environment and independent-computation methods; the next ideal flash is an inspectable simplified numerical exercise.
+
+**Continue:** [Derive a finite flash split before using it as a process calculation](../separations/A-flash-split-with-supplied-equilibrium-ratios.lingua#r_039ZZ8B6081VHRGSP5Y23KBX2W).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_78B24XST7VWY2R1H9F0HRWSPHB

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect nitrogen-containing organic products with reaction networks and purification (@ic-nitrogen-organics: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #industrial-chemistry "Monomer-purity-inhibitors-functionality-and-storage-history.lingua#r_1BFSGK04SQSK8VC3GRYT8KWJQK") { r_6AWS0C1TE00QKPN12DJWEF3XYP
+**Read:** [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the full applicable acrylonitrile, ethanolamine or isocyanate process chapter; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the entire relevant nitrogenated-organic intermediate teaching; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the complete applicable reaction-development and product-isolation context.
+
+Organic nitrogen chemistry supplies nitriles, amines, isocyanates and many other intermediates with distinct molecular behavior and uses. Feed nitrogen, a named functional group and a final commercial product are different descriptions. Reaction pathways and purification determine what species and contaminants actually remain.
+
+Compare complete routes through chemical selectivity, catalyst/phase state, heat, reagent recovery and isolation. A favorable main-component yield can hide a consequential nitrogen-containing side product or a contaminant that matters to polymerization or another downstream reaction. Stoichiometric substitution alone cannot establish the actual mechanism or product distribution.
+
+Distinguish process development evidence, a public industrial reference and plant-specific know-how. Reactive intermediates and changing mixtures need the actual primary thermal, analytical and handling methods in their appropriate setting. Trace all relevant nitrogen through qualified product, recycle and residual streams.
+
+**Work:** reconstruct one complete public nitrogenated-organic process and its downstream specification. Independently close carbon/nitrogen/hydrogen and other consequential elements, with heat and isolation. Compare a documented alternative or change, test uncertainty and propose an observation that discriminates a chemical-pathway explanation from a phase, transport or analytical effect.
+
+**Continue:** [Define a monomer feed by reactive structure, impurities and the intended polymer process](Monomer-purity-inhibitors-functionality-and-storage-history.lingua#r_1BFSGK04SQSK8VC3GRYT8KWJQK).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6AWS0C1TE00QKPN12DJWEF3XYP

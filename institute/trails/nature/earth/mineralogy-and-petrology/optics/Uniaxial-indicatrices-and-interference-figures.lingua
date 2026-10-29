@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Interpret uniaxial optics through geometry and suitable observations (@mp-uniaxial: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #mineralogy-and-petrology "Biaxial-indicatrices-optic-angles-and-sign.lingua#r_055H5F5MZ3GN10AZE1ZNPDP0F3") { r_3PTF28NPQE0WGQ1S0GWBAV8GZ5
+**Read:** [Optical Mineralogy — Brock University course and laboratory material](../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E), the full uniaxial lectures and corresponding labs; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete uniaxial optical treatment; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full relevant conoscopic and compensation procedures.
+
+A uniaxial indicatrix has two independent principal refractive indices under the adopted description. The optic axis is a direction where the relevant birefringence vanishes, not a permanently dark line visible in every grain. Propagation direction and crystallographic orientation determine the observed section through the indicatrix.
+
+Conoscopic observations combine a range of ray directions. Interference figures, isogyres, isochromes, centering, and stage rotation need the correct illumination/aperture and suitable grain. A partial or off-center figure can resemble another case if its geometry is ignored.
+
+Optical sign describes the relationship of principal indices, while elongation sign relates optical vibration directions to observed grain elongation. They are not interchangeable labels for every mineral habit. Compensation procedures require known accessory orientation and an explained addition/subtraction account.
+
+**Work:** complete the uniaxial index and interference-figure labs. Draw indicatrix sections for several propagation directions, identify a suitable grain, and reconstruct an optical-sign determination from the procedure and observations. Compare with a different orientation of the same known species and state when the available figure is insufficient.
+
+Read the entire uniaxial theory and practical treatment. Use virtual images as additional interpretation practice, preserving sample/mode identity. Real proficiency includes finding and adjusting a suitable view, not merely recognizing the ideal centered figure in a diagram.
+
+**Continue:** [Connect biaxial figures with principal indices and directional geometry](Biaxial-indicatrices-optic-angles-and-sign.lingua#r_055H5F5MZ3GN10AZE1ZNPDP0F3).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_3PTF28NPQE0WGQ1S0GWBAV8GZ5

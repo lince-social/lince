@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Total internal reflection, evanescent fields and tunnelling (@em-evanescent: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #source "../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ", #electromagnetism "../matter/Conductivity-complex-permittivity-and-attenuation.lingua#r_4PB9PGW3EFESYNHEZEG2DBRW74") { r_3YG5N7Q50Y4JJ9J7AAHZYRJBCD
+**Read:** [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), total internal reflection and evanescent fields; [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ), evanescent waves and layered structures.
+
+At an interface from higher to lower refractive index, sufficiently large incidence angle makes the transmitted normal wave-vector component imaginary in the ideal lossless model. The transmitted field decays away from the boundary rather than vanishing at it. Reflection has unit power magnitude for an isolated semi-infinite second medium, while its phase depends on angle and polarization.
+
+Derive the critical angle and decay length, and calculate the Poynting vector rather than declaring every evanescent field to carry no energy in every direction. A nearby second interface can couple the decaying field and enable frustrated total internal reflection. The whole arrangement then requires a new boundary problem; a single-interface R = 1 statement no longer determines transmission.
+
+Compare evanescent spatial harmonics in a static boundary solution with those in a harmonic waveguide or interface. Their similar exponential shape does not erase their different time and source conditions. Analyze a finite gap, recover the large-gap limit and identify what changes with loss. Near-field probes can disturb the field they attempt to measure, so the inferred decay length needs an apparatus model and a reference plane.
+
+**Continue:** [Conductivity, complex permittivity and attenuation](../matter/Conductivity-complex-permittivity-and-attenuation.lingua#r_4PB9PGW3EFESYNHEZEG2DBRW74).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3YG5N7Q50Y4JJ9J7AAHZYRJBCD

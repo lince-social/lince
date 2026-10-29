@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Evaluate fragmentation by its material, ground, and operating consequences (@mine-fragmentation: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #mining-and-mineral-engineering "Mechanical-cutting-wear-and-specific-energy.lingua#r_2JQRS9B0QHPQ89D9WC09TEB0YG") { r_7C30NWH7DEGACXKY6AETKPZH9Z
+**Read:** [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the complete relevant excavation/fragmentation and equipment sequence; [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the full excavation-damage and ground-response discussions; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete particle-characterization and comminution treatment.
+
+Fragmentation changes size distribution, shape, damage, exposure, and the material presented to excavation, transport, and processing. Method performance should be evaluated through observed outcomes and the connected system rather than one nominal energy or production figure.
+
+Mechanical and controlled industrial fragmentation involve different mechanisms and constraints. Material structure, boundary conditions, geological variability, execution, and measurement affect the outcome. Preserve actual operating records and compare conditions before attributing every change in size or damage to one chosen parameter.
+
+Image-derived size, screen results, oversize observations, fine fractions, digging/loading response, vibration, air quality, and ground damage have different support and biases. A photograph can miss fines, hidden particles, or three-dimensional size, while a convenient sample can miss segregation and location/time variation.
+
+**Work:** reconstruct a complete published fragmentation/outcome case, identifying measurements, biases, uncertainty, and downstream consequences. Compare two plausible explanations for a changed distribution or damaged boundary and propose an independent check. Build a bounded material/time/energy account and explain which outcomes cannot be inferred from a single visual index.
+
+Read full authorized engineering method and measurement sources. The study focuses on mechanisms, observations, professional methods, and evaluation; later equipment and processing Records test how fragmentation actually affects usable output.
+
+**Continue:** [Evaluate mechanical excavation with a measured work and wear account](Mechanical-cutting-wear-and-specific-energy.lingua#r_2JQRS9B0QHPQ89D9WC09TEB0YG).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_7C30NWH7DEGACXKY6AETKPZH9Z

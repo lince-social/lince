@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Defend an igneous history using phase relations, material balance, and independent evidence (@mp-igneous-project: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/MAGEMin-Riel-2022.lingua#r_7JK9DVER7XW4ESPJ27K7H9K29S", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #mineralogy-and-petrology "Advanced-sedimentary-provenance-and-diagenetic-study.lingua#r_21K256CCMWD35R663MPV64NG88") { r_6TQ5TWWMJ8WZWXWBJTABAY0CQK
+**Read:** [Advanced Igneous Petrology — Timothy Grove, MIT 12.490](../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF), the complete graduate sequence and full selected case papers; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full prerequisite phase/material exercises; [MAGEMin, an efficient Gibbs energy minimizer — Riel and colleagues](../sources/MAGEMin-Riel-2022.lingua#r_7JK9DVER7XW4ESPJ27K7H9K29S), the full method/tests where used; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete relevant process notes.
+
+Complete MIT 12.490's graduate programme and choose a substantial natural/experimental case with accessible methods/data. Read all primary papers and supplements needed to reconstruct its claims, including the source of thermodynamic or partitioning calibrations. Keep the original publication/date distinct from later models.
+
+Reproduce one consequential melting, differentiation, source, storage, or volatile result with explicit sample/domain composition and phase assumptions. Check material/energy accounts, units, limiting cases, numerical convergence, and uncertainty independently. Preserve whether observations represent liquid, cumulate, mixed magma, altered rock, or a particular crystal domain.
+
+Compare at least two histories supported by part of the evidence, such as different sources, melting modes, mixing/assimilation, accumulation, or storage paths. Use a constraint not merely fitted in constructing the preferred model: mineral chemistry/texture, field relation, experimental bracket, isotopic/age context, or another appropriate observation.
+
+**Work:** write and defend a research-level interpretation with reproducible methods/results, independent checks, competing account, and a feasible discriminating investigation. Explain where model/data limitations prevent a unique history and how a new measurement would change the question.
+
+This is substantive advanced academic work, not just completion of an animation or a classification plot. Practical experimental/analytical competence remains tied to the actual supervised work performed rather than implied by a literature calculation.
+
+**Continue:** [Reconstruct a sedimentary rock from sources through burial and alteration](Advanced-sedimentary-provenance-and-diagenetic-study.lingua#r_21K256CCMWD35R663MPV64NG88).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_6TQ5TWWMJ8WZWXWBJTABAY0CQK

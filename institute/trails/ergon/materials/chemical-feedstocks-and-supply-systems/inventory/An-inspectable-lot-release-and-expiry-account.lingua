@@ -1,0 +1,65 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Independently check an exact account of released and expiring lots (@cs-lot-example: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D", #chemical-supply-systems "Consumption-order-history-forecasting-and-backtesting.lingua#r_32EYX5Y4K4905VHCQCTNW67ERW") { r_684PQX9EQBD1WDF7XP6FMWJCD6
+**Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the complete deterministic and time-dependent inventory models; [Good storage and distribution practices for medical products — WHO](../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D), the complete stock-status and rotation account.
+
+This original example isolates one fungible accepted-item model. All listed lots are physically present at time zero; each has a scheduled usable-release day, an exclusive expiry day and an integer quantity in a declared common unit. The model serves that day's demand without backlogging, after removing expired stock and making eligible releases available. It issues the eligible lot expiring first, breaking ties by identifier. A release after expiry is allowed but never makes the lot usable.
+
+The default starts with ten units. Across four days it supplies eight, discards two at expiry and leaves zero; two units of requested demand are unfulfilled. Change the release of lot B and inspect the result. Remaining material can be unreleased or past the simulated horizon; the returned closing usable count keeps that distinction explicit.
+
+```python file=lot_release_expiry.py
+def integer(value, low, high):
+    if type(value) is not int or not low <= value <= high:
+        raise ValueError("bounded integer required")
+    return value
+
+
+def solve(lots=(("A", 0, 2, 6), ("B", 1, 4, 4)), demands=(2, 2, 3, 3)):
+    if type(lots) not in (tuple, list) or not 1 <= len(lots) <= 32:
+        raise ValueError("one to thirty-two lots required")
+    if type(demands) not in (tuple, list) or not 1 <= len(demands) <= 64:
+        raise ValueError("one to sixty-four demand periods required")
+    requests = tuple(integer(value, 0, 1000000) for value in demands)
+    data = []
+    names = set()
+    for row in lots:
+        if type(row) not in (tuple, list) or len(row) != 4:
+            raise ValueError("lot requires name, release, expiry and quantity")
+        name, release, expiry, quantity = row
+        if type(name) is not str or not 1 <= len(name) <= 32 or name in names:
+            raise ValueError("unique bounded lot identifier required")
+        names.add(name)
+        data.append((name, integer(release, 0, 128), integer(expiry, 0, 128), integer(quantity, 0, 1000000)))
+    data.sort(key=lambda row: (row[2], row[0]))
+    remaining = [row[3] for row in data]
+    days = []
+    for day, requested in enumerate(requests):
+        expired = []
+        for index, row in enumerate(data):
+            if row[2] <= day and remaining[index]:
+                expired.append((row[0], remaining[index]))
+                remaining[index] = 0
+        issued = []
+        unfilled = requested
+        for index, row in enumerate(data):
+            if row[1] <= day < row[2] and unfilled:
+                quantity = min(remaining[index], unfilled)
+                if quantity:
+                    issued.append((row[0], quantity))
+                    remaining[index] -= quantity
+                    unfilled -= quantity
+        usable = sum(quantity for row, quantity in zip(data, remaining) if row[1] <= day < row[2])
+        days.append(dict(day=day, demand=requested, issued=tuple(issued), unfilled=unfilled, expired=tuple(expired), closing_total=sum(remaining), closing_usable=usable))
+    return dict(initial=sum(row[3] for row in data), fulfilled=sum(row["demand"] - row["unfilled"] for row in days), unfilled=sum(row["unfilled"] for row in days), expired=sum(quantity for row in days for _, quantity in row["expired"]), ending=sum(remaining), remaining=tuple((row[0], quantity) for row, quantity in zip(data, remaining)), days=tuple(days))
+
+
+if __name__ == "__main__":
+    print(solve())
+```
+
+Check conservation, zero quantities/demand, tied expiry, release after expiry, reordered inputs and horizons ending before a release. Independently formulate eligible lot-to-demand assignments as a capacitated bipartite maximum-flow problem; compare the maximum fulfilled quantity on many small cases without using this greedy routine as the oracle. The simple optimality question excludes different products, unqualified substitutions, capacity constraints and new receipts. Chemical shelf lives, future release evidence and real handling feasibility are inputs to be established, not results of this program.
+
+**Continue:** [Forecast the quantity actually needed rather than an unexamined order series](Consumption-order-history-forecasting-and-backtesting.lingua#r_32EYX5Y4K4905VHCQCTNW67ERW).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_684PQX9EQBD1WDF7XP6FMWJCD6

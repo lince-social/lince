@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Repeatability, intermediate precision, and reproducibility (@met-rr: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #metrology "Validation-and-verification.lingua#r_696ZGSGKBG8BPXN1MF2RZNK69W") { r_5N1ZPCZJ1S4Q3N7J7YZ11Y6A14
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 2.4 and its gauge-study case; [The Fitness for Purpose of Analytical Methods — Eurachem](../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), precision studies and the analysis-of-variance annex; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), statistical models for repeated and shared effects.
+
+Define which conditions are held fixed and which vary. Repeatability concerns specified closely controlled conditions; intermediate precision can allow chosen changes within a laboratory; reproducibility involves its own stated changed conditions. A label such as “R&R” does not by itself identify the design or the population to which its variance estimates apply.
+
+A schematic crossed model y_ijk = μ + p_i + o_j + (po)_ij + ε_ijk can represent part, operator, interaction, and residual effects under assumptions. Nested designs answer different questions. Repeated observations of one part by one operator do not identify all these components, and a between-part spread is not automatically measurement uncertainty for a particular part.
+
+Plan enough independent levels at the relevant hierarchy and avoid changing several factors together when they must be separated. State whether a variance component describes actual use, a validation study, or merely this experiment. Negative unconstrained component estimates can reveal limitations of a simple estimator or insufficient information; they are not physical negative variances to report uncritically.
+
+**Work:** design an operator-by-object comparison with replicate readings and randomized feasible order. First predict which patterns would indicate operator offset, differing part sensitivity, or changing repeat variation. Then analyse a teaching dataset or reconstruct the handbook’s gauge study, preserving its design and uncertainty interpretation.
+
+Compare the estimated repeatability contribution with a budget that already includes equivalent validation variation. Explain whether adding both would count the same effect twice. An advanced result includes the design, statistical model, component estimates, diagnostics, uncertainty of those estimates where material, and a clear description of the conditions represented.
+
+**Continue:** [Validate the intended use and verify the particular implementation](Validation-and-verification.lingua#r_696ZGSGKBG8BPXN1MF2RZNK69W).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_5N1ZPCZJ1S4Q3N7J7YZ11Y6A14

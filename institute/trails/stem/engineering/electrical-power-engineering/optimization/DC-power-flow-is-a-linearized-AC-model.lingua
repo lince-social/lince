@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+DC power flow is a linearized AC model (@pe-dc-approximation: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H", #electrical-power-engineering "Shift-factors-contingency-sensitivity-and-loop-constraints.lingua#r_4WYSCK4TH179602Y518AC6S7QJ") { r_6M4N4JTZ8K5KVRD8EAS9B67V7B
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete DC network, shift-factor and DC OPF formulations; [PowerModels.jl — formulations, methods and primary paper](../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H), full relevant formulation and problem specifications.
+
+The common DC power-flow approximation describes active-power/angle relations in an AC network under stated assumptions; it is not a direct-current electrical circuit simply because of its name. Typical derivations assume near-unit voltage magnitudes, small angle differences and predominantly reactive branches, suppressing reactive power and real losses.
+
+Derive P_ij approximately equal to (θ_i−θ_j)/X_ij on a consistent per-unit basis, then assemble the network Laplacian with an angle reference. Inspect islands and rank. Transformer taps/phase shifts and other features require their actual linearized representation. A network model must obey both nodal conservation and loop/angle constraints; it is not an arbitrary capacitated transport graph.
+
+Compare a small AC solution with the approximation over loading, resistance, voltage and angle changes. Quantify error in the observable used for dispatch or sensitivity. A feasible DC schedule need not have a feasible AC voltage/reactive state, acceptable current or dynamic security. The next original constrained three-bus example makes its approximate scope explicit, while the full AC OPF and validation studies perform the broader physical checks.
+
+**Continue:** [Shift factors, contingency sensitivity and loops](Shift-factors-contingency-sensitivity-and-loop-constraints.lingua#r_4WYSCK4TH179602Y518AC6S7QJ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6M4N4JTZ8K5KVRD8EAS9B67V7B

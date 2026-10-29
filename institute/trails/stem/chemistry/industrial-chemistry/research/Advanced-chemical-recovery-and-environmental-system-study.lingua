@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Defend a chemical-process recovery or environmental change with complete constituent evidence (@ic-environment-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9", #source "../sources/Chemical-Sector-Waste-Gas-BREF.lingua#r_1TCVADXXV40HYCGK8NTERRSSYA", #source "../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3", #source "../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_7NGWG7QHXJ8P47GZ8E4KTJ18EH
+**Read:** [Common Waste Water and Waste Gas Treatment/Management Systems in the Chemical Sector, BREF CWW](../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9), the entire relevant inventory, collection, treatment, sludge and recovery chapters; [Common Waste Gas Management and Treatment Systems in the Chemical Sector, BREF WGC](../sources/Chemical-Sector-Waste-Gas-BREF.lingua#r_1TCVADXXV40HYCGK8NTERRSSYA), the full pertinent prevention, collection, monitoring and treatment methods; [Chemical-industry process descriptions and emission factors — EPA AP-42](../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3), the whole exact process/factor and background sections used; [The E factor 25 years on — Roger A. Sheldon](../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT), the complete metric/boundary perspective and examples.
+
+Choose a consequential air, water, solvent, catalyst or solid-residual question and read the complete applicable technical references and primary analytical/process methods. Begin with source chemistry and a material inventory, not only a favorable concentration or efficiency percentage.
+
+Independently close target, water, energy and consequential contaminant quantities across all phases, including storage and changed conditions. Compare measured, factor-based and model-based estimates with their sampling support, dates, activity bases and uncertainty. Reconstruct recovery/regeneration cycles and the useful state of returned material.
+
+Compare a documented prevention, recovery or treatment alternative at the same accepted products and remaining residual requirements. Test whether a claimed improvement transfers a constituent, utility burden or unresolved problem elsewhere. Use consistent material, functional and life-cycle/metric boundaries.
+
+**Work:** produce a substantial technical/scholarly study with complete primary bibliography/methods, derivations, inspectable original calculations, actual or identified external evidence, uncertainty and independent criticism. Explain a discrepancy and propose the most discriminating new observation. Report the actual practical scope demonstrated and the remaining monitoring, operation or recovery work needed to support broader conclusions.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_7NGWG7QHXJ8P47GZ8E4KTJ18EH

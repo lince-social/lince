@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Breakers, fuses, isolation and interruption (@pe-breakers: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4", #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #electrical-power-engineering "Protection-zones-selectivity-sensitivity-and-reliability.lingua#r_4CE1D8PKEJ964HMZBHQB85PTT6") { r_1KEKT04CMTHQ3DYQVX03DEXYDR
+**Read:** [Maintenance of Power Circuit Breakers — FIST 3-16](../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4), entire manual and complete relevant equipment-type methods; [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), fuse and protection-device lectures; [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), complete device selection and coordination treatment.
+
+A protective device must detect or receive a trip command and physically interrupt the intended current under its rated conditions. A fuse, circuit breaker, contactor and disconnector have different functions and test evidence. Normal current rating, short-circuit breaking/making capability, time-current response and dielectric isolation are separate properties.
+
+Draw the entire chain from sensor/relay through auxiliary supply, trip coil, mechanism, contacts and the interrupted circuit. Model arc extinction and recovery-voltage requirements at the appropriate level; an ideal switch in a transient program has not demonstrated the corresponding real interruption. Include operating duty, contact wear, environmental condition and maintenance.
+
+Read the complete applicable [Maintenance of Power Circuit Breakers — FIST 3-16](../sources/Maintenance-of-Power-Circuit-Breakers-FIST.lingua#r_6YDRQ4GKWPW34WTZ4AVJZHGKP4) sections and compare actual manufacturer ratings with a calculated maximum/minimum fault envelope. Test timing, contact resistance, motion and functional control through appropriate supervised or fully documented evidence. A passed isolated contact test does not establish end-to-end clearing. Later coordination and commissioning Records link the device response with the whole network and actual installed settings.
+
+**Continue:** [Protection zones, selectivity, sensitivity and reliability](Protection-zones-selectivity-sensitivity-and-reliability.lingua#r_4CE1D8PKEJ964HMZBHQB85PTT6).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_1KEKT04CMTHQ3DYQVX03DEXYDR

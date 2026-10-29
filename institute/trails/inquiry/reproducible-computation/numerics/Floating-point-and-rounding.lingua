@@ -1,0 +1,33 @@
+Import "../Reproducible-computation.lingua"
+
+Understand representation, rounding, and the order of operations (@rc-floating: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #reproducible-computation "../../quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T") { r_0001BNCJBQDFTK1SAVASYCRZAR
+**Read:** [What Every Computer Scientist Should Know About Floating-Point Arithmetic — Goldberg](../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH), the full paper, beginning with representation and rounding; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), Floating-Point Arithmetic: Issues and Limitations and math.fsum; [Numerical arrays and reproducible random streams — NumPy documentation](../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY), data types, reductions, and floating-point error behavior.
+
+Most scientific floating-point calculations represent a finite set of binary numbers. Many decimal fractions cannot be represented exactly, and each operation can round. Evaluate the contract of the actual language and numerical library rather than interpreting every printed digit as a mathematical theorem. Read Goldberg's full paper during the advanced progression and compare its historical treatment with the current runtime.
+
+Save this original example as floating.py. The explicit loop deliberately illustrates one grouping of addition. Python's built-in sum has improved its floating-point summation algorithm in recent versions, so it should not be used as an assumed naive loop in this demonstration.
+
+```python file=floating.py
+import math
+
+values = [1e16, 1.0, -1e16]
+naive = 0.0
+for value in values:
+    naive += value
+accurate = math.fsum(values)
+assert naive == 0.0
+assert accurate == 1.0
+assert 0.1 + 0.2 != 0.3
+print({"ordered_loop": naive, "fsum": accurate, "decimal_sum": 0.1 + 0.2})
+```
+
+Explain why the small contribution is lost in the first grouping. Compare another ordering and a reference using exact integers or fractions. The input here is deliberately chosen to make one rounding effect visible; using fsum improves the summation but does not fix uncertain or incorrectly defined observations.
+
+**Work:** examine representation spacing near zero and near a large value, signed zero where relevant, overflow/underflow, infinity, and NaN handling in the selected runtime. Test a comparison that would accidentally accept a nonfinite value and specify the intended rejection behavior. Read the exact operation documentation before deciding how special values propagate.
+
+Choose absolute and relative comparisons according to quantity scale, units, and behavior near zero. Reporting fewer digits is not a substitute for analyzing an unstable algorithm. Follow [Sensitivity, cancellation, dependencies, and conditioning](../../quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T) for the shared distinction between input sensitivity, cancellation, instability, and physical-model assumptions before deepening the numerical validation here.
+
+**Continue:** [Sensitivity, cancellation, dependencies, and conditioning](../../quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_0001BNCJBQDFTK1SAVASYCRZAR

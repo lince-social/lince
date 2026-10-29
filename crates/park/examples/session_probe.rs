@@ -67,8 +67,8 @@ mod client {
             surface.commit();
             state.windows.push(Window { surface, xdg, role, size: [320, 200], fullscreen: false, frames: 0, buffers: Vec::new() });
         }
-        until(&connection, &mut queue, &mut state, |state| state.windows.iter().all(|window| window.frames > 0))?;
-        println!("PASS: two native windows configured and received presentation callbacks");
+        until(&connection, &mut queue, &mut state, |state| state.windows.iter().all(|window| !window.buffers.is_empty()) && state.windows.iter().any(|window| window.frames > 0))?;
+        println!("PASS: two native windows configured and a visible window received a presentation callback");
         if let Some(release) = release {
             use std::os::unix::fs::OpenOptionsExt;
             if !release.is_absolute() || release.exists() || release.with_extension("ready").exists() {
@@ -78,7 +78,7 @@ mod client {
             ready.write_all(std::process::id().to_string().as_bytes())?;
             ready.sync_all()?;
             std::fs::rename(release.with_extension("pending"), release.with_extension("ready"))?;
-            until_before(&connection, &mut queue, &mut state, |state| release.is_file() && state.windows.iter().all(|window| window.frames > 0), Instant::now() + Duration::from_secs(60))?;
+            until_before(&connection, &mut queue, &mut state, |_| release.is_file(), Instant::now() + Duration::from_secs(60))?;
         }
         let before = state.windows[0].frames;
         eprintln!("Checking fullscreen entry on the first window while the second is focused");

@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Maintenance Scheduling for Electrical Equipment — FIST 4-1B (@pe-fist-schedule: 0, is #reference, #part-of @pe-sources) { r_4Q5B4NW1XVGXWXY6SHP16KKN89
+U.S. Bureau of Reclamation. Maintenance Scheduling for Electrical Equipment, FIST 4-1B, January 2026 catalogue revision. [Official catalogue](https://www.usbr.gov/power/data/fist_pub.html) · [Complete linked document](https://www.usbr.gov/power/data/fist/FIST_4-1B_%2801-2026%29.pdf).
+
+Read the entire applicable schedule and its explanatory conditions, then compare calendar, condition and criticality reasoning with the actual equipment and service consequences. Trace an inspection or replacement interval to the evidence supporting it. Coordinate outages, skilled people, spares, tests and restoration rather than treating a schedule as a self-executing list.
+
+The primary catalogue, updated September 2026, identifies this revision and explicitly says its schedules supersede those in equipment-specific FIST manuals. Checked on 29 October 2026; direct PDF retrieval timed out, so full-page inspection is not claimed. These are Reclamation practices, not universally binding intervals. Preserve actual revision, scope and third-party notices. No schedule file, equipment register or manual is bundled.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_4Q5B4NW1XVGXWXY6SHP16KKN89

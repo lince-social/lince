@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Read a flowsheet as connected chemical transformations, separation duties and inventories (@ic-flowsheets: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #source "../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74", #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #industrial-chemistry "../balances/Boundaries-inventory-time-and-degrees-of-freedom.lingua#r_2Z2N5W5E8P521QTHQB13KE4R97") { r_3YXSFY4TWHFHPMZ3N8HBXQC0J8
+**Read:** [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the entire flow-diagram and technical/economic process-route unit; [Chemical Technology I — Indra Deo Mall, NPTEL](../sources/Chemical-Technology-I-Mall.lingua#r_2QDGEANAX8QTGRS531GFVF4H74), one full process description and its reaction/flow account; [Production of Chlor-alkali, BREF CAK](../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the complete preparation, cell and product-handling process descriptions.
+
+A block flow diagram identifies major tasks and connections. A process flow diagram adds streams, equipment roles and important conditions. More detailed engineering diagrams represent additional piping, control and protective functions. Each serves a purpose; none by itself proves that its quantities, chemistry or operating assumptions are correct.
+
+Give every stream a direction, material definition, amount/time basis and relevant state. Distinguish a splitter, which divides a stream without changing its composition in the ideal model, from a separator, which redistributes species or phases. A recycle joins downstream and upstream equations, so it cannot be treated as fresh input a second time.
+
+Show boundaries and inventories explicitly. A buffer, vessel or stock can temporarily decouple neighboring operations. Different campaigns and material histories can share equipment. Utility and waste connections carry significant energy or constituents even when a simplified published diagram draws them as minor arrows.
+
+**Work:** reconstruct a complete public chemical route from its text and figures without copying the original drawing. Author a clear diagram and stream table, stating which values are measured, inferred, fitted or absent. Explain the equations connecting its units and identify an underdetermined quantity that additional measurements could resolve.
+
+**Continue:** [Choose a process boundary and test what its equations can determine](../balances/Boundaries-inventory-time-and-degrees-of-freedom.lingua#r_2Z2N5W5E8P521QTHQB13KE4R97).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_3YXSFY4TWHFHPMZ3N8HBXQC0J8

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Defend a complete bulk-organic route through selectivity, recovery and qualified product (@ic-organic-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_7N1XB5JB5EQ3Y62Q303W9MTYVN
+**Read:** [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the whole generic treatment and complete selected process chapter; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the full corresponding organic manufacturing sequence; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete applicable equilibrium, rate, reactor/transport and parameter methods; [Refining of Mineral Oil and Gas, BREF REF](../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6), the full relevant feed/conversion and utility comparison.
+
+Choose a full petrochemical or other bulk-organic family and read the entire technical process chapter, university treatment and relevant primary kinetic/phase/analytical studies. Reconstruct feed characterization, reaction network, reactor/contacting, separation, recycle, product specification, utilities, service state and residuals.
+
+Independently derive carbon and other consequential element/species accounts, representative reaction/phase/energy models and the link from conversion to accepted output. Reproduce a substantial quantitative result and check it through an independent method, limiting case or primary observation. Explain model domains and uncertainty.
+
+Compare a documented alternative route, feed, catalyst or separation arrangement on the same useful products and time basis. Include co-products, trace contaminants, thermal/transport effects and maintenance where they can alter the result. Test the strongest competing mechanism or boundary assumption.
+
+**Work:** deliver a complete technical/scholarly argument with primary methods, substantial derivations, inspectable original calculations, actual or explicitly external evidence, uncertainty and defended conclusions. Ask another reader to reproduce a central result and challenge the most consequential inference, then revise the account and identify the next experiment or observation needed.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_7N1XB5JB5EQ3Y62Q303W9MTYVN

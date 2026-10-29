@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Explain air releases through source chemistry, transport, measurement and actual treatment (@ic-gas-emissions: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Sector-Waste-Gas-BREF.lingua#r_1TCVADXXV40HYCGK8NTERRSSYA", #source "../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3", #source "../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9", #industrial-chemistry "Solid-residues-spent-catalysts-and-chemical-inventories.lingua#r_013TMJ953SDA91K326986CB485") { r_7KTHFESRPTNWH9ZXEV12K27JW0
+**Read:** [Common Waste Gas Management and Treatment Systems in the Chemical Sector, BREF WGC](../sources/Chemical-Sector-Waste-Gas-BREF.lingua#r_1TCVADXXV40HYCGK8NTERRSSYA), the complete general inventory, prevention, collection, treatment and monitoring chapters used; [Chemical-industry process descriptions and emission factors — EPA AP-42](../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3), the whole applicable process/factor and original background sections; [Common Waste Water and Waste Gas Treatment/Management Systems in the Chemical Sector, BREF CWW](../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9), the full connected air/water and residual-inventory methods.
+
+Gas, vapor, aerosol, mist and particulate releases need distinct physical/chemical descriptions. A species can form in reaction, evaporation, entrainment, degradation, cleaning or an unintended leak. A total release estimate without its activity, material state, control condition and time basis may not describe the process being compared.
+
+Prevention, recovery, capture, absorption, adsorption, reaction and other treatment steps have finite performance and create associated streams. A captured constituent needs a destination; a chemically transformed one needs a product and energy account. Diffuse losses and changed operating conditions can be consequential even when a normal point-source average is favorable.
+
+Compare factor-based estimates, direct measurements and model predictions with appropriate uncertainty and support. An AP-42 factor is a dated average under stated conditions, not proof of a particular plant's current performance. Sampling, calibration, flow/composition and unobserved periods influence actual inference.
+
+**Work:** reconstruct a complete chemical-route air inventory and applicable treatment system from primary methods. Independently balance a consequential constituent and compare measured and factor/model estimates. Evaluate a documented prevention/recovery change, explaining which observations distinguish actual chemical loss reduction from changed sampling, dilution, inventory or transfer to another phase.
+
+**Continue:** [Characterize solid residuals and spent materials by actual state and potential pathways](Solid-residues-spent-catalysts-and-chemical-inventories.lingua#r_013TMJ953SDA91K326986CB485).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_7KTHFESRPTNWH9ZXEV12K27JW0

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow carbohydrate feeds through preparation, separation and further chemical use (@ic-sugars: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Industria-Acucareira-Castro.lingua#r_2MZSAZ19HXA59C006AANFNSM4J", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5", #industrial-chemistry "Ethanol-fermentation-distillation-and-water-quality.lingua#r_4VFKS4BW7QKG9G9AQHMCNQPNWF") { r_0GFTR01N55B1VRJV8JZMA30KZJ
+**Read:** [Indústria açucareira — Heizir F. de Castro](../sources/Industria-Acucareira-Castro.lingua#r_2MZSAZ19HXA59C006AANFNSM4J), the whole sugar-industry apostila; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete sugar, refined sugar, beet/starch and carbohydrate sequence; [Química verde no Brasil: 2010–2030 — MCT/CGEE](../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5), the full relevant sugar-chemistry/platform-feed chapter.
+
+Carbohydrate processing links biological feed variability with extraction, chemical/enzymatic transformation, clarification, concentration, crystallization and product recovery. Sugar, starch and their converted products have distinct molecular, physical and impurity descriptions. A soluble-solids measure is not automatically a complete sugar assay.
+
+Preserve water, nonsugar constituents, reaction products and retained liquor in the material account. Heating, pH and residence history can change the chemistry while evaporation changes concentration. Crystallization and washing trade recovery against purity and physical product properties; returned liquor can accumulate rejected constituents.
+
+The recovered carbohydrate can serve as food, fermentation feed or another chemical intermediate, each with its actual specification. Co-products, energy recovery and residuals connect the route with the rest of the material/utility system. A boundary ending before concentration or cleanup can distort route comparisons.
+
+**Work:** reconstruct an entire public sugar/starch route with primary analytical and process evidence. Independently close carbohydrate, total solids, water and energy, then compare a documented preparation/recovery alternative. Explain how the measurement model, phase/particle behavior and thermal history affect accepted output and what observation could reject an assumed feed equivalence.
+
+**Continue:** [Connect fermentation chemistry with recovery, dehydration and the actual ethanol product](Ethanol-fermentation-distillation-and-water-quality.lingua#r_4VFKS4BW7QKG9G9AQHMCNQPNWF).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_0GFTR01N55B1VRJV8JZMA30KZJ

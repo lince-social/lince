@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+The physics and mathematics of the second law — Lieb and Yngvason (@th-lieb: 0, is #reference, #part-of @th-sources) { r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ
+Elliott H. Lieb and Jakob Yngvason. The Physics and Mathematics of the Second Law of Thermodynamics. Physics Reports 310, 1–96 (1999). [Complete author version, revised 28 January 1999](https://arxiv.org/abs/cond-mat/9708200v2) · [Shorter companion](https://arxiv.org/abs/math-ph/9805005).
+
+Read the full long treatment after the classical book, using the shorter account to orient the argument. Reconstruct the assumptions about adiabatic accessibility, scaling/composition and comparison, and how entropy and temperature follow. Test the role of each assumption on examples rather than treating the second law as a slogan about disorder.
+
+The arXiv record reports 93 manuscript pages, while the journal spans 96 pages. This construction concerns equilibrium states; it does not itself define a general nonequilibrium entropy. Compare that scope carefully with local-equilibrium transport and statistical descriptions. Author deposit access does not establish a blanket CC licence for every publication version.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ

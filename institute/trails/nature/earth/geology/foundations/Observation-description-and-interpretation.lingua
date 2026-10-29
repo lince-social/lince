@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Keep observations and interpretations connected but distinguishable (@geo-observations: 0, is #chapter, #part-of @geology, #source "../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z", #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK", #geology "Scale-time-and-quantitative-comparison.lingua#r_01PA5BHVAM10CFRD2Y6K5BBBSG") { r_5K44604V7MR09287Y20AWVNRXB
+**Read:** [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z), the observation and introductory identification material; [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), the introductory structures and field-mapping discussions; [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK), the method’s observation, scale, and interpretation account.
+
+A geological description states the object, location, scale, conditions, method, and observed features. A field sketch or photograph should have orientation and scale, with actual contacts and gaps distinguished from inferred continuation. Color alone may change with weathering, illumination, moisture, or reproduction; preserve more than one property when identifying a material.
+
+An interpretation should cite the observations supporting it and identify alternatives. Cross-bedding can constrain a transport process under a sedimentary model; a dark band does not automatically establish an organic-rich deposit, volcanic event, or particular age. Correlation between distant exposures needs additional evidence rather than visual similarity alone.
+
+Treat uncertainty in location, measurement, classification, sampling, and interpretation separately. A precise coordinate cannot remove ambiguity about a buried contact. Several observations sharing one source or preparation are not necessarily independent confirmations. Use the shared measurement foundation when an inference depends on resolution, calibration, or representativeness.
+
+**Work:** make an original annotated description from an authorized image or suitable field setting. Mark observed and inferred features, missing exposure, and the evidence behind a tentative classification. Ask another reader to reconstruct the interpretation from the description and explain where disagreement remains.
+
+Read the field/identification introductions and the map-method discussion. This distinction supports advanced maps, measured sections, geological models, and source criticism. Records should preserve the evidence needed to revise an interpretation without turning uncertainty into either false precision or a reason to stop investigating.
+
+**Continue:** [Choose spatial and temporal scales that match the question](Scale-time-and-quantitative-comparison.lingua#r_01PA5BHVAM10CFRD2Y6K5BBBSG).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_5K44604V7MR09287Y20AWVNRXB

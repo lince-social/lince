@@ -117,6 +117,7 @@ pub(crate) fn project_canvas(
         &mut UiTransform,
         Option<&crate::native::workspace::WorkspaceMember>,
         Option<&crate::native::sand_placement::Pinned>,
+        Option<&crate::native::sand_placement::PinnedPreview>,
         Option<&crate::native::area_effects::AreaScale>,
         Option<&crate::native::topology::presentation::Surface>,
         Option<&crate::native::topology::assets::ImportedAsset>,
@@ -136,6 +137,7 @@ pub(crate) fn project_canvas(
         mut transform,
         member,
         pinned,
+        pin_preview,
         scale,
         surface,
         imported,
@@ -211,7 +213,7 @@ pub(crate) fn project_canvas(
             } else {
                 target.logical_size()
             };
-            pinned
+            pin_preview.map(|preview| &preview.0).or(pinned)
                 .map_or(*view, |pin| pin.view(item, viewport))
                 .screen_position(&displayed, viewport)
         });

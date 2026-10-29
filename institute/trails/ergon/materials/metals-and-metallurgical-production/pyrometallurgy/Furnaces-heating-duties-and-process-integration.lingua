@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Compare furnaces through their material, thermal, chemical, and operating duties (@metal-furnaces: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #metals-and-metallurgical-production "Fuels-reductants-carbon-hydrogen-and-energy-carriers.lingua#r_5H576JPP7D6968D6QF30SA8SS9") { r_52KDARYWHWG24BXQ0SX36QQYZY
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete furnace, fuel-utilization, heat-exchanger, and refractory sequence; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), all furnace-energy and relevant extraction exercises; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the complete chosen furnace/process cases and alternatives.
+
+A furnace is a system of material transport/contact, heat generation/transfer, atmosphere, reaction or melting, containment, control, and discharge. Shaft, rotary, hearth, bath, induction, resistance, and arc arrangements have different mechanisms and operating constraints; an equipment name does not fully specify its duty.
+
+Join feed properties, throughput, temperature/residence distributions, gas/slag/metal behavior, refractory interfaces, energy input, heat recovery, and product quality. Distinguish installed power from absorbed duty, useful output, availability, and controllable operating range. A nominally efficient steady condition may not represent transitions, varying feed, or maintenance.
+
+Compare alternatives on matched product and lifecycle boundaries. Electrical heating and combustion-based heating shift some dependencies to different utility systems; neither eliminates materials, cooling, containment, controls, or skilled work. Real evidence includes operating measurements, losses, wear, downtime, residuals, and uncertainty.
+
+**Work:** reconstruct two documented furnace alternatives for a common defined task. Independently close material and thermal accounts, compare spatial/temporal assumptions with observations, and evaluate a changed-feed or interruption case. Explain which aspect of product quality limits the design and which measurement could most change the ranking. Keep detailed operation tied to the actual professional equipment/method setting.
+
+**Continue:** [Distinguish a reductant, fuel, electrode, atmosphere, and energy carrier by its duty](Fuels-reductants-carbon-hydrogen-and-energy-carriers.lingua#r_5H576JPP7D6968D6QF30SA8SS9).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_52KDARYWHWG24BXQ0SX36QQYZY

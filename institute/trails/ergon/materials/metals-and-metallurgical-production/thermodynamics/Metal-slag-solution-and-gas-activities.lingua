@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Define activities and reference states before comparing metallurgical equilibria (@metal-activities: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "Ideal-regular-sublattice-and-assessed-solution-models.lingua#r_0J0EDJ5J87361CXTVVQDE0FH8Z") { r_71JYY2MP09YGH0465M7EESKFPQ
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete thermodynamic and refining discussions; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the full thermodynamics/equilibrium chapters; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the complete solution-thermodynamics and graduate phase-diagram material.
+
+After the shared chemical-potential step, identify every phase, component, composition basis, reference state, and thermodynamic model. For a component i, μᵢ = μᵢ° + RT ln aᵢ is meaningful only with compatible definitions of μᵢ° and activity. Mass percent, mole fraction, and an activity referenced to a dilute solution are not interchangeable numbers.
+
+Metals, slags, mattes, salt melts, aqueous solutions, and gases can use different standard-state and nonideality descriptions. Compare a reported equilibrium constant, activity coefficient, or interaction parameter only after matching its definitions and temperature range. A dilute-solution approximation can be useful and still fail as composition changes.
+
+State which parts of a calculation are thermodynamic data, assessed model parameters, measured compositions, or imposed constraints. An apparent equilibrium may involve oxygen/sulfur potentials, dissolved gases, metastable phases, or transfer between open reservoirs. Convergence of a solver does not establish the correctness of that physical account.
+
+**Work:** reconstruct a complete metal/slag or metal/gas equilibrium calculation from its primary method. Convert its composition conventions independently, derive the reaction quotient from chemical potentials, and compare ideal and documented nonideal models. Explain the consequence of using an incompatible reference state or extrapolating an interaction parameter. Identify the independent measurement that could discriminate the models.
+
+**Continue:** [Interpret solution models through their free energy, evidence, and valid domain](Ideal-regular-sublattice-and-assessed-solution-models.lingua#r_0J0EDJ5J87361CXTVVQDE0FH8Z).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_71JYY2MP09YGH0465M7EESKFPQ

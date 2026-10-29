@@ -1,0 +1,19 @@
+STEM — mathematics, science, and engineering (@stem-map: 0, is #chapter, #stem "../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB", #stem "chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0", #stem "../nature/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH", #stem "engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68", #stem "physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W") { r_4B137J3ZBVM7TD2NA797H2CZ7E
+Understand models and observations, learn the mathematical tools they use, and connect them with the design, production, and maintenance of useful systems. A question can cross several fields without requiring a reader to complete every subject first.
+
+Begin with [shared inquiry](../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB) and [quantitative and technical literacy](../inquiry/quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2). For material inputs, production, operation, and maintenance, continue through [Ergon](../ergon/Ergon.lingua#r_00000000000000000000002001). Questions about assumptions and evidence return to [Philosophy](../philosophy/Philosophy.lingua#r_00000000000000000000001001).
+
+[Chemistry](chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0) begins with [General chemistry](chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), from ordinary materials and chemical language through structure, reactions, energy, rates, equilibria, chemical measurement, sustained laboratory study, and independent research.
+
+[Earth — materials, processes, and geological history](../nature/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH) connects materials, maps, geological time, tectonics, water, and ground conditions through [Geology — Earth materials, processes, history, and investigation](../nature/earth/geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06), with substantial field, laboratory, numerical, and scholarly study. Its [Nature — Earth, living systems, and their relationships](../nature/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21) entrance also connects living systems and their relationships.
+
+Connect design and operating systems through [Engineering — systems, design, construction, and operation](engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68), beginning with [Mining and mineral engineering — extraction, processing, and continuing work](engineering/mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+
+Develop charge, fields, matter, induction, waves, radiation and physical evidence through [Physics — fields, matter, motion and physical evidence](physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+} r_4B137J3ZBVM7TD2NA797H2CZ7E
+
+Extension @stem-map "lince.vocabulary" {
+ definitions {
+  stem "A continuation into mathematics, scientific understanding, engineering, or their shared methods."
+ }
+}

@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Read a flowsheet as a material, water, energy, and information account (@mine-flowsheet: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #mining-and-mineral-engineering "An-inspectable-two-product-balance.lingua#r_4AH5WS3QE1Z40WJ55RQ4XBHYQ2") { r_1DRPSJDFXNJ1P5TJEGS6HPTEXD
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete introductory balance and relevant processing-system chapters; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), one complete case, then the whole book; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the complete relevant stream/sampling methods.
+
+A flowsheet represents operations, streams, recycles, stocks, and boundaries under an identified purpose and detail. Read stream definitions, units, dry/wet and constituent bases, time support, operating conditions, data provenance, and assumptions before interpreting a line as a measured flow.
+
+Feed, product, tailings, middlings, circulating load, water, reagents, and storage changes must be connected consistently. Internal recycles can make equipment flows exceed fresh feed without creating new material. A steady-state simplification should be tested against inventory and changing feed/operation.
+
+Separate measured values, inferred/reconciled flows, model predictions, equipment ratings, and design targets. A perfectly closed drawing can still encode wrong sampling, missed storage, biased instruments, or an incorrect process model. Product quality and recovery require their constituent account as well as total mass.
+
+**Work:** reconstruct a complete CETEM plant case as an original flowsheet with traceable stream definitions and evidence. Independently close a bounded solids, water, and valuable-constituent account, exposing unresolved terms. Compare a plausible changing-stock or unmeasured-stream explanation for a mismatch.
+
+Read the full introductory balance/processing chapters and the chosen complete plant case. The next original program solves one limited steady two-product account; later circuit, control, and accounting studies deepen more complex systems and their uncertainty.
+
+**Continue:** [Solve a dry-solids two-product balance and preserve wet/dry meaning](An-inspectable-two-product-balance.lingua#r_4AH5WS3QE1Z40WJ55RQ4XBHYQ2).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1DRPSJDFXNJ1P5TJEGS6HPTEXD

@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Rotating flow, Rossby number and geostrophic balance (@fd-rotating: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "Potential-vorticity-Rossby-Kelvin-and-inertia-gravity-waves.lingua#r_1MDK0YBKQ7V8JBHGPYPFZ8KX6Y") { r_6X74505055WATA2XZ7CD18HQYZ
+**Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), rotating-fluid module and chapter 7.a; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 rotating shallow-water motion; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), rotating-flow demonstrations.
+
+In a frame rotating steadily with angular velocity Ω, the momentum equation contains Coriolis acceleration 2Ω×u and centrifugal effects. A time-varying rotation adds another term. Centrifugal acceleration may be incorporated into an effective potential in appropriate circumstances, but that bookkeeping does not remove all rotational physics.
+
+Compare advective acceleration with Coriolis acceleration using a declared Rossby number. In an appropriate slow, large-scale horizontal balance, pressure gradient and Coriolis force produce geostrophic motion. That leading balance leaves questions about ageostrophic flow, boundary layers, acceleration and mass continuity to higher-order or additional equations.
+
+Derive an Ekman-layer response for a specified wall or surface stress and connect its transport to the interior. State rotation direction, coordinates and boundary conditions before assigning transport direction. Use the comparison to explain how a small frictional region can control a larger circulation and why rotating laboratory models require more than a matched Reynolds number.
+
+**Continue:** [Potential vorticity, Rossby, Kelvin and inertia–gravity waves](Potential-vorticity-Rossby-Kelvin-and-inertia-gravity-waves.lingua#r_1MDK0YBKQ7V8JBHGPYPFZ8KX6Y).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_6X74505055WATA2XZ7CD18HQYZ

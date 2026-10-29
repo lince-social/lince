@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Identify opaque phases with suitable observations and complementary evidence (@mp-opaque: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #mineralogy-and-petrology "../../geology/materials/Textures-structures-and-rock-classification.lingua#r_6YHWHD1G11JAT700N6FVMHVP5N") { r_46VP12HFWFJRGMYP9B1R2FKK7E
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full opaque/economic-mineral and relevant optical material; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected optical/composition entries and their references; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), the full relevant imaging/quantitative context.
+
+An opaque grain in a transmitted-light section needs a different observational account from a transparent mineral. Reflected-light examination of a suitable polished surface can reveal reflectance, color, anisotropy, textures, intergrowths, and relationships, but preparation and illumination conditions affect the observations.
+
+Sulfides, oxides, native elements, carbonaceous materials, and preparation artifacts can appear dark in transmitted light. A bright backscattered-electron region indicates an instrument-dependent contrast under the measurement conditions, not an automatic species or bulk-grade result. Combine structural and compositional evidence.
+
+Fine intergrowths and alteration can control processing or environmental behavior even when their modal amount is small. A point analysis spanning two phases can yield a plausible intermediate composition that represents neither phase. Record interaction volume, spatial context, specimen surface, and uncertainty when choosing follow-up methods.
+
+**Work:** reconstruct a published opaque-mineral identification from reflected-light description, texture, diffraction/spectral information, and chemistry. Compare two candidates consistent with part of the observations and identify a discriminating measurement. Explain which claims could be made from transmitted-light study alone and which remain unresolved.
+
+Read the complete opaque/non-silicate entries and relevant analytical treatment. Practical reflected-light competence requires appropriate instrument guidance and known specimens; an external image comparison is useful interpretive preparation with a more limited demonstrated scope.
+
+**Continue:** [Read a rock’s texture, structure, composition, and alteration together](../../geology/materials/Textures-structures-and-rock-classification.lingua#r_6YHWHD1G11JAT700N6FVMHVP5N).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_46VP12HFWFJRGMYP9B1R2FKK7E

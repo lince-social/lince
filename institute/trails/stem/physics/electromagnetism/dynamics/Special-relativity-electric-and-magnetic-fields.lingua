@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Special relativity joins electric and magnetic fields (@em-relativity: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH", #electromagnetism "Four-current-field-tensor-and-covariant-equations.lingua#r_3QWFTQD6180HHM0G8NGYZRYAZ1") { r_789H7ACJDQAKVB8H10HXAM09PC
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), the complete special-relativity and field-transformation development; [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH), the complete relativistic part of the lecture progression and problems.
+
+Electric and magnetic fields mix between inertial frames. For a frame moving with velocity v relative to a laboratory, parallel field components are unchanged and perpendicular components obey E′ = γ(E + v×B) and B′ = γ(B − v×E/c²) when interpreted with the stated frame convention. Work the full component transformation rather than applying these perpendicular formulas to arbitrary components.
+
+Derive the transformation of a charge/current distribution, then compare force on a moving test charge beside a current-carrying wire in two frames. Length contraction changes charge densities with the simultaneity convention; declaring the same wire neutral in every frame creates a contradiction. Transform the particle motion and force consistently.
+
+Verify invariants E·B and E²−c²B². A field with E·B = 0 may admit a frame with only electric or only magnetic field depending on the second invariant; a nonzero plane wave cannot be transformed to a static zero-magnetic field. Work energy/momentum transformation and the speed limit before radiation calculations. This classical relativistic depth connects to the separate full spacetime/gravity subject without requiring that whole subject at entry.
+
+**Continue:** [Four-current, field tensor and covariant equations](Four-current-field-tensor-and-covariant-equations.lingua#r_3QWFTQD6180HHM0G8NGYZRYAZ1).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_789H7ACJDQAKVB8H10HXAM09PC

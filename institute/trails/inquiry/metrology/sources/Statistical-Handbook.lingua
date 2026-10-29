@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Measurement Process Characterization — NIST/SEMATECH (@met-handbook: 0, is #book, #part-of @met-sources) { r_6S3221KSX1KKGPJNXKC3N022NN
+NIST/SEMATECH e-Handbook of Statistical Methods, chapter 2, Measurement Process Characterization, with supporting chapters on process modelling and exploratory data analysis. [Chapter 2 and detailed contents](https://www.itl.nist.gov/div898/handbook/mpc/mpc.htm) · [Handbook contents](https://www.itl.nist.gov/div898/handbook/).
+
+Read chapter 2 completely through its linked sections: characterization, measurement control, calibration, gauge repeatability and reproducibility studies, uncertainty analysis, and case studies. Work the supplied numerical examples and consult their references. Use the process-modelling material for regression assumptions and residual diagnostics when the calibration reading calls for it.
+
+This is a substantial open technical handbook, not a single summary webpage. Record the section title and stable page address for a result being reconstructed. The old frames-based index can be unhelpful; the direct chapter page exposes the reading structure.
+
+NIST-produced federal material is generally public domain in the United States; preserve attribution and separately identified contributions, data, and software terms. Official contents checked on 28 October 2026. The reading remains external.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_6S3221KSX1KKGPJNXKC3N022NN

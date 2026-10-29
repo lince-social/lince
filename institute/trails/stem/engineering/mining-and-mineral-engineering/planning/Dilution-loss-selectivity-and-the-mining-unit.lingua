@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Account for dilution, loss, and selectivity on a consistent material basis (@mine-dilution: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #mining-and-mineral-engineering "../methods/Select-a-mining-system-from-evidence-and-constraints.lingua#r_5YMMQJH3Y0NBC8FXCD091ESR5W") { r_4WZ9FG4HQHY0FRBQK0N2GKFZ07
+**Read:** [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete mining-method, dilution, and planning sections; [Underground Mining of Metalliferous Deposits — Mandal and Dey, NPTEL](../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ), the full characterization, cutoff, and method-selection material; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the full relevant feed/balance and characterization treatment.
+
+Dilution mixes material into the selected feed, while mining loss leaves or diverts part of the target material under stated definitions. The units and denominators differ among conventions. Define designed versus observed excavation, mining unit, target boundary, material identity, and process destination before comparing percentages.
+
+For invented target material 1,000 t at 2 percent constituent and added barren material 200 t, the mixed dry feed is 1,200 t containing 20 t of constituent, at 1.6667 percent. Calling dilution 20 percent of target mass differs from calling it 16.6667 percent of final feed; both need explicit labels.
+
+Selectivity depends on geological continuity, boundary uncertainty, equipment/geometry, fragmentation/mixing, measurement, operating practice, and schedule. An apparent assay-grade reduction can also reflect sampling support, moisture, or reconciliation differences. A smaller modeled block is not automatically an achievable selective-mining unit.
+
+**Work:** independently derive the example, then add a stated loss and nonzero diluent grade with a complete constituent balance. Compare two method/mining-unit choices and identify data needed to estimate actual dilution/loss rather than assume handbook averages. Explain the effect on plant throughput, recovery, waste, and product.
+
+Read the full method/evaluation and dilution sections. The following method selection should inherit this mass/geometry account, not choose an extraction method solely from the orebody shape or highest nominal recovery.
+
+**Continue:** [Compare mining systems through geometry, material behavior, and connected constraints](../methods/Select-a-mining-system-from-evidence-and-constraints.lingua#r_5YMMQJH3Y0NBC8FXCD091ESR5W).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_4WZ9FG4HQHY0FRBQK0N2GKFZ07

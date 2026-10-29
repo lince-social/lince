@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Material properties and the state of the fluid (@fd-properties: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #fluid-dynamics "Continuum-fields-molecular-scales-and-relaxation.lingua#r_52W3FJ90C69MPGFW3QNYXA6Q80") { r_5875X8MW02A7JNF72S8MDJSANN
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapters 2 and 6, material state and constitutive transport; [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), fluid properties and constitutive assumptions.
+
+Density, viscosity, compressibility, heat capacity, conductivity, surface tension and vapor pressure are properties evaluated for a material and state. State temperature, pressure, composition and phase. An apparently simple liquid may contain dissolved gas, suspended particles or a changing concentration that alters its response.
+
+For a Newtonian material, viscosity relates shear stress to deformation rate. It is not a measure of density, and a dense fluid need not be highly viscous. Kinematic viscosity compares momentum diffusion with inertia per unit volume. Bulk response to compression requires its own information; shear viscosity alone does not determine it.
+
+Build a property table with source, applicable range, units and uncertainty. Predict which properties matter most in the chosen system before seeking a more elaborate model. Use [IAPWS-95 — fundamental water properties](../../thermodynamics-and-heat-transfer/sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z) or [CoolProp — thermophysical property models and methods](../../thermodynamics-and-heat-transfer/sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1) when their documented substances and domains fit the question, and retain the distinction between an equilibrium property model and a transport-property correlation.
+
+**Continue:** [Continuum fields, molecular scales and relaxation](Continuum-fields-molecular-scales-and-relaxation.lingua#r_52W3FJ90C69MPGFW3QNYXA6Q80).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5875X8MW02A7JNF72S8MDJSANN

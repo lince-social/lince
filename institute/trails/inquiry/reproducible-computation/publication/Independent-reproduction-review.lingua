@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Let an unfamiliar reader test the reconstruction and the claim (@rc-review: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "../research/A-deterministic-research-project.lingua#r_584KCPF0ENH90JFAT0QZ6NHHQS") { r_64PY9JV0XV95ZA0SE54TYNBQWN
+**Read:** [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), the whole article after the practical reconstruction; [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), the whole article after the practical reconstruction; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Code Reviewing Process and research compendia.
+
+An independent reconstruction review starts from the published artifacts and instructions, with the author's implicit knowledge withheld. The reviewer records the entry point, obtained versions, environment procedure, exact attempted commands, checks, discrepancies, and any assistance required. A successful run should be accompanied by the comparison that establishes the particular reproduction claim.
+
+Review the scientific chain as well as execution. Are the inputs what the question requires? Are units and bases consistent? Are transformations and exclusions justified? Does numerical accuracy support the reported precision? Does the conclusion follow from this model and evidence? Identical output can reproduce an error, so inspect independent reference cases and interpretation.
+
+If working alone, approximate this separation by restoring from the saved account after setting aside the original directory and interactive state. State that it is a self-restoration rather than evidence from another researcher. Seek an independent reader for the later scholarly project where possible, without making access to a particular institution a condition for following the learning material.
+
+**Work:** write a review of the two-lot project as if you had received it without this conversation. Classify issues as unavailable artifacts, incomplete environment, execution defect, numerical disagreement, ambiguous method, or unsupported interpretation, using concrete evidence for each. Correct the project and repeat the affected reconstruction. Keep the original discrepancy and reason for the revision recoverable.
+
+Read the full practices and rules papers again, comparing their recommendations with what your review actually needed. The final projects deepen this exercise into substantial computational research and a documented response to criticism, rather than stopping at a checklist of tools installed.
+
+**Continue:** [Sustained project — reconstructible material accounting and calibration](../research/A-deterministic-research-project.lingua#r_584KCPF0ENH90JFAT0QZ6NHHQS).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_64PY9JV0XV95ZA0SE54TYNBQWN

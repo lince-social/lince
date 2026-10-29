@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Converter magnetics, filters, parasitics and thermal design (@pe-magnetics-filters: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #source "../../../physics/electromagnetism/sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #source "../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR", #electrical-power-engineering "../../../physics/electromagnetism/dynamics/Poynting-theorem-energy-flow-and-dissipation.lingua#r_5QQ630P1MWY515P876101QHTAE") { r_3AN53ZK2R5SZSV8HE336WA7D15
+**Read:** [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), complete magnetics, filter and component-design sequence; [Electromagnetic Fields and Energy — Haus and Melcher](../../../physics/electromagnetism/sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), whole relevant magnetic/device development; [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR), applicable complete loss/system-performance context.
+
+Inductors, transformers and filters in a converter have geometry, material state and waveform-dependent loss. Derive ripple/flux excursion from the actual switching voltage and timing, then compare saturation and energy constraints with winding/copper and core loss. Frequency alone does not determine a useful magnetic design.
+
+Choose a complete example with explicit core, winding, gap, insulation, leakage, parasitic capacitance and cooling assumptions. Compare analytical limits, manufacturer/test data and a refined model. A lower ripple or larger inductance can increase size, loss or dynamic interaction. An LCL or EMI filter can introduce resonances that require damping/control and change the grid/interface behavior.
+
+Read the complete relevant [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526) magnetics/filter development and the shared magnetic/field books. Include device/cable/layout parasitics where the time scale requires them, then verify a changed switching/load condition. Physical fabrication, insulation integrity and thermal evidence are distinct from computing a nominal L or turns ratio. The advanced converter study must join these material/construction conditions to control, measurements and usable service.
+
+**Continue:** [Poynting theorem, energy flow and dissipation](../../../physics/electromagnetism/dynamics/Poynting-theorem-energy-flow-and-dissipation.lingua#r_5QQ630P1MWY515P876101QHTAE).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3AN53ZK2R5SZSV8HE336WA7D15

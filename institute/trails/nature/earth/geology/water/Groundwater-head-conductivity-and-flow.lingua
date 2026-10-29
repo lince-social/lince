@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Derive a groundwater-flow account from head, properties, and boundaries (@geo-groundwater-flow: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Groundwater-Freeze-Cherry.lingua#r_6P2FK74P9MC2672X94GE1S0NZB", #geology "Groundwater-chemistry-karst-and-transport.lingua#r_2T5QS13EZDV9X8YS73ETRFA5V2", #mining-and-mineral-engineering "../../../../stem/engineering/mining-and-mineral-engineering/utilities/Dewatering-groundwater-response-and-pumping-work.lingua#r_3HVPDBMJY7DFH0VBW7MJERGPB1") { r_104ZRDJ685JFSD9E3RDJVN8NQB
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 14 in full; [Groundwater — Freeze and Cherry, preserved authorized edition](../sources/Groundwater-Freeze-Cherry.lingua#r_6P2FK74P9MC2672X94GE1S0NZB), the full physical-properties/principles, geological-setting, and groundwater-flow chapters, including their mathematical preparation.
+
+Groundwater occupies pore/fracture space; aquifer behavior depends on connected pathways, storage, boundaries, recharge/discharge, and history. Porosity describes a volume fraction, while hydraulic conductivity describes flow response under specified fluid/material conditions. A porous material need not transmit water readily.
+
+Hydraulic head combines elevation and pressure contributions under the adopted model. Darcy's relation q = −K grad(h) expresses specific discharge for appropriate conditions; Q = q A for a uniform normal section. Head gradient, permeability/conductivity, and geometry need separate observations. A water-table sketch does not measure all of them.
+
+For invented saturated homogeneous steady flow, K = 10⁻⁵ m s⁻¹, gradient magnitude 0.01, and area 10 m² give Q = 10⁻⁶ m³ s⁻¹. Specific discharge is 10⁻⁷ m s⁻¹. With effective porosity 0.25, the simple average pore velocity is 4 × 10⁻⁷ m s⁻¹, about 12.623 m per Julian year. Advecting 100 m would take about 7.922 years under those assumptions.
+
+**Work:** derive and check all units/results, draw the head boundaries, and vary K and porosity separately. Explain why this is not a contaminant-arrival prediction: heterogeneity, fractures, dispersion, reactions, unsaturated flow, and transient forcing can change the account. Read the foundational book chapters before tackling its field/inverse methods and distinguish model calibration from independent validation.
+
+**Continue:** [Join geological flow pathways with chemical evolution and transport](Groundwater-chemistry-karst-and-transport.lingua#r_2T5QS13EZDV9X8YS73ETRFA5V2).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+
+**Continue in mining and mineral engineering:** [Connect dewatering with hydrogeology, changing ground, and measured pump duty](../../../../stem/engineering/mining-and-mineral-engineering/utilities/Dewatering-groundwater-response-and-pumping-work.lingua#r_3HVPDBMJY7DFH0VBW7MJERGPB1).
+} r_104ZRDJ685JFSD9E3RDJVN8NQB

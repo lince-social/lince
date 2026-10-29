@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Infer provenance while accounting for transport, weathering, and recycling (@mp-provenance: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM", #source "../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #mineralogy-and-petrology "Carbonate-components-textures-and-reaction-history.lingua#r_2TV14853GT8HPXDBZ11G5TD26G") { r_68WCSN54XX2DRSB8VJ3TD2690H
+**Read:** [Sedimentary Geology — John Southard, MIT 12.110](../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM), the complete sediment composition, production/transport, and source context; [Introduction to Geochronology — Pieter Vermeesch](../../geology/sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the full detrital-geochronology treatment; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete relevant mineral-survival/composition descriptions.
+
+Sediment composition reflects source rocks plus weathering, erosion, transport, hydraulic sorting, storage, recycling, deposition, and later alteration. A mineral fraction can become concentrated because of density/size and survival rather than simply because it dominated the source.
+
+Framework-grain counts, heavy minerals, lithic fragments, mineral chemistry, ages, and isotopic observations constrain different parts of the history. Sampling and analytical support matter: a detrital-grain age distribution is a selected observed population, not automatically a direct proportion of source-area rock volumes.
+
+Recycled grains can preserve older source histories unrelated to the immediately eroded formation. A youngest detrital age can constrain deposition under specific assumptions but is not generally the exact depositional age. Inheritance, contamination, analytical uncertainty, and incomplete sampling require explicit treatment.
+
+**Work:** reconstruct a provenance argument from a complete published or teaching case. Separate source, sorting/survival, recycling, and diagenesis as possible explanations for an observed composition. Independently check one proportion/age-bound claim and design a discriminating mineral-chemical, textural, or chronological observation. Explain which source history remains nonunique.
+
+Read the complete sediment-composition and detrital-time treatments. The later sedimentary project requires a source-to-burial history supported by multiple evidence types rather than a tectonic label inferred from one compositional plot.
+
+**Continue:** [Separate carbonate deposition, fabric, and later chemical change](Carbonate-components-textures-and-reaction-history.lingua#r_2TV14853GT8HPXDBZ11G5TD26G).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_68WCSN54XX2DRSB8VJ3TD2690H

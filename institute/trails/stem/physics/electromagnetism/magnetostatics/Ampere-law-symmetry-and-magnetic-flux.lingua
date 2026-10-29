@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Ampère law, symmetry and magnetic flux (@em-ampere: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Vector-potential-gauge-and-linked-flux.lingua#r_3DPJ91YTSE9VC10VWH8G6AA5XM") { r_45A2A15VVK27WJ4JAGQ3WC1BE9
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), Ampère law and magnetostatic examples; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), magnetic field equations.
+
+In vacuum magnetostatics, ∮B·dl = μ₀I_enclosed and ∇·B = 0. The circulation law yields a simple field only with enough symmetry; it does not say that B vanishes outside any loop enclosing zero current. The divergence law states zero net magnetic flux through a closed surface, consistent with no observed magnetic monopole sources in this classical model.
+
+Derive the field inside and outside a long cylindrical wire carrying a uniform steady current. At radius r inside radius a, B = μ₀Ir/(2πa²); outside B = μ₀I/(2πr). Check continuity at the surface. At high frequency the current distribution can change through skin effect, so the interior formula must be recomputed.
+
+Analyze a toroidal winding and a long solenoid, stating the neglected leakage/edge fields. Compare a circular Ampèrian loop in a nonsymmetric source with a full Biot–Savart calculation to expose the missing information. In time-dependent situations Ampère's original form conflicts with charge accumulation; Maxwell's displacement-current term will close that account.
+
+**Continue:** [Vector potential, gauge and linked flux](Vector-potential-gauge-and-linked-flux.lingua#r_3DPJ91YTSE9VC10VWH8G6AA5XM).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_45A2A15VVK27WJ4JAGQ3WC1BE9

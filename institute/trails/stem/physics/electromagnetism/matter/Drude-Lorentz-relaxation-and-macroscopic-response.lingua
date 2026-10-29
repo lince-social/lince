@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Drude, Lorentz and relaxation models (@em-matter-models: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Feynman-Lectures-Volume-II.lingua#r_436GYN2CVWCERX7EXFDTWX28XT", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #electromagnetism "../transmission/Distributed-lines-return-conductors-and-telegrapher-equations.lingua#r_3XY92DMB6E0C5HB0YYNQTDGRES") { r_084K320NPDJ1J0AX7D3K207X50
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), electric and magnetic response models; [The Feynman Lectures on Physics, Volume II](../sources/Feynman-Lectures-Volume-II.lingua#r_436GYN2CVWCERX7EXFDTWX28XT), complete relevant matter and refractive-index chapters; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), material dispersion and interpretation.
+
+A driven damped bound charge gives a Lorentz oscillator with resonance and absorption; an idealized unbound carrier with damping gives a Drude contribution. Write the underlying equation of motion, define number density/effective mass/damping, and derive susceptibility rather than memorizing a complex rational function. A Debye relaxation instead models a different first-order response mechanism.
+
+Compare low- and high-frequency limits, static susceptibility where it exists, damping sign and power absorption. A fitted plasma frequency is a model parameter; interpreting it as a unique microscopic carrier density requires additional assumptions. Multiple oscillators can describe a band of data while remaining poorly identified individually.
+
+Examine how material state, microstructure, anisotropy and interfaces alter the macroscopic response. Static ε, optical refractive index and a DC conductivity are not interchangeable measurements of one timeless number. Quantum transitions, band structure and collective behavior motivate further specialist subjects. A classical response model can still provide a useful effective prediction within its validated range. Fit and compare at least two candidate descriptions, include a held-out frequency interval and distinguish explanatory plausibility from parameter identifiability.
+
+**Continue:** [Distributed lines, return conductors and telegrapher equations](../transmission/Distributed-lines-return-conductors-and-telegrapher-equations.lingua#r_3XY92DMB6E0C5HB0YYNQTDGRES).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_084K320NPDJ1J0AX7D3K207X50

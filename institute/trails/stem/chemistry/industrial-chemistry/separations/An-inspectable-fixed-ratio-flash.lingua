@@ -1,0 +1,84 @@
+Import "../Industrial-chemistry.lingua"
+
+Verify a bounded flash calculation with independent phase and component checks (@ic-flash-example: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #source "../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT", #source "../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV", #industrial-chemistry "../models/Functions-derivatives-integrals-and-changing-chemical-inventories.lingua#r_2YY1EB9SY930JF2MPSBSCZB4HG") { r_4C2KA2E8NSHG5XJGQM45H58FQV
+**Read:** [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), the complete flash, VLE and finite-split modules; [Graduate Chemical Engineering Thermodynamics — MIT 10.40](../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT), the whole relevant phase-equilibrium and stability work; [Graduate Numerical Methods Applied to Chemical Engineering — MIT 10.34](../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV), the complete scalar-root, conditioning and numerical-error treatment.
+
+This original program solves [Derive a finite flash split before using it as a process calculation](A-flash-split-with-supplied-equilibrium-ratios.lingua#r_039ZZ8B6081VHRGSP5Y23KBX2W) with supplied fixed equilibrium ratios and normalized nonnegative feed amounts. It accepts two to eight components, feed amounts 0–10⁶ with a total of at least 10⁻⁶, and K_i from 0.001 to 1,000. Feed normalization is explicit; these are relative mole amounts, not a claim of normalized input fractions. All numbers must be finite ordinary int/float values.
+
+Copy it to a temporary study directory and run Python 3.13. It needs no external packages, data, files or network. Single-phase states report the absent phase as None; an all-unity active K set reports an indeterminate phase fraction. These choices expose the model's limits instead of assigning a composition or split to an undefined stream.
+
+```python file=fixed_ratio_flash.py
+import json
+import math
+
+
+def number(value, low, high):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("finite numeric inputs are required")
+    try:
+        value = float(value)
+    except (OverflowError, ValueError) as error:
+        raise ValueError("numeric input is outside the stated domain") from error
+    if not math.isfinite(value) or not low <= value <= high:
+        raise ValueError("numeric input is outside the stated domain")
+    return value
+
+
+def solve(feed=(0.5, 0.5), ratios=(2, 0.5)):
+    if not isinstance(feed, (list, tuple)) or not isinstance(ratios, (list, tuple)):
+        raise ValueError("feed and ratios must be lists or tuples")
+    if len(feed) != len(ratios) or not 2 <= len(feed) <= 8:
+        raise ValueError("two to eight matching components are required")
+    amounts = [number(value, 0, 1000000) for value in feed]
+    coefficients = [number(value, 0.001, 1000) for value in ratios]
+    total = math.fsum(amounts)
+    if total < 0.000001:
+        raise ValueError("the feed total must be at least 0.000001")
+    z = [value / total for value in amounts]
+    active = [k for amount, k in zip(amounts, coefficients) if amount > 0]
+    if all(k == 1 for k in active):
+        return {"state": "indeterminate", "vapor_fraction": None,
+                "feed_fractions": z, "liquid": None, "vapor": None}
+
+    def residual(beta):
+        return math.fsum(zi * (ki - 1) / (1 + beta * (ki - 1))
+                         for zi, ki in zip(z, coefficients))
+
+    if residual(0) <= 0:
+        return {"state": "liquid", "vapor_fraction": 0.0,
+                "feed_fractions": z, "liquid": z.copy(), "vapor": None}
+    if residual(1) >= 0:
+        return {"state": "vapor", "vapor_fraction": 1.0,
+                "feed_fractions": z, "liquid": None, "vapor": z.copy()}
+    lower, upper = 0.0, 1.0
+    for _ in range(100):
+        middle = (lower + upper) / 2
+        if middle == lower or middle == upper:
+            break
+        if residual(middle) > 0:
+            lower = middle
+        else:
+            upper = middle
+    beta = (lower + upper) / 2
+    liquid = [zi / (1 + beta * (ki - 1)) for zi, ki in zip(z, coefficients)]
+    vapor = [ki * xi for ki, xi in zip(coefficients, liquid)]
+    return {"state": "two-phase", "vapor_fraction": beta,
+            "feed_fractions": z, "liquid": liquid, "vapor": vapor,
+            "residual": residual(beta)}
+
+
+if __name__ == "__main__":
+    print(json.dumps(solve(), sort_keys=True))
+
+```
+
+The binary default has β=1/2, liquid composition (1/3,2/3) and vapor composition (2/3,1/3). Independently verify phase normalization and every feed balance. The calculation imposes no energy balance and predicts no thermophysical K_i; those are additional physical questions.
+
+Near a phase boundary, floating-point and property uncertainty can make an infinitesimal computed second phase indistinguishable from a single-phase limit. Check component closure, numerical tolerances and the input uncertainty before interpreting the state label as evidence of a finite measurable phase.
+
+**Work:** obtain the binary solution algebraically, check multicomponent cases with an independent high-precision root method, and test pure active components, zero feed entries, single-phase and unity-ratio limits. Check scaling, component reordering, bounds, nonmutation and rejection. Then compare the fixed-K approximation with a complete thermodynamic/energy study of a real separation.
+
+**Continue:** [Read chemical models as functions, rates, accumulated quantities and constrained systems](../models/Functions-derivatives-integrals-and-changing-chemical-inventories.lingua#r_2YY1EB9SY930JF2MPSBSCZB4HG).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4C2KA2E8NSHG5XJGQM45H58FQV

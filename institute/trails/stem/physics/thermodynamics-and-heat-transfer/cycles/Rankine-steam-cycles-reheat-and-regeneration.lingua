@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Rankine steam cycles, reheat and regeneration (@th-rankine: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/IAPWS-IF97-Industrial-Water-and-Steam.lingua#r_7THV30AN6Q693AJKH3W6ZSG13Y", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "Brayton-cycles-compression-combustion-and-recuperation.lingua#r_7W9XHR7T2YXS48E15FA3F95GST") { r_3RNA0PVT68CQJEJT4XQK1MJ45E
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), chapter 9 in full with substantial problems; [IAPWS-IF97 — industrial water and steam](../sources/IAPWS-IF97-Industrial-Water-and-Steam.lingua#r_7THV30AN6Q693AJKH3W6ZSG13Y), states and check values used in the complete cycle; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), second-law comparison and cogeneration.
+
+Build a state table for pump, boiler, turbine and condenser with pressure, temperature, enthalpy, entropy and phase information. Define ideal isentropic comparisons, actual component efficiencies, pressure drops, heat losses and parasitic power. Check every component and the complete cycle energy balance.
+
+Follow the complete steam-cycle development in [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ) through superheat, reheat and regenerative feed heating. Compare arrangements at consistent useful output and environmental conditions. Track turbine exhaust wetness, thermal-source temperature profile, condenser pressure and cooling duty rather than maximizing a single efficiency number in isolation.
+
+Use verified property states through [IAPWS-IF97 — industrial water and steam](../sources/IAPWS-IF97-Industrial-Water-and-Steam.lingua#r_7THV30AN6Q693AJKH3W6ZSG13Y) or a documented implementation. Reconstruct a full numerical example independently and perturb an operating condition. A thermodynamic cycle does not size blades, pressure vessels, valves or water chemistry; those engineering dependencies remain visible in the integrated system and linked specialist subjects.
+
+**Continue:** [Brayton cycles, compression and recuperation](Brayton-cycles-compression-combustion-and-recuperation.lingua#r_7W9XHR7T2YXS48E15FA3F95GST).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3RNA0PVT68CQJEJT4XQK1MJ45E

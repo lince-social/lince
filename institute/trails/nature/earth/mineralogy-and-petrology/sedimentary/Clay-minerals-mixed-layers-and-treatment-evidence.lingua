@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Identify clay phases with structural, chemical, and preparation evidence (@mp-clay: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM", #mineralogy-and-petrology "Evaporites-silica-phosphates-and-organic-associated-materials.lingua#r_6HTY4SNKY5J2B4REKH2QWDXQXT") { r_1YK3X2Z2EPXKF4P85R27T8A6FF
+**Read:** [A laboratory manual for X-ray powder diffraction — Poppe and colleagues](../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6), the complete manual with the full clay-treatment and identification procedures; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the entire clay/sheet-mineral treatment; [Sedimentary Geology — John Southard, MIT 12.110](../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM), the complete shale/clay and diagenetic context.
+
+Clay-sized material is a grain-size category; clay minerals are structural/chemical classes. A fine fraction can contain other minerals, amorphous material, organic matter, and mixed assemblages. Identify the separation, preparation, and target before equating a size fraction with one mineral population.
+
+Layer type, interlayer charge/components, hydration, ordering, and mixed layering influence diffraction and behavior. Preferred orientation and chemical/thermal treatments can provide useful contrasts under a documented procedure. A changed spacing is an observation whose interpretation depends on preparation, conditions, and alternative phases.
+
+Clay mineralogy can record source, weathering, diagenesis, hydrothermal change, or mixtures, with important consequences for swelling, sorption, permeability, and processing. Those properties require their own measurement/model; a tentative diffraction identification does not specify all behavior at every fluid condition.
+
+**Work:** read the entire XRD manual and reconstruct a multi-treatment clay-identification example. Compare candidate single-phase and mixed-layer explanations, preserving observed patterns and method conditions. Relate one transformation to component/water exchange and identify an independent chemical or microscopic check. Explain how uncertain identification affects a proposed material-use inference.
+
+Read the full sheet/clay descriptions and relevant diagenetic notes. Actual preparation and instrument competence requires suitable supervised laboratory work; interpretation of published patterns is a valuable but separately described achievement.
+
+**Continue:** [Explain chemical and biogenic sedimentary materials through component budgets](Evaporites-silica-phosphates-and-organic-associated-materials.lingua#r_6HTY4SNKY5J2B4REKH2QWDXQXT).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_1YK3X2Z2EPXKF4P85R27T8A6FF

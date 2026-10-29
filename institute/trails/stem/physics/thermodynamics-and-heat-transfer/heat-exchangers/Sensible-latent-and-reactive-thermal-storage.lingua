@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Sensible, latent and reactive thermal storage (@th-storage: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "../measurement/Conductivity-diffusivity-capacity-and-the-experiment-that-distinguishes-them.lingua#r_4MJYXPQ8QBZ4JQSN3F48JK50V6", #thermodynamics-and-heat-transfer "../research/Heat-exchange-storage-and-a-complete-delivery-duty.lingua#r_3K1JM0SXJXEM7H9D5XRWTMZ7VK") { r_3TJT4KE8M619Y9628FD3N3K3W9
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), energy/entropy accounts and thermal machines; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), phase and reaction equilibrium; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), transient conduction and phase-change transport.
+
+Storage capacity, charging power, delivery temperature and retained useful energy answer different questions. Calculate sensible storage from an actual heat-capacity integral, latent storage from the phase fraction and transition conditions, and reaction storage from a chemically consistent account. Reference states must remain consistent through a charge/discharge cycle.
+
+A phase transition is not necessarily sharp or perfectly reversible in a real material. Supercooling, hysteresis, segregation, expansion, incomplete reaction and changing contact can affect performance. Heat-transfer resistance can leave much of a store inaccessible on the service time scale.
+
+Construct a spatial or lumped storage model whose simplifications are justified. Compare equal-energy stores by usable temperature, charge/discharge rate, exergy loss, cycling history and containment. Include standing losses and auxiliaries. A measured single-cycle capacity is not evidence of long-term material durability or of a complete storage installation.
+
+**Continue:** [Conductivity, diffusivity, capacity and distinguishable measurements](../measurement/Conductivity-diffusivity-capacity-and-the-experiment-that-distinguishes-them.lingua#r_4MJYXPQ8QBZ4JQSN3F48JK50V6) · [Advanced study: heat exchange, storage and delivery duty](../research/Heat-exchange-storage-and-a-complete-delivery-duty.lingua#r_3K1JM0SXJXEM7H9D5XRWTMZ7VK).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3TJT4KE8M619Y9628FD3N3K3W9

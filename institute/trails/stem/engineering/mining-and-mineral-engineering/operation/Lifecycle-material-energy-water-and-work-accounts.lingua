@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Compare extraction systems with consistent boundaries, products, and continuing burdens (@mine-lifecycle-account: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #source "../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM", #source "../sources/Mine-Closure-Leading-Practice.lingua#r_2GYS4C9MHF2CRD8253QPDEV3QN", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #mining-and-mineral-engineering "Preserve-engineering-knowledge-and-identify-unresolved-claims.lingua#r_1PY7QJ9AZSW05BY0HY2HNWND5T") { r_01TRATGM0EJ92PCMPHE5XKMK9J
+**Read:** [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the full lifecycle and system-context sequence; [Water stewardship — Australian leading-practice handbook](../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM), the complete water-stewardship handbook; [Mine closure — Australian leading-practice handbook](../sources/Mine-Closure-Leading-Practice.lingua#r_2GYS4C9MHF2CRD8253QPDEV3QN), the complete closure account; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), a complete mine/plant-related case and its primary quantitative evidence.
+
+Define the function before comparing totals: a tonne of excavated rock, a tonne of concentrate, a kilogram of contained constituent, and a quantity of specified usable product answer different questions. Recovery, quality, coproduct allocation, moisture, inventory, geography, and time can change the comparison.
+
+Build connected material, water, energy, emissions/residuals, labor, maintenance, and closure accounts. Distinguish physical measurements from allocation conventions and model assumptions. Purchased electricity, reagents, machinery, transport, and treatment carry upstream requirements; excluding them may move a burden across the boundary rather than reduce it.
+
+Compare alternative scenarios on common functional outcomes and report multiple consequences where no single metric captures the question. Sensitivity should include feed variability, grade/recovery interactions, reliability, energy source, water quality/scarcity, transport, and continuing closure work. A very precise total from uncertain or mismatched inputs is not strong evidence.
+
+**Work:** construct a reproducible lifecycle account for a complete mine-and-beneficiation case. Reconcile its core material/energy/water totals, distinguish measured and estimated inputs, and test at least two defensible boundary/allocation choices. Compare an alternative extraction or processing arrangement under changed feed and utility assumptions. Explain which conclusion remains stable, which reverses, and what new measurement would most reduce the consequential uncertainty.
+
+**Continue:** [Keep engineering knowledge inspectable through evidence, versions, and transfers of work](Preserve-engineering-knowledge-and-identify-unresolved-claims.lingua#r_1PY7QJ9AZSW05BY0HY2HNWND5T).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_01TRATGM0EJ92PCMPHE5XKMK9J

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Verify and scientifically test a substantial chemical-process calculation (@ic-computational-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Cantera-Models-and-Documentation.lingua#r_4ZMEMBQGEYE25NZVYTPNXAGENT", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_5T76SF25MVN1GP03WFBHPQ0QNV
+**Read:** [Graduate Numerical Methods Applied to Chemical Engineering — MIT 10.34](../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV), the entire graduate numerical/programming course with actual assignments and examinations; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full applicable model chapters and computational appendix; [Cantera — chemical thermodynamics, kinetics and reactor models](../sources/Cantera-Models-and-Documentation.lingua#r_4ZMEMBQGEYE25NZVYTPNXAGENT), the complete actual theory, data, examples and numerical documentation used.
+
+Complete the graduate numerical-methods programme and choose a consequential chemical reactor, equilibrium, phase, separation or integrated process result. Read its full primary mathematical/physical methods and identify the exact property, kinetic, material and observation models involved.
+
+Derive the equations and constraints independently, implement an inspectable calculation and check it with a substantially different method or exact/analytic limits. Test conservation, nonnegative/feasible states, conditioning, convergence, parameter identifiability and uncertainty. A small residual or repeated agreement with the same implementation is not independent evidence.
+
+If an external engine such as Cantera is used, preserve its actual version, model/database identity and rights. Installation or execution is the reader's documented study, not an achievement implied by a source link. Compare numerical agreement with physical validation using actual primary observations under changed conditions.
+
+**Work:** reproduce a substantial published result, challenge a competing model and deliver complete bibliography, derivations, original code, environment/data provenance, uncertainty, failures and defended conclusions. Have another reader reproduce a central claim in a changed working environment. Explain which differences are numerical, which physical and what observation would decide the unresolved scientific question.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_5T76SF25MVN1GP03WFBHPQ0QNV

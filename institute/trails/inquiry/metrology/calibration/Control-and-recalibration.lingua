@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Keep a measurement process under observation between calibrations (@met-measurement-control: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #metrology "../uncertainty/Model-and-budget.lingua#r_0QB7F1RTYH2F2P1VDT1AW3TY7R") { r_6AHX4PAFTWTDPKEZVQ3KSNP9AC
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 2.2 and check-standard case studies; [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), periodic review and assurance of a reference chain; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), time-dependent and statistical models.
+
+Control measurements ask whether the process remains consistent with its characterized behavior. A stable check standard observed regularly can reveal changes, provided its own stability and relevance are supported. Distinguish control of the measurement process from control of the product being measured; a shifted product population and a shifted instrument can look alike without an appropriate reference.
+
+A control chart needs a definition of the statistic, sampling plan, baseline, expected variation, and response to signals. Simple limits based on a stable independent normal model can be useful, but their false-alarm and missed-change behavior depend on those assumptions. Autocorrelation, changing conditions, or estimated limits can invalidate a casual “three-sigma” interpretation.
+
+Recalibration intervals follow use, stability evidence, reference requirements, consequences of error, and applicable obligations. There is no universal technical rule that every device remains suitable for exactly one year. A repair, shock, changed configuration, or failed check can demand action before the scheduled date. An overdue calendar alone does not quantify an actual error either.
+
+**Work:** reconstruct the handbook’s check-standard case. Identify what changed, how the signal was distinguished from ordinary variation, and which earlier results would need review. Make a teaching timeline containing a calibration, repeated checks, a transport event, a failed check, investigation, and a new comparison. State what can and cannot be inferred about the interval between observations.
+
+Keep records of as-found behavior and the response to deviations. A history in which every instrument is adjusted before its previous state is observed can conceal the evidence needed to evaluate earlier work and future intervals. The next readings use these histories as inputs to a measurement model and uncertainty budget.
+
+**Continue:** [Build the measurement model before filling the uncertainty budget](../uncertainty/Model-and-budget.lingua#r_0QB7F1RTYH2F2P1VDT1AW3TY7R).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_6AHX4PAFTWTDPKEZVQ3KSNP9AC

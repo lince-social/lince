@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Compare mining systems through geometry, material behavior, and connected constraints (@mine-method-selection: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ", #mining-and-mineral-engineering "Open-pits-strips-quarries-and-surface-sequences.lingua#r_1MD9JMH32P3R9JP1NZ26ZZCE0G") { r_5YMMQJH3Y0NBC8FXCD091ESR5W
+**Read:** [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the complete method-selection and extraction sequence; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full methods and mine-layout chapters; [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the complete surface-system sequence; [Underground Mining of Metalliferous Deposits — Mandal and Dey, NPTEL](../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ), the complete method-selection and systems sequence.
+
+Method selection combines deposit geometry/depth, ground and water, grade/quality distribution, selectivity, productivity, access/development, workforce/equipment, utilities, waste, environmental/social conditions, and lifecycle consequences. No single ranking table can replace the evidence for the actual system.
+
+Distinguish a method family from a complete mine design. Excavation geometry, support, ventilation, handling, schedule, plant response, and closure must be compatible. A nominally high extraction ratio can create other constraints or uncertainty, while a low-cost excavation method may not deliver the required material quality.
+
+Compare alternatives under a common basis and range of plausible geological/operating conditions. Preserve options ruled uncertain by missing data and identify the investigation that would clarify them. Avoid treating one case history or rule of thumb as a universal suitability boundary.
+
+**Work:** compare surface and underground alternatives for an invented or published teaching deposit with documented assumptions. Draw flows, accesses, principal ground/water interactions, and material-quality consequences. Identify a constraint that changes the preferred method and the evidence needed to evaluate it.
+
+Read complete method/course treatments before the detailed family studies. The goal is an explained decision and testable design basis, not memorizing method names or assuming all systems with the same name share the same geometry and operating conditions.
+
+**Continue:** [Connect surface geometry and sequence with access, material movement, and ground](Open-pits-strips-quarries-and-surface-sequences.lingua#r_1MD9JMH32P3R9JP1NZ26ZZCE0G).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_5YMMQJH3Y0NBC8FXCD091ESR5W

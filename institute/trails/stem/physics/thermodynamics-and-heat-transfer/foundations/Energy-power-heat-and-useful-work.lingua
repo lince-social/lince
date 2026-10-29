@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Energy, power, heat and useful work (@th-energy: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #thermodynamics-and-heat-transfer "../../../chemistry/general-chemistry/energy/Systems-heat-work-and-enthalpy.lingua#r_545JZM2734935DFWXBV90WM5PE") { r_5AGSBC6PR9H1ZGAE3B88568ZDQ
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), chapters 4–5; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), closed and open energy accounts.
+
+Stored energy changes when net energy enters a system. Energy is conserved; the ability to deliver a specified useful output need not be. Two streams with equal total energy can have very different temperatures and potential uses. This motivates the later distinction between energy and exergy.
+
+For a heater delivering 500 W to a perfectly mixed 1 kg teaching sample with constant heat capacity 1000 J/(kg·K), and no losses or phase change, dT/dt = 0.5 K/s. After 60 s the idealized rise is 30 K. Add a heat loss and the rise changes; add latent heat and temperature may remain near a transition while energy continues to enter.
+
+Write the omitted mechanisms beside the calculation: boundary work, inflow/outflow, kinetic/potential changes, reaction, spatial gradients and temperature-dependent properties. A simplified estimate is useful because its assumptions are explicit, not because real systems must behave as its single equation.
+
+**Continue:** [Choose a system and track heat, work, and enthalpy](../../../chemistry/general-chemistry/energy/Systems-heat-work-and-enthalpy.lingua#r_545JZM2734935DFWXBV90WM5PE).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5AGSBC6PR9H1ZGAE3B88568ZDQ

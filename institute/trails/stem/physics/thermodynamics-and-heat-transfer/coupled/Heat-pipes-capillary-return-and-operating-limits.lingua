@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Heat pipes, capillary return and operating limits (@th-heat-pipes: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Heat-Pipe-Design-Handbook-Brennan-Kroliczek.lingua#r_08JYCA7B2K6B8E5490DSJYQJFA", #source "../sources/Introduction-to-Loop-Heat-Pipes-Semenov.lingua#r_6WFJ8TNG86GRTFSKSXD319J97D", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../heat-exchangers/Overall-conductance-capacity-rates-and-temperature-profiles.lingua#r_3TFZHJ9FQPK90ZVH0Q5YYS3R80") { r_3NQTXGXEDBDPQ58VVTP5G469T2
+**Read:** [Heat Pipe Design Handbook, Volume I — Brennan and Kroliczek](../sources/Heat-Pipe-Design-Handbook-Brennan-Kroliczek.lingua#r_08JYCA7B2K6B8E5490DSJYQJFA), complete fixed/variable conductance, limits and design chapters; [Introduction to Loop Heat Pipes — Sergey Semenov](../sources/Introduction-to-Loop-Heat-Pipes-Semenov.lingua#r_6WFJ8TNG86GRTFSKSXD319J97D), the entire course; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), phase equilibrium and surface conditions.
+
+A heat pipe transfers energy through evaporation, vapour motion, condensation and liquid return. Its apparent high conductance is a system behavior involving a working fluid and internal geometry; it is not an exceptionally large solid conductivity independent of operating state.
+
+Write separate mass, pressure and energy accounts. Capillary return, gravity/orientation, viscous pressure drop, sonic limits, entrainment and dryout can limit the duty. Startup and freezing can differ substantially from the established operating regime.
+
+Read a complete applicable method or documented experiment and compare it with a solid conduction link at the same service conditions. State the temperature range, fluid/material compatibility and the uncertain internal conditions. A reduced equivalent resistance is useful only over the operating range supported by evidence.
+
+**Continue:** [Overall conductance, capacity rates and exchanger profiles](../heat-exchangers/Overall-conductance-capacity-rates-and-temperature-profiles.lingua#r_3TFZHJ9FQPK90ZVH0Q5YYS3R80).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3NQTXGXEDBDPQ58VVTP5G469T2

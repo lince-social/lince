@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Inverse thermal problems, identifiability and regularization (@th-inverse: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #source "../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW", #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #thermodynamics-and-heat-transfer "../../../../inquiry/quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T", #thermodynamics-and-heat-transfer "../research/Recover-a-boundary-history-with-identifiability-and-held-out-evidence.lingua#r_1HCHRN1TN1Z0VK26M2Z1VVFXM5") { r_5N261RJHPXAZ52AG7TC3Y5CW7H
+**Read:** [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), complete sensitivity, uncertainty and fitting developments; [Thermoreflectance methods — September 2026 review](../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW), complete common-model and complementary-method discussion; [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), a checked forward diffusion model.
+
+A forward model predicts observations from geometry, properties, boundaries and instrument response. An inverse problem estimates some of those quantities from observations. Heat diffusion smooths information, so recovering a rapid boundary history or a fine spatial property field can amplify noise severely.
+
+Write the complete observation operator, including sensor averaging and timing. Examine sensitivity directions and parameter correlation before choosing an optimizer. Compare different initial estimates, parameterizations and independent datasets. A low residual can coexist with many incompatible parameter sets.
+
+Regularization adds information or a preference, such as smoothness or bounded variation; it does not create measured detail. Justify its scale, test reconstruction on a withheld case and show how conclusions change with plausible noise and model discrepancy. Use the TDTR tutorial's full sensitivity treatment as a concrete example, including nuisance parameters and experimentally controllable depth sensitivity.
+
+**Continue:** [Sensitivity, cancellation, dependencies, and conditioning](../../../../inquiry/quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T) · [Advanced study: inverse heat transfer with held-out evidence](../research/Recover-a-boundary-history-with-identifiability-and-held-out-evidence.lingua#r_1HCHRN1TN1Z0VK26M2Z1VVFXM5).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5N261RJHPXAZ52AG7TC3Y5CW7H

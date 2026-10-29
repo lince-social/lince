@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Use reaction extent to connect species changes with conserved elements (@gc-extent: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Limiting-reactants-and-purity.lingua#r_0B70BWF6HF4MK461M5Q92HPSH9", #industrial-chemistry "../../industrial-chemistry/balances/Reaction-networks-extents-and-independent-constraints.lingua#r_25NVZFRFZNBVKYDCXPAA04Z95X") { r_5NMK6VYMTG3QWD994R4VPP4M1Y
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 4’s stoichiometry and examples; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), stoichiometry and extent definitions; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), reaction arithmetic and equilibrium preparation.
+
+For one reaction with signed stoichiometric coefficients ν_i, write n_i = n_i,0 + ν_i ξ. Reactant coefficients are negative and product coefficients positive under this convention. The extent ξ has units of amount. Its allowed interval follows from nonnegative species amounts and the chosen initial state, before equilibrium or kinetics chooses what actually happens.
+
+With hypothetical initial amounts 0.50 mol N₂, 1.20 mol H₂, and no NH₃, the reaction N₂ + 3H₂ → 2NH₃ has a forward extent no greater than 0.40 mol under the single-reaction closed-system model. At that limiting value it produces 0.80 mol NH₃ and leaves 0.10 mol N₂. This is a stoichiometric limit, not a prediction that a real synthesis reaches that state.
+
+For several independent reactions, sum ν_ij ξ_j. Distinguish reaction, transfer, accumulation, and phase partition in a species balance. An element remains conserved across chemical reactions while a named species can be consumed or formed. A recycle affects individual equipment boundaries but cancels from a complete system boundary when consistently accounted for.
+
+**Work:** derive the allowed extent interval from all species constraints, including an initial product. Confirm element and charge balances after a proposed change. Add a second independent reaction on paper and explain which additional observations are needed to determine both extents. Identify a balance that closes numerically but leaves the chemical interpretation underdetermined.
+
+These relations become reusable foundations for process design, reaction equilibrium, electrochemistry, and metabolism. Later engineering will add continuous-flow, energy, and transport models. Here keep the distinction between possible composition changes and the physical conditions controlling them explicit.
+
+**Continue:** [Account for limiting reactants, specimen purity, and inert material](Limiting-reactants-and-purity.lingua#r_0B70BWF6HF4MK461M5Q92HPSH9).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in industrial chemistry:** [Represent a reaction network with extents and independent chemical constraints](../../industrial-chemistry/balances/Reaction-networks-extents-and-independent-constraints.lingua#r_25NVZFRFZNBVKYDCXPAA04Z95X).
+} r_5NMK6VYMTG3QWD994R4VPP4M1Y

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Follow formaldehyde through competing chemistry, absorption and its actual solution state (@ic-formaldehyde: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Ethylene-oxide-glycols-selectivity-water-and-recovery.lingua#r_4F44CG4NV3RHFYF1GFMTW4GEPC") { r_4KKZ7P8QC7TZRR579NY0RCJ7RP
+**Read:** [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the entire formaldehyde production, absorption, energy and residual chapter; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete relevant methanol-derivative and oxidation teaching; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full relevant competing-reaction and heterogeneous/energy reasoning.
+
+Formaldehyde production from methanol can use oxidative and dehydrogenative pathways with different catalyst and thermal behavior. CH₃OH+½O₂→HCHO+H₂O and CH₃OH→HCHO+H₂ describe distinct idealized atom accounts; actual selectivity includes further reaction, incomplete conversion and side products.
+
+Absorption and product conditioning determine the delivered material. Aqueous formaldehyde has hydration and oligomerization behavior, so a nominal HCHO assay does not mean every molecule remains in a single free monomeric form. Water, stabilizers, residual methanol and other constituents affect product state and use.
+
+Follow reaction heat, gas/liquid contact, recovered feed, impurities, residual gas and wastewater through the complete route. A favorable oxidation selectivity can be offset by recovery, quality or maintenance consequences. Compare routes on the same actual product specification and analytical convention.
+
+**Work:** reconstruct the full public production chapter and independently close carbon/hydrogen/oxygen, water and thermal accounts. Compare two documented catalyst/route arrangements using complete product and residual evidence. Explain how a measured composition, absorption behavior or catalyst history would distinguish a proposed chemical mechanism from a changed separation or feed condition.
+
+**Continue:** [Connect ethylene oxidation and glycol production with selectivity and separation](Ethylene-oxide-glycols-selectivity-water-and-recovery.lingua#r_4F44CG4NV3RHFYF1GFMTW4GEPC).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4KKZ7P8QC7TZRR579NY0RCJ7RP

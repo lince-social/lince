@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Explain crushing through material breakage, size distribution, and circuit constraints (@mine-crushing: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD", #mining-and-mineral-engineering "Grinding-energy-models-media-and-product.lingua#r_5AYC92J7CG5938NXTGH8Z2HAHC") { r_1VA4J52FKX3H9Z80CRZM73SZ33
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete comminution/crushing and relevant circuit chapters; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the full corresponding breakage/size/test procedures; [Introduction to Mineral Processing — Arun Kumar Majumder, NPTEL](../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD), the complete comminution lecture sequence.
+
+Crushing changes a particle population through mechanical breakage under a defined feed, machine geometry, setting, condition, and circuit. Feed size/shape, hardness, structure, moisture, abrasivity, and unwanted material influence throughput, product distribution, wear, and availability.
+
+A nominal reduction ratio or machine capacity is not a complete performance model. Product-size distribution, fines, oversize, recirculation, screening, feed presentation, power, and maintenance need their own observed account. A setting change can affect several downstream operations and accepted product quality.
+
+Breakage tests and empirical models require preparation, scale, measured outputs, calibration, and applicability. A laboratory index does not automatically predict every full-scale feed/circuit condition. Separate energy input, net breakage work, and energy per accepted product.
+
+**Work:** reconstruct a complete crushing/laboratory case with feed characterization, machine/circuit, measurements, balances, energy, wear, and uncertainty. Independently check a bounded size/mass/energy account. Compare a changed feed or circuit interpretation and identify the test that would discriminate it.
+
+Read complete comminution and crushing chapters/labs. The grinding and classification sequence next develops the coupled circuit rather than treating a crusher product as a fixed isolated input.
+
+**Continue:** [Relate grinding energy and circuit performance to material and measured product](Grinding-energy-models-media-and-product.lingua#r_5AYC92J7CG5938NXTGH8Z2HAHC).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1VA4J52FKX3H9Z80CRZM73SZ33

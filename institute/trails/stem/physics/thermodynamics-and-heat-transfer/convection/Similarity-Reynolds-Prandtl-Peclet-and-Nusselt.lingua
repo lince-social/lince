@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Similarity, Reynolds, Prandtl, Péclet and Nusselt numbers (@th-similarity: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #thermodynamics-and-heat-transfer "Boundary-layers-similarity-and-integral-methods.lingua#r_7V982S8W9Y3XT7TAADDWJ13WXS") { r_3JWWBGHVJESEM3K1RN50QC88J5
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), convection and dimensional analysis; [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), nondimensional energy and momentum equations; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), similarity and dimensionless reasoning.
+
+Nondimensionalize the governing equations with explicit length, speed and temperature scales. Reynolds number compares inertial and viscous effects; Prandtl number compares momentum and thermal diffusivities; Péclet number expresses a corresponding advection/diffusion comparison; Nusselt number compares an appropriately defined wall transfer coefficient with conduction across the chosen length scale.
+
+The same numerical value can mean different physical situations if the characteristic length or boundary condition changes. Matching selected dimensionless groups does not automatically match roughness, entrance conditions, property variation, buoyancy or radiation.
+
+Derive the groups from the equations and units, then compare a scaled experiment with the intended installation. Explain which conditions remain unmatched. A dimensional-analysis form constrains possible dependence but does not supply its coefficient or validate a proposed correlation.
+
+**Continue:** [Boundary layers, similarity and integral methods](Boundary-layers-similarity-and-integral-methods.lingua#r_7V982S8W9Y3XT7TAADDWJ13WXS).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3JWWBGHVJESEM3K1RN50QC88J5

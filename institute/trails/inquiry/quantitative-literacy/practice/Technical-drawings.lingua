@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Technical drawings — turn views into a spatial description (@ql-drawings: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-blueprint, #quantitative-literacy "Dimensions-and-tolerances.lingua#r_0K38T1TBRR4N9ESP1FYR55H90T") { r_3PEBG59JH06QGKQCR5YAKKF3R2
+**Read:** Basic Blueprint Reading in full, taking The Language of Lines, Visualization, and Technical Sketching before Scaling, Dimensioning, and the remaining view and interpretation units. Reproduce several of its exercises on paper. Revisit the geometry and vector readings when a projection is difficult to reconstruct.
+
+A drawing communicates a specification through views, symbols, dimensions, notes, and a declared convention. A perspective illustration makes a shape recognizable; orthographic and sectional views help define it. Visible, hidden, centre, section, and dimension lines carry different information. Read the title block, revision, projection convention, units, and notes before taking a length from the picture.
+
+First-angle and third-angle arrangements place views differently. A section removes material in the representation to expose interior features; the physical part has not been cut away in the intended product. An auxiliary view can show a face's true shape when it is inclined relative to the main projection planes.
+
+**Work:** choose a simple block with an off-centre through-hole and a step. Draw its principal views, one section through the hole, and a labelled isometric sketch. Give enough dimensions to reconstruct it without measuring the paper. Have another reader model it using only those views, then correct an ambiguity. A cardboard object is sufficient; operating machine tools is not part of this exercise.
+
+Compare the corrected drawing with a vendor's dimensional drawing of an ordinary component. Identify specifications that cannot be inferred from geometry alone, such as material, surface condition, heat treatment, and functional acceptance. Record the vendor document's revision when using it as evidence.
+
+**Continue:** [Dimensions, tolerances, references, and an inspection question](Dimensions-and-tolerances.lingua#r_0K38T1TBRR4N9ESP1FYR55H90T).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_3PEBG59JH06QGKQCR5YAKKF3R2

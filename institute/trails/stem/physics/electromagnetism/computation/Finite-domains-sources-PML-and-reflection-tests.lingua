@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Finite domains, sources, PML and reflection tests (@em-boundaries: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Notes-on-Perfectly-Matched-Layers-Johnson.lingua#r_0NSKFHQZEZSB48A279RTVFB8HM", #source "../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX", #electromagnetism "Fit-dispersive-materials-with-physical-and-numerical-tests.lingua#r_6FQ5BD11V41QDWJJMYQFJQKDWW") { r_3HA5JXCH0JJR2BYHJ8AFHKZ9MV
+**Read:** [Notes on Perfectly Matched Layers — Steven G. Johnson](../sources/Notes-on-Perfectly-Matched-Layers-Johnson.lingua#r_0NSKFHQZEZSB48A279RTVFB8HM), whole paper and limitations; [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX), complete PML, boundary and source sections.
+
+An open physical problem must be truncated for a finite computation. A reflecting wall, periodic boundary, absorbing condition and perfectly matched layer represent different problems. Choose source injection and boundary treatment together so that incident/scattered fields are defined consistently and artificial reflections can be measured.
+
+Derive a one-dimensional simple absorbing condition before studying the full PML coordinate-stretch construction. A continuous PML can be perfectly matched under its assumptions while a finite discretized layer reflects. Thickness, grading, resolution, grazing components, inhomogeneity and backward/evanescent modes can alter performance. An outgoing-looking movie is not a quantitative reflection bound.
+
+Read the entire [Notes on Perfectly Matched Layers — Steven G. Johnson](../sources/Notes-on-Perfectly-Matched-Layers-Johnson.lingua#r_0NSKFHQZEZSB48A279RTVFB8HM) paper and the applicable complete [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX) boundary/source documentation. Compare enlarging the physical domain, increasing PML thickness, refining the mesh and changing the source spectrum separately. Measure a reflected pulse or complex scattering error at a declared reference plane. Confirm that a PML has not absorbed a physical near-field component in a way that changes the intended observable. Keep the periodic teaching program separate: its exact conservation is not evidence that a new absorbing boundary works.
+
+**Continue:** [Fit dispersive materials with physical and numerical tests](Fit-dispersive-materials-with-physical-and-numerical-tests.lingua#r_6FQ5BD11V41QDWJJMYQFJQKDWW).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3HA5JXCH0JJR2BYHJ8AFHKZ9MV

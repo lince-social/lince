@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Trace reliable production to inspectable equipment, skilled work, repair, and supplies (@metal-maintenance-work: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #source "../sources/Smitheries-and-Foundries-BREF.lingua#r_7ZJ5479WTSPDER11K364F6T041", #metals-and-metallurgical-production "Exposure-emissions-water-residues-and-continuing-obligations.lingua#r_0Z0Q9C4E51648GMA5TCX0J9X2R") { r_3EXHTMEAR84ZES01SD2KWKDH4V
+**Read:** [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), complete applicable equipment, containment, maintenance, and operating cases; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), whole relevant production/service and intervention context; [Smitheries and Foundries Industry — European Commission BREF](../sources/Smitheries-and-Foundries-BREF.lingua#r_7ZJ5479WTSPDER11K364F6T041), complete tooling, equipment, handling, and continuing-work sections used.
+
+Furnaces, electrodes, refractories, pumps, fans, drives, cooling systems, tools, filters, valves, seals, sensors, laboratories, and handling systems require inspection, calibration, repair/replacement, and coordinated operation. A nominal equipment rating says little about maintained delivered output if those dependencies are ignored.
+
+Connect degradation and failure evidence with physical mechanism, operating history, product quality, and restoration time. Wear, corrosion, thermal damage, contamination, alignment, insulation, calibration drift, and changing material properties affect different equipment and observations. Replacing a component does not automatically restore the original process state or measurement validity.
+
+Account for roles, training, access, work planning, isolation and actual professional procedures, spare condition/availability, supplier/repair knowledge, tooling, and verification before return to use. The learning account follows real work and responsibilities without turning a literature exercise into a claim of operating qualification.
+
+**Work:** reconstruct a complete production-interruption or maintenance case. Trace the failed function to equipment/material/utility and human-work dependencies, reproduce a consequential capacity or restoration calculation, and compare two repair/substitute strategies on common quality/output boundaries. Explain what must be measured or demonstrated to establish restored function and what records another team needs to diagnose recurrence.
+
+**Continue:** [Connect environmental and workplace evidence with process sources, transport, and ongoing work](Exposure-emissions-water-residues-and-continuing-obligations.lingua#r_0Z0Q9C4E51648GMA5TCX0J9X2R).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_3EXHTMEAR84ZES01SD2KWKDH4V

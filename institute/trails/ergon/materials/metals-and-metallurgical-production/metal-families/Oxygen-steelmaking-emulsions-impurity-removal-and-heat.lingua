@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect oxygen steelmaking with reactions, phase contact, heat, and endpoint evidence (@metal-oxygen-steelmaking: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #metals-and-metallurgical-production "Electric-steelmaking-charge-energy-quality-and-secondary-feed.lingua#r_7CQFN0FRPARFRCM0X1AJ6BA1AB") { r_0FW47BSXY8XBZDDPK349BRWCNS
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), all oxygen-steelmaking, slag-reaction, jet/emulsion, and impurity-evolution lectures; [Steel Making — Dipak Mazumdar and Satish Ch. Koria, NPTEL](../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ), the full oxygen-steelmaking and relevant reactor/kinetics sequence; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), the entire oxygen-steelmaking and integrated secondary-treatment chapters.
+
+Oxygen steelmaking changes composition through coupled oxidation, slag formation, gas evolution, mixing, and heat. Desired carbon/impurity removal competes with metal oxidation, temperature control, slag behavior, and final product requirements. The endpoint is defined by an actual composition/temperature/quality account, not a single time or oxygen quantity.
+
+Use thermodynamic distribution and reaction/transport models with the physical bath, droplets/emulsion, gas/jet interactions, and evolving slag. Chemical potential and temperature vary locally; an equilibrium estimate is distinguished from measured dynamic performance. Sampling and sensor timing/support matter for interpreting an apparent trajectory.
+
+Close target/impurity, oxygen, slag, dust/gas, scrap/addition, and heat accounts, including inventory and returned material. A favorable removal percentage can conceal lower useful metal yield or a different residual/energy burden. Connect tapping/transfer with secondary treatment and product quality.
+
+**Work:** reproduce a complete converter reaction/heat-balance or dynamic-model case. Independently check a core calculation, compare an alternative mechanism/contact assumption with observations, and validate on a separate state or case. Evaluate two whole refining arrangements on composition, temperature, inclusions, recovery, utilities, residuals, and uncertainty. Explain which measurement most constrains the consequential endpoint prediction.
+
+**Continue:** [Evaluate electric steelmaking with charge quality and connected refining work](Electric-steelmaking-charge-energy-quality-and-secondary-feed.lingua#r_7CQFN0FRPARFRCM0X1AJ6BA1AB).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_0FW47BSXY8XBZDDPK349BRWCNS

@@ -1,0 +1,11 @@
+Import "../Industrial-chemistry.lingua"
+
+Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt (@ic-reactor-book: 0, is #reference, #part-of @ic-sources) { r_7YQAV27Y3J0B537Z6K5HDN8H0A
+James B. Rawlings and John G. Ekerdt. Chemical Reactor Analysis and Design Fundamentals, second edition, sixth printing, May 2026, Nob Hill Publishing. [Author/publisher teaching site](https://sites.engineering.ucsb.edu/~jbraw/chemreacfun/) · [Authorized complete 699-file-page PDF](https://sites.engineering.ucsb.edu/~jbraw/chemreacfun/CHEMREACFUN-book-2nd-edition-6th-printing.pdf).
+
+Read the entire book with its problems: reaction accounts and equilibrium, material balances, kinetics, energy balances, heterogeneous systems, nonideal flow, parameter estimation, and particulate/biological systems. Use the author site's computational appendix, errata, sample homework and examinations as assigned. The sixth printing discusses a Python computational revision; distinguish it from the older Octave/MATLAB material and the original 2012 second edition.
+
+The full-text file, its contents listing, edition/printing dates, and copyright notice were inspected on 29 October 2026. The author supplies free full-text access, while the book explicitly reserves reproduction rights; it is not represented as CC licensed. Instructor-only solution material is separate. The book and its external code/figures are linked, not bundled or executed here.
+
+**Return:** [Industrial chemistry sources — whole books, courses, technical methods and primary evidence](../Sources.lingua#r_3084780FHMK499ZDAW07TYA3TQ).
+} r_7YQAV27Y3J0B537Z6K5HDN8H0A

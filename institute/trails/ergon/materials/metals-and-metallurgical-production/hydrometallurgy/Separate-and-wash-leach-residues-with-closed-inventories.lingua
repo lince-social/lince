@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Separate liquid and solid without losing the dissolved and entrained constituent account (@metal-liquid-solid: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Hidrometalurgia-Ciminelli.lingua#r_6G9611F0V3GQXWW0C108RDQB9B", #metals-and-metallurgical-production "Solvent-extraction-distribution-selectivity-and-staged-contact.lingua#r_6HYBSHN4W0NKJM2KXJASD5R1VE") { r_5G3CTT8CP62YDP1W4NSGV64382
+**Read:** [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the complete balance and liquid/solid basis material; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the full applicable leaching, residue, and water-recycle case; [Hidrometalurgia — Virgínia Sampaio T. Ciminelli](../sources/Hidrometalurgia-Ciminelli.lingua#r_6G9611F0V3GQXWW0C108RDQB9B), the whole solution-process context and relevant original method.
+
+Clarification, thickening, filtration, washing, and drying alter which liquid and solids accompany a product or residue. Dissolved target, entrained liquor, fine suspended particles, adsorbed material, and precipitated phases are different inventories. A washed solid's bulk assay alone may not identify which form was removed.
+
+Reuse the physical dewatering and stream-balance knowledge from mining while stating the solution chemistry and recovery purpose here. Occluded or entrained liquor, changing pore volume, displacement/mixing, precipitation during washing, and reagent carryover can affect practical performance. Water recovery and recycle also change downstream chemistry.
+
+For ideal mixing washing with fixed retained liquid volume V and fresh wash volume W, one stage leaves fraction V/(V+W) of a freely dissolved nonreacting constituent after equal retained-volume separation. Derive this from a liquid/constituent account; multiple fresh stages multiply their factors. Displacement, nonideal mixing, diffusion, adsorption, reaction, and changing volumes require different evidence.
+
+**Work:** reconstruct a complete leach-residue separation/washing case. Independently close solids, liquid, target, and one impurity across all returns and inventories. Compare single, staged, and countercurrent arrangements using their actual assumptions and measured support. Explain a discrepancy through alternative liquor retention, fine-particle, or chemical behavior and identify the measurement that could distinguish them.
+
+**Continue:** [Design an extraction argument from equilibrium, finite phases, and actual contact evidence](Solvent-extraction-distribution-selectivity-and-staged-contact.lingua#r_6HYBSHN4W0NKJM2KXJASD5R1VE).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_5G3CTT8CP62YDP1W4NSGV64382

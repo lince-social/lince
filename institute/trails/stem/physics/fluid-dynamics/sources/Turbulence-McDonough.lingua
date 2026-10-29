@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Introductory Lectures on Turbulence — James M. McDonough (@fd-turbulence: 0, is #reference, #part-of @fd-sources) { r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ
+James M. McDonough. Introductory Lectures on Turbulence: Physics, Mathematics and Modeling, University of Kentucky, 2007. [Complete university-hosted work](https://uknowledge.uky.edu/me_textbooks/2/).
+
+Read the entire work during the turbulence development, with independent derivations and numerical questions. Compare statistical descriptions, transition, transport and model assumptions with [Fluid Mechanics — David Tong](Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), [Notes on Computational Fluid Dynamics — Greenshields and Weller](Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY) and contemporary primary evidence. Separate an explanation of a phenomenon from a closure that needs calibration.
+
+The university identifies the year and archived full-text download. Automated PDF access returned 403 during inspection; the catalogue was accessible. No uninspected chapter numbering or general adaptation licence is claimed. Treat its historical models in their dated context and compare implemented variants against [Turbulence Modeling Resource — model definitions and benchmarks](Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6). The source file remains external.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ

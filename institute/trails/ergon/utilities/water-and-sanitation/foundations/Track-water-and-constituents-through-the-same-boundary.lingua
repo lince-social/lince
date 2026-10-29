@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Track water and constituents through the same boundary (@wu-quality-account: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #source "../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV", #water-and-sanitation "Read-a-water-system-drawing-and-its-boundaries.lingua#r_4EDEN8TRVC7KRWYHTJZ18G9VG9") { r_4SA70P0BR6C7ADCR7MDV78D2D8
+**Read:** [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), chapter 12, complete water and mass balances; [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV), balance and reactor development.
+
+For a selected volume, write accumulation = inflow − outflow + generation − consumption. Track the water account and each relevant constituent separately. Evaporation removes water while leaving many dissolved salts behind; precipitation transfers a dissolved constituent into solids; a biological process can convert one chemical form into several products.
+
+For conservative mixing at steady state, C_out = Σ(Q_i C_i)/ΣQ_i. Mixing 100 m³/day at 4 mg/L with 300 m³/day at 12 mg/L gives 400 m³/day at 10 mg/L and a total load of 4 kg/day. This formula applies to a declared conservative concentration. It does not justify averaging pH values.
+
+Draw all liquid, solid and gas outputs for a treatment step. A low effluent concentration may reflect removal, dilution, temporary storage or conversion to an unmeasured form. Reconcile the account before naming the mechanism. Quantify measurement uncertainty and unmeasured terms instead of forcing an apparent exact closure.
+
+**Continue:** [Read a water-system drawing and its boundaries](Read-a-water-system-drawing-and-its-boundaries.lingua#r_4EDEN8TRVC7KRWYHTJZ18G9VG9).
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+} r_4SA70P0BR6C7ADCR7MDV78D2D8

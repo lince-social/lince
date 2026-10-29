@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced fluid–structure or field-coupling study (@fd-advanced-coupled: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #fluid-dynamics "../practice/A-sustained-fluid-experimental-programme.lingua#r_44MEVXT1S9AQTHW3NM4R6WET66") { r_64X1S719WFMBMAEZY9J0WVR3Q3
+**Read:** [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), field-driven and compliant small-scale examples; [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), fluid–wall coupling when relevant; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), unsteady fluid-force foundations; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), independent coupled-model checks.
+
+Choose a compliant boundary, an oscillating immersed body or an electrically driven microflow and write both sides of the coupled problem. State how motion, traction, current, species or energy passes through the coupling. Recover an uncoupled limit and derive a reduced analytical response that can be checked independently.
+
+Assess the relative physical time scales and numerical coupling strategy. Track interface work or field-to-fluid energy transfer so a partitioned calculation cannot silently create or lose the quantity of interest. Vary the resolution and coupling step independently where they introduce distinct errors.
+
+Compare two independently observed quantities, such as force and displacement or current and volume flow, with documented boundary/property evidence. Explain which material, electrochemical or structural uncertainties prevent a stronger conclusion. The finished study should show why the coupled model is necessary for the chosen question and where a simpler approximation remains adequate.
+
+**Continue:** [A sustained fluid experimental programme](../practice/A-sustained-fluid-experimental-programme.lingua#r_44MEVXT1S9AQTHW3NM4R6WET66).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_64X1S719WFMBMAEZY9J0WVR3Q3

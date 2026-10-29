@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Continuum limits, balance and numerical verification (@th-verification: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #source "../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #thermodynamics-and-heat-transfer "../convection/Flow-fields-advection-and-the-fluid-energy-equation.lingua#r_2WC51KRYYZ7BRAT3ASQRMTKTDT", #thermodynamics-and-heat-transfer "../research/Transient-diffusion-conservation-convergence-and-model-validation.lingua#r_6D7203E6JM4YAB6QNBAJS74SXA") { r_5PJ5RCWTV301NEP8WC30S847XA
+**Read:** [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), verification and examples; [Convecção e métodos numéricos — Maliska, UFSC](../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7), discretization and solution methods; [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), the distinction between a numerical correction and measurement evidence.
+
+Start with a problem having a known solution or independently constructed benchmark. Check units, sign, conservation, symmetry, constant/zero limits and convergence order. A small residual shows that an algebraic system was solved; it does not prove that the correct physical equation or boundary was discretized.
+
+Refine space and time separately, then together under a stated relation. Keep the observation time, geometry, interface placement and reported quantity fixed. A changing numerical peak at an ideal singularity may require a different physical or averaged observable rather than a false convergence claim.
+
+Compare two implementations that do not share the same critical derivation or code. Preserve uncertainty and model discrepancy after numerical errors become small. A verified thermal model still needs suitable measurements, material properties and boundary evidence before it supports a real design claim.
+
+**Continue:** [Flow fields, advection and the fluid energy equation](../convection/Flow-fields-advection-and-the-fluid-energy-equation.lingua#r_2WC51KRYYZ7BRAT3ASQRMTKTDT) · [Advanced study: transient diffusion, convergence and validation](../research/Transient-diffusion-conservation-convergence-and-model-validation.lingua#r_6D7203E6JM4YAB6QNBAJS74SXA).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5PJ5RCWTV301NEP8WC30S847XA

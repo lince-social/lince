@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Heat and work signs across physics and chemistry (@th-conventions: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #thermodynamics-and-heat-transfer "../balances/Closed-system-energy-and-storage.lingua#r_26CN1Z2H23NCXB8W7K74CVW5VN") { r_3Z4G73ZME2A7M1A63NGX177SQN
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), first-law conventions; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), chapter 3; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), chapters 2–3.
+
+This subject uses heat entering the system as positive and work done by the system on its surroundings as positive. A closed-system balance is ΔE = Q−W. The shared chemistry convention writes ΔU = q+w with work on the system positive. Thus q = Q and w = −W for the same physical event; kinetic/potential changes must also be treated consistently.
+
+For 100 J supplied as heat and 30 J of work delivered outward, with no change in macroscopic kinetic/potential energy, ΔU = 70 J. The chemical convention gives q = 100 J and w = −30 J. Both describe the same event. A minus sign is not a physical disagreement when the definitions differ.
+
+Keep total versus specific and state versus process symbols explicit. In an open balance, enthalpy accompanies flowing matter and shaft/electrical work remains separately identified. Copying a familiar formula without its boundary and sign convention is a common way to count flow work twice.
+
+**Continue:** [Closed-system energy and storage](../balances/Closed-system-energy-and-storage.lingua#r_26CN1Z2H23NCXB8W7K74CVW5VN).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3Z4G73ZME2A7M1A63NGX177SQN

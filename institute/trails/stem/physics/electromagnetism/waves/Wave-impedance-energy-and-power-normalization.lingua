@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Wave impedance, energy and power normalization (@em-wave-impedance: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #electromagnetism "Electromagnetic-boundary-conditions-and-surface-sources.lingua#r_7CZ3214B64A21KWWVG6HM2DKBN") { r_3TRN08JNAE4ZS68AHEMQDXR661
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), chapter 9 in full; [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), lossy-wave impedance and power.
+
+A uniform plane wave in a homogeneous lossless isotropic medium has impedance η = √(μ/ε) and H = k̂×E/η. With peak phasor amplitude, average intensity is |Ẽ|²/(2η). The reverse-travelling wave has the corresponding reversed H relation. A standing field's local E/H ratio is generally not the travelling-wave impedance.
+
+Distinguish impedance in ohms, refractive index, admittance and power-normalized amplitude. In a nonmagnetic lossless medium of index n, η = η₀/n. Therefore equal electric-field transmission amplitudes into different n do not imply equal transmitted power. This factor is essential to the later layer example.
+
+Derive equal time-averaged electric and magnetic energy densities for a nondispersive travelling wave and compare energy speed with phase speed under those assumptions. Lossy/dispersive media change phase relations and stored-energy interpretation. Track the actual Poynting flux instead of extrapolating a vacuum magnitude formula. For an experiment, distinguish incident, reflected and total fields at the measurement plane and specify the area and calibration used to infer power.
+
+**Continue:** [Wave boundary conditions and surface sources](Electromagnetic-boundary-conditions-and-surface-sources.lingua#r_7CZ3214B64A21KWWVG6HM2DKBN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3TRN08JNAE4ZS68AHEMQDXR661

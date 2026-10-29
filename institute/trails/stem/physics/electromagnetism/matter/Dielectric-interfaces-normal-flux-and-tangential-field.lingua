@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Dielectric interfaces and field components (@em-dielectric-boundary: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Anisotropy-nonlinearity-locality-and-material-history.lingua#r_56YXQANA62QHAYXPAFSK9V43KQ") { r_23Y84ERRGYDWK5R8R25SKX93P5
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), dielectric boundary conditions; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), electrostatic interfaces and polarized materials.
+
+At an electrostatic interface, a shrinking loop gives continuity of tangential E when no singular time-varying magnetic flux is present. A pillbox gives n·(D₂−D₁) = σ_free. These conditions do not generally make normal E continuous. With no free surface charge and isotropic linear materials, ε₁E₁n = ε₂E₂n.
+
+Solve a capacitor with two dielectrics stacked along its field direction, then a laterally divided capacitor with the field parallel to the dividing interface. Series and parallel effective capacitances arise from different geometry and boundary conditions. A single averaged ε cannot represent every orientation. At a metal boundary, include the free surface charge rather than forcing D continuity.
+
+Track bound surface charge at an interface between two polarized regions with a consistent normal. Compare integral conservation across the interface with a smooth microscopic transition layer. In a numerical model, represent discontinuous ε and normal flux conservatively. The original one-dimensional example later makes its face-permittivity convention explicit; averaging material values at the wrong geometric location can preserve a plausible potential while violating the actual interface physics.
+
+**Continue:** [Anisotropy, nonlinearity, locality and history](Anisotropy-nonlinearity-locality-and-material-history.lingua#r_56YXQANA62QHAYXPAFSK9V43KQ).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_23Y84ERRGYDWK5R8R25SKX93P5

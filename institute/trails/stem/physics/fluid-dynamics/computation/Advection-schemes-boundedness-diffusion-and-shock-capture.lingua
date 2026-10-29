@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advection schemes, boundedness, diffusion and shock capture (@fd-numerical-flux: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #fluid-dynamics "Incompressible-pressure-velocity-coupling-and-the-nullspace.lingua#r_3DYC1KZFBT3WBPFKTWEZAT0MRN") { r_0XH17KPCTVWEZATGC9DTC9PGFN
+**Read:** [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), advection, boundedness and discretization errors; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), numerical schemes and verification; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 conservation, characteristics and shocks.
+
+Upwinding uses propagation direction to construct a stable transport approximation but introduces numerical diffusion. Higher-order reconstruction can reduce smooth-region error and still generate oscillations near discontinuities unless limited appropriately. State whether an accuracy claim concerns smooth fields, cell averages or a norm that includes a moving shock.
+
+Derive the modified equation or Fourier amplification factor for a simple linear scheme. For nonlinear conservation laws, compare a central dissipative flux with an approximate Riemann flux and identify their wave-speed bounds. Check positivity of density, depth or concentration in the actual update; clipping a negative result after the fact can destroy the conservation account.
+
+Test smooth periodic transport, a sharp transported profile and a shock/rarefaction problem with an independent solution. Vary time step as well as mesh. Report front location, integral error, overshoot and diffusion, and explain why a visually smooth result may reflect excessive numerical damping rather than correctly resolved physics.
+
+**Continue:** [Incompressible pressure–velocity coupling and the nullspace](Incompressible-pressure-velocity-coupling-and-the-nullspace.lingua#r_3DYC1KZFBT3WBPFKTWEZAT0MRN).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0XH17KPCTVWEZATGC9DTC9PGFN

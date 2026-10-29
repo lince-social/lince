@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Treat dewatering as coupled solids, water, structure, and energy work (@mine-dewatering-process: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A", #mining-and-mineral-engineering "Slurry-rheology-pumping-and-material-transport.lingua#r_099JPP0YGKZAWN4T14QQ3QB80C") { r_2PSR8EW4FE03WDD42928AJXD53
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), complete solid-liquid separation and drying chapters/discussions; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), full sedimentation, filtration, moisture, and applicable rheology methods; [Wills’ Mineral Processing Technology — Wills and Finch, eighth edition](../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A), all of chapter 15, when available.
+
+Thickening/sedimentation, filtration, centrifugation, and drying separate water through different mechanisms and leave different material states. Distinguish mass fraction solids, volume fraction solids, moisture on a wet or dry basis, clarified-water quality, settling/filtration behavior, and the physical behavior of the final product.
+
+Particle size, clay content, shape, flocculation, liquid chemistry, compressibility, and history affect performance. A batch settling velocity does not by itself specify continuous thickener area or underflow behavior. In filtration, pressure drop drives flow through both medium and evolving cake resistance; a constant-resistance approximation needs evidence when the cake compresses.
+
+Keep solids and water balances separate. Recovery of water can change return-water chemistry and downstream reagent response. A drier product may reduce transport and storage burdens but increase energy, dust, wear, or preparation requirements. The final stream must be characterized for its actual handling or storage purpose.
+
+**Work:** reconstruct complete settling and filtration tests on characterized feed, derive the stated design relation from its assumptions, and validate it against independent data. Compare two dewatering routes on product/moisture distributions, throughput, energy, returned-water quality, and abnormal feed. Report uncertainty and scale-up limits; do not turn a single cylinder test into a final facility design.
+
+**Continue:** [Connect slurry transport with measured rheology, particles, and route conditions](Slurry-rheology-pumping-and-material-transport.lingua#r_099JPP0YGKZAWN4T14QQ3QB80C).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_2PSR8EW4FE03WDD42928AJXD53

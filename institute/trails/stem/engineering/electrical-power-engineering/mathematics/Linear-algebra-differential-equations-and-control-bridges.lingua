@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Matrix, differential-equation and control bridges (@pe-linear-math: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW", #source "../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #electrical-power-engineering "../../../physics/electromagnetism/currents/Circuit-approximations-sources-resistance-and-power.lingua#r_0Y05GYZKN18BT1FY2GGQ6476W2") { r_5HPRA3VXTJQKHD1RDH620HJW43
+**Read:** [Introduction to Applied Linear Algebra — Boyd and Vandenberghe](../sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW), complete book with substantial exercises; [Feedback Systems — Åström and Murray](../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833), the complete available author text and associated derivations.
+
+A network equation is a compact account of specific physical variables and constraints. Begin with two simultaneous circuit equations, label each row and column, solve them independently and check units/residuals. Then connect matrix rank to references, disconnected parts and missing information rather than treating a singular matrix as merely a software problem.
+
+Read the full [Introduction to Applied Linear Algebra — Boyd and Vandenberghe](../sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW) book as the matrix foundation. Develop complex arithmetic, derivatives, linearization and elementary differential equations at the models that use them; the complete circuit texts and shared quantitative Records provide the entry. Introduce eigenvalues, state-space and transfer functions through an actual component/control question and the full [Feedback Systems — Åström and Murray](../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833) text.
+
+Later power-flow, state-estimation and dynamic models require sparse systems, Jacobians, conditioning, constraints and differential-algebraic equations. Work a small explicit example before using a large solver. A numerical tolerance bounds the computed residual, not every physical input error. [Convex Optimization — Boyd and Vandenberghe](../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA) supplies a complete separate mathematical reading for advanced dispatch/OPF work. These books support the required understanding without pretending that this application finishes the full general mathematics or control subjects.
+
+**Continue:** [Circuit approximations, sources and power](../../../physics/electromagnetism/currents/Circuit-approximations-sources-resistance-and-power.lingua#r_0Y05GYZKN18BT1FY2GGQ6476W2).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5HPRA3VXTJQKHD1RDH620HJW43

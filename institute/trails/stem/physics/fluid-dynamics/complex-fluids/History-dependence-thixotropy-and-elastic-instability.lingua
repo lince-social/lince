@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+History dependence, thixotropy and elastic instability (@fd-thixotropy: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #fluid-dynamics "../measurement/Rheometry-from-instrument-torque-to-material-response.lingua#r_4WYS6QXWBP6XESABJZPJ7H1TSA") { r_50D2X9FX0CF87WVGH3WT85M8ET
+**Read:** [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), experiments, relaxation and instability sections; [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), material functions and research-project framework.
+
+Time-dependent structural change is different from an instantaneous shear-rate dependence. A thixotropic model introduces a state variable whose evolution depends on deformation and rebuilding; different preparation and waiting histories can produce different stresses at the same current shear rate. Viscoelastic stress memory is another mechanism and need not follow the same structural law.
+
+Design a protocol that distinguishes rate, duration, recovery and elastic effects. Hysteresis in a rate sweep alone does not uniquely identify a constitutive mechanism. In curved-streamline viscoelastic flow, elastic stresses can drive instability even when inertia is small; a low Reynolds number is therefore insufficient to guarantee simple steady motion.
+
+Compare a transient constitutive calculation with independent start, stop and recovery data. State which parameters are identifiable, and predict a protocol not used in fitting. For an instability, distinguish physical growth from numerical loss of robustness at high deformation rates. Preserve the microstructural reasoning that motivates the model and its limits.
+
+**Continue:** [Rheometry from instrument torque to material response](../measurement/Rheometry-from-instrument-torque-to-material-response.lingua#r_4WYS6QXWBP6XESABJZPJ7H1TSA).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_50D2X9FX0CF87WVGH3WT85M8ET

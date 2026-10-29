@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Connect aging and stability to the actual stored chemical (@cs-reactive-storage: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Hydrogen-Peroxide-Safety-and-Handling-Solvay.lingua#r_4HBTDKE1JB2QCDMN29A4XHX3BQ", #source "../../../../stem/chemistry/industrial-chemistry/sources/Polymer-Production-BREF.lingua#r_01PXATYT6P16206KQ3VDX34K1F", #source "../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D", #chemical-supply-systems "Segregation-containment-ventilation-and-shared-facility-limits.lingua#r_07WNN342XJEYG86PH67CRHHXEK") { r_621TVDZF59JYYDV3V68PJRY2C5
+**Read:** [Hydrogen Peroxide: Safety & Handling — Solvay](../sources/Hydrogen-Peroxide-Safety-and-Handling-Solvay.lingua#r_4HBTDKE1JB2QCDMN29A4XHX3BQ), the complete handling guide and stability methods; [Production of Polymers, BREF POL](../../../../stem/chemistry/industrial-chemistry/sources/Polymer-Production-BREF.lingua#r_01PXATYT6P16206KQ3VDX34K1F), complete applicable monomer/product stability and handling sections; [Good storage and distribution practices for medical products — WHO](../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D), the complete storage-condition, monitoring and rotation sections.
+
+Stability is a claim about a specified material over stated conditions and time, not a property of its name alone. Identify relevant changes in composition, phase, activity, inhibitors, contamination and packaging. Read the actual product-specific methods and distinguish accelerated testing, observed storage and extrapolation to another condition.
+
+Use peroxide and a stabilized organic feed as contrasting cases. Trace how contamination or a changed atmosphere/contact system can affect chemical behavior. Keep the technical scope tied to the actual grade and concentration. A calendar expiry can be conservative within a defined envelope, but passing a date or one assay does not reconstruct an unknown history.
+
+Develop a stability evidence table: initial material, conditions, sampled times, method, observed change, uncertainty and extrapolation. Derive a simple first-order remaining-fraction model f(t)=exp(−kt) as an explicitly hypothetical illustration; t₉₀=−ln(0.9)/k follows only if that model and rate apply. Compare it with data or a different model and explain failure. The inventory studies later allocate only material known to be usable; they do not manufacture chemical-validity periods from an administrative rule.
+
+**Continue:** [Study a store as a facility with interacting materials and services](Segregation-containment-ventilation-and-shared-facility-limits.lingua#r_07WNN342XJEYG86PH67CRHHXEK).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_621TVDZF59JYYDV3V68PJRY2C5

@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Interpret climate history through mechanisms, proxies, and chronological evidence (@geo-climate: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #geology "Planetary-origins-differentiation-and-comparison.lingua#r_6J5FXZ22PH2MG023NH6R7X5J2X") { r_2JEZDTTEKAS0C4ZY0CEB1T5V4T
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 19 in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the full climate, carbon, and Earth-history record treatments; [Introduction to Geochronology — Pieter Vermeesch](../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the chronological method relevant to the selected record.
+
+Climate concerns statistical behavior over defined intervals and regions, while geological records preserve imperfect evidence of past conditions. Radiation, atmosphere, ocean, ice, land, weathering, carbon cycling, tectonics, and biology connect processes with very different response times. A forcing, feedback, and response need distinct definitions in a model.
+
+A proxy links a measured property with a target through calibration and process assumptions. Preservation, source changes, local environment, seasonality, chronological uncertainty, and nonclimatic influences can affect interpretation. Agreement among proxies is strongest when their evidence and error sources are sufficiently independent.
+
+Distinguish carbon inventory from flux and concentration from isotope composition. A long-term sink or source requires a system boundary and accounting for transfers. Geological-rate reasoning should not assume that every past change occurred at the present rate, nor that a past analogue reproduces every present boundary condition.
+
+**Work:** reconstruct a paleoclimate argument from an assigned complete record treatment, separating observations, age model, calibration, mechanism, and conclusion. Compare two explanations for a proxy excursion and identify an independent constraint. Build a simplified carbon-transfer diagram and explain which timescale its assumptions support.
+
+Read the whole climate chapter and the historical counterpart before selecting a case. The later climate-science trail will deepen physical models, current assessments, data, and attribution; this geological foundation focuses on interpreting preserved records and connecting them with Earth-system histories rather than making an unsupported current forecast.
+
+**Continue:** [Connect Earth’s origin and differentiation with planetary evidence](Planetary-origins-differentiation-and-comparison.lingua#r_6J5FXZ22PH2MG023NH6R7X5J2X).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_2JEZDTTEKAS0C4ZY0CEB1T5V4T

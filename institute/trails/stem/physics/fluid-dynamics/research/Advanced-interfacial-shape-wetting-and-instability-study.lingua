@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced interfacial shape, wetting and instability study (@fd-advanced-interface: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "Advanced-bubble-dynamics-and-cavitation-evidence-study.lingua#r_09Z0ZDBDWHCA7ABKPVDMCNT5H1") { r_7HESDAWAFEZPSA3GX8P27H9XSN
+**Read:** [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), complete relevant lecture progression and public project guidance; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), interfacial waves and instabilities; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), surface-tension module; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), image-derived uncertainty where velocity is inferred.
+
+Derive the normal and tangential stress conditions for a chosen interface with declared curvature and normal conventions. Recover a static capillary shape, then introduce motion or a small perturbation. State the kinematic boundary and any contact-line, surfactant or thermal conditions that close the problem.
+
+Predict a wavelength, growth rate, film thickness or interfacial velocity and compare an analytical limit with an independently verified calculation. Measure or document surface preparation, fluid properties, contamination history and imaging resolution. Separate equilibrium contact angle from a dynamic or hysteretic observation.
+
+Use evidence to decide whether constant surface tension and a clean sharp interface are adequate. If adding a surface-transport or contact-line model, identify the new state variables and independent parameter evidence. Deliver a conservation-consistent account of the observed mechanism and an explicit explanation of the stages beyond linear or static theory.
+
+**Continue:** [Advanced bubble dynamics and cavitation-evidence study](Advanced-bubble-dynamics-and-cavitation-evidence-study.lingua#r_09Z0ZDBDWHCA7ABKPVDMCNT5H1).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7HESDAWAFEZPSA3GX8P27H9XSN

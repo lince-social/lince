@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Connect Earth’s origin and differentiation with planetary evidence (@geo-planet-origins: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #geology "Precambrian-crust-atmosphere-life-and-evidence.lingua#r_5FSH6M4DRES0NXD11K0287GVVQ") { r_6J5FXZ22PH2MG023NH6R7X5J2X
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 22 in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the full Earth/solar-system origin and differentiation material; [Introduction to Geochronology — Pieter Vermeesch](../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the U-Pb and relevant initial-system assumptions.
+
+The origin of Earth is investigated through planetary observations, meteorites, isotope systems, physical/chemical models, and geological constraints. Distinguish accretion, differentiation, core/mantle/crust development, volatile history, and later surface evolution. A numerical age for a mineral or meteorite component dates an identified process, not automatically every stage of planet formation.
+
+Composition, pressure, temperature, phase behavior, energy transfer, and gravity connect small materials with planetary-scale models. Differentiation changes element distributions through processes that depend on conditions and partitioning. A present bulk reservoir is an inferred account needing mass balance and evidence, rather than a directly collected sample of the whole planet.
+
+Comparison with the Moon and other bodies helps test explanations, but different size, composition, irradiation, atmosphere, and history affect applicability. A crater-count chronology requires calibration and preservation assumptions; apparent surface age and the age of the body's formation are distinct quantities.
+
+**Work:** compare two independent constraints on a major origin/differentiation stage, identifying observations and model dependencies. Draw a chronological account with intervals rather than assigning one date to all processes. Explain an observation from another body that supports or challenges a proposed terrestrial account.
+
+Read the full planetary-origin chapter and the historical opening. The planetary-science and geochemistry trails will deepen orbital, experimental, and isotope methods; general geology should already connect the planet's material origin with later tectonics, atmosphere, water, and the unevenly preserved record.
+
+**Continue:** [Reconstruct early Earth without treating sparse preservation as a complete record](Precambrian-crust-atmosphere-life-and-evidence.lingua#r_5FSH6M4DRES0NXD11K0287GVVQ).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_6J5FXZ22PH2MG023NH6R7X5J2X

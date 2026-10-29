@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Design observations that can test a ground model and inform a response (@mine-ground-monitoring: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #source "../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08", #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #mining-and-mineral-engineering "../equipment/Excavation-as-material-transformation-and-system-work.lingua#r_356XP73S1SACTRRWKTF933G7AS") { r_031R2XG88PEQPGZH6A41J50TY4
+**Read:** [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the complete design-acceptance, case, and response-monitoring discussions; [Pillar and Roof Span Design Guidelines for Underground Stone Mines — NIOSH](../sources/NIOSH-Stone-Mine-Pillars-and-Roof-Spans.lingua#r_5PSV3N7QTFG43D1GDG8BWEYW08), the full applicable observation/method limitations; [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the complete applicable current monitoring/responsibility context.
+
+Monitoring connects a proposed mechanism, measurable quantity, instrument/inspection method, spatial/time support, uncertainty, communication, and an identified decision. Ground displacement, strain, stress, water pressure, seismicity, and visible damage observe different aspects and may not change together.
+
+Instrument location, calibration, installation, reference stability, drift, sampling interval, communications, power, missing data, and actual availability affect interpretation. A precise reading at one point does not establish the state of every unobserved feature or the validity of a model outside its domain.
+
+Compare predictions and observations with uncertainty, alternative mechanisms, and changes in work/conditions recorded. A threshold needs a justified relationship with performance and a response process; copying a value from another case does not create that evidence. Preserve who receives information and how revised assumptions affect work.
+
+**Work:** reconstruct a complete ground-monitoring case from model and measurement design through observed response and revision. Independently check a measurement or model comparison, examine a missing/faulty-instrument scenario, and propose an observation capable of distinguishing the main alternative mechanism.
+
+Read full observational/design-acceptance and relevant current operating guidance. The next extraction/equipment sequence uses the ground basis as an active constraint rather than a report completed once before production.
+
+**Continue:** [Connect excavation with material properties, ground, fragmentation, and downstream work](../equipment/Excavation-as-material-transformation-and-system-work.lingua#r_356XP73S1SACTRRWKTF933G7AS).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_031R2XG88PEQPGZH6A41J50TY4

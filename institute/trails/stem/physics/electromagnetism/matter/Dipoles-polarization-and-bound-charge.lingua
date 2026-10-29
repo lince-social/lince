@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Dipoles, polarization and bound charge (@em-polarization: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #electromagnetism "Dielectric-interfaces-normal-flux-and-tangential-field.lingua#r_23Y84ERRGYDWK5R8R25SKX93P5") { r_0ZFQN93KF28Y07MHTSCDABZ443
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), electric fields in matter; [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), dielectric polarization and flux density.
+
+Polarization P is dipole moment per volume after a chosen averaging procedure. Its divergence represents bound volume charge, ρ_bound = −∇·P, and its jump at a surface contributes P·n to bound surface charge in the usual outward-normal convention. Bound charge is real charge within matter; the label separates its modelled response from the free-charge bookkeeping.
+
+Define D = ε₀E + P, giving ∇·D = ρ_free. This is a useful reorganization of Gauss's law, not a new independent vacuum force law. A local linear isotropic dielectric sets P = ε₀χ_eE only within its operating range. A permanent polarization, a spatially varying susceptibility and a nonlinear response require the actual constitutive description.
+
+Work a uniformly polarized sphere or slab, including both volume and surface contributions and the depolarizing field. Distinguish the applied external field from the internal macroscopic field and from a microscopic local field. Explain why a dielectric placed between voltage-driven plates need not have the same E as the same material inserted at fixed free charge. Read complete material chapters before attempting to infer microscopic mechanisms from one measured permittivity.
+
+**Continue:** [Dielectric interfaces and field components](Dielectric-interfaces-normal-flux-and-tangential-field.lingua#r_23Y84ERRGYDWK5R8R25SKX93P5).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_0ZFQN93KF28Y07MHTSCDABZ443

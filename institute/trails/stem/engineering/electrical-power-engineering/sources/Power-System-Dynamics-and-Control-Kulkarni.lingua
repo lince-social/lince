@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Power System Dynamics and Control — A. M. Kulkarni (@pe-nptel-dynamics: 0, is #reference, #part-of @pe-sources) { r_2T4WS3TCPCXRB5JEH7HTN5FAHQ
+A. M. Kulkarni, IIT Bombay. [NPTEL course 108101004](https://nptel.ac.in/courses/108101004) · [Official full syllabus](https://archive.nptel.ac.in/content/syllabus_pdf/108101004.pdf).
+
+Complete the programme on dynamical-system models, equilibria, small/large disturbance analysis, synchronous-machine models, excitation/prime-mover controls, lines/loads, interconnected stability, numerical integration, modes and stability improvement. Derive single-machine and multimachine examples and compare the implications for operation and planning.
+
+The official syllabus identifies the instructor, an undergraduate power-systems foundation and the sustained modelling/analysis scope; checked on 29 October 2026. It explicitly includes slow/fast and stiff-system issues. Public lectures and written syllabus do not make every associated commercial reading or figure openly reusable. Preserve versions and distinguish the older synchronous-machine emphasis from newer inverter-dominated systems studied through additional primary sources. All course media and data remain external.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_2T4WS3TCPCXRB5JEH7HTN5FAHQ

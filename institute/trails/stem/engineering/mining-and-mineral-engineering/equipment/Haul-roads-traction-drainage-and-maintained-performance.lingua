@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect road geometry and condition with transport work and operating evidence (@mine-roads: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Surface-Mine-Haulage-Roads-USBM.lingua#r_10NBQN6839CGGK06YZDGCPATXF", #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #mining-and-mineral-engineering "Conveyors-ore-passes-chutes-and-material-transfer.lingua#r_6R5CD3BM18V50ZZS01EPWY9EXK") { r_7CW1YAKDG3G207SF15106RQC5S
+**Read:** [Design of Surface Mine Haulage Roads — U.S. Bureau of Mines](../sources/Surface-Mine-Haulage-Roads-USBM.lingua#r_10NBQN6839CGGK06YZDGCPATXF), the entire manual; [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the complete road design/maintenance and transport sequence; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full relevant haulage/operating sections.
+
+Haul roads combine geometry, foundation/materials, drainage, surface condition, vehicle behavior, visibility/traffic, maintenance, and changing work. A historical width/grade or vehicle example needs its full assumptions before comparison with current equipment and conditions.
+
+Traction work can be approximated with a stated gravity/rolling-resistance model. For an invented gross mass 100 t, small gradient 0.05, rolling-resistance coefficient 0.02, speed 5 m s⁻¹, and g = 9.81 m s⁻², the small-angle mechanical power estimate mgv(0.05+0.02) is 343.35 kW. It excludes drive losses, acceleration, braking, and many operating limits; the numbers are not recommended road/vehicle settings.
+
+Road deterioration, water, dust, tires, route changes, and maintenance affect cycle time, energy, availability, and observed risk. A single nominal resistance or speed cannot describe every weather/load condition. Preserve measurements and their support before fitting a transport model.
+
+**Work:** derive/check the example and reconstruct a complete haul-road case using the manual plus actual appropriate vehicle data. Compare two road/maintenance assumptions, identify an independent observation, and explain the effects on the whole fleet rather than isolated travel time.
+
+Read the whole road manual and current relevant equipment/professional guidance. Later civil/transport engineering deepens its unique design methods while reusing this material, geometry, and observed-duty account.
+
+**Continue:** [Connect continuous handling with material state, interfaces, and measured throughput](Conveyors-ore-passes-chutes-and-material-transfer.lingua#r_6R5CD3BM18V50ZZS01EPWY9EXK).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_7CW1YAKDG3G207SF15106RQC5S

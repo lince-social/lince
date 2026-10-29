@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Green functions, reciprocity and source response (@em-green: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Multipoles-origin-choice-and-far-field-error.lingua#r_6WSMWK4DFGSGKMGH6WTQJGB19H") { r_1H8R91AG0Q7EHDWGPKNG6E7JAQ
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), Green functions and electrostatic reciprocity; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), potential and boundary-value methods.
+
+A Green function is the response to a localized source under specified boundary conditions. The free-space kernel and a grounded enclosure's kernel are different objects. Reconstruct Green's identities and the source/boundary representation of potential, keeping the normal orientation and sign convention explicit.
+
+Use a plane-boundary Green function to recover the image solution, then compare a source displaced within the domain. For reciprocal linear electrostatic media, exchanging source and observation roles yields a symmetry with the appropriate normalization. This leads to reciprocal capacitance coefficients and is a useful independent check on a discretized model.
+
+Investigate a localized source approaching a smooth boundary, the source singularity, and the regular part that represents the boundary response. State what changes for an anisotropic constitutive tensor and which symmetry assumptions still hold. An integral kernel built for vacuum cannot be silently applied to an arbitrary layered dielectric. Develop one complete calculation from Green identity to an observable field or energy; advanced study later compares an analytical kernel with a separately constructed numerical solution.
+
+**Continue:** [Multipoles, origin choice and far-field error](Multipoles-origin-choice-and-far-field-error.lingua#r_6WSMWK4DFGSGKMGH6WTQJGB19H).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_1H8R91AG0Q7EHDWGPKNG6E7JAQ

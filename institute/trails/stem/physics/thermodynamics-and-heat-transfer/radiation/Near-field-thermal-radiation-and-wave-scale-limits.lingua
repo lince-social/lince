@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Near-field thermal radiation and wave-scale limits (@th-near-field: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #source "../../electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY", #thermodynamics-and-heat-transfer "../phase-change/Boiling-nucleation-regimes-and-critical-heat-flux.lingua#r_5SRYEBH3HXSNPW0K9CJNPMCA83", #thermodynamics-and-heat-transfer "../research/Near-field-radiation-and-the-limits-of-a-far-field-bound.lingua#r_21HG1TEETQVTC8NSEG3RMMMHJD") { r_7ZKC2M34RBJSNWYG26ABREHC9R
+**Read:** [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), the complete near-field and fluctuation-dissipation lectures; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), nanoscale-gap transport and experimental limitations; [Electromagnetism — charge, fields, matter, waves and physical evidence](../../electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY), the relevant wave/material and evanescent-field explanations.
+
+At separations comparable to relevant electromagnetic decay and wavelength scales, evanescent fields and material response can change thermal exchange beyond a far-field ray model. Define gap, geometry, temperature, optical properties and the assumptions of the fluctuation/response formulation.
+
+Study the complete graduate derivation and compare its far-field or large-gap limit with radiative transfer. Distinguish a spectral enhancement per area from the total useful service and from nonradiative contact or gas paths in an experiment.
+
+Trace one complete primary measurement or calculation through surface preparation, gap knowledge, electromagnetic model and uncertainty. Do not use the breakdown of a grey far-field formula as evidence that energy or thermodynamic accounting has failed. The microscopic and electromagnetic descriptions must close the same physical energy balance.
+
+**Continue:** [Boiling, nucleation, regimes and critical heat flux](../phase-change/Boiling-nucleation-regimes-and-critical-heat-flux.lingua#r_5SRYEBH3HXSNPW0K9CJNPMCA83) · [Advanced study: near-field radiation](../research/Near-field-radiation-and-the-limits-of-a-far-field-bound.lingua#r_21HG1TEETQVTC8NSEG3RMMMHJD).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7ZKC2M34RBJSNWYG26ABREHC9R

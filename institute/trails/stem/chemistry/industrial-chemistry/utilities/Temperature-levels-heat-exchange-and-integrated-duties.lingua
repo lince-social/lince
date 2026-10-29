@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Match process heat duties at compatible temperatures and operating times (@ic-heat-integration: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X", #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #industrial-chemistry "../inorganic/Air-separation-oxygen-nitrogen-and-gas-specification.lingua#r_2WT6DXK7CD9M2VQ1Q8JSC49PS4") { r_0AB2T3N3JWJY8FF9KR5CDBJCNB
+**Read:** [Improving Steam System Performance — U.S. DOE sourcebook](../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X), the entire steam/condensate system and relevant heat-recovery discussion; [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), a complete process energy-integration case; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the complete relevant heat-transfer and integrated-process treatment if chosen.
+
+Heat integration couples streams that need cooling with streams that need heating, subject to compatible temperature levels, finite approach differences, phases and time. Closing net energy alone cannot prove that the heat can flow in the proposed arrangement. Exchanger area, fouling, pressure drop and control influence the actual result.
+
+Build enthalpy-temperature profiles from the actual materials and phase changes. A composite or pinch construction can identify useful bounds within its assumptions. Process changes, batch timing, startup/shutdown and part-load operation may alter which duties coexist and how much utility remains necessary.
+
+Examine interactions with chemistry and product quality. A hotter preheat may improve one energy duty while changing selectivity, stability or fouling. Recovering heat from a contaminated stream adds material compatibility, cleaning and leakage questions. Steam, condensate and cooling systems connect several operations beyond the chosen exchanger.
+
+**Work:** reconstruct a complete chemical-route heat account and independently test a feasible integration alternative. Preserve finite temperature approaches, utility conditions, uncertainty, operation over time and maintenance. Compare the accepted-product system before and after the change, identifying which measurements would establish whether the predicted saving is actually obtained.
+
+**Continue:** [Follow oxygen, nitrogen and other air-derived products through separation and use](../inorganic/Air-separation-oxygen-nitrogen-and-gas-specification.lingua#r_2WT6DXK7CD9M2VQ1Q8JSC49PS4).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_0AB2T3N3JWJY8FF9KR5CDBJCNB

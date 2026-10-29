@@ -1,0 +1,11 @@
+Import "../Electromagnetism.lingua"
+
+Meep — methods, tutorials, validation and licence (@em-meep: 0, is #reference, #part-of @em-sources) { r_7V0TJSMDBGNHBD0MBTB94W8GRX
+The Meep project, NanoComp and contributors. [Primary manual](https://meep.readthedocs.io/en/latest/) · [Source and release history](https://github.com/NanoComp/meep) · [Licence](https://meep.readthedocs.io/en/latest/License_and_Copyright/).
+
+Read the complete introduction and applicable tutorials, then the full method documentation for material dispersion, sources, boundaries/PML, flux spectra, symmetry, units, convergence and the actual observable. Pin a release or commit, retain model inputs outside this repository and reproduce a documented benchmark before an independent case.
+
+The latest documentation follows the master development branch; no current release number is guessed. The project states GPL version 2 or later, with third-party notices; verified on 29 October 2026. This software licence does not assign the same licence to every research article or dataset. This is a reading reference; Meep was not installed or run during trail assembly.
+
+**Return:** [Electromagnetic sources — complete books, courses, methods and research](../Sources.lingua#r_6XW0N80NM6WSDWED10N8N7WX3P).
+} r_7V0TJSMDBGNHBD0MBTB94W8GRX

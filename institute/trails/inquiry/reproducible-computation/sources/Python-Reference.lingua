@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+Python tutorial and standard-library references — Python documentation (@rc-python: 0, is #reference, #part-of @rc-sources) { r_53J5SVX9CRECPQJFX3EAD8NRCZ
+Python Software Foundation and contributors. Python tutorial and standard-library documentation. [Version 3.13 tutorial](https://docs.python.org/3.13/tutorial/) · [Standard library](https://docs.python.org/3.13/library/) · [Current tutorial](https://docs.python.org/3/tutorial/).
+
+Read the tutorial’s input/output, functions, data structures, modules, errors, classes, and floating-point sections after the beginner book. Consult the exact-version references for pathlib, csv, json, fractions, decimal, math, hashlib, argparse, unittest, random, and subprocess while examining the worked examples. Read the specific callable’s contract rather than guessing from an imported name.
+
+The official tutorial says it assumes general programming knowledge; it is a reference companion rather than the first reading for a complete beginner. Examples here use a documented Python 3.13 runtime for validation. A reader using another runtime records its exact version and checks the relevant contracts instead of assuming identical behavior from a generic command name.
+
+PSF documentation and example terms apply to the source; preserve their notices before reuse. Official tutorial and numerical sections checked on 29 October 2026. References only; no interpreter or documentation collection is bundled.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_53J5SVX9CRECPQJFX3EAD8NRCZ

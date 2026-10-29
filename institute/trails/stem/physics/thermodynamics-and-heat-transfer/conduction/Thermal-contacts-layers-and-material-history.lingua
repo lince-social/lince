@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Thermal contacts, layers and material history (@th-contacts: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #thermodynamics-and-heat-transfer "Fins-efficiency-effectiveness-and-competing-losses.lingua#r_13R9CGJVQMY3Q9XC3EEC2030M0") { r_68Z22QE65T6P6TYMDN3CP6500E
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), thermal resistance and contacts; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), solid interfaces and transport; [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), interface conductance and identification.
+
+Two solids in apparent contact exchange heat through actual contact regions, intervening gas or filler, radiation and other mechanisms. Define an effective contact conductance only with pressure, roughness, temperature, material pair, area and history. A nominal area may differ greatly from microscopic contact area.
+
+Compare a pressure-sensitive rough contact with a bonded interface in a thin-film measurement. Bulk conductivity, contact resistance and spreading resistance can trade off in a fitted model; distinguish them through suitable geometry or independent observations.
+
+Read a complete experimental method, inspect specimen preparation and cycling, and model degradation or assembly variation relevant to the service. Thermal interfaces connect material processing, surface cleanliness, joining and repair to a device's temperature. A catalogue value cannot by itself establish performance of an assembled stack.
+
+**Continue:** [Fins, efficiency, effectiveness and competing losses](Fins-efficiency-effectiveness-and-competing-losses.lingua#r_13R9CGJVQMY3Q9XC3EEC2030M0).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_68Z22QE65T6P6TYMDN3CP6500E

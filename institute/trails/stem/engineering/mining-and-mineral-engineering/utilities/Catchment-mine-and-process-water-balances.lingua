@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Close water quantities across catchment, mine, plant, storage, and returns (@mine-water-balance: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE", #mining-and-mineral-engineering "Water-quality-reuse-reactions-and-discharge-evidence.lingua#r_0EW72C79PC40WD3VNQKSYM5PSN") { r_0A8BRZMCFA9YTYGA9331FVDCK7
+**Read:** [Water stewardship — Australian leading-practice handbook](../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM), the entire handbook; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), a complete selected plant/water case; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the full slurry, dewatering, and stream-basis treatments; [Engineering Geology Field Manual — U.S. Bureau of Reclamation](../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE), the full relevant water measurement methods.
+
+A mine/process water balance includes inflows, outflows, transfers, storage, rainfall/runoff, infiltration, evaporation, process moisture, reuse, seepage, and other identified terms over a specified period and boundary. Internal recycle changes equipment flows without becoming new external water supply.
+
+Wet and dry material quantities, water density, moisture basis, and inventory changes must be consistent. Tailings, concentrate, backfill, dust control, cooling, and drainage can carry water across boundaries. A steady-state assumption should be tested against storage and seasonal/operating variation.
+
+Measurement and model uncertainties can be correlated. Forcing closure by one balancing term can conceal meter bias, unobserved seepage, timing mismatch, or storage error. Preserve raw observations and distinguish a reconciled estimate from a direct measurement.
+
+**Work:** reconstruct a complete water-account case from the handbook and plant study. Independently close quantities with explicit stocks/flows and support periods, then test a storage, weather, or production-change scenario. Compare two explanations for a consequential mismatch and identify the observation needed to discriminate them.
+
+Read the entire water-stewardship handbook and full relevant processing/field methods. The next quality step adds constituents and reactions; volume closure alone cannot establish a suitable reuse or discharge stream.
+
+**Continue:** [Join water quantities with constituents, reactions, and intended use](Water-quality-reuse-reactions-and-discharge-evidence.lingua#r_0EW72C79PC40WD3VNQKSYM5PSN).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0A8BRZMCFA9YTYGA9331FVDCK7

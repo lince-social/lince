@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Test a regional reconstruction against geometry, ages, and competing models (@geo-reconstruction-project: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/GPlates-Reconstruction.lingua#r_6C7H7HA2X7FPJF6EZKK6NRQDBT", #source "../sources/Full-plate-reconstruction-Merdith.lingua#r_6MDP42ENB5YVNBM6WF7V3WRNB6", #geology "Geology-in-a-material-and-infrastructure-chain.lingua#r_0B6Z481YETERS1TN848T6JRVN0") { r_0TZDDE53WP7NTCMNE0D5VB4EMC
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), the complete structural book and relevant labs; [GPlates — geological reconstructions, manuals, and methods](../sources/GPlates-Reconstruction.lingua#r_6C7H7HA2X7FPJF6EZKK6NRQDBT), the full reconstruction tutorials and relevant user/data manuals; [Extending full-plate tectonic models into deep time — Merdith and colleagues](../sources/Full-plate-reconstruction-Merdith.lingua#r_6MDP42ENB5YVNBM6WF7V3WRNB6), the full methods/supplement where authorized access is available, and the identified model revision.
+
+Choose a regional deformation or plate-history question connecting multiple evidence types. Read the complete relevant structural treatment and GPlates manuals/tutorials, then examine the full methods and supplement of an authorized research study. The Merdith publication/model pair offers one dated example; it is not presented as the final or uniquely correct reconstruction.
+
+Specify the reference frame, ages, rotations, plate/terrane identities, structural geometry, geological correlations, and observation uncertainties. Preserve which constraints are directly observed and which were selected or inferred in building the model. A modern position is one boundary condition rather than a complete ancient history.
+
+Reproduce a published figure or quantitative relationship from its documented model/data in your study workspace. Check rotation conventions and order, coordinate transformations, topology, chronology, and numerical behavior independently where possible. Compare two admissible model choices rather than merely exporting an animation.
+
+**Work:** test an independent constraint such as structural orientation, paleomagnetic evidence, a dated contact, a metamorphic history, or basin evolution. Explain whether disagreement arises from data, convention, age model, rigidity assumptions, or geological mechanism. Propose a targeted observation that could discriminate the competing reconstructions and assess feasibility.
+
+Write a research-level argument with explicit limitations and alternative histories, supported by complete primary papers. If one article is inaccessible, choose an authorized accessible study with sufficient methods/data rather than treating an abstract as a full research reconstruction. Specialist geodynamics and paleomagnetism remain deeper routes connected through the same evidence.
+
+**Continue:** [Follow a geological material and its water/ground dependencies into infrastructure](Geology-in-a-material-and-infrastructure-chain.lingua#r_0B6Z481YETERS1TN848T6JRVN0).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_0TZDDE53WP7NTCMNE0D5VB4EMC

@@ -1,0 +1,39 @@
+Import "../Reproducible-computation.lingua"
+
+Refine an approximation and justify its numerical accuracy (@rc-convergence: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH", #reproducible-computation "../../metrology/uncertainty/Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E") { r_1D7K129GJSMBAB3WR7Z1KJFXXK
+**Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), arrays/plotting and the numerical examples revisited; [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), numerical testing; [What Every Computer Scientist Should Know About Floating-Point Arithmetic — Goldberg](../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH), rounding compared with approximation error.
+
+The shared decay example uses x′ = −kx, x(0) = 100, k = 0.2 h⁻¹, and a forward time update. The exact model value after 5 h is 100 exp(−1). Refining a step studies the approximation to this stated model, not whether the model represents an actual stock or physical process. Keep that distinction visible when reporting a very precise simulation.
+
+Save the original convergence.py example. It reports step size, approximate value, and absolute error against this analytic benchmark. The error ratio approaches two for this first-order method in its asymptotic regime; finite-step values need not give exactly two.
+
+```python file=convergence.py
+import math
+
+reference = 100 * math.exp(-1)
+previous_error = None
+for steps in (5, 10, 20, 40, 80, 160):
+    step_h = 5 / steps
+    value = 100.0
+    for _ in range(steps):
+        value *= 1 - 0.2 * step_h
+    error = abs(value - reference)
+    assert error > 0
+    if previous_error is not None:
+        assert error < previous_error
+        print(steps, step_h, value, error, previous_error / error)
+    else:
+        print(steps, step_h, value, error)
+    previous_error = error
+```
+
+**Work:** reproduce the first three approximations independently, then plot error versus step on logarithmic axes and estimate the observed order. Choose a target relative accuracy, find an adequate step, and check it again against a finer calculation. Try a step outside the positivity or stability conditions explained in the shared Record and diagnose the result.
+
+For a problem without an analytic solution, compare refinements, method order, independent methods, and appropriate limiting cases. A single small change between two grids can result from cancellation or a shared defect, so state what evidence supports an error estimate. Solver stopping tolerance is another algorithm setting, not automatically a bound on the scientific output's error.
+
+Numerical truncation, floating-point rounding, uncertain inputs, stochastic simulation error, and model discrepancy require different evaluations. A tolerance should be justified against the use and scale of the result, rather than adjusted until a preferred output passes. The next shared metrology Record develops distribution propagation and exact simulation benchmarks.
+
+**Continue:** [Propagate joint distributions and control the numerical approximation](../../metrology/uncertainty/Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_1D7K129GJSMBAB3WR7Z1KJFXXK

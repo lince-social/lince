@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Uncertainty, model discrepancy and an electromagnetic claim (@em-uncertainty: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #source "../sources/Experimental-Physics-MIT-Junior-Lab.lingua#r_55H9HGYP31B14NSEEAZY27PW5E", #electromagnetism "../connections/Fields-through-mining-metals-utilities-devices-and-information.lingua#r_205SB4K06PDYXA7YGX3Q8X0YMW") { r_2KYWTMX0SHJYWAH69AQ9H3068X
+**Read:** [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), uncertainty, specimen and calibration analyses; [Experimental Physics I and II — MIT Junior Lab](../sources/Experimental-Physics-MIT-Junior-Lab.lingua#r_55H9HGYP31B14NSEEAZY27PW5E), complete reporting and uncertainty guidance for the chosen experiment.
+
+State an operational claim such as a resonance frequency, shielding attenuation, transmitted power or material response over a specified band. Define the measurand, environmental conditions, reference planes and decision use. Separate input/calibration uncertainty, numerical approximation, repeatability and discrepancy between the ideal model and the actual object.
+
+Use complex covariance when amplitude and phase or real/imaginary parts are correlated. Report how phase unwrapping, background subtraction, fixture removal and model selection influence the result. A single scalar uncertainty added after fitting cannot automatically represent ambiguous inverse solutions or an omitted mode.
+
+Compare two models and at least one alternative apparatus condition. If they disagree beyond their stated uncertainty, investigate assumptions before averaging. Preserve evidence that changed the conclusion and a sensitivity analysis of the final claim. The reused metrology Record supplies the general method; this application adds field geometry, material response and frequency-dependent evidence. Exact numerical energy conservation verifies an implementation property, while agreement with an independent physical measurement tests a broader and still limited claim about the world.
+
+**Continue:** [Fields through extraction, utilities, devices and information](../connections/Fields-through-mining-metals-utilities-devices-and-information.lingua#r_205SB4K06PDYXA7YGX3Q8X0YMW).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_2KYWTMX0SHJYWAH69AQ9H3068X

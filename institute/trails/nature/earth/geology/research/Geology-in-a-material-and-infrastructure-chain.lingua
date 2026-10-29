@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Follow a geological material and its water/ground dependencies into infrastructure (@geo-infrastructure-project: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #source "../sources/Mineral-Commodity-Summaries-USGS.lingua#r_47FJ4GZC4CS4KJX8WXNDB418CX", #source "../sources/Groundwater-Freeze-Cherry.lingua#r_6P2FK74P9MC2672X94GE1S0NZB", #geology "Independent-geological-scholarship.lingua#r_3HWJT4PS3ZAP0SY5968CMBK6ST") { r_0B6Z481YETERS1TN848T6JRVN0
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), the complete resources and relevant rock/water chapters; [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), the relevant complete resource/territorial chapters; [Mineral Commodity Summaries 2026 — USGS](../sources/Mineral-Commodity-Summaries-USGS.lingua#r_47FJ4GZC4CS4KJX8WXNDB418CX), overview, definition appendices, and complete selected commodity chapters; [Groundwater — Freeze and Cherry, preserved authorized edition](../sources/Groundwater-Freeze-Cherry.lingua#r_6P2FK74P9MC2672X94GE1S0NZB), the complete relevant flow/geotechnical chapters.
+
+Choose a material or infrastructure system: copper for conductors, silica-bearing feedstock, aggregate for concrete, a groundwater source, or ground for a major facility. Bound the question so that geological work is substantial and traceable rather than a superficial inventory of every downstream technology.
+
+Explain the material's formation/history, distribution, variability, and evidence. Connect mineral form, grain association, impurities, weathering, structure, and water with possible recovery or use requirements. Distinguish observations from a deposit model and a documented resource estimate from actual operating supply.
+
+Use the complete resource chapter, relevant Brazilian/regional treatment, and the report's overview/definitions and selected commodity chapters. Trace units, data years, estimates, revisions, and categories. Do not conflate ore, contained element, concentrate, refined material, and a finished product; identify where information is missing or proprietary.
+
+**Work:** build an original material/water/ground account connecting geological evidence with processing inputs, waste, energy, transport, and site conditions. Quantify one bounded mass/quality or water-flow question with checked assumptions and uncertainty. Compare two geological supply/settings scenarios and identify the investigation needed to choose between them.
+
+Finish with a precise handoff to mineralogy/petrology, mining/beneficiation, refining, water, engineering, or manufacturing studies. Their specialized designs and operations are not claimed as completed by this general geological account. Preserve the interfaces so shared knowledge can be reused without copying a new foundation into every material chain.
+
+**Continue:** [Develop and defend an independent geological investigation](Independent-geological-scholarship.lingua#r_3HWJT4PS3ZAP0SY5968CMBK6ST).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_0B6Z481YETERS1TN848T6JRVN0

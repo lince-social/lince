@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Test sensor-based sorting against measured particles and the complete feed account (@mine-sensor-sorting: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #mining-and-mineral-engineering "Flotation-interfaces-reagents-and-water-chemistry.lingua#r_2A20JQZ9TPGPJ30NF01PC6QVP6") { r_1C2JP9GAXHD912MVT0WS8Q071G
+**Read:** [Wills’ Mineral Processing Technology — Wills and Finch, eighth edition](../sources/Wills-Mineral-Processing-Technology.lingua#r_02W7VCEB3274XY5AKSH9SGPV1A), all of chapter 14, when available, with the relevant characterization and balance chapters; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete material-characterization and applicable preconcentration discussions; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), a complete comparable feed/flowsheet case; distinguish older methods from the selected newer primary sorting study.
+
+A sensor measures a response under specified geometry and conditions. Turning that response into a useful material decision requires a relationship with mineral association, composition, physical quality, and the size/support of the object being sorted. A visible surface measurement and the whole rock's composition may disagree. Calibration performance on selected specimens need not transfer to run-of-mine feed.
+
+Separate sensing, a decision rule, presentation of particles, actuation, and resulting product streams. Throughput, overlap, surface contamination, size range, latency, and missed ejections affect actual separation. Evaluate an independent population with its natural class proportions; a classification accuracy alone does not establish useful constituent recovery or rejected mass.
+
+Compare sorted products through dry mass, constituent/quality balances, grade distributions, downstream grinding/processing work, and changing feed. A preconcentration stage may save work while also discarding valuable material. Calculate both outcomes and the material changes in the remaining circuit.
+
+**Work:** reconstruct one complete published sorting study. Separate training/calibration from independent validation, preserve particle/sample identity, and calculate mass rejection and valuable-constituent recovery from measured output streams. Compare a different threshold on the same independent population and report the recovery-throughput-quality tradeoff. Design a representative feed test that would challenge the assumed sensor-to-material relationship.
+
+**Continue:** [Explain flotation selectivity through interfaces, reagents, and the actual water](Flotation-interfaces-reagents-and-water-chemistry.lingua#r_2A20JQZ9TPGPJ30NF01PC6QVP6).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1C2JP9GAXHD912MVT0WS8Q071G

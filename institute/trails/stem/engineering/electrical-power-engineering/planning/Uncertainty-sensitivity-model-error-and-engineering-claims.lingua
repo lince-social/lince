@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Uncertainty, sensitivity, model error and engineering claims (@pe-uncertainty: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B", #source "../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G", #electrical-power-engineering "../operation/Islanding-black-start-restoration-and-synchronization.lingua#r_26D4WPFJNAJNYQGDDC2WTXE5S0") { r_6X4V9ZDF411WG03JF8D8K5SE1Z
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete modelling/solver-limit definitions; [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B), whole relevant estimation and uncertainty assumptions; [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G), complete scenario/dependence and risk interpretation.
+
+Define the claim and its use: a voltage envelope, fault duty, protection margin, stability response, loss or usable service. Separate measured input uncertainty, parameter fit, numerical approximation, scenario uncertainty and discrepancy between model and actual system. A single post hoc percentage cannot represent all of them.
+
+Use the shared sensitivity/metrology Records to propagate correlated quantities and test alternative models. Power-flow behavior near a fold, protection threshold switching and controller/current limits can invalidate a simple local linear approximation. Compare sampling/nonlinear methods with independent limits and report whether the decision changes under plausible model choices.
+
+Read complete method definitions and preserve calibration, actual topology, state, bases and timestamps. A result with many printed digits is not more accurate than its geometry, load or material evidence. If independent predictions or observations disagree beyond their declared uncertainties, investigate assumptions before averaging. The advanced investigations must defend a limited engineering claim and identify the next measurement or analysis that could most directly reduce the remaining uncertainty.
+
+**Continue:** [Islanding, black start, restoration and synchronization](../operation/Islanding-black-start-restoration-and-synchronization.lingua#r_26D4WPFJNAJNYQGDDC2WTXE5S0).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6X4V9ZDF411WG03JF8D8K5SE1Z

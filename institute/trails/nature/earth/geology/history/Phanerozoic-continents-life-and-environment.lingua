@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Join Phanerozoic histories of continents, environments, and life (@geo-phanerozoic: 0, is #chapter, #part-of @geology, #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/International-Chronostratigraphic-Chart.lingua#r_6RWJCRCKJD7BZS5RRKVKGE8MT3", #geology "Quaternary-landscapes-climate-and-recent-deposits.lingua#r_6V6VJ3GRBA5BXVXXS38FM8QEQ6") { r_6Y5PBVMNPC3F1ZS4QHFBK5NVY9
+**Read:** [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the complete Paleozoic, Mesozoic, and Cenozoic sequence; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 21 in full; [International Chronostratigraphic Chart — ICS and IUGS](../sources/International-Chronostratigraphic-Chart.lingua#r_6RWJCRCKJD7BZS5RRKVKGE8MT3), hierarchy, definitions, and editions relevant to the selected intervals.
+
+Organize the Phanerozoic through major intervals, continental configurations, orogenies, sedimentary basins, environmental change, and the evolving record of organisms. Avoid treating the time chart as a list of unrelated names or every biological change as a single global instantaneous event.
+
+Use fossils with stratigraphy, depositional context, geochemistry, and age constraints. First/last observed occurrences depend on sampling and preservation; they are not automatically the true first appearance or extinction of a lineage. A regional environmental transition may change which organisms are preserved even without a global disappearance.
+
+Mass-extinction and recovery arguments require timing, magnitude, ecological/geographical scope, competing mechanisms, and evidence linking cause with response. Correlation with volcanism, impacts, sea-level change, or isotope excursions is an investigative beginning. Examine age uncertainty and independent predictions of each mechanism.
+
+**Work:** build an integrated chronology for one interval and compare it across two regions. Reconstruct one major transition using the complete historical treatment and at least two primary studies reached through its references. State where the observations establish order but cannot resolve near-simultaneity or causal direction.
+
+Read all Phanerozoic chapters of the historical book, then study chapter 21's western Canadian regional synthesis as an extended example. Compare it with Brazil later. The paleontology/Earth-history specialist trail will deepen taxonomy, evolution, biostratigraphy, and research methods while reusing these chronological and geological foundations.
+
+**Continue:** [Interpret recent geological history through multiple dated records](Quaternary-landscapes-climate-and-recent-deposits.lingua#r_6V6VJ3GRBA5BXVXXS38FM8QEQ6).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_6Y5PBVMNPC3F1ZS4QHFBK5NVY9

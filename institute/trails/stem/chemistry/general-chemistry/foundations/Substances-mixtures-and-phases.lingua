@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Substances, mixtures, components, and phases (@gc-matter: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Observations-particles-and-symbols.lingua#r_1BMJ0JMYA9THS9B5K12C423YFC") { r_07Y9PYVRA9HSVSZWQC4N0X8ZZS
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 1’s matter and property sections; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), chapter 4, Matéria e energia, in full; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), classification of matter and the introductory states-of-matter material.
+
+A chemical substance has a specified composition and chemical identity under a useful description. A mixture contains more than one component. A phase is a region with uniform physical character and composition at the scale being considered; it is not the same classification as element versus compound. One substance can occupy two phases, and one phase can contain many substances.
+
+An element identifies atoms by nuclear charge; an elemental substance is material made from that element in a particular form. A compound combines elements in a defined chemical structure/composition. Molecules are discrete entities, whereas an ionic crystal or an extended covalent solid should not automatically be described as a collection of isolated molecules. Formula units and empirical formulas have their own uses.
+
+Distinguish intensive properties from extensive quantities. Temperature, density under stated conditions, and composition can characterize a sample without scaling directly with its size; total mass and amount scale with the chosen system. Apparent uniformity at one scale does not establish molecular homogeneity. A suspension or emulsion can look uniform to the eye while containing distinct phases.
+
+**Work:** classify pure water with ice, air, a salt solution, a suspension, and an alloy under explicitly stated conditions. Identify components and phases separately. Explain why filtering cannot remove a truly dissolved ion, and why boiling a mixture need not yield a single pure substance. Propose evidence that would distinguish a pure crystal from a visually similar mixture.
+
+Read the complete matter/classification treatment and draw a material boundary for each example. These distinctions will later determine which quantities enter balances, which equilibrium model applies, and what a separation can accomplish. Use the language precisely without treating classifications as permanent barriers between fields.
+
+**Continue:** [Connect observations, particle models, and chemical symbols](Observations-particles-and-symbols.lingua#r_1BMJ0JMYA9THS9B5K12C423YFC).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_07Y9PYVRA9HSVSZWQC4N0X8ZZS

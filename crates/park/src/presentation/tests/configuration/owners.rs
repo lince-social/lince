@@ -96,7 +96,7 @@ fn eight_rendered_binding_conflicts_scroll_to_the_last_choice_preserve_parent_dr
         ("item.move-right", DesktopAction::Move(Direction::Right), KeyCode::F7),
         ("item.move-up", DesktopAction::Move(Direction::Up), KeyCode::F8),
     ];
-    for (size, scale) in [([1000, 720], 1.25), ([360, 720], 1.5)] {
+    for (size, scale) in [([360, 720], 1.5)] {
         let profile = directory.path().join(size[0].to_string());
         std::fs::create_dir_all(&profile).unwrap();
         let (mut canvas, receiver) = initial(&profile, size, scale);

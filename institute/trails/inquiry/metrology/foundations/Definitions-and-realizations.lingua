@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Definitions, realizations, dissemination, and uncertainty (@met-si-realizations: 0, is #chapter, #part-of @metrology, #source "../../quantitative-literacy/sources/SI-Brochure.lingua#r_0QS0FQDWGM0BE9ZM4099FGRXED", #source "../sources/Metrology-in-Short.lingua#r_348S70JD4Z4VX9S3KA08JXQ2MS", #source "../sources/SI-Realizations.lingua#r_240WHEHDVW9TR241AXP6T4STM0", #metrology "Traceability-chain.lingua#r_7XW6NVMPW7PMPJPBESW5G1757N") { r_2N05W0W3N8EMV1HADRRFR79Q72
+**Read:** [The International System of Units — BIPM and Inmetro](../../quantitative-literacy/sources/SI-Brochure.lingua#r_0QS0FQDWGM0BE9ZM4099FGRXED), the complete unit-definition chapters and appendix-2 introduction; [Metrology — in Short — Howarth and Redgrave](../sources/Metrology-in-Short.lingua#r_348S70JD4Z4VX9S3KA08JXQ2MS), the complete handbook, with historical definitions identified; [Practical realizations of SI units — BIPM consultative committees](../sources/SI-Realizations.lingua#r_240WHEHDVW9TR241AXP6T4STM0), the metre, kilogram, and second introductions.
+
+The SI defines units through fixed numerical values of selected constants. A physical realization applies a measurement principle to make the unit accessible, and dissemination transfers that reference through comparisons and calibrations. An exact definition does not make every implementation exact or allow an instrument to determine the constant and realize its unit independently without assumptions.
+
+For example, a length realization can connect optical frequency and the speed of light to wavelength, then require corrections for refractive index, geometry, environment, and the actual comparison. A mass realization and a working balance comparison have different equipment, models, and uncertainties. The same definition can support more than one realization.
+
+Study the practical documents at different scales: the conceptual definition; a primary realization’s physical model; the reference and transfer standards; and an ordinary result produced downstream. Identify which quantities are exact by definition and which are evaluated experimentally. Constants fixed in the SI can still occur in a model with many uncertain measured inputs.
+
+**Work:** draw a plausible reference path for a length or mass measurement and label each link with the quantity compared, conditions, result, and uncertainty contribution. Use a real published reference path for the advanced version; an initial classroom sketch must be labelled schematic. Explain where a technical change, damaged transfer standard, or unrecognized correction could weaken the path.
+
+Use current realization documents rather than historical unit definitions from the introductory handbook. Compare the English SI material with the Portuguese SI translation named in the shared source Record, recording the edition differences. The act of defining a unit, realizing it, and demonstrating comparability are connected but distinct kinds of work.
+
+**Continue:** [A documented calibration chain for a particular result](Traceability-chain.lingua#r_7XW6NVMPW7PMPJPBESW5G1757N).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_2N05W0W3N8EMV1HADRRFR79Q72

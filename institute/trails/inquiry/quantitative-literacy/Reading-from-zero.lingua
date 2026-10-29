@@ -1,0 +1,24 @@
+Import "Quantitative-literacy.lingua"
+
+Begin quantitative and technical literacy from zero (@ql-reading-from-zero: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-1, #source @ql-source-trades-2, #source @ql-source-trades-3, #source @ql-source-prealgebra, #source @ql-source-algebra, #quantitative-literacy "foundations/Quantity-and-reference.lingua#r_65GAJ89AZRG6VYVXDC43NBT0DK") { r_0RVVPMXQQDS96N2BCGHD50N2NN
+Start with Math for Trades, Volume 1, read completely with the exercises and final practice test. Work its numerical examples on paper, then use a calculator to check. Prealgebra 2e chapters 1–11 provide a fuller arithmetic-to-algebra book; read the whole book if those foundations are new, or use the named chapters to repair gaps discovered in the review.
+
+Continue through the linked Records and complete Math for Trades, Volumes 2 and 3. Alongside them, study the selected Algebra and Trigonometry 2e chapters. The same idea can appear in several books: read a second explanation when the first is unclear, and demonstrate it on a new problem before moving on. No previous course or programming language is assumed.
+
+| Stage | Substantial reading | Understanding and work |
+| --- | --- | --- |
+| Numbers and comparisons | Math for Trades 1 complete; Prealgebra 1–7 and 10 as needed | signs, fractions, decimals, denominators, percentages, and numerical scale |
+| Units and equations | Math for Trades 2 complete; SI Brochure 2–5; Prealgebra 8 | physical quantities, conversions, equations, and explicit constraints |
+| Functions and spatial reasoning | Math for Trades 3 complete; Algebra and Trigonometry 1–4, 6–7, 8.1–8.3, 10.1–10.2 and 10.5–10.8, linear systems in 11 | tables, graphs, logarithms, geometry, trigonometry, complex-number notation, vectors, and independent equations |
+| Drawings and accounts | Basic Blueprint Reading complete; The Art of Insight Parts I–II; Broman and Woo complete | technical views, specification versus measurement, flows, yields, and recoverable data |
+| Measurement and model criticism | JCGM GUM-1 complete; VIM definitions in context; The Art of Insight Part III | uncertainty, estimation, scaling, approximations, and limits of inference |
+| Advanced command | both Mahajan books complete; NIST TN 1297 complete, including appendices | independent derivation, source comparison, reproducible studies, and criticism and revision |
+
+Section numbers refer to the editions described in the source Records. Use the named topic when a web revision changes numbering. Complete means read the explanations and work the problems, not open each page once. Restricted instructor answer materials are not required; the published questions, available answers, independent calculations, and these original studies support self-study.
+
+The later mathematical exercises are deliberately demanding. Return to the earlier algebra, functions, and geometric work where they reveal a gap. Full analysis, probability, numerical analysis, physical mechanisms, and metrology deepen through their own subject material; this path gives the common quantitative language and a substantial advanced practice with it.
+
+**Continue:** [A number needs a quantity and a reference](foundations/Quantity-and-reference.lingua#r_65GAJ89AZRG6VYVXDC43NBT0DK).
+
+**Return:** [Quantitative and technical literacy](Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_0RVVPMXQQDS96N2BCGHD50N2NN

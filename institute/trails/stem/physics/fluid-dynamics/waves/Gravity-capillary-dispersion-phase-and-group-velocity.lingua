@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Gravity–capillary dispersion, phase and group velocity (@fd-gravity-capillary: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Depth-averaged-mass-and-momentum-in-shallow-water.lingua#r_719NEXPHYB8DCJPKVZ3QKNSCXX") { r_058JA47C7PH8ER8Y6YGQ4WQ2R9
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 surface and capillary waves; [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), complete surface-wave notes; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), gravity-wave dispersion.
+
+For small waves on an inviscid liquid of depth h beneath a dynamically negligible atmosphere, ω²=(gk+σk³/ρ)tanh(kh), with surface tension σ and positive wavenumber k. This dispersion relation assumes the stated uniform state, boundary conditions and negligible viscosity. An overlying fluid of appreciable density changes it.
+
+Calculate phase speed ω/k and group speed dω/dk, and recover shallow/deep and gravity/capillary limits. In deep-water gravity waves the group speed is half the phase speed; in the long-wave shallow-water gravity limit both approach √(gh). Compare characteristic lengths using the balance between gravity and surface tension.
+
+Construct a narrow wave packet and distinguish motion of a crest from motion of its envelope and energy. Test a measured dispersion relation with uncertainty in wavelength, depth and timing. Nonlinear amplitude effects, dissipation, current and confinement can invalidate a direct comparison even if the visible waves appear regular.
+
+**Continue:** [Depth-averaged mass and momentum in shallow water](Depth-averaged-mass-and-momentum-in-shallow-water.lingua#r_719NEXPHYB8DCJPKVZ3QKNSCXX).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_058JA47C7PH8ER8Y6YGQ4WQ2R9

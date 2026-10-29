@@ -1,0 +1,11 @@
+Import "../Geology.lingua"
+
+Digital Cartographic Standard for Geologic Map Symbolization — FGDC/USGS (@geo-symbols: 0, is #reference, #part-of @geo-sources) { r_7DHXSTN5K3KF1EPTPG18RM5K1K
+Federal Geographic Data Committee and U.S. Geological Survey. Digital Cartographic Standard for Geologic Map Symbolization, FGDC-endorsed 2006 standard. [Official standard, status, and downloadable materials](https://www.fgdc.gov/standards/projects/geo-symbol/).
+
+Read the introduction and the complete symbol sections needed for contacts, orientation, folds, faults, uncertainty/location, and the actual map being studied. Distinguish a symbol's defined meaning from what a particular observation establishes. Compare with the regional map's own legend rather than assuming one national convention applies unchanged everywhere.
+
+The official catalogue identifies the 2006 endorsement and publication resources. A direct USGS publication endpoint returned automated-access denial; the official FGDC page was accessible. Preserve the actual publication/component notices before reuse. Identity/status and authorized source route checked on 29 October 2026. No symbols, fonts, or style libraries are embedded in a Sand or copied into this trail.
+
+**Return:** [Geology sources — complete books, field methods, maps, and research](../Sources.lingua#r_3H47FYGCEYFZPW2VK77PMR0ECB).
+} r_7DHXSTN5K3KF1EPTPG18RM5K1K

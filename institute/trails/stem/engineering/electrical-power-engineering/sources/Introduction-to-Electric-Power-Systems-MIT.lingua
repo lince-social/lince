@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Introduction to Electric Power Systems — MIT 6.061 (@pe-kirtley-intro: 0, is #reference, #part-of @pe-sources) { r_6JR10ZVGMZ7GT4RRK7734JQ7WD
+James L. Kirtley Jr. MIT 6.061/6.690, Spring 2011. [Course](https://ocw.mit.edu/courses/6-061-introduction-to-electric-power-systems-spring-2011/) · [Complete available notes and reading context](https://ocw.mit.edu/courses/6-061-introduction-to-electric-power-systems-spring-2011/pages/readings/).
+
+Complete the public course, including the available chapters, problems, quizzes and independent attempts before consulting solutions. Notes cover network theory, AC power, polyphase systems, symmetrical components, load flow, magnetic circuits, forces/losses, synchronous and induction machines, and DC/permanent-magnet machines.
+
+The 2011 course publishes 2007 notes; chapter 7 on power-electronic motor drives is absent. The separate converter course fills that gap. The later commercial Electric Power Principles, Wiley 2010, is a distinct expanded book, not the same freely supplied file set. OCW's CC BY-NC-SA terms have component exceptions, including permission-only steel data. Identity, chapter list and these limitations were checked on 29 October 2026. No course files are stored here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_6JR10ZVGMZ7GT4RRK7734JQ7WD

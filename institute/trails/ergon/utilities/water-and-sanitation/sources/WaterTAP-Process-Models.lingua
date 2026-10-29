@@ -1,0 +1,11 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+WaterTAP — inspectable water-treatment models (@wu-watertap: 0, is #reference, #part-of @wu-sources) { r_6JCG0EJT4DZTWJTNKZQXF1Y3JD
+WaterTAP contributors. Version 1.8.0 documentation. [Versioned reverse-osmosis model](https://watertap.readthedocs.io/en/1.8.0/technical_reference/unit_models/reverse_osmosis_1D.html) · [Constitutive equations and variables](https://watertap.readthedocs.io/en/1.8.0/technical_reference/unit_models/reverse_osmosis_0D.html) · [Source and releases](https://github.com/watertap-org/watertap).
+
+Read the complete model definition, property model, configuration and relevant examples before reproducing a case. Trace units, transport assumptions, degrees of freedom, discretization and initialization. Compare solution-diffusion and Spiegler–Kedem–Katchalsky assumptions where appropriate; separate predicted behaviour from evidence about a particular membrane.
+
+The stable documentation resolved to 1.8.0 during review, so the link fixes that version. Follow the repository's actual licence and dependency notices. Nothing here claims that the software has been installed or a published case run. In calculations, distinguish volumetric solvent flux from mass flux explicitly rather than inferring units from a familiar symbol.
+
+**Return:** [Water and sanitation sources — complete books, methods and operating evidence](../Sources.lingua#r_7AMRJFFR11FF35KJM7Y7M05B3M).
+} r_6JCG0EJT4DZTWJTNKZQXF1Y3JD

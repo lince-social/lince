@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Microfluidic actuation, electric fields and small-scale transport (@fd-microfluidic-fields: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #fluid-dynamics "../coupled/Fluid-structure-interaction-compliance-and-oscillating-boundaries.lingua#r_12QYK1JNCA4K7MNAKG8F4CXSZQ") { r_1N19HX89Z4CQFB7SSXW9TRFVHX
+**Read:** [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), complete review, especially electrokinetic, capillary and diffusive mechanisms; [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), complex-fluid scale comparisons; [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), wetting and interfacial effects.
+
+Shrinking a device changes competing terms by different powers of length. Pressure-driven resistance, surface-to-volume ratio, diffusion time, capillary stress and electric-interface effects can therefore change relative importance. Estimate Reynolds, Péclet, capillary, Deborah and Knudsen numbers as appropriate instead of treating small geometry as one universal physical regime.
+
+For an electroosmotic example, connect ion distribution, electric potential and electric body force to the hydrodynamic balance under explicitly stated dilute-electrolyte and interface assumptions. Compare pressure-driven and electrically driven profiles. The thin-double-layer limit is an approximation with its own length ratio; surface conduction, concentration polarization, heating and reactions can invalidate a simple slip representation.
+
+Form an integrated species, charge, energy and momentum account for one small device. Identify which boundary properties need measurement and how sample chemistry changes them. Electromagnetic forcing, magnetic liquid flows and acoustic actuation reuse the same balance discipline, but require their own field equations and coupling evidence rather than an unexplained additional force term.
+
+**Continue:** [Fluid–structure interaction, compliance and oscillating boundaries](../coupled/Fluid-structure-interaction-compliance-and-oscillating-boundaries.lingua#r_12QYK1JNCA4K7MNAKG8F4CXSZQ).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1N19HX89Z4CQFB7SSXW9TRFVHX

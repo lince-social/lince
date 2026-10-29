@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Explain partial melting through phase relations and material transfer (@mp-melting: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF", #mineralogy-and-petrology "Partition-coefficients-batch-melting-and-limits.lingua#r_3B2TW5ED1ABJ87H801PXK3HW15") { r_15MH726G409NZR6MJGFPE1BKDE
+**Read:** [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full melting, binary/ternary, and related assignments; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete partial-melting notes; [Advanced Igneous Petrology — Timothy Grove, MIT 12.490](../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF), the complete relevant experimental/source case study.
+
+Partial melting changes the amounts and compositions of coexisting phases under an identified path. Solidus/liquidus positions depend on pressure, bulk composition, fluids/redox, and models. A phase diagram at fixed pressure is not automatically a decompression or heating trajectory for a natural source.
+
+Batch/equilibrium, fractional extraction, and other melting models impose different exchange and removal assumptions. Melt composition, residual composition, and melt fraction must satisfy conservation on a consistent basis. A source can change through extraction, infiltration, deformation, or reaction, so one fixed starting composition may not describe every stage.
+
+The presence of melt or an evolved rock does not uniquely identify source lithology or melting mechanism. Mineral assemblages, trace elements, isotopes, textures, experimental results, and regional constraints provide complementary tests. Residual and accumulated phases can strongly affect the interpretation of a whole-rock sample.
+
+**Work:** derive a simple melting mass balance and follow an assigned binary/ternary diagram through an explicit path. Compare batch and incrementally removed melt accounts, stating what equilibrates and what is exported at each step. Identify an independent observation that could distinguish source composition from degree of melting as the explanation of a compositional difference.
+
+Read the full melting notes and experimental case material. The next partitioning calculation makes a limited element-distribution model explicit before the more complex natural differentiation and research studies.
+
+**Continue:** [Derive a partitioning model and distinguish its coefficient from a universal constant](Partition-coefficients-batch-melting-and-limits.lingua#r_3B2TW5ED1ABJ87H801PXK3HW15).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_15MH726G409NZR6MJGFPE1BKDE

@@ -1,0 +1,70 @@
+Import "../Electrical-power-engineering.lingua"
+
+An inspectable constrained three-bus dispatch (@pe-dc-dispatch-example: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA", #source "../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H", #electrical-power-engineering "../optimization/AC-optimal-power-flow-feasibility-and-nonconvexity.lingua#r_565HECC4J3Z7PEGQNKAKR2BADB") { r_54G856GK2G38HP34VQS8TMK974
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete DC and AC OPF formulations; [Convex Optimization — Boyd and Vandenberghe](../sources/Convex-Optimization-Boyd-Vandenberghe.lingua#r_54EB992HDGH8YV8BEV5PT5CYHA), convex optimality and constrained quadratic methods; [PowerModels.jl — formulations, methods and primary paper](../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H), complete applicable mathematical model.
+
+This original normalized example has generator buses 0 and 1, load D at bus 2 and three connected lossless DC-approximation branches ordered (0,1), (1,2), (0,2). Angle 0 is the reference. Generator capacities and symmetric branch active-flow limits are given, with strictly convex quadratic plus linear generation costs. It is one period with no reserve, ramp, uncertainty or AC voltage/reactive constraints.
+
+Nodal equations determine angles/flows as affine functions of generator-0 output g, while generator 1 supplies D−g. Intersect every line/capacity constraint to obtain a feasible interval. The unconstrained convex optimum is then projected onto that interval. This uses electrical loop constraints as well as nodal balance.
+
+With the default load of 1.5, generator outputs are 0.9 and 0.6; branch flows in the stated order are 0.2, 0.8 and 0.7. The first branch is at its 0.2 limit, and the normalized cost is 1.53. Relax only that limit to 0.6: the cheaper uncongested outputs are 1.0 and 0.5, with cost 1.50. Derive both results from the network and cost equations before running the program. The same total demand can require a different generation mix because the network must carry it.
+
+```python file=three_bus_dispatch.py
+import json
+
+def bounded(value, low, high):
+    if type(value) not in (int, float) or not low <= value <= high:
+        raise ValueError("finite real input outside declared bounds")
+    return float(value)
+
+def vector(values, size, low, high):
+    if not isinstance(values, (list, tuple)) or len(values) != size:
+        raise ValueError("input vector has wrong size")
+    return tuple(bounded(value, low, high) for value in values)
+
+def dispatch(demand=1.5, reactances=(0.2, 0.3, 0.4), limits=(0.2, 1.0, 1.0), capacities=(2.0, 2.0), quadratic=(1.0, 2.0), linear=(0.0, 0.0)):
+    demand = bounded(demand, 0.0, 6.0)
+    reactances = vector(reactances, 3, 0.1, 2.0)
+    limits = vector(limits, 3, 0.0, 5.0)
+    capacities = vector(capacities, 2, 0.0, 4.0)
+    quadratic = vector(quadratic, 2, 0.01, 10.0)
+    linear = vector(linear, 2, -20.0, 20.0)
+    b01, b12, b02 = (1.0 / value for value in reactances)
+    determinant = (b01 + b12) * (b12 + b02) - b12 * b12
+    def state(generation, load):
+        theta1 = ((b12 + b02) * (load - generation) - b12 * load) / determinant
+        theta2 = (b12 * (load - generation) - (b01 + b12) * load) / determinant
+        flows = (-b01 * theta1, b12 * (theta1 - theta2), -b02 * theta2)
+        return (0.0, theta1, theta2), flows
+    coefficients = state(1.0, 0.0)[1]
+    intercepts = state(0.0, demand)[1]
+    lower, upper = max(0.0, demand - capacities[1]), min(capacities[0], demand)
+    for coefficient, intercept, limit in zip(coefficients, intercepts, limits, strict=True):
+        ends = sorted(((-limit - intercept) / coefficient, (limit - intercept) / coefficient))
+        lower, upper = max(lower, ends[0]), min(upper, ends[1])
+    tolerance = 1e-11
+    if lower > upper + tolerance:
+        return {"feasible": False, "interval": (lower, upper), "tolerance": tolerance}
+    if lower > upper:
+        lower = upper = (lower + upper) / 2.0
+    unconstrained = (2.0 * quadratic[1] * demand + linear[1] - linear[0]) / (2.0 * sum(quadratic))
+    first = min(upper, max(lower, unconstrained))
+    generation = (first, demand - first)
+    angles, flows = state(first, demand)
+    cost = sum(quadratic[j] * generation[j] ** 2 + linear[j] * generation[j] for j in range(2))
+    violations = [abs(flows[j]) - limits[j] for j in range(3)]
+    violations += [-generation[j] for j in range(2)] + [generation[j] - capacities[j] for j in range(2)]
+    return {"feasible": True, "generation": generation, "angles": angles, "flows": flows, "cost": cost, "interval": (lower, upper), "maximum_violation": max(0.0, *violations), "tolerance": tolerance}
+
+if __name__ == "__main__":
+    print(json.dumps(dispatch(), sort_keys=True, allow_nan=False))
+```
+
+Verify independently with exact rational network equations and feasible-boundary/convex-cost analysis, not a copy of the same floating-point routine. Check each bus, each loop/angle relation, all capacities/flow limits, a zero-demand case, binding lines, infeasibility, cost scaling and rejected inputs. The reported tolerance is in these bounded normalized variables and is not an installation acceptance tolerance.
+
+Compare the resulting schedule with a complete AC model before a physical claim. Negative/near-zero slack, losses, reactive limits, contingency requirements and time coupling can change the feasible set. The full [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), [PowerModels.jl — formulations, methods and primary paper](../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H) and advanced optimization work extend those models; this inspectable example is deliberately restricted rather than a production dispatch system.
+
+**Continue:** [AC optimal power flow, feasibility and nonconvexity](../optimization/AC-optimal-power-flow-feasibility-and-nonconvexity.lingua#r_565HECC4J3Z7PEGQNKAKR2BADB).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_54G856GK2G38HP34VQS8TMK974

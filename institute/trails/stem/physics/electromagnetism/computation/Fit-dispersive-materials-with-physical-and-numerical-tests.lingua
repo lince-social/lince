@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Fit dispersive materials with physical and numerical tests (@em-material-fit: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #source "../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX", #electromagnetism "../measurement/Inverse-fields-identifiability-regularization-and-prior-information.lingua#r_3SFTJFY73PCPPREDHPDKKPQC9E") { r_6FQ5BD11V41QDWJJMYQFJQKDWW
+**Read:** [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), whole report and applicable uncertainty/inversion appendices; [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX), complete dispersive-material method documentation.
+
+A frequency-dependent material model must be physically meaningful over the band and compatible with the chosen time-domain update. Start with the original measured observable and calibration, not a graph stripped of units and uncertainty. Fit complex data with a stated convention, parameter constraints and model discrepancy.
+
+Compare oscillator, relaxation and conductivity contributions, identify redundant parameters and examine uncertainty/correlation. Test passivity, causality, asymptotes and sensitivity to unmeasured frequency ranges. A stable fit in a harmonic solver need not give a stable discrete auxiliary-differential-equation update at every time step; derive and validate the actual numerical implementation.
+
+Use [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91) for full measurement and inversion methods, and [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX) for the implemented material model and its limitations. Hold out data, vary specimen thickness or fixture and compare an independent observable such as phase or resonance shift. State which parameter is effective and which microscopic interpretation requires additional evidence. Preserve the exact source/version and fitting procedure without copying external datasets into this repository. A fitted material file is a research output to verify, not an authority created by the fitting software.
+
+**Continue:** [Inverse fields, identifiability and regularization](../measurement/Inverse-fields-identifiability-regularization-and-prior-information.lingua#r_3SFTJFY73PCPPREDHPDKKPQC9E).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_6FQ5BD11V41QDWJJMYQFJQKDWW

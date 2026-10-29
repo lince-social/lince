@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Describe ventilation through mass, pressure, environment, and work (@mine-ventilation-principles: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #mining-and-mineral-engineering "Resistance-geometry-friction-and-network-equations.lingua#r_5YSPMRHHR0Q3KTE7XA6KJWBQVR") { r_4E51NRPHRS5164Q2AXBTEDRQP2
+**Read:** [Subsurface Ventilation Engineering — Malcolm J. McPherson](../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY), the complete book, beginning with its physical/airflow and environmental foundations; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full ventilation and operating-layout context; [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the complete applicable current ventilation/work requirements.
+
+Mine ventilation connects air supply/return paths, openings, fans, controls, leakage, operating changes, equipment, people, contaminants, heat, and moisture. Draw the network and its purpose before calculating a flow. A fan rating does not establish delivered conditions at every workplace.
+
+Mass continuity is fundamental; volumetric flow depends on density and reference conditions. Constant-density network approximations can be useful within an identified range, while temperature, pressure, humidity, elevation, compression, and natural driving effects may require a fuller account.
+
+Separate required environmental performance, measured conditions, flow/pressure predictions, equipment operation, and responsibilities. Air quantity alone does not determine exposure, heat stress, contamination sources, short-circuiting, mixing, or every local condition. Work and layout changes can alter both sources and network resistance.
+
+**Work:** read the full ventilation book progressively and reconstruct an authorized teaching network with intake/return paths, services/workplaces, sources, leakage, observations, and uncertainty. Identify which quantities are measured, specified, or calculated and trace how a changed working area or equipment duty affects the system.
+
+The next resistance/fan calculations make limited models explicit. Later survey, heat/contaminant, and independent projects require complete methods and observed-system tests rather than using a formula as a whole-mine environmental conclusion.
+
+**Continue:** [Relate pressure losses to geometry, flow, conditions, and measured resistance](Resistance-geometry-friction-and-network-equations.lingua#r_5YSPMRHHR0Q3KTE7XA6KJWBQVR).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_4E51NRPHRS5164Q2AXBTEDRQP2

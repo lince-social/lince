@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Flow-rate calibration, density and the installed meter (@fd-flow-measurement: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05", #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #source "../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT", #fluid-dynamics "Velocity-pressure-and-probe-interference.lingua#r_350KWVSRBR55T06BP45HY4B22C") { r_2AVBCMG4JY9YW3BW5GWA1J40Y1
+**Read:** [Water-flow calibration — NIST SP 250-98](../sources/Water-Flow-Calibration-NIST-SP-250-98.lingua#r_0PB8TSYF24VJ8QVCE1DP7SVY05), complete report and example calibration account; [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), flow-rate measurement lessons; [Advanced Hydraulics — Suresh A. Kartha](../sources/Advanced-Hydraulics-Kartha.lingua#r_1MCV024RY5CA95WTHY708FP7VT), continuity and measured velocity/discharge relations.
+
+Mass flow, actual volume flow and volume flow referred to a standard state are distinct reported quantities. Convert them only with the required density, pressure, temperature and composition information. For a collection measurement, mass change divided by elapsed time requires correction for the actual collection, timing and buoyancy conditions represented by the method.
+
+Study the complete NIST gravimetric calibration model and reconstruct its uncertainty account. Distinguish the reference standard, repeatability of the meter under calibration and the performance of that meter in its installed setting. Upstream disturbances, pulsation, gas bubbles, deposits or a changing fluid can alter the relation between an instrument indication and the intended flow.
+
+Compare two independent measurement principles on a common physical basis, for example timed collection and a calibrated differential-pressure device. Use several operating points and repeat them in changed order. Report correction models and uncertainty, including correlations, rather than treating agreement of displayed digits as traceability.
+
+**Continue:** [Velocity, pressure and probe interference](Velocity-pressure-and-probe-interference.lingua#r_350KWVSRBR55T06BP45HY4B22C).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2AVBCMG4JY9YW3BW5GWA1J40Y1

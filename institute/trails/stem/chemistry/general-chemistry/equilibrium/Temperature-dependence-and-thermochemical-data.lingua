@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Change temperature without mixing equilibrium and rate models (@gc-temperature-k: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Activities-ionic-strength-and-conditional-constants.lingua#r_7CCX4WJ7S62EAWJWFH2RHP7GXD") { r_712BZKFREWN36EKPEYKTZSQ1E1
+**Read:** [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), free-energy/equilibrium temperature dependence; [NIST-JANAF Thermochemical Tables — fourth-edition reference data](../sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44), conventions and one complete selected table; [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP), the relevant evaluated thermochemical record; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), equilibrium and thermochemical definitions.
+
+Temperature can change an equilibrium constant and a reaction-rate constant through different relations. The van ’t Hoff derivative d ln K/dT = Δ_rH°/(RT²) follows within the thermodynamic conventions for the reaction. An integrated relation using constant Δ_rH° is an approximation over a stated range. Arrhenius parameters describe rate behavior and should not be substituted into the equilibrium formula.
+
+For the constant-enthalpy approximation, ln(K₂/K₁) = −Δ_rH°/R (1/T₂−1/T₁). A positive reaction enthalpy then gives increasing K with increasing T within that model. Heat-capacity changes, phase changes, and a changed chemical description can require a fuller calculation. Preserve the same reaction normalization and standard states.
+
+Use identified evaluated data to reconstruct a temperature-dependent prediction. Distinguish heat capacity, formation enthalpy, entropy, and the reference enthalpy increment in a table. A table for a gas species cannot simply replace a condensed-phase entry because the formula text matches.
+
+**Work:** derive the integrated relation from the derivative and compare two temperature predictions under an invented constant-enthalpy model. Then use a small identified JANAF/WebBook case to inspect how an actual evaluated treatment changes the approximation. Check signs, temperature units, interpolation range, and independent limits.
+
+Read the complete data-source introduction and relevant table rather than extracting only one numeric cell. General chemistry should support this criticism of conditions and approximations even though detailed chemical thermodynamics will receive its own deeper trail.
+
+**Continue:** [State when concentrations approximate activities and when they do not](Activities-ionic-strength-and-conditional-constants.lingua#r_7CCX4WJ7S62EAWJWFH2RHP7GXD).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_712BZKFREWN36EKPEYKTZSQ1E1

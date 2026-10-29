@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Yield, recovery, purity, and usable output (@ql-yield: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-1, #source @ql-source-insight, #quantitative-literacy "Concentrations-and-bases.lingua#r_0XCSBEG82Y6TYKX1Z28R693AY5") { r_2G5J64TBJZ1NBBT1DS2FT81B20
+**Read:** Math for Trades, Volume 1, percent change and percentage problems; The Art of Insight, Proportional reasoning. Rework the separator balance before comparing ratios. Use the definition supplied by a particular industry rather than assuming every source uses yield identically.
+
+Component recovery is component mass in the chosen product divided by component mass in the feed on the same basis. In the preceding separator example it is 15/20 = 75%. Product grade is 15/100 = 15%; product mass yield is 100/1000 = 10%. None can substitute for another.
+
+For sequential stages with conditional usable-output fractions y₁,...,y_n on compatible item populations, overall yield is their product. Three stages at 0.90, 0.95, and 0.98 leave 0.8379 of the original population. This calculation assumes the stated stage definitions and accounting apply; rework, merging batches, changing item definitions, or correlated selection can require another model.
+
+Purity describes specified unwanted constituents or their complement on a stated analytical basis. A high total purity alone may fail to control a particular impurity that matters to a semiconductor process. “Five nines” without component list, method, basis, and uncertainty is an incomplete procurement description.
+
+**Work:** create a teaching account for raw pieces, cut pieces, assembled units, tested units, rework, and accepted units. Give each ratio an explicit numerator and denominator. Include the energy and material spent on rejected work when calculating resource use per accepted unit. Show how quoting consumption per started unit instead can hide a low-yield process. Retain the balances, not only the final percentage.
+
+**Continue:** [Concentrations, moisture, and changing the basis](Concentrations-and-bases.lingua#r_0XCSBEG82Y6TYKX1Z28R693AY5).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_2G5J64TBJZ1NBBT1DS2FT81B20

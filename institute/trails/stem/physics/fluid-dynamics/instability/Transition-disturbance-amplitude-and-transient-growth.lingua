@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Transition, disturbance amplitude and transient growth (@fd-transition: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "../turbulence/Means-fluctuations-correlations-and-sampling.lingua#r_28QSWBMS4143WE5A6NHQQJXZEY") { r_3YVWXR0JBV81JE1W6E58FB6F6A
+**Read:** [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), transition and turbulence origins; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), instability and turbulence chapters; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), transition experiments and explanatory notes.
+
+A Reynolds number compares selected inertial and viscous scales; it is not a universal switch identifying every flow state. Geometry, imposed disturbances, roughness, inlet conditions and observation time affect transition. A linearly stable base flow can experience transient amplification or finite-amplitude transition, while an unstable mode may need time and distance to become observable.
+
+Formulate perturbation kinetic energy and its production, viscous dissipation and boundary transport. Identify how perturbations extract energy from base shear. Compare modal growth with the amplification of a chosen initial disturbance under the linear operator, then identify when nonlinear terms can no longer be neglected.
+
+Design a reproducible transition study that varies disturbance level as well as Reynolds number. Define what observation counts as sustained turbulence, intermittency or decay. Use repeated realizations and report distributions or uncertain thresholds where appropriate. This is why an exact laminar solution can remain mathematically valid beyond the range in which a particular apparatus realizes it.
+
+**Continue:** [Means, fluctuations, correlations and sampling](../turbulence/Means-fluctuations-correlations-and-sampling.lingua#r_28QSWBMS4143WE5A6NHQQJXZEY).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3YVWXR0JBV81JE1W6E58FB6F6A

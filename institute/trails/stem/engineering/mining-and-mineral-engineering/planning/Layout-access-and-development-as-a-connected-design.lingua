@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Build a layout whose accesses, production, utilities, and lifecycle fit together (@mine-layout: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ", #mining-and-mineral-engineering "Precedence-pit-shells-and-physically-admissible-extraction.lingua#r_1PWM02XFF4XQ8TCHCH5MA0MWSW") { r_0AXF4MAB48YPG888GMT46Z76HN
+**Read:** [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete mine layout, access, shaft/ramp, and supporting-system chapters; [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the full relevant phase/geometry sequence; [Underground Mining of Metalliferous Deposits — Mandal and Dey, NPTEL](../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ), the complete development/layout and supporting-system material.
+
+A layout connects deposit geometry, excavation sequence, equipment/work spaces, ground, ventilation, water, material/personnel movement, utilities, and monitoring. Draw the physical and operational boundaries before comparing an isolated ramp, shaft, plant position, or waste site.
+
+Access choices affect development time, transport/pumping/ventilation energy, maintenance, flexibility, exposure to changing ground/water, and future extraction. Several nominally feasible components may not operate compatibly when combined. A diagram needs quantities, scale, constraints, uncertainty, and a progression through time.
+
+Preserve planned, observed, and alternative geometries and their source/version. New exploration, ground observations, process response, or equipment constraints can require revision. A mathematically convenient route can conflict with working space, temporary access, supporting infrastructure, or closure requirements.
+
+**Work:** reconstruct a full teaching layout from method selection through development, production, services, plant/material destinations, and closure. Independently check a volume, gradient, travel/energy, or capacity relation. Compare a consequential alternative and explain which observations and tradeoffs control the choice.
+
+Read the complete layout/access chapters and course material. Later specialist machinery, power, geotechnics, utilities, and construction subjects deepen their own design work; the mine account should identify their interfaces and required evidence clearly rather than treat them as unspecified background.
+
+**Continue:** [Represent extraction dependencies without equating a graph solution with a buildable mine](Precedence-pit-shells-and-physically-admissible-extraction.lingua#r_1PWM02XFF4XQ8TCHCH5MA0MWSW).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_0AXF4MAB48YPG888GMT46Z76HN

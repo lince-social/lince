@@ -1,0 +1,70 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Solve and independently test a deliberately simple two-phase equilibrium (@mp-equilibrium-example: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/MAGEMin-Riel-2022.lingua#r_7JK9DVER7XW4ESPJ27K7H9K29S", #mineralogy-and-petrology "Activities-nonideal-mixing-and-solvi.lingua#r_5PPNHA0XQ09N8BVJVN816PJDMF") { r_0N9KF8HD8HGNAZ114DPF9ZP2JW
+**Read:** [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full thermodynamic and lever-rule lectures/problems; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete relevant binary diagrams; [MAGEMin, an efficient Gibbs energy minimizer — Riel and colleagues](../sources/MAGEMin-Riel-2022.lingua#r_7JK9DVER7XW4ESPJ27K7H9K29S), the full algorithm/tests for a later multicomponent comparison.
+
+At fixed temperature and pressure, consider two ideal binary structural phases with dimensionless molar energies g_α = x ln(x)+(1−x)ln(1−x)+a x and g_β = x ln(x)+(1−x)ln(1−x)+a(1−x). Here x is component-B mole fraction, g means G/(RT) under chosen reference states, and a is a positive dimensionless endmember-energy offset. This invented model is not a calibrated natural mineral system.
+
+Symmetry makes the common tangent horizontal. Solve ln(x_α/(1−x_α))+a = 0 and set x_β = 1−x_α, then use mass balance for phase amounts. Outside the coexistence interval, the stable phase has the bulk composition. The code uses bounded bisection rather than a general multicomponent minimizer.
+
+```python file=two_phase.py
+import json
+import math
+
+def bounded(value, lower, upper):
+    if isinstance(value, bool):
+        raise ValueError("supply a finite number")
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError) as error:
+        raise ValueError("supply a finite number") from error
+    if not math.isfinite(result) or not lower <= result <= upper:
+        raise ValueError("value outside exercise bounds")
+    return result
+
+def coexistence(offset):
+    offset = bounded(offset, 0.01, 20)
+    lower, upper = 0.0, 0.5
+    for _ in range(100):
+        middle = (lower + upper) / 2
+        slope = math.log(middle) - math.log1p(-middle) + offset
+        if slope > 0:
+            upper = middle
+        else:
+            lower = middle
+    alpha = (lower + upper) / 2
+    return alpha, 1 - alpha
+
+def energy(x, phase, offset):
+    mixing = 0.0 if x in (0.0, 1.0) else x * math.log(x) + (1-x) * math.log1p(-x)
+    return mixing + offset * (x if phase == "alpha" else 1-x)
+
+def equilibrate(bulk, offset=math.log(4)):
+    bulk = bounded(bulk, 0, 1)
+    offset = bounded(offset, 0.01, 20)
+    alpha, beta = coexistence(offset)
+    if bulk <= alpha:
+        phases = [{"phase": "alpha", "x_B": bulk, "mole_fraction": 1.0}]
+    elif bulk >= beta:
+        phases = [{"phase": "beta", "x_B": bulk, "mole_fraction": 1.0}]
+    else:
+        fraction = (bulk - alpha) / (beta - alpha)
+        phases = [{"phase": "alpha", "x_B": alpha, "mole_fraction": 1-fraction},
+                  {"phase": "beta", "x_B": beta, "mole_fraction": fraction}]
+    total = math.fsum(item["mole_fraction"] * energy(item["x_B"], item["phase"], offset)
+                      for item in phases)
+    return {"bulk_x_B": bulk, "offset_G_over_RT": offset,
+            "coexistence_x_B": [alpha, beta], "phases": phases, "G_over_RT": total}
+
+if __name__ == "__main__":
+    print(json.dumps(equilibrate(0.35), sort_keys=True, allow_nan=False))
+```
+
+With a = ln(4), coexistence compositions are 0.2 and 0.8 and the bulk-0.35 phase fractions are 0.75 and 0.25. Both phases have g ≈ −0.22314355 at the tangent. Equal chemical potentials and nonnegative amounts are distinct checks.
+
+**Work:** derive the analytic endpoints independently; check the numerical slope, tangent equality, amounts, composition balance, and single-phase limits over a bulk grid. Compare total energy with admissible alternative states or a separately constructed convex hull. Reject invalid/nonfinite/out-of-domain inputs. Study small tie-line gaps and explain the conditioning. A correct toy calculation does not validate a natural phase diagram, its thermodynamic data, or a rock's equilibrium history.
+
+**Continue:** [Relate solid-solution thermodynamics to activities, ordering, and exsolution](Activities-nonideal-mixing-and-solvi.lingua#r_5PPNHA0XQ09N8BVJVN816PJDMF).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_0N9KF8HD8HGNAZ114DPF9ZP2JW

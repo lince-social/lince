@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+AC optimal power flow, feasibility and nonconvexity (@pe-ac-opf: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H", #source "../sources/Power-Grid-Library-OPF-Benchmarks.lingua#r_6AC54N8ECBG43CFWW99NERNWN5", #electrical-power-engineering "Duality-convex-relaxations-and-physical-recovery.lingua#r_7H8HRFCFJM8FJ3YYMSNJ6E2X38") { r_565HECC4J3Z7PEGQNKAKR2BADB
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), chapters 6–7 in full and applicable complete solver methods; [PowerModels.jl — formulations, methods and primary paper](../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H), complete selected formulation/problem and result definitions; [Power Grid Library — OPF benchmarks and provenance](../sources/Power-Grid-Library-OPF-Benchmarks.lingua#r_6AC54N8ECBG43CFWW99NERNWN5), complete report, model, selected case headers and baselines.
+
+AC OPF joins a chosen objective to nonlinear complex-power balance and explicit equipment/network/control limits. State voltage, generator P/Q capability, branch/angle/thermal constraints, taps/shunts and the actual cost representation. A different constraint or interpretation can change the problem even when two case files have the same buses.
+
+Read the complete [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV) OPF formulation and compare with [PowerModels.jl — formulations, methods and primary paper](../sources/PowerModels-Methods-and-Formulations.lingua#r_3SDQSM0EXY38699XFME0NQQT2H) on an authorized versioned [Power Grid Library — OPF benchmarks and provenance](../sources/Power-Grid-Library-OPF-Benchmarks.lingua#r_6AC54N8ECBG43CFWW99NERNWN5) case. Check the original AC equations, every constraint and the meaning of a solver's status. A local numerical optimum is not automatically a global optimum, and a convex lower bound is not necessarily an achievable operating point.
+
+Compare multiple starts/formulations, residuals, lower bounds where justified and physical recovery. Study a changed binding constraint and predict its marginal effect. Recheck the approximate dispatch against losses and reactive/voltage limits. A steady optimum does not establish dynamic security, protection or chronological adequacy; include those models where the decision requires them. The advanced study must keep economic assumptions, mathematical optimality and physical feasibility as separate claims.
+
+**Continue:** [Duality, convex relaxations and physical recovery](Duality-convex-relaxations-and-physical-recovery.lingua#r_7H8HRFCFJM8FJ3YYMSNJ6E2X38).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_565HECC4J3Z7PEGQNKAKR2BADB

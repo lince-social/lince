@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Explain hydrocyclone response through flow, particles, and coupled circuit conditions (@mine-hydrocyclones: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD", #mining-and-mineral-engineering "Gravity-separation-particle-motion-and-selectivity.lingua#r_4Q7PHAQFNCVZD8M3KX8PC5PQ5N") { r_2MP542MYM3BZWYRE2FQ0JBGT1R
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete classification/hydrocyclone and circuit material; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the full relevant classification/slurry procedures; [Introduction to Mineral Processing — Arun Kumar Majumder, NPTEL](../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD), the complete hydrocyclone and movement-in-fluids sequence.
+
+A hydrocyclone separates through a flow/particle system whose geometry, pressure/flow, solids concentration, size/density distribution, rheology, wear, and outlets affect behavior. Its products are not perfectly separated by one universal diameter.
+
+Water split, bypass, misplaced material, density effects, fine/coarse populations, and changing operating states can alter observed partitions. A corrected cut-size model needs its actual definitions and calibration. A bulk size curve may hide different mineral-density populations important to recovery or grinding load.
+
+Hydrocyclones interact with pumps, sumps, mills, controls, and recirculation. A change intended to alter one product can shift circulating load, residence, energy, throughput, and downstream quality. Preserve measured states and time support before interpreting a steady model.
+
+**Work:** reconstruct a complete book/lab cyclone case with material/slurry characterization, geometry, operation, samples, measurements, and uncertainty. Independently close solids/water and size-fraction accounts and compare observed/corrected partitions. Test an alternative involving feed density, wear, bypass, or measurement and identify a discriminating observation.
+
+Read the full theory, method, and circuit application, then compare with independent test data. The later integrated plant project requires a defensible circuit account rather than choosing a device from one fitted cut-size number.
+
+**Continue:** [Connect gravity concentration with particle properties, flow, and recovery evidence](Gravity-separation-particle-motion-and-selectivity.lingua#r_4Q7PHAQFNCVZD8M3KX8PC5PQ5N).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_2MP542MYM3BZWYRE2FQ0JBGT1R

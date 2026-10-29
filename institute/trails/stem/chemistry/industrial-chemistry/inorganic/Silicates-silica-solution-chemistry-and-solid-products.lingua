@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect silicate and silica chemistry with solution state, particles and product function (@ic-silica: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP", #industrial-chemistry "Lime-cement-glass-and-ceramics-as-chemical-transformations.lingua#r_7GXF5XZKSCM78TGA1YPN0KEEGB") { r_6RC3NYH9QG0C5XSJS3RD6PA4TT
+**Read:** [Large Volume Inorganic Chemicals — Solids and Others Industry, BREF LVIC-S](../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4), the complete synthetic amorphous silica, sodium-silicate and relevant solid-product chapters; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the full silicate/mineral-product chemistry teaching; [Production of Speciality Inorganic Chemicals, BREF SIC](../sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP), the relevant complete specialty-material quality and process context.
+
+Silicate and silica production links mineral or chemical feeds with thermal reactions, solution chemistry, precipitation or gas-phase processes. A single nominal SiO₂ content does not specify surface area, pore state, aggregation, hydration, soluble ions or physical form. These properties can determine usefulness in a downstream material or chemical operation.
+
+Silicate solutions contain composition- and condition-dependent species and structures; a convenient bulk formula is not a complete molecular description. Changing pH, concentration, temperature or counterions can alter solubility, polymerization and particle formation. A precipitated, pyrogenic or gel product can require different process evidence.
+
+Trace reaction, separation, washing, drying, finishing and impurity pathways with silicon, sodium or other relevant constituents and water. A purification improvement can alter particle or surface properties, so a bulk assay alone cannot settle the product comparison.
+
+**Work:** reconstruct a complete public silicate/silica route and independently close elemental, liquid/solid and utility accounts. Compare two documented routes at the same functional product requirement. Explain which molecular/phase, particle, surface and analytical observations distinguish their performance and what further evidence is needed for a sensitive application.
+
+**Continue:** [Connect mineral-product chemistry with thermal history, phase formation and function](Lime-cement-glass-and-ceramics-as-chemical-transformations.lingua#r_7GXF5XZKSCM78TGA1YPN0KEEGB).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_6RC3NYH9QG0C5XSJS3RD6PA4TT

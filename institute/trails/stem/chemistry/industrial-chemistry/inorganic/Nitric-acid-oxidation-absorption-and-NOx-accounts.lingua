@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect nitric-acid chemistry with gas oxidation, absorption and nitrogen recovery (@ic-nitric-acid: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3", #industrial-chemistry "Nitrogen-salts-neutralization-solids-and-product-quality.lingua#r_6RBXMJQ5M3DPGC1JGBCBQ4VKR9") { r_5T20YCXZ7SSKJPZCF4HH795M02
+**Read:** [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the complete nitric-acid production and process-flow teaching; [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the full nitric-acid chapter and associated energy/emissions evidence; [Chemical-industry process descriptions and emission factors — EPA AP-42](../sources/Chemical-Industry-Emission-Factors-EPA.lingua#r_16XA95GZSY1VD7GZNTSXWVNBC3), the complete nitric-acid section and background evidence, retaining its date and factor basis.
+
+Nitric-acid manufacture links catalytic ammonia oxidation, subsequent gas reactions and absorption into a liquid product. An illustrative sequence is 4NH₃+5O₂→4NO+6H₂O, 2NO+O₂→2NO₂, and 3NO₂+H₂O→2HNO₃+NO. The regenerated NO and additional oxidation show why the process must be treated as a connected system.
+
+Reaction selectivity, heat recovery, gas composition, pressure/temperature and absorption behavior influence usable acid and nitrogen-oxide emissions. Product concentration and impurity requirements determine further processing. A nominal percentage conversion in the initial catalytic step is not the overall nitrogen recovery into qualified acid.
+
+Separate the formation, capture, recycle and residual pathways of nitrogen-containing species. Trace the actual measured basis and treatment conditions when comparing environmental performance; a historical emission factor does not replace a plant measurement or explain a changed operating regime.
+
+**Work:** reconstruct a complete acid route, independently balance the reaction sequence and close nitrogen, oxygen, water and thermal accounts. Compare two documented process arrangements using compatible product and emissions boundaries. Explain how a changed catalyst, absorption duty or gas condition could alter the result and what observation would discriminate those explanations.
+
+**Continue:** [Connect nitrogen-containing salts with neutralization, finishing and useful specifications](Nitrogen-salts-neutralization-solids-and-product-quality.lingua#r_6RBXMJQ5M3DPGC1JGBCBQ4VKR9).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_5T20YCXZ7SSKJPZCF4HH795M02

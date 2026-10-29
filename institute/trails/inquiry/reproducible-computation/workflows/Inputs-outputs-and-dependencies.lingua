@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Describe a workflow as transformations with explicit dependencies (@rc-dag: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "A-small-Make-workflow.lingua#r_169Z4XQW39YQTHGVHHE68GYVNM", #reproducible-computation "Larger-workflow-engines.lingua#r_3KEYE030EP12Y4MHBY6RB1SJV6") { r_6FXMW2VCCFTF1X1CS2SGSP1N31
+**Read:** [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), the complete Make chapter, chapter 9; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), Reproducible Research with Make and Research Compendia.
+
+A workflow connects activities by the inputs they use and outputs they produce. For the toy project, CSV plus analysis code produce a report; the report and reporting code can produce a table or figure; independent checks examine the calculation and its failure behavior. A dependency graph makes this relation inspectable without turning every reference to another subject into an execution dependency.
+
+Name parameters and reference data as inputs when they affect a transformation. An omitted calibration file or an environment variable can make a workflow reuse a stale output after a scientific input has changed. A timestamp-based engine knows only the dependencies and freshness rules it was given. It cannot infer the meaning of a hidden parameter from the paper's prose.
+
+Distinguish an artifact dependency from a scientific assumption. An assay table is an input artifact; representativeness is a claim that needs additional evidence. A successful graph execution proves that the recorded activities completed under their contracts, not that the model is adequate. Preserve both the graph and the methodological explanation.
+
+**Work:** draw the dependencies for the two-lot calculation, a generated summary, and an independent check. List what must rerun when the CSV changes, when a reporting label changes, and when the analysis formula changes. Introduce an undeclared configuration file and demonstrate the stale-result risk. Then repair the graph and verify the intended rerun.
+
+Follow the Make Record for the smallest concrete implementation and the workflow-engine Record for a larger comparison. Both return to notebook and execution-state questions. One tool can support the final practical project; understanding the dependencies matters more than accumulating several equivalent wrappers.
+
+**Continue:** [Run a small dependency graph and check its freshness assumptions](A-small-Make-workflow.lingua#r_169Z4XQW39YQTHGVHHE68GYVNM) · [Scale the workflow while keeping the method independent of its engine](Larger-workflow-engines.lingua#r_3KEYE030EP12Y4MHBY6RB1SJV6).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_6FXMW2VCCFTF1X1CS2SGSP1N31

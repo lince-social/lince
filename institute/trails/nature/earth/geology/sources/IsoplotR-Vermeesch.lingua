@@ -1,0 +1,11 @@
+Import "../Geology.lingua"
+
+IsoplotR: A free and open toolbox for geochronology — Vermeesch (@geo-isoplot: 0, is #reference, #part-of @geo-sources) { r_6H156FG6EJ2M5AJ1A9GV0NV3S4
+Pieter Vermeesch. “IsoplotR: A free and open toolbox for geochronology.” Geoscience Frontiers 9(5), 1479–1493, 2018. DOI 10.1016/j.gsf.2018.04.001. [Author's complete article](https://pieter-vermeesch.es.ucl.ac.uk/papers/VermeeschGSF2018/) · [Institutional publication and authorized PDF](https://discovery.ucl.ac.uk/id/eprint/10050725/).
+
+Read the full paper and relevant supplement, reconstructing an example independently before using the package as a check. Examine covariance, regression, geological scatter, age distributions, and interpretation as distinct questions. Record the actual software version and method used; a 2018 description does not specify every current implementation detail.
+
+The institutional record states CC BY-NC-ND 4.0 for the article. The paper identifies GPL for the software; preserve that distinction and component notices. No package is embedded in Lince. Citation, full-author access, publication licence, and code/content distinction checked on 29 October 2026. Article, data, and code remain external.
+
+**Return:** [Geology sources — complete books, field methods, maps, and research](../Sources.lingua#r_3H47FYGCEYFZPW2VK77PMR0ECB).
+} r_6H156FG6EJ2M5AJ1A9GV0NV3S4

@@ -1,7 +1,7 @@
 use super::*;
 
 fn head(id: u64, second: bool) -> Monitor {
-    Monitor { id: OutputId(id), name: if second { "Affinity B" } else { "Affinity A" }.into(), origin: [if second { 500 } else { 0 }, 0], size: [500, 720] }
+    Monitor { id: OutputId(id), name: if second { "Affinity-B" } else { "Affinity-A" }.into(), origin: [if second { 500 } else { 0 }, 0], size: [500, 720] }
 }
 
 fn create(runtime: &tokio::runtime::Runtime, directory: &std::path::Path, monitors: &[Monitor], mut harness: Harness) -> Fixture {
@@ -66,7 +66,25 @@ fn follows(fixture: &mut Fixture) -> bool {
 fn wait_follow(fixture: &mut Fixture) {
     let deadline = Instant::now() + Duration::from_secs(30);
     while !follows(fixture) {
-        assert!(Instant::now() < deadline, "Saved native follow intent did not restore through real startup/loading");
+        if Instant::now() >= deadline {
+            let state = fixture.inspect(|canvas| {
+                let world = canvas.world_mut();
+                let root = world.query_filtered::<Entity, With<native::workspace::Workspaces>>().single(world).unwrap();
+                let input = world.resource::<bevy::input_focus::InputFocus>().get();
+                let input_details = input.map(|entity| serde_json::json!({"entity":format!("{entity:?}"),
+                    "name":world.get::<Name>(entity).map(Name::as_str),
+                    "label":world.get::<bevy::a11y::AccessibilityNode>(entity).and_then(|node| node.label()),
+                    "editable":world.get::<bevy::text::EditableText>(entity).is_some(),
+                    "window":world.get::<bevy::window::Window>(entity).is_some(),
+                    "primary_window":world.get::<bevy::window::PrimaryWindow>(entity).is_some(),
+                    "root":entity == root}));
+                let items = world.query::<(Entity, &native::layout::LayoutBox, &native::workspace::WorkspaceMember, &native::canvas::CanvasItem)>()
+                    .iter(world).map(|(entity, layout, member, item)| serde_json::json!({"entity":format!("{entity:?}"),"id":layout.id,"workspace":member.0,"position":item.position.to_array(),"size":item.size.to_array()})).collect::<Vec<_>>();
+                let spaces = world.get::<native::workspace::Workspaces>(root).unwrap();
+                serde_json::json!({"root":format!("{root:?}"),"active":spaces.active,"workspaces":spaces.entries,"input":input_details,"items":items})
+            });
+            panic!("Saved native follow intent did not restore through real startup/loading: {state}");
+        }
         std::thread::sleep(Duration::from_millis(2));
     }
 }
@@ -101,9 +119,9 @@ fn two_real_output_affinities_reconnect_without_stealing_input_and_cold_native_f
         let note = native::sand_store::spawn_sand(canvas.world_mut(), root, b, native::sand_store::SandKind::EditableText, "Durable affinity note", bevy::math::DVec2::ZERO);
         let field = canvas.world_mut().get::<native::sand_store::StoredSand>(note).unwrap().content.unwrap();
         canvas.world_mut().get_mut::<bevy::text::EditableText>(field).unwrap().editor.set_text("Durable affinity content");
-        let id = canvas.world_mut().get::<native::layout::LayoutBox>(note).unwrap().id;
-        (first_member, second_member, id)
+        (first_member, second_member, note)
     });
+    let note = fixture.inspect(move |canvas| canvas.world_mut().get::<native::layout::LayoutBox>(note).unwrap().id);
     assert_eq!(first_member.1, a);
     assert_eq!(second_member.1, b);
     activate(&mut fixture, first_id, &first.surface);
@@ -114,7 +132,7 @@ fn two_real_output_affinities_reconnect_without_stealing_input_and_cold_native_f
     assert_eq!(workspace(&fixture, 1), a);
     type_key(&mut fixture, &first.surface);
     let preferences: Vec<lince_interface::layout::outputs::Preference> = serde_json::from_slice(&std::fs::read(directory.path().join("park-outputs.json")).unwrap()).unwrap();
-    assert_eq!(preferences.iter().find(|preference| preference.workspace == b).unwrap().output, "Affinity B");
+    assert_eq!(preferences.iter().find(|preference| preference.workspace == b).unwrap().output, "Affinity-B");
     configure(&mut fixture, &[head(2, true), head(1, false)]);
     assert_eq!(workspace(&fixture, 1), a);
     assert_eq!(workspace(&fixture, 2), b);
@@ -131,6 +149,11 @@ fn two_real_output_affinities_reconnect_without_stealing_input_and_cold_native_f
     assert_ne!(workspace(&fixture, 2), b);
     assert_eq!(view(&mut fixture), occupied);
     type_key(&mut fixture, &second.surface);
+    fixture.inspect(|canvas| {
+        let world = canvas.world_mut();
+        let root = world.query_filtered::<Entity, With<native::workspace::Workspaces>>().single(world).unwrap();
+        canvas.create_workspace(root.to_bits()).unwrap();
+    });
     action(&mut fixture, DesktopAction::Workspace(1));
     activate(&mut fixture, first_id, &first.surface);
     assert_eq!(workspace(&fixture, 1), a);
@@ -146,7 +169,7 @@ fn two_real_output_affinities_reconnect_without_stealing_input_and_cold_native_f
     assert_ne!(workspace(&fixture, 2), b);
     type_key(&mut fixture, &second.surface);
     let preferences: Vec<lince_interface::layout::outputs::Preference> = serde_json::from_slice(&std::fs::read(directory.path().join("park-outputs.json")).unwrap()).unwrap();
-    assert_eq!(preferences.iter().find(|preference| preference.workspace == b).unwrap().output, "Affinity A");
+    assert_eq!(preferences.iter().find(|preference| preference.workspace == b).unwrap().output, "Affinity-A");
     fixture.desktop.server.disconnect_outputs();
     fixture.desktop.server.output_catalog(Vec::new()).unwrap();
     fixture.desktop.invalidate_outputs().unwrap();
@@ -168,6 +191,7 @@ fn two_real_output_affinities_reconnect_without_stealing_input_and_cold_native_f
         geometry.items.iter().any(|item| item.id == ItemId::Native(note)))));
     assert_eq!(workspace(&reopened, 7), b);
     assert_ne!(workspace(&reopened, 9), b);
+    assert_eq!(view(&mut reopened).0, b);
     assert!(reopened.desktop.server.windows().is_empty());
     wait_follow(&mut reopened);
     let retained = reopened.inspect(move |canvas| {

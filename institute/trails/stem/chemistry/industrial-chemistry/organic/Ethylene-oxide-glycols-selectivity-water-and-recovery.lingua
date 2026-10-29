@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect ethylene oxidation and glycol production with selectivity and separation (@ic-ethylene-oxide: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #industrial-chemistry "Propylene-derivatives-oxidation-hydration-and-co-products.lingua#r_6X7N9HWSBN8V1H8GNHC598TVGT") { r_4F44CG4NV3RHFYF1GFMTW4GEPC
+**Read:** [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the complete ethylene-oxide and ethylene-glycol chapter; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the entire relevant olefin oxidation/derivative sequence; [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the full applicable reaction development and thermal/scale assessment methods.
+
+The desired oxidation C₂H₄+½O₂→C₂H₄O competes with other transformations, including more complete oxidation. Catalyst state, local composition, heat/transport and residence history affect product distribution. A high ethylene conversion does not automatically imply high useful oxide yield.
+
+Subsequent oxide-water chemistry forms glycol products with its own selectivity and separation questions. Water amount, competing/continued reaction, product distribution and removal influence isolated grades. Recycled carriers, unreacted feed and trace species connect reactor and separation sections.
+
+Reconstruct the complete product conditioning, gas/liquid duties, heat recovery, wastewater and residual account. Chemical reactivity and thermal behavior require the actual primary methods and appropriate professional setting; a simplified equation is a teaching relation, not operating knowledge for reactive equipment.
+
+**Work:** reconstruct the entire public oxide/glycol process chapter with complete primary chemistry, phase and performance evidence. Independently close carbon, oxygen, water and energy, compare a documented process or catalyst change at equal accepted products, and explain the observations needed to distinguish reaction selectivity, recovery and analytical effects.
+
+**Continue:** [Compare propylene-derived routes through reaction selectivity, isolation and co-products](Propylene-derivatives-oxidation-hydration-and-co-products.lingua#r_6X7N9HWSBN8V1H8GNHC598TVGT).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4F44CG4NV3RHFYF1GFMTW4GEPC

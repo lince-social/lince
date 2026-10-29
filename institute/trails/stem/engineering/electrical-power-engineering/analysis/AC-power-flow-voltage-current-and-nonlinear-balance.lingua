@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+AC power flow and nonlinear balance (@pe-power-flow: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #electrical-power-engineering "Slack-PV-PQ-buses-controls-and-limits.lingua#r_5RQME23KX22XW5NGAWMEXDWEKD") { r_1152R24GG899A9DD2S3PY2Q5D2
+**Read:** [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), chapter 5 in full; [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), chapters 3–4 in full; [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete load-flow treatment.
+
+Use I = YV and complex injected power S_i = V_i conjugate(I_i). Under the declared injection convention, generation minus load supplies the net bus injection; passive absorbed power has the opposite boundary orientation. Derive real and reactive equations in voltage magnitudes/angles or rectangular components, keeping tap/shunt models explicit.
+
+Constant-power bus specifications make these equations nonlinear. Multiple solutions, absent feasible solutions and limiting device constraints are physical/model possibilities rather than software inconveniences. A power-flow solution describes a particular steady state; it is not automatically economically optimal, dynamically stable, protection-coordinated or constructible.
+
+Work a two-bus case by hand before a multibus system. Check each bus balance, branch terminal power, total real/reactive losses and voltage/device limits. Use both magnitude/angle and an independent rectangular/current formulation to verify a small result. [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV) gives complete models and algorithms; [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G) supplies sustained Portuguese system development. The next bus-type, numerical and original two-bus Records make the assumptions and solution branches inspectable.
+
+**Continue:** [Slack, PV and PQ buses, controls and limits](Slack-PV-PQ-buses-controls-and-limits.lingua#r_5RQME23KX22XW5NGAWMEXDWEKD).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_1152R24GG899A9DD2S3PY2Q5D2

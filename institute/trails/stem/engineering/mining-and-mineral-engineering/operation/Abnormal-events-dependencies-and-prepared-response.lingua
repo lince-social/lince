@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Understand abnormal events through system dependencies, evidence, and prepared work (@mine-emergency: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #source "../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #mining-and-mineral-engineering "../../../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H") { r_5K00AAW6ZSK6H58Y22TZYET3Z5
+**Read:** [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the complete applicable current abnormal-event, preparedness, access, and responsibility context; [Subsurface Ventilation Engineering — Malcolm J. McPherson](../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY), the full relevant abnormal-environment and system discussions; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant management/preparedness chapters.
+
+Abnormal events can couple ground, water, fire/heat, air, machinery, power, communications, access, people, and neighboring systems. Analyze credible mechanisms in the actual setting and distinguish initiating conditions, propagation, detection, controls, response, and recovery.
+
+Detection and response depend on instrument availability, interpretation, communications, accessible routes/resources, trained roles, coordination, and changing conditions. A written plan or simulated alarm does not alone demonstrate the whole response system. Testing should preserve what was actually observed and what remains assumed.
+
+Compare failure/dependency models with field history and current professional requirements. A numerical probability built from weakly supported independent events may hide common causes or omitted pathways. Information arriving too late or without an actionable role may not change the outcome it was intended to address.
+
+**Work:** reconstruct an authorized teaching/official case at the level of mechanisms, evidence, dependencies, prepared roles, and lessons. Analyze a communication or service loss and identify a discriminating observation/test. Explain what a drill or model establishes about readiness and where actual professional validation is still needed.
+
+Read complete relevant current guidance and handbook material. Continue through [Mass and component balances — account for every stream](../../../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H) for shared component/mass reasoning before processing flowsheets and the original two-product balance. Ordinary reading links keep the system connections available without a new assessment feature.
+
+**Continue:** [Mass and component balances — account for every stream](../../../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_5K00AAW6ZSK6H58Y22TZYET3Z5

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Distinguish chemical yield, stereochemical composition and useful selective synthesis (@ic-chiral-biocat: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT", #industrial-chemistry "Pharmaceutical-intermediates-impurities-and-process-knowledge.lingua#r_6YE0HMCQ9S8Z7341AA854P4M7M") { r_0D53A6RMV288PCA6GV5GA14E0G
+**Read:** [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the whole relevant selective-reaction, isolation and product-quality treatment; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete pertinent catalytic/biological rate and reactor reasoning; [The E factor 25 years on — Roger A. Sheldon](../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT), the full biocatalysis, solvent and complete-process metric discussion.
+
+Stereochemical composition can determine whether an isolated product meets its purpose. Chemical purity, enantiomeric or diastereomeric composition, conversion and isolated yield describe different aspects of the material. A high value for one does not establish the others or guarantee the product's stability during workup/storage.
+
+Compare asymmetric catalysis, resolution, enzyme/cell transformations and other documented strategies through their actual chemistry, substrate range, selectivity and recovery. Cofactors, catalysts, solvents, water, byproducts and regeneration can shape the complete account. A biological catalyst is not automatically a lower-impact route, nor is a high turnover number sufficient process evidence.
+
+The analytical method must distinguish the relevant forms with suitable calibration, support and uncertainty. Isolation can preferentially retain one form or alter composition, while a change in feed can create a different impurity distribution. Keep mechanism, measurement and process claims separate and connected by evidence.
+
+**Work:** reconstruct a complete primary selective-synthesis study with methods and product characterization, and compare a justified alternative. Independently check species, stereochemical and solvent/catalyst accounts, test an influential changed condition and identify the observation needed to challenge the claimed selectivity mechanism or practical route advantage.
+
+**Continue:** [Understand pharmaceutical chemical production through identity, impurities and evidence](Pharmaceutical-intermediates-impurities-and-process-knowledge.lingua#r_6YE0HMCQ9S8Z7341AA854P4M7M).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_0D53A6RMV288PCA6GV5GA14E0G

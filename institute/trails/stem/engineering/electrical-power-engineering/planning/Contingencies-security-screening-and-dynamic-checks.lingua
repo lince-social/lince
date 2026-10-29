@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Contingencies, screening and dynamic checks (@pe-contingencies: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #source "../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ", #electrical-power-engineering "../../../../inquiry/quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T") { r_6NDG8CV5PF3WZX4BWDTAJ4KA95
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete applicable network/flow and limit methods; [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), whole security/contingency and ramp/reserve treatment; [ANDES — dynamic modelling and analysis manual](../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ), complete relevant contingency/time-domain tutorials.
+
+Define the disturbance set, operating conditions and acceptability criteria before a security study. A single component outage, common-mode loss and evolving cascade are different scenarios. A list called N−1 does not by itself specify which equipment, source states, corrective actions or time-dependent limits were modelled.
+
+For a small network, compare intact, changed topology and source-loss cases with actual island/reference conditions. Check thermal loading, voltage/reactive feasibility and relevant protection/control response. Fast sensitivity screening can prioritize cases, but its approximation and missed-case risk must be tested against direct AC/dynamic calculations where required.
+
+Include corrective action timing, ramp, reserves, communications and energy. An action available after minutes cannot automatically prevent a subsecond instability. Compare a static secure-looking state with a dynamic failed transition, and the reverse case where a transient limit/response needs explicit modelling. Use the complete [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), [ANDES — dynamic modelling and analysis manual](../sources/ANDES-Modeling-and-Analysis-Manual.lingua#r_5JM9DVGXWSD8645484SZP5XRSZ) and primary case methods. Preserve what was screened, solved and physically supported rather than reporting one blanket secure result.
+
+**Continue:** [Sensitivity, cancellation, dependencies, and conditioning](../../../../inquiry/quantitative-literacy/models/Sensitivity-and-conditioning.lingua#r_43NVV3KJX9W9R026T1NKCYMP3T).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6NDG8CV5PF3WZX4BWDTAJ4KA95

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Interpret solution models through their free energy, evidence, and valid domain (@metal-solution-models: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "../../../../nature/earth/mineralogy-and-petrology/equilibrium/Tie-lines-phase-amounts-and-mass-balance.lingua#r_5VBSCW4DQFHPD00EQHBQ752R87") { r_0J0EDJ5J87361CXTVVQDE0FH8Z
+**Read:** [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the complete equilibrium/free-energy and worked phase examples; [pycalphad — Otis and Liu, paper and computational thermodynamics](../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR), the entire paper and full relevant model/assessment documentation; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the complete graduate thermodynamics and phase-diagram exercises.
+
+An ideal binary solution has a configurational mixing term RT[x ln x + (1−x) ln(1−x)] under its assumptions. Excess terms represent interactions not included in that model. An assessed description may also represent ordering, site populations, magnetic contributions, and multiple structures. A polynomial fit is not automatically a transferable physical explanation.
+
+Derive chemical potentials and activity relations consistently from the same free-energy description. Test convexity, phase coexistence, reference-state consistency, and limiting compositions. A negative mixing free energy does not by itself prove that a single homogeneous phase is stable against every possible competing phase.
+
+Parameter values can compensate for missing physics or incomplete data. Phase boundaries, thermochemical observations, and composition/activity measurements constrain different combinations of parameters. Assess correlation, uncertainty, and validation outside the fitting set before using a database for an important impurity or processing prediction.
+
+**Work:** reconstruct an ideal and a documented nonideal binary description, derive their equilibrium criteria, and independently check limiting cases and mass balance. Compare predicted phase behavior with a full primary experimental assessment, retaining disagreement. Reuse the shared phase-amount step next, then investigate what changes when the target is an alloy under a particular processing constraint rather than an equilibrium point on a familiar diagram.
+
+**Continue:** [Derive phase amounts from a tie line and preserve their basis](../../../../nature/earth/mineralogy-and-petrology/equilibrium/Tie-lines-phase-amounts-and-mass-balance.lingua#r_5VBSCW4DQFHPD00EQHBQ752R87).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_0J0EDJ5J87361CXTVVQDE0FH8Z

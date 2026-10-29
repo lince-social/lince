@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Connect volcanic products with magma, transport, eruption, and later change (@geo-volcanic: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Discovering-Geology-BGS.lingua#r_5ZRRQ0YYJEH16ZR7172P1PE4VC", #geology "Earthquakes-wave-evidence-and-source-size.lingua#r_4BNPETFQMFN0C0W0Q3H3TMT044") { r_4PFCEXS09TEDAV09B9YMYG8YV4
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 4 in full with exercises; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), volcanic/igneous evidence in geological history; [Discovering Geology — British Geological Survey](../sources/Discovering-Geology-BGS.lingua#r_5ZRRQ0YYJEH16ZR7172P1PE4VC), the complete volcano and volcanic-hazard topic pages used.
+
+A volcanic system includes magma generation, storage, transport, eruption, deposits, fluids, and interaction with the surrounding environment. Composition, crystals, temperature, dissolved volatiles, pressure history, and geometry influence behavior. Viscosity and gas expansion matter, but no single property predicts every eruption style.
+
+Distinguish lava, fragmental material, tephra fall, pyroclastic density-current deposits, and remobilized deposits through appropriate field evidence. Deposit thickness, grading, component types, contacts, and distribution support an interpretation; later erosion, alteration, reworking, and incomplete exposure affect what remains.
+
+Monitoring observations can include deformation, earthquakes, gas, temperature, and other signals. Their interpretation is conditional on an identified system, baseline, uncertainty, and model. A precursor is not an exact eruption clock. A geological record constrains past events and potential processes without specifying the time of a future event by itself.
+
+**Work:** build a stratigraphic event account for a published volcanic section using its observations and chronological constraints. Compare two possible transport/deposition mechanisms and show what distinguishes them. Then analyze an official monitoring example as observations, interpretations, and decision context without turning it into your own public forecast.
+
+Read all of the volcanism chapter and its exercises. Connect its physical account with igneous processes, sedimentary reworking, hazards, and resource/water systems; the later specialist volcanology and petrology material can deepen the unique experimental and monitoring methods.
+
+**Continue:** [Separate earthquake location, source size, shaking, and geological interpretation](Earthquakes-wave-evidence-and-source-size.lingua#r_4BNPETFQMFN0C0W0Q3H3TMT044).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4PFCEXS09TEDAV09B9YMYG8YV4

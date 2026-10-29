@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Combine reaction enthalpies with explicit states and references (@gc-hess: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP", #source "../sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44", #general-chemistry "../atomic/Light-spectra-and-energy-levels.lingua#r_3Z2QB3MQ90C9GRT3XV9QNKN7KG") { r_4KZGWMKS0V45XNRJ5ABNM0FWV7
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 5’s reaction enthalpy, formation values, and bond-energy examples; [NIST Chemistry WebBook — evaluated properties and their sources](../sources/NIST-Chemistry-WebBook.lingua#r_7MMJR7YZKCS02QYACZM15GFQVP), guide and a small set of identified thermochemical entries; [NIST-JANAF Thermochemical Tables — fourth-edition reference data](../sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44), introductory conventions and one relevant complete table.
+
+Hess's law follows from enthalpy being a state quantity. Add reaction equations and their enthalpy changes consistently, reversing signs when a reaction is reversed and scaling quantities with its stoichiometric equation. Species, phase, temperature, and reference state must match before an intermediate cancels.
+
+For hypothetical transformations A → B with ΔH = +10 kJ mol⁻¹ and B → C with ΔH = −35 kJ mol⁻¹ on compatible bases, A → C has ΔH = −25 kJ mol⁻¹. A diagram can help check the path, but the reason is a shared state difference. Replacing B(g) with B(l) would require the associated phase-change contribution.
+
+Formation enthalpies supply a convenient reference account: sum stoichiometric product values minus reactant values under the identified conventions. Mean bond enthalpies can support approximate gas-phase estimates, while detailed phase-specific thermochemical values answer a more particular question. State the approximation and compare it with appropriate evaluated data.
+
+**Work:** reconstruct a textbook enthalpy cycle and then one reaction using identified NIST/JANAF entries. Record source, species, phase, temperature, units, and reference convention. Compare two sources and investigate any difference rather than averaging incompatible values. Include temperature correction only with an identified heat-capacity model and range.
+
+Read the relevant complete textbook and Chem1 treatments, then the data source's explanatory material. An industrial heat estimate additionally needs the actual feed/product states, amounts, phase changes, sensible heat, losses, and system boundary. This Record supplies the chemical reference account that later thermodynamics and engineering will deepen.
+
+**Continue:** [Use spectra to connect energy changes with atomic structure](../atomic/Light-spectra-and-energy-levels.lingua#r_3Z2QB3MQ90C9GRT3XV9QNKN7KG).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_4KZGWMKS0V45XNRJ5ABNM0FWV7

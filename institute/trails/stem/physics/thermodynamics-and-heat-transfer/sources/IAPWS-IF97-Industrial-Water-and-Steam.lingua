@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+IAPWS-IF97 — industrial water and steam (@th-if97: 0, is #reference, #part-of @th-sources) { r_7THV30AN6Q693AJKH3W6ZSG13Y
+IAPWS R7-97(2012), Revised Release on the IAPWS Industrial Formulation 1997 for the Thermodynamic Properties of Water and Steam. [Authority, revision history and complete download](https://iapws.org/technical-guidance/release/IF97-Rev).
+
+Read the complete release, regional definitions, backward equations, verification tables and consistency limits. Trace a steam-cycle state through the correct region and input pair; test the phase boundary and units explicitly. Compare industrial speed-oriented equations with [IAPWS-95 — fundamental water properties](IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z) rather than assuming two packages implement independent physical models.
+
+The document designation is 2012; the current landing page displays a 29 May 2018 release date. The 2007 revision extended region 5 to 50 MPa, while later changes included editorial clarification. Preserve these distinctions and the applicability of each region. The nominal 1997 name is not the date of every equation or implementation. Releases, supplemental equations and software remain external.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_7THV30AN6Q693AJKH3W6ZSG13Y

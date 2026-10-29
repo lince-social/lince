@@ -179,10 +179,11 @@ pub(crate) fn screen_bounds(world: &World, root: Entity, entity: Entity) -> Opti
         return Some(bounds);
     }
     let viewport = crate::native::inspection::bounds(world, root)?;
-    let item = world.get::<CanvasItem>(entity)?;
+    let item = crate::native::canvas::presented(world, entity)?;
     let view = *world.get::<CanvasView>(root)?;
-    let pin = world.get::<Pinned>(entity);
-    let view = pin.map_or(view, |pin| pin.view(item, viewport.size()));
+    let pin = world.get::<crate::native::sand_placement::PinnedPreview>(entity).map(|preview| &preview.0)
+        .or_else(|| world.get::<Pinned>(entity));
+    let view = pin.map_or(view, |pin| pin.view(&item, viewport.size()));
     let scale = if pin.is_some() {
         1.0
     } else {
@@ -192,7 +193,7 @@ pub(crate) fn screen_bounds(world: &World, root: Entity, entity: Entity) -> Opti
     };
     let item = CanvasItem {
         size: item.size * scale,
-        ..*item
+        ..item
     };
     let top = view.screen_position(&item, viewport.size())? + viewport.min;
     Some(Rect::from_corners(top, top + item.size * view.zoom as f32))

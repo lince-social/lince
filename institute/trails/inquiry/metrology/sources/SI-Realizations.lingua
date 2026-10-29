@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Practical realizations of SI units — BIPM consultative committees (@met-realizations: 0, is #reference, #part-of @met-sources) { r_240WHEHDVW9TR241AXP6T4STM0
+BIPM and the relevant Consultative Committees. SI Brochure, appendix 2: Practical realization of the definitions of important units, a maintained collection of technical documents. [Official publication index](https://www.bipm.org/en/publications/mises-en-pratique).
+
+Begin with the introduction to the current metre, kilogram, and second realizations. Then study the ampere/electrical and kelvin documents and the mole realization as the corresponding measurement families arise. Read the complete realization for the family chosen for advanced study. Retain each document’s title, committee, year, and version: the official index lists different revision dates, including 2026 metre and silicon-lattice guidance and a 2025 mole document.
+
+Use these particular documents rather than assuming an exact defining constant produces an uncertainty-free laboratory realization. Different realizations and dissemination paths require physical models, equipment, and comparisons.
+
+The documents are freely accessible from BIPM, with their individual publication and reuse notices. Do not transfer the SI Brochure’s licence automatically to every linked technical document. Index and document identities checked on 28 October 2026; no collection is downloaded into the repository.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_240WHEHDVW9TR241AXP6T4STM0

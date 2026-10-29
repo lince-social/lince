@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Begin with a material, an observation, and a question about its formation (@mp-question: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #source "../sources/Mineralogy-and-Optical-Laboratory-Manual.lingua#r_4EH79TNHB2YMYGY79B5PV11FTG", #mineralogy-and-petrology "../../geology/materials/Mineral-identification-and-evidence.lingua#r_4V80T5SEAWK0JPVQTJ29YSH6F4") { r_34W71KV9Y00D9TGQJSQMT1NNSC
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete introduction and mineral-chemistry preparation; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the complete opening orientation; [Mineralogy and Optical Mineralogy Laboratory Manual — McNamee and Gunter](../sources/Mineralogy-and-Optical-Laboratory-Manual.lingua#r_4EH79TNHB2YMYGY79B5PV11FTG), the introduction and equipment/observation objectives.
+
+Mineralogy connects composition and structure with mineral properties; petrology connects minerals, textures, rocks, and the processes and conditions that formed or changed them. Begin with a specific question: what minerals are present, why do grains have this relationship, or what controls a material's suitability for a process?
+
+A hand specimen, thin section, chemical analysis, and diffraction pattern observe different aspects and volumes. Connect their identities and scales before combining their interpretations. A rock name, bulk elemental abundance, or attractive microscope image does not alone establish its history or processing behavior.
+
+The earlier [Geology — Earth materials, processes, history, and investigation](../../geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06) provides materials, maps, field relationships, chronology, and processes. Follow [Identify a mineral through converging properties and context](../../geology/materials/Mineral-identification-and-evidence.lingua#r_4V80T5SEAWK0JPVQTJ29YSH6F4) for the shared evidence-based identification step and return here through its mineralogy continuation. Chemical, measurement, and computational preparation appears where the question needs it; no complete degree is required before beginning a specimen description.
+
+**Work:** choose a known teaching specimen or authorized published example. Describe observations without an origin claim, state two questions requiring different methods, and identify the specimen/context information necessary to answer them. Explain why a composition result from a different grain cannot silently substitute for the grain being described.
+
+Read the complete opening book chapters, then keep the observation account as later methods revise the identification or interpretation. The advanced programme demands full books, sustained practical work, quantitative models, and scholarship, building from this accessible beginning.
+
+**Continue:** [Identify a mineral through converging properties and context](../../geology/materials/Mineral-identification-and-evidence.lingua#r_4V80T5SEAWK0JPVQTJ29YSH6F4).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_34W71KV9Y00D9TGQJSQMT1NNSC

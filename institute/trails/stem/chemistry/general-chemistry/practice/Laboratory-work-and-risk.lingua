@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Make experimental competence part of the chemical method (@gc-laboratory: 0, is #chapter, #part-of @general-chemistry, #source "../sources/ACS-Academic-Laboratories.lingua#r_1GAGRBYCJGJAY86HQCNE9S66EP", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/Prudent-Practices.lingua#r_3RPEFRP5NBW53ECS7EFQX6D6ZK", #source "../sources/ACS-Laboratory-Safety-Textbook.lingua#r_7TD6AG2TZZ0GS0EWJMC8KC9SB0", #general-chemistry "First-chemical-study.lingua#r_6AD48R8HSNCS1QWP1YGRGDAAVC") { r_4Y0FHN8SXCYEVEYAZYF7SRGCN7
+**Read:** [Safety in Academic Chemistry Laboratories — ACS, eighth edition](../sources/ACS-Academic-Laboratories.lingua#r_1GAGRBYCJGJAY86HQCNE9S66EP), the entire publication; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the complete manual as an initial overview; [Prudent Practices in the Laboratory — National Research Council](../sources/Prudent-Practices.lingua#r_3RPEFRP5NBW53ECS7EFQX6D6ZK), planning, hazards, operations, and waste chapters; [Laboratory Safety for Chemistry Students — Hill and Finster, third edition](../sources/ACS-Laboratory-Safety-Textbook.lingua#r_7TD6AG2TZZ0GS0EWJMC8KC9SB0), the relevant introductory sections, then the whole textbook during sustained practical study.
+
+An experiment needs more than a correct equation: suitable equipment and materials, a defined procedure, training, an assessment of its particular hazards and scale, reliable observations, and a way to handle outputs and wastes. Read the complete ACS student booklet and the laboratory manual before selecting a practical activity. Continue into the full safety texts for sustained laboratory and research work.
+
+Use the RAMP process to connect each operation with evidence: recognize hazards from appropriate current information; assess exposure and credible failure conditions; choose controls suited to those risks; and prepare for the actual emergency arrangements of the laboratory. Quantity, concentration, temperature, pressure, energy sources, and compatibility can change an operation's risk even when its reaction equation is familiar.
+
+Distinguish reading, simulation, data analysis, and practical performance. They develop complementary understanding. A calculation can be studied independently; handling chemicals or equipment requires the relevant laboratory conditions and supervision. A virtual success cannot demonstrate accurate pipetting, a secure apparatus, or competence with an unexpected leak or spill.
+
+**Work:** choose an introductory activity from the UNILA manual and write its question, model, measurements, equipment, materials, control arrangements, observations, calculations, limitations, and waste plan. Have a suitably competent supervisor evaluate the actual implementation before laboratory work. If working from published data, state that evidence route and identify which practical skills remain unobserved.
+
+Preserve original observations and explain deviations from a procedure rather than editing them into a more convenient result. Experimental craft and critical interpretation deepen together throughout the later practical programme. These are subject-specific learning demands, not permission requirements for opening or reusing a Record.
+
+**Continue:** [First study — connect identity, amount, observation, and a balance](First-chemical-study.lingua#r_6AD48R8HSNCS1QWP1YGRGDAAVC).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_4Y0FHN8SXCYEVEYAZYF7SRGCN7

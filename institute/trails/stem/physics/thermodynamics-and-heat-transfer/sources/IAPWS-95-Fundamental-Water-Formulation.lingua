@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+IAPWS-95 — fundamental water properties (@th-iapws95: 0, is #reference, #part-of @th-sources) { r_4JH7YVKGMCC4R7MK1F5S1XY90Z
+IAPWS R6-95(2018), Revised Release on the IAPWS Formulation 1995 for the Thermodynamic Properties of Ordinary Water Substance for General and Scientific Use. [Authority and revision](https://iapws.org/technical-guidance/release/IAPWS-95) · [Complete release](https://iapws.org/technical-guidance/release/IAPWS-95.download).
+
+Read the entire nineteen-page release, including Helmholtz-energy formulation, derivatives, domain, uncertainties and verification values. Reconstruct selected thermodynamic properties from a fundamental potential and compare independently with tables and software. Distinguish stable fluid, saturation, metastable extrapolation and solid phases.
+
+The authority lists 21 December 2018; the title's 1995 denotes the formulation, not this revision. Its stated stable-fluid range reaches 1273 K and 1000 MPa subject to the melting boundary. Extrapolation behavior is not a new certified domain. Follow the release's own permission/attribution notice; the equations and tables are read externally.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_4JH7YVKGMCC4R7MK1F5S1XY90Z

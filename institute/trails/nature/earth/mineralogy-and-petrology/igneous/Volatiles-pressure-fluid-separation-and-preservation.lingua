@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Connect volatile behavior with pressure, phase relations, and sampled evidence (@mp-volatile: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #mineralogy-and-petrology "Mantle-rocks-basalt-generation-and-residues.lingua#r_1VA4KEHC0R7MV9RHYR6A2BYPKZ") { r_388NSFRN85ZCYHY5FTJ4P1ECDF
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete relevant volatile/fluid and magmatic notes; [Advanced Igneous Petrology — Timothy Grove, MIT 12.490](../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF), the full selected volatile-bearing system case; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the complete model/reference conditions used for the study.
+
+Volatile components influence melting, crystallization, density/rheology, fluid separation, transport, and alteration. Their solubility and partitioning depend on composition, temperature, pressure, species, and the adopted model. A bubble or hydrous mineral is evidence within a history, not a complete measurement of the original volatile budget.
+
+Distinguish dissolved volatile, separate fluid, crystal-bound components, inclusions, and later contamination or weathering. An erupted glass or preserved inclusion may have undergone loss, diffusion, crystallization, decrepitation, or re-equilibration. Correcting it to an earlier state requires a model and uncertainty rather than a universal adjustment.
+
+Fluid separation can transport elements and connect magmatic systems with hydrothermal mineralization. A temporal/spatial association between an intrusion and a deposit needs geochemical, structural, chronological, and mass-transfer evidence to establish the particular relationship.
+
+**Work:** compare two volatile histories compatible with a documented sample, preserving analytical method and domain context. Reconstruct a mass account for dissolved, separate, and exported components under a simple model. Identify independent observations or experiments that could discriminate degassing, late alteration, and inherited inclusions.
+
+Read the complete volatile/fluid and igneous notes and primary study used. Specialist volcanology, fluid-inclusion methods, and economic geology deepen their unique measurement and process questions; this shared petrological sequence keeps phase and material constraints explicit.
+
+**Continue:** [Interpret mantle and basalt histories through minerals, experiments, and balances](Mantle-rocks-basalt-generation-and-residues.lingua#r_1VA4KEHC0R7MV9RHYR6A2BYPKZ).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_388NSFRN85ZCYHY5FTJ4P1ECDF

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Fourier's law, conductivity and local heat flux (@th-fourier: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #thermodynamics-and-heat-transfer "Energy-equation-sources-and-constitutive-assumptions.lingua#r_0AEQ934QTQ4AEZW88TQMSX3X53") { r_05EQENX75RXRDXHYBA5PXC2A28
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the complete introductory conduction development; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), derivation of the conduction equation; [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), conductivity definition and specimen conditions.
+
+Fourier's constitutive law relates heat flux to a local temperature gradient within its applicable regime. For an isotropic material, q = −k∇T. The minus sign makes heat flow down temperature for positive conductivity; it is distinct from an arbitrary sign convention for heat entering a control volume.
+
+Conductivity depends on material, temperature, direction, structure and condition. Porosity, moisture, interfaces and radiation within a porous body can affect an apparent effective value. A tabulated number requires enough information to match the specimen and use conditions.
+
+For a uniform plane slab of thickness 0.1 m, area 2 m², conductivity 0.5 W/(m·K) and maintained face difference 20 K, the steady one-dimensional heat rate is 200 W. Its thermal resistance is 0.1 K/W. Verify the dimensional and limiting behavior before adding internal generation, contacts or transient storage.
+
+**Continue:** [The heat equation, sources and constitutive assumptions](Energy-equation-sources-and-constitutive-assumptions.lingua#r_0AEQ934QTQ4AEZW88TQMSX3X53).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_05EQENX75RXRDXHYBA5PXC2A28

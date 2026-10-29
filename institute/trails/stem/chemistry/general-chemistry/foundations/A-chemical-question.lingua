@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Ask a chemical question about a material and a change (@gc-question: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Substances-mixtures-and-phases.lingua#r_07Y9PYVRA9HSVSZWQC4N0X8ZZS") { r_7Y7E3QBYQADPGQ06JXY84FCEVN
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 1 in full; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), chapter 1 in full; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), What is Chemistry all about? completely.
+
+Chemistry asks what a material contains, how its constituents are arranged, how they interact, and how a change can be explained or controlled. Start with an ordinary question: why can a clear liquid leave a solid after evaporation, and what evidence would identify that solid? Appearance alone cannot establish composition. A transparent liquid can be a pure substance or a mixture of many species.
+
+Separate a question about identity, a question about quantity, a question about structure, and a question about transformation. “There is copper in this specimen” differs from a mass fraction, an oxidation state, or a claim about how the copper will react. A useful investigation states the specimen, conditions, observation, candidate explanations, and what further evidence would distinguish them.
+
+Choose a material boundary as well as a conceptual one. A reaction vessel can exchange matter and energy with its surroundings; an unexplained loss may be evaporation, a gas product, a transfer loss, or an inadequate measurement. Chemistry connects small-scale species with the larger flows studied in extraction, water treatment, manufacturing, medicine, and maintenance.
+
+**Work:** describe table salt, a metal object, water, and a rock without identifying their composition from appearance alone. For each write an observable property, a possible chemical explanation, and a test or reference that would change the explanation. Use a drawing or existing observations; the first exercise does not require handling unknown substances.
+
+Read the opening chapters completely and keep returning to the distinction between evidence and representation. Later calculations are useful only when their symbols refer to a stated chemical system. [Philosophy](../../../../philosophy/Philosophy.lingua#r_00000000000000000000001001) and [Inquiry — shared ways to understand and investigate](../../../../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB) provide a return for questions about classification, models, and what an observation justifies.
+
+**Continue:** [Substances, mixtures, components, and phases](Substances-mixtures-and-phases.lingua#r_07Y9PYVRA9HSVSZWQC4N0X8ZZS).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_7Y7E3QBYQADPGQ06JXY84FCEVN

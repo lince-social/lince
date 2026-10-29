@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Distinguish a reductant, fuel, electrode, atmosphere, and energy carrier by its duty (@metal-fuels: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #metals-and-metallurgical-production "Refractories-containment-slag-attack-and-service-life.lingua#r_6KJ8JD9AM6TJ5NA4ZY6A62SNPF") { r_5H576JPP7D6968D6QF30SA8SS9
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete fuels, coke-making, furnace, and reduction discussions; [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), all burden/coke and direct/smelting reduction material; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the full combustion, gasification, and extraction-energy exercises.
+
+Carbonaceous material, hydrogen, electricity, and other inputs can play different chemical and energetic roles. Carbon may provide reducing potential, heat, permeability/support in a burden, dissolved alloy carbon, or electrode function. Replacing one role does not automatically replace the others.
+
+Use balanced reactions, gas/solid activities, equilibrium, kinetics, heat, material behavior, and transport to compare routes. Moisture, ash, volatile matter, impurity content, reactivity, strength, and preparation history can affect performance. A fuel heating value is not enough to characterize its usefulness as a metallurgical reductant or structural burden component.
+
+Follow the input's production, purification, transport, storage, delivery, equipment, and maintenance account. A lower direct emission at one unit may change upstream electricity, gas, water, material, or heat requirements. Compare complete evidence at a defined output quality and scale rather than assuming a universally favorable carrier.
+
+**Work:** reconstruct a complete carbon-based and an alternative documented reduction/heating case. Independently check reaction and energy accounts, trace impurity/product effects, and test a changed input-quality or utility scenario. Identify which physical functions require additional process changes and which claims lack independent evidence. Advanced process studies compare feasible whole systems rather than selecting a carrier from one isolated reaction.
+
+**Continue:** [Connect refractory selection and service life with chemical, thermal, and mechanical evidence](Refractories-containment-slag-attack-and-service-life.lingua#r_6KJ8JD9AM6TJ5NA4ZY6A62SNPF).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_5H576JPP7D6968D6QF30SA8SS9

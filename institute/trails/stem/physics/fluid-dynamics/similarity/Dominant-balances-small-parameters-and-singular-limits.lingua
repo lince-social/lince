@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Dominant balances, small parameters and singular limits (@fd-approximations: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #fluid-dynamics "../inviscid/Euler-motion-Bernoulli-and-the-assumptions-behind-a-head.lingua#r_2JK0RXSRKF2STTY52STQFQCHPS") { r_7SWMXVAX4WWEGQPEDHHHNJT8AR
+**Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), complete scaling, low-Reynolds-number and boundary-layer notes; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), viscous limits and boundary-layer development; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapters VIII and IX.
+
+An approximation should follow from the size of terms in a stated region. Dropping viscosity from an outer high-Reynolds-number flow may reduce the differential order and remove the means of satisfying no slip. A thin viscous region can therefore remain essential even when viscosity is small in the outer equation.
+
+Distinguish regular perturbation, in which a correction remains small in the domain, from a singular limit needing separate regions and matching. Scale the unknown solution and boundary conditions as well as the governing equation. A small coefficient can multiply a large derivative.
+
+For a narrow-gap or boundary-layer problem, predict the relative sizes of velocity components, pressure gradients and derivatives before solving. Check the neglected terms afterward. Report the portion of the physical system and parameter range where the approximation supports the intended conclusion.
+
+**Continue:** [Euler motion, Bernoulli and the assumptions behind a head](../inviscid/Euler-motion-Bernoulli-and-the-assumptions-behind-a-head.lingua#r_2JK0RXSRKF2STTY52STQFQCHPS).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7SWMXVAX4WWEGQPEDHHHNJT8AR

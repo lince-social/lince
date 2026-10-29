@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Explain chemical and biogenic sedimentary materials through component budgets (@mp-evaporite: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM", #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #mineralogy-and-petrology "../../geology/materials/Metamorphism-protolith-and-pressure-temperature-history.lingua#r_3P42J3NDC118QXFD1G1ME5SGTG") { r_6HTY4SNKY5J2B4REKH2QWDXQXT
+**Read:** [Sedimentary Geology — John Southard, MIT 12.110](../sources/MIT-Sedimentary-Geology.lingua#r_7FWZZ66CT5G1FP2JPQMWRV1YHM), the full chert, evaporite, chemical/biogenic, and organic-resource note sequence; [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete relevant sulfate/halide/phosphate/silica descriptions; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected mineral entries.
+
+Evaporites, siliceous deposits, phosphatic material, iron-rich chemical sediments, and organic-associated rocks connect sources, fluids, organisms, reaction conditions, deposition, and later alteration. A mineral present today can be a replacement rather than the original deposited phase.
+
+Evaporation concentrates dissolved components only within a water/solute account that also includes inflow, outflow, precipitation, dissolution, and exchange. A simple sequence from one closed experimental solution need not describe every natural basin. Hydration/dehydration, burial, fluids, and deformation can modify the deposit substantially.
+
+Silica and phosphate mineral forms, impurities, grain associations, porosity, and alteration affect both geological interpretation and industrial use. An organic-rich appearance or bulk elemental enrichment requires compositional/method evidence before identifying a particular source process or useful feedstock.
+
+**Work:** compare a complete evaporite and a siliceous/phosphatic case from the notes and primary references. Build the component/water account, order deposition/replacement events from observations, and test an alternative fluid or biological history. Explain which mineralogical measurement matters to a specified material-use question and why bulk grade alone cannot settle it.
+
+Read the complete chemical-sedimentary and organic-resource notes, keeping the focus on mineral/rock constituents and process history. Follow [Infer metamorphic history from reactions, fabrics, and context](../../geology/materials/Metamorphism-protolith-and-pressure-temperature-history.lingua#r_3P42J3NDC118QXFD1G1ME5SGTG) for shared metamorphic foundations before investigating assemblages and quantitative metamorphic reactions in depth.
+
+**Continue:** [Infer metamorphic history from reactions, fabrics, and context](../../geology/materials/Metamorphism-protolith-and-pressure-temperature-history.lingua#r_3P42J3NDC118QXFD1G1ME5SGTG).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_6HTY4SNKY5J2B4REKH2QWDXQXT

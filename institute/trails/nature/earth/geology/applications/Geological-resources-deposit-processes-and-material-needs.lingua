@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Connect geological concentration with the materials infrastructure requires (@geo-resources: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #source "../sources/Mineral-Commodity-Summaries-USGS.lingua#r_47FJ4GZC4CS4KJX8WXNDB418CX", #geology "Exploration-drilling-and-subsurface-models.lingua#r_0EEXNVK4NWE8G3HC3XH9QSSBCA") { r_43YQNWZP626XZAQTWAQ9PFJVY1
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 20 in full; [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), the complete mineral/material-resource treatment; [Mineral Commodity Summaries 2026 — USGS](../sources/Mineral-Commodity-Summaries-USGS.lingua#r_47FJ4GZC4CS4KJX8WXNDB418CX), overview, definition appendices, and the complete selected commodity chapters.
+
+Geological resources include water, aggregates, dimension stone, industrial minerals, metals, energy-bearing materials, and other useful geological attributes. Their formation, distribution, accessibility, quality, variability, and interactions differ. A material can be common in the crust while deposits meeting a particular specification are scarce or difficult to use.
+
+Concentration can involve magmatic, hydrothermal, sedimentary, weathering, biological, metamorphic, or reworking processes and combinations across time. A deposit model connects evidence and process; it is not a guarantee that every matching regional setting contains an extractable body. Mineral occurrence, exploration target, resource estimate, reserve, and operating supply are distinct claims under identified definitions.
+
+Grade, tonnage, mineral form, grain association, contaminants, location, water, power, transport, and recovery influence usefulness. High bulk abundance does not guarantee a separable or sufficiently pure feedstock. A semiconductor material's final specifications are downstream requirements that geology alone cannot establish.
+
+**Work:** read the whole resource chapter and the statistical report overview/definitions. Choose copper, silica, or another infrastructure material; compare two deposit settings and explain implications for sampling, processing, and waste. Trace actual edition/units and distinguish geological inventory, mine production, refining, trade, and manufacturing capacity in the report.
+
+Continue later into the dedicated mineralogy/petrology, economic geology, mining, beneficiation, refining, and manufacturing subjects. Their unique work remains substantial; this shared geological route supplies the material/history foundation and a clear statement of what remains unknown.
+
+**Continue:** [Investigate the subsurface with traceable samples, observations, and alternatives](Exploration-drilling-and-subsurface-models.lingua#r_0EEXNVK4NWE8G3HC3XH9QSSBCA).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_43YQNWZP626XZAQTWAQ9PFJVY1

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect fertiliser chemistry, physical form and nutrient reporting conventions (@ic-fertiliser-mixtures: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #industrial-chemistry "Brine-mineral-salts-purification-and-returned-streams.lingua#r_1VB0Q55CFB2PPH5VYGY5Y2VCRQ") { r_15KD96DVW38ZFC1M02YZDGR904
+**Read:** [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), the complete relevant ammonium-phosphate, mixed-fertiliser and finishing chapters; [Large Volume Inorganic Chemicals — Solids and Others Industry, BREF LVIC-S](../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4), the whole inorganic-phosphate product treatment; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the full nitrogen/phosphorus/potassium fertiliser sequence.
+
+Fertiliser production combines chemical identity, nutrient availability, physical form and application requirements. Potassium salts, ammonium phosphates and formulated mixtures can use different reactions or mainly physical preparation. Blending named nutrient materials is not the same process as synthesizing a chemically distinct compound.
+
+Keep the reporting convention explicit. Nitrogen commonly uses elemental mass fraction, while phosphorus and potassium labels can use P₂O₅- and K₂O-equivalent bases. Convert by molar-mass relationships before combining these with real-species balances. A grade's nutrient numbers do not account for all product mass or identify every phase present.
+
+Granulation, drying, screening, recycling, coatings, moisture and storage history influence handling and use. Returned fines are internal circulation, not extra saleable production. A high nutrient concentration can coexist with poor physical stability, variable distribution or a contaminant unsuitable for the intended use.
+
+**Work:** reconstruct a complete phosphate/potassium or mixed-fertiliser case, converting real species and nutrient conventions independently. Close material, water, heat and recycle accounts and compare two documented product arrangements at equal useful nutrient delivery. Explain the chemical, physical and measurement evidence needed to establish the claimed specification.
+
+**Continue:** [Prepare a salt or brine feed for the actual downstream chemical duty](Brine-mineral-salts-purification-and-returned-streams.lingua#r_1VB0Q55CFB2PPH5VYGY5Y2VCRQ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_15KD96DVW38ZFC1M02YZDGR904

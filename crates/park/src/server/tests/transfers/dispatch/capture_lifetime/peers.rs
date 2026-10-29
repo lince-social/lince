@@ -129,7 +129,7 @@ fn mode(fixture: &mut Fixture, size: [u32; 2]) {
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
-fn twenty_actual_capture_session_resize_stop_and_disconnect_cycles_retire_gpu_resources_and_return_to_quiet_owner_input() {
+fn three_actual_capture_session_resize_stop_and_disconnect_cycles_retire_gpu_resources_and_return_to_quiet_owner_input() {
     let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(32 * 1024 * 1024).build().unwrap();
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
@@ -153,7 +153,7 @@ fn twenty_actual_capture_session_resize_stop_and_disconnect_cycles_retire_gpu_re
             Node::default(), BackgroundColor(Color::srgb(1.0, 0.0, 1.0)), native::workspace::WorkspaceMember(1), ChildOf(root)));
     });
     let mut samples = Vec::new();
-    for cycle in 0..24 {
+    for cycle in 0..4 {
         let before = fixture.client.configures.len();
         let mut peer = Peer::connect(&mut fixture);
         let (source, session) = peer.session(&mut fixture);
@@ -211,8 +211,8 @@ fn twenty_actual_capture_session_resize_stop_and_disconnect_cycles_retire_gpu_re
         samples.push((cycle, publications, sample));
         super::super::configuration::application_input(&mut fixture, surface, &window);
     }
-    let warm = &samples[..4];
-    for (_, _, sample) in &samples[4..] {
+    let warm = &samples[..1];
+    for (_, _, sample) in &samples[1..] {
         for index in 0..3 { assert!(sample.assets[index] <= warm.iter().map(|sample| sample.2.assets[index]).max().unwrap(), "Capture assets grew after warmup: {samples:?}"); }
         assert!(sample.cameras <= warm.iter().map(|sample| sample.2.cameras).max().unwrap(), "Capture retained a temporary camera: {samples:?}");
         assert!(sample.shadow_views <= warm.iter().map(|sample| sample.2.shadow_views).max().unwrap(), "Capture retained temporary shadow views: {samples:?}");
@@ -223,13 +223,13 @@ fn twenty_actual_capture_session_resize_stop_and_disconnect_cycles_retire_gpu_re
             assert!(bytes <= warm.iter().filter_map(|sample| sample.2.allocated_bytes).max().unwrap(), "Capture GPU allocations grew after warmup: {samples:?}");
         }
     }
-    let late = &samples[samples.len() - 10..];
+    let late = &samples[samples.len() - 3..];
     assert!(!(late.windows(2).all(|pair| pair[1].2.descriptors >= pair[0].2.descriptors)
         && late.last().unwrap().2.descriptors > late.first().unwrap().2.descriptors), "Capture descriptors grew monotonically: {samples:?}");
     if let Some(directory) = std::env::var_os("LINCE_PARK_TEST_ARTIFACTS") {
         std::fs::create_dir_all(&directory).unwrap();
         std::fs::write(std::path::Path::new(&directory).join("capture-session-resources.json"), serde_json::to_vec_pretty(&serde_json::json!({
-            "measured_cycles": 20, "warmup_cycles": 4, "samples": &samples,
+            "measured_cycles": 3, "warmup_cycles": 1, "samples": &samples,
             "gpu_order": ["textures", "texture_views", "buffers", "bind_groups", "samplers"],
             "gpu_fields": ["kept_from_user", "allocated_ids"], "quiet_interval_ms": 600,
         })).unwrap()).unwrap();

@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Infer conditions from calibrated mineral relations with their uncertainty (@mp-thermobarometry: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #mineralogy-and-petrology "Effective-bulk-composition-and-fractionated-domains.lingua#r_2XN684WEWC9RSCNV7ZMGMDD6GX") { r_52CQD7G1AWVW9FMT5B50S7NTXY
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete geothermobarometry and equilibrium notes; [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the complete relevant calibration, data, and inference discussion; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the full selected method/model papers; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), the full analytical uncertainty/context relevant to the measured inputs.
+
+A thermometer or barometer links measured mineral/domain properties with conditions through experimental/thermodynamic calibration and an equilibrium account. Identify mineral composition, site allocation, oxidation state, activities, pressure/temperature dependence, fluid constraints, and calibration range before calculating a number.
+
+Exchange ratios and equilibrium constants are not automatically identical. A simple form ln K = −ΔH/(RT)+ΔS/R at fixed pressure uses stated reference assumptions; natural calibrations may require nonideal, pressure, composition, and other corrections. A precise formula result need not be an accurate formation temperature.
+
+Analytical uncertainty, model/calibration uncertainty, systematic data components, disequilibrium, domain selection, and later resetting can contribute differently. Two thermometers using the same analyses or dataset may not be independent confirmations. An intersection of curves also needs uncertainty and model consistency.
+
+**Work:** read a complete primary calibration and reproduce one benchmark with its actual definitions. Propagate an explicit measurement/correlation account and test sensitivity to a plausible composition or valence change. Compare an independent constraint and explain disagreement in terms of analytical, model, domain, or geological-history alternatives.
+
+Read the full course thermobarometry notes and review. Report conditions as a justified inference for an identified event/domain, not a generic property stamped onto the rock. The next effective-bulk and pseudosection steps extend this reasoning to an assemblage and its model dependencies.
+
+**Continue:** [Define the composition that actually participates in the modeled reaction](Effective-bulk-composition-and-fractionated-domains.lingua#r_2XN684WEWC9RSCNV7ZMGMDD6GX).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_52CQD7G1AWVW9FMT5B50S7NTXY

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Discrete ordinates, Monte Carlo and radiative verification (@th-radiation-numerics: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #thermodynamics-and-heat-transfer "Near-field-thermal-radiation-and-wave-scale-limits.lingua#r_7ZKC2M34RBJSNWYG26ABREHC9R", #thermodynamics-and-heat-transfer "../research/Spectral-participating-media-and-radiative-transfer-solvers.lingua#r_605FZN565BJZ8AE20KMKHY3S9F") { r_216T0G36037GGTX33RMZ497B52
+**Read:** [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), complete discrete-ordinate, spherical-harmonic and Monte Carlo lectures; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), zonal methods and gas-radiation models; [Reproducible computational work](../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), the relevant shared numerical and stochastic evidence.
+
+Angular discretization, spatial discretization and spectral approximation introduce distinct errors in a radiative calculation. Discrete ordinates can exhibit angular artifacts; diffusion-like approximations require an appropriate optical regime; Monte Carlo estimates require uncertainty and sampling-convergence analysis.
+
+Study the full method derivations and compare them on the same elementary slab or enclosure. Preserve normalization of phase functions, energy conservation, boundary conditions and reciprocity where applicable. Test limiting transparent, black and equilibrium cases before a complex furnace or film geometry.
+
+For a coupled thermal/radiation solve, separate transport convergence from temperature iteration and property uncertainty. More photon histories do not repair an incorrect material spectrum. A numerical method's reproducibility must include its angular/spectral grids or random-sampling definition, not only a plotted temperature field.
+
+**Continue:** [Near-field thermal radiation and wave-scale limits](Near-field-thermal-radiation-and-wave-scale-limits.lingua#r_7ZKC2M34RBJSNWYG26ABREHC9R) · [Advanced study: spectral participating media](../research/Spectral-participating-media-and-radiative-transfer-solvers.lingua#r_605FZN565BJZ8AE20KMKHY3S9F).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_216T0G36037GGTX33RMZ497B52

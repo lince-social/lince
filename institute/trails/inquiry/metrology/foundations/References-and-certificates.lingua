@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Read a reference certificate and turn it into usable information (@met-certificates: 0, is #chapter, #part-of @metrology, #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../sources/Reference-Materials.lingua#r_6M66GJE1X11ZY0R3517A3VEYM3", #source "../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R", #metrology "Environment-and-handling.lingua#r_1RNJYM0X929ZYV4TKHKDA5FTQC") { r_0BNMDMZ7WPMYWYD9P0BAE281ZB
+**Read:** [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), the checklist and reference examples; [Reference materials, certificates, and their scope — NIST](../sources/Reference-Materials.lingua#r_6M66GJE1X11ZY0R3517A3VEYM3), one complete actual certificate; [Calibration of digital multimeters — EURAMET cg-15](../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R), certificate contents and appendix A.
+
+A certificate is evidence for specified results under stated conditions. Read the quantity, range, item and serial or lot identity, procedure, dates, environmental conditions, correction convention, uncertainty, coverage information, and limitations. The issue date alone does not describe later stability or suitability.
+
+If a teaching calibration gives indication I = 10.012 mm for reference R = 10.000 mm, the estimated indication error under the convention E = I − R is +0.012 mm. The additive correction is −0.012 mm under the corresponding simple model. Apply the correction in its calibrated conditions and include its uncertainty; do not reverse its sign because a table happens to use the word deviation differently.
+
+For a material certificate, identify which values are certified, which are informational, the relevant matrix and chemical form, minimum subsample, homogeneity, storage, and any preparation requirement. A certificate for one lot or property does not supply all properties of every similar material. Later use can require new handling and stability contributions.
+
+**Work:** extract the fields from one real openly available certificate or a full calibration example. Preserve the exact source and revision. Create a small result calculation that uses its correction and uncertainty, then state three circumstances in which those values could not simply be reused. If physical equipment is unavailable, make the calculation as a document study.
+
+The receiving party needs enough information to interpret the result independently. A brief result table can be convenient, but retain the original certificate, model, and conditions by reference so its meaning is not lost during a transfer between a laboratory, manufacturer, and customer.
+
+**Continue:** [Environment, alignment, handling, and the specimen itself](Environment-and-handling.lingua#r_1RNJYM0X929ZYV4TKHKDA5FTQC).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_0BNMDMZ7WPMYWYD9P0BAE281ZB

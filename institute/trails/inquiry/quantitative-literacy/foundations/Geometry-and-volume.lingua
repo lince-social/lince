@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Length, area, volume, density, and scaling a shape (@ql-geometry: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-2, #source @ql-source-trades-3, #source @ql-source-prealgebra, #quantitative-literacy "Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ") { r_6DCACA5A4YM1PC08DT5WEW3BHW
+**Read:** Math for Trades, Volume 2, Perimeter and Area and Volume in full; Volume 3, Capacities. Use Prealgebra 2e chapter 9 for additional geometric problems and derivations. Draw each figure and state which length is a radius, diameter, height, or slant length.
+
+For geometrically similar objects enlarged by a factor λ, length scales as λ, area as λ², and volume as λ³. Material mass follows volume only when density and composition remain appropriate. Heat loss, strength, price, and usable capacity do not automatically share the volume scaling.
+
+A flat circular blank of radius 0.15 m and thickness 0.0007 m has ideal volume πr²t, about 4.95 × 10^−5 m³. Multiplying by an assumed density gives a mass estimate; the density's material, porosity, temperature, and provenance must accompany it. The exercise does not describe a manufacturing yield or a real wafer specification.
+
+For irregular shapes, decompose into simpler parts or bound the volume between enclosing shapes. State whether cavities, holes, overlap, packing voids, and machining allowance are included. A box's external dimensions alone do not establish its internal storage volume.
+
+**Work:** estimate a hollow cylinder's material mass using outer and inner diameters, length, and a cited or clearly hypothetical density. Derive the formula by subtracting two cylinder volumes. Compare a filled tank's geometric capacity with an operating volume allowing headspace. Scale a drawing from 1:5 to 1:20 and determine the corresponding paper lengths and areas. Explain why measuring a resized screenshot is weaker evidence than reading its stated dimensions.
+
+**Continue:** [Angles, grade, triangles, and periodic relationships](Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_6DCACA5A4YM1PC08DT5WEW3BHW

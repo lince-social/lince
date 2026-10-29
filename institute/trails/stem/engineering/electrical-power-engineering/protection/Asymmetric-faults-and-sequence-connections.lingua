@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Asymmetric faults and sequence connections (@pe-fault-sequence: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B", #electrical-power-engineering "Earthing-bonding-fault-return-and-touch-step-potentials.lingua#r_2324AA0XT8K4G0A82TV2ABPK80") { r_5V4B65W6RXCQJTMKBD7G51H23S
+**Read:** [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), complete symmetrical-component notes; [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), all sequence-modelling and fault tutorials; [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B), full relevant phase-domain modelling.
+
+Derive the phase boundary conditions for a single line-to-earth, line-to-line or double-line-to-earth fault, then transform them into sequence variables. Connect sequence networks from those equations rather than memorizing one diagram for every case. Transformer winding/grounding and machine sequence impedances determine the actual available paths.
+
+For the restricted single-line-to-earth case with an appropriate prefault positive-sequence source and no extra assumptions hidden in its impedances, I_fault = 3E₁/(Z₁+Z₂+Z₀+3Z_fault). State the basis and what E₁ represents. Verify the result by reconstructing phase voltages/currents and checking the fault conditions. A missing zero-sequence return can change the result dramatically.
+
+Compare phase-domain and sequence calculations for a small network and deliberately change one neutral/transformer connection. Investigate negative-sequence heating, residual-current sensing and protection sensitivity. Symmetry-based sequence decoupling is not automatically valid for arbitrary untransposed or converter-controlled networks. Retain actual mutual/phase coupling where needed, and distinguish an algebraic fault estimate from a dynamic protection/clearing study.
+
+**Continue:** [Earthing, bonding, return paths and touch/step potentials](Earthing-bonding-fault-return-and-touch-step-potentials.lingua#r_2324AA0XT8K4G0A82TV2ABPK80).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_5V4B65W6RXCQJTMKBD7G51H23S

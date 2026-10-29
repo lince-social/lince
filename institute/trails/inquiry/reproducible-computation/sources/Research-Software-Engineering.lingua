@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+Research Software Engineering with Python — Irving and colleagues (@rc-rse: 0, is #book, #part-of @rc-sources) { r_07D4PDD4HGKNK3PW4M90YSV2QY
+Damien Irving, Kate Hertweck, Luke Johnston, Joel Ostblom, Charlotte Wickham, and Greg Wilson. Research Software Engineering with Python: Building Software that Makes Research Possible. CRC Press/Taylor & Francis, 2021. ISBN 978-0-367-69834-8.
+
+[Authors’ complete rendered book](https://third-bit.com/py-rse/) · [Authors’ source and edition information](https://github.com/merely-useful/py-rse).
+
+Read the complete book in sequence after the early programming preparation, completing the exercises and following its substantial research-software project. It develops the shell, Python, version control, collaboration, Make workflows, configuration, testing, error handling, publishing, and packaging. Its introductory page explicitly assumes loops, conditionals, functions, and reading files; this trail introduces those before relying on that preparation.
+
+The rendered 2021 edition states CC BY 4.0 for content and MIT for code, with attribution and component notices retained. The source repository directs readers to third-bit.com; an older merely-useful.tech address was not accessible during checking. Author, edition, full-book access, and licence statements checked on 29 October 2026. No book or companion corpus is copied into the repository.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_07D4PDD4HGKNK3PW4M90YSV2QY

@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Identify aqueous species and write a defensible net ionic equation (@gc-ionic: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Oxidation-states-and-electron-balance.lingua#r_6V448SEZNVP40ASEQXC59PDTV9") { r_1D7ZRSG6A9TD5G2879FVG4NS89
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 4’s reaction classification and aqueous examples; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the complete chemical-reactions activity; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), electrolytes and introductory aqueous reactions.
+
+An aqueous label does not mean every formula represents intact dissolved molecules. Strong electrolytes are commonly modelled as separated solvated ions in dilute water; weak electrolytes and equilibrating complexes require a different description. Write the actual species model before cancelling apparent spectators in an equation.
+
+A net ionic equation exposes the selected transformation after removing species whose amounts are unchanged under that description. It does not imply that the removed ions have no influence on activities, ionic strength, solubility, or electrode behavior. The simplification has a purpose and a range, which the later equilibrium/activity work will examine.
+
+Precipitation, acid/base change, gas formation, and oxidation/reduction are useful initial classifications. The same real system can combine several. A visible change may depend on competing equilibria or rate limitations; a mnemonic solubility rule cannot replace the conditions and quantitative model needed for a detailed prediction.
+
+**Work:** translate complete molecular equations into explicit species and net ionic forms, conserving charge and elements independently. Compare a strong-acid neutralization with a weak-acid case and explain why indiscriminately splitting every aqueous compound into ions changes the model. Identify what physical information would distinguish precipitation from another cause of cloudiness.
+
+Read the full reaction-classification material and the laboratory manual's corresponding activities. Keep the early qualitative rules available as an entrance, then return to them critically after solubility, complexation, and activity calculations. Do not regard a familiar classification as the end of the chemical explanation.
+
+**Continue:** [Balance redox changes while keeping oxidation state and charge distinct](Oxidation-states-and-electron-balance.lingua#r_6V448SEZNVP40ASEQXC59PDTV9).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_1D7ZRSG6A9TD5G2879FVG4NS89

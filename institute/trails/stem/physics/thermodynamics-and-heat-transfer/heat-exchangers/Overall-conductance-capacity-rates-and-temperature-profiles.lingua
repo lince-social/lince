@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Overall conductance, capacity rates and exchanger profiles (@th-exchanger: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #thermodynamics-and-heat-transfer "LMTD-effectiveness-NTU-and-their-domain.lingua#r_3251QEQQX1R6BSNHQAXZ9WHYNQ") { r_3TFZHJ9FQPK90ZVH0Q5YYS3R80
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the complete heat-exchanger treatment; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), open-system and heat-recovery accounts; [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), steady-flow energy balances.
+
+A heat exchanger joins two or more energy streams through a separating wall or direct contact. Define mass flow, composition, capacity rates, inlet states, arrangement, losses and phase changes. The overall conductance UA depends on the area convention and the actual combination of wall, film and fouling resistances.
+
+For a constant-property two-stream model without external loss or phase change, the smaller heat-capacity rate limits Q_max = C_min(T_h,in−T_c,in). This is a model-specific maximum; it does not determine the actual duty without conductance and flow arrangement.
+
+Derive coupled stream-temperature equations and compare parallel with counterflow profiles. A counterflow cold outlet can exceed the hot outlet without a local reversal of heat flow. Check the approach temperature at both ends and along the exchanger rather than imposing an incorrect cross-stream outlet ordering.
+
+**Continue:** [LMTD, effectiveness–NTU and their domain](LMTD-effectiveness-NTU-and-their-domain.lingua#r_3251QEQQX1R6BSNHQAXZ9WHYNQ).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3TFZHJ9FQPK90ZVH0Q5YYS3R80

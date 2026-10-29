@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Pipe transients, wave speed and rapid flow changes (@fd-water-hammer: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578", #fluid-dynamics "../boundary-layers/Boundary-layer-scaling-displacement-and-wall-shear.lingua#r_1K0S71RQ25E0PJBAXKXW7GNPDW") { r_64ZR22XA5Z4K5JXRRM1XHQMRVY
+**Read:** [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), complete review, especially governing balances, wave speed and boundaries; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 4 acoustic propagation and characteristics; [Cavitation and Bubble Dynamics — Christopher E. Brennen](../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578), cavity dynamics and limitations of single-phase pressure models.
+
+Changing a pipe flow rapidly communicates through pressure waves; a steady friction calculation cannot describe the initial transient. In a simple one-dimensional liquid-pipe model, the wave speed depends on both fluid compressibility and the wall's elastic response. For an appropriate rapid velocity change, the local Joukowsky relation is Δp=ρaΔU, with sign tied to the wave direction and closure event.
+
+Compare the actuator's change time with the round-trip travel time 2L/a before using the rapid-change estimate. Derive the characteristic relations from the linearized mass and momentum equations, then impose reservoir, valve and junction conditions. Include reflection and propagation before interpreting a pressure trace. Friction, wall viscoelasticity, trapped gas and vapor cavities can require richer models.
+
+Construct a bounded numerical or recorded-data study of a specified transient, preserving time resolution, sensor response, geometry and material properties. Check limiting reflections and energy interpretation. A steady operating point and an acceptable average pressure do not establish the transient maxima; a future engineering design must evaluate the actual device and service history.
+
+**Continue:** [Boundary-layer scaling, displacement and wall shear](../boundary-layers/Boundary-layer-scaling-displacement-and-wall-shear.lingua#r_1K0S71RQ25E0PJBAXKXW7GNPDW).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_64ZR22XA5Z4K5JXRRM1XHQMRVY

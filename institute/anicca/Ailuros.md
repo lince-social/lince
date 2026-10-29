@@ -1,27 +1,12 @@
-Do these tasks in order. Do not run tests until the user authorizes them. Use two monitors for the first hardware workflow; defer projector tests until the user has access to a projector and authorizes them.
+# Ailuros: testing and fixes
 
-1. Two workspaces in Park
-   - [x] Inspect existing output and workspace assignment. Park already assigns workspaces to outputs and creates workspaces for connected displays.
-   - [ ] Code any missing support for independent views, usable assignment and default-monitor selection, and disconnect/reconnect recovery.
-   - [ ] Code focused tests for output assignment, independent views and disconnect/reconnect.
-   - [ ] Execute those tests and verify the workflow with two monitors.
+The feature coding and the focused tests have been written. The implementation has not yet been verified by a successful compile or test run. The remaining work is to run the existing tests, perform the hardware checks, and make small fixes for any failures found.
 
-2. Camera feed and hand-model mode
-   - [x] Code camera index selection, separate camera and hand-analysis controls, feed preview and status; reuse the existing hand models.
-   - [x] Code a test for independent camera selection and hand-analysis settings.
-   - [ ] Code further lifecycle tests covering live capture, preview, errors, stopping and tracking loss.
-   - [ ] Execute the tests and verify the feed and controls with a camera.
+Do the following in order when the user authorizes execution. The user is required for the hands-on test with two monitors and a camera, and is willing to participate. Coordinate that step with the user. Projector testing remains separate until the user has access to a projector and authorizes it.
 
-3. Head-relative hand control on the default monitor
-   - [ ] Code head detection and detection of up to two open palms facing the camera. When both are visible, prioritize the palm on the right side of the unmirrored camera image shown in the preview.
-   - [ ] Code head-relative up, down and sideways canvas movement with a neutral region, smoothing and bounded speed; stop on uncertain or stale input. Route it to the default monitor's workspace while preserving keyboard and mouse control and the other workspace.
-   - [ ] Code focused tests for directional movement, two-palm priority, neutral position, tracking loss, mode changes and workspace isolation.
-   - [ ] Execute the tests and test the complete setup with two monitors and a camera. Measure responsiveness and accidental actions; fix failures and record results.
+1. [ ] Obtain the face and hand models with `cargo xtask hand-models`, then run the appropriate `cargo check` commands with warnings treated as errors.
+2. [ ] Run the already-written focused tests for Park workspace assignment and reconnection, camera controls and lifecycle, hand detection and movement, display selection, workspace isolation, and pointer manipulation. Apply small fixes for failures and rerun the affected checks.
+3. [ ] With the user present, connect two monitors as extended displays and use a camera. Verify independent workspaces, camera preview and analysis controls, and that hand movement controls the selected display's workspace. Check up, down, left, right, neutral and tracking loss; with two open palms, the palm on the right side of the unmirrored camera image takes priority. Check pointer selection, movement, release and cancellation, as well as keyboard and mouse recovery. Measure responsiveness and accidental actions, record results, and make small fixes as needed.
+4. [ ] When the user has a projector and authorizes its use, connect it as the second extended display and repeat the workspace and hand-control checks. Record the equipment, display settings, lighting, responsiveness and failures; make small fixes as needed.
 
-4. Projector validation
-   - [ ] After the user authorizes projector testing, connect the projector as the second extended display and repeat the workspace and hand-control checks. Record the equipment, display settings, lighting, responsiveness and failures; fix issues found.
-
-5. Optional item manipulation
-   - [ ] Refine and code a visible pointer and deliberate gestures to select, move, release and cancel items if the user wants these beyond canvas movement. Keep keyboard and mouse recovery and cancel unfinished actions on tracking loss.
-   - [ ] Code focused interaction tests.
-   - [ ] Execute the tests and verify with available displays before any further projector test.
+The existing ignored `downloaded_models_run` integration test requires the downloaded models. For real-image coverage, set `LINCE_FACE_TEST_IMAGE` to a frontal face image and `LINCE_TWO_PALMS_TEST_IMAGE` to an image with two open palms facing the camera; it also accepts `LINCE_HAND_TEST_IMAGE` and `LINCE_HAND_CLOSED_TEST_IMAGE` for open- and closed-hand images. These inputs are optional, so a run without them does not verify real-image detection.

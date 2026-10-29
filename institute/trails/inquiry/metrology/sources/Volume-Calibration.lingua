@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Gravimetric volume calibration — EURAMET cg-19 (@met-volume: 0, is #reference, #part-of @met-sources) { r_1Y7BMP63V5GF7963V2HRNT3917
+EURAMET Technical Committee for Flow. Guidelines on the Determination of Uncertainty in Gravimetric Volume Calibration, calibration guide 19, version 4.1, December 2025. English.
+
+[Official catalogue and PDF download, No. 19](https://www.euramet.org/publications-media-centre/calibration-guidelines).
+
+Read the complete guide in the mass, volume, and flow study. Trace each input from weighing, density, temperature, buoyancy, evaporation, and handling to the reported volume under defined reference conditions. Compare an ideal mass/density calculation with the full correction model and its uncertainty budget.
+
+The official catalogue’s current edition and download reference were checked on 28 October 2026; its automated PDF endpoint timed out during that check. Use the publisher’s current download and retain the exact edition. EURAMET copyright and document-specific terms apply; this is not an openly adapted or locally retained text.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_1Y7BMP63V5GF7963V2HRNT3917

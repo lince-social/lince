@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Cables, screens, terminations and insulation (@pe-cables: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V", #source "../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2", #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #electrical-power-engineering "../networks/Transmission-lines-distributed-parameters-and-loss.lingua#r_5JFKCZDVB9ZBK40HHJGZQH4A1X") { r_45MNDE4BPX26N004X8583RBAW1
+**Read:** [Electrical Installation Guide — Schneider Electric](../sources/Electrical-Installation-Guide-Schneider.lingua#r_045M70B905F19RA4E6FTNXFC0V), complete cable, conductor and protection sections; [Medium Voltage Technical Guide — Schneider Electric](../sources/Medium-Voltage-Technical-Guide-Schneider.lingua#r_77NSGJV2R4FM4513WTNWE456J2), whole applicable cable/interface and insulation guidance; [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete line/cable network representations.
+
+A cable is a physical system of conductors, insulation, screens/shields, armour, joints and terminations. Its electrical model includes series impedance and shunt admittance, while ratings depend on thermal, dielectric, mechanical and environmental conditions. A screen connection changes induced voltage/current and loss; it is not merely a symbol for an ideal zero-potential boundary.
+
+Compare a short lumped cable equivalent with a distributed or frequency-dependent model. Explain capacitance, charging current, field concentration at terminations, sheath bonding and where the return path actually runs. A catalogue impedance needs its frequency, temperature, layout and basis before being used in a network study.
+
+For a documented feeder, connect conductor selection, steady voltage drop, fault duty, protection, dielectric condition and installation/testing evidence. Account for grouping, burial/ambient conditions, joints and actual load history. Compare at least two arrangements with independent thermal/electrical checks. Physical construction and diagnostic techniques need suitable specialist instruction; an analysed public case should be described accurately. The purpose is to connect useful current delivery to the material and field system that makes it possible.
+
+**Continue:** [Transmission lines, distributed parameters and loss](../networks/Transmission-lines-distributed-parameters-and-loss.lingua#r_5JFKCZDVB9ZBK40HHJGZQH4A1X).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_45MNDE4BPX26N004X8583RBAW1

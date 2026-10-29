@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Atomic models are explanations constrained by evidence (@gc-atomic-evidence: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "Isotopes-and-atomic-weights.lingua#r_7RS9YA931BVZ7RVM0KSWJ2W7Y3") { r_4HT48V97KV1TDBR18MBRR0HCE4
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 2 in full; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), chapter 2’s historical models and atomic properties; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), the beginning of Unit I, with notes and concept questions.
+
+Read the development of atomic models as a sequence of questions and observations rather than a list of superseded pictures. Composition ratios, electrical behavior, scattering, and spectra constrain different aspects of matter. A later model can explain an earlier model's useful approximation while changing its interpretation.
+
+Atomic number Z counts protons and defines an element. For a nuclide with mass number A, the neutron count is A−Z; the mass number is a count, not a measured mass in grams or an exact relative isotopic mass. An ion has an electron count different from that of the neutral atom. These distinctions support both formula bookkeeping and the later physical explanation of chemical behavior.
+
+Separate atomic-scale evidence from a claim about a bulk specimen. A scattering result can support a nuclear model; it does not identify every constituent of an unknown rock. A measured spectrum can constrain composition and states, but interpretation needs a method, reference, and account of possible interference. The quantity and measurement foundations will deepen that connection later.
+
+**Work:** reconstruct the logic of one textbook experiment, including the expected observation under competing models. For several specified nuclides and ions determine proton, neutron, and electron counts. Explain why changing the neutron count differs from ionization and from an ordinary chemical reaction.
+
+Complete the atomic-theory reading in both a first textbook and the Portuguese companion. The later quantum Records revisit where a classical orbital picture fails; for now use the evidence to establish what the symbols count. Follow the source references in a historical account when attributing an experiment, distinguishing the modern teaching reconstruction from an original publication.
+
+**Continue:** [Isotopic composition, atomic mass, and a material’s molar mass](Isotopes-and-atomic-weights.lingua#r_7RS9YA931BVZ7RVM0KSWJ2W7Y3).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_4HT48V97KV1TDBR18MBRR0HCE4

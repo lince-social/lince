@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: conjugate transport and auditable CFD (@th-study-conjugate: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #source "../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_1M8CF0Z404X2SJQB63MET4FF29
+**Read:** [Convecção e métodos numéricos — Maliska, UFSC](../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7), both complete available graduate course progressions; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), full coupled physical models; [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), conservation and discretization principles; [Convective Heat Transfer — Arup Kumar Das](../sources/Convective-Heat-Transfer-Das.lingua#r_1BYB2QY61ENBK9WGCHBBC5YE92), complete relevant convection development.
+
+Construct a coupled solid/fluid thermal problem from a physical service, with documented geometry, flow, material properties and heat generation. Start with separate analytical limits before joining the regions. Enforce interface energy conservation and the actual contact condition.
+
+Follow complete applicable numerical/convection courses. Document mesh treatment, pressure/velocity coupling, discretization, turbulence or laminar assumptions, iterative convergence and discretization uncertainty. A low residual alone is not a grid-convergence or validation result.
+
+Compare with independent measurements or a well-documented benchmark over changed flow and load. Examine how inlet turbulence, roughness, outlet placement, contact and radiation alter conclusions. Deliver a reduced model that can be audited alongside the resolved one, and show where the reduced approximation ceases to support the intended decision.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1M8CF0Z404X2SJQB63MET4FF29

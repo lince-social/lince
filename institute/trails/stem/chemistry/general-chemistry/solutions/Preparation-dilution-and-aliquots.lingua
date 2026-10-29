@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Prepare and dilute a solution under an explicit amount and volume model (@gc-preparation: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/ChemCollective-Virtual-Lab.lingua#r_246CB9EYQ2A1SQFHPV15F4Q4WT", #general-chemistry "../reactions/Aqueous-species-and-net-ionic-equations.lingua#r_1D7ZRSG6A9TD5G2879FVG4NS89") { r_53MS427PJ81EAEKEBXZFCK78W6
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 3’s solution composition and dilution material in full; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the complete solution-preparation and standardization activities; [Virtual laboratory and quantitative exercises — ChemCollective](../sources/ChemCollective-Virtual-Lab.lingua#r_246CB9EYQ2A1SQFHPV15F4Q4WT), the introduction and an appropriate solution exercise.
+
+Amount concentration c = n/V refers to the solution's total volume under stated conditions, not automatically the volume of solvent added. Mass fraction, amount fraction, mass concentration, molality, and amount concentration use different denominators. Preserve the distinction through preparation, transfer, dilution, and interpretation.
+
+For a hypothetical dilution with conserved solute amount, 10.00 mL of a 0.1000 mol L⁻¹ stock diluted to 100.00 mL gives 0.01000 mol L⁻¹. The relation follows from c₁V₁ = c₂V₂ under the model, not from assuming volumes of all mixed liquids add exactly. Reaction, precipitation, evaporation, adsorption, or contamination can invalidate the simple solute-conservation account.
+
+An aliquot is a selected portion. Several aliquots from one stock share its preparation information; treating their stock-concentration uncertainties as independent loses that relationship. Temperature, glassware calibration, reading technique, specimen purity, and transfer completeness can affect an actual prepared concentration. Use [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5) when evaluating those contributions.
+
+**Work:** derive the dilution relation from a solute balance and check units. Compare one-step and serial dilution accounts, identifying shared and independent influences. Read the complete preparation/standardization activities in the laboratory manual, then design a paper plan stating quantities, equipment, reference purity, temperature, expected concentration, checks, and waste arrangements. Actual preparation belongs in an appropriately supervised laboratory.
+
+Use a virtual activity for additional arithmetic practice if useful, while preserving its assumptions. A successful virtual dilution does not establish practical transfer competence. Return to the whole composition chapter until you can translate freely between each required concentration basis.
+
+**Continue:** [Identify aqueous species and write a defensible net ionic equation](../reactions/Aqueous-species-and-net-ionic-equations.lingua#r_1D7ZRSG6A9TD5G2879FVG4NS89).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_53MS427PJ81EAEKEBXZFCK78W6

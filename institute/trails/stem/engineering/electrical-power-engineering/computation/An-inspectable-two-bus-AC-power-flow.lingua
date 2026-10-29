@@ -1,0 +1,53 @@
+Import "../Electrical-power-engineering.lingua"
+
+An inspectable two-bus AC power flow (@pe-two-bus-example: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #electrical-power-engineering "../analysis/Reactive-power-voltage-and-capability.lingua#r_5E8CNSEF120NGYA02XH9WF89KV") { r_4NH5W4H1B5YARD5V8V1J3MX7G9
+**Read:** [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete AC balance and continuation methods; [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), whole load-flow development.
+
+This original balanced per-unit example has a real positive source E, one series impedance R+jX and a constant-power consuming load P+jQ. Use RMS exp(+jωt) phasors and total three-phase power bases consistently. Negative Q represents capacitive behavior within this restricted model; P is nonnegative. No tap, shunt, current limit, control dynamics or distributed source is included.
+
+Let y = |V|², a = RP+XQ and b = RQ−XP. The terminal equations imply E V = y + a + jb and y²+(2a−E²)y+|Z|²|S|² = 0. The implementation selects the larger positive y root and then independently reports the current/power residuals. Existence of that branch is not a proof of dynamic stability or acceptable operating voltage.
+
+```python file=two_bus_ac.py
+import json
+import math
+
+def bounded(value, low, high):
+    if type(value) not in (int, float) or not low <= value <= high:
+        raise ValueError("finite real input outside declared bounds")
+    return float(value)
+
+def solve(source=1.0, resistance=0.05, reactance=0.1, active=0.8, reactive=0.3):
+    source = bounded(source, 0.8, 1.2)
+    resistance = bounded(resistance, 0.0, 0.5)
+    reactance = bounded(reactance, 0.05, 1.0)
+    active = bounded(active, 0.0, 2.0)
+    reactive = bounded(reactive, -1.0, 1.0)
+    a = resistance * active + reactance * reactive
+    b = resistance * reactive - reactance * active
+    product = (resistance * resistance + reactance * reactance) * (active * active + reactive * reactive)
+    middle = source * source - 2.0 * a
+    discriminant = middle * middle - 4.0 * product
+    if discriminant < 0.0 or middle <= 0.0:
+        return {"feasible": False, "discriminant": discriminant}
+    squared_voltage = 0.5 * (middle + math.sqrt(discriminant))
+    voltage = complex(squared_voltage + a, b) / source
+    impedance = complex(resistance, reactance)
+    load = complex(active, reactive)
+    current = (source - voltage) / impedance
+    source_power = source * current.conjugate()
+    loss = impedance * abs(current) ** 2
+    return {"feasible": True, "voltage": voltage, "voltage_magnitude": abs(voltage), "current": current, "source_power": source_power, "branch_loss": loss, "load_residual": voltage * current.conjugate() - load, "power_residual": source_power - load - loss, "discriminant": discriminant, "other_squared_voltage": product / squared_voltage}
+
+if __name__ == "__main__":
+    result = solve()
+    print(json.dumps({key: [value.real, value.imag] if isinstance(value, complex) else value for key, value in result.items()}, sort_keys=True, allow_nan=False))
+```
+
+Check with an independent rectangular Newton solve and high-precision quadratic arithmetic, plus source/load/loss balance. For E=1, R=0, X=0.25, P=1, Q=0, the high solution is V=(2+sqrt(3))/4−0.25j, magnitude cos(15°) and angle −15°. At X=0.5 with the other values unchanged, the discriminant is zero; increasing P beyond 1 removes this steady solution in the restricted model.
+
+Test zero load, lossless resistance, reactive compensation, branch alternatives and rejected domains. At zero load the zero algebraic alternative is degenerate; do not interpret every returned quadratic candidate as an independently supported operating state. Near a zero discriminant floating-point classification is sensitive, so report margin/precision and verify independently rather than using this small example as an operational security limit.
+
+**Continue:** [Reactive power, voltage and capability](../analysis/Reactive-power-voltage-and-capability.lingua#r_5E8CNSEF120NGYA02XH9WF89KV).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4NH5W4H1B5YARD5V8V1J3MX7G9

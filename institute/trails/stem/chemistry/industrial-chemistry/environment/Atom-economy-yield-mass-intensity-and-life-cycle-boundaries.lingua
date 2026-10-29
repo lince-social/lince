@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Compare chemical routes with compatible metrics and explicit useful outcomes (@ic-metrics: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT", #source "../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5", #source "../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH", #industrial-chemistry "../operation/Process-economics-scale-quality-and-resource-assumptions.lingua#r_67JCR48DW88R29ED6RMGBMPDHN") { r_4FRG83GXJGE91RRZP86NXEEG4K
+**Read:** [The E factor 25 years on — Roger A. Sheldon](../sources/E-Factor-Sheldon.lingua#r_37VYJ12P4GGC89VRW44RMBK0AT), the whole perspective, definitions and complete worked route examples; [Química verde no Brasil: 2010–2030 — MCT/CGEE](../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5), the full relevant process/strategy and resource chapters; [Biochemical conversion of corn stover to ethanol — Humbird and colleagues](../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH), the complete material/energy, co-product, economic and sensitivity basis.
+
+Atom economy describes a stoichiometric allocation of reactant atoms to a chosen product; conversion, selectivity, isolated yield and accepted output describe other aspects of the process. Process mass intensity (PMI) divides defined material inputs by useful product, while an E factor divides defined nonproduct or waste output by product. State the inclusion rules and boundary before comparing numbers.
+
+For an original closed steady account with 500 kg crossing as material input, 100 kg of chosen product and 400 kg of counted nonproduct output, PMI=5 and E=4. Internal recycle does not cross that boundary again. The relation PMI=1+E holds only with compatible accounting conventions, no omitted accumulation and all remaining output included in the nonproduct definition.
+
+Mass metrics do not alone determine hazard, water quality, energy, carbon, resource availability, economic viability or actual function. A co-product credit or excluded solvent/water stream can change a comparison without changing the physical process. Keep life-cycle and allocation assumptions explicit and test them against alternatives.
+
+**Work:** reproduce a complete primary route comparison, independently calculating its main metrics and checking every inclusion rule. Extend it with a consequential energy, water, hazard or lifetime question and a changed boundary. Explain which ranking is supported, which depends on an assumption and what new evidence could reverse the conclusion.
+
+**Continue:** [Interpret chemical-process economics through the actual technical system and dated assumptions](../operation/Process-economics-scale-quality-and-resource-assumptions.lingua#r_67JCR48DW88R29ED6RMGBMPDHN).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4FRG83GXJGE91RRZP86NXEEG4K

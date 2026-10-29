@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Treat interfaces and orientation populations as material structure with measurable consequences (@metal-interfaces: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/ASM-Metallography-and-Microstructures.lingua#r_4XHEJ1ZHW0B1YNG9AWCEC491ME", #source "../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #metals-and-metallurgical-production "Solute-particle-grain-and-work-strengthening.lingua#r_6ZCH11YX10JBBKDSJDHM0YGGQW") { r_5VHXEDBRYBAFTQV0G49KQ1GV5Z
+**Read:** [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), all interfaces, orientations, texture, recrystallization, and advanced crystallography material used; [Metallography and Microstructures — ASM Handbook, volume 9](../sources/ASM-Metallography-and-Microstructures.lingua#r_4XHEJ1ZHW0B1YNG9AWCEC491ME), complete relevant quantitative/orientation and alloy-interpretation chapters, when available; [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), the full anisotropy, polycrystal, and structure-response context.
+
+Grain boundaries, phase boundaries, coherent or incoherent particle interfaces, free surfaces, and internal defects have different structure, energy, transport, and mechanical roles. Grain size alone does not capture their orientation distribution, connectivity, chemistry, or spatial variation.
+
+Texture changes aggregate response when individual crystals are anisotropic. Boundary/phase networks can affect diffusion, deformation, crack paths, corrosion, and transformation. A scalar average and a two-dimensional image may miss the connected structure controlling a property.
+
+Describe how orientation, grain/phase segmentation, boundary character, and three-dimensional inference were measured. Preparation, indexing confidence, spatial resolution, sampling design, and reconstruction assumptions affect the resulting statistics. A changed image-processing threshold can resemble a changed material population.
+
+**Work:** reconstruct a complete grain/interface or texture study with its original methods and uncertainty. Independently calculate or verify a representative orientation or population statistic, compare two mechanistic interpretations of a property change, and validate against complementary observations. Explain what additional spatial or chemical evidence could distinguish them. Link interface state to the processing history that created it rather than treating it as a fixed label for the alloy.
+
+**Continue:** [Compare strengthening mechanisms with the actual structural and performance evidence](Solute-particle-grain-and-work-strengthening.lingua#r_6ZCH11YX10JBBKDSJDHM0YGGQW).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_5VHXEDBRYBAFTQV0G49KQ1GV5Z

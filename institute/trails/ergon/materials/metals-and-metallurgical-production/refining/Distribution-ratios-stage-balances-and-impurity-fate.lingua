@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Derive refining performance from phase distribution and finite material inventories (@metal-partition: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ", #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #metals-and-metallurgical-production "../pyrometallurgy/Offgas-dust-heat-recovery-and-constituent-capture.lingua#r_324B18686WSDWQQSAG6G8XKYKZ") { r_63HT1JN0JGBF5G17D2HSVAVRE5
+**Read:** [Steel Making — Dipak Mazumdar and Satish Ch. Koria, NPTEL](../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ), the complete refining/distribution and slag/metal balance material; [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), all relevant chemical-refining discussions; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), complete refining and phase-balance exercises.
+
+A distribution ratio must identify the species/element, two phases, composition basis, temperature, chemical conditions, and equilibrium or observed status. A ratio measured in one composition range is not a universal constant. Selectivity between two constituents can matter more than the distribution of the target alone.
+
+For an invented trace impurity with equilibrium mass-fraction ratio L = c_slag/c_metal = 10, metal mass 100 t, and initially impurity-free slag mass 10 t, assuming unchanged phase masses and a fixed L, the impurity fraction remaining in metal is 100/(100+10×10) = 1/2. Derive it from impurity conservation. Two successive fresh 5 t slag contacts would leave (100/(100+10×5))² = 4/9 under the same ideal assumptions. Actual reactions, mass changes, nonidealities, and incomplete equilibration need their own model.
+
+Distinguish chemical transfer from mechanical entrainment or unmeasured losses. Added phase quantity, valuable-metal co-transfer, heat, residence time, separability, and handling affect whether an apparent refining improvement is useful. The same balance logic later supports liquid-liquid extraction and washing, with different physical/chemical coefficients.
+
+**Work:** reconstruct a full refining-distribution study, preserving raw observations and model definitions. Independently derive single and staged balances, compare measured and equilibrium interpretations, and test changing phase masses or coefficients. Explain which observation separates an incorrect distribution model from incomplete contact or entrainment.
+
+**Continue:** [Follow offgas through heat, particles, chemical constituents, and recovered products](../pyrometallurgy/Offgas-dust-heat-recovery-and-constituent-capture.lingua#r_324B18686WSDWQQSAG6G8XKYKZ).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_63HT1JN0JGBF5G17D2HSVAVRE5

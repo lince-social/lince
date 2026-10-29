@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Porous media, effective properties and thermal nonequilibrium (@th-porous: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "Heat-pipes-capillary-return-and-operating-limits.lingua#r_3NQTXGXEDBDPQ58VVTP5G469T2") { r_1E12SSXGWM0QSESEZ0HNXA0N1H
+**Read:** [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), the complete specimen/measurement model; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), effective transport and coupled mechanisms; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), interfaces and composite thermal response.
+
+A porous body's thermal behavior depends on the solid, fluid, void geometry, saturation, flow and interfaces. An effective single-temperature model presumes sufficiently rapid interphase equilibration for the intended question. Otherwise separate solid/fluid energy equations and interfacial transfer may be required.
+
+Derive a representative-volume balance and distinguish intrinsic from superficial averages. Include advection, storage, conduction and possible internal radiation or phase change. Effective conductivity and dispersion are model-dependent summaries, not simply the conductivity of the solid fraction.
+
+Compare dry and wet insulation, a packed thermal store or a porous process material under a defined duty. Examine the evidence for scale separation and local thermal equilibrium. Check how specimen size, compression, moisture and pressure change the interpretation of measured conductivity.
+
+**Continue:** [Heat pipes, capillary return and operating limits](Heat-pipes-capillary-return-and-operating-limits.lingua#r_3NQTXGXEDBDPQ58VVTP5G469T2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1E12SSXGWM0QSESEZ0HNXA0N1H

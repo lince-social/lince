@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Validate a defined prediction against independent physical evidence (@fd-validation: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "A-reproducible-fluid-case-from-geometry-to-evidence.lingua#r_2PAK85R8DRMK4F04X4049NE49W") { r_6H9AXRJ7C8KS3CQKVAPK0BW0GV
+**Read:** [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), validation process, uncertainty and applicability; [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), selected experimental validation case and its original report; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), matching measurement and derived observables.
+
+A validation comparison needs a specified physical quantity, conditions and intended use. Match the simulation's averaging and observation operator to the experiment: a pointwise instantaneous velocity is not directly comparable to a finite-window, spatially filtered mean. Retain measured boundary and property uncertainties as part of the comparison.
+
+Use data not consumed in selecting or fitting the model whenever feasible. Compare several relevant observables and operating conditions, including a case likely to expose the model's limitations. Separate numerical error, sampling error, experimental uncertainty and model discrepancy before interpreting a mismatch.
+
+State the domain in which the comparison supports a prediction and where extrapolation begins. A model can be adequate for total pressure loss and inadequate for a local peak stress or mixing rate. Preserve residual structure and failed cases; changing a closure after seeing validation data turns that data into development evidence and requires a new independent comparison.
+
+**Continue:** [A reproducible fluid case from geometry to evidence](A-reproducible-fluid-case-from-geometry-to-evidence.lingua#r_2PAK85R8DRMK4F04X4049NE49W).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_6H9AXRJ7C8KS3CQKVAPK0BW0GV

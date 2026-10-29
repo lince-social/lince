@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Derive and test integrated rate laws instead of selecting a convenient straight line (@gc-integrated: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ") { r_2WZTK2PWSJ27S4PB9K0BYCAJF3
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 12’s integrated laws and exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), integrated laws and experimental methods; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 13’s kinetic-observation treatment.
+
+For an ideal first-order disappearance in a constant-volume system, dc_A/dt = −kc_A gives c_A(t) = c_A(0) exp(−kt), with half-life ln 2/k. Here c_A denotes the amount concentration of A. The differential law, integration conditions, and initial value are the reason for the expression. A second-order law has a different integrated form and concentration-dependent half-life.
+
+With a hypothetical k = 0.200 min⁻¹, the first-order half-life is about 3.466 min. Interpret the time unit and the quantity that is decaying. A measured signal proportional to concentration may include a baseline or calibration relation; taking its logarithm without accounting for that relation can distort the inference.
+
+Plot transformations as diagnostics while inspecting their error model. A logarithm changes how measurement errors enter a fit and cannot accept zero/negative concentration as ordinary values. Compare fitting in the observation space with a transformed fit, examine residuals, and avoid treating a high correlation coefficient as the sole evidence for a mechanism.
+
+**Work:** derive zero-, first-, and second-order textbook relations with their assumptions. Generate labelled hypothetical observations, fit competing models, and compare an independent prediction or held-out condition. Add a nonzero signal baseline and show how an incorrectly transformed fit changes the estimate. Keep numerical estimation error separate from chemical-model inadequacy.
+
+Use [Reproducible computational work](../../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ) for reproducible fitting/validation and [Measurement and metrology](../../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5) for calibration and uncertainty. The later sustained kinetic project will require the complete observation-to-rate chain, not merely a fitted parameter table.
+
+**Continue:** [Explain temperature dependence and interpret an activation model](Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_2WZTK2PWSJ27S4PB9K0BYCAJF3

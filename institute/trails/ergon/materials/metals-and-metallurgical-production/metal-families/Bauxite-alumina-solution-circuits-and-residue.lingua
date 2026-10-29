@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Follow alumina production through mineral chemistry, circulating solution, and residue (@metal-alumina: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #metals-and-metallurgical-production "Aluminium-electrolysis-anodes-bath-heat-and-product.lingua#r_03JS3JSTHRVNN500EZ8JQ11FG0") { r_5GGD4Q68DT33WZQVNFZVY7MP36
+**Read:** [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), the complete aluminium and hydrometallurgical sequence; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), all applicable solution extraction, thermal conversion, and metal-production discussions; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the entire relevant aluminium/alumina route and residual/utility account.
+
+Bauxite and other aluminium-bearing feeds contain different minerals, impurities, physical associations, and variability. The chemical form of aluminium and accompanying silica/iron/titanium-bearing material matters to dissolution, reagent use, purification, precipitation, thermal conversion, and residue. Bulk aluminium content alone does not establish process suitability.
+
+Reconstruct the full alumina route as connected solution, solid, heat, and reagent inventories. Distinguish dissolution, solution purification, aluminium-hydroxide precipitation, and conversion to alumina. Circulating liquor can accumulate or transform constituents, and a favorable local recovery can coexist with significant reagent, water, heat, or residue demands.
+
+Connect product purity, particle properties, phases, and handling behavior with the receiving reduction cell. Residue is a material/chemical and water-management system with continuing responsibilities; recording only a residue mass does not characterize its long-term behavior or possible use.
+
+**Work:** reconstruct a complete alumina case with feed mineralogy, stream compositions, methods, recycle, product evidence, and residuals. Independently check aluminium and a consequential impurity/reagent balance plus a defensible heat account. Compare a changed feed domain or purification arrangement against observed evidence. Explain which uncertainty controls the product or residue conclusion and design the investigation that could resolve it.
+
+**Continue:** [Reconstruct aluminium electrolysis as a coupled material, electrical, and thermal system](Aluminium-electrolysis-anodes-bath-heat-and-product.lingua#r_03JS3JSTHRVNN500EZ8JQ11FG0).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_5GGD4Q68DT33WZQVNFZVY7MP36

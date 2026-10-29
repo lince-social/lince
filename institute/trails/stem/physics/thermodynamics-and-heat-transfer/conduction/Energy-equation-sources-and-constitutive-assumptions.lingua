@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+The heat equation, sources and constitutive assumptions (@th-heat-equation: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #thermodynamics-and-heat-transfer "Initial-boundary-and-interface-conditions.lingua#r_30JMJ8RWE91FATJ35EDH11P7MH") { r_0AEQ934QTQ4AEZW88TQMSX3X53
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), heat-equation derivation and boundary conditions; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), conduction governing equations; [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), conservative discretization.
+
+Derive a local energy balance over a small material region before substituting Fourier's law. For a stationary homogeneous material with suitable constant volumetric heat capacity and no coupled work terms, C_v ∂T/∂t = ∇·(k∇T)+q̇_v, where q̇_v is volumetric heat generation. Here C_v denotes a volumetric storage coefficient, not a total heat capacity; name the convention explicitly.
+
+More general materials may require enthalpy, phase fraction, deformation or composition variables. A flowing fluid needs advection and potentially compressibility/viscous work terms. Constant diffusivity α = k/(ρc) is a specialization, not a universal material law.
+
+Identify initial conditions and temperature, flux or mixed boundary conditions sufficient for the problem. A numerical solution cannot recover a physically omitted contact resistance or heat source. Integrate the PDE over the whole domain and recover the global energy balance as an independent check.
+
+**Continue:** [Initial, boundary and interface conditions](Initial-boundary-and-interface-conditions.lingua#r_30JMJ8RWE91FATJ35EDH11P7MH).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_0AEQ934QTQ4AEZW88TQMSX3X53

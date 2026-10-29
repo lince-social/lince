@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect crystallization with phase relations, particle populations and impurity fate (@ic-crystallization: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4", #industrial-chemistry "Filtration-washing-drying-and-physical-product-state.lingua#r_74FDG721Y6Q0HQGAJS6JSXTCYC") { r_0NRN1K5ADPNX1GKMYG749S46RJ
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete particulate-reactor and population-balance chapter relevant to crystallization; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the full crystallization, filtration, drying and isolation treatment; [Large Volume Inorganic Chemicals — Solids and Others Industry, BREF LVIC-S](../sources/Inorganic-Solids-and-Others-BREF.lingua#r_1M61GTSHDW8CPV4PNH48PTB4Y4), a whole relevant solid-product family chapter.
+
+Crystallization converts a supersaturated solution or other parent phase into a solid population. Solubility and phase relations constrain possible states; nucleation, growth, aggregation, breakage and changing supersaturation govern how the population evolves. A saturation value alone does not predict particle size, morphology or filtration behavior.
+
+Separate crystal composition from the composition of adhering or trapped mother liquor. Polymorph, hydrate/solvate form, inclusions and surface contamination can influence product function and stability. Washing, drying and recycle can change both recovery and quality, including accumulation of a rejected impurity in mother liquor.
+
+Use population and species balances together. Sampling and image/size measurements need their support and model, especially when a few large particles dominate mass while many small ones dominate number. A convenient average diameter can conceal a consequential distribution.
+
+**Work:** reconstruct a complete primary crystallization/isolation study with phase, kinetic and particle evidence. Independently check solute/solvent and population moments where available, compare two operating histories and trace an impurity through crystals, liquor, wash and recycle. Explain which additional measurements discriminate chemical incorporation from retained liquid or a changed solid form.
+
+**Continue:** [Account for solids separation, washing, drying and the material delivered](Filtration-washing-drying-and-physical-product-state.lingua#r_74FDG721Y6Q0HQGAJS6JSXTCYC).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_0NRN1K5ADPNX1GKMYG749S46RJ

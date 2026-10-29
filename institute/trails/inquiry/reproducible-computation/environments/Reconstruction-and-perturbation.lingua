@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Reconstruct in a fresh place and vary declared irrelevant conditions (@rc-perturbation: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG", #reproducible-computation "../workflows/Inputs-outputs-and-dependencies.lingua#r_6FXMW2VCCFTF1X1CS2SGSP1N31") { r_3XGCVXWS4PAJNXAQBJQKW213FB
+**Read:** [Deterministic artifacts and environmental variation — Reproducible Builds](../sources/Reproducible-Builds.lingua#r_1WZF9P4S3GQYQWVT15HWJVCQ3A), environment variance and verification; [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), the full set of rules reviewed against the actual experiment.
+
+A reconstruction experiment begins with specified artifacts and instructions, not the author's already-running session. Copy or restore the identified inputs and code, create the declared environment, invoke the procedure, and apply the predeclared comparison. Record both successes and discrepancies. An unrecorded rescue command becomes part of the reconstruction evidence and a candidate correction to the procedure.
+
+For the standard-library teaching program, test a fresh interpreter process, another working directory, a directory name containing spaces, and changed time-zone/locale settings. Its deterministic report intentionally excludes time and paths and uses exact rational arithmetic. Under the tested runtime, unchanged input and script bytes should give identical report bytes. Report which settings were actually varied and which were held fixed.
+
+An informative comparison also changes a relevant input. Reorder rows and expect equal scientific values but a changed input digest. Change a component fraction and derive the new expected result independently. This distinguishes a meaningful invariance test from a broken pipeline that always returns the same cached answer.
+
+**Work:** perform the relocation experiment in two fresh personal directories with unchanged source/input files. Save the commands, interpreter identity, environment changes, output digests, and byte comparison. Then ask another reader to reconstruct from your instructions alone, or restore after setting aside the original exercise directory and interactive state. Diagnose any missing input instead of silently copying it from the original session.
+
+Do not generalize the small benchmark beyond its tested contract. A stochastic or floating-point project later uses its own acceptance rule and environment evidence. A successful small reconstruction establishes a useful baseline from which the larger analysis can expose its additional dependencies.
+
+**Continue:** [Describe a workflow as transformations with explicit dependencies](../workflows/Inputs-outputs-and-dependencies.lingua#r_6FXMW2VCCFTF1X1CS2SGSP1N31).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_3XGCVXWS4PAJNXAQBJQKW213FB

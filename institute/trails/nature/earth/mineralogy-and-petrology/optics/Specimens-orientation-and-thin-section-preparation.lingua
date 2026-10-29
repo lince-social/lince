@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Preserve specimen context through preparation and thin-section orientation (@mp-preparation: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../sources/Mineralogy-and-Optical-Laboratory-Manual.lingua#r_4EH79TNHB2YMYGY79B5PV11FTG", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #mineralogy-and-petrology "Set-up-and-understand-a-petrographic-microscope.lingua#r_5SB8Z0J3715X5FB9RSG4CA2VK8") { r_1ZW5S57B5BN7MQ6CBBPG2W8N6W
+**Read:** [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the complete preparation/imaging and measurement account; [Mineralogy and Optical Mineralogy Laboratory Manual — McNamee and Gunter](../sources/Mineralogy-and-Optical-Laboratory-Manual.lingua#r_4EH79TNHB2YMYGY79B5PV11FTG), the full specimen/equipment preparation; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), preparation and geometry relevant to the chosen method.
+
+A prepared section is a selected slice through a heterogeneous three-dimensional sample. Preserve field/specimen identity, orientation, sampling purpose, preparation, thickness, mounting/polishing, coatings or stains, and alteration. A section cut in an unknown direction cannot silently supply the same fabric or inclusion geometry as an oriented one.
+
+Section thickness affects transmitted-light observations and some quantitative interpretations. A nominal 30 μm section is not necessarily uniformly that thick at every grain or edge. Surface quality, contamination, pull-out, fractures, and preparation damage can resemble natural features or affect later analysis.
+
+Select preparation for the intended methods. A covered optical section, uncovered polished section, grain mount, powder, and bulk chemical preparation preserve different information and compatibility. Preparing an unknown material by crushing or cutting is practical laboratory work requiring suitable material identification, equipment, and guidance, especially for hazardous fibers, dust, or radioactive components.
+
+**Work:** reconstruct the preparation chain for a known teaching specimen and two analytical purposes. Draw how section orientation changes the appearance of a lineation, twin, vein, or inclusion. Identify a plausible preparation artifact and the independent check needed to distinguish it from a geological feature.
+
+Read the full preparation and imaging sections of the guide/manual. Keep image-only study distinct from demonstrated preparation competence. Later source interpretations should remain traceable to the actual specimen/domain rather than a generic mineral photograph.
+
+**Continue:** [Set up a petrographic microscope and explain the observation chain](Set-up-and-understand-a-petrographic-microscope.lingua#r_5SB8Z0J3715X5FB9RSG4CA2VK8).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_1ZW5S57B5BN7MQ6CBBPG2W8N6W

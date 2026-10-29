@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Derive transport relations with their conserved quantity, mechanism, and boundary conditions (@metal-transport: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "Heterogeneous-reaction-shrinking-core-and-mechanism-tests.lingua#r_6CK5EQM4MP5QHJY0AAQXBQYFV7") { r_5N8Z97S1PHYZJXPCPN7E1NRMR1
+**Read:** [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), the complete heat/mass/flow theory and corresponding problem sets; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the full reaction/transport context for the chosen extraction process; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the full diffusion and graduate irreversible-process material.
+
+After the shared reaction-versus-transport step, define the local conserved quantity and derive accumulation from fluxes and reaction/source terms. Heat, species, total mass, momentum, and electrical charge have related balance structures but different constitutive relations and constraints. A familiar coefficient cannot be transferred between them without a physical model.
+
+For an appropriate constant-diffusivity concentration model, diffusive flux is J = −D∇c. In nonideal or multicomponent systems, chemical potentials, coupled mobilities, reference frames, and volume/density changes need explicit treatment; a concentration gradient alone does not always identify the flux direction. At an interface, bulk transport, reaction, phase change, and partition may all contribute.
+
+State initial and boundary conditions, dimensional scales, material properties, and what is measured. A surface mass-transfer coefficient is an effective relation for specified geometry/flow/material conditions, not a universal material constant. Separate rate-limiting approximations from a model retaining several comparable resistances.
+
+**Work:** reconstruct a full transfer/reaction problem from an extraction or processing case. Derive the governing balance and boundary relations, nondimensionalize the important terms, and test a limiting case independently. Compare a different plausible transport interpretation with measured profiles or rate data. Explain the observation that distinguishes a real chemical-rate change from a change in mixing, interfacial area, or boundary-layer transport.
+
+**Continue:** [Test heterogeneous reaction mechanisms with geometry, conversion, and independent evidence](Heterogeneous-reaction-shrinking-core-and-mechanism-tests.lingua#r_6CK5EQM4MP5QHJY0AAQXBQYFV7).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_5N8Z97S1PHYZJXPCPN7E1NRMR1

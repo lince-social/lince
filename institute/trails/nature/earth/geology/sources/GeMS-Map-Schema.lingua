@@ -1,0 +1,11 @@
+Import "../Geology.lingua"
+
+GeMS — Geologic Map Schema — USGS (@geo-gems: 0, is #reference, #part-of @geo-sources) { r_6JP32YH79HZAV8JYYKVV1WER0J
+U.S. Geological Survey National Cooperative Geologic Mapping Program. GeMS: A Standard Format for the Digital Publication of Geologic Maps, Techniques and Methods 11-B10, 2020, 74 pages. DOI 10.3133/tm11B10. [Official publication](https://www.usgs.gov/publications/gems-geologic-map-schema-a-standard-format-digital-publication-geologic-maps) · [Published PDF](https://pubs.usgs.gov/tm/11b10/tm11b10.pdf).
+
+Read the complete specification during advanced map publication, examining observations, interpretations, map units, contacts, orientation, references, and confidence. Use it to compare what a dataset preserves with what its geological claim needs. A valid schema can faithfully encode an uncertain or incorrect interpretation.
+
+The official indexed record supplied publication identity, date, DOI, and length; direct publication/standards access timed out or was denied during automated checking. Do not represent the full text as inspected. Preserve actual USGS and component notices for reuse. Metadata/source routes checked on 29 October 2026. The subject uses ordinary Lince Records and links, not a new GeMS import or map feature.
+
+**Return:** [Geology sources — complete books, field methods, maps, and research](../Sources.lingua#r_3H47FYGCEYFZPW2VK77PMR0ECB).
+} r_6JP32YH79HZAV8JYYKVV1WER0J

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Turbines, compressors, valves, mixers and nozzles (@th-flow-devices: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #thermodynamics-and-heat-transfer "../../../chemistry/general-chemistry/energy/Calorimetry-and-thermal-models.lingua#r_55B9CZ9RST5E8CANA6GZ0SNPEY") { r_5FNNDS9HS3F0FDBD0MX1H5D8YJ
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), steady-flow applications and second-law applications; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), open systems and cycle components.
+
+Apply the same control-volume balance to different physical devices. A turbine delivers shaft work; a compressor requires it. A nozzle can convert enthalpy into kinetic energy. A throttling valve often has negligible heat/work and velocity changes, making h approximately constant without making the process reversible.
+
+Write the retained and neglected terms for each device, then check their relative magnitudes. In an adiabatic mixer, the outlet enthalpy follows incoming energy and mass, but entropy generation and composition must be considered separately. In a heat exchanger, heat exchanged internally cancels only when the boundary includes both streams and the wall.
+
+Define isentropic efficiency by the actual task: turbine actual work divided by ideal isentropic work, but compressor ideal required work divided by actual required work. Use the same inlet state and outlet pressure for the comparison. Do not transfer one ratio blindly between machines.
+
+**Continue:** [Interpret a temperature change through a calibrated thermal model](../../../chemistry/general-chemistry/energy/Calorimetry-and-thermal-models.lingua#r_55B9CZ9RST5E8CANA6GZ0SNPEY).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5FNNDS9HS3F0FDBD0MX1H5D8YJ

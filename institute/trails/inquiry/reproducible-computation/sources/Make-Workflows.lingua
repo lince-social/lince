@@ -1,0 +1,11 @@
+Import "../Reproducible-computation.lingua"
+
+GNU Make and executable dependency workflows (@rc-make: 0, is #reference, #part-of @rc-sources) { r_6Y907BH3SMATGCHV3C7ZC2CVMF
+Free Software Foundation and GNU Make contributors. GNU Make manual. [Official manual](https://www.gnu.org/software/make/manual/) · [Full HTML manual](https://www.gnu.org/software/make/manual/make.html). For a second practical reading use the Make chapter of Research Software Engineering with Python and the Make chapter of The Turing Way.
+
+Read the introduction, rules, prerequisites, recipes, variables, phony targets, errors, and parallel-execution material. Reconstruct a small dependency graph and test what happens when an input changes, an output is absent, a recipe fails, or a configuration value is not declared as a prerequisite. More advanced patterns are useful only after these basic semantics are understood.
+
+The GNU manual has its own free-documentation terms; preserve its notices before adaptation. The official manual endpoints timed out during automated checking on 29 October 2026. The verified author-book and Turing Way chapters provide accessible practical readings and identify the same tool; record the installed version and consult its supplied manual as well. No manual copy is bundled.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_6Y907BH3SMATGCHV3C7ZC2CVMF

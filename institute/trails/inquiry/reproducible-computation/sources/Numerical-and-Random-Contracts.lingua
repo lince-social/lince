@@ -1,0 +1,13 @@
+Import "../Reproducible-computation.lingua"
+
+Numerical arrays and reproducible random streams — NumPy documentation (@rc-numpy: 0, is #reference, #part-of @rc-sources) { r_22SKS09JTH3YF4244RX2FYWHNY
+NumPy contributors. Official manual, numerical operations, testing support, random generation, and parallel-stream documentation. [Manual](https://numpy.org/doc/stable/) · [Parallel streams](https://numpy.org/doc/stable/reference/random/parallel.html) · [Generator reproducibility conditions](https://numpy.org/doc/stable/reference/random/compatibility.html).
+
+Read array types, shape and broadcasting, reductions, numerical testing, generators, seed sequences, and the exact operation contracts used in a study. Reconstruct an independent numerical benchmark before trusting a large analysis. Read the parallel-stream and stream-compatibility discussions completely when preserving stochastic work.
+
+Record generator algorithm, seed or initialization state, method calls, distribution transformations, version/build, numerical dependencies, and execution partition where relevant. The official documentation places conditions on reproducing a stream; a seed number alone is not the complete computation.
+
+Official manual and stream documentation checked on 29 October 2026. Preserve NumPy’s current software/documentation and component notices. No numerical dependency is embedded in the trail; the original small worked pipeline uses only the Python standard library.
+
+**Return:** [Reproducible-computation sources — books, research, and primary manuals](../Sources.lingua#r_7RY36NATQ0VQE5JMJAMF6KXK3K).
+} r_22SKS09JTH3YF4244RX2FYWHNY

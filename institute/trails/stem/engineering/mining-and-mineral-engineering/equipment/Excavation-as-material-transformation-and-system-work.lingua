@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect excavation with material properties, ground, fragmentation, and downstream work (@mine-excavation: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #mining-and-mineral-engineering "Drilling-performance-samples-and-hole-geometry.lingua#r_5TSTAC4EF6KQJKKYW66XVSRNNJ") { r_356XP73S1SACTRRWKTF933G7AS
+**Read:** [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the complete excavation and equipment lectures; [Underground Mining of Metalliferous Deposits — Mandal and Dey, NPTEL](../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ), the full applicable development/production methods; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete excavation, ground, and equipment context; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the full selected method chapters.
+
+Excavation removes and changes material under a defined geometry and sequence. Rock structure/strength, abrasivity, water, stress, access, equipment, product requirements, ground response, and the surrounding operation influence the method. One average rock-strength value does not predict every excavation behavior.
+
+Compare mechanical cutting, ripping, drilling-assisted methods, controlled fragmentation, and other appropriate families through complete engineering sources. The relevant outputs include excavated quantity, size/shape distribution, damage, dust, vibration, heat, wear, ground conditions, and the material presented to handling/processing.
+
+Specific energy, penetration rate, tool consumption, availability, and usable production require explicit boundaries and measurement. A machine's installed power differs from net cutting work and from energy per accepted product. Time spent repositioning, servicing, supporting, or waiting can control the connected result.
+
+**Work:** reconstruct a complete teaching excavation case with material evidence, work sequence, equipment, ground/interface constraints, measured outputs, and uncertainty. Compare two methods under a common product/geometry basis and identify a discriminating test. Explain how changing fragmentation or access can shift downstream handling, comminution, or maintenance.
+
+Read full surface/underground and handbook method chapters. The following Records develop the measured and mechanical account without treating a generic technique as a complete field operating instruction.
+
+**Continue:** [Interpret drilling through mechanics, material response, geometry, and observations](Drilling-performance-samples-and-hole-geometry.lingua#r_5TSTAC4EF6KQJKKYW66XVSRNNJ).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_356XP73S1SACTRRWKTF933G7AS

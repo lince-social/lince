@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Compare a complete renewable-chemical route with independent conversion and system accounts (@ic-biorefinery-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH", #source "../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Industria-Alcooleira-Castro.lingua#r_1CNHDZJD6MQ66YERF52Q0PTPPE", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_31VRGSD0Z8CPMK8B9J9G4WHFN7
+**Read:** [Biochemical conversion of corn stover to ethanol — Humbird and colleagues](../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH), the entire report with all relevant balances, equipment/economic appendices and sensitivity; [Química verde no Brasil: 2010–2030 — MCT/CGEE](../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5), the whole book and primary references pertinent to the chosen route; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete renewable-feed/fermentation and isolation programme; [Indústria alcooleira — Heizir F. de Castro](../sources/Industria-Alcooleira-Castro.lingua#r_1CNHDZJD6MQ66YERF52Q0PTPPE), the full applicable Portuguese process account.
+
+Read the entire public biochemical design report, the whole relevant Brazilian technical/strategy chapters and complete primary studies for a defined renewable chemical. Reconstruct feed heterogeneity, preparation, reaction/biological conversion, gas and nutrient transfer, product isolation, utilities, co-products and residuals.
+
+Independently close carbon, hydrogen, oxygen, water and consequential nutrients/impurities. Reproduce a substantial design or experimental result with a second method and test a changed feed, biological yield or recovery assumption. Distinguish a theoretical stoichiometric limit from measured conversion and accepted isolated product.
+
+Compare a documented alternative source or route on equal useful output with dated, explicit cost/energy and co-product boundaries. Preserve variability, season/storage, enzyme/catalyst service, purification and actual operating evidence. Treat future scenarios as hypotheses to compare with later observations.
+
+**Work:** produce a full technical/research account with complete bibliography and methods, derivations, reproducible original calculations, primary observations or identified external data, uncertainty and independent criticism. Explain the strongest unresolved chemical, biological or system question and propose a discriminating study. Report exactly which practical achievements are supported by actual work.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_31VRGSD0Z8CPMK8B9J9G4WHFN7

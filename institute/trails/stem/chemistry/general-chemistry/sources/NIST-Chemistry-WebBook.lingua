@@ -1,0 +1,11 @@
+Import "../General-chemistry.lingua"
+
+NIST Chemistry WebBook — evaluated properties and their sources (@gc-webbook: 0, is #reference, #part-of @gc-sources) { r_7MMJR7YZKCS02QYACZM15GFQVP
+NIST Chemistry WebBook, Standard Reference Database 69, edited by Peter J. Linstrom and contributors. [Official database, guide, source collections, and citation help](https://webbook.nist.gov/chemistry/).
+
+Read the guide and citation instructions, then inspect a small number of species/property records needed for the research projects. Identify phase, temperature, pressure, reference state, units, original source, uncertainty, and evaluation comments. Thermochemistry, phase properties, ion energetics, and spectra have distinct source histories and applicability. A matching chemical name does not establish that a number describes the required phase or conditions.
+
+Free consultation is available. The site expressly states that its Standard Reference Data are copyrighted under the relevant data framework; it must not be described as a public-domain collection merely because NIST is a government agency. Preserve the actual data/source notices. Access and record structure checked on 29 October 2026. This trail links selected references and does not mirror or bulk-ingest the database.
+
+**Return:** [General chemistry sources — books, courses, data, and research](../Sources.lingua#r_37CHT3QSMD33JDMXE59S6M2ME3).
+} r_7MMJR7YZKCS02QYACZM15GFQVP

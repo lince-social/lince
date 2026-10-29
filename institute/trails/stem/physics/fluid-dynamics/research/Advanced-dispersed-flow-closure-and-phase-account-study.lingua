@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced dispersed-flow closure and phase-account study (@fd-advanced-multiphase: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #fluid-dynamics "Advanced-rheometry-constitutive-inference-and-processing-flow-study.lingua#r_49DVK2ND92ZB7EN3P0V4R1BJ71") { r_4QBZV9Q9Z7CFSZPHAPHZ75NV9A
+**Read:** [Fundamentals of Multiphase Flow — Christopher E. Brennen](../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM), the complete book followed by the selected closure and primary comparison; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), aerosol, settling or porous-flow development as applicable; [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), suspension material functions; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), model comparison and applicability.
+
+Select a dilute suspension, bubbly channel, spray or settling system and construct phase-specific mass, momentum and, where needed, energy accounts. Specify size distributions, phase fractions and slip, identifying the scale of averaging. Show explicitly how interphase exchange cancels in the combined conserved quantity.
+
+Compare a reduced mixture model with a more resolved phase description for an observable supported by independent evidence. Check particle/bubble response, interaction and loading scales before choosing drag, breakup, coalescence or transfer closures. Resolve a single-particle or isolated-bubble limit independently before trusting the ensemble prediction.
+
+Assess several outputs, such as pressure, concentration profile and slip, across changed conditions. Document conservation, numerical error, sampling and closure uncertainty. A fitted pressure drop alone cannot establish a correct phase distribution or material exposure history; defend the quantities that the available evidence actually identifies.
+
+**Continue:** [Advanced rheometry, constitutive inference and processing-flow study](Advanced-rheometry-constitutive-inference-and-processing-flow-study.lingua#r_49DVK2ND92ZB7EN3P0V4R1BJ71).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4QBZV9Q9Z7CFSZPHAPHZ75NV9A

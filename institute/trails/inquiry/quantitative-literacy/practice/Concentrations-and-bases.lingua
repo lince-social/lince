@@ -1,0 +1,19 @@
+Import "../Quantitative-literacy.lingua"
+
+Concentrations, moisture, and changing the basis (@ql-concentrations: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-si, #source @ql-source-vim, #quantitative-literacy "Energy-power-and-capacity.lingua#r_0EE7P9TMJK8SRVCVM1M7K61RAR", #general-chemistry "../../../stem/chemistry/general-chemistry/solutions/Preparation-dilution-and-aliquots.lingua#r_53MS427PJ81EAEKEBXZFCK78W6") { r_0XCSBEG82Y6TYKX1Z28R693AY5
+**Read:** SI Brochure chapter 2's treatment of quantities with unit one and chapter 5's expression conventions; VIM chapter 1. Revisit the fractions and ratio readings and solve the percentage problems on a stated reference mass before using abbreviated concentration labels.
+
+Mass fraction is component mass divided by total mixture mass. Mass concentration is component mass divided by mixture volume. Amount concentration uses amount of substance per volume and requires chemical identity and molar mass for a mass conversion. A volume fraction has another definition; mixing volumes need not add exactly. Numerically similar labels can therefore denote different quantities.
+
+For a mass fraction, 1 mg/kg is 10^−6, often described as one part per million on a mass basis. A value in mg/L is a mass concentration. It becomes numerically close to mg/kg only under an appropriate density approximation. State that approximation, temperature, and the required precision rather than writing an identity.
+
+**Work:** a hypothetical 800 kg wet delivery contains 10% water by wet mass and 0.5% target component on a dry-solid basis. Dry solids are 720 kg and target component mass is 3.6 kg. The wet-basis component fraction is 0.45%. Explain why applying 0.5% directly to 800 kg gives the wrong answer.
+
+Prepare a data dictionary for wet mass, dry mass, water mass, component mass fraction, and sampling basis. Distinguish an individual specimen result from the average composition of a heterogeneous delivery. A unit conversion cannot repair an unrepresentative sample. The later chemistry and analytical trails develop sampling, amount of substance, speciation, and assay methods in depth; this Record supplies the denominator discipline those calculations share.
+
+**Continue in general chemistry:** [Prepare and dilute a solution under an explicit amount and volume model](../../../stem/chemistry/general-chemistry/solutions/Preparation-dilution-and-aliquots.lingua#r_53MS427PJ81EAEKEBXZFCK78W6).
+
+**Continue:** [Energy, power, capacity, and a production denominator](Energy-power-and-capacity.lingua#r_0EE7P9TMJK8SRVCVM1M7K61RAR).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_0XCSBEG82Y6TYKX1Z28R693AY5

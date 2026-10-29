@@ -1,0 +1,19 @@
+Import "../Quantitative-literacy.lingua"
+
+Study a material process from receipts to usable output (@ql-stock-study: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #source @ql-source-uncertainty, #source @ql-source-data, #quantitative-literacy "Infrastructure-account.lingua#r_1SPNJTQF61CBZ3V6H0NPM7SD0E") { r_6AJ0D56F46SY1AFC4DGJXFD7RJ
+**Read:** revisit the balance, recovery, concentration, energy, data, and uncertainty Records and their assigned chapters. Use The Art of Insight, Symmetry and conservation, to justify the account and NIST TN 1297 to state what the input uncertainties mean.
+
+Work through a hypothetical nonreacting separator and packing operation. The supplied dry feed is 1200 kg per batch at 2% target-component mass fraction. Product is 180 kg at 10% target component; a tail stream contains the remainder. The product is then packed into 7 kg net portions, with no additional loss in the idealized first calculation.
+
+Derive the tail mass, its component fraction, component recovery, product mass yield, full package count, and unpackaged remainder. Check values: tail mass 1020 kg, tail component mass 6 kg, tail component fraction 6/1020, recovery 75%, mass yield 15%, 25 packages and 5 kg remainder. Do not confuse the remainder with lost mass or the recovered component with the product's total mass.
+
+Now state a wet-feed moisture fraction of 8% while keeping dry feed unchanged. Recalculate the gross wet feed and water quantity. Add a 36 kWh direct electricity reading for the separator and 4 kWh for packing. Compare energy per dry feed, product, and packed net mass, explaining where the unpackaged remainder is counted. These are teaching values, not a real mineral-processing recipe.
+
+**Deepen:** add explicitly assumed measurement intervals, a possible inventory change, and a measured stream that does not close. Present both the raw residual and a discussion of its size relative to those assumptions. Draw the process and organizational transfer boundaries. Give the receiving party units, batch identity, moisture basis, composition basis, measured versus assumed quantities, and document revision.
+
+The study is complete when a second reader can reproduce both the ideal calculation and the changed-basis calculation, identify the same limitations, and see what additional measurement would most improve the account. A spreadsheet total without that explanation is insufficient.
+
+**Continue:** [Follow a quantitative account across an infrastructure chain](Infrastructure-account.lingua#r_1SPNJTQF61CBZ3V6H0NPM7SD0E).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_6AJ0D56F46SY1AFC4DGJXFD7RJ

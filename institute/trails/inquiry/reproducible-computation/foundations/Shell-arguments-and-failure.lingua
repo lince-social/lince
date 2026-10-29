@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Use the shell to run an explicit procedure (@rc-shellwork: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Unix-Shell.lingua#r_5YJ6K2A69H1D45AADES3QR94AX", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #reproducible-computation "Values-types-and-formulas.lingua#r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V") { r_1R8YM93EXAYPW48D0CEWQ3QXJB
+**Read:** [The Unix Shell — Software Carpentry](../sources/Unix-Shell.lingua#r_5YJ6K2A69H1D45AADES3QR94AX), all episodes and exercises; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), the complete shell chapters, 2–4.
+
+Complete the shell lesson before using a long command as if its meaning were obvious. A shell parses words, quotes, expansions, redirections, and pipes before launching a program. A filename containing spaces needs correct quoting. A command that looks like one argument in prose can become several arguments after parsing. Quoting in the shell and parsing a CSV field are separate operations.
+
+Practice listing files, changing directory, passing a path to a program, and redirecting an output into a new file in your exercise area. Examine both standard error and exit status after an intentionally missing input. A pipeline's failure behavior depends on the shell and its options; inspect that contract before treating the final command's success as evidence that every stage succeeded.
+
+Keep a useful analysis invocation short: an interpreter, a saved script, named inputs or configuration, and an output. Record the actual working directory and interpreter selection. Avoid an opaque sequence of interactive actions as the only surviving specification of the method. A script can make repeated work explicit, but its errors still need observation.
+
+**Work:** pass an input filename with a space to a small program. Compare an argument list with one incorrectly quoted command. Send the program's diagnostic stream to a separate file and explain why a diagnostic is not a scientific result. Run the missing-input case from a script and show how you know it failed rather than merely produced an empty report.
+
+Then complete the entire Software Carpentry lesson, including pipes, loops, scripts, and finding material. Its exercises provide the preparation for the later research-software book. Explain each command in the two-lot workflow in ordinary language; no terminal command is an acceptable substitute for knowing what its transformation does.
+
+**Continue:** [Translate quantities into values, types, and expressions](Values-types-and-formulas.lingua#r_7H2CRQWVZ5KS9RSQ8TH4VFJH4V).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_1R8YM93EXAYPW48D0CEWQ3QXJB

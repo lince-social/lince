@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Specify water, carbon, redox, and open-system constraints in a phase model (@mp-fluid-redox: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ", #source "../sources/Perple-X-Methods-and-Documentation.lingua#r_39E8B7CK16VF55MXWKSXMNN4Z6", #mineralogy-and-petrology "Thermodynamic-data-model-compatibility-and-numerical-tests.lingua#r_4VK39PV7M2RHZHCSWK6R1AGW6F") { r_6QCQEWZVFBMQNVYP5H5ZBGMXRR
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete fluid/redox and metamorphic-reaction notes used; [HPx-eos and THERMOCALC — models, data, and interpretation](../sources/HPx-eos-and-THERMOCALC.lingua#r_0QYHHGNWRA8RQEM5MADWXDRQFJ), the full fluid/endmember/model definitions for the selected system; [Perple_X — Connolly, phase-equilibrium methods and examples](../sources/Perple-X-Methods-and-Documentation.lingua#r_39E8B7CK16VF55MXWKSXMNN4Z6), the full relevant component, constraint, and data-model documentation.
+
+Fluids can transfer components, change chemical potentials, enable reactions, and affect mineral stability and kinetics. Water saturation, a fixed bulk water amount, and an imposed fluid chemical potential are different constraints. A rock containing hydrous minerals is not automatically saturated with an abundant equilibrium fluid throughout its history.
+
+Oxygen fugacity expresses a chemical-potential account under a reference convention; it is not simply the measured oxygen weight percent. Iron valence, buffers, fluids, sulfur/carbon species, and mineral compositions can constrain redox under specific models and conditions. Preserve which quantities are measured and which are imposed or inferred.
+
+Closed-system, externally buffered, and infiltrating/reactive-transport accounts can predict different assemblages even with similar initial rock names. A phase calculation may assume a fluid composition that the specimen never experienced. Textures, veins, reaction fronts, and mass transfer provide geological tests of the boundary assumptions.
+
+**Work:** compare a dry/finite-water and a fluid-buffered calculation for an identified teaching system, deriving the component/constraint differences. Explain how a ferric-iron or CO₂ assumption could alter a result. Design an observation or analysis that would discriminate the competing fluid/redox accounts.
+
+Read the complete thermodynamic/fluid notes and method/data documentation. Later metamorphic, hydrothermal, and ore/feedstock studies reuse these constraints with their own evidence rather than imposing one convenient default on every natural material.
+
+**Continue:** [Separate thermodynamic validity, numerical convergence, and geological applicability](Thermodynamic-data-model-compatibility-and-numerical-tests.lingua#r_4VK39PV7M2RHZHCSWK6R1AGW6F).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_6QCQEWZVFBMQNVYP5H5ZBGMXRR

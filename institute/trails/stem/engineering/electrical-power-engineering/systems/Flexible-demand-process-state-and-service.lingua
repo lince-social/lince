@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Flexible demand, process state and service (@pe-demand-response: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #source "../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G", #source "../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR", #electrical-power-engineering "../optimization/Economic-dispatch-constraints-and-service-cost.lingua#r_667YJCFT9K4GYNNBY0Y8Z30X6W") { r_3G55HWZEJR23DRDAS5RQDYJ5FW
+**Read:** [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), complete deferrable-demand, ramp and uncertainty formulation; [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G), entire report and load/chronological reliability reasoning; [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR), whole useful-system and variable-speed application context.
+
+Load flexibility is a change in when or how electrical power is used while maintaining a stated useful service. Curtailment, shifting, thermal storage, variable-speed operation and interruption have different consequences. A demand-response amount is conditional on process state, duration, recovery, user constraints and the credibility of the baseline.
+
+Build a small original service model for pumping, heating or a scheduled process. Track energy, state bounds, ramping, deferred work and post-event recovery. A load that can reduce power for minutes may not sustain the same reduction for hours, and several flexible users can share a weather/process constraint. Preserve that dependence in adequacy and dispatch studies.
+
+Compare an unconstrained electrical schedule with one respecting process and service conditions, then identify the measurements and control/communication needed to support the claim. Read the complete relevant [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99) and [Redefining Resource Adequacy for Modern Power Systems — ESIG](../sources/Redefining-Resource-Adequacy-ESIG.lingua#r_0HBM3TV8RE50TSK5D34E4TTC4G) treatments. The full process/mechanical/social-economic subjects deepen the surrounding system, while this electrical interface must state actual service, evidence and restoration rather than calling every unserved load a successful flexibility resource.
+
+**Continue:** [Economic dispatch, constraints and service cost](../optimization/Economic-dispatch-constraints-and-service-cost.lingua#r_667YJCFT9K4GYNNBY0Y8Z30X6W).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3G55HWZEJR23DRDAS5RQDYJ5FW

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Build a chemical-process energy account from states, reactions and work (@ic-energy: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #source "../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X", #industrial-chemistry "Energy-quality-entropy-and-minimum-separation-work.lingua#r_6KQ9H7SJ6V4QVR5QF3T2WSHQ0M") { r_7XJ8R69XAXCCCTMAEXWPSKXEP0
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the entire energy-balance chapter and derivations for batch, semi-batch, stirred and flow systems; [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), all heat-capacity, phase-change and reactive-energy modules; [Improving Steam System Performance — U.S. DOE sourcebook](../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X), the complete generation, distribution, end-use and recovery account.
+
+Choose a sign convention and boundary before writing an energy balance. For a steady open unit neglecting kinetic/potential changes, one useful convention is Q̇−Ẇ=Σout F_i h_i−Σin F_i h_i, with heat into and shaft work out of the unit positive. Use compatible reference states and material/amount bases for every enthalpy.
+
+Enthalpy differences include sensible heating, phase change, mixing and reaction as appropriate. A formation-enthalpy account already includes chemical transformation; adding the same reaction heat again double counts it. An account using a separate reaction-heat term must be derived consistently with its chosen species/reference convention.
+
+For an original simplified duty, heating 1,000 kg/h of a material with constant heat capacity 4 kJ/(kg K) through 50 K requires 200 MJ/h of sensible energy. A simultaneous exothermic transformation releasing 80 MJ/h changes the net external requirement to 120 MJ/h only under the explicitly assumed steady boundary with no other duties, losses or work. It does not establish the local temperature profile or controllability.
+
+**Work:** reconstruct a full reaction/separation energy account with phase changes and an independent material closure. Derive the same net duty using two consistent enthalpy conventions. Identify which measurements or property uncertainties most affect the result and where the actual thermal rate could exceed a steady average.
+
+**Continue:** [Distinguish energy quantity, temperature level, entropy and useful work](Energy-quality-entropy-and-minimum-separation-work.lingua#r_6KQ9H7SJ6V4QVR5QF3T2WSHQ0M).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_7XJ8R69XAXCCCTMAEXWPSKXEP0

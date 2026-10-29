@@ -1,0 +1,17 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Defend a consequential change to a chemical supply system (@cs-change-project: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0", #source "../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA", #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #chemical-supply-systems "A-complete-qualified-chemical-supply-system.lingua#r_44MR9J6NH9MF50YCHKGAT4GMK3") { r_1E9PHJNQAAA6GSQGK31SP3GMB0
+**Read:** [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the entire quality and change-relevant annex; [Methanol Safe Handling Manual — Methanol Institute](../sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0), complete management-of-change and operating-readiness methods; [Validation of Measurement Procedures that Include Sampling — Eurachem](../sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA), the whole measurement-validation guide; [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the complete relevant graduate decision/coordination studies.
+
+Choose a changed source, product grade, contact component, distribution route or user process. Read complete applicable technical and measurement methods, the full relevant quality guidance and the graduate planning material. Establish the existing and proposed systems on one explicit function, quantity, quality, state and service basis.
+
+Build a complete before/after evidence account. Identify what can remain established, what the change invalidates and which new observations are needed. Design a discriminating comparison for impurities, physical state, stability, analytical method and actual process performance where consequential. Include qualification time, quarantined stock, package/equipment compatibility, maintenance and communication across parties.
+
+Compare at least one alternative and the option of retaining the existing system. Evaluate normal operation, a changed demand and a disruption/restoration scenario, with full quantity/service/resource/cost consequences. Independently validate calculations and preserve uncertain or undisclosed process information. Test both the physical hypothesis and the decision model instead of adjusting acceptance criteria to obtain a desired result.
+
+Submit a substantial technical/research report, independent critique and revision. State what actual experiment, qualified operational trial, public-case reconstruction or synthetic study establishes. The outcome should be a defensible bounded judgement about the change, with a clear path for additional evidence and continuing review rather than a declaration that a nominally similar product is interchangeable.
+
+**Continue:** [Defend one complete chemical supply from origin to use and recovery](A-complete-qualified-chemical-supply-system.lingua#r_44MR9J6NH9MF50YCHKGAT4GMK3).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_1E9PHJNQAAA6GSQGK31SP3GMB0

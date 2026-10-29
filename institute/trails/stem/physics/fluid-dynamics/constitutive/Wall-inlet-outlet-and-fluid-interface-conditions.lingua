@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Wall, inlet, outlet and fluid-interface conditions (@fd-boundaries: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #fluid-dynamics "../kinematics/Reference-frames-rotating-motion-and-consistent-forces.lingua#r_5SB0X4AF38MZ5W9V6TX733B6BN") { r_1CRP84TQ0EED7784XC3NCV3WFR
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 8 boundary conditions; [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), stress boundary conditions and wetting topics; [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), complete relevant boundary-condition treatment.
+
+At an impermeable moving wall, the normal fluid velocity matches the wall's normal velocity. No slip additionally matches tangential velocity when that continuum approximation is appropriate. A prescribed shear, slip length or porous-wall flux describes a different physical boundary.
+
+At a material fluid interface, a kinematic condition describes its motion and a stress balance accounts for pressure, viscous traction, curvature and surface-tension gradients. A prescribed free-surface pressure alone does not supply every tangential condition. Contact lines introduce further material and geometric information.
+
+For each inlet and outlet, state which physical environment the condition approximates. Test whether moving a computational outlet or changing an assumed inflow profile alters the conclusion. Initial fields must also satisfy necessary constraints. Record the actual wall condition, geometry and roughness of an experiment so the numerical and physical problems can be compared.
+
+**Continue:** [Reference frames, rotating motion and consistent forces](../kinematics/Reference-frames-rotating-motion-and-consistent-forces.lingua#r_5SB0X4AF38MZ5W9V6TX733B6BN).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1CRP84TQ0EED7784XC3NCV3WFR

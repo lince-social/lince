@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Describe relative plate motion with vectors, rotations, and reference frames (@geo-plate-kinematics: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/GPlates-Reconstruction.lingua#r_6C7H7HA2X7FPJF6EZKK6NRQDBT", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "Ridges-subduction-collisions-and-transforms.lingua#r_2GMMJETT0Y2X66FEN58NVQVD2P") { r_2SGRRPAKREKTZGW3ATZFR4RFGS
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 10’s movement and boundary sections; [GPlates — geological reconstructions, manuals, and methods](../sources/GPlates-Reconstruction.lingua#r_6C7H7HA2X7FPJF6EZKK6NRQDBT), the full introductory reconstruction tutorials and corresponding manual/data-model sections; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), plate-motion exercises.
+
+Plate motion is relative to a defined frame or another plate. A local horizontal velocity has direction and magnitude; a spreading rate can refer to one flank or the full separation of two sides. Identify that convention before comparing values. Relative velocity requires subtracting vectors in a common frame, not subtracting their magnitudes.
+
+On a sphere a rigid plate's instantaneous motion can be represented by an angular-velocity vector: v = ω × r. Finite rotations reconstruct positions over a stated interval. Rotation order matters; composing finite rotations by adding Euler angles generally fails. Choose a common rotation convention and distinguish an instantaneous angular velocity from a finite reconstruction.
+
+For an invented local example, plate A moves east at 30 mm yr⁻¹ and B moves east at 10 mm yr⁻¹ in the same frame. A relative to B moves east at 20 mm yr⁻¹. A boundary's opening or sliding component requires projecting that vector onto the identified normal and tangent.
+
+**Work:** solve local vector/half-spreading examples with diagrams, then complete the introductory GPlates reconstruction tutorials. Preserve model, reference plate, rotation file, geological age convention, and software version. Reconstruct a feature under two admissible models and distinguish model disagreement from arithmetic or plotting error.
+
+Read the manual's reconstruction and data-model sections in full as used. A polished animation displays a specified model; it does not independently verify vanished plate boundaries or establish deformation-free behavior for every reconstructed region.
+
+**Continue:** [Explain boundaries through material, heat, deformation, and geological history](Ridges-subduction-collisions-and-transforms.lingua#r_2GMMJETT0Y2X66FEN58NVQVD2P).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_2SGRRPAKREKTZGW3ATZFR4RFGS

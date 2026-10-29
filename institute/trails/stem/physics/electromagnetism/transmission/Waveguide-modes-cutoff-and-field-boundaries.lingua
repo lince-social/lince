@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Waveguide modes, cutoff and field boundaries (@em-waveguides: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #source "../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ", #electromagnetism "Cavities-resonance-loss-and-coupling.lingua#r_6KWKPHVZFYZJR8T014QKKPMD4A") { r_3G14MTZDHF8SK3T0BEFQ8HPFP3
+**Read:** [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), complete waveguide and fibre sections; [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ), guided modes and dispersion.
+
+A guide mode is a field pattern satisfying transverse boundary conditions with specified longitudinal propagation. Derive TE, TM and TEM definitions relative to the guide axis, and identify when a two-conductor structure supports TEM while a simple hollow perfect-conductor guide does not. A scalar cross-section eigenproblem must be connected back to the full vector fields.
+
+For a rectangular vacuum-filled perfect-conductor guide of broad dimension a, TE₁₀ cutoff is f_c = c/(2a). At a = 0.02 m, f_c = 7.49481145 GHz using the exact c. Above cutoff, derive β² = (ω/c)² − (π/a)²; below it, the longitudinal field is evanescent. Phase velocity can exceed c without transmitting a causal front faster than c.
+
+Normalize a mode by power and examine conductor loss, dielectric loading and higher modes. A discontinuity excites reflected, transmitted and evanescent modes; retaining only one propagating mode needs an error argument. Mesh refinement must resolve geometry and fields, especially near corners. Optical fibres and integrated guides share mode methods while requiring their actual material/vector boundary conditions.
+
+**Continue:** [Cavities, resonance, loss and coupling](Cavities-resonance-loss-and-coupling.lingua#r_6KWKPHVZFYZJR8T014QKKPMD4A).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3G14MTZDHF8SK3T0BEFQ8HPFP3

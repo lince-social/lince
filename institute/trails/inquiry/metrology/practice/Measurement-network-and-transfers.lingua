@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Maintain the measurement network that production relies on (@met-network: 0, is #chapter, #part-of @metrology, #source "../sources/Metrology-in-Short.lingua#r_348S70JD4Z4VX9S3KA08JXQ2MS", #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1", #metrology "../research/Calibration-project.lingua#r_49WHGBJDWWRNE926CEV5JCWZ7P") { r_61QE5K586RSSFJ7DW1B82KXSW3
+**Read:** [Metrology — in Short — Howarth and Redgrave](../sources/Metrology-in-Short.lingua#r_348S70JD4Z4VX9S3KA08JXQ2MS), the full infrastructure chapters, updated through current references; [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), the complete report; [CIPM MRA, CMCs, and key comparisons — BIPM](../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1), the arrangement and a relevant capability/comparison.
+
+Follow a measurement result through reference production, calibration, use, interpretation, and transfer between parties. Each step needs material inputs, equipment, energy, environmental control, consumables, transport, repair, software and documentation, skilled labor, and knowledge of the method. A reference chain survives because this work is continually performed.
+
+For a raw-material delivery, the chain can include sampling, moisture and composition measurements, reference solutions or materials, instrument calibration, data reduction, and a transfer of mass and assay information to a receiver. For precision production it can include dimensional references, machine qualification, inspection, and acceptance. Semiconductor work adds further scales and interactions but reuses the same questions about measurand and evidence.
+
+**Work:** map a three-party chain containing a reference or calibration provider, a user laboratory, and a manufacturer or receiver. For every transfer state quantity, unit, basis, conditions, correction, uncertainty and dependence where relevant, source identity/revision, responsibility, and limits of reuse. Include sample custody and document history separately from metrological traceability.
+
+Add one realistic failure scenario: a reference is damaged in transport, a software change alters an analysis, a calibration provider is unavailable, or a shared environmental control fails. Explain which capabilities and previous results are affected, what evidence is needed to decide, and how a replacement path would be established. Do not assume a supplier can be replaced solely by matching a catalogue label.
+
+Identify shared resources and maintenance work that several industries depend on. Keep the physical and organizational account linked to the actual quantitative results. This connects metrology with Ergon’s broader concern: sustaining the infrastructure, skills, cooperation, and reference knowledge that make advanced production reproducible.
+
+**Continue:** [Sustained project — design, calibrate, validate, and report a measurement](../research/Calibration-project.lingua#r_49WHGBJDWWRNE926CEV5JCWZ7P).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_61QE5K586RSSFJ7DW1B82KXSW3

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Follow offgas through heat, particles, chemical constituents, and recovered products (@metal-gas-handling: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #metals-and-metallurgical-production "../hydrometallurgy/Leaching-speciation-selectivity-and-complete-solution-accounts.lingua#r_2PXCEXY9HNAWMYA9HSZBF4JNH2") { r_324B18686WSDWQQSAG6G8XKYKZ
+**Read:** [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the complete shared gas/dust and chosen metal-family treatment material; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), whole gas/energy/residual accounts for the chosen production route; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the complete gas and furnace-account exercises.
+
+Offgas carries mass, heat, momentum, water, chemical species, particles, and sometimes recoverable constituents. Flow and concentration require defined dry/wet and reference-condition bases. Dilution can change a concentration without changing emitted constituent mass; recovered dust may also be an internal circulating load.
+
+Connect the process source, gas path, cooling/heat recovery, condensation, particle capture, chemical treatment, returns, and final streams. Temperature and chemistry changes can alter phase/species, deposit material, cause corrosion/wear, or change what a sampling method measures. An isolated collection-efficiency figure does not describe every operating state.
+
+Track useful recovery and unwanted concentration of impurities through recycles, purges, or secondary products. Gas treatment depends on utilities, consumables, maintenance, instruments, and coordinated work; it is part of production feasibility and product/residual accounting, not an unrelated last-stage addition.
+
+**Work:** reconstruct a complete smelter or steelmaking gas/dust case. Independently balance a consequential element through gas, particles, recovered product, and returns, with compatible measured conditions. Compare an alternative heat/capture arrangement and an interruption or changed-feed scenario. Explain the observations needed to distinguish changed generation, transport, capture, and sampling response. Use actual current primary requirements where a practical study relies on them.
+
+**Continue:** [Explain leaching through mineral reactions, solution chemistry, and the whole feed](../hydrometallurgy/Leaching-speciation-selectivity-and-complete-solution-accounts.lingua#r_2PXCEXY9HNAWMYA9HSZBF4JNH2).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_324B18686WSDWQQSAG6G8XKYKZ

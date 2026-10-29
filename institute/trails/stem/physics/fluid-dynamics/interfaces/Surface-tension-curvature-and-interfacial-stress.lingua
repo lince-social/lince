@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Surface tension, curvature and interfacial stress (@fd-surface-stress: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #fluid-dynamics "Wetting-contact-lines-hysteresis-and-coating.lingua#r_0QBZZTX53DYHBPJTHRAH7YTK1D") { r_45KBS33PK1WK235BRBFHAACN9W
+**Read:** [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), surface tension, interfacial stress and Marangoni notes; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), surface-tension chapter; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 7.b interface conditions.
+
+A fluid interface has an energy and a stress response that can matter at scales where gravity or inertia is weak. For a static spherical liquid drop of radius R with constant surface tension σ, the interior pressure exceeds the exterior pressure by 2σ/R. A thin soap film has two interfaces and a different pressure jump. State the curvature and normal convention before applying a general Young–Laplace relation.
+
+Derive the normal stress balance from a small surface patch and the tangential balance when σ varies along the interface. A surface-tension gradient can drive Marangoni motion. Temperature, composition and adsorbed material can change that gradient, so a clean-interface assumption requires evidence about the actual preparation and time history.
+
+Compare capillary, gravitational, viscous and inertial stress scales using declared length and velocity scales. Identify when a static shape can be reconstructed from curvature and when flow or hysteresis matters. A fitted apparent surface tension can hide contamination or dynamics if the model's equilibrium conditions are not met.
+
+**Continue:** [Wetting, contact lines, hysteresis and coating](Wetting-contact-lines-hysteresis-and-coating.lingua#r_0QBZZTX53DYHBPJTHRAH7YTK1D).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_45KBS33PK1WK235BRBFHAACN9W

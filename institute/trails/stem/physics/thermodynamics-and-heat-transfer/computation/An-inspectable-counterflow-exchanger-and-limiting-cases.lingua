@@ -1,0 +1,79 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+An inspectable counterflow exchanger and limiting cases (@th-exchanger-example: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #thermodynamics-and-heat-transfer "../heat-exchangers/Fouling-maldistribution-pressure-loss-and-service.lingua#r_1772HCRCTXFNDXMGCNSDTJBW4W") { r_2PWXETQRX007J85DKXCPCE7W71
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the full exchanger differential balance, LMTD and effectiveness derivations; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), complete open-system energy and entropy accounts.
+
+Two streams exchange heat in steady counterflow with constant heat-capacity rates C_h and C_c in W/K and total conductance UA in W/K. There is no external heat loss, phase change, axial conduction, pressure-work effect or varying property. Integrating the local energy equations gives effectiveness from NTU = UA/C_min and r = C_min/C_max.
+
+For unequal capacity rates, ε = (1−exp(−NTU(1−r)))/(1−r exp(−NTU(1−r))). Its equal-capacity limit is NTU/(1+NTU). The program uses expm1 to avoid cancellation when the exponent is small, then obtains both outlet temperatures from energy conservation. It reports both end approach temperatures and the streams' net entropy change.
+
+The deliberate domain is capacity rates 0.1–1,000,000 W/K, nonnegative UA with NTU at most 20, and inlet temperatures 100–2000 K with the hot inlet at least as warm as the cold inlet. The finite NTU bound avoids presenting a rounded limiting pinch as exact finite-area physics.
+
+```python file=counterflow_exchanger.py
+import json
+import math
+
+
+def bounded(value, low, high):
+    if type(value) not in (int, float):
+        raise ValueError("expected a finite real number")
+    try:
+        value = float(value)
+    except OverflowError:
+        raise ValueError("number is outside the model domain") from None
+    if not math.isfinite(value) or not low <= value <= high:
+        raise ValueError("number is outside the model domain")
+    return value
+
+
+def solve(hot_capacity=2.0, cold_capacity=1.0, conductance=2.0,
+          hot_in=600.0, cold_in=300.0):
+    ch = bounded(hot_capacity, 0.1, 1e6)
+    cc = bounded(cold_capacity, 0.1, 1e6)
+    ua = bounded(conductance, 0.0, 2e7)
+    hot_in = bounded(hot_in, 100.0, 2000.0)
+    cold_in = bounded(cold_in, 100.0, 2000.0)
+    if hot_in < cold_in:
+        raise ValueError("the hot inlet must not be colder than the cold inlet")
+    minimum = min(ch, cc)
+    ratio = minimum / max(ch, cc)
+    ntu = ua / minimum
+    if ntu > 20.0:
+        raise ValueError("this teaching model limits NTU to 20")
+    difference = 1.0 - ratio
+    if difference == 0.0:
+        effectiveness = ntu / (1.0 + ntu)
+    else:
+        change = -math.expm1(-ntu * difference)
+        effectiveness = change / (difference + ratio * change)
+    heat = effectiveness * minimum * (hot_in - cold_in)
+    hot_out = hot_in - heat / ch
+    cold_out = cold_in + heat / cc
+    entropy = math.fsum((
+        ch * math.log1p((hot_out - hot_in) / hot_in),
+        cc * math.log1p((cold_out - cold_in) / cold_in),
+    ))
+    return {
+        "heat_rate_W": heat,
+        "hot_out_K": hot_out,
+        "cold_out_K": cold_out,
+        "effectiveness": effectiveness,
+        "NTU": ntu,
+        "capacity_ratio": ratio,
+        "hot_in_end_approach_K": hot_in - cold_out,
+        "hot_out_end_approach_K": hot_out - cold_in,
+        "entropy_generation_W_per_K": entropy,
+        "energy_residual_W": ch * (hot_in - hot_out) - cc * (cold_out - cold_in),
+    }
+
+
+if __name__ == "__main__":
+    print(json.dumps(solve(), sort_keys=True, allow_nan=False))
+```
+
+Independently solve the duty equation Q = UA × LMTD using energy-derived endpoint differences, or solve the coupled temperature boundary-value problem. Include equal and nearly equal capacity rates, zero UA, equal inlet temperatures, capacity/UA scaling and entropy production. The cold outlet may exceed the hot outlet while the local counterflow temperature difference remains positive. A fitted conductance does not specify a buildable exchanger's geometry, fouling or pressure loss.
+
+**Continue:** [Fouling, maldistribution, pressure loss and exchanger service](../heat-exchangers/Fouling-maldistribution-pressure-loss-and-service.lingua#r_1772HCRCTXFNDXMGCNSDTJBW4W).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_2PWXETQRX007J85DKXCPCE7W71

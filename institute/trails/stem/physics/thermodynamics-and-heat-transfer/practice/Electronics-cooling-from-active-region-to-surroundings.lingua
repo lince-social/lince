@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Electronics cooling from the active region to the surroundings (@th-electronics: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #source "../sources/Heat-Pipe-Design-Handbook-Brennan-Kroliczek.lingua#r_08JYCA7B2K6B8E5490DSJYQJFA", #thermodynamics-and-heat-transfer "Furnaces-process-heat-and-the-material-energy-account.lingua#r_4G1V3TX1T9MJAWBE2TYA17QKXY", #thermodynamics-and-heat-transfer "../research/A-device-cooling-path-with-contacts-transients-and-measurement.lingua#r_6WZA48VDJ5JQQ44VD67DT7C1EF") { r_0WX6B9PJ1ETFGWYREKWSZ06XQG
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), full conduction, fins, convection and exchanger models; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), scale-dependent transport; [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), material/interface measurement; [Heat Pipe Design Handbook, Volume I — Brennan and Kroliczek](../sources/Heat-Pipe-Design-Handbook-Brennan-Kroliczek.lingua#r_08JYCA7B2K6B8E5490DSJYQJFA), relevant complete cooling-link design method.
+
+Trace energy generation from a device's active region through films, substrate, package, interfaces, spreader, cooler and ambient. Define the spatial and temporal distribution of dissipation. A single junction-to-ambient resistance represents particular boundary conditions and cannot automatically predict a different board, mounting or airflow.
+
+Combine a compact thermal network with resolved regions where spreading, interface resistance or transient gradients matter. Include uncertain contacts and fluid conditions. Check both steady duty and pulsed loads; thermal capacity can delay a peak without removing the energy eventually discharged.
+
+Compare a continuum package model with the scale at which carrier or interface effects require deeper treatment. Specify a measurement that can challenge the predicted internal temperature, accounting for the observable's relation to that temperature. The full chip fabrication, packaging and electronics subjects supply their own processes; this Record makes their thermal dependencies explicit.
+
+**Continue:** [Furnaces, process heat and the material energy account](Furnaces-process-heat-and-the-material-energy-account.lingua#r_4G1V3TX1T9MJAWBE2TYA17QKXY) · [Advanced study: a complete device cooling path](../research/A-device-cooling-path-with-contacts-transients-and-measurement.lingua#r_6WZA48VDJ5JQQ44VD67DT7C1EF).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_0WX6B9PJ1ETFGWYREKWSZ06XQG

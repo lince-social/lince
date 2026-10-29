@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Relay tests, functional chains and evidence (@pe-relay-tests: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD", #source "../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6", #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #electrical-power-engineering "Settings-changes-coordination-and-cross-party-knowledge.lingua#r_0TME03Z1QSWTXQDE4TCN62NV84") { r_1KPYCNB92Z0PT9E6HS9XM05AJW
+**Read:** [Protective relay operation, maintenance and tests — FIST 3-8](../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD), entire applicable manual and complete selected test methods; [Management of Protective Relay Settings — FIST 6-4](../sources/Management-of-Protective-Relay-Settings-FIST.lingua#r_11X2AGDKXQ69S5GZYNK21Y8CW6), whole settings/evidence work examples; [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), complete numerical-relaying fundamentals.
+
+A relay algorithm test, secondary-injection test, trip-circuit test and full end-to-end functional test establish different claims. State what was excited, what was measured, which parts of the chain were included and which were bypassed. A simulated trip output does not demonstrate that a real breaker opens within the required time.
+
+Read the entire applicable [Protective relay operation, maintenance and tests — FIST 3-8](../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD) method, then connect source waveform, CT/VT behavior, sampling/filtering, logic, settings, communication, auxiliary supply and breaker response. Define cases before inspecting results, including both expected trips and expected restraint. Compare actual timings with uncertainty and tolerances rather than treating one deterministic value as exact.
+
+Use suitable qualified laboratory/field procedures or a complete authorized published test reconstruction and distinguish them. Preserve installed/tested setting identity, calibration, connections, state and exceptions. A firmware/model change or secondary-circuit modification can invalidate part of an earlier result. The next settings Record ties that evidence to the changing network, while the separate general metrology content supplies calibration/conformity reasoning without inventing a Trail-specific approval mechanism.
+
+**Continue:** [Settings changes, coordination and cross-party knowledge](Settings-changes-coordination-and-cross-party-knowledge.lingua#r_0TME03Z1QSWTXQDE4TCN62NV84).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_1KPYCNB92Z0PT9E6HS9XM05AJW

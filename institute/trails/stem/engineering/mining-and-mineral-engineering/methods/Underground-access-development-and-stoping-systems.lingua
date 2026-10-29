@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Join underground access, development, stopes, and supporting systems (@mine-underground-methods: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #mining-and-mineral-engineering "Tabular-deposits-room-and-pillar-and-longwall-context.lingua#r_7Z93N54QJH13CBRCR048V3S67G") { r_384X3KJ4AQNHZ4780D9Z26FMV2
+**Read:** [Underground Mining of Metalliferous Deposits — Mandal and Dey, NPTEL](../sources/Underground-Metalliferous-Mining-NPTEL.lingua#r_5RZCS0BHH0FH6QKFB1V86NXRFJ), the full course progressively, including access/development and method families; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete methods, layout, shafts/access, and related engineering sections; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant underground-method chapters.
+
+Underground methods require access to the deposit and a sequence of development, production, support, ventilation, handling, services, and monitoring. Shafts, declines, adits, levels, raises, ore passes, and production openings have different roles and constraints. An extraction drawing does not specify the whole operating system.
+
+Compare supported, self-supporting under a defined ground account, filled, and caving families with their actual geometry/material assumptions. Ground response and the sequence of extraction/filling can affect adjacent workings and future access. The same orebody shape can admit different methods depending on ground, selectivity, scale, and uncertainty.
+
+Development effort and lead time matter. A resource can exist ahead of production while insufficient prepared access, ventilation, ground support, or handling prevents feed delivery. Preserve the physical and scheduling dependencies rather than treating development as a single initial cost.
+
+**Work:** reconstruct a complete underground teaching case, drawing access, production/development faces, material/personnel routes, air/water paths, and utilities. Compare two method/sequence alternatives and identify where ground or logistics changes the choice. Check a bounded development-to-production capacity account with explicit units and timing.
+
+Read the full underground course and complete handbook chapters. The later ground/support, ventilation, hoisting, and reliability studies make those interfaces quantitative while retaining the geological and material-quality basis.
+
+**Continue:** [Interpret tabular extraction systems with ground, gas, and sequence context](Tabular-deposits-room-and-pillar-and-longwall-context.lingua#r_7Z93N54QJH13CBRCR048V3S67G).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_384X3KJ4AQNHZ4780D9Z26FMV2

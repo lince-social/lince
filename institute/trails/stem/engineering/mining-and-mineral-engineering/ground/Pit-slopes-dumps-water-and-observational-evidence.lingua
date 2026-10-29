@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Evaluate slope systems through geometry, structures, material behavior, and water (@mine-slopes: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP", #source "../sources/Tailings-Management-Leading-Practice.lingua#r_40NN1207ZCBP7RVX690CP4G7HZ", #mining-and-mineral-engineering "Pillars-roof-spans-and-applicability-of-design-relations.lingua#r_7VXWZ4QX9JABNDM55QRGAJP3VP") { r_16M6WNFSJ46K3B04RDAQCJ8D9V
+**Read:** [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the full pit-slope and dump-design sequence; [Practical Rock Engineering — Evert Hoek](../sources/Practical-Rock-Engineering-Hoek.lingua#r_5VDNJTZ30N76R8Y5DP3T212SGP), the complete slope cases, rock-mass, and probability chapters; [Tailings management — Australian leading-practice handbook](../sources/Tailings-Management-Leading-Practice.lingua#r_40NN1207ZCBP7RVX690CP4G7HZ), the full applicable foundation/material/water context.
+
+Bench, inter-ramp, and overall pit slopes represent different scales and mechanisms. Waste dumps are constructed material systems with their own placement, foundation, drainage, heterogeneity, and time history. A slope angle from another case cannot establish a suitable design for either system.
+
+Planar/wedge/toppling, rock-mass, foundation, erosion, pore-pressure, and progressive mechanisms require different observations/models. Surface geometry, groundwater, geological structures, weathering, stress, and excavation or placement sequence can interact. Identify which mechanisms the chosen analysis can and cannot represent.
+
+Factor of safety, probability under a model, observed movement, consequence, and operational response are different quantities. Formal numerical precision should not hide uncertainty in geometry, strength, drainage, or failure mechanism. Monitoring needs an explicit relation between measurement and the model/decision it can inform.
+
+**Work:** read a complete slope/dump case and reconstruct its investigation, alternatives, calculations, observational checks, and revisions. Independently test a consequential geometric or force/water account. Compare a plausible groundwater or structural alternative and identify a discriminating observation with its required support and timing.
+
+Read full surface-course and rock-engineering chapters plus the relevant primary case. The later waste/tailings and closure sequence revisits how the material, water, geometry, and responsibilities continue changing after the main excavation or placement work.
+
+**Continue:** [Interpret pillar and roof behavior through mechanisms and the calibration domain](Pillars-roof-spans-and-applicability-of-design-relations.lingua#r_7VXWZ4QX9JABNDM55QRGAJP3VP).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_16M6WNFSJ46K3B04RDAQCJ8D9V

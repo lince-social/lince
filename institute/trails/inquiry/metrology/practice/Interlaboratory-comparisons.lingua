@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Compare laboratories, reference values, and degrees of agreement (@met-interlab: 0, is #chapter, #part-of @metrology, #source "../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1", #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #metrology "Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ") { r_4B3WR8EBCNJRGVMR6HCG66Y1S9
+**Read:** [CIPM MRA, CMCs, and key comparisons — BIPM](../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1), one complete actual comparison report, with its identifier and date retained; [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), comparison and measurement-process material; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), a multi-source or comparison-based example.
+
+A comparison needs a common measurand, compatible conditions, an adequately stable item or material, a protocol, and a model for the reference value and participant results. Transport, sample heterogeneity, drift, and shared traceability can affect the apparent differences. Agreement is meaningful only after these relationships are understood.
+
+Distinguish key or supplementary comparisons, proficiency testing, bilateral comparisons, and an informal duplicate measurement. Their purposes and statistical interpretations differ. A consensus mean can be appropriate under one model and misleading when common effects, heterogeneous uncertainty, or a biased cluster dominate.
+
+For compatible independent expanded uncertainties using the same coverage convention, E_n = (x − x_ref)/√(U_x² + U_ref²) is a common normalized comparison statistic. Dependence requires the corresponding covariance treatment, and a reference value estimated using the participant can create dependence. A z score using a proficiency standard deviation answers a different question from a statistic based on reported measurement uncertainties.
+
+**Work:** calculate E_n for a teaching difference of 0.6 units with U_x = 0.4 and U_ref = 0.5 units; the value is about 0.937 under these assumptions. Then introduce shared reference information and explain why the denominator must be reconsidered. Interpret a compatibility criterion only under the actual protocol, not as a universal proof of accuracy.
+
+Read a full relevant KCDB comparison report and one handbook or technical-guide comparison case. Reconstruct the reference-value method, uncertainty, participant covariance where applicable, and conclusion. Discuss a participant that reports a much larger uncertainty and one with a small but inconsistent result. The purpose is to examine evidence and improve methods rather than reward a particular score in isolation.
+
+**Continue:** [Conformity decisions, guard bands, and the risk being controlled](Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_4B3WR8EBCNJRGVMR6HCG66Y1S9

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Refrigerators, heat pumps and real-fluid states (@th-refrigeration: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1", #thermodynamics-and-heat-transfer "Finite-temperature-differences-power-and-exergy-tradeoffs.lingua#r_70JRVCNN7C3P20J0VJ5RENAY1R") { r_1T8MW3VM9XZ6B9B53QWK6VRKG1
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), thermal machines, refrigerators and heat pumps; [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), the complete refrigeration/COP and open-system second-law sections; [CoolProp — thermophysical property models and methods](../sources/CoolProp-Thermophysical-Property-Methods.lingua#r_2QYM459W81KPNJK37RHJ6VB9R1), the selected fluid and phase documentation.
+
+For a vapour-compression cycle, identify evaporation, compression, condensation and expansion. Distinguish useful cooling from compressor work and rejected heat. Superheat, subcooling, pressure losses and actual compressor behavior change the state table and capacity.
+
+The expansion device usually approximates throttling, not an isentropic work-producing turbine. A heat-pump COP depends on source/sink temperatures and the actual thermal duty. Use absolute temperatures for a reversible comparison, then explain the irreversibilities and finite transfer differences in the real cycle.
+
+Reconstruct an entire book example with verified fluid properties and compare another refrigerant or arrangement only within its property, equipment and application constraints. Absorption, cryogenic and specialized systems require further whole-system study; a thermodynamic comparison alone does not establish interchangeable hardware or an approved working-fluid choice.
+
+**Continue:** [Finite temperature differences, power and exergy tradeoffs](Finite-temperature-differences-power-and-exergy-tradeoffs.lingua#r_70JRVCNN7C3P20J0VJ5RENAY1R).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1T8MW3VM9XZ6B9B53QWK6VRKG1

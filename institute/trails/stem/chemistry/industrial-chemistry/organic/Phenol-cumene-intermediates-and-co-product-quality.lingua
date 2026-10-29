@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect aromatic oxygenated products with intermediate chemistry and co-product accounts (@ic-phenol: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #industrial-chemistry "Chlorinated-intermediates-recycle-and-halogen-fate.lingua#r_2DDQW0R2T57MGW41S34QMVSEG3") { r_1HRR8N9RMAQ8D1AMEDKAEZE5JY
+**Read:** [Production of Large Volume Organic Chemicals, BREF LVOC](../sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), the complete phenol production chapter and generic organic-process context; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the full aromatic derivative/intermediate sequence; [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the entire relevant reaction-behavior, accumulation and scale-assessment guide.
+
+Phenol and related aromatic oxygenated products connect a carbon feed, intermediate reactions, separation and useful co-products. A familiar overall route name does not reveal all of the reacting species, competing transformations, thermal behavior or product-quality evidence needed to understand it.
+
+Follow carbon through each actual intermediate and quantify selectivity on a compatible basis. Product and co-product recovery are connected: a favorable yield for one stream can conceal losses, impurities or costly finishing in another. A co-product's usefulness depends on its actual grade and destination rather than its theoretical presence.
+
+Thermal accumulation, reactor/contacting behavior, material compatibility, solvent/utility duties and cleanup affect the complete route. Public technical evidence may describe the industrial principles while omitting particular catalyst, equipment or operating know-how. Distinguish those evidence limits from what the balanced chemistry establishes.
+
+**Work:** reconstruct the entire public phenol process chapter with actual methods and material/energy assumptions. Independently close carbon and oxygen across reaction, separation, co-products and residues. Compare a documented alternative route or process change at equal accepted outputs, identifying the thermal, kinetic and analytical evidence most capable of challenging the proposed explanation.
+
+**Continue:** [Trace chlorine through organic intermediates, products, recycle and residuals](Chlorinated-intermediates-recycle-and-halogen-fate.lingua#r_2DDQW0R2T57MGW41S34QMVSEG3).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_1HRR8N9RMAQ8D1AMEDKAEZE5JY

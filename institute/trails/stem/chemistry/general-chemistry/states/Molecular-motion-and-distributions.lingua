@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Relate molecular motion and distributions to gas behavior (@gc-kineticgas: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "Real-gases-and-equation-of-state.lingua#r_018876A9YYB1MX6CGYXB1KAZ2N") { r_44XEP1GDGE3QKRCSEXBZM135TY
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 9’s kinetic-theory treatment; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), kinetic molecular theory in the gas unit; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), lectures 13–15.
+
+Kinetic theory connects a model of molecular motion with macroscopic pressure and temperature. In the classical ideal-gas regime, translational kinetic energy is related to temperature, and molecular speeds have a distribution rather than one common value. Mass, temperature, dimensionality, and the defined summary determine a reported characteristic speed.
+
+Distinguish most probable, mean, and root-mean-square speeds. Molecular-speed distributions and collision statistics help explain transport and reaction encounters, but they do not supply an entire reaction mechanism or a guarantee that every collision reacts. Internal rotational/vibrational/electronic degrees of freedom require their own energy-level description.
+
+The idealized assumptions connect this theory with the state equation. At conditions where interactions, quantum effects, or strong departures from equilibrium matter, examine whether the simple model remains adequate. A fitted distribution can be useful evidence without uniquely establishing every microscopic detail.
+
+**Work:** derive the relation between mean translational kinetic energy and temperature within the model, then compare characteristic speeds for two specified molar masses at the same temperature. Explain how the speed distribution changes when temperature rises. Compare diffusion and effusion reasoning with a bulk-flow process and state the assumptions behind each prediction.
+
+Read the full kinetic-gas treatment and MIT's molecular-energy lectures, returning to the probability and calculus used in a derivation when needed. Later kinetics and transport will reuse the distinction between a distribution of molecular behavior and a single macroscopic rate.
+
+**Continue:** [Check gas nonideality instead of extending the ideal law by habit](Real-gases-and-equation-of-state.lingua#r_018876A9YYB1MX6CGYXB1KAZ2N).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_44XEP1GDGE3QKRCSEXBZM135TY

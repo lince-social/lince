@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Buck/boost conversion, ripple and operating modes (@pe-dc-converters: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #electrical-power-engineering "Rectifiers-inverters-modulation-and-three-phase-power.lingua#r_0WNJBSTSPAEJR38RWS0GW9YE7K") { r_1SQ4C9GKMGQE9SRW2H8CYCJSBV
+**Read:** [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), complete DC–DC and mode/ripple development; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), the full available converter problem statements and context.
+
+Derive a switched converter from its conducting states, not just a voltage-ratio formula. For an ideal continuous-conduction buck stage, inductor volt-second balance gives V_out = D V_in under steady periodic assumptions. A boost stage instead gives V_out = V_in/(1−D) in its corresponding ideal regime. Source/load, duty and mode conditions must be stated.
+
+Use capacitor charge balance and the actual waveforms to derive ripple, current stress and stored-energy changes. Check continuous/discontinuous boundaries, startup, limits and losses. An ideal ratio approaching infinity as D approaches one is not a physical promise: finite resistance, switching, minimum off-time, control and rating constraints change the result.
+
+Compare a switching model, averaged model and analytical steady limit for a small declared example. Include an independently predicted changed duty/load case and diagnose the difference. Use isolated low-energy educational hardware in suitable supervised work or a complete published experiment; do not present an ideal simulation as constructed hardware evidence. The later feedback, DC-link and protection Records extend this energy-conversion account to a maintained system.
+
+**Continue:** [Rectifiers, inverters, modulation and three-phase power](Rectifiers-inverters-modulation-and-three-phase-power.lingua#r_0WNJBSTSPAEJR38RWS0GW9YE7K).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_1SQ4C9GKMGQE9SRW2H8CYCJSBV

@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Explain a chemical-process failure or change through competing causal mechanisms (@ic-change-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_2341K8NSCA0H62J1KSEDPMD239
+**Read:** [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the whole relevant reaction-development, changed-condition and operating-basis methods; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the complete applicable process, campaign, quality and equipment context; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full pertinent parameter, transport and transient-model reasoning.
+
+Investigate a documented process deviation, quality failure or consequential proposed change using a complete primary evidence chain. Preserve feed/material histories, measurements, process states, equipment/service records, inventories, product tests and the actual time ordering.
+
+Develop competing chemical, thermal/transport, contamination, analytical and equipment explanations as appropriate to the evidence. Derive their different predictions and independently check the material, energy and measurement implications. A correlation, one passing sample or a fitted parameter is insufficient to establish a causal account.
+
+Compare a justified corrective route, operating, measurement or maintenance change on the complete accepted-product system. Test whether it addresses the identified mechanism under changed conditions or merely shifts the problem. Include relevant service time, cleaning/restoration and residual/utility effects.
+
+**Work:** deliver a substantial technical/research study with complete primary bibliography/methods, derivations, original calculations, uncertainty, rejected alternatives and independent criticism. Explain the observation that establishes or challenges the corrective mechanism, revise from evidence and state the exact scope demonstrated. Retain a clear unresolved question where the available evidence cannot decide between explanations.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_2341K8NSCA0H62J1KSEDPMD239

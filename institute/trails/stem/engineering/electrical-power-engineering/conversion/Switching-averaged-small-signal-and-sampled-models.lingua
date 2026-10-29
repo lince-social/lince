@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Switched, averaged, small-signal and sampled models (@pe-averaging: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #source "../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #electrical-power-engineering "../control/Control-loops-bandwidth-delay-saturation-and-robustness.lingua#r_0Q868KQNPXRCK6JT71Q9HRY0BX") { r_6QM2FBM0SS5FKXF9YBJN5FR1HJ
+**Read:** [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), complete modelling, averaging and control development; [Feedback Systems — Åström and Murray](../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833), whole state-space, linearization, feedback and sampled-system treatment.
+
+A switching model follows discrete topologies and continuous states; averaging replaces rapid variation by a slower description under explicit separation assumptions. Linearizing an averaged model gives a local small-signal approximation around an operating point. A sampled digital implementation adds delay, discretization, update and saturation behavior.
+
+Derive these models from the same small converter and label state, input, output and operating point. Compare startup, ripple, a small perturbation and a large load change. An averaged model may capture a slow control response while missing subharmonics, fast current limits or switching stress. A locally stable linearization does not prove global recovery after a fault.
+
+Calculate a Jacobian analytically and compare an independent perturbation check. Preserve duty/mode boundaries and limiting logic, especially discontinuous conduction or actuator saturation. Use the complete [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526) and [Feedback Systems — Åström and Murray](../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833) readings rather than inventing a transfer function solely to match one plot. Later RMS/EMT and dynamic-system Records use the same hierarchy: the observable/time scale determines which model can support the claim.
+
+**Continue:** [Control loops, bandwidth, delay, saturation and robustness](../control/Control-loops-bandwidth-delay-saturation-and-robustness.lingua#r_0Q868KQNPXRCK6JT71Q9HRY0BX).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_6QM2FBM0SS5FKXF9YBJN5FR1HJ

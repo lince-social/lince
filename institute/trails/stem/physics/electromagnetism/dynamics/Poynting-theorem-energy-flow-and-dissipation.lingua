@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Poynting theorem, energy flow and dissipation (@em-poynting: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "Field-momentum-vacuum-Maxwell-stress-and-material-forces.lingua#r_0JWB2N6JEY5498VNAM64CBHB6N", #electrical-power-engineering "../../../engineering/electrical-power-engineering/conversion/DC-links-energy-balance-capacitors-and-protection.lingua#r_6VS9NHR8PRDF0PG5E1E6GEJQPH") { r_5QQ630P1MWY515P876101QHTAE
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), energy conservation and Poynting vector; [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), power flow and field energy.
+
+For vacuum microscopic fields with explicit source current, derive ∂u/∂t + ∇·S = −J·E, where u = ε₀E²/2 + B²/(2μ₀) and S = E×B/μ₀. The right side describes transfer to charged matter. Integrate over a volume to compare stored energy, boundary flux and work on charges.
+
+Analyze a resistor carrying steady current. The surrounding electric and magnetic fields give an inward Poynting flux that accounts for Joule heating. This complements the port expression VI; energy need not be pictured as a substance transported exclusively inside drifting electrons. Draw the actual surface and current-return geometry rather than applying an isolated infinite-wire picture indiscriminately.
+
+For linear nondispersive matter, E×H and the corresponding stored-energy expressions are useful under their stated material assumptions. In a dispersive or lossy medium, material degrees of freedom carry energy and heat; simply inserting ε(ω) into a static energy density is insufficient. Derive a harmonic average with peak phasors and complex conjugation, and verify energy balance before trusting a calculated transmission or radiation efficiency.
+
+**Continue:** [Field momentum, vacuum stress and material forces](Field-momentum-vacuum-Maxwell-stress-and-material-forces.lingua#r_0JWB2N6JEY5498VNAM64CBHB6N).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in electrical power engineering:** [DC links, energy balance, capacitors and protection](../../../engineering/electrical-power-engineering/conversion/DC-links-energy-balance-capacitors-and-protection.lingua#r_6VS9NHR8PRDF0PG5E1E6GEJQPH).
+} r_5QQ630P1MWY515P876101QHTAE

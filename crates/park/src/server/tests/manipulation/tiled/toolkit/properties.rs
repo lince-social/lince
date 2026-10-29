@@ -285,6 +285,21 @@ impl Toolkit {
             ),
             "The Properties editor is hidden by an application at {point:?}: {field:?}"
         );
+        let expected = field.entity;
+        let (owner, hit, surfaces) = self.inspect(move |canvas| {
+            let world = canvas.world_mut();
+            let entity = world.query_filtered::<Entity, bevy::prelude::With<EditableText>>()
+                .iter(world).find(|entity| entity.to_bits() == expected).unwrap();
+            let camera = world.get::<ComputedUiTargetCamera>(entity).unwrap().get().unwrap();
+            let owner = world.get::<native::topology::presentation::VisualOwner>(camera).unwrap().0;
+            let hit = world.resource::<native::topology::input::PointerState>().hit.map(|(entity, _)| entity);
+            let surfaces = [Some(owner), hit].into_iter().flatten().map(|entity| {
+                let surface = world.get::<native::topology::presentation::Surface>(entity).unwrap();
+                format!("{entity:?}: face={:?}, transform={:?}", surface.face, world.get::<bevy::prelude::GlobalTransform>(surface.face))
+            }).collect::<Vec<_>>();
+            (owner, hit, surfaces)
+        });
+        assert_eq!(hit, Some(owner), "The visible Properties field must receive the native content pointer before clicking at {point:?}: {surfaces:?}");
         self.button(272, true);
         self.button(272, false);
         let deadline = Instant::now() + Duration::from_secs(40);

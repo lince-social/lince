@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Suspension stress, concentration, migration and granular limits (@fd-suspensions: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #fluid-dynamics "../complex-fluids/Shear-dependent-viscosity-power-laws-and-yield-models.lingua#r_05PD745REMMP6X02K2S3A78KYK") { r_2YSMF4GB2EBRBZ20F4Z7S586GQ
+**Read:** [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), topic 9 suspension rheology, with its public notes and related problems; [Fundamentals of Multiphase Flow — Christopher E. Brennen](../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM), suspension and particle-interaction chapters; [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), microstructure and yield discussions.
+
+Particles change a suspension's stress through disturbance flow, interactions, contacts and microstructure. For a sufficiently dilute suspension of rigid noninteracting spheres in a Newtonian fluid, the first viscosity correction is proportional to volume fraction. Extrapolating that dilute law toward crowding suppresses mechanisms that become dominant there.
+
+Distinguish shear-induced migration, settling, Brownian rearrangement and frictional contact. Apparent viscosity may depend on concentration, shear rate, history and confinement. A local homogeneous constitutive fit can fail when concentration evolves or particle size is not small relative to the channel.
+
+Read the suspension theory and rheometry treatments together, then formulate a settling or pressure-driven transport study. Measure or specify the size distribution and concentration basis. Compare global pressure-flow response with spatial concentration and check material balance. Explain where a dense slurry requires granular and particulate mechanics beyond a simple effective-liquid picture.
+
+**Continue:** [Shear-dependent viscosity, power laws and yield models](../complex-fluids/Shear-dependent-viscosity-power-laws-and-yield-models.lingua#r_05PD745REMMP6X02K2S3A78KYK).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2YSMF4GB2EBRBZ20F4Z7S586GQ

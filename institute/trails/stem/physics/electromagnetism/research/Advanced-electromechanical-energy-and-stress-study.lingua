@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Advanced electromechanical energy and stress study (@em-force-study: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN") { r_3J775PFRNMS0G28Q2B6CXSHJME
+**Read:** [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), complete energy, coenergy and force chapters; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), whole momentum/stress development; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), complete corresponding conservation treatment.
+
+Investigate a capacitor actuator, coupled magnetic device or radiation-pressure arrangement. Read the complete force/energy/coenergy developments in [Electromagnetic Fields and Energy — Haus and Melcher](../sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV) and the vacuum stress/momentum chapters of [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1) and [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H). Choose a system boundary that includes the relevant source or makes its power exchange explicit.
+
+Derive the force in two independent ways: a constrained energy/coenergy derivative and a stress/momentum balance on an appropriate surrounding surface. State fixed charge, voltage, current or flux conditions precisely. Compare quasistatic and time-dependent cases, including field momentum when necessary. For a dielectric object, separate total measurable force from convention-dependent partitions within matter.
+
+Calculate sensitivity to gap, alignment and constitutive response, and identify the mechanical displacement/force measurement needed for a test. Use suitable supervised apparatus or a full published physical case, stating which evidence was actually produced. Recover an ideal plate/solenoid or plane-wave limit and investigate where fringing, loss or material history changes it. The final account should close energy and momentum budgets and explain why two superficially plausible derivatives can disagree when one omits source work.
+
+**Continue:** [An integrated electromagnetic-system investigation](../study/An-integrated-electromagnetic-system-investigation.lingua#r_1FQW2ASX2WCT3JRXKKP4NB4HSN).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3J775PFRNMS0G28Q2B6CXSHJME

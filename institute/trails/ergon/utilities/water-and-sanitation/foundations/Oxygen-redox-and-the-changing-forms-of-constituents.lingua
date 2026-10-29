@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Oxygen, redox and the changing forms of constituents (@wu-redox: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV", #source "../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37", #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #water-and-sanitation "Treatment-barriers-and-the-evidence-for-their-performance.lingua#r_4KN934MCH4BZF0JMKMYN0VYRRB") { r_7SJ9QMVSF9TWJG7Z36EZ8R1YC4
+**Read:** [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV), oxygen transfer and biological-conversion foundations; [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), microbiology, metabolism and nutrient-conversion chapters; [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), makeup-water and corrosion mechanisms.
+
+Aeration, oxygen consumption, biological conversion and mineral reactions can change both a constituent's form and its location. Dissolved iron can become a removable solid under suitable conditions; reduced sulfur or nitrogen compounds have different reactions and oxygen demands from their oxidized forms. These changes require a species and electron account.
+
+Distinguish dissolved oxygen from an oxidation–reduction potential reading. A single electrode potential in a mixed, reacting water does not establish equilibrium among every redox couple. Temperature, gas exchange, kinetics, surfaces and sample handling can all affect the observation.
+
+Follow one conversion through reactants, products, alkalinity and gas or solid outputs. Compare the theoretically required electron acceptor with actual transfer and competing demand. Explain why a chemically possible conversion may be slow, incomplete or coupled to a biological community under the operating conditions.
+
+**Continue:** [Treatment barriers and the evidence for their performance](Treatment-barriers-and-the-evidence-for-their-performance.lingua#r_4KN934MCH4BZF0JMKMYN0VYRRB).
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+} r_7SJ9QMVSF9TWJG7Z36EZ8R1YC4

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Biot–Savart fields of steady currents (@em-biotsavart: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #electromagnetism "Ampere-law-symmetry-and-magnetic-flux.lingua#r_45A2A15VVK27WJ4JAGQ3WC1BE9") { r_2K157JSDFF7RY1VAPJKJ82VKFA
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 12 in full; [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), chapter 7, Biot–Savart development.
+
+For a localized steady current distribution in vacuum, Biot–Savart expresses B as an integral over J with its geometric cross product. Continuity requires a compatible steady current; a finite open wire segment with current mysteriously ending at its tips is not a complete stationary source. Idealized segment formulas approximate part of a larger circuit.
+
+Derive the axial field of a circular loop: B_z = μ₀ I a²/[2(a²+z²)^(3/2)]. At the centre B = μ₀I/(2a); far away the field has magnetic-dipole scaling. Compare a finite solenoid with the long-solenoid approximation and quantify the position where edge effects matter.
+
+Keep observation and source coordinates distinct, recover the direction by right-hand rule and evaluate zero-current and symmetry limits. Draw the complete circuit and inspect field contributions from the return path. For arbitrary geometry, numerical quadrature is a way to approximate the integral, not evidence that the current distribution itself is correct. Material magnetization and time-dependent retardation require the later extended models rather than a silent change of μ₀ to an arbitrary constant.
+
+**Continue:** [Ampère law, symmetry and magnetic flux](Ampere-law-symmetry-and-magnetic-flux.lingua#r_45A2A15VVK27WJ4JAGQ3WC1BE9).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_2K157JSDFF7RY1VAPJKJ82VKFA

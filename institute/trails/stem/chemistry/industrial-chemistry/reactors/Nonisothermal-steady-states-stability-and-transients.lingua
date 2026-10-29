@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Distinguish a thermal steady state, its stability and the trajectory reaching it (@ic-thermal-states: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV", #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #industrial-chemistry "Calorimetry-accumulation-quench-and-thermal-evidence.lingua#r_780HSC98AC6KFVKCBJ7N55T5JT") { r_20YMRWMPPJ12WQBT3M9ZSBKAZK
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete nonisothermal stirred/flow-reactor chapter and multiple-state/transient examples; [Graduate Numerical Methods Applied to Chemical Engineering — MIT 10.34](../sources/Graduate-Numerical-Methods-MIT-10-34.lingua#r_1NTDP6EFQGR8HWP34VT9ZJ98DV), the full nonlinear-system, eigenvalue and differential-equation verification treatment; [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the entire reaction-behavior, accumulation and heat-removal assessment guide.
+
+Reaction and energy balances can admit several steady states at the same external settings. A steady solution satisfies the algebraic equations; local stability depends on the response of the full dynamic model to disturbances. A scalar heat-generation/removal intersection is useful intuition but cannot substitute for the coupled Jacobian when several state variables interact.
+
+For an original dimensionless illustration, let da/dt=1−a−r a and dθ/dt=r a−θ, with r=0.02 exp(8θ). This is an explicitly simplified exponential temperature model with equal chosen time scales. At a steady state, a=1−θ and 0.02=θ exp(−8θ)/(1−θ). The function has turning points at θ=(1±1/√2)/2, so solve its monotonic intervals separately instead of trusting one initial guess to find every state.
+
+The full Jacobian has trace −2−r+8θ and determinant 1+r−8θ at a steady state. Use these quantities or eigenvalues to classify each computed solution under this model. Actual Arrhenius behavior, variable properties, cooling dynamics and controller action require additional equations and evidence.
+
+**Work:** independently find all three physical roots, verify the balances and linear stability, then integrate disturbed trajectories with convergence checks. Compare with a complete published nonisothermal process case and explain which simplified assumptions prevent directly applying the toy result to equipment or operation.
+
+**Continue:** [Measure reaction heat and accumulation before extending a process argument](Calorimetry-accumulation-quench-and-thermal-evidence.lingua#r_780HSC98AC6KFVKCBJ7N55T5JT).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_20YMRWMPPJ12WQBT3M9ZSBKAZK

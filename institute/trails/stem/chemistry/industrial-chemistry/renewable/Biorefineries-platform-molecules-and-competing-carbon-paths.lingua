@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Compare renewable chemical routes through complete feed, conversion and recovery systems (@ic-biomass-platforms: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH", #source "../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #industrial-chemistry "Pulp-chemistry-bleaching-recovery-and-material-use.lingua#r_4A797GVR9W8PJ01QW3ZY4EPRCY") { r_30F0DVM1F2QC6XQX5R34HDHJ8A
+**Read:** [Biochemical conversion of corn stover to ethanol — Humbird and colleagues](../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH), the complete report, balances, equipment/economics basis and sensitivity; [Química verde no Brasil: 2010–2030 — MCT/CGEE](../sources/Quimica-Verde-no-Brasil-CGEE.lingua#r_6C2MG2T0DTT5FDCA24NFY2FTW5), the whole book with particular attention to both biochemical and thermochemical route chapters; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the full relevant renewable-feed and fermentation process sequence.
+
+Biorefinery routes can fractionate or transform biological material into several useful products through biochemical, thermochemical and chemical steps. Feed heterogeneity, water, minerals, inhibitory compounds and physical structure influence what can be recovered or converted. A platform-molecule name does not specify its whole upstream process.
+
+Trace carbon, hydrogen, oxygen, nutrients, water and energy through pretreatment, conversion, isolation and residual use. Several products or internal energy carriers can complicate allocation and comparison. State the actual functional outputs and co-product assumptions before comparing a renewable route with an alternative source.
+
+Distinguish a measured conversion, a conceptual process design and a future strategic scenario. Each can inform the inquiry, but they support different claims. Feed availability, seasonal storage, catalyst/enzyme service, utility demand and product quality can change the useful outcome even when a central laboratory yield is reproduced.
+
+**Work:** read the entire public biorefinery design and relevant whole Brazilian strategy/technical chapters, then construct an independent route comparison. Recalculate a central result under changed feed and recovery assumptions, check all material/energy boundaries and identify the strongest unresolved uncertainty. Propose a primary observation that could reverse the conclusion.
+
+**Continue:** [Connect pulping and bleaching with chemical recovery, fibres and a complete process account](Pulp-chemistry-bleaching-recovery-and-material-use.lingua#r_4A797GVR9W8PJ01QW3ZY4EPRCY).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_30F0DVM1F2QC6XQX5R34HDHJ8A

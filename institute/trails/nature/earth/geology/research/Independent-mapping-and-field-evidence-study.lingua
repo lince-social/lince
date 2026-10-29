@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Carry out a sustained mapping study from question to revised geological model (@geo-field-project: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #source "../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK", #source "../sources/GeMS-Map-Schema.lingua#r_6JP32YH79HZAV8JYYKVV1WER0J", #geology "Advanced-geochronology-and-event-history.lingua#r_4WC3HDHSNQKQ941M1S0VY8HJR3") { r_5ZC4N7CSG8RZF5ZT177EHCFQYR
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), the full field-mapping and fold/thrust labs with supporting sections; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete field-trip/mapping material; [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK), the full guide; [GeMS — Geologic Map Schema — USGS](../sources/GeMS-Map-Schema.lingua#r_6JP32YH79HZAV8JYYKVV1WER0J), the full specification during publication.
+
+Choose a bounded area/question with suitable access, supervision, exposures, and supporting information. Define the working scale and competing geological accounts before collecting observations. Prepare the field programme with the complete mapping material, then adapt it as evidence changes rather than only confirming the first model.
+
+Preserve observation/sample identity, positions/reference systems, descriptions, orientations, sketches/images, actual methods, conditions, missing exposure, and sampling decisions. Make an original geological map, measured sections where appropriate, and cross-sections showing observed versus inferred relationships. Link each major interpretation with evidence.
+
+Develop at least two alternatives for a consequential uncertain feature, such as a buried contact, fault connection, repeated succession, or depositional correlation. Choose further observations based on their ability to discriminate the accounts. Compare measured orientations, contact geometry, relative order, and any numerical constraints for consistency.
+
+**Work:** publish your own study report, maps, sections, observation account, uncertainty analysis, and revision history in the study workspace. Ask an independent reader to reconstruct selected claims and identify unsupported steps. Revise the interpretation and explain which differences reflect new evidence rather than cosmetic redrawing.
+
+A complete practical demonstration includes real suitable field observations and instrument/material work; an authorized document-based reconstruction is valuable preparation and a distinct interpretive achievement. State the scope honestly. Read the full SGB method, map-schema specification, and necessary structural sections while performing the study, then carry its unresolved history into the advanced dating project.
+
+**Continue:** [Reconstruct a numerical geological history with analytical and model uncertainty](Advanced-geochronology-and-event-history.lingua#r_4WC3HDHSNQKQ941M1S0VY8HJR3).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_5ZC4N7CSG8RZF5ZT177EHCFQYR

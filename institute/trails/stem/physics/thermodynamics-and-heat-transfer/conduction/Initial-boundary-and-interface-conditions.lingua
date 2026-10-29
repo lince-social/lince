@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Initial, boundary and interface conditions (@th-boundary-data: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #thermodynamics-and-heat-transfer "Plane-walls-composite-layers-and-energy-closure.lingua#r_4J8Z4W7NZGZ0N1MCE66CAGQHJF") { r_30JMJ8RWE91FATJ35EDH11P7MH
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), boundary/interface conditions and thermal resistance; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), interface conductance and its interpretation; [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), boundary conditions and face fluxes.
+
+A temperature boundary prescribes temperature; a flux boundary prescribes energy rate per area; a mixed boundary links flux to a state-dependent transfer model. A convective condition q = h(T_s−T∞) requires a defined fluid reference temperature and coefficient. Radiation adds a different nonlinear and often nonlocal relation.
+
+At an ideal perfectly bonded interface, temperature and normal heat flux satisfy continuity conditions. A contact resistance permits a temperature jump related to flux; an interfacial heat capacity or source adds another balance. Specify area conventions and orientation on both sides.
+
+Compare two calculations with identical bulk material but different external/interface conditions. Identify which parameter a surface or internal temperature measurement can determine. Missing boundary information is an underdetermined physical problem, not a solver inconvenience to conceal with an arbitrary value.
+
+**Continue:** [Plane walls, composite layers and energy closure](Plane-walls-composite-layers-and-energy-closure.lingua#r_4J8Z4W7NZGZ0N1MCE66CAGQHJF).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_30JMJ8RWE91FATJ35EDH11P7MH

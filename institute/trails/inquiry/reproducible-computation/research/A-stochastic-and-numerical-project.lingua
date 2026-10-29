@@ -1,0 +1,21 @@
+Import "../Reproducible-computation.lingua"
+
+Advanced project — uncertain inputs, numerical control, and execution order (@rc-projectstoch: 0, is #chapter, #part-of @reproducible-computation, #source "../../metrology/sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4", #source "../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY", #source "../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH", #reproducible-computation "Reproduce-a-published-result.lingua#r_262594EJP43XMD8STYD24PSHJY") { r_4T7Z99R0VQKC0A3699FEZCXE1J
+**Read:** [Propagation of distributions using Monte Carlo — JCGM 101](../../metrology/sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4), the complete guide and one full published example; [Numerical arrays and reproducible random streams — NumPy documentation](../sources/Numerical-and-Random-Contracts.lingua#r_22SKS09JTH3YF4244RX2FYWHNY), the exact selected generator, sampling, linear-algebra, and testing contracts; [What Every Computer Scientist Should Know About Floating-Point Arithmetic — Goldberg](../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH), the full paper revisited against the actual calculation.
+
+Choose a nonlinear two-input model or vector-output model from metrology and build an independently checked computational study. Read the complete JCGM Monte Carlo guide and reproduce one published example from its equations before extending it. Preserve the joint input model, units, parameter sources, dependence construction, output summaries, and the distinction between uncertainty propagation and inferential assumptions.
+
+Begin with exact benchmarks such as the squared-uniform distribution and a correlated sum/difference. Derive their moments and selected quantiles independently. Use them to validate your generator, transformations, summary methods, and correlation construction. Then investigate a problem whose full answer is not analytically available, using multiple appropriate forms of numerical evidence.
+
+Design stream identities and execution partition explicitly. Compare one preserved stream, independent runs, different task orders, and different worker counts. Analyze reductions and numerical-library contracts. State the conditions under which exact stream agreement is expected and the numerical/statistical criteria appropriate when it is not. A shared seed or repeated cached output is insufficient evidence of convergence.
+
+Quantify simulation error for each reported summary, including a tail quantity, and compare it with the intended reporting precision. Investigate sample size, dependence, nonlinear bias, invalid evaluations, and model alternatives. Do not silently discard draws. If the algorithm changes the implied distribution, explain and justify that change as part of the method.
+
+**Produce:** a derivation and independent benchmark set; reproducible code/configuration; a reconstructed environment and workflow; performance/resource observations; a report separating numerical accuracy, input uncertainty, and model discrepancy; and a documented criticism/revision. Ask another reader to reproduce both a small benchmark and a substantial result. Explain why success in one does or does not support the other.
+
+This project demands the numerical and computational argument, while specialist probability, statistics, and numerical-analysis trails will deepen their theories separately. Use shared Records whenever the needed mathematical preparation is missing rather than treating a familiar library call as that preparation.
+
+**Continue:** [Reconstruct and critique a published computational result](Reproduce-a-published-result.lingua#r_262594EJP43XMD8STYD24PSHJY).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_4T7Z99R0VQKC0A3699FEZCXE1J

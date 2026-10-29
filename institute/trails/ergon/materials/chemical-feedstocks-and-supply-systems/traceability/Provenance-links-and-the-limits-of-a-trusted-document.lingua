@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Distinguish a trustworthy information history from a qualified material (@cs-provenance: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Manufacturing-Supply-Chain-Traceability-NIST.lingua#r_7CK4NN1QW48PPVA9XKMGNHZWDZ", #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #chemical-supply-systems "../quality/Manage-changes-in-source-method-package-and-user-process.lingua#r_7WRJMB59KQVTMQ59Y92BZMD1K4") { r_4JTFSAF00SFZ8AAZY837B4T53P
+**Read:** [Supply Chain Traceability Principles: A Manufacturing Meta-Framework — NIST IR 8536](../sources/Manufacturing-Supply-Chain-Traceability-NIST.lingua#r_7CK4NN1QW48PPVA9XKMGNHZWDZ), the entire final report, keeping it distinct from the drafts; [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the complete documentation and contracted-activity sections.
+
+Read the full NIST manufacturing-traceability report. Model one material history as events and their linked evidence: production, packaging, dispatch, transport condition, receipt, sample, analysis, release and use. Preserve who asserted what, when and about which identified object or interval. A later correction should explain the changed claim rather than erase the earlier evidence.
+
+Compare three questions: is this information from the stated source, does it refer to this material, and does it establish suitability for this use? Cryptographic or organizational authenticity can help the first question, but cannot by itself establish representative sampling, truthful observations or a suitable analytical method. An unbroken chain can faithfully preserve an incorrect claim.
+
+Design an exchange in which the supplier shares necessary grade, lot, quantity and test evidence while retaining unrelated commercial detail. State what an independent receiver can verify and what remains reliance on another party. Compare a conventional document chain and the report's linked approach using the same physical case. This is an exercise in evidence and interoperability, not a demand for a new software abstraction; ordinary Lince Records, links and references can hold the study.
+
+**Continue:** [Evaluate a change through the requirement it could affect](../quality/Manage-changes-in-source-method-package-and-user-process.lingua#r_7WRJMB59KQVTMQ59Y92BZMD1K4).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_4JTFSAF00SFZ8AAZY837B4T53P

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Maxwell equations and displacement current (@em-maxwell: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Poynting-theorem-energy-flow-and-dissipation.lingua#r_5QQ630P1MWY515P876101QHTAE") { r_4ETBPA07D21W3J864XWFXHN4X5
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), Maxwell equations and displacement current; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), complete introductory Maxwell development.
+
+In vacuum with charge/current sources, use ∇·E = ρ/ε₀, ∇·B = 0, ∇×E = −∂B/∂t and ∇×B = μ₀J + μ₀ε₀∂E/∂t. Taking the divergence of the last equation and using Gauss's law yields charge continuity. Omitting displacement current would force ∇·J = 0 even where charge accumulates.
+
+For a charging ideal capacitor, compare an Ampèrian loop with a surface cutting the wire and another passing through the gap. Conduction and displacement contributions together give a consistent circulation. The term ε₀∂E/∂t is not a claim that vacuum contains conduction carriers. In matter, the macroscopic D/H formulation includes polarization and magnetization through explicitly stated definitions.
+
+Recover the integral forms using oriented surfaces, then derive normal/tangential interface conditions without discarding free surface charge or current. Initial data must satisfy divergence constraints; an arbitrary pair of initial vector fields is not automatically a valid Maxwell state. This system joins static, quasistatic, propagating and radiative behavior, with constitutive laws and boundary/initial data completing a specific problem.
+
+**Continue:** [Poynting theorem, energy flow and dissipation](Poynting-theorem-energy-flow-and-dissipation.lingua#r_5QQ630P1MWY515P876101QHTAE).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_4ETBPA07D21W3J864XWFXHN4X5

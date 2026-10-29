@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Separate biological contributions from chemical and transport explanations in bioleaching (@metal-bioleaching: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Biohydrometallurgical-Processes-CETEM.lingua#r_6DQNK4H5798FVNTHJ48QF7QNGN", #source "../sources/Hidrometalurgia-Ciminelli.lingua#r_6G9611F0V3GQXWW0C108RDQB9B", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #metals-and-metallurgical-production "Separate-and-wash-leach-residues-with-closed-inventories.lingua#r_5G3CTT8CP62YDP1W4NSGV64382") { r_6653S9HM3C6Y1QKT9XCRVKM396
+**Read:** [Biohydrometallurgical Processes: A Practical Approach — CETEM](../sources/Biohydrometallurgical-Processes-CETEM.lingua#r_6DQNK4H5798FVNTHJ48QF7QNGN), the complete authorized book as further sustained study, especially full applicable methods/cases; [Hidrometalurgia — Virgínia Sampaio T. Ciminelli](../sources/Hidrometalurgia-Ciminelli.lingua#r_6G9611F0V3GQXWW0C108RDQB9B), the entire chapter and its relevant original references; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete biological/hydrometallurgical and coupled process context.
+
+Microorganisms can change chemical conditions, reaction rates, and material/solution interactions. A biological account needs evidence for the organisms and functions present, substrates/electron acceptors, reaction products, and the actual environmental history. Finding an organism alongside dissolution does not by itself establish the proposed causal mechanism.
+
+Connect microbial processes with iron/sulfur and other chemical cycles, redox/speciation, mineral surfaces, gases, nutrients, heat, and transport. Heterogeneity and changing flow paths can produce local conditions very different from a bulk sample. Distinguish a culture or laboratory result from performance in a larger reactor or heap.
+
+Compare suitable independent controls and alternative abiotic explanations. Assay support, contamination, cell/activity observations, solution chemistry, mineral change, and material balances should support one coherent argument. A fitted biological rate term cannot substitute for observations of the mechanism it represents.
+
+**Work:** reconstruct a complete primary biohydrometallurgical study with its actual methods and controls. Independently balance a target metal and a coupled chemical constituent, compare biological and chemical/transport interpretations, and design a discriminating validation. Analyze variability, heat/gas/solution needs, residuals, and scale-up. Practical biological/chemical methods use the appropriate laboratory and professional context; a literature or supplied-data investigation states which work was actually performed.
+
+**Continue:** [Separate liquid and solid without losing the dissolved and entrained constituent account](Separate-and-wash-leach-residues-with-closed-inventories.lingua#r_5G3CTT8CP62YDP1W4NSGV64382).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_6653S9HM3C6Y1QKT9XCRVKM396

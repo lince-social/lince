@@ -1,0 +1,21 @@
+Import "../Quantitative-literacy.lingua"
+
+Repeated observations, averages, spread, and shared errors (@ql-repeated-observations: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-uncertainty, #source @ql-source-vim, #source @ql-source-insight, #quantitative-literacy "Measurement-and-uncertainty.lingua#r_7ECX6WRYHP37YAMGXEBGYRW23X", #metrology "../../metrology/calibration/Repeatability-and-reproducibility.lingua#r_5N1ZPCZJ1S4Q3N7J7YZ11Y6A14") { r_6S7MZWJ6S5MERFKE0NQEWC5SY2
+**Read:** NIST TN 1297 sections 2–4 and appendix A, with the VIM definitions of repeatability, precision, error, and uncertainty. Read The Art of Insight, Probabilistic reasoning. Work the numerical examples slowly; a formula for spread needs an explicit interpretation of the observations.
+
+For n observations x_i, the arithmetic mean is x̄ = Σx_i/n. The sample standard deviation is s = √[Σ(x_i − x̄)²/(n − 1)] for n > 1. It describes the observed spread under the stated conditions. Under appropriate assumptions of independent observations from the same stable process, the estimated standard uncertainty of their mean is s/√n. This describes a component of uncertainty, not every possible source affecting the result.
+
+For the teaching readings 9.9, 10.0, 10.1, 10.0, and 10.0 mm, x̄ = 10.0 mm, s is about 0.0707 mm, and s/√5 is about 0.0316 mm. Adding an unknown common offset to every reading leaves s unchanged. A repeatable instrument can therefore give a tightly grouped result with an unresolved systematic contribution.
+
+Covariance records how deviations of two quantities tend to vary together. For paired observations, the sample covariance uses Σ(x_i − x̄)(y_i − ȳ)/(n − 1); its units are the product of the two units. Correlation normalizes covariance by the two standard deviations where both are nonzero. A shared calibration reference can create dependence even when two readings were taken at different times.
+
+**Work:** calculate the example by hand, add a common 0.2 mm shift, and compare mean and spread. Contrast a spread of repeated measurements on one object with the distribution of dimensions across different manufactured objects. State which question each answers. Then create a paired dataset in which both series drift together and explain why independent-error propagation would be unsupported.
+
+Do not use more decimal places or more repetitions to conceal a missing quantity definition, unstable conditions, serial dependence, or an unsuitable sample. Explain what is being averaged and why the uncertainty calculation's assumptions are plausible before reporting it.
+
+**Continue in metrology:** [Repeatability, intermediate precision, and reproducibility](../../metrology/calibration/Repeatability-and-reproducibility.lingua#r_5N1ZPCZJ1S4Q3N7J7YZ11Y6A14).
+
+**Continue:** [Measurement — resolution, variation, bias, and uncertainty](Measurement-and-uncertainty.lingua#r_7ECX6WRYHP37YAMGXEBGYRW23X).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_6S7MZWJ6S5MERFKE0NQEWC5SY2

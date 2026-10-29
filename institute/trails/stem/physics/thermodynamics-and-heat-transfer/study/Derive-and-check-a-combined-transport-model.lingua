@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Derive and check a combined transport model (@th-transport-review: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Intermediate-Heat-and-Mass-Transfer-MIT-2-51.lingua#r_4NKJ30PDFTY42GJVZX1C2ZS4B8", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #thermodynamics-and-heat-transfer "Whole-books-graduate-courses-and-a-sustained-thermal-programme.lingua#r_7NHTEAK764F0WSPPZNHZB7CJ1M") { r_77N3EXRST6J39D13QJ83RDY9VJ
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), the entire book and sustained independent exercises; [Intermediate Heat and Mass Transfer — MIT 2.51](../sources/Intermediate-Heat-and-Mass-Transfer-MIT-2-51.lingua#r_4NKJ30PDFTY42GJVZX1C2ZS4B8), the full reading/calendar progression; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), the complete analytical course.
+
+Choose a geometry that requires more than one heat-transfer mechanism. Begin with local/integral energy conservation, constitutive laws and complete initial/boundary/interface conditions. Explain every simplification through a scale, symmetry or independent observation.
+
+Recover a conduction, convection or radiation limit that can be checked analytically. Resolve the same model numerically with refinement, energy closure and independent comparison. Then alter a physical condition that distinguishes competing models instead of merely comparing two implementations of the same approximation.
+
+Account for sensor response, uncertain properties and contact or flow conditions before claiming agreement with measurement. State whether the work verifies mathematics, supports a physical model or demonstrates an actual device. Correct a discrepancy and document how the correction changes the predicted service, then continue to the advanced studies.
+
+**Continue:** [Whole books, graduate courses and a sustained thermal programme](Whole-books-graduate-courses-and-a-sustained-thermal-programme.lingua#r_7NHTEAK764F0WSPPZNHZB7CJ1M).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_77N3EXRST6J39D13QJ83RDY9VJ

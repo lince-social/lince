@@ -1,0 +1,23 @@
+Import "../Metrology.lingua"
+
+Sustained project — design, calibrate, validate, and report a measurement (@met-calibration-project: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #metrology "Nonlinear-and-vector-project.lingua#r_6DDE8J43JQFVSPHW3CDEX0EE6X") { r_49WHGBJDWWRNE926CEV5JCWZ7P
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 2 in full; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), the complete document and relevant annexes; [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the main guide, amendment, and relevant annexes; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), the full general treatment and selected detailed cases.
+
+Choose a quantity and measurement principle with a fully specified reference path. It can be investigated with actual appropriate equipment, reconstructed from a published study, or developed as a clearly labelled simulated study. Distinguish these evidence levels throughout; a simulation demonstrates reasoning under a model and does not establish a real laboratory capability.
+
+**Reading:** complete the NIST measurement-process chapter, the selected family’s full calibration guide, GUM-6, the main GUM with its amendment and relevant annexes, and TN 1900’s general treatment and relevant examples. Read the complete realization or reference document needed to understand the chosen chain. Follow source references when a derivation or physical correction remains unexplained.
+
+**Design and observations:** define measurand, range, purpose, reference conditions, apparatus, procedure, and influence quantities. Design multipoint comparisons with replication, sequence and time information, checks not used to select the model, and a way to examine at least one plausible systematic effect. Preserve original observations and every excluded or repeated run with reasons.
+
+**Analysis:** derive the measurement and observation models. Estimate the response and any corrections, retaining coefficient covariance. Check residuals, weighting, reference-axis uncertainty, model choice, and the supported interpolation range. Produce a complete uncertainty budget or appropriately justified alternative evaluation, including reference, use, environmental, repeat, drift, and model contributions without double counting.
+
+**Validation:** reconstruct an independent check and challenge at least two assumptions that could change the result. Compare direct evaluation with local propagation and one independent numerical implementation where practical. Discuss why the model is fit for the stated purpose and what remains unsupported. A high R² or a narrow simulated interval alone is insufficient evidence.
+
+**Report and revision:** produce a result and supporting report a second reader can reproduce. Include the reference chain, methods, equations, calculations, data, uncertainty interpretation, conditions of use, and source editions. Have a reviewer identify a serious ambiguity or alternative explanation; revise the model or explain with evidence why the conclusion remains supported. Retain the revision and the reason for it.
+
+The project is complete when the quantitative result, the physical comparison, and the claimed scope agree. A beautiful certificate template with an untested correction or an unexplained uncertainty does not satisfy this requirement.
+
+**Continue:** [Advanced project — nonlinear estimates, joint outputs, and numerical validation](Nonlinear-and-vector-project.lingua#r_6DDE8J43JQFVSPHW3CDEX0EE6X).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_49WHGBJDWWRNE926CEV5JCWZ7P

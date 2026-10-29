@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Stability, convexity, metastability and critical response (@th-stability: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ", #thermodynamics-and-heat-transfer "Third-law-low-temperature-properties-and-limits.lingua#r_7H842F7EKN9PQHHJBWNNN5PQG9", #thermodynamics-and-heat-transfer "../research/Entropy-accessibility-potentials-and-stability.lingua#r_4KJSTP1MRKPDX5P908Q10XE8S0") { r_3M6CNT1P8N16TEZQ8XTPZBNEVG
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), stability and phase-equilibrium chapters; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), metastability and spinodal decomposition; [The physics and mathematics of the second law — Lieb and Yngvason](../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ), equilibrium assumptions and admissible states.
+
+An equilibrium state is stable only with respect to the allowed perturbations and constraints. Entropy maximization or the corresponding potential minimum constrains response functions and curvature. Establish the variables and ensemble-like contact conditions before interpreting a Hessian.
+
+Separate local stability, global phase preference and kinetic persistence. A metastable superheated liquid may be locally sustained until nucleation, while a spinodal instability is a loss of the relevant local stability. A polynomial equation of state can supply several mathematical roots, not all physically selected.
+
+Construct a free-energy-versus-composition example and compare local curvature with a common-tangent construction. Follow how susceptibility, compressibility or capacity changes near a transition. Discuss finite-size, nonequilibrium and experimental-resolution limits before interpreting an apparent divergence.
+
+**Continue:** [Third law, low-temperature properties and limits](Third-law-low-temperature-properties-and-limits.lingua#r_7H842F7EKN9PQHHJBWNNN5PQG9) · [Advanced study: entropy, accessibility, potentials and stability](../research/Entropy-accessibility-potentials-and-stability.lingua#r_4KJSTP1MRKPDX5P908Q10XE8S0).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3M6CNT1P8N16TEZQ8XTPZBNEVG

@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Hall effect, conductivity tensors and carrier inference (@em-hall: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "../induction/Faraday-law-Lenz-law-and-changing-flux.lingua#r_15N270EPVSG2RM9NEK94YGX7RR") { r_4HGZYF44KNT5Y68SWNWZ8Q0WV6
+**Read:** [Física III — Bernhard Johannes Lesche, UFJF](../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7), Hall effect and magnetic-force notes; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), charged transport and magnetic response.
+
+In a simple one-carrier conductor, transverse Lorentz force redistributes charge until an opposing electric force balances it. Derive the Hall voltage for a rectangular sample and state the direction convention, carrier charge, current direction, magnetic-field direction and thickness. Reversing current or B should reverse the ideal Hall signal; unwanted voltage offsets need not do so.
+
+The elementary Hall coefficient 1/(nq) depends on the one-carrier model and its transport assumptions. Multiple carrier types, anisotropy and scattering can change the inference. A measured Hall sign or magnitude is evidence about a modelled transport response, not a universal direct census of microscopic electrons.
+
+Use a four-terminal geometry, polarity reversals and uncertainty to separate longitudinal pickup from the transverse signal. Compare tensor Ohm law and reciprocity relations under field reversal. Connect this example to semiconductor/material characterization while keeping the full specialist studies distinct. Derive a prediction from geometry and declared parameters, then ask which alternative parameter sets could produce the same observed voltage before claiming a uniquely identified carrier density.
+
+**Continue:** [Faraday law, Lenz law and changing flux](../induction/Faraday-law-Lenz-law-and-changing-flux.lingua#r_15N270EPVSG2RM9NEK94YGX7RR).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_4HGZYF44KNT5Y68SWNWZ8Q0WV6

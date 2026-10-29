@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Defend a chemical equilibrium or phase model with independent theory and primary evidence (@ic-thermo-project: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Cantera-Models-and-Documentation.lingua#r_4ZMEMBQGEYE25NZVYTPNXAGENT", #source "../../general-chemistry/sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44", #industrial-chemistry "Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X") { r_1XHBYWDC9DTFET0YB5EKKEYBK2
+**Read:** [Graduate Chemical Engineering Thermodynamics — MIT 10.40](../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT), the entire published graduate programme with actual assigned readings and problems; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete chemical-equilibrium and relevant coupled reactor examples; [Cantera — chemical thermodynamics, kinetics and reactor models](../sources/Cantera-Models-and-Documentation.lingua#r_4ZMEMBQGEYE25NZVYTPNXAGENT), the full exact theory, data/phase and numerical documentation used; [NIST-JANAF Thermochemical Tables — fourth-edition reference data](../../general-chemistry/sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44), the complete pertinent data definitions, entries, reference states and validity domains.
+
+Complete the graduate thermodynamics progression and choose an industrial reaction/separation question with complete primary model and measurement evidence. Derive the relevant potentials, constraints, reference states, constitutive descriptions and stable phase/reaction conditions rather than beginning from a simulator's default.
+
+Reproduce a substantial published result independently. Check conservation, units, limiting laws, stability, parameter/data provenance, conditioning and numerical tolerance. Compare an alternative physically justified description and quantify how property uncertainty changes the process conclusion.
+
+Extend to a changed composition, temperature, pressure or impurity condition that can discriminate the competing models. A numerically converged root may be metastable or lie outside the measured assessment domain. Explain the observation needed to decide whether the model remains useful.
+
+**Work:** deliver a scholarly model/evidence account with complete primary bibliography, derivations, inspectable original computation, versioned external data/models, uncertainty, failures and independent criticism. Connect the conclusions to accepted product and reaction/separation duties, reporting precisely what is established and which further experimental or specialist thermodynamic questions remain unresolved.
+
+**Continue:** [Defend a complete chemical-production system from feed through useful product and recovery](Integrated-feed-to-qualified-chemical-product-and-recovery-study.lingua#r_65F3X7EQ6C2Y13CN33EYQTW77X).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_1XHBYWDC9DTFET0YB5EKKEYBK2

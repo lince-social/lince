@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect mineral-product chemistry with thermal history, phase formation and function (@ic-mineral-products: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #industrial-chemistry "Titanium-dioxide-carbon-black-and-particle-specifications.lingua#r_55ZHS5ZZTXKHTGN92D6D77BHN4") { r_7GXF5XZKSCM78TGA1YPN0KEEGB
+**Read:** [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the complete lime/cement/glass/ceramic product teaching available in its programme; [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the whole relevant mineral-product units; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the full relevant inorganic-products, reaction and industrial examples if using this commercial route.
+
+Mineral-based products depend on chemical reactions and controlled physical/phase histories. CaCO₃→CaO+CO₂ illustrates calcination, but actual feed phases, impurities, heat/transport, residence and product reactivity influence a lime route. Cement, glass and ceramics develop other phase/network assemblages whose useful properties cannot be inferred from one balanced reaction.
+
+Distinguish a constituent assay from the phases and structure formed during processing. Melting, reaction, sintering, crystallization, cooling and hydration can change the relation between composition and function. A nominally similar feed may respond differently because of mineralogy or physical state.
+
+Follow energy carriers, atmospheres, equipment/refractories, dust, gases and returned material through the system. Production and later use can release or consume water/carbon dioxide or transform phases again. The full specialist mineral-products and materials studies deepen these systems beyond this shared chemical connection.
+
+**Work:** reconstruct one complete public mineral-product route and independently balance reaction, phase, heat and residual quantities. Compare two feeds or processing histories against measured product function. Explain the actual mineral, thermal and physical evidence needed to distinguish competing mechanisms and keep the boundaries with the later full material-specific study explicit.
+
+**Continue:** [Explain pigment and carbon products through route chemistry and particle evidence](Titanium-dioxide-carbon-black-and-particle-specifications.lingua#r_55ZHS5ZZTXKHTGN92D6D77BHN4).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_7GXF5XZKSCM78TGA1YPN0KEEGB

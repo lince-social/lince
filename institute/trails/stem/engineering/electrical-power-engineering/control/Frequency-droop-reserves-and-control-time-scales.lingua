@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Frequency, droop, reserves and time scales (@pe-frequency: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #source "../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF", #source "../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99", #electrical-power-engineering "../dynamics/Small-signal-stability-eigenvalues-and-modal-meaning.lingua#r_3FK0KQ9D1RFM86085BWMQF2VJN") { r_10E3WX4GPH8P6K6DPVGV1T9K2D
+**Read:** [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), complete interconnected operation/control and frequency development; [Research Roadmap on Grid-Forming Inverters](../sources/Grid-Forming-Inverters-Research-Roadmap.lingua#r_1XBSV4CPJGZG5FE56MH7507WAF), whole frequency-control and modelling treatment; [MOST User’s Manual, version 1.3.1](../sources/MOST-User-Manual-1-3-1.lingua#r_3BNCVR190YKFZ0YMSWHV1PMJ99), complete reserves, ramping and energy-limited scheduling formulation.
+
+System frequency reflects the evolving balance of source/load dynamics, stored energy and controls. Derive a restricted aggregate swing/frequency account and identify its assumptions about coherent machines and network behavior. A local measured frequency during a disturbed or weak network is an estimator-defined quantity and need not represent one perfect global oscillator.
+
+For an ideal steady droop model, relate incremental power sharing to frequency deviation using explicit units and bases. Separate inertial response, primary response, secondary restoration and dispatch/energy replacement. A resource can have a nominal reserve amount while lacking the ramp rate, stored energy, headroom or control state needed at the required time.
+
+Compare the same disturbance under synchronous, grid-following and grid-forming resources with their actual limits and energy sources. Examine nadir, settling, rate of change and saturation as distinct observables. Link measurement windows and timing to the claimed response. The complete dynamic and scheduling studies must close both short-term power and longer-term energy balances; moving a numerical frequency back to nominal in an unconstrained model is insufficient evidence.
+
+**Continue:** [Small-signal stability, eigenvalues and modal meaning](../dynamics/Small-signal-stability-eigenvalues-and-modal-meaning.lingua#r_3FK0KQ9D1RFM86085BWMQF2VJN).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_10E3WX4GPH8P6K6DPVGV1T9K2D

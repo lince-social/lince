@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+UNIFI grid-forming specifications, version 2 (@pe-unifi: 0, is #reference, #part-of @pe-sources) { r_5SF91JRQ8TE46HXTXRK16P9KBZ
+UNIFI Consortium; institutional catalogue attributes Ben Kroposki. UNIFI Specifications for Grid-Forming Inverter-Based Resources: Version 2, 2024, NREL/TP-5D00-89269, DOI 10.2172/2329414. [Primary record](https://research-hub.nlr.gov/en/publications/unifi-specifications-for-grid-forming-inverter-based-resources-ve/) · [Complete report](https://www.nlr.gov/docs/fy24osti/89269.pdf).
+
+Read the complete versioned specification and distinguish system-level plant requirements from individual-unit functional requirements. Relate every capability to a test setup, observable, operating range and interacting control. Compare implementation-neutral functional intent with a particular vendor's claimed behavior.
+
+The primary record identifies version 2, 2024 and 21 pages; checked on 29 October 2026. This is a specific consortium document, not an assertion that version 2 is forever the newest version or that it is a universally binding law. Check actual title-page contributors, component notices and the intended jurisdiction/application. Public institutional access is not a blanket CC licence. No specification, model or test data is copied here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_5SF91JRQ8TE46HXTXRK16P9KBZ

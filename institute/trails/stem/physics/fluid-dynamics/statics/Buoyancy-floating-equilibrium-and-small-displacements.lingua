@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Buoyancy, floating equilibrium and small displacements (@fd-buoyancy: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Accelerated-containers-and-rigid-body-rotation.lingua#r_6JVXB2M9DRSZ6GP1WJCH6ZF73M") { r_4BR14XK13BE96AV41F3P76D8GK
+**Read:** [University Physics Volume 1 — OpenStax](../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), Archimedes principle and buoyancy; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), floating-body equilibrium and stability.
+
+Integrate hydrostatic pressure over a closed immersed surface. In a uniform gravitational field, the result is the weight of displaced fluid, directed upward, with its moment determined by the displaced volume. Compare it with the body's weight and other applied forces.
+
+Floating equilibrium and stability are different questions. A body can satisfy vertical force balance yet develop an overturning moment after a small rotation. Track how the centre of buoyancy moves relative to the centre of mass; use metacentric reasoning only within its small-angle and geometric assumptions. Partially filled internal tanks can alter the restoring moment through free-surface motion.
+
+Analyze a simple rectangular floating body from its geometry. Change the loading height while keeping mass fixed and predict the change in stability. An observation at one orientation does not establish behavior at every angle or in waves. Distinguish this static study from the dynamics of a moving vessel or a coupled fluid–structure system.
+
+**Continue:** [Accelerated containers and rigid-body rotation](Accelerated-containers-and-rigid-body-rotation.lingua#r_6JVXB2M9DRSZ6GP1WJCH6ZF73M).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4BR14XK13BE96AV41F3P76D8GK

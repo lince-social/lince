@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Several results share information and sometimes exact constraints (@met-multivariate: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK", #source "../sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #source "../../quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J", #metrology "Inverse-and-Bayesian-models.lingua#r_1TSJYTGBD1NY9Q7VP0BDFXZ94K") { r_4V8WXSM2RD4S9XTX4X1R1Z6P6A
+**Read:** [Several output quantities — JCGM 102](../sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK), the whole guide and a reconstructed vector example; [Worked measurement examples — JCGM GUM-5:2026](../sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0), chapter 4 in full; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), E15 Voltage Reflection Coefficient and E17 Gas Analysis; [Vectors, coordinate systems, and spatial meaning](../../quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J), the shared coordinate preparation.
+
+When a measurement produces several quantities, report their relationship as well as their individual uncertainties. A vector output can represent coordinates, composition fractions, complex impedance components, or several fitted parameters. Separate ± intervals generally do not preserve the information needed for a later combined calculation.
+
+For output vector y and input covariance U_x, a first-order treatment is U_y ≈ J U_x Jᵀ, where the Jacobian entry J_ij is the sensitivity of output i to input j. Introduce the matrix by writing the covariance sum for each output pair; the matrix notation is a compact form of those scalar relations. Units belong to every component and covariance entry.
+
+Exact constraints can make covariance singular without making it invalid. If p = x/(x + z) and q = 1 − p, then p + q = 1 exactly in this model, u²(q) = u²(p), and cov(p,q) = −u²(p). Treating p and q as independent would assign uncertainty to their exact sum and distort later use.
+
+**Work:** derive the fraction sensitivities and output covariance, verify the constraint, and compare linear propagation with joint simulation. Then rotate a two-dimensional coordinate result and transform its covariance with the same coordinate transformation. Explain why rotating only the plotted point while leaving the uncertainty description unchanged is incorrect.
+
+Read a vector example from JCGM 102 and compare the composition example in GUM-5 with a different physical application in TN 1900. Define coverage regions and their intended probability; simultaneous coverage is not established by quoting individual 95% intervals. Retain covariance or an equivalent joint representation in a transfer so another party can compute a defensible derived result.
+
+**Continue:** [Observation models, inverse questions, and Bayesian interpretation](Inverse-and-Bayesian-models.lingua#r_1TSJYTGBD1NY9Q7VP0BDFXZ94K).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_4V8WXSM2RD4S9XTX4X1R1Z6P6A

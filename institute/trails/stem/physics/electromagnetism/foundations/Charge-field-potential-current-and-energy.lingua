@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Charge, field, potential, current and energy are different quantities (@em-language: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7", #electromagnetism "Geometry-time-scale-and-model-scope.lingua#r_4WAT0ASSD1WYXGBDTKWTFWZ7VZ") { r_73F672N5XQ9B4B1MPJAKCK2EGS
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapters 5–10, definitions and introductory examples; [Física III — Bernhard Johannes Lesche, UFJF](../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7), charge/field, potential and current notes.
+
+Charge is a signed property and conserved quantity, measured in coulombs. Electric field is force per unit positive test charge; its direction matters. Potential difference is energy change per unit charge in an electrostatic model. Current is signed charge crossing a selected surface per time. A magnetic field changes the force on moving charge, and its effect depends on velocity and direction.
+
+Keep units beside every symbol: E in V/m or N/C, B in teslas, potential in volts, current in amperes, charge density in C/m³ and current density in A/m². A source can have voltage with no steady current. A capacitor can carry opposite separated charges while its total charge is zero. A neutral conductor contains mobile and bound charges even when its net charge vanishes.
+
+Translate tensão, diferença de potencial, corrente, campo, fluxo, carga livre, polarização and força eletromotriz carefully. Flux is a surface integral; it is not automatically a flow of material. Electromotive force has voltage units. Construct a glossary with a definition, a measurement arrangement, a counterexample to a common confusion and the first model in which the quantity will be used.
+
+**Continue:** [Geometry, time scale and the range of a model](Geometry-time-scale-and-model-scope.lingua#r_4WAT0ASSD1WYXGBDTKWTFWZ7VZ).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_73F672N5XQ9B4B1MPJAKCK2EGS

@@ -1,0 +1,17 @@
+Import "../Quantitative-literacy.lingua"
+
+Conversions, offsets, reference states, and compound units (@ql-conversions: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-2, #source @ql-source-trades-3, #source @ql-source-si, #quantitative-literacy "Equations-and-constraints.lingua#r_2XGYVPEJSA3GYYV0K6PYXCHXVZ") { r_5WNAMEBVYKZM0TYN5A4TBYDSWD
+**Read:** Math for Trades, Volume 2, chapters 1–5, and Volume 3, Capacities. Use SI Brochure chapter 4 and its unit-writing guidance to verify definitions. Do the conversions as chains of explicit ratios before abbreviating them.
+
+For a pure scale conversion, multiply by a ratio equal to one and cancel units. A flow of 2.5 m³/h is 2500 L/h, or about 0.6944 L/s. Conversion of area, volume, and inverse quantities requires carrying every power. A density in kg/m³ cannot be converted to mass without a volume and its relevant conditions.
+
+Some transformations have an offset. T/K = t/°C + 273.15 relates numerical values on the kelvin and Celsius scales; a temperature difference of 1 °C corresponds to 1 K. The ratio of two Celsius readings is generally not a thermodynamic temperature ratio. Similarly, gauge pressure and absolute pressure differ by the stated reference pressure. A conversion cannot supply a missing atmospheric condition.
+
+The international inch is exactly 25.4 mm; a gallon must be identified as US liquid, imperial, or another defined unit. A normal or standard cubic metre of gas needs the specified reference temperature, pressure, composition, and any compressibility convention before comparison.
+
+**Work:** convert 36 km/h into m/s, 12 cm³ into m³, and 0.8 g/cm³ into kg/m³. Explain why 25 °C becoming 50 °C is not a doubling of absolute temperature. Correct a fictitious purchasing sheet that mixes gauge and absolute pressure, an unspecified gallon, and tonnes versus short tons. Report missing information instead of inventing a conversion factor.
+
+**Continue:** [Equations, unknowns, systems, and constraints](Equations-and-constraints.lingua#r_2XGYVPEJSA3GYYV0K6PYXCHXVZ).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+} r_5WNAMEBVYKZM0TYN5A4TBYDSWD

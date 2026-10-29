@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Use metallurgical vocabulary with a defined material, basis, and purpose (@metal-vocabulary: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Metais-Nao-Ferrosos-e-Suas-Ligas-Barbosa.lingua#r_0FJ1378X0JMVHYVBFAXGK2399D", #metals-and-metallurgical-production "Metallic-bonding-solutions-phases-and-properties.lingua#r_7RGGJ6PG474BP7MTDGTASEDKP7") { r_6CS9CNJZZGHDSPVNSBZH1E0V92
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete introductory terminology and route discussions; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the complete quantities, basis, and stoichiometry introduction; [Metais Não Ferrosos e suas Ligas — Cassio Barbosa](../sources/Metais-Nao-Ferrosos-e-Suas-Ligas-Barbosa.lingua#r_0FJ1378X0JMVHYVBFAXGK2399D), the whole introduction and relevant alloy chapters, when available.
+
+A metal can refer to an element, a material with metallic behavior, or a traded product whose composition must be specified. An alloy contains multiple elements; its useful behavior depends on more than the nominal composition. A phase is a thermodynamic/structural entity within a material, while a constituent in a mass balance may mean an element, species, or analytically defined component.
+
+Distinguish ore, concentrate, calcine, matte, slag, leach solution, precipitate, anode, cathode product, ingot/billet/slab, wrought product, casting, scrap, and residue through what they physically contain and the operation being described. The same word recovery can refer to a stage, a whole route, a measured constituent, or a final usable product.
+
+Extraction, refining, alloying, casting, forming, annealing, hardening, and joining are different duties. Their sequence and interfaces matter: heat can change structure without changing bulk composition, and deformation can alter defects and texture without converting one metal element into another.
+
+**Work:** build a bilingual glossary for one complete metal route, using metal/liga, teor/composição, fase, escória, refino, fundição, conformação, tratamento térmico, and sucata in their actual context. For every quantity, state its numerator, denominator, units, material state, sampling support, and period. Correct a process summary that confuses contained metal with metallic product or a hardness value with a complete material specification.
+
+**Continue:** [Connect metallic behavior with bonding, structure, and the material actually present](Metallic-bonding-solutions-phases-and-properties.lingua#r_7RGGJ6PG474BP7MTDGTASEDKP7).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_6CS9CNJZZGHDSPVNSBZH1E0V92

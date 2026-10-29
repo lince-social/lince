@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+CoolProp — thermophysical property models and methods (@th-coolprop: 0, is #reference, #part-of @th-sources) { r_2QYM459W81KPNJK37RHJ6VB9R1
+Ian H. Bell and the CoolProp developers. [Official documentation](https://coolprop.org/) · [High-level interface and derivative conventions](https://coolprop.org/coolprop/HighLevelAPI.html) · [Actual code licence](https://raw.githubusercontent.com/CoolProp/CoolProp/master/LICENSE).
+
+Read the complete relevant fluid-model, saturation/phase, mixture, transport, derivative and reference-state documentation before using properties in balances. Fix the software/model version and fluid definition, reproduce published check values, and distinguish a numerical failure from a physically invalid state request. Read [Open thermophysical property evaluation — Bell and colleagues](Open-Thermophysical-Library-Bell-and-Colleagues.lingua#r_33XEMZDJ2BMYZ0GDFGWDTV1C95) in full.
+
+The documentation identifies version 8.0.0 at the 29 October 2026 inspection. The source licence is MIT; the underlying model papers, optional REFPROP backend and third-party components have their own conditions. Linking this library does not install or validate it here. Property data, dependencies and software remain external, and future examples must identify the actual version run.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_2QYM459W81KPNJK37RHJ6VB9R1

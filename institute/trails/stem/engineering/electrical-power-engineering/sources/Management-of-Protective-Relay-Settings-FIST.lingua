@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Management of Protective Relay Settings — FIST 6-4 (@pe-fist-settings: 0, is #reference, #part-of @pe-sources) { r_11X2AGDKXQ69S5GZYNK21Y8CW6
+U.S. Bureau of Reclamation, Power Resources Office and regional teams. Management of Protective Relay Settings, FIST 6-4. [Actual complete file](https://www.usbr.gov/power/data/fist/FIST_6-4_%281-2022%29.pdf) · [Catalogue](https://www.usbr.gov/power/data/fist_pub.html).
+
+Read the complete document and work examples: system data, settings development, independent review, coordination/communication, changes and retained evidence. Link an installed setting to its model assumptions, actual equipment and test result. It connects technical settings with maintained behavior across parties.
+
+The PDF inspected on 29 October 2026 has a September 2021 cover and January 2022 minor revision, 36 file pages and an inconsistent internal 119-page field. Preserve actual version/pagination rather than assuming missing text. Its scope is Reclamation facilities; it explicitly sends operating/maintenance/testing practice to FIST 3-8. Public federal text and separately credited components keep their own notices. No manual or internal database is bundled.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_11X2AGDKXQ69S5GZYNK21Y8CW6

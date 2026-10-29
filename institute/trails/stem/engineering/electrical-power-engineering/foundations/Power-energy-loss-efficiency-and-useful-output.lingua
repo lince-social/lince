@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Power, energy, loss, efficiency and useful output (@pe-energy-account: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #electrical-power-engineering "Ratings-operating-states-models-and-evidence.lingua#r_4BA5QEZMPE71TKF40R5EYJ9HMQ") { r_687M5Y50M8E086E1JGP2V2SGS1
+**Read:** [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR), whole system-performance and economics sections; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), energy conversion and loss developments.
+
+Define the system boundary before calculating efficiency. For a steady device, input power equals useful output plus loss and any other outgoing power. During a transient, changing stored electrical, magnetic, mechanical and thermal energy belongs in the account. A motor accelerating a flywheel is not in the same energy state as one driving a steady load.
+
+For a 10 kW shaft output and 0.9 electrical-to-shaft efficiency at that operating point, electrical input is 11.111… kW and device loss 1.111… kW. This says nothing yet about the pump or process efficiency downstream. At partial load, fixed and load-dependent losses change the efficiency; do not apply the rated value to every hour of operation.
+
+Connect terminal VI power to the shared field-energy account and to heat/temperature limits. Include auxiliaries, standby, conversion stages and time-varying duty in a system study. Compare replacement or control choices on useful service, life-cycle work and actual operating schedule rather than one best-case percentage. [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR) supplies a complete practical system comparison; later machine, converter and network Records give the physical loss models behind that comparison.
+
+**Continue:** [Ratings, operating states, models and evidence](Ratings-operating-states-models-and-evidence.lingua#r_4BA5QEZMPE71TKF40R5EYJ9HMQ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_687M5Y50M8E086E1JGP2V2SGS1

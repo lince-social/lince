@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Pressure lines, bandwidth, aliasing and fluctuating flow (@fd-dynamic-evidence: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #source "../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #fluid-dynamics "../../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T") { r_7774CKPZV59YNJP2EQ0R621544
+**Read:** [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), measurement response, dynamic pressure and statistical lessons; [A Review of Water Hammer Theory and Practice — Ghidaoui and colleagues](../sources/Water-Hammer-Ghidaoui-and-Colleagues.lingua#r_60QC37FY494KQ6Z6YEWDCCFYTN), wave propagation and experimental interpretation; [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), temporal statistics.
+
+A connecting tube, sensor cavity and pressure transducer form a dynamic measurement system. Damping, resonance and delay can make the measured signal differ from the pressure at the tap. The static calibration alone does not establish the response to a rapid transient or turbulent fluctuation.
+
+Model the relevant response and compare its characteristic times with the physical signal. Choose sampling and analog filtering together: a higher stored sampling rate does not recover frequencies already lost or aliased. For time correlations and spectra, retain windowing, normalization, record length, gaps and synchronization among channels.
+
+Check response using a traceable or independently characterized excitation where possible. Estimate mean, fluctuation level and phase with uncertainty appropriate to each. In a water-hammer or oscillatory-flow case, compare pressure arrival times and amplitudes across sensors; distinguish a physical reflected wave from ringing in the sensing path.
+
+**Continue:** [Optical power, spectra, images, and model-defined features](../../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7774CKPZV59YNJP2EQ0R621544

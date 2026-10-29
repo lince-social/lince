@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Distinguish formal charge, oxidation state, and delocalized bonding (@gc-resonance: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "Geometry-polarity-and-properties.lingua#r_1ESH4EFVR6399WYBN1405EJ38F") { r_43EAP1EC5N8J3HRPWV4D9T51AF
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 7’s formal-charge, resonance, and octet-exception sections; [Nomenclature of Inorganic Chemistry — IUPAC Red Book and brief guide](../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J), the relevant charge/oxidation-state conventions; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), the corresponding Unit II lectures/problems.
+
+Formal charge partitions bonding electrons equally in a Lewis bookkeeping scheme. Oxidation state follows a different assignment convention. Partial charge describes a model or inference about electronic distribution and depends on its definition. A species' total charge constrains these accounts but does not make each atomic assignment interchangeable.
+
+Resonance uses several contributing Lewis structures to describe electronic features that one localized drawing represents poorly. The physical state is described by the combined electronic model rather than a molecule repeatedly switching among the contributing diagrams. Relative contribution and measured properties require evidence and a suitable theory.
+
+Compare bond lengths, symmetry, spectra, and reactivity with the proposed description. A drawing with convenient integer charges can hide equivalent bonds or delocalized electrons. Conversely, a resonance notation should not erase a real distinction between constitutional isomers or rapidly interconverting chemical species; those are different structural questions.
+
+**Work:** analyze a polyatomic ion and a conjugated molecule from the book, computing electron counts, formal charges, and oxidation states separately. Explain a measured or textbook-reported equivalence of bonds without calling the drawings separate chemical substances. State what an experiment would need to distinguish alternative connectivities.
+
+Return to the full naming and bonding sources when a charge label is ambiguous. Later molecular orbitals, acid/base behavior, coordination, and organic chemistry reuse these distinctions. Preserve their definitions so overlapping fields can share the same Record rather than inherit incompatible shorthand.
+
+**Continue:** [Connect three-dimensional shape with polarity and behavior](Geometry-polarity-and-properties.lingua#r_1ESH4EFVR6399WYBN1405EJ38F).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_43EAP1EC5N8J3HRPWV4D9T51AF

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Derive heat transfer through actual geometry, interfaces, and material states (@metal-heat-transfer: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #metals-and-metallurgical-production "../pyrometallurgy/Furnaces-heating-duties-and-process-integration.lingua#r_52KDARYWHWG24BXQ0SX36QQYZY") { r_74NN5SSS0BVJRXYNYK6NR81X1N
+**Read:** [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), the complete heat-transfer, radiation, phase-change, and applicable problem/exam sequences; [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), all nucleation/solidification and thermal-history examples; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the full furnace and reaction/energy-balance context.
+
+Heat conduction, convection, and radiation have different driving relations and boundary descriptions. Material conductivity/capacity, contact resistance, surface/emissivity, geometry, phase change, and gas/flow conditions determine what a simplified temperature history can represent. A furnace set point is not automatically the temperature everywhere in a charge or part.
+
+Derive the local energy equation and boundary conditions before selecting a lumped, one-dimensional, semi-infinite, or coupled model. Compare internal conduction time L²/α with boundary transfer; Biot and Fourier numbers are useful only with their defined characteristic lengths and properties. Radiation involves absolute temperatures and an appropriate exchange/surface model.
+
+Melting/solidification adds an interface and latent-energy balance. Transformations and reactions can change properties or supply/consume heat, while thermal gradients can affect phase selection, stress, and defects. A single cooling-rate number may omit the spatial and temporal history controlling a material.
+
+**Work:** reproduce a complete thermal-processing or casting calculation from the open course. Derive and independently test its governing relations, units, limits, and energy balance. Compare an alternative boundary/contact or property model with measured temperatures. Identify which observation distinguishes internal resistance, surface transfer, and sensor response. Extend only after the simpler model's scientific and numerical limits are understood.
+
+**Continue:** [Compare furnaces through their material, thermal, chemical, and operating duties](../pyrometallurgy/Furnaces-heating-duties-and-process-integration.lingua#r_52KDARYWHWG24BXQ0SX36QQYZY).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_74NN5SSS0BVJRXYNYK6NR81X1N

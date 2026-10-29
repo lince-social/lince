@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Finite temperature differences, power and exergy tradeoffs (@th-finite-rate: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #thermodynamics-and-heat-transfer "Cogeneration-cascades-and-thermal-storage-accounts.lingua#r_35K417BYMW9C4NMWQVF36K6A2K") { r_70JRVCNN7C3P20J0VJ5RENAY1R
+**Read:** [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), available work and second-law performance; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), finite heat-transfer rates and exchanger analysis; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), cycle comparisons.
+
+A reversible heat exchange approaches zero driving temperature difference, while finite transfer area and conductance limit the rate. A design must meet output and time constraints, so an ideal efficiency limit is not a complete design optimum.
+
+Combine a reservoir or stream energy account with a specified heat-transfer model. Compare work, area, pressure loss, material temperature and operating time. Finite-capacity streams change temperature as energy moves; their available work cannot generally be calculated from one arbitrarily selected inlet temperature.
+
+For a defined objective and fixed resources, derive the optimization conditions and check boundary cases. Distinguish an endoreversible model, a phenomenological conductance assumption and actual irreversible component performance. [An inspectable finite-body work and entropy account](../computation/An-inspectable-finite-body-work-and-entropy-account.lingua#r_25XA3PWHWX32KGK07RCAXA5XR6) isolates the finite-body thermodynamic limit before transfer-rate constraints are introduced.
+
+**Continue:** [Cogeneration, heat cascades and storage accounts](Cogeneration-cascades-and-thermal-storage-accounts.lingua#r_35K417BYMW9C4NMWQVF36K6A2K).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_70JRVCNN7C3P20J0VJ5RENAY1R

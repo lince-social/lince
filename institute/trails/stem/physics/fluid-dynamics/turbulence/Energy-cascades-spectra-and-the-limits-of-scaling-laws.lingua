@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Energy cascades, spectra and the limits of scaling laws (@fd-cascade: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE", #fluid-dynamics "DNS-LES-RANS-and-what-the-computation-resolves.lingua#r_7J730ZRGKC9B6BVVHTZK9D2YYE") { r_0KK7VWV52ZQZHS4DJ7QS9WJQ50
+**Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 6 Kolmogorov theory and third-order relation; [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), spectra, scales and physical interpretation; [Johns Hopkins Turbulence Databases — numerical flow evidence](../sources/Johns-Hopkins-Turbulence-Databases.lingua#r_1D25T86CC1CHT4BX098WQXBQPE), dataset-specific diagnostics and numerical limits.
+
+Large-scale forcing, nonlinear transfer, viscous dissipation and boundaries shape a turbulent energy budget. In the classical high-Reynolds-number locally isotropic picture, an intermediate range can transfer energy at a mean rate ε with limited direct forcing or dissipation. Dimensional reasoning then gives the familiar ε^(2/3) k^(−5/3) spectral form within that range, under a stated spectral convention.
+
+Derive the Kolmogorov length (ν³/ε)^(1/4), time (ν/ε)^(1/2) and velocity (νε)^(1/4). Distinguish the scaling hypothesis from an exact balance relation. Study the longitudinal third-order structure-function law with its homogeneity, isotropy, stationarity and inertial-range assumptions, and contrast it with finite-Reynolds-number corrections and intermittency.
+
+Use a selected numerical dataset to compare compensated spectra, structure functions and energy closure. State averaging, domain and resolution limits; a short apparent straight segment on logarithmic axes does not establish a cascade. Explain why two-dimensional, stratified, rotating, compressible or strongly inhomogeneous flows need additional reasoning rather than automatic reuse of the same slope.
+
+**Continue:** [DNS, LES, RANS and what the computation resolves](DNS-LES-RANS-and-what-the-computation-resolves.lingua#r_7J730ZRGKC9B6BVVHTZK9D2YYE).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_0KK7VWV52ZQZHS4DJ7QS9WJQ50

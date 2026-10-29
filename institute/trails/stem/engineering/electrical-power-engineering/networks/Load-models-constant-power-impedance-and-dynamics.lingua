@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Load models, constant power, impedance and dynamics (@pe-load-models: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #source "../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV", #source "../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ", #electrical-power-engineering "Demand-profiles-coincidence-and-time-resolution.lingua#r_0911DFKSXS6804RHVTWBR11DQX") { r_490N9DZXVK6YZC3MCTJJ8H6HGZ
+**Read:** [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), complete load and system-component modelling treatment; [MATPOWER User’s Manual, version 8.1](../sources/MATPOWER-User-Manual-8-1.lingua#r_5ANPNGQHP93EVQXR6FW357WSEV), complete load/network representations; [Power System Dynamics and Control — A. M. Kulkarni](../sources/Power-System-Dynamics-and-Control-Kulkarni.lingua#r_2T4WS3TCPCXRB5JEH7HTN5FAHQ), load modelling and dynamical-system context.
+
+A load model describes how current/power changes with voltage, frequency, time and internal state. Constant impedance, constant current and constant power are different approximations. A regulated electronic load may look approximately constant-power over one band and have a very different startup, current-limit or fault response.
+
+Derive an elementary ZIP active/reactive model with coefficients tied to a reference operating point. For constant impedance, power scales with V² at fixed frequency and parameters; constant current gives another dependence. A constant-power load's current magnitude increases as voltage falls in its model range, creating an incremental response different from a resistor. Do not extrapolate it through zero voltage or past a controller's protection limits.
+
+Compare a heating load, an induction motor and a regulated supply at the same nominal P/Q. Give each model a domain and an observable that could distinguish it. Include duty, coincidence, startup, recovery and environmental state when aggregating many devices. The later two-bus, voltage-stability and converter studies show how an apparently small load-model choice can change feasibility, dynamics and protection predictions.
+
+**Continue:** [Demand profiles, coincidence and time resolution](Demand-profiles-coincidence-and-time-resolution.lingua#r_0911DFKSXS6804RHVTWBR11DQX).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_490N9DZXVK6YZC3MCTJJ8H6HGZ

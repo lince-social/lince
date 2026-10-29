@@ -1,0 +1,11 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+HPx-eos and THERMOCALC — models, data, and interpretation (@mp-hpx: 0, is #reference, #part-of @mp-sources) { r_0QYHHGNWRA8RQEM5MADWXDRQFJ
+HPx-eos/THERMOCALC authors and collaborators. [Official models, explanation, downloads, and resource hub](https://hpxeosandthermocalc.org/).
+
+Read the model and phase-equilibrium explanations with the full methods papers for the selected endmember/solution models. Preserve dataset version, reference state, composition basis, calibration range, assumptions, and software implementation. A calculation using a model is distinct from the experimental/thermodynamic evidence supporting it.
+
+The site makes these resources freely available for academic research and identifies THERMOCALC as Roger Powell and Tim Holland's intellectual property. This is not a blanket unrestricted licence, nor the unrelated commercial Thermo-Calc product. Official identity, scope, terms distinction, and current source routes checked on 29 October 2026. All models, software, papers, and data remain external references.
+
+**Return:** [Mineralogy and petrology sources — books, laboratories, analytical methods, and research](../Sources.lingua#r_38Q6Z3J7ER2G1B441JXJ14NV5A).
+} r_0QYHHGNWRA8RQEM5MADWXDRQFJ

@@ -550,7 +550,6 @@ impl Composition {
         view: Option<&lince_interface::host::OutputViewport>,
     ) -> io::Result<Presented> {
         self.prepare_color(renderer)?;
-        server.enable_sdr_color_management();
         self.touched.clear();
         if server.locked() {
             return self.render_lock(renderer, target, size, transform, server, canvas.map(|canvas| &canvas.frame), view);

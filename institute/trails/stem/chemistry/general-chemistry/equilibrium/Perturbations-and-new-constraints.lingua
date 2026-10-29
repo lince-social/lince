@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Predict a changed equilibrium by changing Q and the constraints (@gc-perturb-equilibrium: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB") { r_4MX92N6C2F162E3V3YFYB1B30N
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 13’s equilibrium perturbations and exercises; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), Q versus K, perturbations, and systematic equilibrium.
+
+An equilibrium perturbation changes the system's conditions or constraints. Identify what was changed, compute its immediate effect on the reaction quotient, and determine the new equilibrium under the applicable K. This is more informative than a vague instruction to “oppose the change.” Temperature changes can change K itself; an added species, volume change, or phase change asks a different question.
+
+For an ideal gas reaction, a volume change scales component partial pressures according to the actual composition and boundary conditions. Adding an inert gas at fixed volume leaves those partial pressures unchanged under the ideal model, while adding it at fixed total pressure generally changes volume and component pressures. State the experiment before predicting a shift.
+
+A catalyst changes approach rates for the same overall thermodynamic system, rather than changing its equilibrium constant. Removing a product, opening a boundary to a reservoir, or coupling another reaction changes constraints and balances. An observed conversion under continuous flow need not equal the closed-batch equilibrium calculated earlier.
+
+**Work:** analyze concentration addition, dilution, compression, inert-gas addition under two different constraints, and removal of a solid phase for selected textbook reactions. Derive each conclusion from Q, balances, and the specified assumptions. Identify a case where a memorized qualitative rule is ambiguous until the boundary conditions are supplied.
+
+Return to the reaction-extent and gas Records when a prediction involves changing total amount or pressure. The following thermodynamic sequence explains why these quotient comparisons predict direction and how temperature dependence enters.
+
+**Continue:** [Use entropy changes with a defined system and a valid thermodynamic argument](../energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_4MX92N6C2F162E3V3YFYB1B30N

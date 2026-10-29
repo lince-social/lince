@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Fluxes, oriented surfaces and coordinate measures (@fd-integrals: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "../kinematics/Material-volumes-deformation-maps-and-density.lingua#r_1R8TG4FSEVRSMJRH25WAX6128Z") { r_67DWMZBFCRCW464EP31KR60ZV9
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 1 integral tools and chapter 3 advective flux; [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter II mathematical tools; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), vector and coordinate appendices.
+
+Volume flow through an oriented surface is ∫u·n dA; mass flow is ∫ρu·n dA. The normal component and the area element both matter. A curved surface or non-Cartesian coordinate system does not permit replacing the integral by one convenient speed times a guessed area.
+
+For an axisymmetric circular pipe, Q=2π∫₀ᴿu(r)r dr. The factor r is part of the area measure. A parabolic profile u(r)=uₘₐₓ(1−r²/R²) has mean speed uₘₐₓ/2, found by integration. The centreline value alone would overestimate the flow by a factor of two in this case.
+
+Derive the relevant area, volume and derivative measures before changing coordinates. Use the divergence and circulation theorems with consistent orientations and regularity assumptions. Singular idealized vortices and discontinuities require separate treatment; an identity for smooth fields cannot be applied through an excluded core without accounting for it.
+
+**Continue:** [Material volumes, deformation maps and density](../kinematics/Material-volumes-deformation-maps-and-density.lingua#r_1R8TG4FSEVRSMJRH25WAX6128Z).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_67DWMZBFCRCW464EP31KR60ZV9

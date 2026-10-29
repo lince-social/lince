@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+State estimation, observability, bad data and topology (@pe-state-estimation: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B", #source "../sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW", #electrical-power-engineering "../protection/Fault-models-prospective-current-and-time-scale.lingua#r_4FV98NRVV0M3JYR5WG3X2E8KVS") { r_3HZZS294V9MX6W1EQ7H480C33G
+**Read:** [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B), all complete state-estimation lectures, derivations and examples; [Introduction to Applied Linear Algebra — Boyd and Vandenberghe](../sources/Introduction-to-Applied-Linear-Algebra-Boyd.lingua#r_3684D74C735KQS61ST3EH0XKZW), complete least-squares, rank and conditioning treatment.
+
+State estimation relates measured quantities to a modelled network state through explicit nonlinear measurement functions and uncertainty. Weighted least squares minimizes a residual metric, not an abstract distance to reality. Weights and correlations must correspond to the actual measurement chain, and an incorrect topology or model can dominate nominal sensor noise.
+
+Derive a small measurement Jacobian, identify unobservable directions and compare adding an independent measurement with simply repeating the same information. A phase reference removes one gauge freedom but cannot reveal a disconnected unknown part of a network. Bad-data tests depend on redundancy, error assumptions and model correctness; a small residual can coexist with biased or nonunique inference.
+
+Work the full [Three-phase unbalanced networks — Biswarup Das](../sources/Three-Phase-Unbalanced-Networks-Das.lingua#r_4J5TZVPWY0FYP8WY7AGZM8NQ4B) estimation development, beginning with its balanced example. Compare phase and sequence models, parameter uncertainty, time alignment and a changed switch state. Predict a held-out observable and report what remains unresolved. Distinguish quasi-steady estimation from dynamic-state estimation and from protection decisions. The advanced investigation must connect mathematical observability to actual sensors, connections, time and evidence rather than presenting a state image as uniquely known physical truth.
+
+**Continue:** [Fault models, prospective current and time scale](../protection/Fault-models-prospective-current-and-time-scale.lingua#r_4FV98NRVV0M3JYR5WG3X2E8KVS).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3HZZS294V9MX6W1EQ7H480C33G

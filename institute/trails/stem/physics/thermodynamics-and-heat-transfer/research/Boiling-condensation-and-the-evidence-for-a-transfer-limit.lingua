@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: boiling, condensation and transfer limits (@th-study-two-phase: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_7D7D3GS454M9Z5NRPJJ3CNBDCJ
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete boiling and condensation chapters; [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), the full two-phase, boiling and condensation sequence; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), complete relevant interfacial and phase equilibrium.
+
+Read the complete phase-change treatment and select a published boiling or condensation experiment with enough geometry, surface and operating data to reconstruct its model. Distinguish imposed power, measured heat flux, wall superheat, local state and bulk flow conditions.
+
+Derive the applicable film or interfacial balance and compare alternative correlations within their measured ranges. Study nucleation, wetting, noncondensable gases, flow regime and hysteresis as appropriate. Treat a critical heat flux or dryout relation as an empirical/physical claim with a domain, not a universal material constant.
+
+Deliver an independently checked energy account, uncertainty and a reasoned explanation of agreement and disagreement. Identify which additional measurements discriminate the proposed mechanisms. Work that reproduces a dangerous operating limit belongs to a properly equipped and supervised facility; a documentary analysis must retain its actual evidential status.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_7D7D3GS454M9Z5NRPJJ3CNBDCJ

@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Relate loading cycles to payload, material state, and the next constraint (@mine-loading: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #mining-and-mineral-engineering "Truck-cycles-fleet-matching-and-delivered-capacity.lingua#r_1P7SQVMSZSPG118GWYDH7JAG2P") { r_3MD90BCSRFA9YS90CVGB933X79
+**Read:** [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the complete shovel/loading and connected excavation/transport lectures; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full material-handling and equipment-capacity sections; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete relevant bulk material and characterization treatment.
+
+Loading connects fragmented material, machine geometry/capacity, operator/work sequence, ground, access, receiving transport, and dust/water conditions. Bucket volume, fill, bulk density, payload, cycle time, and accepted material need compatible definitions and observation.
+
+In-place, loose, compacted, and wet materials can have different bulk densities and volumes while preserving constituent mass under an account. Swell or fill factors are measured/modelled relationships with conditions, not universal constants for a rock name. Overloading and spillage can alter quality, wear, handling, and actual delivered mass.
+
+Cycle time includes defined elements and excludes or includes delays explicitly. A short observed productive cycle is not calendar capacity. Waiting for receiving equipment, material preparation, repositioning, support, maintenance, or other services can dominate system output.
+
+**Work:** reconstruct a complete published/teaching loading study with payload/volume/density bases, cycle elements, delays, sample support, and uncertainty. Independently close a mass/time account and compare two equipment/material assumptions. Identify a measurement that separates a local loading limitation from downstream queue or access constraints.
+
+Read complete loading/equipment and bulk-material chapters. The truck/fleet study next makes ideal capacities and synchronization explicit before the reliability, queue, and maintenance work.
+
+**Continue:** [Compare fleet capacity with the connected loading, route, and destination system](Truck-cycles-fleet-matching-and-delivered-capacity.lingua#r_1P7SQVMSZSPG118GWYDH7JAG2P).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_3MD90BCSRFA9YS90CVGB933X79

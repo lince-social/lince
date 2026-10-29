@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Account for the work and knowledge a closed mine can continue to require (@mine-post-closure: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Mine-Closure-Leading-Practice.lingua#r_2GYS4C9MHF2CRD8253QPDEV3QN", #source "../sources/Preventing-Acid-and-Metalliferous-Drainage.lingua#r_7SDBPF4TAZV9GKDCTW9BTYJ43R", #source "../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM", #mining-and-mineral-engineering "../operation/Land-water-work-and-affected-communities.lingua#r_222K818VT9AFN33GJFZ08QB4P0") { r_27R2N7NJMBPNJDA0JHMD51F2A9
+**Read:** [Mine closure — Australian leading-practice handbook](../sources/Mine-Closure-Leading-Practice.lingua#r_2GYS4C9MHF2CRD8253QPDEV3QN), the complete post-closure, completion, and case-study material; [Preventing acid and metalliferous drainage — leading-practice handbook](../sources/Preventing-Acid-and-Metalliferous-Drainage.lingua#r_7SDBPF4TAZV9GKDCTW9BTYJ43R), full long-term prediction, prevention, treatment, and monitoring discussions; [Water stewardship — Australian leading-practice handbook](../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM), the complete relevant water-balance and stewardship sequence.
+
+Stopping extraction does not stop groundwater rebound, weathering, settlement, reactions, erosion, or movement through old workings. Some systems approach passive behavior; others require treatment, power, inspection, repair, and interpretation for long periods. A planned duration is not evidence that a process will end then.
+
+Construct time-dependent water and constituent balances and connect them to ground/material histories. Separate measured trends, model extrapolation, alternative scenarios, and the uncertainty in each. Monitoring should detect changes that matter to a defined response, preserve long records and reference frames, and retain enough method detail to interpret an apparent change decades later.
+
+Examine continuing dependencies: access, spare equipment, laboratory services, knowledgeable workers, funding, public information, and authority/responsibility to act. Transferring ownership or archiving a report does not itself transfer operational understanding or remove physical processes.
+
+**Work:** follow a complete post-closure case across multiple observation periods. Reproduce a core water/chemical or deformation prediction, compare it with later measurements, and test changed-boundary assumptions. Explain what evidence could support reducing, changing, or extending intervention. Develop the monitoring/maintenance/knowledge handoff for one unresolved long-term system, with explicit failure detection and work requirements rather than assuming an ideal permanent caretaker.
+
+**Continue:** [Connect technical decisions with affected people, rights, evidence, and continuing work](../operation/Land-water-work-and-affected-communities.lingua#r_222K818VT9AFN33GJFZ08QB4P0).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_27R2N7NJMBPNJDA0JHMD51F2A9

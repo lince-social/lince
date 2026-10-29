@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Read phase diagrams with their basis, variables, and projection assumptions (@mp-phase-sections: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR", #mineralogy-and-petrology "Tie-lines-phase-amounts-and-mass-balance.lingua#r_5VBSCW4DQFHPD00EQHBQ752R87") { r_57K2PVW70VR7BPDBWHVRDYSJEX
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete binary, ternary, and metamorphic triangular-plot notes; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full phase-diagram lectures and assignments; [O uso de pseudosseções em Petrologia Metamórfica — Gengo and colleagues](../sources/Pseudossecoes-Gengo-Santos-Moraes-Szabo.lingua#r_00V3DDNE7B5SQHWP5NKFT0YJZR), the complete phase-diagram/topology discussion.
+
+A binary, ternary, pressure–temperature, or projected diagram is a selected view of a defined phase-equilibrium problem. Read axes, composition units, temperature/pressure constraints, phase models, fluid/redox conditions, and the meaning of boundaries. Similar triangles can represent different component systems or projections.
+
+Tie lines/triangles relate coexisting phase compositions under specified conditions. A bulk composition within a compatible region can be resolved into phase amounts, but the construction needs the same mole/mass basis. An absent phase in a diagram may have been excluded or projected away, not demonstrated impossible.
+
+Petrogenetic grids describe reaction relationships for a system, while a bulk-composition-specific section answers a different question. Projected diagrams can simplify interpretation while hiding variables that matter for a particular mineral's chemistry. State how the projection is constructed and when its assumptions fail.
+
+**Work:** complete the binary/ternary exercises and derive a simple barycentric balance independently. Read one metamorphic triangular plot from its full notes and reconstruct the component projection. Explain two errors produced by mixing weight and mole units or by treating a phase-composition point as the whole rock's composition.
+
+Read the complete diagram sequences and Portuguese theoretical article. The next lever-rule and original equilibrium work make the amount/composition distinction explicit before using a multicomponent software pseudosection.
+
+**Continue:** [Derive phase amounts from a tie line and preserve their basis](Tie-lines-phase-amounts-and-mass-balance.lingua#r_5VBSCW4DQFHPD00EQHBQ752R87).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_57K2PVW70VR7BPDBWHVRDYSJEX

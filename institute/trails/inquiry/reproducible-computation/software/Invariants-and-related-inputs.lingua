@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Use conservation, symmetries, and related inputs as additional oracles (@rc-invariants: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Failures-and-debugging.lingua#r_70541T2GJ91TBBSC8B6NFM2Z9R") { r_04TRFA8ARZ7JK0ANVQZYDKMKB3
+**Read:** [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), testing and numerical checks; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), unittest and exact-number types.
+
+Some useful expectations concern relationships rather than a single known answer. For the ideal dry balance, dry feed equals product plus tails, and input component equals recovered component plus tail component. Fractions lie in their defined ranges when denominators are positive. These relationships constrain a broad set of examples but do not uniquely determine every output.
+
+Metamorphic checking changes an input in a way that implies a known relation between outputs. Multiply all masses by the same positive rational factor while leaving fractions unchanged: masses should scale by that factor and defined yield/recovery ratios should stay unchanged. Permute independent lot rows: scientific totals should remain the same, though the input's byte identity changes. Split one lot into proportional portions with new unique identities: under this ideal model the aggregate quantities should agree.
+
+Generate both ordinary and boundary cases. Inputs with zero dry mass, zero component, all component recovered, and no product distinguish defined zeros from undefined ratios. If a generated case violates the model, reject or classify it explicitly; silently selecting only cases that make a test pass changes what was checked. Preserve initialization and generator details when random generation is used.
+
+**Work:** implement the scale and split experiments and justify their algebra before running them. Construct an implementation that obeys mass conservation but swaps the two lots' recoveries, then explain why conservation alone misses it. Combine relational checks with independently known values rather than choosing only one testing style.
+
+In later domains, identify invariants from the governing model: dimensional consistency, monotonicity under stated conditions, conservation, permutation symmetry, or known limits. Do not import a convenient invariant into a model where its assumptions fail, such as applying a nonreacting component balance to a chemical reaction without accounting for species changes.
+
+**Continue:** [Reduce a failure until its cause can be explained](Failures-and-debugging.lingua#r_70541T2GJ91TBBSC8B6NFM2Z9R).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_04TRFA8ARZ7JK0ANVQZYDKMKB3

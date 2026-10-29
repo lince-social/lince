@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Interpret chemical-process economics through the actual technical system and dated assumptions (@ic-economics: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH", #source "../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #industrial-chemistry "Open-chemical-knowledge-primary-evidence-and-unresolved-know-how.lingua#r_7Q4T402YF6X9GY8A5KD1QC2971") { r_67JCR48DW88R29ED6RMGBMPDHN
+**Read:** [Biochemical conversion of corn stover to ethanol — Humbird and colleagues](../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH), the entire equipment, capital/operating, product and sensitivity analysis with appendices; [Industrial Chemical Technology II — Nduka, NOUN](../sources/Industrial-Chemical-Technology-II-NOUN.lingua#r_7RXE2GF1DW7QH9GHTCGT0P09SR), the full technical/economic principles and flow-route unit; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the complete production-cost and relevant industrial comparison chapters if chosen.
+
+A process cost model combines material, energy, equipment, labor, maintenance, service life, operating time, quality and other assumptions. Its currency, base year, scale, location and included boundary determine what the result means. A detailed numerical output is not a current quote or a measurement of a future plant.
+
+Costs per unit of accepted product can change through conversion/selectivity, recovery, utility integration, catalyst lifetime, cycle time, downtime and feed variability. A cheaper reagent can create more isolation or residual work. A co-product's value needs a defined quality, amount, destination and market assumption rather than a theoretical yield alone.
+
+Separate fixed/capital, variable and time-dependent quantities and distinguish a conceptual design from demonstrated operating data. Sensitivity should follow the physical model: changing a feed or rate can alter equipment and utilities, not merely one price cell. Preserve uncertainty and correlated assumptions.
+
+**Work:** read a complete public technical-economic design and independently reproduce a consequential result. Compare an alternative route on the same dated basis and actual useful outputs, then test a changed yield, quality, service or utility assumption. Explain which conclusion follows from chemical/process evidence and which remains contingent on assumptions requiring further information.
+
+**Continue:** [Preserve usable chemical knowledge and distinguish demonstrated methods from gaps](Open-chemical-knowledge-primary-evidence-and-unresolved-know-how.lingua#r_7Q4T402YF6X9GY8A5KD1QC2971).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_67JCR48DW88R29ED6RMGBMPDHN

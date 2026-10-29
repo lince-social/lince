@@ -2,6 +2,19 @@ use super::*;
 use crate::server::PowerRequest;
 use std::time::Duration;
 
+fn trace_time() -> f64 {
+    static START: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+    START.get_or_init(Instant::now).elapsed().as_secs_f64()
+}
+
+fn trace_request(output: OutputId, epoch: u64, request: &PowerRequest) {
+    if crate::runtime::tracing_frames() {
+        let remaining = request.deadline.saturating_duration_since(Instant::now()).as_secs_f64();
+        let started = trace_time() - (2.0 - remaining);
+        eprintln!("Park power request: {} {} epoch {epoch} at {started:.6}", output.0, if request.on { "on" } else { "off" });
+    }
+}
+
 pub(crate) struct Frame {
     id: OutputId,
     output: smithay::output::WeakOutput,
@@ -120,7 +133,7 @@ fn sleep(device: &DrmDevice, screen: &mut Screen, crtc: crtc::Handle, server: &m
     screen.power.epoch = epoch;
     screen.protected = false;
     if crate::runtime::tracing_frames() {
-        eprintln!("Park power observed: {} off epoch {epoch}", screen.id.0);
+        eprintln!("Park power observed: {} off epoch {epoch} at {:.6}", screen.id.0, trace_time());
     }
     sleeping(screen, server);
     Ok(())
@@ -137,7 +150,7 @@ pub(super) fn presented(device: &DrmDevice, screen: &mut Screen, crtc: crtc::Han
     match result {
         Ok(Some(true)) => {
             if crate::runtime::tracing_frames() {
-                eprintln!("Park power observed: {} on epoch {epoch} protected {protected}", screen.id.0);
+                eprintln!("Park power observed: {} on epoch {epoch} protected {protected} at {:.6}", screen.id.0, trace_time());
             }
             None
         }
@@ -219,6 +232,7 @@ impl Hardware {
             if request.on {
                 if screen.power.confirmed_on() { continue; }
                 let Some(epoch) = screen.power.epoch.checked_add(1) else { desktop.server.output_power_failed(request); continue; };
+                trace_request(screen.id, epoch, &request);
                 if let Err(failure) = screen.color.wake() {
                     desktop.server.output_power_failed(request);
                     desktop.send(Input::Feedback(failure.to_string()))?;
@@ -237,6 +251,7 @@ impl Hardware {
                 desktop.redraw = true;
             } else {
                 if !screen.power.on && screen.power.observed == Some(false) { continue; }
+                trace_request(screen.id, screen.power.epoch.saturating_add(1), &request);
                 if let Err(failure) = sleep(self.outputs.device(), screen, crtc, &mut desktop.server) {
                     desktop.server.output_power_failed(request);
                     screen.output.reset_buffers();

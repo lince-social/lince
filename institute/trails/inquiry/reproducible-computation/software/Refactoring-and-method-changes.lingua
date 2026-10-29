@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Improve structure while keeping scientific changes identifiable (@rc-refactoring: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #reproducible-computation "../environments/Interpreter-and-imports.lingua#r_135ETSE2H731NE6R14RF7XQ9VG") { r_449MB2D68DJG0C44H8FC540Q1Q
+**Read:** [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), the whole handbook and sample project; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), the full book and exercises, continuing in sequence.
+
+Refactoring changes organization while intending to preserve behavior under a stated contract. A method change alters the scientific operation or its accepted domain. Both may be needed, but distinguish them so a reviewer can tell whether a changed result was expected. A faster loop, new numeric type, or library substitution can cross that boundary even when the source diff looks mechanical.
+
+Establish independent reference cases and meaningful relational checks before reorganizing. Compare the public inputs/outputs, diagnostics, and side effects that matter. Exact byte equality may be appropriate for the small rational report; a different algorithm may require a predeclared numerical criterion instead. Explain any change in row ordering, rounding, missingness, or provenance fields.
+
+Keep intermediate changes small enough to review. Moving code and correcting a scientific formula in the same large edit makes the reason for an output difference harder to inspect. Preserve the earlier method revision when it underlies a published result, then identify the corrected edition and its consequences. Version control makes both recoverable; the scientific account explains which should be used for which claim.
+
+**Work:** reorganize the worked program into reading, calculation, and writing modules in your personal exercise project. Demonstrate equivalent numerical results and failure behavior on the independent benchmark set. Then add a new model option and give it separate tests, documentation, and method identity. Explain why an unchanged test count says little about whether the new domain is adequately checked.
+
+Complete the handbook and the research-software book as sustained readings, including their projects. They provide repeated experience with changes larger than this teaching example. Use their comparison to decide which organizational practices actually help a future researcher reconstruct the method.
+
+**Continue:** [Identify the interpreter and the code it actually imports](../environments/Interpreter-and-imports.lingua#r_135ETSE2H731NE6R14RF7XQ9VG).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_449MB2D68DJG0C44H8FC540Q1Q

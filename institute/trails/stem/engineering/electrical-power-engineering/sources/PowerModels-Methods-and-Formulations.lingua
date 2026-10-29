@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+PowerModels.jl — formulations, methods and primary paper (@pe-powermodels: 0, is #reference, #part-of @pe-sources) { r_3SDQSM0EXY38699XFME0NQQT2H
+The LANL-ANSI PowerModels project. [Complete manual and formulation reference](https://lanl-ansi.github.io/PowerModels.jl/stable/) · [Repository and licence](https://github.com/lanl-ansi/PowerModels.jl). Carleton Coffrin, Russell Bent, Kaarthik Sundar, Yeesian Ng and Miles Lubin, PowerModels.jl: An Open-Source Framework for Exploring Power Flow Formulations, PSCC 2018, DOI 10.23919/PSCC.2018.8442948; [author preprint](https://arxiv.org/abs/1711.01728).
+
+Read the complete paper and applicable full manual/formulation sections, then compare AC, DC and convex-relaxation results on a properly specified common problem. Check feasibility, bounds, optimality claims and recovery of physical variables.
+
+The official repository identifies a BSD licence and the manual separates problem specification from formulation; checked on 29 October 2026. Dependencies/solvers and test data have their own terms. The stable documentation is moving; pin the actual release/commit used. No package, benchmark, paper or solver is installed or bundled by this reference.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_3SDQSM0EXY38699XFME0NQQT2H

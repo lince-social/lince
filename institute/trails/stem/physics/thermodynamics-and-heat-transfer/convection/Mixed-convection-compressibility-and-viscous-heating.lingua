@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Mixed convection, compressibility and viscous heating (@th-mixed-compressible: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7", #thermodynamics-and-heat-transfer "Correlations-domains-property-evaluation-and-pumping-cost.lingua#r_2NTN9Z1N354JB42CDF3N02W01K") { r_4TGCDBZ3W29YPPGE535ECRQJAD
+**Read:** [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), Couette flow, adiabatic wall temperature and governing equations; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), convection assumptions and relevant high-speed/mixed cases; [Convecção e métodos numéricos — Maliska, UFSC](../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7), the complete corresponding momentum/energy derivation.
+
+Forced and buoyant motion can reinforce or oppose one another. Compare their scales and orientation before deciding which model to use. Transitional behavior may be sensitive to inlet disturbances, enclosure geometry and temperature-dependent properties.
+
+In high-speed or strongly sheared flows, kinetic energy, compressibility and viscous dissipation can affect temperature. Distinguish stagnation, static and recovery temperatures, and define an adiabatic wall temperature where the model uses it. A low-speed incompressible heat-transfer coefficient cannot automatically be used with the wrong temperature difference.
+
+Derive a controlled Couette or compressible-flow thermal example and quantify the neglected terms. Compare at least two approximations against a full method or documented measurement. State the flow/temperature regime rather than using “convection” as a complete model specification.
+
+**Continue:** [Correlations, domains, property evaluation and pumping cost](Correlations-domains-property-evaluation-and-pumping-cost.lingua#r_2NTN9Z1N354JB42CDF3N02W01K).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_4TGCDBZ3W29YPPGE535ECRQJAD

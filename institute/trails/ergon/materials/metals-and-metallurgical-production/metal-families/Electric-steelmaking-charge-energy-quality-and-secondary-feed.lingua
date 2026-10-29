@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Evaluate electric steelmaking with charge quality and connected refining work (@metal-electric-steelmaking: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #source "../sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #metals-and-metallurgical-production "Secondary-steelmaking-gases-inclusions-and-cleanliness.lingua#r_4KWHT49WZJGRRP09VB93RD52HA") { r_7CQFN0FRPARFRCM0X1AJ6BA1AB
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), the entire electric/secondary steelmaking and inclusion sequence; [Steel Making — Dipak Mazumdar and Satish Ch. Koria, NPTEL](../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ), all relevant electric-furnace and refining material; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), the complete electric-steelmaking chapter and downstream quality context; [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1), the whole ferrous quality/impurity and system discussion.
+
+An electric furnace receives metallic and other feed with a distribution of composition, size/form, oxidation, contaminants, and thermal state. Electrical input supports a coupled melting, chemical, and heat-transfer process with electrodes, gases, slags, containment, cooling, and control. Gross scrap input is not automatically a usable steel output.
+
+Connect charge selection and availability with residual/tramp elements, dilution requirements, metal yield, slag/dust, carbon/oxygen reactions, and final specification. Some unwanted elements are difficult to remove under the practical refining conditions; knowing their incoming inventories matters before melting. Return streams can concentrate them across cycles.
+
+Compare capacity, energy, useful recovery, quality, transitions, maintenance, and supporting utilities on matched boundaries. A low direct fossil-fuel figure or a high recycled-feed fraction does not settle upstream energy, product acceptance, contamination, or residual handling.
+
+**Work:** reconstruct a complete electric-steelmaking case with charge, measured energy/material accounts, chemistry, and product evidence. Independently reproduce a charge and a heat/element balance, using the original exact small blend exercise as a conceptual check rather than a real charge recipe. Compare an alternative feed/refining arrangement and changed-quality or availability conditions. Explain the most consequential missing measurement and how it would change production decisions.
+
+**Continue:** [Connect secondary steel treatment with measured chemistry, inclusions, and required performance](Secondary-steelmaking-gases-inclusions-and-cleanliness.lingua#r_4KWHT49WZJGRRP09VB93RD52HA).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_7CQFN0FRPARFRCM0X1AJ6BA1AB

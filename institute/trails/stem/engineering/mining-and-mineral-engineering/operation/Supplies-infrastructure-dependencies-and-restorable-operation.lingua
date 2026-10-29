@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Trace the inputs and repair capabilities needed to sustain mining and processing (@mine-supply: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #mining-and-mineral-engineering "Lifecycle-material-energy-water-and-work-accounts.lingua#r_01TRATGM0EJ92PCMPHE5XKMK9J") { r_6668FR88NFFDAWCP560Y8370CS
+**Read:** [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full relevant maintenance, equipment, utilities, and logistics sections; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), the complete utilities/equipment account of the selected plant; [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the whole supporting-systems and lifecycle progression.
+
+Extraction depends on more than a deposit and major machines. Electricity/fuels, water, gases, wear parts, steels/elastomers, reagents, lubricants, instruments, communications, laboratory services, transport, skilled work, and repair facilities all have supply and maintenance histories. A purchased assembly can conceal a long chain of material and manufacturing knowledge.
+
+Build a dependency account around delivered functions and restoration times. Distinguish an input normally consumed, a part whose failure stops output, a substitute requiring qualification, and a service dependent on another utility. Name the physical quality or performance evidence required for replacement; nominal interchangeability is not demonstrated compatibility in the operating conditions.
+
+Compare stock, redundancy, maintainability, repair capability, alternative routes, and operating flexibility through the same time/output basis. Include inspection, storage degradation, training, tooling, calibration, and documentation. An inventory count without condition and lead-time evidence can overstate readiness.
+
+**Work:** take one mine/plant interruption case and reconstruct its dependency chain to equipment, material inputs, utilities, and human knowledge. Estimate interrupted and restored usable output under explicit scenarios. Compare two restoration or substitute strategies and identify what must be measured or demonstrated before using each. Follow one wear part or reagent back into the relevant later machinery, chemistry, manufacturing, energy, and logistics learning routes.
+
+**Continue:** [Compare extraction systems with consistent boundaries, products, and continuing burdens](Lifecycle-material-energy-water-and-work-accounts.lingua#r_01TRATGM0EJ92PCMPHE5XKMK9J).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_6668FR88NFFDAWCP560Y8370CS

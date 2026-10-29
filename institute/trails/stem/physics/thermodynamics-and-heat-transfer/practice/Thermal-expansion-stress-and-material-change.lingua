@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Thermal expansion, stress and material change (@th-thermal-stress: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "Electronics-cooling-from-active-region-to-surroundings.lingua#r_0WX6B9PJ1ETFGWYREKWSZ06XQG") { r_42B1ZP9ZZENC5AM43MDX21V08K
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), temperature-field derivations; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), phase and material-state changes; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), interfaces and microstructure-dependent response.
+
+A temperature field can produce expansion, stress and microstructural change. Free expansion differs from constrained expansion; a uniform temperature change can still create stress in bonded materials with different expansion coefficients. A temperature-gradient calculation alone does not solve the mechanical problem.
+
+For a bounded elastic example, identify reference temperature, strain, constitutive law, constraint and equilibrium. Compare free and restrained limits. Then state where yielding, creep, phase transformation, residual stress or damage requires a fuller material model and experimental evidence.
+
+Use thermal history as an input to [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../../../../ergon/materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1) when studying heat treatment, solidification or joining. In electronics, contacts and interfaces can change during cycling and thereby alter the thermal boundary used in the original prediction. Separate a predicted temperature from demonstrated mechanical integrity and durability; follow the appropriate materials/mechanics study for those claims.
+
+**Continue:** [Electronics cooling from the active region to the surroundings](Electronics-cooling-from-active-region-to-surroundings.lingua#r_0WX6B9PJ1ETFGWYREKWSZ06XQG).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_42B1ZP9ZZENC5AM43MDX21V08K

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: a complete device cooling path (@th-study-cooling: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Heat-Pipe-Design-Handbook-Brennan-Kroliczek.lingua#r_08JYCA7B2K6B8E5490DSJYQJFA", #source "../sources/Introduction-to-Loop-Heat-Pipes-Semenov.lingua#r_6WFJ8TNG86GRTFSKSXD319J97D", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_6WZA48VDJ5JQQ44VD67DT7C1EF
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), full relevant conduction, convection and exchanger developments; [Heat Pipe Design Handbook, Volume I — Brennan and Kroliczek](../sources/Heat-Pipe-Design-Handbook-Brennan-Kroliczek.lingua#r_08JYCA7B2K6B8E5490DSJYQJFA), the full applicable design/limit method; [Introduction to Loop Heat Pipes — Sergey Semenov](../sources/Introduction-to-Loop-Heat-Pipes-Semenov.lingua#r_6WFJ8TNG86GRTFSKSXD319J97D), the complete course; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), full relevant small-scale and interface studies.
+
+Select an electronic package or another compact heat-producing device with an inspectable load and geometry. Trace the path from internal generation to the final sink and identify each uncertain interface, material state and boundary. Use a compact model and resolve the regions where that model's assumptions fail.
+
+Compare steady and transient duty, changed ambient or flow, and degraded contact or blocked cooling. Include pumping/fan power and the ability to manufacture, assemble and measure the intended configuration. If a heat pipe is used, apply a complete design method and its operating limits rather than inserting an unlimited conductance.
+
+Deliver independently checked thermal predictions, an experimental comparison or a clearly labeled documentary reconstruction, and a revision after criticism. Explain the bridge to semiconductor packaging, reliability and manufacturing while preserving their distinct unfinished scope. A cool external surface does not alone establish an acceptable internal temperature.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6WZA48VDJ5JQQ44VD67DT7C1EF

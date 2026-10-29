@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Distinguish twins, zoning, exsolution, and deformation features (@mp-twins: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD", #source "../sources/Virtual-Petrography-Toronto.lingua#r_4ZA3K3DY6FMKNN06EFJ8X8SARS", #mineralogy-and-petrology "Opaque-phases-reflected-light-and-complementary-methods.lingua#r_46VP12HFWFJRGMYP9B1R2FKK7E") { r_2CS1MMWSJAVV7B6P6R6VNS4WY1
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete twinning, zoning, exsolution, and optical texture treatments; [Guide to Thin Section Microscopy — Raith, Raase, and Reinhardt](../sources/Guide-to-Thin-Section-Microscopy.lingua#r_2MH30T4MGW8YMVP9SA3Z7XCDSD), the full internal-feature and deformation sections; [Virtual Petrography — Daxberger and Kennedy, University of Toronto Scarborough](../sources/Virtual-Petrography-Toronto.lingua#r_4ZA3K3DY6FMKNN06EFJ8X8SARS), selected identified contrasting examples.
+
+Twinning relates domains by a defined operation not equivalent to the ordinary symmetry of an individual domain. Compositional zoning, exsolution, deformation, replacement, and preparation can also create internal patterns. Similar-looking bands need observation and analysis before receiving a genetic label.
+
+Stage rotation, extinction relationships, morphology, boundary geometry, interference behavior, and plane-light appearance provide complementary evidence. A twin law relates crystal orientations; it is not a description of every alternating bright/dark band. Optical observations can suggest a law but may need additional orientation or diffraction constraints.
+
+Zoning can reflect growth, resorption, diffusion, reaction, or mixed histories. Undulose extinction can indicate spatial variation in optical orientation under an interpretation, but it does not uniquely quantify strain or date a deformation event. Distinguish what a single section reveals from a three-dimensional domain account.
+
+**Work:** compare known twin, zoned, exsolved, and strained examples from complete book/atlas descriptions. Make an observation table before naming the features, then propose an independent chemical or structural test. Reconstruct two histories for one ambiguous pattern and identify the textural relation that would favor either.
+
+Read the full relevant crystal and optical sections. Later quantitative mapping, diffusion, metamorphic, and igneous studies return to these domains as evidence; the preparation and instrument records make those connections reliable.
+
+**Continue:** [Identify opaque phases with suitable observations and complementary evidence](Opaque-phases-reflected-light-and-complementary-methods.lingua#r_46VP12HFWFJRGMYP9B1R2FKK7E).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_2CS1MMWSJAVV7B6P6R6VNS4WY1

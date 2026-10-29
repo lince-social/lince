@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Compare water-based and solution extraction with explicit material and boundary accounts (@mine-solution-placer: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #source "../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #mining-and-mineral-engineering "Industrial-minerals-aggregates-and-dimension-stone.lingua#r_31X6WPEKQ75FS9B23V9BX7H8FZ") { r_1NTMM1VCNWXBG1FMQFXYM7DWAT
+**Read:** [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the full applicable extraction-method studies; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete selected placer/dredging/solution-method chapters; [General chemistry](../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), the full relevant aqueous, reaction, kinetic, and open-system foundations.
+
+Placer, dredging, and solution-based extraction systems connect deposits with fluids and material transport in different ways. Grain size/density, sediment structure, water, permeability/pathways, mineral chemistry, selectivity, and product requirements influence suitability. A useful element's presence does not establish recoverability by one fluid-based method.
+
+Placer concentration reflects transport, sorting, source, and preservation; extraction/removal changes sediment and water pathways. Dredging involves hydraulic/mechanical behavior and system boundaries beyond the immediate excavation. Marine settings add site-specific oceanographic, ecological, technical, and jurisdictional questions.
+
+Solution extraction needs a chemical/flow/reactive-transport account with recovery, containment, neighboring-water interaction, and closure considered. A laboratory dissolution result cannot by itself establish connected field pathways, selectivity, or controllable recovery. Preserve what was measured and what remains modeled.
+
+**Work:** compare a complete placer/dredging and a solution-based case at the level of deposit evidence, flows, products, waste, observations, and uncertainty. Reconstruct a bounded material/water account and identify an alternative process or pathway interpretation. Explain which new test would materially change suitability or closure assumptions.
+
+Read the full method material and relevant chemical/water foundations. Later hydrogeology, hydrometallurgy, and marine-resource studies deepen their unique methods; no particular reagent recipe or field operating plan is inferred from this general comparison.
+
+**Continue:** [Design the material account around physical quality as well as contained elements](Industrial-minerals-aggregates-and-dimension-stone.lingua#r_31X6WPEKQ75FS9B23V9BX7H8FZ).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_1NTMM1VCNWXBG1FMQFXYM7DWAT

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: spectral participating media (@th-study-participating: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86", #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_605FZN565BJZ8AE20KMKHY3S9F
+**Read:** [Radiative Transfer — MIT 2.58J](../sources/Radiative-Transfer-MIT-2-58J.lingua#r_0SGHEYZJFKN0ZNS3AYJ39XPT86), all available participating-media and numerical lectures, assignments and exams; [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), complete relevant photon transport development; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), full radiation foundation.
+
+Read the complete radiative-transfer development in MIT 2.58J. Derive the transport equation with declared directional and spectral quantities, emission, absorption and scattering conventions. Recover transparent, optically thin and diffusion limits where their hypotheses hold.
+
+Implement or independently configure two genuinely different solution approaches for a bounded slab or enclosure, such as discrete ordinates and Monte Carlo. Check angular, spatial and spectral resolution, statistical uncertainty, boundary treatment and energy conservation separately. Use a benchmark whose assumptions and data can be inspected.
+
+Then investigate a real gas, particle medium or optical layer using traceable property data. Distinguish line structure, scattering phase function and surface effects from grey approximations. Deliver a conclusion about the chosen observable and an account of what resolution and property evidence it requires.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_605FZN565BJZ8AE20KMKHY3S9F

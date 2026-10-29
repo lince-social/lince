@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect slag chemistry with activities, phases, transport, and actual separation (@metal-slag: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR", #metals-and-metallurgical-production "../refining/Distribution-ratios-stage-balances-and-impurity-fate.lingua#r_63HT1JN0JGBF5G17D2HSVAVRE5") { r_5K9C7AGZASB27TFJ1JT6NJYD8Q
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), the complete slag properties, reaction equilibria, and slag/metal kinetics sequence; [Steel Making — Dipak Mazumdar and Satish Ch. Koria, NPTEL](../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ), all relevant slag/refining theory and worked material; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), the whole chosen slag-process and residual case; [pycalphad — Otis and Liu, paper and computational thermodynamics](../sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR), the exact assessed model and complete relevant method documentation.
+
+Slag is a multicomponent material whose phase state, activities, viscosity, density, interfacial behavior, and structure depend on composition, temperature, redox conditions, and history. A basicity ratio compresses part of the composition; different ratios and mass/mole bases should not be interchanged or treated as complete property models.
+
+Separate thermodynamic capacity or equilibrium distribution from observed process removal. Interfacial area, mixing, reaction rates, slag volume, temperature, oxygen potential, refractory interaction, entrainment, and residence history can control what is achieved. A high nominal capacity for one impurity may bring costs or conflicts elsewhere.
+
+Preserve analytical basis and sampling/preparation effects. Quenching can retain useful information while also changing phases; a room-temperature phase assemblage does not directly measure every high-temperature liquid property. Compare calculations with independent thermochemical, structural, and property evidence.
+
+**Work:** reconstruct a complete slag/metal case, derive the stated equilibrium relation, and independently check composition and material balances. Compare two defensible activity/property descriptions and test their effect on impurity or metal-loss predictions. Investigate a competing transport/entrainment explanation for a discrepancy. Explain how the chosen slag affects containment, energy, separation, residual use, and final product quality.
+
+**Continue:** [Derive refining performance from phase distribution and finite material inventories](../refining/Distribution-ratios-stage-balances-and-impurity-fate.lingua#r_63HT1JN0JGBF5G17D2HSVAVRE5).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_5K9C7AGZASB27TFJ1JT6NJYD8Q

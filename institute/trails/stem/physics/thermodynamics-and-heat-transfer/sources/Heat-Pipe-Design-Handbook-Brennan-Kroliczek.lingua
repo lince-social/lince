@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Heat Pipe Design Handbook, Volume I — Brennan and Kroliczek (@th-heatpipe-handbook: 0, is #reference, #part-of @th-sources) { r_08JYCA7B2K6B8E5490DSJYQJFA
+Patrick J. Brennan and Edward J. Kroliczek, B & K Engineering. Heat Pipe Design Handbook, Volume I, June 1979, NASA-CR-163661. [NASA catalogue](https://ntrs.nasa.gov/citations/19810065690) · [Complete NASA PDF](https://ntrs.nasa.gov/api/citations/19810065690/downloads/19810065690.pdf).
+
+Read the complete relevant theory and design chapters, then the whole volume for a sustained heat-pipe investigation. It develops fixed and variable conductance, capillary and pressure balances, transport limits and design methods. The file has 385 pages including front matter; its 1981 accession identifier is not its publication year.
+
+NASA labels the distribution public and public use permitted. Keep the report and component notices; the report is a historical technical source, not current qualification evidence for an arbitrary fluid, wick or manufactured device. Compare it with [Introduction to Loop Heat Pipes — Sergey Semenov](Introduction-to-Loop-Heat-Pipes-Semenov.lingua#r_6WFJ8TNG86GRTFSKSXD319J97D) and the primary research applicable to the proposed service. Only the reference is stored here.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_08JYCA7B2K6B8E5490DSJYQJFA

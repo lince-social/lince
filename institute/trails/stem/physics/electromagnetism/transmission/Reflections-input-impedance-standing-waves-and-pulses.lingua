@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Reflections, input impedance and pulses (@em-reflections: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #source "../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ", #electromagnetism "Layered-dielectrics-interference-and-transfer-matrices.lingua#r_2C4CFNY2E9JFY0YTQDWT4AREM4") { r_2JK690XGY5MS28SAX3QQ9ZGFR9
+**Read:** [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), complete reflection and impedance development; [Electromagnetic Waves and Antennas — Sophocles J. Orfanidis](../sources/Electromagnetic-Waves-and-Antennas-Orfanidis.lingua#r_2E9PTW5TH97W2B200A5XKHHNTQ), transmission lines and matching.
+
+At a load, voltage-wave reflection coefficient is Γ = (Z_L−Z₀)/(Z_L+Z₀) for the stated line and normalization. An open circuit reflects voltage with +1, a short with −1; current has the corresponding sign change from propagation direction. A matched termination suppresses reflection in that mode but can still absorb and dissipate substantial power.
+
+For a 50 Ω lossless line terminated in 100 Ω, Γ = 1/3 and reflected power fraction is 1/9. Derive the input impedance as a function of length/frequency and check zero-length, quarter-wave and half-wave limits. A quarter-wave section exchanges high/low impedance through its distributed fields; it is not a broadband algebraic resistor transformation.
+
+Track a launched pulse through source and load reflections with explicit travel times. Include source reflection, loss and finite rise time before interpreting a time-domain trace as a physical discontinuity. Move the reference plane and show how the complex Γ changes even when a lossless line preserves |Γ|. Compare voltage measurements, delivered power and standing-wave maxima without treating them as the same observable.
+
+**Continue:** [Layered dielectrics, interference and transfer matrices](Layered-dielectrics-interference-and-transfer-matrices.lingua#r_2C4CFNY2E9JFY0YTQDWT4AREM4).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_2JK690XGY5MS28SAX3QQ9ZGFR9

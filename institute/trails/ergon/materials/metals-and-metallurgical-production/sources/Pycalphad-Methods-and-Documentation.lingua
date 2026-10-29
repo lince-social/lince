@@ -1,0 +1,11 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+pycalphad — Otis and Liu, paper and computational thermodynamics (@metal-calphad: 0, is #reference, #part-of @metal-sources) { r_24VWE1JCTVHMZ88907VK19ZWZR
+Richard Otis and Zi-Kui Liu. pycalphad: CALPHAD-based Computational Thermodynamics in Python. Journal of Open Research Software 5, article 1, 2017. DOI 10.5334/jors.140. [Original paper](https://doi.org/10.5334/jors.140) · [Official documentation and citation](https://pycalphad.org/docs/latest/) · [Software licence](https://github.com/pycalphad/pycalphad/blob/develop/LICENSE.txt).
+
+Read the complete paper and the exact model, database, equilibrium, example, and numerical documentation used in the study. Version the actual software and thermodynamic descriptions; an accessible engine does not put every compatible database under the same licence or validate every assessment.
+
+Official documentation, paper identity, and MIT software licence were verified on 29 October 2026. The paper is CC BY 4.0; the publisher redirect later failed through the browsing tool, so access limits are preserved. Do not treat the 2017 paper's installation/dependency list as current instructions. The software is referenced, not installed or executed as part of authoring this content; no program/database is bundled.
+
+**Return:** [Metals and metallurgical production sources — books, courses, methods, and cases](../Sources.lingua#r_03Z21BSG78ZRQSAVCCD6FJVNRY).
+} r_24VWE1JCTVHMZ88907VK19ZWZR

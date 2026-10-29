@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Property tables, reference states and interpolation (@th-tables: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/IAPWS-IF97-Industrial-Water-and-Steam.lingua#r_7THV30AN6Q693AJKH3W6ZSG13Y", #source "../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #thermodynamics-and-heat-transfer "../../../chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S") { r_3FSQXM2G05B0C35PEQ6G67M5BZ
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), property tables and appendices; [IAPWS-IF97 — industrial water and steam](../sources/IAPWS-IF97-Industrial-Water-and-Steam.lingua#r_7THV30AN6Q693AJKH3W6ZSG13Y), regional definitions and verification values; [IAPWS-95 — fundamental water properties](../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z), fundamental-property derivatives and uncertainty.
+
+Record the material, composition, phase, units, independent variables, reference conventions and source version for every property value. A table of saturated water is not a table of compressed liquid at arbitrary pressure. Enthalpy, entropy, conductivity and viscosity have different meanings and sources.
+
+Interpolate only within a stated region where the property behavior supports it. Near phase boundaries or critical regions, a small input change can have a large response, and a coarse interpolation may violate a thermodynamic identity. Compare interpolation error with measurement and model uncertainty.
+
+Construct one consistent state table for a cycle, checking each state through a second representation. If two software libraries share IAPWS equations, agreement tests implementation consistency more directly than independent physical truth. Use a measured reference or distinct evaluated evidence for the latter claim.
+
+**Continue:** [Interpret vapor pressure, phase change, and a phase diagram](../../../chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_3FSQXM2G05B0C35PEQ6G67M5BZ

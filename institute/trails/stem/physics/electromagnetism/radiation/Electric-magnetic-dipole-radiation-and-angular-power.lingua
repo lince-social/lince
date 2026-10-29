@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Electric/magnetic dipole radiation and angular power (@em-dipole-radiation: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "Accelerated-charges-Larmor-and-radiation-reaction-limits.lingua#r_19J7GRVJRGWX97DXT5S7P5G5MS") { r_4BPSV3J0C046ZSABN6VE17JE7B
+**Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), dipole radiation and multipole expansion; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), radiation by localized sources.
+
+For a small localized harmonic electric dipole p(t) = Re{p₀ exp(−iωt)} with a fixed axis in vacuum, derive transverse far E/B fields, the sin²θ angular pattern and total average radiated power ω⁴|p₀|²/(12π ε₀c³). The amplitude p₀ is a peak phasor; RMS conventions change factors. Small source size relative to wavelength is part of the approximation.
+
+Integrate the angular Poynting flux explicitly and check units and low-frequency scaling. Compare near and far energy terms rather than extrapolating the far formula back to the source. Develop the magnetic-dipole and electric-quadrupole contributions and identify source symmetries that suppress the leading electric dipole.
+
+A prescribed oscillating dipole requires an energy supply; radiation changes the complete source/load account. For an actual short antenna, a current distribution and feed geometry determine the dipole moment and input impedance. A radiated-power result alone does not establish an antenna's bandwidth, matching, efficiency or local field exposure. Advanced radiation study later derives these connections and compares a finite source with the asymptotic multipole approximation.
+
+**Continue:** [Accelerated charges, Larmor and reaction limits](Accelerated-charges-Larmor-and-radiation-reaction-limits.lingua#r_19J7GRVJRGWX97DXT5S7P5G5MS).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_4BPSV3J0C046ZSABN6VE17JE7B

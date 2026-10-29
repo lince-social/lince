@@ -1,0 +1,21 @@
+Import "../Reproducible-computation.lingua"
+
+Sustained project — reconstructible material accounting and calibration (@rc-projectdet: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #reproducible-computation "A-stochastic-and-numerical-project.lingua#r_4T7Z99R0VQKC0A3699FEZCXE1J") { r_584KCPF0ENH90JFAT0QZ6NHHQS
+**Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), the whole book and exercises; [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), the whole book and its substantial project; [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), the whole handbook and numerical-testing extension.
+
+Build a substantial computational study from the two-lot example rather than merely rerunning its supplied checks. Use original hypothetical data or authorized observations with clearly documented meaning. Extend the model to several lots, explicit units/bases, a justified sampling/assay interpretation, and one calibration or correction drawn from [Measurement and metrology](../../metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5). Preserve enough independently checkable cases to diagnose each transformation.
+
+Read the complete Sundnes book and complete the research-software book's main project and exercises as the sustained software preparation. The study should show that you can transfer those methods to a different scientific question. Keep any copied textbook or project media outside this repository and preserve its source/rights in your own exercise account.
+
+Develop the mathematical model before implementation. Derive mass/component relations, correction behavior, aggregation, sensitivity, and acceptance checks. Separate observed values, corrections, uncertainty information, and hypothetical design choices. Introduce uncertainty only with its assumptions and dependence explicit; exact rational arithmetic in one part does not make the entire study exact.
+
+Produce validated input contracts, a readable implementation, independent analytic/reference cases, meaningful invalid inputs, versioned changes, a declared/reconstructed environment, an executable workflow, and a report generated from identified results. Compare a second implementation or hand-calculable subset with the main method. Investigate performance and resources over a justified workload family instead of removing the teaching bounds without analysis.
+
+**Evidence to discuss:** an unfamiliar reader's reconstruction or an explicitly identified self-restoration; output comparisons under relocation and relevant environment perturbations; a numerical/model error analysis; a failure and recovery experiment; a review that found and led to a correction; and a clear statement of the result's scientific scope. Explain every unshared or unavailable dependency.
+
+The finished project should support a technical discussion of why the method is credible and how it could fail. It is preparation for deeper mining, chemistry, process-engineering, and logistics studies, whose unique domain knowledge will live in their own Records.
+
+**Continue:** [Advanced project — uncertain inputs, numerical control, and execution order](A-stochastic-and-numerical-project.lingua#r_4T7Z99R0VQKC0A3699FEZCXE1J).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_584KCPF0ENH90JFAT0QZ6NHHQS

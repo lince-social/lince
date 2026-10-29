@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Account for limiting reactants, specimen purity, and inert material (@gc-limiting: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Yield-selectivity-and-material-accounting.lingua#r_73PW18H0EQATWC20EC95V9D9M3") { r_0B70BWF6HF4MK461M5Q92HPSH9
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 4’s limiting-reactant and composition problems; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the full stoichiometric calculation lessons.
+
+The limiting reactant follows from available amounts divided by the corresponding required stoichiometric amounts, under the selected reaction model. A specimen's total mass is not necessarily the mass of reactive material. Convert an assay or purity into the amount of the specified reactant before comparing reaction ratios.
+
+Consider an entirely hypothetical 100 g feed containing 80% CaCO₃ by mass and 20% inert material. Use rounded teaching molar masses 100.0 g mol⁻¹ for CaCO₃ and 44.0 g mol⁻¹ for CO₂. For CaCO₃ + 2HCl → CaCl₂ + CO₂ + H₂O with 1.00 mol HCl available, the acid limits the extent to 0.50 mol. The ideal stoichiometric CO₂ amount is 0.50 mol, or 22.0 g. Reactive carbonate remaining is 30 g, and the inert 20 g remains accounted for.
+
+This is a paper balance, not a laboratory procedure or a prediction of gas collection under arbitrary conditions. Water, dissolved gases, incomplete reaction, impurities that also consume acid, and measurement losses would alter an experimental interpretation. The stated assumptions make the first calculation independently checkable.
+
+**Work:** derive the result by two methods and verify the elemental account for the reaction. Change feed purity and acid amount separately, drawing the boundary between acid-limited and carbonate-limited cases. Show why using the whole feed mass as pure carbonate overestimates the available reactant.
+
+Then examine a textbook problem with an impure reactant and a measured product. Distinguish the maximum amount allowed by stoichiometry from the result of equilibrium, rate, selectivity, and collection. These distinctions will matter when a mineral assay is connected to a practical extraction route.
+
+**Continue:** [Distinguish conversion, yield, selectivity, recovery, and purity](Yield-selectivity-and-material-accounting.lingua#r_73PW18H0EQATWC20EC95V9D9M3).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_0B70BWF6HF4MK461M5Q92HPSH9

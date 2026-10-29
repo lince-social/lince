@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Derive a partitioning model and distinguish its coefficient from a universal constant (@mp-partition: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF", #mineralogy-and-petrology "Fractional-crystallization-and-Rayleigh-models.lingua#r_6W8ZBWZZZ0WGZRPAD66MPHRHT1") { r_3B2TW5ED1ABJ87H801PXK3HW15
+**Read:** [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the complete trace-element/partial-melting notes; [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the full corresponding problem sequence; [Advanced Igneous Petrology — Timothy Grove, MIT 12.490](../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF), the complete selected experimental/partitioning case and its original papers.
+
+A distribution/partition coefficient needs defined phases, species/element, concentration basis, conditions, and exchange/equilibrium assumptions. It can vary with composition, pressure, temperature, redox, and structure. A bulk coefficient combines phase proportions and their coefficients under a specified source/residue account.
+
+For an illustrative batch-melting model with constant bulk D = C_s/C_l and melt mass fraction F, mass balance gives C_l/C₀ = 1/[D+F(1−D)]. With invented D = 0.1 and F = 0.2, the enrichment is 1/0.28 ≈ 3.5714, while C_s/C₀ ≈ 0.35714. Check the original mass account rather than applying the formula without its assumptions.
+
+The coefficient may cease to be constant as phases disappear or compositions change. Accessory minerals, disequilibrium, volatile/fluid components, and fractional extraction can change the relation. A good fit to one element trend does not identify a unique source or process.
+
+**Work:** derive/check the example and its F→0 and F→1 behavior under the model. Compare equilibrium and fractional removal conceptually and quantitatively where the assigned notes permit. Evaluate a published coefficient's measured conditions and uncertainty before using it in a natural-rock model; test how an accessory phase changes the inferred result.
+
+Read the full trace-element and melting treatment and complete original experimental paper for the chosen coefficient. The broader geochemistry trail will deepen isotope/trace methods while reusing this explicit phase and material balance.
+
+**Continue:** [Distinguish crystallization, separation, and a Rayleigh distribution model](Fractional-crystallization-and-Rayleigh-models.lingua#r_6W8ZBWZZZ0WGZRPAD66MPHRHT1).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_3B2TW5ED1ABJ87H801PXK3HW15

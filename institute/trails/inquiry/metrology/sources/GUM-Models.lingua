@@ -1,0 +1,13 @@
+Import "../Metrology.lingua"
+
+Developing and using measurement models — JCGM GUM-6 (@met-models: 0, is #book, #part-of @met-sources) { r_3AAJPGTHAAF72R05SJ1VJ7HN46
+JCGM GUM-6:2020. Guide to the expression of uncertainty in measurement — Part 6: Developing and using measurement models. [DOI and official edition](https://doi.org/10.59161/JCGMGUM-6-2020) · [Catalogue](https://www.bipm.org/en/committees/jc/jcgm/publications).
+
+Begin with clauses 5–8 on basic principles, specifying a measurand, the measurement principle, and model form. Add clauses 9–10 on measurement effects and model extensions, then clause 11 on statistical models. Read the complete document and its annexes in advanced study. The actual section titles and edition identify these assignments.
+
+Use it to compare explicit equations with observation models, shared effects, drift, regression, and Bayesian formulations. The companion Records supply original examples and questions; the report supplies the sustained technical treatment.
+
+Freely readable JCGM publication with retained copyright and reproduction/translation restrictions. Edition, contents, and authorized access checked on 28 October 2026. No document is stored here.
+
+**Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+} r_3AAJPGTHAAF72R05SJ1VJ7HN46

@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Expose parameters and make their interpretation reproducible (@rc-configuration: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Version-control-and-snapshots.lingua#r_3SQ3GK6XAMY85MDN8RCZC6DVXM") { r_0AH1JA9H4RCTT1T4S876V0N674
+**Read:** [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), command-line programs, configuration, and error-handling chapters; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), argparse, json, and the chosen configuration parser reference.
+
+Parameters include model choices, thresholds, units, selection rules, numerical settings, and file locations. If one can change the result, preserve its value and interpretation. The toy analysis fixes a narrow model and takes input/output paths explicitly. A real study should identify its scientific parameters separately from execution conveniences such as worker count or a temporary directory.
+
+Define defaults, allowed values, precedence, and diagnostics. If a command-line option overrides a configuration file which overrides an environment variable, the resolved value must be recoverable. Publishing only the configuration file can omit the override actually used. Record the resolved scientific configuration in the result or its associated execution account.
+
+Configuration is data. Parse it using a defined format rather than evaluating arbitrary expressions as program code. Check units and cross-parameter relations just as carefully as individual numeric types. A positive time step can still be inconsistent with an integration interval or stability requirement. A default assay basis can silently change a physical meaning even if every option parses successfully.
+
+**Work:** add a documented reporting option without changing the numerical method. Then design a deliberate model parameter and specify how it must alter the method identity, provenance, and tests. Reject an unknown option and an invalid combination with a useful nonzero-exit diagnostic. Show the complete resolved configuration for a successful run.
+
+Compare the book's configuration treatment with your program's actual scale. A few named command-line arguments may be enough. The required evidence is that another reader can determine which choices produced the result and reproduce those choices without editing unrecorded constants scattered through the code.
+
+**Continue:** [Version the method and understand what a snapshot contains](Version-control-and-snapshots.lingua#r_3SQ3GK6XAMY85MDN8RCZC6DVXM).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_0AH1JA9H4RCTT1T4S876V0N674

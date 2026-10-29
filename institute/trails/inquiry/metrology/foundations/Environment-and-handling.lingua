@@ -1,0 +1,19 @@
+Import "../Metrology.lingua"
+
+Environment, alignment, handling, and the specimen itself (@met-environment: 0, is #chapter, #part-of @metrology, #source "../sources/Dimensional-Metrology.lingua#r_5XRAV7WQWR6CTM94WM04G0Z647", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #metrology "Instrument-response.lingua#r_07SCGP3DGSTJ27T288T3G50J8H") { r_1RNJYM0X929ZYV4TKHKDA5FTQC
+**Read:** [Fundamental Good Practice in Dimensional Metrology — Flack and Hannaford](../sources/Dimensional-Metrology.lingua#r_5XRAV7WQWR6CTM94WM04G0Z647), the complete guide and its physical error discussions; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 9–10 on effects and model extensions.
+
+The measuring system includes the object and its interaction with references, fixtures, people, and surroundings. Temperature, humidity, pressure, vibration, air currents, cleanliness, mounting force, warm-up, and elapsed time can affect different quantities in different ways. State which influences matter to the intended uncertainty and how they are controlled, observed, corrected, or bounded.
+
+For a teaching steel length of 100 mm, assumed expansion coefficient α = 11.5 × 10^−6 K^−1, and temperature 5 K above the reference, the first-order expansion is LαΔT = 0.00575 mm, or 5.75 µm. This is already large relative to some dimensional claims. The coefficient, temperature distribution, reference convention, and model also have uncertainty. Using a familiar nominal coefficient without identifying the material is an assumption.
+
+Geometry can create systematic effects. A projection L cos θ differs from L; near zero angle, its relative difference is approximately −θ²/2. An offset between the measurement axis and the defined length can introduce a first-order angular error, often discussed through the Abbe principle. Contact force can deform the specimen or probe rather than merely reveal a pre-existing distance.
+
+**Work:** write an influence map for an ordinary dimensional comparison. Rank likely effects using rough numerical estimates, and describe an alignment or reversal experiment that could distinguish two of them. Design a stabilization observation rather than assuming a waiting time guarantees equilibrium.
+
+Do not inflate a budget with every conceivable influence while omitting the dominant one. Explain why an effect is negligible relative to the purpose, or retain it with an appropriate model. Later instrument-family studies return to this physical judgement at a more demanding scale.
+
+**Continue:** [Range, sensitivity, loading, bandwidth, and response time](Instrument-response.lingua#r_07SCGP3DGSTJ27T288T3G50J8H).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+} r_1RNJYM0X929ZYV4TKHKDA5FTQC

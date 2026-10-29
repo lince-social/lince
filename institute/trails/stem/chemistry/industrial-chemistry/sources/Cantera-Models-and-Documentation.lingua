@@ -1,0 +1,11 @@
+Import "../Industrial-chemistry.lingua"
+
+Cantera — chemical thermodynamics, kinetics and reactor models (@ic-cantera: 0, is #reference, #part-of @ic-sources) { r_4ZMEMBQGEYE25NZVYTPNXAGENT
+Cantera Developers. [Official stable documentation](https://cantera.org/stable/) · [Official source and licence](https://github.com/Cantera/cantera) · [User guide](https://cantera.org/stable/userguide/index.html).
+
+The stable documentation inspected on 29 October 2026 identifies version 3.2.0. Read the complete theoretical/model documentation and actual examples used by a computational study. Record species/phase/reaction data, thermodynamic and transport assumptions, units, numerical settings, software revision and database provenance; software access does not validate every mechanism or extend every data licence.
+
+Cantera's code is distributed under its stated BSD licence; preserve the specific version's licence and separate component/data terms. The source and documentation remain external references. No installation, model run, mechanism validation or execution of the external examples is claimed in this authored trail. The three inline teaching programs are independent original calculations with their own stated simplified models.
+
+**Return:** [Industrial chemistry sources — whole books, courses, technical methods and primary evidence](../Sources.lingua#r_3084780FHMK499ZDAW07TYA3TQ).
+} r_4ZMEMBQGEYE25NZVYTPNXAGENT

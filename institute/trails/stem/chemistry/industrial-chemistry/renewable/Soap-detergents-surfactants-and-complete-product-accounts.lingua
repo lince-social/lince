@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect soap and detergent chemistry with interfaces, manufacture and useful formulation (@ic-soaps: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Saboes-e-Detergentes-Castro.lingua#r_08ET1T9T2F8GDEB1315ZB6XFRF", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Oleos-e-Gorduras-Castro.lingua#r_4C89Z0YDFDBY55HN2R7WCDEETY", #industrial-chemistry "Sugar-starch-concentration-crystallization-and-platform-feeds.lingua#r_0GFTR01N55B1VRJV8JZMA30KZJ") { r_02YGZWRNNZWZK9JAVQMY2MR448
+**Read:** [Sabão e detergentes — Heizir F. de Castro](../sources/Saboes-e-Detergentes-Castro.lingua#r_08ET1T9T2F8GDEB1315ZB6XFRF), the entire soap/detergent chemistry, production and formulation apostila; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete soaps/detergents manufacturing sequence; [Óleos e gorduras — Heizir F. de Castro](../sources/Oleos-e-Gorduras-Castro.lingua#r_4C89Z0YDFDBY55HN2R7WCDEETY), the full feed-composition, refining and modification context.
+
+Soap production links feed lipids or fatty acids with the chemical form of a surfactant, while synthetic detergent routes create other surfactant structures and mixtures. Surfactant identity, chain distribution, counterions, water conditions, concentration and other ingredients influence interfacial and cleaning behavior.
+
+An ideal saponification or neutralization relation provides a stoichiometric account but not a complete product process. Feed composition, conversion, co-products such as glycerol, separation, salt/water, drying and formulation change the delivered material. Distinguish active surfactant amount from total product mass.
+
+Performance and environmental fate need the actual application and evidence. A favorable foam observation does not establish cleaning, stability or downstream behavior. Formulation, packaging/contact materials and storage can alter the physical/chemical state before use.
+
+**Work:** reconstruct a complete public soap or detergent route and its actual functional tests. Independently close feed/reagent, surfactant, co-product, water and residual accounts. Compare a documented feed/route/formulation alternative on equal useful function, explain the phase/interfacial and analytical basis of the comparison and identify a changed-condition test capable of challenging it.
+
+**Continue:** [Follow carbohydrate feeds through preparation, separation and further chemical use](Sugar-starch-concentration-crystallization-and-platform-feeds.lingua#r_0GFTR01N55B1VRJV8JZMA30KZJ).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_02YGZWRNNZWZK9JAVQMY2MR448

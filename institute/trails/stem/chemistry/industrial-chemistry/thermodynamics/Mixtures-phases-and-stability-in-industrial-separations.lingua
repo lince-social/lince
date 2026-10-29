@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect mixture phase equilibria with stable states and actual separation duties (@ic-phase-equilibrium: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT", #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #source "../sources/Chemical-Process-Technology-Moulijn.lingua#r_37X27XFH4Z21CVXC81T01PH35W", #industrial-chemistry "Select-test-and-version-chemical-property-models.lingua#r_78B24XST7VWY2R1H9F0HRWSPHB") { r_77RX7N6YCX25E5PTTMHQ7X9ZRQ
+**Read:** [Graduate Chemical Engineering Thermodynamics — MIT 10.40](../sources/Graduate-Thermodynamics-MIT-10-40.lingua#r_62DYAQ1KKK4AWYQMYAEN964VJT), the complete mixture-property, stability and phase-equilibrium work; [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), the full relevant Raoult/VLE, phase-map, flash and multicomponent teaching; [Chemical Process Technology — Moulijn, Makkee and van Diepen](../sources/Chemical-Process-Technology-Moulijn.lingua#r_37X27XFH4Z21CVXC81T01PH35W), the complete property/separation treatment used in an authorized edition if chosen.
+
+Phase equilibrium requires equality of appropriate chemical potentials across coexisting phases together with material and energy constraints. For vapor/liquid equilibrium, y_iφ_iP=x_iγ_i f_i° is one common form when its reference-state conventions are defined. Simplified Raoult/Henry relations apply only within their stated models and domains.
+
+Distinguish the phase composition from the fraction of feed in each phase. A bubble or dew condition describes appearance of an infinitesimal new phase; a finite flash splits the feed inventory. More than two phases, electrolytes, associating mixtures, solids and reactions can require additional conditions and a stability analysis.
+
+A formally solved set of equalities can represent an unstable or metastable state. Compare alternative phase assemblages and property models rather than assuming a numerical root is the physically relevant state. Trace impurities and pressure/temperature changes can alter which phase carries a valuable or unwanted constituent.
+
+**Work:** reconstruct a measured phase relation for one industrial mixture, naming standard states, data provenance, phases and uncertainty. Compare an ideal approximation with the model actually justified by the evidence. Explain the consequences for product recovery, impurities and utility demand, including an example where a two-phase simplification fails.
+
+**Continue:** [Select and test property models against the material state and evidence](Select-test-and-version-chemical-property-models.lingua#r_78B24XST7VWY2R1H9F0HRWSPHB).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_77RX7N6YCX25E5PTTMHQ7X9ZRQ

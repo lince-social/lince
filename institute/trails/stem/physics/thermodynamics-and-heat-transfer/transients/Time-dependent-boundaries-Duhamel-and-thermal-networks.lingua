@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Time-dependent boundaries, Duhamel response and thermal networks (@th-duhamel: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF", #source "../sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE", #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #thermodynamics-and-heat-transfer "../../../../inquiry/quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX") { r_5HXNCTPBZKN5QHF2EMAW2TZ5W4
+**Read:** [Second Level Course in Heat Transfer — R. P. Vedula](../sources/Second-Level-Heat-Transfer-Vedula.lingua#r_663BY2CF56BBB35C1S595A2VRF), Duhamel theorem and time-varying boundaries; [Differential Equations — MIT 18.03SC](../sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE), the complete convolution, Laplace and systems units; [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), transient superposition and network approximations.
+
+For a linear time-invariant thermal model, superposition relates a general input history to step or impulse responses. Derive the convolution or Duhamel representation and state the initial conditions and input/output quantities. Variable material properties, radiation or phase change can break linearity.
+
+Construct a thermal resistance/capacitance network from conservation and constitutive approximations. Its states, capacity matrix and conductance matrix must have physical units and boundary meaning. Passive isolated networks conserve energy and relax temperature differences; arbitrary fitted coefficients need not satisfy those properties.
+
+Compare periodic, pulse and ramp heating of the same system, checking phase lag and amplitude against analytical or frequency-domain predictions. Identify which reduced states remain valid when the source location or boundary condition changes. A model fit to one pulse can fail under a different heating pattern.
+
+**Continue:** [Discretization — approximate a changing process and check it](../../../../inquiry/quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5HXNCTPBZKN5QHF2EMAW2TZ5W4

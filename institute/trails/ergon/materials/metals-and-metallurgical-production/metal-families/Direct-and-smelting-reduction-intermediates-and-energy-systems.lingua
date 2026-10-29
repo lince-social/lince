@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Evaluate direct and smelting reduction through product state and complete system duties (@metal-direct-reduction: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #metals-and-metallurgical-production "Oxygen-steelmaking-emulsions-impurity-removal-and-heat.lingua#r_0FW47BSXY8XBZDDPK349BRWCNS") { r_78WJKGTR6J2VBT9RMH770V263T
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), the entire direct/smelting-reduction and feed/product sequence; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete reduction and energy context; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), full relevant route and integrated material/energy comparisons.
+
+Direct reduction produces a solid metallized intermediate under a defined gas/solid and thermal history; smelting-reduction arrangements include a liquid-production duty with different reactor/system constraints. Degree of metallization, total composition, carbon, gangue, physical behavior, temperature, and storage/transfer history determine how useful the intermediate is downstream.
+
+Compare gas-, coal-, hydrogen-containing, electrical, or mixed arrangements through actual chemistry, transport, heat, equipment, and utility evidence. A change of reducing carrier can require changes in heat supply, gas recycle/purification, material behavior, or the receiving furnace. The route is a whole system, not an isolated overall reaction.
+
+Use matched boundaries when comparing primary energy, electricity, reductant, water, emissions/residuals, useful recovery, and accepted output. Distinguish observed industrial operation, pilot/laboratory evidence, and a modeled future arrangement. Greater claimed scale or a favorable modeled energy number does not establish every supporting capability.
+
+**Work:** reconstruct complete conventional and alternative reduction cases using the full primary technical studies. Independently check iron/carbon/oxygen and energy balances, intermediate quality, and downstream requirements. Test feed/utility variability and an interruption/handling scenario. Compare mechanisms and uncertainties, identifying the experiment or operating observation most likely to change the conclusion.
+
+**Continue:** [Connect oxygen steelmaking with reactions, phase contact, heat, and endpoint evidence](Oxygen-steelmaking-emulsions-impurity-removal-and-heat.lingua#r_0FW47BSXY8XBZDDPK349BRWCNS).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_78WJKGTR6J2VBT9RMH770V263T

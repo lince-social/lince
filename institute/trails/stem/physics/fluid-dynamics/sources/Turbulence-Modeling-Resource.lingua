@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+Turbulence Modeling Resource — model definitions and benchmarks (@fd-tmr: 0, is #reference, #part-of @fd-sources) { r_42VW512D9MG3Z0SBJ78N7DAPE6
+Turbulence Model Benchmarking Working Group, with NASA contributors. [Current resource](https://tmbwg.github.io/turbmodels/) · [NASA's relocation notice](https://www.nasa.gov/nasa-turbulence-modeling-resource/) · [NASA-hosted large files](https://www.nasa.gov/reference/turbulence-modeling-resource-large-files/).
+
+Read complete definitions of the selected model and named variant, its verification cases, grid studies and applicable validation data. Reproduce a benchmark before using the model for a new claim. Distinguish model implementation verification, numerical uncertainty and comparison with experiments.
+
+The site moved from the NASA Langley address to the working group's GitHub site on 24 February 2026. Model variants, constants and conventions are part of the citation. Large-file download restrictions may require the linked NASA mirror. Public data are supplied with source-specific provenance and limitations, not a guarantee of universal accuracy or one blanket licence. No benchmark files are bundled.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_42VW512D9MG3Z0SBJ78N7DAPE6

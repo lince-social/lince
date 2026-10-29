@@ -1,0 +1,11 @@
+Import "../Fluid-dynamics.lingua"
+
+CFD verification and validation — NPARC Alliance (@fd-verification: 0, is #reference, #part-of @fd-sources) { r_7P72ZWZEJ0SVMWFDGK52N9AZPV
+NPARC Alliance. [Complete CFD verification and validation tutorial](https://www.grc.nasa.gov/www/wind/valid/tutorial/tutorial.html).
+
+Read the full tutorial: analysis process, error and uncertainty, verification, validation, iterative/solution consistency, spatial refinement and temporal refinement. Derive the observed convergence estimate for an actual sequence rather than quoting an assumed order. Explain why residual reduction and a visually plausible field are insufficient evidence for a physical claim.
+
+The NASA-hosted tutorial is public technical guidance with a historical bibliography. Its methods need their stated assumptions, including the regime in which a refinement extrapolation is meaningful. Retain primary notices and cited-source terms. The tutorial is a learning reference, not a certification of future solver results.
+
+**Return:** [Fluid dynamics sources — books, courses, methods and physical evidence](../Sources.lingua#r_3Y3TVV9VQAB50M2ZSECK5JTYVG).
+} r_7P72ZWZEJ0SVMWFDGK52N9AZPV

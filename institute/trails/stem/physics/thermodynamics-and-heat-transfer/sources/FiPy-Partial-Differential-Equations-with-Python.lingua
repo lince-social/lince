@@ -1,0 +1,11 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+FiPy: Partial Differential Equations with Python (@th-fipy-paper: 0, is #reference, #part-of @th-sources) { r_0CA1GV7T9X876WS57M2KH93SZB
+Jonathan E. Guyer, Daniel Wheeler and James A. Warren. FiPy: Partial Differential Equations with Python. Computing in Science & Engineering 11(3), 6–15 (2009), DOI 10.1109/MCSE.2009.52. [NIST author project, citation and paper route](https://pages.nist.gov/fipy/en/stable/).
+
+Read the complete paper and relevant references. Reconstruct how finite-volume terms represent conservation and how composable PDE expressions connect to a physical model. Compare an original discrete thermal example with a full documented solver while keeping mathematical verification distinct from material/experimental validation.
+
+The original paper predates the current manual; compare the version actually run. The NIST project provides an authorized paper link, but paper, software and dependencies have distinct notices. No external implementation or article is copied into the repository.
+
+**Return:** [Thermodynamics and heat transfer sources](../Sources.lingua#r_4N96T70VYW3C3M91M2SXF5KEQF).
+} r_0CA1GV7T9X876WS57M2KH93SZB

@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Evaluate mechanical excavation with a measured work and wear account (@mine-mechanical: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #mining-and-mineral-engineering "Loading-payload-cycle-and-material-state.lingua#r_3MD90BCSRFA9YS90CVGB933X79") { r_2JQRS9B0QHPQ89D9WC09TEB0YG
+**Read:** [Surface Mining Technology — Kaushik Dey, NPTEL](../sources/Surface-Mining-Technology-NPTEL.lingua#r_5J36XSV6KZRNWX3J51Q4TRV7KG), the complete surface miner, dozer/dragline, and continuous-equipment lectures; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full applicable excavation/equipment/performance sections; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete selected mechanical-excavation chapters.
+
+Mechanical cutting/ripping/excavation depends on tool geometry/contact, material structure/strength/abrasivity, machine motion/power, confining conditions, and work sequence. A measured intact-strength class does not automatically determine production, wear, or required power.
+
+Define specific energy as a stated energy input per excavated or accepted volume/mass, identifying net/gross power and time. For invented steady cutting power 100 kW and excavated-volume rate 10 m³ h⁻¹, the ratio is 10 kWh m⁻³ = 36 MJ m⁻³. It is a teaching account, not a prediction of a particular machine or material.
+
+Tool wear, replacement, access, support, dust/water, transport, and maintenance affect calendar output and product. Comparing energy while ignoring different boundaries or accepted products can favor an option that performs worse in the connected system.
+
+**Work:** derive/check the energy example, then reconstruct a full published mechanical-excavation performance case with actual measurement boundaries. Compare two material/tool or duty assumptions and identify tests needed to discriminate them. Explain how wear and downtime change a nominal rate into delivered material.
+
+Read the full surface-equipment and relevant handbook chapters. The following loading/haulage studies carry the same distinction between a local machine measurement, operating availability, and whole-system throughput.
+
+**Continue:** [Relate loading cycles to payload, material state, and the next constraint](Loading-payload-cycle-and-material-state.lingua#r_3MD90BCSRFA9YS90CVGB933X79).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_2JQRS9B0QHPQ89D9WC09TEB0YG

@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+RMS phasors, passive signs and complex power (@pe-conventions: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK", #source "../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD", #electrical-power-engineering "../../../physics/electromagnetism/currents/Impedance-resonance-passivity-and-quality-factor.lingua#r_7ATZTVDYNEVH4RS80RSV55W07Y") { r_556PBA65ZE7BMDDYWHFFR0DK6D
+**Read:** [AC Electrical Circuit Analysis — James M. Fiore](../sources/AC-Electrical-Circuit-Analysis-Fiore.lingua#r_0C4FYP5P0A5GQP13HAD8FTEEWK), complex quantities, impedance and power chapters; [Introduction to Electric Power Systems — MIT 6.061](../sources/Introduction-to-Electric-Power-Systems-MIT.lingua#r_6JR10ZVGMZ7GT4RRK7734JQ7WD), complete AC power-flow and polyphase notes.
+
+Use real terminal quantities represented as sqrt(2)Re{V exp(+jωt)} and sqrt(2)Re{I exp(+jωt)} in this power route: V and I are RMS phasors, with current entering the positive-voltage terminal for a passive load. Then Z_L = jωL, Z_C = −j/(ωC) and complex absorbed power S = V I* = P + jQ. Inductive loads have positive Q in this convention.
+
+The shared electromagnetic notes deliberately use peak phasors with exp(−iωt). Conjugate the harmonic amplitudes when changing time sign and convert peak/RMS normalization; do not copy a reactance or loss sign between conventions unchanged. The real measured waveform and average active power are invariant under a consistent translation.
+
+Derive p(t) from the real voltage/current and recover P = V_rms I_rms cosφ. Explain why S contains a conjugate and why a three-phase total needs the actual connection/basis. Document reference direction, phase sequence, reference angle/time and whether a source is reported by absorbed or injected power. These choices prevent apparent negative losses or reactive-power reversals caused solely by inconsistent bookkeeping.
+
+**Continue:** [Impedance, resonance, passivity and quality factor](../../../physics/electromagnetism/currents/Impedance-resonance-passivity-and-quality-factor.lingua#r_7ATZTVDYNEVH4RS80RSV55W07Y).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_556PBA65ZE7BMDDYWHFFR0DK6D

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Microscopic states, heat capacity and statistical bridges (@th-statistical: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../../electromagnetism/sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ", #thermodynamics-and-heat-transfer "Local-equilibrium-relaxation-and-nonequilibrium-description.lingua#r_3HB6VPZW5TWMC0HQMDANS7NM1C") { r_6A7NAN2B4VD8KZ1AXPTCFCWZB5
+**Read:** [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), the complete microscopic-foundation lecture sequence; [University Physics Volume 2 — OpenStax](../../electromagnetism/sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), kinetic theory and thermal chapters; [The physics and mathematics of the second law — Lieb and Yngvason](../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ), scope of a macroscopic entropy construction.
+
+Relate a macroscopic state description to a distribution over accessible microscopic states under specified constraints. The ensemble, energy spectrum, particle statistics and interaction model determine the calculation. Counting “disorder” without that definition does not determine entropy or a heat capacity.
+
+Derive the partition function and energy/capacity for a small exactly solvable spectrum, then compare classical equipartition with quantized modes and frozen degrees of freedom. In a solid, distinguish electronic and vibrational carriers; in a dilute gas, connect a distribution and collisions with transport scales.
+
+Follow the full required quantum/statistical preparation in [Nano-to-Macro Transport Processes — MIT 2.57](../sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG) and compare with the equilibrium argument in [The physics and mathematics of the second law — Lieb and Yngvason](../sources/Second-Law-Foundations-Lieb-Yngvason.lingua#r_4ZBR10NAYWD4G8ZJYQV7PXS8DZ), which does not depend on statistical mechanics. This establishes a working bridge while the complete statistical and nonequilibrium physics subject remains a distinct deeper route.
+
+**Continue:** [Local equilibrium, relaxation and nonequilibrium description](Local-equilibrium-relaxation-and-nonequilibrium-description.lingua#r_3HB6VPZW5TWMC0HQMDANS7NM1C).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_6A7NAN2B4VD8KZ1AXPTCFCWZB5

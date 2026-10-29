@@ -124,6 +124,7 @@ fn removing_every_output_retains_workspaces_and_the_settings_draft_and_allows_he
 
     canvas.outputs(Vec::new()).unwrap();
     let frame = settle(&mut canvas);
+    assert!(canvas.app.world().get_resource::<native::output_views::OutputViews>().is_none());
     assert!(frame.dmabuf().is_none());
     assert!(frame.output.is_none());
     assert!(frame.outputs.is_empty());

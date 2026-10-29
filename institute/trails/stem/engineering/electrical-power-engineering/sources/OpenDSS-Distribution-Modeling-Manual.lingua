@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+OpenDSS — distribution modelling and reference manual (@pe-opendss: 0, is #reference, #part-of @pe-sources) { r_1192RYEP2NRARXYCHHJDZGXNGN
+Electric Power Research Institute, OpenDSS project. [Official documentation](https://opendss.epri.com/) · [Official project files and full manual](https://sourceforge.net/projects/electricdss/files/OpenDSS/).
+
+Read the complete applicable manual and command/component/model documentation for unbalanced feeders, line/transformer/load representations, controls, time series, harmonics and fault studies. Preserve phase/neutral connectivity, voltage and power bases, load models and controller state. Reproduce a small independently solved network before using a larger external benchmark.
+
+The official documentation identifies the open-source EPRI project, and the project listing supplies OpenDSSManual.pdf with a November 2021 upload; checked on 29 October 2026. Upload date is not proof of the manual's original publication or software version. Direct automated documentation retrieval was intermittent. Check the actual distribution's licence.txt, component notices and version rather than inferring a licence from an unrelated wrapper. No solver, feeder data or manual is copied or claimed to have been run here.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_1192RYEP2NRARXYCHHJDZGXNGN

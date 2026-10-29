@@ -15,6 +15,9 @@ pub struct Pinned {
     pub scale: f64,
 }
 
+#[derive(Component, Clone, Copy)]
+pub(crate) struct PinnedPreview(pub Pinned);
+
 impl Pinned {
     pub(crate) fn valid(&self) -> bool {
         DVec2::from_array(self.anchor).is_finite()

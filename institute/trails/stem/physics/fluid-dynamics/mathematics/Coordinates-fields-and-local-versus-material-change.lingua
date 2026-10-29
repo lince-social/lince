@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Coordinates, fields and local versus material change (@fd-fields: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../../thermodynamics-and-heat-transfer/sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE", #fluid-dynamics "../kinematics/Streamlines-pathlines-streaklines-and-what-images-show.lingua#r_5YN2AA06C9HWVJG4C7QP2S7QBN") { r_3ZSP7RX2565ZAA91ZD418BAEVN
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapters 3 and 8 material descriptions and derivative; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 1 descriptions of motion and material derivative; [Differential Equations — MIT 18.03SC](../../thermodynamics-and-heat-transfer/sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE), ordinary differential equations needed to follow a trajectory.
+
+A velocity field u(x,t) reports velocity at a position and time. A moving material point follows dx/dt=u(x,t). Its acceleration includes change at a fixed position and change caused by entering another part of the field: Du/Dt=∂u/∂t+(u·∇)u.
+
+Consider the steady planar field u=(a x,−a y,0), with constant a. A particle follows x=x₀ exp(at), y=y₀ exp(−at). Its acceleration is (a²x,a²y,0), although the local time derivative is zero. Area is preserved while a material element stretches in one direction and contracts in the other.
+
+Write the units of a and verify the trajectories by differentiating them. Compare a fixed sensor's time series with the history of one moving particle. Neither description is more physical; they answer different questions and must be transformed consistently. The same distinction matters when a fluid carries temperature or composition through a nonuniform field.
+
+**Continue:** [Streamlines, pathlines, streaklines and what images show](../kinematics/Streamlines-pathlines-streaklines-and-what-images-show.lingua#r_5YN2AA06C9HWVJG4C7QP2S7QBN).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_3ZSP7RX2565ZAA91ZD418BAEVN

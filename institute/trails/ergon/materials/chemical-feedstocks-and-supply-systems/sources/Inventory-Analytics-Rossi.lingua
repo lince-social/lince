@@ -1,0 +1,11 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Inventory Analytics — Roberto Rossi (@cs-rossi: 0, is #reference, #part-of @cs-sources) { r_61Y17EAC05XZSS1B28NX17SV7C
+Roberto Rossi. Inventory Analytics, Open Book Publishers, 2021, 184 pages, DOI 10.11647/OBP.0252. [Publisher and complete contents](https://www.openbookpublishers.com/books/10.11647/obp.0252) · [Publisher full text](https://books.openbookpublishers.com/10.11647/obp.0252.pdf) · [University-held publisher PDF](https://www.pure.ed.ac.uk/ws/portalfiles/portal/211432347/RossiOBP2021InventoryAnalytics.pdf) · [Library of Congress full-text copy](https://tile.loc.gov/storage-services/master/gdc/gdcebookspublic/20/20/44/74/93/2020447493/2020447493.pdf).
+
+Read the whole book and work its mathematical/computational examples, including deterministic control, forecasting, stochastic inventory and multiple echelons. Preserve the assumptions behind each policy when adapting it to grades, release delays and aging chemicals.
+
+The publisher identifies CC BY 4.0, publication 24 May 2021 and PDF ISBN 9781800641778; the indexed Library of Congress file preserves that notice. Metadata and complete chapter listing were checked on 29 October 2026. The publisher PDF returned 405; the university and 32,349,525-byte Library of Congress PDFs exceeded the browser's size limit. Full-page inspection is not claimed. External code and figures keep their own notices and remain outside this repository.
+
+**Return:** [Chemical supply sources — books, methods, complete cases and research](../Sources.lingua#r_76J82CV79QKHQ2CSCT63MFYJYN).
+} r_61Y17EAC05XZSS1B28NX17SV7C

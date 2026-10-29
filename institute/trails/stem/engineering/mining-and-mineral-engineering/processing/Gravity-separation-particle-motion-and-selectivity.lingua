@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect gravity concentration with particle properties, flow, and recovery evidence (@mine-gravity: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD", #mining-and-mineral-engineering "Dense-media-separation-medium-control-and-material-response.lingua#r_5JP09XGADZNJ6YZ5QTY6Y5E9RN") { r_4Q7PHAQFNCVZD8M3KX8PC5PQ5N
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the complete gravity-concentration and relevant particle/fluid chapters; [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the full applicable gravity test methods; [Introduction to Mineral Processing — Arun Kumar Majumder, NPTEL](../sources/Introduction-to-Mineral-Processing-NPTEL.lingua#r_5VQ67PA1160RQ1EWN17211XBWD), the complete movement-in-fluids and gravity sequence.
+
+Gravity concentration exploits differences in particle response under gravity/flow or an applied acceleration field. Density, size, shape, mineral association, fluid properties, crowding, and equipment motion/geometry influence behavior. A density contrast alone does not establish a sharp or economically useful split.
+
+Simple settling laws require defined regimes and assumptions. Laminar isolated-sphere, turbulent, hindered-settling, and concentrated-flow accounts differ. Applying a convenient formula across all sizes/shapes/concentrations without checking conditions can reverse a selectivity inference.
+
+Jigs, tables, spirals, centrifugal devices, and other methods create different flow/force histories and constraints. Product yield, grade, recovery, mineral loss by size, and throughput must be assessed together. Fine intergrowth or a size-density tradeoff can limit performance despite attractive bulk density data.
+
+**Work:** reconstruct a complete gravity-separation lab/plant case with feed association and size/density populations. Independently check material/constituent balances and one motion/selectivity model within its stated range. Compare a plausible feed or operating-history alternative and identify the discriminating test.
+
+Read full theory/lab chapters and primary method used. Later specialist fluid/particle and processing work deepens the mechanisms while reusing this material/measurement account and the observation limits.
+
+**Continue:** [Evaluate dense-media concentration with the medium and particle populations explicit](Dense-media-separation-medium-control-and-material-response.lingua#r_5JP09XGADZNJ6YZ5QTY6Y5E9RN).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_4Q7PHAQFNCVZD8M3KX8PC5PQ5N

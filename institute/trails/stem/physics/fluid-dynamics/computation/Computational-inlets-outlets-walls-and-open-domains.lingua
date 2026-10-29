@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Computational inlets, outlets, walls and open domains (@fd-computational-boundaries: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY", #source "../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW", #source "../sources/Gas-Dynamics-Kulkarni.lingua#r_34YGDV61X77JFYZH8X8NGDBS9W", #fluid-dynamics "Mesh-geometry-resolution-and-spatial-convergence.lingua#r_7A7VK8TFZMZ370MVT6QZGPT08C") { r_1KEP8G46P15AT3CZZRJJJVHKCJ
+**Read:** [Notes on Computational Fluid Dynamics — Greenshields and Weller](../sources/Notes-on-CFD-Greenshields-Weller.lingua#r_50W8G5SX00YH7R6TBXK4FAP5MY), complete boundary-condition chapter; [Computational Fluid Dynamics: An Open-Source Approach — Vermeire and colleagues](../sources/Computational-Fluid-Dynamics-Vermeire-Pereira-Karbasian.lingua#r_7B08DEGENZD4JFFRFNPKJCVFCW), case setup and boundary specification; [Gas Dynamics — Vinayak Kulkarni](../sources/Gas-Dynamics-Kulkarni.lingua#r_34YGDV61X77JFYZH8X8NGDBS9W), characteristics and wave propagation.
+
+A numerical boundary condition should implement the physical and mathematical problem, not merely provide a value for every available input field. In compressible flow, the number and direction of incoming characteristic signals depend on the local regime. In incompressible flow, pressure, velocity and net flux conditions are coupled.
+
+Distinguish prescribed velocity, pressure, traction, flux, periodicity and convective/radiative approximations. Explain what happens under outlet backflow, a moving interface or a supposedly distant boundary placed too close to a wake. Specify wall motion, slip or wall-function assumptions and their relation to the resolved scales.
+
+Move an artificial boundary, vary its treatment and monitor physically relevant observables and reflected disturbances. Check consistency with measured inlet profiles and turbulence quantities. A solution that changes materially when an arbitrary far boundary moves is evidence of incomplete domain or boundary assessment, even if the solver reports convergence.
+
+**Continue:** [Mesh geometry, resolution and spatial convergence](Mesh-geometry-resolution-and-spatial-convergence.lingua#r_7A7VK8TFZMZ370MVT6QZGPT08C).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_1KEP8G46P15AT3CZZRJJJVHKCJ

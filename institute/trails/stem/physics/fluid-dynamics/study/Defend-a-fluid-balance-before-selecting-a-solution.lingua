@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Defend a fluid balance before selecting a solution (@fd-foundation-review: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #fluid-dynamics "../viscous/Plane-Couette-Poiseuille-and-combined-flow.lingua#r_6PPBMTFDM4X0DXRTFRMG2VPA9B") { r_7FCXY6QVV016AZ59EC6E0DS3QB
+**Read:** [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), unseen problems spanning the continuum, statics and control-volume topics; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), substantial independent problems across all eight chapters; [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), independent foundational problems.
+
+Take a previously unseen fluid system and produce a dimensioned sketch, material-state account, observations and a declared reference frame. Identify unknown fields and the intended decision. Write mass, momentum and energy accounts before selecting a formula or numerical method.
+
+Explain which stress law, density approximation and boundary data make the model solvable. Recover one equilibrium or limiting case, check dimensions and signs, and estimate at least one neglected term. Predict an observation that could contradict the model. Distinguish uncertainty in an input from inadequacy of the chosen physical description.
+
+Use unfamiliar exercises from the complete introductory readings and the public graduate problems. Defend the reasoning without hiding an assumption inside a memorized coefficient. These foundations support the later viscous, vortical, turbulent, compressible, interfacial and computational investigations; they do not by themselves demonstrate mastery of those later subjects.
+
+**Continue:** [Plane Couette, Poiseuille and combined flow](../viscous/Plane-Couette-Poiseuille-and-combined-flow.lingua#r_6PPBMTFDM4X0DXRTFRMG2VPA9B).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_7FCXY6QVV016AZ59EC6E0DS3QB

@@ -1,0 +1,11 @@
+Import "../Electromagnetism.lingua"
+
+Measuring Permittivity and Permeability — NIST TN 1536 (@em-nist1536: 0, is #reference, #part-of @em-sources) { r_6BH70T5QSNJ7P7RKZ0G133CM91
+James Baker-Jarvis, Michael D. Janezic, Bill F. Riddle, Robert T. Johnk, Pavel Kabos, Christopher L. Holloway, Richard G. Geyer and Chriss A. Grosvenor. Measuring the Permittivity and Permeability of Lossy Materials: Solids, Liquids, Metals, Building Materials, and Negative-Index Materials, NIST TN 1536, February 2005. [Catalogue](https://www.nist.gov/publications/measuring-permittivity-and-permeability-lossy-materials-solids-liquids-metals-and) · [Complete report](https://nvlpubs.nist.gov/nistpubs/Legacy/TN/nbstechnicalnote1536.pdf).
+
+Read the entire provided report, including appendices, for material models, transmission/reflection and resonance methods, calibration, specimen effects and uncertainty. Reconstruct at least one inversion with its assumptions.
+
+Title, contents and notices were inspected on 29 October 2026. The actual PDF byline includes Kabos and differs from the catalogue; the provided file has 160 file pages, while internal bibliographic pagination differs. Do not silently substitute catalogue text for the title page. US-government authorship and separately credited components must be distinguished when reusing material. Only references are supplied.
+
+**Return:** [Electromagnetic sources — complete books, courses, methods and research](../Sources.lingua#r_6XW0N80NM6WSDWED10N8N7WX3P).
+} r_6BH70T5QSNJ7P7RKZ0G133CM91

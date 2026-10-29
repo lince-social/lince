@@ -41,7 +41,7 @@ fn display_name<'a>(socket: &'a Path, runtime: Option<&Path>) -> &'a OsStr {
     }
 }
 
-fn restore_graphics_environment(
+pub(crate) fn restore_graphics_environment(
     command: &mut Command,
     value: impl Fn(&str) -> Option<OsString>,
 ) -> io::Result<()> {

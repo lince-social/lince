@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Make a notebook reconstructible from a fresh kernel (@rc-notebookwork: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Executable-Notebooks.lingua#r_0Q66F0CBYJG56Y8KGBGY97X5YN", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #reproducible-computation "Atomic-output-and-recovery.lingua#r_67AHSE6SV62WC5H49ECP23VRTX") { r_1BQXFAENRWVF3P7FZHW7NBSBQS
+**Read:** [Executable notebooks and unattended execution — Jupyter](../sources/Executable-Notebooks.lingua#r_0Q66F0CBYJG56Y8KGBGY97X5YN), the notebook model and complete execution page, including error and timeout behavior; [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), project documentation and separation of code responsibilities.
+
+A notebook stores text, code, metadata, and often outputs. Its kernel also holds live state that may not match the visible order of cells. A table can remain displayed after its producing code or input has changed. Distinguish the saved source, observed execution, and rendered result when deciding what the notebook proves.
+
+Use a notebook to explain an analysis, but make its inputs and execution order explicit. Import tested transformations from the project's module rather than retyping a subtly different formula in several cells. A fresh kernel should execute the declared procedure from beginning to end without depending on an earlier exploratory cell, a manually chosen working directory, or a variable left by another notebook.
+
+Read nbconvert's exact-version execution documentation. Its unattended execution can save a new executed notebook, with a chosen kernel, working directory, timeout, and error behavior. Record those settings. Stored outputs can contain run times, paths, or generated identifiers, so notebook byte equality may be a different claim from agreement of its scientific table.
+
+**Work:** create a short notebook explaining the two-lot model and calling the saved analysis. Deliberately execute a later cell first, then restart the kernel and run the full notebook in order. Use a documented unattended execution to produce a separate executed copy and compare the scientific results. Introduce a missing input and verify that an error is visible instead of allowing a stale displayed table to be accepted as a fresh result.
+
+Keep exploration available where it explains the method, but identify the exact source and procedure underlying a final figure. The research-software programme remains executable without a notebook service: a script plus explanatory Records and a generated report can provide the same essential computational evidence.
+
+**Continue:** [Handle interrupted work without confusing partial and completed results](Atomic-output-and-recovery.lingua#r_67AHSE6SV62WC5H49ECP23VRTX).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_1BQXFAENRWVF3P7FZHW7NBSBQS

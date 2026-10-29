@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Follow powder metallurgy from particles and surfaces to consolidated material (@metal-powder: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Powder-Metallurgy-NPTEL.lingua#r_06YWQNWNS5SXW55R7J60Y70RND", #source "../sources/Material-Processing-Theory-and-Practice-NPTEL.lingua#r_7BSA0B8283WGYN6KF2609N2GK2", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #metals-and-metallurgical-production "Metal-additive-processing-thermal-cycles-feed-and-defects.lingua#r_3JT2FNTBJ8P4PSX979PW0CZM73") { r_4BJPAMHBXM1S84THXZ6YFKDNH8
+**Read:** [Powder Metallurgy — Ranjit Bauri, NPTEL](../sources/Powder-Metallurgy-NPTEL.lingua#r_06YWQNWNS5SXW55R7J60Y70RND), the complete twelve-week programme and all applicable methods/examples; [Material Processing: Metallurgical Aspects, Fundamental and Practical — Dwivedi](../sources/Material-Processing-Theory-and-Practice-NPTEL.lingua#r_7BSA0B8283WGYN6KF2609N2GK2), the full powder and related thermal/characterization material; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), complete diffusion, interfaces, and applicable phase/structure work.
+
+Metal powders carry particle-size/shape distributions, chemistry, phases, surfaces/oxides, internal porosity, and preparation/history. Atomization, chemical/mechanical/electrolytic production, storage, blending, and reuse can create different responses even under a common alloy label. A mean particle size or flowability number does not fully characterize the feed.
+
+Connect packing, friction, compaction, green structure, thermal/chemical history, sintering mechanisms, and densification. Neck growth, pore evolution, grain/phase changes, diffusion, liquid phases, and atmosphere can interact. A measured density increase alone does not identify the controlling mechanism or all remaining defects.
+
+Compare conventional, pressure-assisted, and other consolidation routes through final chemistry/structure, dimensional and property evidence, tools, utilities, maintenance, and residuals. Product shape and high nominal density are distinguished from demonstrated integrity, stability, and service performance.
+
+**Work:** complete the full powder-metallurgy course and reconstruct one substantial primary powder-to-product case. Independently check mass/geometry/density and a significant diffusion/sintering or thermal relation. Compare two mechanistic models or consolidation arrangements against independent observations. Investigate a defect or property discrepancy and design the test most likely to reject the preferred explanation. Practical powder handling/processing uses its actual appropriate professional facilities and methods.
+
+**Continue:** [Connect metal additive processing with repeated thermal histories and qualified evidence](Metal-additive-processing-thermal-cycles-feed-and-defects.lingua#r_3JT2FNTBJ8P4PSX979PW0CZM73).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_4BJPAMHBXM1S84THXZ6YFKDNH8

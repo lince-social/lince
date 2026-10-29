@@ -1,0 +1,11 @@
+Import "../Geology.lingua"
+
+QGIS Training Manual — QGIS project (@geo-qgis: 0, is #reference, #part-of @geo-sources) { r_65XJEHNY3P1ESW5KF5V0871SFQ
+QGIS contributors. QGIS Training Manual. [Official maintained entry](https://docs.qgis.org/latest/en/docs/training_manual/index.html) · [Version 3.44 manual reached during checking](https://docs.qgis.org/3.44/en/docs/training_manual/index.html).
+
+Complete the basic-map, vector/attribute, layout, data-creation, projection, analysis, raster/terrain, and assessment modules. During advanced work read the processing/log/model and georeferencing material needed to reconstruct a workflow. Match commands and tools to the exact installed version rather than assuming the current entry remains fixed.
+
+The earlier 3.40 page stated end of life and linked to the maintained entry, which resolved to 3.44 during checking. The official manual is freely accessible; consult its actual documentation/software and component licences before adapting or distributing it. Documentation structure/version and access checked on 29 October 2026. No QGIS dependency, plugin, map service, or training dataset is bundled or required as a new Lince feature.
+
+**Return:** [Geology sources — complete books, field methods, maps, and research](../Sources.lingua#r_3H47FYGCEYFZPW2VK77PMR0ECB).
+} r_65XJEHNY3P1ESW5KF5V0871SFQ

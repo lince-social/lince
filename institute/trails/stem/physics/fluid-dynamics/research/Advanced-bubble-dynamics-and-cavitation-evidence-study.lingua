@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Advanced bubble dynamics and cavitation-evidence study (@fd-advanced-cavitation: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578", #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4", #fluid-dynamics "Advanced-dispersed-flow-closure-and-phase-account-study.lingua#r_4QBZV9Q9Z7CFSZPHAPHZ75NV9A") { r_09Z0ZDBDWHCA7ABKPVDMCNT5H1
+**Read:** [Cavitation and Bubble Dynamics — Christopher E. Brennen](../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578), complete spherical dynamics and relevant flow/interaction chapters; [Fundamentals of Multiphase Flow — Christopher E. Brennen](../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM), bubble and multiphase closures; [Experimental Methods in Fluid Mechanics — Pranab K. Mondal](../sources/Experimental-Methods-in-Fluids-Mondal.lingua#r_4XFYEGQVB1EV4QF9BP17ME04Y4), dynamic pressure and optical evidence.
+
+Work through the complete bubble-dynamics derivation in [Cavitation and Bubble Dynamics — Christopher E. Brennen](../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578), choosing a specified pressure history, gas/vapor model and initial nucleus. Recover a static equilibrium and a limiting oscillation or collapse result. Independently integrate a bounded case with adequate event and stiffness handling, tracking energy and the range in which spherical incompressible assumptions remain meaningful.
+
+Compare the isolated-bubble account with an actual cavitating flow's local pressure, nuclei distribution and residence time. Use primary images, pressure or acoustic observations with documented timing and calibration. Distinguish what the observations establish about onset, cavity volume and collapse from what they do not establish about erosion or service life.
+
+Investigate a disagreement by varying a physically supported input or model, not merely an arbitrary initial bubble radius. Explain the need for compressibility, thermal, gas-diffusion, boundary or cloud-interaction physics in the chosen extension. Present both the successful limit and the case that exceeds it.
+
+**Continue:** [Advanced dispersed-flow closure and phase-account study](Advanced-dispersed-flow-closure-and-phase-account-study.lingua#r_4QBZV9Q9Z7CFSZPHAPHZ75NV9A).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_09Z0ZDBDWHCA7ABKPVDMCNT5H1

@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Advanced study: inverse heat transfer with held-out evidence (@th-study-inverse: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS", #source "../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW", #source "../sources/FiPy-Partial-Differential-Equations-with-Python.lingua#r_0CA1GV7T9X876WS57M2KH93SZB", #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #thermodynamics-and-heat-transfer "A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2") { r_1HCHRN1TN1Z0VK26M2Z1VVFXM5
+**Read:** [Time-domain thermoreflectance — Jiang, Qian and Yang](../sources/Time-Domain-Thermoreflectance-Jiang-Qian-Yang.lingua#r_7ZHR7DG99WYCCG8J21HTKE9TMS), complete inverse-model and uncertainty treatment; [Thermoreflectance methods — September 2026 review](../sources/Thermoreflectance-Methods-Review-2026.lingua#r_1XWEMH6TFMF988CCKE3YJ96RTW), full sensitivity comparison across methods; [FiPy: Partial Differential Equations with Python](../sources/FiPy-Partial-Differential-Equations-with-Python.lingua#r_0CA1GV7T9X876WS57M2KH93SZB), the full forward-method paper; [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), complete relevant numerical developments.
+
+Specify a boundary history or material parameter field to infer from thermal observations. Derive a verified forward model and an observation operator including sensor location, averaging, timing and response. Before fitting, analyze sensitivity and the distinguishability of the proposed unknowns.
+
+Construct synthetic observations with a separately generated truth model and declared noise, then recover the unknown through more than one regularization or parameterization. Do not use the same discretization for both truth and inversion as the sole verification. Examine resolution, prior dependence and stability under plausible model discrepancy.
+
+Apply the method to an adequately documented dataset if available. Withhold a changed condition or sensor for prediction. Deliver an uncertainty account, unsuccessful cases and a statement of what the observations cannot determine. A smooth recovered curve is not proof that its fine detail was measured.
+
+**Continue:** [A complete thermal service from physics to continuing use](A-complete-thermal-service-from-physics-to-continuing-use.lingua#r_7J8HFJ2KFHGSRF5EB4JFNRZRB2).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_1HCHRN1TN1Z0VK26M2Z1VVFXM5

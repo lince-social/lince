@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Interpret chain silicates through structure, sites, optics, and nomenclature (@mp-chains: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E", #source "../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #mineralogy-and-petrology "Micas-chlorite-serpentine-and-sheet-silicates.lingua#r_4QKPW3NA78Z626YYAXB6400ET9") { r_0B0NYE7JFPXEJGEQJN0BABAFZG
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), all pyroxene/amphibole and chain-silicate sections; [Optical Mineralogy — Brock University course and laboratory material](../sources/Optical-Mineralogy-Brock.lingua#r_4HWN93T5EATAS40HNJGMCHSM7E), the complete pyroxene and amphibole optical/laboratory material; [Mineral names and classification reports — IMA-CNMNC](../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH), the selected full nomenclature reports; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected entries.
+
+Single-chain pyroxenes and double-chain amphiboles connect silicate topology with distinct site arrangements and compositional possibilities. Their common cleavage patterns help identification under appropriate views, but cleavage alone is not a complete chemical or species diagnosis. Grain orientation and alteration influence what can be seen.
+
+Study orthopyroxene, clinopyroxene, and representative amphiboles with site formulas and compositional variation. A quadrilateral or group name is a projection into selected components, not the entire chemistry of every natural analysis. Ferric iron, alkalis, aluminium, titanium, hydrogen, and other components can matter.
+
+Optical properties can support a group identification while leaving exact composition or species unresolved. A chemical normalization needs the relevant oxygen/anion basis, valence assumptions, and site-allocation model. An analysis spanning exsolution lamellae can describe a mixture rather than one homogeneous phase.
+
+**Work:** compare a pyroxene and amphibole from hand specimen through thin section and a complete published analysis. Explain the structural/charge account, optical evidence, uncertainty, and nomenclature report used. Test whether a simplified endmember projection preserves the information needed for the proposed rock-history inference.
+
+Read the complete chain-silicate chapters and optical labs. Later thermobarometry and igneous/metamorphic studies will demand a defensible mineral-composition and equilibrium account before translating these minerals into pressure, temperature, or source history.
+
+**Continue:** [Connect sheet structures, hydration, and compositional variability](Micas-chlorite-serpentine-and-sheet-silicates.lingua#r_4QKPW3NA78Z626YYAXB6400ET9).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_0B0NYE7JFPXEJGEQJN0BABAFZG

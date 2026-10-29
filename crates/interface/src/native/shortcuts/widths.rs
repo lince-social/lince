@@ -233,7 +233,6 @@ fn button(
         .unwrap()
         .set_label(caption);
     let label = label(world, entity, caption, 14.0);
-    world.get_mut::<Node>(label).unwrap().min_width = px(0);
     world.entity_mut(label).insert(TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter));
     entity
 }
@@ -386,7 +385,6 @@ fn open(world: &mut World, root: Entity) {
     world.entity_mut(caption).insert(TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter));
     {
         let mut node = world.get_mut::<Node>(caption).unwrap();
-        node.min_width = px(0);
         node.flex_shrink = 1.0;
     }
     label(world, list, "When enabled, selecting the current numbered workspace returns to the previous workspace selected in this view. Background activation stays unchanged. History is kept for this session only.", 14.0);

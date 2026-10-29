@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Study a store as a facility with interacting materials and services (@cs-segregation: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Chemical-Warehousing-HSE-HSG71.lingua#r_6MKP347GP6BY1H1PCKCJKAV91R", #source "../sources/Chemical-Classification-and-Communication-GHS.lingua#r_3JK41Y6PYJ4063TNSBZ6ZJ50PG", #source "../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43", #chemical-supply-systems "../transfers/Loading-and-unloading-as-a-shared-technical-operation.lingua#r_308YPHWHSV82M1F4BYZRBBV559") { r_07WNN342XJEYG86PH67CRHHXEK
+**Read:** [Chemical warehousing — HSE HSG71](../sources/Chemical-Warehousing-HSE-HSG71.lingua#r_6MKP347GP6BY1H1PCKCJKAV91R), the whole fourth-edition guide and its referenced methods where needed; [Globally Harmonized System of Classification and Labelling of Chemicals — UN](../sources/Chemical-Classification-and-Communication-GHS.lingua#r_3JK41Y6PYJ4063TNSBZ6ZJ50PG), complete relevant hazard chapters and communication annexes; [Emissions from Storage — European Commission BREF](../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43), complete relevant storage and environmental-pathway chapters.
+
+Read HSG71 in full and construct a facility account for a documented set of products, quantities and package types. Trace credible interactions among incompatible materials, leaks, drainage, ignition/exposure pathways, shared handling equipment and work activity. Use actual substance and product documents; a colour or broad hazard label cannot establish every compatibility decision.
+
+Draw the store's material, person, vehicle, drainage and ventilation paths. Identify normal operations, maintenance and exceptional states such as damaged goods or quarantined returns. Explain what each proposed segregation or containment measure is intended to change, and what evidence establishes its domain. Compare the plan with the transport and product-specific requirements at receiving and dispatch.
+
+Evaluate two layouts against usable capacity, access, condition preservation, work and environmental consequences. A nominal empty floor area is not automatically available for another chemical. Include inspection, housekeeping, trained responsibility and review after change. The case should distinguish source-derived technical principles, jurisdiction-specific requirements and unverified assumptions. A paper reconstruction can expose missing evidence; physical qualification or operation is separate work in the appropriate setting.
+
+**Continue:** [Understand a transfer at the interface between two organisations](../transfers/Loading-and-unloading-as-a-shared-technical-operation.lingua#r_308YPHWHSV82M1F4BYZRBBV559).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_07WNN342XJEYG86PH67CRHHXEK

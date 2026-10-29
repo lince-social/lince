@@ -1,0 +1,19 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect chemical performance with equipment materials, surfaces and service history (@ic-equipment: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #industrial-chemistry "Water-steam-power-gases-cooling-and-controlled-environments.lingua#r_1AJS35N1FXFQV7T3AKG0XG1D2C", #chemical-supply-systems "../../../../ergon/materials/chemical-feedstocks-and-supply-systems/storage/Contact-surfaces-contamination-corrosion-and-cleanability.lingua#r_2CWXX7AEHB88MT4RB9YF29DDXH") { r_6FT29RK2NR7R7D4ZPNJKEEASGR
+**Read:** [Designing and operating safe chemical reaction processes — HSE HSG143](../sources/Chemical-Reaction-Processes-HSE-HSG143.lingua#r_4W5NNM3T7AY4AWFT30RZRJQAST), the complete relevant plant/material and reaction-operating context; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the entire pertinent equipment, cleaning and multipurpose-operation treatment; [Production of Chlor-alkali, BREF CAK](../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the full cell/material, conditioning and service-history chapters.
+
+Reactors, separators, exchangers, piping and seals provide chemical environments as well as mechanical functions. Their materials, surface state, coatings, deposits and history can influence corrosion, contamination, catalysis, fouling and product quality. A nominal alloy or lining name does not establish the actual service condition.
+
+Composition, temperature, pressure, phases, velocity and local gradients interact with materials and joints. A small corrosion observation or compatibility table needs its stated environment and method. An average stream assay can miss a consequential local condition at an interface, crevice, deposit or changing phase.
+
+Maintenance and cleaning alter surfaces and inventories. Replacement parts, lubricants, cleaning reagents, welds and prior campaigns can introduce different chemical effects. Connect inspection and material observations with the process and analytical evidence rather than assigning every quality deviation to feed or catalyst.
+
+**Work:** reconstruct one complete public equipment/material service problem in a chemical route. Compare competing chemical, surface/transport and mechanical explanations using primary methods. Independently trace consequential contaminant or material loss and explain the observation needed to validate a corrective material/process choice. [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../../../../ergon/materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1) and [Engineering — systems, design, construction, and operation](../../../engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68) provide connected material, joining, inspection and machinery questions.
+
+**Continue:** [Account for the utility systems that sustain useful chemical production](Water-steam-power-gases-cooling-and-controlled-environments.lingua#r_1AJS35N1FXFQV7T3AKG0XG1D2C).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+
+**Continue in chemical supply systems:** [Treat packaging and delivery components as part of the chemical system](../../../../ergon/materials/chemical-feedstocks-and-supply-systems/storage/Contact-surfaces-contamination-corrosion-and-cleanability.lingua#r_2CWXX7AEHB88MT4RB9YF29DDXH).
+} r_6FT29RK2NR7R7D4ZPNJKEEASGR

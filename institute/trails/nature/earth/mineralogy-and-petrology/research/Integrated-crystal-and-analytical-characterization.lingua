@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Characterize a material by independent structural, optical, and chemical evidence (@mp-crystal-project: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #source "../sources/GSAS-II-Refinement-Tutorials.lingua#r_14B5VSDN6YR5MQJVNTKYJXF3XB", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #source "../sources/Raman-Mineral-Identification-Practical-Guide.lingua#r_3TQHZH1T2CDCQPTVVXSKJ5DCED", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Advanced-igneous-process-and-experimental-study.lingua#r_6TQ5TWWMJ8WZWXWBJTABAY0CQK") { r_5C4Q9327N8YT8SAN6Q8F2SJF1P
+**Read:** [Crystallography Open Database — structures, citations, and CIF records](../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG), the full selected structure record and original paper; [GSAS-II — diffraction analysis and refinement tutorials](../sources/GSAS-II-Refinement-Tutorials.lingua#r_14B5VSDN6YR5MQJVNTKYJXF3XB), all relevant complete tutorials and method references; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), the entire paper; [Raman Spectroscopy for Mineral Identification — Bartholomew and Post](../sources/Raman-Mineral-Identification-Practical-Guide.lingua#r_3TQHZH1T2CDCQPTVVXSKJ5DCED), the whole guide with the exact relevant method sections; [Crystallographic teaching pamphlets — IUCr](../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the full relevant crystallographic pamphlets.
+
+Choose a bounded mineral/material question with authorized data and sufficient specimen/domain context. Read the full original structural and analytical papers, complete relevant GSAS-II tutorials, and the entire method guides. Actual instrument collection should use suitable supervised facilities; a supplied-data study must state that scope.
+
+Connect hand/optical observations, composition, diffraction, and a structural model. Preserve preparation, instrument conditions, calibration/standards, raw/processed stages, versions, sampling support, and uncertainty. Test whether methods observed the same phase/domain or different mixtures.
+
+Independently reproduce a consequential formula, spacing/cell, density, phase proportion, or spectral result. Compare a plausible polymorph, mixed-phase, occupancy, or redox account. Check geometric, component/site/charge, and instrumental constraints without treating a low fit residual as full identification.
+
+**Work:** publish a research-style characterization account in your study workspace, with complete primary-source references, original calculations, independent checks, alternative model, limitations, and an appropriate next experiment. Ask another reader to reconstruct selected conclusions from the retained evidence and revise after substantive critique.
+
+The result should explain what is identified, what is only constrained, and which uncertainty matters to a geological or material-use question. It should not claim every species/property from a single normalized analysis or a successful database match.
+
+**Continue:** [Defend an igneous history using phase relations, material balance, and independent evidence](Advanced-igneous-process-and-experimental-study.lingua#r_6TQ5TWWMJ8WZWXWBJTABAY0CQK).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_5C4Q9327N8YT8SAN6Q8F2SJF1P

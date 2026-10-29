@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Unsteady potential flow, added mass and fluid impulse (@fd-added-mass: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #fluid-dynamics "../computation/Boundary-integrals-panel-methods-and-singular-kernels.lingua#r_5P780W86MVPRSPSFG1YNRFMS4X") { r_42431P3X28AY1G8BQAPA3RM1XR
+**Read:** [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), axisymmetric and unsteady inviscid flow; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), potential-flow and wave modules; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), unsteady potential-flow problems.
+
+An accelerating body changes surrounding fluid momentum even in an ideal inviscid irrotational region. The unsteady Bernoulli relation includes ∂φ/∂t; integrating its pressure over the body produces an acceleration-dependent force. The associated added mass depends on shape, direction, nearby boundaries and the assumed fluid domain.
+
+Derive one translating sphere or cylinder example from the velocity potential and independently from fluid kinetic energy. Distinguish added mass from the solid's actual mass, buoyancy, steady drag, viscous history and radiation of waves. A free surface or compressible fluid can introduce frequency dependence and energy carried away.
+
+Form a coupled body-fluid equation for a small-amplitude motion and predict the change in oscillation frequency under the model. Test the limit of a stationary boundary moved far away. Explain what observations would indicate that a frequency-independent added-mass approximation has omitted important physics.
+
+**Continue:** [Boundary integrals, panel methods and singular kernels](../computation/Boundary-integrals-panel-methods-and-singular-kernels.lingua#r_5P780W86MVPRSPSFG1YNRFMS4X).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_42431P3X28AY1G8BQAPA3RM1XR

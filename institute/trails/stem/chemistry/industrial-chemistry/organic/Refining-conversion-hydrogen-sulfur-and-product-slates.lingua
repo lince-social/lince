@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Reconstruct refining as connected molecular conversion, separation and utility systems (@ic-refining: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41", #industrial-chemistry "Steam-cracking-catalytic-cracking-and-olefin-recovery.lingua#r_6XS5MEWVCVYWS17PWGAC4WJDBC") { r_59Y67VS2PHN9MW3CK4M8CPAAMZ
+**Read:** [Refining of Mineral Oil and Gas, BREF REF](../sources/Mineral-Oil-and-Gas-Refining-BREF.lingua#r_3ZQ3XT8F2XTED0CF8KN79K9NP6), the entire relevant conversion, hydrogen, sulfur, utilities and environmental chapters; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the complete petroleum-refinery process sequence; [Chemical Technology: From Principles to Products — Jess and Wasserscheid](../sources/Chemical-Technology-Jess-Wasserscheid.lingua#r_38DBBMW0BMR89K3R95V073YA41), the full cracking, hydrotreating, reforming and alkylation examples if chosen.
+
+Refining combines physical fractionation with reactions that alter molecular size, structure, heteroatoms and product properties. Cracking, reforming, isomerization, alkylation and hydrogen treatment perform different chemical tasks. A process name alone does not describe selectivity, catalyst condition, required feed or useful output.
+
+Hydrogen, sulfur, heat and recycle networks connect these tasks. Hydrotreating or hydrocracking consumes hydrogen and changes impurity distribution; reforming can produce hydrogen and change aromatic content. Product specifications and the actual feed slate determine how these connections influence the full material/energy account.
+
+Include catalyst service/regeneration, gas and residual handling, blending, storage and operating variability. A single-unit conversion or favorable energy number cannot establish an integrated refinery comparison. The boundary should preserve co-products and the chemical/physical product slate rather than assigning all inputs to one chosen fraction.
+
+**Work:** reconstruct a complete public integrated conversion route with primary process and property evidence. Independently close carbon, hydrogen, sulfur, inventory and utility accounts, then compare a documented alternative at compatible useful products. Explain how assay, catalyst, separation and operating uncertainties affect the conclusion and what new evidence could reverse it.
+
+**Continue:** [Distinguish cracking chemistry, thermal history and recovered olefin products](Steam-cracking-catalytic-cracking-and-olefin-recovery.lingua#r_6XS5MEWVCVYWS17PWGAC4WJDBC).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_59Y67VS2PHN9MW3CK4M8CPAAMZ

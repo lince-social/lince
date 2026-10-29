@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Faraday law, Lenz law and changing flux (@em-induction: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #electromagnetism "Moving-loops-motional-emf-and-reference-frame.lingua#r_2J3AWCEN6GVBWXBS1PYYGAXT44") { r_15N270EPVSG2RM9NEK94YGX7RR
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 13 in full; [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), Faraday law and induction.
+
+For a fixed oriented loop, Faraday's law gives ∮E·dl = −dΦ_B/dt. The minus sign links the loop direction and surface normal through a consistent orientation; Lenz's law describes the corresponding opposition of the induced response to the flux change. It is not a separate instruction to guess a sign after the calculation.
+
+For N identical turns in a spatially uniform perpendicular field, the linked flux is N A B, and a fixed geometry gives emf −NA dB/dt. Tilt the loop and use the actual dot product; add nonuniformity by integrating rather than using a single local B value. A changing B produces a circulating electric field even in the absence of a wire.
+
+Derive the induced azimuthal E inside and outside an ideal long solenoid with changing flux. Compare two voltmeter-lead arrangements enclosing different areas. This makes the path dependence of an induced voltage measurable in principle. Distinguish open-circuit induced emf from the current that results after adding resistance, inductance, capacitance and a load. Energy transferred to the load comes from the source changing the field or geometry.
+
+**Continue:** [Moving loops, motional emf and reference frame](Moving-loops-motional-emf-and-reference-frame.lingua#r_2J3AWCEN6GVBWXBS1PYYGAXT44).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_15N270EPVSG2RM9NEK94YGX7RR

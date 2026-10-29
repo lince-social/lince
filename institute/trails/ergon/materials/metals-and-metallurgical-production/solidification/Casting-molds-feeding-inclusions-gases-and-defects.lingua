@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect casting design with heat, flow, material quality, and independent defect evidence (@metal-casting: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Material-Processing-Theory-and-Practice-NPTEL.lingua#r_7BSA0B8283WGYN6KF2609N2GK2", #source "../sources/Smitheries-and-Foundries-BREF.lingua#r_7ZJ5479WTSPDER11K364F6T041", #source "../sources/Aluminium-Automotive-Manual.lingua#r_73MPKA19MDBSQ96195B818Z49T", #metals-and-metallurgical-production "Continuous-casting-flow-shell-growth-and-product-history.lingua#r_6SK54AG2Q53MB4RJPFS21GJ0VY") { r_1Q2NKXMA98SM3CYSAV1YZ5M82E
+**Read:** [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), all mold, heat-transfer, solidification, and matching problem/exam work; [Material Processing: Metallurgical Aspects, Fundamental and Practical — Dwivedi](../sources/Material-Processing-Theory-and-Practice-NPTEL.lingua#r_7BSA0B8283WGYN6KF2609N2GK2), the entire casting and demonstration sequence; [Smitheries and Foundries Industry — European Commission BREF](../sources/Smitheries-and-Foundries-BREF.lingua#r_7ZJ5479WTSPDER11K364F6T041), whole relevant casting, mold/core, treatment, finishing, and utility chapters; [Aluminium Automotive Manual — European Aluminium and collaborators](../sources/Aluminium-Automotive-Manual.lingua#r_73MPKA19MDBSQ96195B818Z49T), the full applicable casting and product-quality material.
+
+Casting joins melt preparation, transfer, mold/core behavior, filling, heat extraction, solidification, feeding, removal, and finishing. Geometry, surface/interfacial behavior, gases, inclusions, shrinkage, stress, and phase history affect the final product. The presence of a fully filled mold does not establish a qualified casting.
+
+Derive a useful heat/flow or solidification-time relation with actual assumptions, material properties, contact/boundary conditions, and geometric scale. Empirical design correlations need their calibration range and definitions. A local thermal model alone cannot identify every entrainment, gas, feeding, chemical, or hot-tearing mechanism.
+
+Compare metal, mold/core/binder, containment, atmosphere, cooling, tools, inspection, maintenance, and residual/recovery work on the whole accepted-product boundary. A higher gross casting yield or faster cycle may change defects, machining allowances, repair, or product performance.
+
+**Work:** reconstruct two complete casting arrangements for a defined alloy/function. Independently reproduce a central heat/flow or material-balance result, verify numerical or empirical limits, and compare with measured temperature, structure, and defect observations. Investigate at least two plausible explanations for a defect, designing a discriminating test. Defend the preferred arrangement through quality, repeatability, uncertainty, utilities, tooling, residuals, and continuing maintenance.
+
+**Continue:** [Reconstruct continuous casting through coupled flow, shell formation, chemistry, and work](Continuous-casting-flow-shell-growth-and-product-history.lingua#r_6SK54AG2Q53MB4RJPFS21GJ0VY).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_1Q2NKXMA98SM3CYSAV1YZ5M82E

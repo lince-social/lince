@@ -1,0 +1,11 @@
+Import "../Electrical-power-engineering.lingua"
+
+Transformer maintenance and diagnostics — FIST 3-30 and 3-31 (@pe-fist-transformers: 0, is #reference, #part-of @pe-sources) { r_5Y3NB9GQFCVNJ8QVR9BC53JS32
+U.S. Bureau of Reclamation. Transformer Maintenance, FIST 3-30, October 2000; Transformer Diagnostics, FIST 3-31, June 2003. [Official current catalogue](https://www.usbr.gov/power/data/fist_pub.html) · [Maintenance manual](https://www.usbr.gov/power/data/fist/fist3_30/fist3_30.pdf) · [Diagnostics manual](https://www.usbr.gov/power/data/fist/fist3_31/fist3-31.pdf).
+
+Read both complete manuals during transformer study. Relate construction and thermal/insulation condition to inspection, measurements, oil/gas interpretation, electrical tests, failure mechanisms and a maintained service decision. Compare methods and uncertainties with the actual equipment and newer primary guidance.
+
+The official catalogue identifies these dates and warns that FIST 4-1B maintenance intervals supersede those in equipment-specific manuals; checked on 29 October 2026. Direct file retrieval timed out, so complete-page inspection is not claimed. Reclamation procedures and historical equipment practices are application-specific, while third-party component notices retain their own rights. No manual, condition data or manufacturer instructions are bundled.
+
+**Return:** [Power-engineering sources — complete books, courses, methods and evidence](../Sources.lingua#r_12EFX00X7ZXGT9MPMJDYRTNY9N).
+} r_5Y3NB9GQFCVNJ8QVR9BC53JS32

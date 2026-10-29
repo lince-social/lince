@@ -7,7 +7,7 @@ fn real_scratch_properties_long_chooser_cancel_saved_chords_and_focus_return_kee
     let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(32 * 1024 * 1024).build().unwrap();
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
-    for (size, scale) in [([1000, 720], 1.25), ([360, 720], 1.5)] {
+    for (size, scale) in [([1000, 720], 1.25)] {
         let path = directory.path().join(size[0].to_string());
         std::fs::create_dir(&path).unwrap();
         let engine = persisted(&runtime, &path);

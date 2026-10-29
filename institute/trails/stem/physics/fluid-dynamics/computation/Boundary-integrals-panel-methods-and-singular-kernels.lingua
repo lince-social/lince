@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Boundary integrals, panel methods and singular kernels (@fd-panel-method: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #fluid-dynamics "../internal/Entrance-development-hydraulic-diameter-and-section-shape.lingua#r_2ZV9PF833DSR5B56KY11SZ86A0") { r_5P780W86MVPRSPSFG1YNRFMS4X
+**Read:** [Intermediate Fluid Mechanics — James Liburdy](../sources/Intermediate-Fluid-Mechanics-Liburdy.lingua#r_45KKWKB7DTN9MMQ951P62JHH5N), chapter VI in full with its examples; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), potential-theory and aerodynamic applications; [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), consistency and spatial-convergence sections.
+
+A potential-flow boundary-value problem can be represented by singularity distributions on a boundary. Discretizing that representation leads to panel strengths chosen to satisfy no penetration and any additional circulation condition. The unknowns describe an ideal exterior field; a panel method does not become a viscous Navier–Stokes solver by using many panels.
+
+Follow the derivation of source and vortex panel influence coefficients, normal directions, self terms and the trailing-edge condition. Recover a cylinder result with an independent analytical pressure distribution. Refine panels, vary clustering and test integral flux and force, including the near-singular evaluation of points close to the boundary.
+
+Report discretization error separately from the physical limitations of irrotational flow. Compare a geometry change with the original assumptions and retain reproducible geometry, coordinate units and conventions. When a result requires a boundary-layer or wake coupling, state the new equations and evidence rather than inserting a fitted correction without explanation.
+
+**Continue:** [Entrance development, hydraulic diameter and section shape](../internal/Entrance-development-hydraulic-diameter-and-section-shape.lingua#r_2ZV9PF833DSR5B56KY11SZ86A0).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_5P780W86MVPRSPSFG1YNRFMS4X

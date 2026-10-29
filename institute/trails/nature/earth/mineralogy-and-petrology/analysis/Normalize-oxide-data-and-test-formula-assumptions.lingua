@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Derive a mineral formula from oxide data without hiding its assumptions (@mp-formula: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #mineralogy-and-petrology "An-inspectable-oxide-normalization.lingua#r_45M80VFVGPQ0ZX888J14RQENMC") { r_3S3B97TF7704BK3YVVGKTBXZ2P
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete mineral-chemistry/normalization treatment; [Mineral names and classification reports — IMA-CNMNC](../sources/IMA-CNMNC-Mineral-Names-and-Reports.lingua#r_1B4ZWGSZKGP6JM3NKPY0D5RJXH), the complete relevant group/formula definition; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), analytical totals, corrections, and uncertainty in the full paper.
+
+For an oxide analysis, divide each reported mass proportion by the adopted molar mass, count cation and oxygen amounts, and rescale to an explicitly chosen basis. Oxygen, cation, anion, and charge normalizations impose different assumptions and can produce different inferred formulas when unmeasured components or valences matter.
+
+Preserve the original analytical total and reported conventions. Total Fe as FeO does not distinguish ferrous and ferric iron; assuming all ferrous is a model choice. Hydrogen, water, halogens, vacancies, mixed analysis, or an inappropriate basis may require additional information beyond a simple anhydrous oxide account.
+
+Separate the normalized composition from site allocation, endmember projection, species classification, and a thermobarometric model. Charge balance computed from assumed stoichiometric oxides is bookkeeping under those assumptions, not independent confirmation of oxidation state or mineral identity. A better-looking integer formula is not evidence for rounding away a mismatch.
+
+**Work:** derive the normalization for an ideal olivine and feldspar with stated weights, then compare a natural published analysis and its measurement uncertainty. Test a different iron-valence or missing-component assumption where appropriate. Identify which new measurement would discriminate the candidate accounts and which normalizations merely erase a common scale factor.
+
+Read the full mineral-chemistry examples and the relevant group definition. The following original program makes one limited calculation inspectable; it deliberately does not infer site allocation, a species, or an oxidation state from elemental data alone.
+
+**Continue:** [Calculate an oxygen-basis formula and expose the retained analytical total](An-inspectable-oxide-normalization.lingua#r_45M80VFVGPQ0ZX888J14RQENMC).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_3S3B97TF7704BK3YVVGKTBXZ2P

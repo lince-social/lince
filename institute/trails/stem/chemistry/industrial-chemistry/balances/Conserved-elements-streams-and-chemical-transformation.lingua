@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Close element accounts while allowing species, phases and useful products to change (@ic-elements: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #industrial-chemistry "../../general-chemistry/reactions/Reaction-extent-and-species-balances.lingua#r_5NMK6VYMTG3QWD994R4VPP4M1Y") { r_71NDSP7R3M8W3B7511NVQ4HW6V
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete stoichiometric conservation and species/material-balance treatment; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), the full selected gas, acid or fertiliser reaction/flow case; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), a corresponding complete carbon-containing process case.
+
+Let F_i be a species amount flow and a_ei the number of atoms of element e in that species. The corresponding element flow is Σ_i a_ei F_i. A chemical reaction changes species amounts while preserving these element totals; a material account that changes an element without an external stream or inventory change is incomplete.
+
+Define wet/dry basis, carrier substances, dissolved/gaseous material and consequential minor constituents. Conversion of one feed species is not equivalent to recovery of an element in an accepted product. Co-products, purge, spent catalyst, entrained liquid and residues may carry significant quantities outside the chosen product stream.
+
+As a simple exact example, producing two amount units of NH₃ from N₂+3H₂→2NH₃ consumes one unit of N₂ and three of H₂. This is a stoichiometric relationship, not the composition of an actual fresh-feed, reactor-inlet or purge stream. Real feeds and recycle require separate species accounts and measurements.
+
+**Work:** close at least two independent element accounts for a complete inorganic or organic route. Reconcile the result with a total-mass account using compatible molar masses and inventories. Locate every consequential missing stream and explain how a plant's apparent efficiency could change when that stream is measured rather than omitted.
+
+**Continue:** [Use reaction extent to connect species changes with conserved elements](../../general-chemistry/reactions/Reaction-extent-and-species-balances.lingua#r_5NMK6VYMTG3QWD994R4VPP4M1Y).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_71NDSP7R3M8W3B7511NVQ4HW6V

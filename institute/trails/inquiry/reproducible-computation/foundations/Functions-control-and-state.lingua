@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Functions, branching, repetition, and visible state (@rc-functions: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8") { r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF
+**Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), chapters 3–4 completely, then 7–9 during sustained study; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), functions, control flow, data structures, and modules.
+
+A function packages a transformation with explicit inputs and a returned result. This lets a test examine the numerical operation without opening files or launching a command. Prefer a dry_mass(wet, water_fraction) calculation whose arguments say what it needs over a function that silently reads whichever global variables a previous notebook cell left behind.
+
+Branching expresses different cases. A zero input-component mass requires an explicit decision about undefined recovery; returning zero would claim that a meaningful ratio was computed. Repetition applies a transformation to a collection. Trace a loop over two lots by hand before relying on thousands of records. Lists preserve an order, while a dictionary associates keys and values; the mathematical operation must determine whether order should matter.
+
+State is information that persists across operations. Mutating an input list inside a helper changes what a later operation sees. A function that reads the current time or consumes a shared random generator has additional inputs even if they do not appear in its argument list. Make those influences explicit when they matter to the result.
+
+**Work:** complete chapters 3–4 of Sundnes, then write and test the one-lot formulas as functions. Return a new record of results without changing the input. Process the two lots in either order and inspect which outputs should be order-independent. Add a branch for a zero denominator and explain its scientific meaning in words.
+
+Continue through dictionaries, strings, classes, and object-oriented programming in the full-book reading. Use a class only where it clarifies the data and behavior of the actual project. The skill being developed is controllable computation, rather than using every language construct in one small analysis.
+
+**Continue:** [Input, output, and errors are part of the method](Input-output-and-errors.lingua#r_2QVCXPVQAFX2MASMBWC80KNWV8).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_7YW5W6Q5BZGBP3EGCWPFE2Y5BF

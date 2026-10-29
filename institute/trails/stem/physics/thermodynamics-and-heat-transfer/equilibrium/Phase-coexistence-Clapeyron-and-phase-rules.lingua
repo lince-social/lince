@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Phase coexistence, Clapeyron slopes and phase rules (@th-coexistence: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #thermodynamics-and-heat-transfer "Surface-energy-curvature-and-small-system-thermodynamics.lingua#r_1CF5QPBT4S6WVH8W7364J240V8") { r_4RC5M920WZB08JG03SSHM0DQTQ
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), chapters 8, 12 and 13 in full; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), multiphase equilibrium; [IAPWS-95 — fundamental water properties](../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z), vapour-liquid equilibrium and phase limits.
+
+At equilibrium, coexisting phases satisfy the appropriate equality of chemical potentials, with mechanical/thermal conditions and any interfacial effects stated. Derive the Clapeyron relation dp/dT = Δs/Δv = L/(TΔv) for a pure-substance coexistence curve, using consistent molar or mass-specific quantities.
+
+The common Clausius–Clapeyron approximation adds assumptions about vapour behavior, liquid volume and latent-heat variation. State those before fitting a straight line to log pressure versus inverse temperature. A slope inferred from a narrow range need not remain valid across the entire phase diagram.
+
+Count degrees of freedom with the applicable phase rule, species and constraints. Distinguish an equilibrium phase diagram from cooling-path kinetics, nucleation, glass formation and segregation. Use the same temperature/composition data to compare a thermodynamic phase claim with an actual process history.
+
+**Continue:** [Surface energy, curvature and small-system thermodynamics](Surface-energy-curvature-and-small-system-thermodynamics.lingua#r_1CF5QPBT4S6WVH8W7364J240V8).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_4RC5M920WZB08JG03SSHM0DQTQ

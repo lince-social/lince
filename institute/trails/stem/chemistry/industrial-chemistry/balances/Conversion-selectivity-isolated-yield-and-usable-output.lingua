@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Distinguish reactant conversion, selectivity, isolated yield and accepted output (@ic-yield: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #industrial-chemistry "Recycle-purge-and-accumulation-in-a-process-loop.lingua#r_4JBQH57WVMDA799QCG1KNDRQGV") { r_59JNS3Q481HSMKY7ZHFFVJFVG6
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete multiple-reaction and selectivity material with its worked cases; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), a complete family with competing products and isolation; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the relevant full yield, isolation and solvent/process account.
+
+State the denominator before comparing a yield or selectivity. Conversion measures disappearance of a specified feed species. Selectivity compares specified product pathways or products on a stated stoichiometric basis. Isolated yield additionally reflects separation and handling, while accepted output includes the actual quality requirements.
+
+For an original simple case, start with 100 mol of A undergoing A→B and A→C, each one-to-one. If 80 mol of A reacts and 60 mol of B forms, conversion is 0.80 and selectivity to B on reacted A is 60/80=0.75. Recovering 90% of B during isolation gives 54 mol isolated B, a feed-based isolated yield of 0.54. An acceptance failure can lower usable output further without changing the reactor conversion.
+
+Now distinguish pass and overall conversion in a recycle loop, gross product and net saleable product, and selectivity measured at one time versus integrated over a batch. Feed variability and product rework can change the comparison. A nominally efficient reaction may be costly to purify or maintain.
+
+**Work:** reconstruct all four quantities for a full process case, including a consequential side stream and inventory. Compare two published routes on the same functional product and boundary; explain which ranking changes when separation, quality or recycle is treated explicitly.
+
+**Continue:** [Explain why recycle, purge and fresh-feed accounts must be solved together](Recycle-purge-and-accumulation-in-a-process-loop.lingua#r_4JBQH57WVMDA799QCG1KNDRQGV).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_59JNS3Q481HSMKY7ZHFFVJFVG6

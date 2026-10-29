@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Infer glacial history from ice processes, deposits, and landforms (@geo-glaciers: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #geology "Coasts-relative-sea-level-and-sediment-budgets.lingua#r_4674G17AR76JSEJ08BXV9Z88YW") { r_225C44HK39XZQQ4D7T70V84HSF
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 16 in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), glacial evidence in the complete Earth-history material; [Introduction to Geochronology — Pieter Vermeesch](../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the full cosmogenic-nuclide treatment and applicable exercises.
+
+Glacial accumulation, ablation, ice deformation, basal conditions, erosion, transport, and deposition form a connected system. A glacier's margin position reflects more than instantaneous air temperature: flow, geometry, accumulation, ablation, and time-dependent adjustment all matter. Distinguish mass balance from advance or retreat.
+
+Striations, erosional forms, till, moraines, outwash, lake deposits, and relative relationships constrain different aspects of a history. A ridge needs sedimentary/geomorphic evidence before being identified as a particular moraine. Reworking and later erosion can remove or rearrange the record.
+
+Dating a landform or deposit requires identifying what event a sample records. Exposure dating can involve inherited exposure, shielding, erosion, production models, and later burial. A sediment age or a minimum organic age may constrain a glacial event indirectly rather than date ice occupation exactly.
+
+**Work:** reconstruct a glacial sequence from a complete published map/section case, marking flow evidence, relative ordering, and numerical constraints. Propose an alternative for an ambiguous feature and identify evidence distinguishing it. Explain the resulting implications for heterogeneous ground deposits and groundwater pathways without treating an idealized glacial model as a site investigation.
+
+Read all of the glaciation chapter and connect its landforms with the advanced time methods. The Quaternary sequence will broaden climate and landscape history, including regions whose modern surface looks unlike the conditions that produced their ground materials.
+
+**Continue:** [Interpret coastlines through waves, sediment, sea level, and land motion](Coasts-relative-sea-level-and-sediment-budgets.lingua#r_4674G17AR76JSEJ08BXV9Z88YW).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_225C44HK39XZQQ4D7T70V84HSF

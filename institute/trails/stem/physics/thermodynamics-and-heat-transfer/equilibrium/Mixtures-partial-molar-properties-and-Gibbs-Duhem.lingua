@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Mixtures, partial molar properties and Gibbs–Duhem (@th-mixtures: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "Reaction-affinity-equilibrium-and-energy-coupling.lingua#r_00J4FSQC2N8B22QHW83H4KMH71", #thermodynamics-and-heat-transfer "../research/Mixture-equilibrium-separation-work-and-reaction-affinity.lingua#r_5RSM1M9GBB0RDR0F9WJB5H4K9R") { r_5Y41C1P88D3EMXPZ3A4GNHBEN4
+**Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), chapters 9–12 in full; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), mixing, separation and multicomponent equilibrium.
+
+A mixture property is not generally the mole-fraction average of pure-component values. Define partial molar properties through derivatives at specified temperature, pressure and amounts. Chemical potentials encode how free energy changes when a species amount changes under those constraints.
+
+Derive Euler's relation for an extensive homogeneous phase and the associated Gibbs–Duhem constraint. It limits which intensive-property variations can be assigned independently. Ideal-mixture chemical potentials and activities are models with stated reference conventions; nonideality requires additional evidence.
+
+Calculate an ideal mixing entropy and its associated minimum reversible separation work under a declared environment. Then identify where activity coefficients, pressure, electrochemical terms or phase formation change the result. Compare with the full chemical texts rather than importing an ideal formula into a concentrated or reacting mixture by habit.
+
+**Continue:** [Reaction affinity, equilibrium and energy coupling](Reaction-affinity-equilibrium-and-energy-coupling.lingua#r_00J4FSQC2N8B22QHW83H4KMH71) · [Advanced study: mixture equilibrium, separation work and reaction affinity](../research/Mixture-equilibrium-separation-work-and-reaction-affinity.lingua#r_5RSM1M9GBB0RDR0F9WJB5H4K9R).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5Y41C1P88D3EMXPZ3A4GNHBEN4

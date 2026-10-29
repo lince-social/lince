@@ -1700,7 +1700,7 @@ pub(crate) mod tests {
         assert_eq!(world.get::<CanvasView>(root).unwrap().zoom, view.zoom);
     }
 
-    pub(super) fn fixture() -> (World, Entity, Entity, Entity) {
+    pub(crate) fn fixture() -> (World, Entity, Entity, Entity) {
         let mut world = World::new();
         let mut spaces = Workspaces::default();
         spaces.entries[0]

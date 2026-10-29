@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Read formulas and names without losing chemical identity (@gc-names: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J", #general-chemistry "../atomic/Evidence-for-atoms-and-nuclei.lingua#r_4HT48V97KV1TDBR18MBRR0HCE4") { r_1CP96XH8H24BQWR2PEA3CT4H61
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 2’s formulas and nomenclature material; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), the nomenclature and acid/base sections; [Nomenclature of Inorganic Chemistry — IUPAC Red Book and brief guide](../sources/IUPAC-Red-Book.lingua#r_0CW26ZVGP8AR7QH2KXCM36MB4J), the complete brief inorganic-nomenclature guide and relevant formula/ion sections.
+
+An element symbol, subscript, coefficient, superscript charge, isotope label, and phase label encode different information. In 2 CaCl₂(aq), the coefficient counts a stoichiometric amount of formula units, the subscripts state composition, and aq indicates the chosen aqueous description. Changing a subscript changes identity; changing a coefficient changes the amount represented.
+
+Distinguish an ion from a neutral atom and oxidation state from net charge on an arbitrary part of a molecule. Learn common simple ions through their formulas, charges, and relationships, then apply systematic nomenclature. A name should let another reader identify the intended species, while familiar common names need care when they denote different mixtures or grades.
+
+Chemical identity includes structure and conditions when relevant. An empirical formula need not distinguish isomers; an anhydrous compound differs from a hydrate in a mass calculation; an elemental allotrope can have different properties from another form of the same element. Preserve phase, hydration, and relevant purity rather than relying on a short label on a table.
+
+**Work:** translate a set of textbook names into formulas and back, checking total charge independently. Explain the difference between Co and CO, between Fe²⁺ and Fe³⁺, and between a coefficient and a subscript in a balanced equation. Write bilingual terms such as substance/substância, ion/íon, amount of substance/quantidade de matéria, and concentration/concentração alongside exact symbols.
+
+Read the short IUPAC naming guide, using the full Red Book for the particular naming question instead of memorizing all of it at once. Return to its coordination chapters later. Basic chemical language should become a shared tool for biology, geology, manufacturing, and medicine rather than a reason to erect a separate vocabulary barrier around each field.
+
+**Continue:** [Atomic models are explanations constrained by evidence](../atomic/Evidence-for-atoms-and-nuclei.lingua#r_4HT48V97KV1TDBR18MBRR0HCE4).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_1CP96XH8H24BQWR2PEA3CT4H61

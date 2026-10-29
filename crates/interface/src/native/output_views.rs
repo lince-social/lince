@@ -5,6 +5,27 @@ use crate::{
 use bevy::prelude::*;
 use std::collections::HashSet;
 
+#[derive(Resource, Clone, Debug, Default, PartialEq)]
+pub struct OutputNames(pub Vec<(OutputId, String)>);
+
+#[derive(Resource, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HandFocusRequest {
+    pub output: OutputId,
+    pub workspace: u64,
+    pub root: Entity,
+    pub created: std::time::Instant,
+}
+
+impl HandFocusRequest {
+    pub fn fresh(&self) -> bool {
+        self.created.elapsed() <= std::time::Duration::from_millis(350)
+    }
+
+    pub fn matches(&self, root: Entity, output: OutputId, workspace: u64) -> bool {
+        self.root == root && self.output == output && self.workspace == workspace
+    }
+}
+
 #[derive(Resource, Clone, Debug, PartialEq)]
 pub struct OutputViews {
     pub canvas: Option<Entity>,

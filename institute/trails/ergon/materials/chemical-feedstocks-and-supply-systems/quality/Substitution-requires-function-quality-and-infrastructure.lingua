@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Decide when an alternate source or material is actually usable (@cs-alternatives: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F", #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #chemical-supply-systems "../exchange/Orders-commitments-ownership-service-and-total-delivered-cost.lingua#r_1Y6QHYPF59NJGDFTSD0CP1VSRE") { r_2KSS24YHT3ZQB43PJP45RD0HMG
+**Read:** [Supply Chain Resilience: Guide for Water and Wastewater Utilities — EPA](../sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F), the whole guide, including operational-flexibility cases; [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the complete quality and procurement requirements; [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the complete coordination and inventory-placement work.
+
+Distinguish an alternate manufacturer of an agreed grade, another grade of the same substance and a different chemical performing a similar function. Each asks a different question. An alternate requires evidence of function, quality, legal/organizational acceptance where applicable, physical handling and sufficient availability at the required time.
+
+Construct an alternatives table for one critical feed. Include active-content basis, impurity panel, process consequences, packaging/connection requirements, storage capacity, testing and qualification time. Mark available evidence and unresolved requirements. A listed seller, a plausible synthesis and an approved delivered product occupy different stages of readiness.
+
+Compare a supplier outage, a quality failure and a loss of transport access. A source that helps one scenario can share the same underlying failure in another. Evaluate inventory, a second source, on-site conditioning and a changed user process on one common service requirement. Use actual public cases and label modelled scenarios as such. Explain why more stock or a different chemical might create additional aging, storage or qualification work. The outcome is a defended set of feasible options with explicit observations needed before reliance, not an assumption that every chemically similar product is interchangeable.
+
+**Continue:** [Relate purchasing decisions to a usable delivered service](../exchange/Orders-commitments-ownership-service-and-total-delivered-cost.lingua#r_1Y6QHYPF59NJGDFTSD0CP1VSRE).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_2KSS24YHT3ZQB43PJP45RD0HMG

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect reactor performance with mixing, residence histories, and phase interactions (@metal-reactors: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ", #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #metals-and-metallurgical-production "Conduction-convection-radiation-and-phase-change.lingua#r_74NN5SSS0BVJRXYNYK6NR81X1N") { r_4AR0Y409MHHGFJ3CVYJR64JJ9G
+**Read:** [Steel Making — Dipak Mazumdar and Satish Ch. Koria, NPTEL](../sources/Steel-Making-Mazumdar-Koria.lingua#r_37SE3PY3C4WDRFHWQ39PDMXEYQ), the full reactor/flow and refining-model sequence; [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), complete flow, scaling, and transport material; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the full chosen extraction-unit process and original methods.
+
+A reactor receives distributions of material, temperature, composition, particle/bubble size, and residence history. Distinguish batch, plug-flow, well-mixed, staged, and distributed-residence models through the balances and observations that justify them. A nominal volume divided by feed rate is not a complete residence-time distribution.
+
+Gas-liquid, slag-metal, liquid-solid, and reacting porous systems may involve changing interfacial area, circulation, contact, entrainment, and heat transfer. Apparent reaction improvement can follow a change in these physical processes rather than an intrinsic kinetic constant. Scaling volume or keeping a single mixing time fixed does not establish similarity of every relevant mechanism.
+
+Identify what is actually observed: tracer response, local fields, bulk samples, product distributions, energy input, or final quality. Inverse inference of a flow pattern or kinetic parameter can be poorly identifiable from a single outlet signal. Validate across independent conditions and compare a simpler explanation.
+
+**Work:** reconstruct one complete metallurgical reactor study with measured operating conditions, model equations, and parameter evidence. Derive a simpler limit, test conservation and residence behavior independently, and compare predictions with withheld observations. Propose a scale-up/operating experiment targeted at the uncertainty controlling product quality or useful recovery. Include the actual sensor, maintenance, human-work, and utility conditions required to interpret and sustain that performance.
+
+**Continue:** [Derive heat transfer through actual geometry, interfaces, and material states](Conduction-convection-radiation-and-phase-change.lingua#r_74NN5SSS0BVJRXYNYK6NR81X1N).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_4AR0Y409MHHGFJ3CVYJR64JJ9G

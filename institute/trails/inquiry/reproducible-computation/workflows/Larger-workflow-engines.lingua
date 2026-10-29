@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+Scale the workflow while keeping the method independent of its engine (@rc-workflowengines: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Notebooks-and-hidden-state.lingua#r_1BQXFAENRWVF3P7FZHW7NBSBQS") { r_3KEYE030EP12Y4MHBY6RB1SJV6
+**Read:** [Workflow graphs, environments, and execution — Snakemake documentation](../sources/Snakemake-Workflows.lingua#r_6FGN565JFTD2FTW69KDCS9BWHS), the complete basic and advanced tutorial, then the relevant rule/configuration/reproducibility sections; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), workflow and compendium material.
+
+The Snakemake tutorial supplies a substantial example of rules, dependency inference, configuration, execution, and environments. Complete its basic and advanced sections in your own exercise area, using authorized tutorial inputs from their external sources. Compare each concept with the small Make graph rather than treating the new syntax as a new scientific method.
+
+Identify how the engine determines dependencies, parameter identity, completed outputs, scheduling, resource requirements, logs, and environment reconstruction. Examine the exact version's behavior for failed or interrupted jobs, changed configuration, missing inputs, and caches. A distributed executor adds worker environments, file visibility, transfer, retry, and scheduling conditions to the reconstruction problem.
+
+Map one larger project as a graph of meaningful transformations before encoding it. Reusing an intermediate is justified only when its complete input/method identity is appropriate. A convenient output filename is insufficient evidence that a previous job used the current parameters or reference data. Preserve execution configuration together with the workflow's scientific choices.
+
+**Work:** express a small parameter sweep or multi-lot analysis in the selected engine. Run a clean reconstruction, an incremental rerun, an intentional failure, and an interrupted/restarted run. Compare results with the independent small benchmark. Explain what is recomputed and what is trusted in each case. If you use only Make for the main project, complete enough of the Snakemake tutorial to make this comparison concrete.
+
+The advanced goal is a workflow another person can execute and criticize, not a requirement to migrate every small calculation to a larger scheduler. Keep workflow mechanisms distinct from the trail's ordinary links and learning assertions: these Records teach the method without adding a new Lince feature or an execution obligation to reading.
+
+**Continue:** [Make a notebook reconstructible from a fresh kernel](Notebooks-and-hidden-state.lingua#r_1BQXFAENRWVF3P7FZHW7NBSBQS).
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_3KEYE030EP12Y4MHBY6RB1SJV6

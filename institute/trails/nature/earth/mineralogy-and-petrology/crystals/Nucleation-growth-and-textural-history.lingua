@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Connect crystal growth with driving force, transport, and preserved textures (@mp-growth: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #mineralogy-and-petrology "../minerals/Isolated-ring-and-other-silicate-structures.lingua#r_736317PHP4KMSCR801YWR3M20H") { r_4W51WE1Z1RRCJE9N3KBK5C3MQ6
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete crystals/crystallization treatment; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the complete growth, textures, and kinetic context used; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the full igneous and metamorphic texture notes.
+
+Crystal formation involves a driving force, nucleation, growth, and supply/transfer of components and heat. Supersaturation or undercooling does not specify a unique growth rate without a kinetic/transport model. A large crystal can reflect several combinations of time, nucleation density, transport, and later modification.
+
+Growth faces and zoning record changing boundary conditions and crystallographic influences, with possible later diffusion, dissolution, replacement, or deformation. An apparently euhedral grain need not have grown freely throughout its history. A crystal-size distribution requires a sampling/sectioning account before being interpreted as a time record.
+
+Distinguish reaction-controlled and transport-controlled limits, recognizing that a real system may shift between them. For a diffusion model a characteristic distance scales as √(Dt), but geometry, boundary conditions, changing diffusivity, and the measured profile define the actual interpretation. A scaling estimate is not a complete diffusion chronometer.
+
+**Work:** reconstruct two possible histories for a documented zoning or size/textural pattern. Identify the observations favoring each and what later alteration could erase. Derive the diffusion-length scaling with units and explain what additional calibration and boundary conditions a quantitative time estimate would need.
+
+Read the complete crystallization and petrological texture treatments. The group and microscopy sequence now gives practical ways to recognize features, while later experimental and chronological studies test their physical meaning at greater depth.
+
+**Continue:** [Organize silicates by connectivity while preserving composition and site differences](../minerals/Isolated-ring-and-other-silicate-structures.lingua#r_736317PHP4KMSCR801YWR3M20H).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_4W51WE1Z1RRCJE9N3KBK5C3MQ6

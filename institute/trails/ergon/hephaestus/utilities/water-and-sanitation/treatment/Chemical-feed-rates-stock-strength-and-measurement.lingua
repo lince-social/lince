@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Chemical feed rates, stock strength and measurement (@wu-treatment-dosing: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Coagulation-as-a-testable-chemical-and-separation-question.lingua#r_6J1YPAN5CB9XGSDAHBE9J03NFC") { r_7JRV3FGMS5HCGZMA0GFJSX2B4M
+**Read:** [The Physics of Water Treatment Design](../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR), chapter 5 on flow measurement/control and chapter 6 on rapid mixing; [Manual de Saneamento](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), treatment chemicals and operating quantities. Use the specified chemical and reporting basis, not an unnamed “dose”.
+
+Dose D in mg/L multiplied by water flow Q in m³/hour gives DQ/1,000 kg/hour on the declared active basis. An original example at 100 m³/hour and 20 mg/L needs 2 kg/hour active material. A stock specified as 10% active by mass with density 1.10 kg/L contains 0.11 kg active/L, requiring about 18.182 L/hour. A volume percentage or a concentration reported as an element would require a different conversion.
+
+Separate the desired active quantity, supplier assay, stock preparation and delivered feed. Pump setting is not measured delivery. Stock ageing, viscosity, calibration, pulsation and changes in water flow can change actual dose. State the location and time of each measurement and how flows are synchronized.
+
+**Work:** Close the stock and active-material inventories over a shift. Recompute the example at ±5% relative stock-strength error and separately at ±5% water-flow error. Explain which combinations overfeed or underfeed. Identify how a flow-proportional feed should respond to zero water flow, restart and a failed signal. These are measurement and control questions; a calculated dose alone does not select a suitable chemical or establish a treatment result. Keep storage compatibility, handling requirements and supplier instructions with the selected real substance.
+
+**Water treatment continuation:** [Coagulation as a testable chemical and separation question](Coagulation-as-a-testable-chemical-and-separation-question.lingua#r_6J1YPAN5CB9XGSDAHBE9J03NFC).
+} r_7JRV3FGMS5HCGZMA0GFJSX2B4M

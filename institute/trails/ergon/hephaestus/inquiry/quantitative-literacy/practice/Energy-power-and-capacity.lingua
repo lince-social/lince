@@ -1,0 +1,23 @@
+Import "../Quantitative-literacy.lingua"
+
+Energy, power, capacity, and a production denominator (@ql-energy: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-si, #source @ql-source-insight, #quantitative-literacy "Data-and-calculation-records.lingua#r_5TTXVQ6161YYC7CFWDSQCV8WX8", #electromagnetism "../../../physics/electromagnetism/electrostatics/Work-potential-difference-and-reference-choice.lingua#r_0KDY19PKDZXWKFN38GPNQMKR3N", #electrical-power-engineering "../../../engineering/electrical-power-engineering/foundations/Power-energy-loss-efficiency-and-useful-output.lingua#r_687M5Y50M8E086E1JGP2V2SGS1", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/foundations/Energy-power-heat-and-useful-work.lingua#r_5AGSBC6PR9H1ZGAE3B88568ZDQ") { r_0EE7P9TMJK8SRVCVM1M7K61RAR
+**Read:** SI Brochure's derived-unit tables and The Art of Insight's Symmetry and conservation and Proportional reasoning chapters. Use these readings to check quantities and balances; the mechanisms of heating, electricity, and machinery require their corresponding physics and engineering material.
+
+Energy and power are different quantities: 1 W = 1 J/s and 1 kWh = 3.6 MJ. A device operating at an average 2 kW for 3 h uses 6 kWh under the defined boundary. A nameplate power, peak demand, average operating power, and useful output are not the same observation.
+
+Resource intensity needs a denominator and boundary. If a hypothetical operation consumes 60 kWh during a batch that starts 100 items and accepts 80, its direct electricity use is 0.6 kWh per started item and 0.75 kWh per accepted item. Neither includes upstream material production, standby services outside the interval, or delivery unless explicitly counted.
+
+Capacity is a maximum under conditions, not an achieved throughput. An 8 h shift at 10 items/h can start 80 items if those conditions hold; availability, changeovers, bottlenecks, and rejects alter actual usable output. A flow rate is also not an inventory: a stored energy in kWh and an available delivery power in kW answer distinct questions.
+
+**Work:** draw a batch boundary and list direct energy, useful output, heat rejected, stored changes, and omitted upstream terms. Reconcile a hypothetical meter difference with the operating schedule. Compare two routes per accepted product and then per unit mass, explaining how the comparison changes. Mark a missing observation as missing. A precise-looking total assembled from mismatched time intervals is not a defensible account.
+
+**Continue:** [Keep observations, formulas, units, and revisions recoverable](Data-and-calculation-records.lingua#r_5TTXVQ6161YYC7CFWDSQCV8WX8).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in electromagnetism:** [Work, potential difference and reference choice](../../../physics/electromagnetism/electrostatics/Work-potential-difference-and-reference-choice.lingua#r_0KDY19PKDZXWKFN38GPNQMKR3N).
+
+**Continue in electrical power engineering:** [Power, energy, loss, efficiency and useful output](../../../engineering/electrical-power-engineering/foundations/Power-energy-loss-efficiency-and-useful-output.lingua#r_687M5Y50M8E086E1JGP2V2SGS1).
+
+**Continue in thermodynamics and heat transfer:** [Energy, power, heat and useful work](../../../physics/thermodynamics-and-heat-transfer/foundations/Energy-power-heat-and-useful-work.lingua#r_5AGSBC6PR9H1ZGAE3B88568ZDQ).
+} r_0EE7P9TMJK8SRVCVM1M7K61RAR

@@ -1,0 +1,19 @@
+Import "../Reproducible-computation.lingua"
+
+What completing reproducible computational work means (@rc-completion: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG") { r_7VYT5A5V6ZS9K32WJQK6786NZT
+**Read:** [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), the complete article as a final critical comparison; [Ten Simple Rules for Reproducible Computational Research — Sandve and colleagues](../sources/Reproducible-Research-Rules.lingua#r_5WNPQ4CBNZFM416E5TTNSKKPQG), the complete article, with its historical/tool conditions explained.
+
+Completing this study means being able to explain, reconstruct, test, criticize, and improve a substantial scientific computation. Familiarity with a terminal, Git, a notebook, or an environment tool is preparation rather than the full outcome. The route begins with one transparent formula and ends with independent methodological investigation.
+
+Show the full beginner-book reading and exercises, the research-software book's complete programme and project, the handbook's practices and numerical extension, the relevant whole papers, and the primary manuals actually used. Explain where the sources agree, where tools implement different contracts, and where a particular recommendation has conditions or has changed since an older publication.
+
+Use the sustained deterministic project, stochastic/numerical project, published-result reproduction, and independent investigation to demonstrate progressively stronger evidence. You should be able to derive the main mathematical relations, justify input meaning and selection, distinguish identity from scientific equivalence, reconstruct the environment/workflow, diagnose failures, assess numerical accuracy, and preserve a usable method with honest access/resource limits.
+
+An oral or written review should be able to question any link in the chain from observation to claim. Explain an independent benchmark, an invariant's limits, a model discrepancy, a convergence result, a random-stream contract, a stale-cache failure, and a substantive correction made after criticism. Present successful and failed reconstruction evidence with the conditions needed to interpret each.
+
+These are demanding study expectations, not bureaucratic requirements for creating or opening Records. The learning data remain ordinary linked content. Reuse any useful Record in another trail and follow whichever subject the question requires. Return to [Inquiry — shared ways to understand and investigate](../../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB), [Ergon — mathematics, science, and engineering](../../../Hephaestus.lingua#r_00000000000000000000002001), [Hephaestus](../../../Hephaestus.lingua#r_00000000000000000000002001), and [Philosophy](../../../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001) to connect the work with the wider scientific and production system.
+
+The general foundation does not replace specialist numerical analysis, statistics, programming-language theory, software engineering, domain modelling, or high-performance computing. It supplies the practical and scholarly ability to make those later computations inspectable and usable by someone other than their original author.
+
+**Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+} r_7VYT5A5V6ZS9K32WJQK6786NZT

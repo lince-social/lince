@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Connect geological knowledge with land use, preservation, and material consequences (@geo-heritage: 0, is #chapter, #part-of @geology, #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #source "../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N", #source "../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK", #geology "../methods/Publish-maps-observations-and-interpretations.lingua#r_0YXQJE013HS4Y1978966K3352W") { r_7KX1F44N6ER90NB6QY4KKG10BF
+**Read:** [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), the full geological-heritage, geoconservation, and territorial-use material; [Geodiversidade do estado do Rio Grande do Sul — Viero and Silva](../sources/Geodiversidade-Rio-Grande-do-Sul.lingua#r_177DN2HQXX9X7QQB6TNSS3RD3N), the corresponding regional applications; [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK), the complete product-purpose and interpretation guidance.
+
+An outcrop, fossil occurrence, landscape, or collection can preserve evidence that cannot be recreated after removal or alteration. Geological heritage includes scientific, educational, cultural, and other identified values. Explain those values through the actual evidence and relationships rather than assuming every attractive rock feature has the same significance.
+
+Land-use decisions connect geological conditions with water, soil, ecosystems, resources, infrastructure, access, institutions, and long-term change. Geology constrains physical possibilities and consequences but does not by itself settle every social priority. Distinguish a material/process statement from a value judgment or policy choice.
+
+Material extraction and construction redistribute rock, water, sediment, and waste and can create lasting changes in ground behavior. Recovery or closure is a process with evidence and timescales, not an automatic reversal of geological disturbance. Preserve observation and interpretation records useful for later assessment.
+
+**Work:** analyze a documented geological site or land-use case from the complete Brazilian treatment. Identify the evidence preserved, the material/water connections, the proposed uses, and where geological uncertainty changes the discussion. Compare at least two options using explicit assumptions and consequences without representing the exercise as a final public decision.
+
+Read the complete geoconservation and territorial-application chapters. Return to [Philosophy](../../../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001) for arguments about values and evidence and to [Hephaestus](../../../../hephaestus/Hephaestus.lingua#r_00000000000000000000002001) for the work of maintaining material systems. These links offer useful continuations without requiring every connected subject before a reader can study geology.
+
+**Continue:** [Publish a geological map whose evidence, identities, and revisions can be followed](../methods/Publish-maps-observations-and-interpretations.lingua#r_0YXQJE013HS4Y1978966K3352W).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_7KX1F44N6ER90NB6QY4KKG10BF

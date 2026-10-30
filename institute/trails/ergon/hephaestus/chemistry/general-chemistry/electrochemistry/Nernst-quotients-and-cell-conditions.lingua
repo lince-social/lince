@@ -1,0 +1,21 @@
+Import "../General-chemistry.lingua"
+
+Use the Nernst relation with the actual reaction quotient (@gc-nernst: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #general-chemistry "Electrolysis-charge-efficiency-and-products.lingua#r_769ZEZ2WVT6XC6RT11VM55WEAT", #metals-and-metallurgical-production "../../../materials/metals-and-metallurgical-production/electrometallurgy/Electrode-kinetics-overpotential-and-mass-transfer.lingua#r_3SJ6Y5KK3T5J69KMTGSNE2P9VR") { r_2V1NHR9TS7CD4ESB9PMAN3MJ5A
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 17’s free-energy, equilibrium, and Nernst sections; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the full Nernst and electrode-application lessons; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), electrochemical potential, cells, and quantity conventions.
+
+Combining Δ_rG = Δ_rG° + RT ln Q with Δ_rG = −zFE gives E = E° − (RT/zF) ln Q under compatible thermodynamic cell conventions. Use a dimensionless activity quotient for the identified balanced reaction. Concentration shortcuts require their ideal/conditional assumptions and the correct species.
+
+For an invented teaching cell with E° = 1.100 V, z = 2, T = 298.15 K, and Q = 10, the model gives about 1.07042 V. The standard reaction Gibbs energy is about −212.27 kJ mol⁻¹ of reaction extent using the SI-related Faraday constant. These numbers specify a hypothetical thermodynamic model rather than a buildable cell recipe.
+
+Composition, pressure, pH, complexation, and phase availability can enter Q. A total-metal concentration is not automatically the free-ion activity required by a half reaction. In a concentration cell or a pH measurement, reference/junction and observation details also matter. An operating loaded voltage may need kinetic and transport terms beyond this equilibrium relation.
+
+**Work:** derive the relation and recover the equilibrium-constant expression when the overall reversible driving force vanishes. Check the teaching value independently, then compare ideal and explicitly corrected activity estimates for a textbook example. Reverse the reaction and verify signs and normalization.
+
+Read the full Nernst sections and Green Book conventions. Use this account to explain what a measured potential can infer and which chemical/calibration assumptions support that inference. The same equation appears across several fields, but its actual reaction and constraints must remain visible.
+
+**Continue:** [Account for electrical charge, chemical amount, and competing electrode products](Electrolysis-charge-efficiency-and-products.lingua#r_769ZEZ2WVT6XC6RT11VM55WEAT).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in metals and metallurgical production:** [Separate equilibrium potential, electrode kinetics, and mass-transfer limits](../../../materials/metals-and-metallurgical-production/electrometallurgy/Electrode-kinetics-overpotential-and-mass-transfer.lingua#r_3SJ6Y5KK3T5J69KMTGSNE2P9VR).
+} r_2V1NHR9TS7CD4ESB9PMAN3MJ5A

@@ -164,8 +164,8 @@ fn source_inspection_obeys_visibility_and_remote_commands_cannot_open_local_file
 fn philosophy_content_is_selected_by_named_relations_without_personal_examples() {
     support::run_async_test("philosophy-query-content", || async {
         let engine = support::karma::engine().await;
-        let repository =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails/philosophy");
+        let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../institute/trails/scholazein/philosophy");
         let uri = repository
             .join("Philosophy.lingua")
             .to_string_lossy()

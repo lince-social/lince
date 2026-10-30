@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A catchment is a water account with boundaries (@wu-catchment-account: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Chronology-low-flow-and-the-water-that-is-available.lingua#r_5AQS99X6KYXV8BQAGKE4PRQ41M") { r_0RWVH5WS933CGBP80NHR40WT2B
+**Read:** [Manual de Saneamento](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), the water-supply material on sources and abstraction; [Groundwater Resource Development](../sources/Groundwater-resource-development.lingua#r_1M3NS4Y0CV4391JF136S20MVBP), chapters 1–3, especially section 3.2. Begin with a sketch of rain, ground, river, reservoir, wells and users. A catchment (bacia hidrográfica) drains toward an outlet; the contributing groundwater area need not follow the surface divide.
+
+For a declared interval, write change in stored volume = incoming volume − outgoing volume. Use precipitation, evapotranspiration, streamflow, groundwater exchange and abstractions only where each crosses the chosen boundary. Recharge is internal transfer if both the soil and aquifer are inside that boundary. Counting it as an additional external input creates water on paper. A return flow is not automatically available at the same location, time or quality as the original abstraction.
+
+Convert depth over area before combining it with stream volumes. In an original teaching example, a 10 km² catchment receives 100 mm in a month: 1,000,000 m³. If evapotranspiration is 40 mm, outlet flow 300,000 m³ and net abstraction 100,000 m³, with no other boundary exchange, storage rises 200,000 m³. Check by expressing each term as millimetres over the catchment. These simplified terms do not estimate a real catchment's yield.
+
+**Work:** Draw two nested boundaries around the same supply. Move an aquifer recharge arrow from an internal to an external term by changing the boundary, without changing total physical water. Add a groundwater inflow that crosses the surface divide. Explain why the original surface budget no longer closes and which measurements could distinguish missing flow from measurement error. Finish with a bilingual legend for captação, vazão, armazenamento, recarga and descarga.
+
+**Continue:** [Chronology, low flow and the water that is available](Chronology-low-flow-and-the-water-that-is-available.lingua#r_5AQS99X6KYXV8BQAGKE4PRQ41M).
+} r_0RWVH5WS933CGBP80NHR40WT2B

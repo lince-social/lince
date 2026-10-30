@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Explain why co-products make chemical availability interdependent (@cs-coproduct: 0, is #chapter, #part-of @chemical-supply-systems, #source "../../../chemistry/industrial-chemistry/sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #source "../sources/Chemical-Supply-Chain-Profiles-EPA.lingua#r_0E09Q6T7CC9HNWZB3N84E7K21A", #source "../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C", #chemical-supply-systems "Acids-bases-salts-and-their-real-delivery-state.lingua#r_625W6RZMDFFY4CE2NS8QAVXD1C") { r_6TBYK42RHG7R4JSKZ8KGR1EXD2
+**Read:** [Production of Chlor-alkali, BREF CAK](../../../chemistry/industrial-chemistry/sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the complete process, feed, product and operating chapters relevant to the case; [Water-treatment chemical supply-chain profiles — EPA](../sources/Chemical-Supply-Chain-Profiles-EPA.lingua#r_0E09Q6T7CC9HNWZB3N84E7K21A), the full sodium-hydroxide and chlorine profiles; [Understanding Water Treatment Chemical Supply Chains and the Risk of Disruptions — EPA](../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C), the complete chlor-alkali disruption analysis.
+
+The shared chlor-alkali Record supplies the chemistry and process account. Now follow the co-produced outputs to their markets and actual supply arrangements. A user's requirement for one output does not independently set plant production; other outputs, energy, equipment, storage and distribution have their own constraints.
+
+Reconstruct the EPA sodium-hydroxide profile in full, keeping its data years separate from today's conditions. Draw one causal hypothesis for a local shortage and identify the observations that would test it. More distributors may not diversify production if they draw from the same plant. Conversely, a producer can have capacity while a terminal, receiving tank or compatible delivery vehicle limits the user's supply.
+
+Build a simple joint-product account using the actual reaction basis and distinguish theoretical stoichiometry from saleable output and losses. Examine a demand change for one co-product, a planned maintenance period and a transport restriction. State which price, quantity or inventory effects follow from the model and which remain unproven. The purpose is to understand a connected production system, including alternatives and quality, rather than infer a universal market law from one dated disruption case.
+
+**Continue:** [Compare acids, bases and salts as actual supplied materials](Acids-bases-salts-and-their-real-delivery-state.lingua#r_625W6RZMDFFY4CE2NS8QAVXD1C).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_6TBYK42RHG7R4JSKZ8KGR1EXD2

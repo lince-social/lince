@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Field discretization, boundaries and observables (@em-numerical-fields: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM", #source "../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX", #electromagnetism "../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8") { r_3HYVJQ7HP9QQG81XSQ8B5EDV3P
+**Read:** [Understanding the Finite-Difference Time-Domain Method — John B. Schneider](../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM), complete numerical-development chapters; [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX), introduction, units, convergence and applicable tutorials.
+
+A numerical field model approximates an explicitly stated continuous problem. Select geometry, units, material law, sources, initial/boundary conditions and the observable before selecting a solver. Finite differences, finite volumes, finite elements, boundary elements and spectral methods make different approximation and conservation choices.
+
+Derive at least one discrete equation from an integral balance rather than immediately replacing derivatives by a stencil. Preserve charge/flux at material interfaces and distinguish point values from averages. State how geometry is represented and how singular sources or corners are regularized. Refining a mesh does not correct the wrong boundary condition or constitutive model.
+
+Plan verification before fitting data: exact limits, manufactured solutions, independent formulations, conservation, symmetry, refinement and parameter sensitivity. Separate algebraic-solver tolerance from discretization, domain truncation, measurement and model discrepancy. A converged answer can still describe the wrong physical system. The next original Poisson, dielectric-stack and time-domain examples expose small problems completely enough to test independently. [Understanding the Finite-Difference Time-Domain Method — John B. Schneider](../sources/Understanding-FDTD-Schneider.lingua#r_3BTKKSTADJQXT1XD3S4WZVBMYM), [Meep — methods, tutorials, validation and licence](../sources/Meep-Methods-Manual.lingua#r_7V0TJSMDBGNHBD0MBTB94W8GRX) and the advanced studies then extend the reasoning to substantially larger electromagnetic calculations.
+
+**Continue:** [Build a numerical validation argument across several kinds of evidence](../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3HYVJQ7HP9QQG81XSQ8B5EDV3P

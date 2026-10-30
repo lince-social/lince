@@ -1,0 +1,31 @@
+Engineering — systems, design, construction, and operation (@engineering-map: 0, is #chapter, #engineering "mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA", #engineering "../materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1", #engineering "../chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618", #engineering "../materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q", #engineering "../physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W", #engineering "electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ") { r_5DA6VY09MAD2N8D9SH0FFJVV68
+Connect physical principles, measured materials, design alternatives, construction, operation, maintenance, and evidence. A useful design must fit its conditions, supporting services, people, and continuing work.
+
+Begin with [Mining and mineral engineering — extraction, processing, and continuing work](mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA) for resource evidence, extraction methods, mine planning, ground, excavation/transport, utilities, mineral processing, products, waste, closure, and independent investigation.
+
+Shared foundations are available through [Inquiry — shared ways to understand and investigate](../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB), [Ergon — mathematics, science, and engineering](../Hephaestus.lingua#r_00000000000000000000002001), [Earth — materials, processes, and geological history](../../gaia/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH), and [General chemistry](../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V). Follow connected production and upkeep through [Hephaestus](../Hephaestus.lingua#r_00000000000000000000002001); questions about evidence, purposes, and assumptions return to [Philosophy](../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001).
+
+Connect extraction/refining, evolving material structure, fabrication, inspection, and continuing work through [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+
+Connect chemical transformations and product evidence with reaction/separation systems, utilities, scale and operation through [Industrial chemistry — chemical transformations, useful products and continuing production](../chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+
+Investigate specified chemical materials, supplier and delivery interfaces, qualified inventories, continuity and recovery through [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+
+Connect electrical, magnetic, wave and material models with their physical evidence through [Physics — fields, matter, motion and physical evidence](../physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+Develop electrical sources, networks, machines, conversion, protection, stability, construction and continuing service through [Electrical power engineering — sources, networks, machines and continuing service](electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+
+**Thermodynamics and heat transfer:** [Thermodynamics and heat transfer](../physics/thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E) develops energy, entropy, equilibrium, transport, measurements and advanced thermal investigation through complete books, courses and shared foundations.
+
+**Fluid dynamics:** [Fluid dynamics — motion, forces, transport and evidence](../physics/fluid-dynamics/Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ) connects observed fluid motion with pressure, forces, conservation laws, transport and the mathematical and experimental evidence for a flow model.
+
+**Water and sanitation:** [Water, sanitation and industrial utilities — from sources to continuing service](../utilities/water-and-sanitation/Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN) follows water sources, quality, delivery, treatment, recovery and the work required to maintain service.
+
+[Development scope: Engineering](../../../lince/Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
+} r_5DA6VY09MAD2N8D9SH0FFJVV68
+
+Extension @engineering-map "lince.vocabulary" {
+ definitions {
+  engineering "A continuation into the design, construction, operation, maintenance, or investigation of useful systems."
+ }
+}

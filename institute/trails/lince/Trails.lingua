@@ -1,16 +1,18 @@
-Trails — Knowledge to learn and use (@trails: 0, is #chapter, #contains @plan-philosophical-study, #contains @plan-quantitative-and-computational-practice, #contains @plan-reasoning-and-communication, #contains @plan-measurement-and-research, #contains @plan-learning-and-teaching, #contains @plan-knowledge-stewardship, #contains @plan-mathematics, #contains @plan-physics, #contains @plan-chemistry, #contains @plan-engineering, #contains @plan-computing, #contains @plan-earth-and-environment, #contains @plan-life-and-evolution, #contains @plan-food-land-and-animals, #contains @plan-health-and-care, #contains @plan-universe-and-space, #contains @plan-history, #contains @plan-sociology, #contains @plan-ethics-and-responsibility, #contains @plan-political-economy, #contains @plan-literature, #contains @plan-geography-and-communities, #contains @plan-resources-and-materials, #contains @plan-energy-and-utilities, #contains @plan-production-and-quality, #contains @plan-logistics-and-exchange, #contains @plan-facilities-and-maintenance, #contains @plan-connected-system-journeys, #contains @plan-first-connected-pathways) { r_7A4AY51TXG87NVHR9J1XNZTJQ9
+Trails — Knowledge to learn and use (@trails: 0, is #chapter, #contains @plan-ergon, #contains @plan-scholazein, #contains @plan-ascholia, #contains @plan-lince, #contains @plan-first-connected-pathways) { r_7A4AY51TXG87NVHR9J1XNZTJQ9
 ## One body of knowledge, several entrances
 
-Build substantial knowledge from books, articles, methods, explanations, and examples. Support learning, investigation, making, maintenance, and the continuation of knowledge. Philosophy, Sociology, Literature, History, Political-Economy, and STEM contribute their own questions and connections.
+Build substantial knowledge from books, articles, methods, explanations, and examples. Support learning, investigation, making, maintenance, and the continuation of knowledge. Philosophy, Sociology, Literature, History, Political-Economy, and Ergon contribute their own questions and connections.
 
-| Entrance | Branches |
+| Umbrella | Branches and file homes |
 | --- | --- |
-| Philosophy | Inquiry, logic, knowledge, reality, action, values, mind, language, interpretation, and philosophical traditions |
-| Inquiry and learning | Quantities; reasoning and communication; measurement; teaching; knowledge stewardship |
-| STEM | Mathematics; physics; chemistry; engineering; computing |
-| Nature, life, and health | Earth and environment; life and evolution; food, land, and animals; health and care; universe and space |
-| Society, history, and literature | [History](Trails.lingua#r_3MKG6XS2X0W9YR8T4438CTGZ1T); [Sociology](Trails.lingua#r_2ENBJ86RED2J0TCGJFZARTTNQT); [Political-Economy](Trails.lingua#r_2WPG1Y767BM24Z0K4BY6Y6T62W); [Literature](Trails.lingua#r_68XTEFTFVR5ZPB68D6E1XK0SR3); geography and communities |
-| Ergon | Materials; energy and utilities; production and quality; logistics and exchange; facilities and maintenance; connected systems |
+| Ergon — useful labor and productive knowledge | `ergon/`: Hephaestus, Gaia, and connections across productive systems |
+| Hephaestus, within Ergon | `ergon/hephaestus/`: mathematics, hard sciences, engineering, computing, astronomy, materials, utilities, production, logistics, maintenance, and shared inquiry |
+| Gaia, within Ergon | `ergon/gaia/`: Earth and environment, biology, food and agriculture, medicine and care |
+| Scholazein | `scholazein/`: philosophy, history, sociology, political-economy, literature, and art |
+| Ascholia | `ascholia/`: bureaucracy and practical administration |
+| Lince | `lince/`: ecosystem documentation, habits, simulations, and shared examples |
+
+These are useful homes, not exclusive boundaries or prerequisites. Shared Records remain reusable through ordinary links. Hephaestus names the hard-science branch previously called STEM; Ergon names the broader work of sustaining life and productive knowledge. Astronomy and astrophysics belong with Hephaestus; Earth and environmental studies keep their Gaia home while connecting to physics, chemistry, and engineering.
 
 “Trail” is our name for this plan, the content under `institute/trails/`, and the ordinary Lince data and referenced material it develops. Readers use Records, links, resources, Protein, and normal actions. They do not need to learn a separate Trail feature.
 
@@ -52,9 +54,10 @@ The linked planning Records describe knowledge to develop. ERG labels are editor
 
 ## Development register
 
+### Ergon / Hephaestus
+
 | Field | Planned subjects |
 | --- | --- |
-| [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z) | 12 |
 | [Quantitative and computational practice](Trails.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00) | 0 |
 | [Reasoning and communication](Trails.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB) | 2 |
 | [Measurement and research](Trails.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0) | 1 |
@@ -65,183 +68,126 @@ The linked planning Records describe knowledge to develop. ERG labels are editor
 | [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6) | 16 |
 | [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48) | 31 |
 | [Computing](Trails.lingua#r_7YRTRPQ94D66X8Y7KN7K2XCTK8) | 22 |
+| [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP) | 5 |
+| [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5) | 6 |
+| [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4) | 4 |
+| [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ) | 4 |
+| [Logistics and exchange](Trails.lingua#r_40D59MXC3BX7K9FEVGCRY5S6F1) | 1 |
+| [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28) | 4 |
+
+### Ergon / Gaia
+
+| Field | Planned subjects |
+| --- | --- |
 | [Earth and environment](Trails.lingua#r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE) | 12 |
 | [Life and evolution](Trails.lingua#r_72CYF6F3ZBTDEZ07QGWVYVPBRB) | 14 |
 | [Food, land, and animals](Trails.lingua#r_7TZJ0205WDMV84BK85FENRWE64) | 5 |
 | [Health and care](Trails.lingua#r_1YY66H962HAJ5XJQHYJWGZQ0Z6) | 3 |
-| [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP) | 5 |
+
+### Ergon / shared production journeys
+
+| Field | Planned subjects |
+| --- | --- |
+| [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA) | 10 |
+
+### Scholazein
+
+| Field | Planned subjects |
+| --- | --- |
+| [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z) | 12 |
 | [History](Trails.lingua#r_3MKG6XS2X0W9YR8T4438CTGZ1T) | 7 |
 | [Sociology](Trails.lingua#r_2ENBJ86RED2J0TCGJFZARTTNQT) | 4 |
 | [Ethics and responsibility](Trails.lingua#r_13ARZACNYPA4ZZHNVDSYG8C1A8) | 1 |
 | [Political-Economy](Trails.lingua#r_2WPG1Y767BM24Z0K4BY6Y6T62W) | 8 |
 | [Literature](Trails.lingua#r_68XTEFTFVR5ZPB68D6E1XK0SR3) | 4 |
 | [Geography and communities](Trails.lingua#r_51B6N9Q9KVNQJTZRYTSJVGZ54P) | 1 |
-| [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5) | 6 |
-| [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4) | 4 |
-| [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ) | 4 |
-| [Logistics and exchange](Trails.lingua#r_40D59MXC3BX7K9FEVGCRY5S6F1) | 1 |
-| [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28) | 4 |
-| [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA) | 10 |
 
 [First connected pathways](Trails.lingua#r_3RYVEGQ60GSD3XY3EVQH0JJRED) supplies the first connected reading and doing plans and their shared questions. These are editorial starting points; the register can grow, split, or combine scopes as the actual material develops.
 
 ## Source anchors and proposed homes
 
-Use the existing [Philosophy](../philosophy/Philosophy.lingua), [Ergon](../ergon/Ergon.lingua), [Basic Eletronics](../ergon/computer-science/Basic%20Eletronics.lingua), [Farming](../nature/farming/Farming.lingua), and [Supply](../habits/simple/Supply.lingua) sources by reference. The [Trail Record](Lince.lingua#r_Q46Z5FZHZFACPNSNPJP2GEDC1D) remains the authority for Lince's general intention. Use existing identities and keep affected references valid when connecting or reorganising material.
+Use the existing [Philosophy](../scholazein/philosophy/Philosophy.lingua), [Hephaestus](../ergon/hephaestus/Hephaestus.lingua), [Basic Eletronics](../ergon/hephaestus/computer-science/Basic%20Eletronics.lingua), [Farming](../ergon/gaia/farming/Farming.lingua), and [Supply](habits/simple/Supply.lingua) sources by reference. The [Trail Record](Lince.lingua#r_Q46Z5FZHZFACPNSNPJP2GEDC1D) remains the authority for Lince's general intention. Use existing identities and keep affected references valid when connecting or reorganising material.
 
 | Proposed content | Source home |
 | --- | --- |
-| Philosophical study | `institute/trails/philosophy/Philosophy.lingua` and its subject directories |
-| Shared inquiry | `institute/trails/inquiry/Inquiry.lingua` and its branch sources |
-| STEM | `institute/trails/stem/STEM.lingua` and its branch sources |
-| Nature, life, and health | `institute/trails/nature/Nature.lingua`, referencing existing subject material |
-| Society, history, and literature | `institute/trails/society/Society.lingua` |
-| History | `institute/trails/society/history/History.lingua` |
-| Sociology | `institute/trails/society/sociology/Sociology.lingua` |
-| Political-Economy | `institute/trails/society/political-economy/Political-Economy.lingua` |
-| Literature | `institute/trails/society/literature/Literature.lingua` |
+| Ergon | `institute/trails/ergon/Ergon.lingua` |
+| Scholazein | `institute/trails/scholazein/Scholazein.lingua` |
+| Ascholia | `institute/trails/ascholia/Ascholia.lingua` |
+| Philosophical study | `institute/trails/scholazein/philosophy/Philosophy.lingua` and its subject directories |
+| Shared inquiry | `institute/trails/ergon/hephaestus/inquiry/Inquiry.lingua` and its branch sources |
+| Hephaestus | `institute/trails/ergon/hephaestus/Hephaestus.lingua` and its branch sources |
+| Gaia — Earth, life, food, and health | `institute/trails/ergon/gaia/Nature.lingua`, referencing existing subject material |
+| Society, history, and literature | `institute/trails/scholazein/society/Society.lingua` |
+| History | `institute/trails/scholazein/society/history/History.lingua` |
+| Sociology | `institute/trails/scholazein/society/sociology/Sociology.lingua` |
+| Political-Economy | `institute/trails/scholazein/society/political-economy/Political-Economy.lingua` |
+| Literature | `institute/trails/scholazein/society/literature/Literature.lingua` |
+
+All Hephaestus subject homes are beneath `institute/trails/ergon/hephaestus/`: `inquiry/`, `mathematics/`, `physics/`, `chemistry/`, `engineering/`, `computer-science/`, `space/`, `materials/`, `utilities/`, `production/`, `logistics/`, and `facilities/`. Use descriptive subject directories inside these fields; retain existing developed directory names. These are proposed homes where not yet populated, not instructions to create empty directories. Cross-branch productive journeys can live under `ergon/connected-systems/` and reference either branch.
 
 Use direct file/URL references and known identities for navigation; keep source definitions and the reader's personal work distinct.
 } r_7A4AY51TXG87NVHR9J1XNZTJQ9
 
-Philosophical study (@plan-philosophical-study: 0, is #chapter, #planned, #part-of @trails, #contains @plan-philosophical-inquiry-argument-and-dialectic, #contains @plan-logic-and-philosophy-of-logic, #contains @plan-epistemology-and-the-life-of-knowledge, #contains @plan-metaphysics-and-ontology, #contains @plan-ethics-value-and-moral-reasoning, #contains @plan-action-freedom-and-practical-reason, #contains @plan-mind-experience-and-subjectivity, #contains @plan-language-meaning-and-interpretation, #contains @plan-social-philosophy-and-political-judgment, #contains @plan-aesthetics-and-philosophy-of-art, #contains @plan-religion-existence-and-the-meaning-of-life, #contains @plan-history-and-traditions-of-philosophy) { r_49SB3VCQS4WDEBHS2V3BSA411Z
-Proposed branch Record: `@philosophical-inquiry-map`. Organising Record: `@philosophy`.
+Ergon — useful labor and productive knowledge (@plan-ergon: 0, is #chapter, #part-of @trails, #contains @plan-hephaestus, #contains @plan-gaia, #contains @plan-connected-system-journeys, #related "../ergon/Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1") { r_07E6A8FE1217C77B83EEDF55EC
+**Existing entrance:** [Ergon](../ergon/Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1).
 
-The existing Philosophy Record is the shared entrance. Use `#philosophy` for its general learning connections and specific predicates such as `#ancient-greek-philosophy` and `#buddhism` for their respective selections. The [Buddhism and Yoga entrance](../philosophy/karmic-philosophy/Karmic-philosophy.lingua) connects the ordered Buddhist study and the separate, single-book Yoga reading through ordinary Records. Their learning connections use `#buddhism` and `#yoga`; comparisons and sources retain their own links.
+**Content home:** `institute/trails/ergon/`.
 
-**Pathways:** Begin with a philosophical question or primary text, reconstruct its argument, and compare objections and alternative accounts. Follow a problem through logic, knowledge, reality, action, value, experience, or historical traditions as relevant. Share formal foundations with Mathematics and interpretive methods with History and Literature, introducing the preparation actually used by each step.
+Ergon joins the knowledge and work that sustain collective life. Hephaestus covers hard sciences and their productive applications; Gaia covers Earth, living systems, food, and health. Connected system journeys reuse both branches and relevant social knowledge.
 
-## Planned pathways
+- [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA)
 
-- [Philosophical inquiry, argument, and dialectic](Trails.lingua#r_78KZ3J6EYBMW8FYF80GHJ2Q2AM)
-- [Logic and philosophy of logic](Trails.lingua#r_1J0J8EJ093GRB91Y0Z9353TJMR)
-- [Epistemology and the life of knowledge](Trails.lingua#r_74PA1ZD0W1T4Y2PZEZNXRK7Y4D)
-- [Metaphysics and ontology](Trails.lingua#r_3SNF8V7B02S3QVBRC2WVSCCZW8)
-- [Ethics, value, and moral reasoning](Trails.lingua#r_5M0CC0HK1Q4GDME0G52DEEBR7X)
-- [Action, freedom, and practical reason](Trails.lingua#r_36FFA1JH7A8DEDJPJEKCBS1Q4F)
-- [Mind, experience, and subjectivity](Trails.lingua#r_47VCQR824JH7PZ2VNNSKCH6B7K)
-- [Language, meaning, and interpretation](Trails.lingua#r_4HNGAHCTCDZCFRQ8GTM0DCG4M7)
-- [Social philosophy and political judgment](Trails.lingua#r_2FWM2H1GDRH93WW2QV15MNHMEA)
-- [Aesthetics and philosophy of art](Trails.lingua#r_28Z7XY50BG67Y8WWMVFRVWK0QW)
-- [Religion, existence, and the meaning of life](Trails.lingua#r_6HFHAD3C09XQ0Y1N0HMQ15414J)
-- [History and traditions of philosophy](Trails.lingua#r_17Q7Z11WNMH2ZWVXCZT2ASB2RK)
+[Hephaestus — hard sciences and productive work](Trails.lingua#r_B6CB9BDC51A6B67584422A89AE).
 
-**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
-} r_49SB3VCQS4WDEBHS2V3BSA411Z
+[Gaia — Earth, life, food, and health](Trails.lingua#r_5C9BFC717E14FCCEAA6213706A).
+} r_07E6A8FE1217C77B83EEDF55EC
 
-Philosophical inquiry, argument, and dialectic (@plan-philosophical-inquiry-argument-and-dialectic: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_78KZ3J6EYBMW8FYF80GHJ2Q2AM
-**Editorial reference:** ERG-201.
+Hephaestus — hard sciences and productive work (@plan-hephaestus: 0, is #chapter, #part-of @plan-ergon, #contains @plan-quantitative-and-computational-practice, #contains @plan-reasoning-and-communication, #contains @plan-measurement-and-research, #contains @plan-learning-and-teaching, #contains @plan-knowledge-stewardship, #contains @plan-mathematics, #contains @plan-physics, #contains @plan-chemistry, #contains @plan-engineering, #contains @plan-computing, #contains @plan-universe-and-space, #contains @plan-resources-and-materials, #contains @plan-energy-and-utilities, #contains @plan-production-and-quality, #contains @plan-logistics-and-exchange, #contains @plan-facilities-and-maintenance, #related "../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001") { r_B6CB9BDC51A6B67584422A89AE
+**Existing entrance:** [Hephaestus](../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001).
 
-Philosophical inquiry begins with a question, makes its concepts and assumptions explicit, and develops an answer that can withstand criticism. This material joins close reading, conceptual analysis, argument reconstruction, dialogue, counterexamples, objections, and dialectic. Routes can begin with an everyday problem or a primary text, then compare competing accounts and examine what a distinction reveals or conceals. Reuse these methods when questioning scientific models, historical explanations, social arrangements, and interpretations of literature.
+**Content home:** `institute/trails/ergon/hephaestus/`.
 
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_78KZ3J6EYBMW8FYF80GHJ2Q2AM
+This is the home of the former STEM hard-science plans: mathematics, physics, chemistry, engineering, computing, astronomy, materials, energy, manufacturing, logistics, facilities, and maintenance, with shared inquiry and learning methods. Start from [Hephaestus](../ergon/hephaestus/Hephaestus.lingua). Develop each subject in a descriptive subdirectory beneath its field directory. Pure theory belongs here as fully as its applications; immediate industrial usefulness is not a requirement.
 
-Logic and philosophy of logic (@plan-logic-and-philosophy-of-logic: 0, is #chapter, #planned, #part-of @plan-philosophical-study, #related @plan-mathematical-foundations-logic-and-proof) { r_1J0J8EJ093GRB91Y0Z9353TJMR
-**Editorial reference:** ERG-202.
+- [Quantitative and computational practice](Trails.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00)
+- [Reasoning and communication](Trails.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB)
+- [Measurement and research](Trails.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0)
+- [Learning and teaching](Trails.lingua#r_1JERVDF9ND9GX4T1AGV0PE1HT3)
+- [Knowledge stewardship](Trails.lingua#r_7T9WCQ0Q5TA1Q0VXQJ74Y25F53)
+- [Mathematics](Trails.lingua#r_6PZSEX3MTC14A74R94SJQ67B3C)
+- [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ)
+- [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6)
+- [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48)
+- [Computing](Trails.lingua#r_7YRTRPQ94D66X8Y7KN7K2XCTK8)
+- [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP)
+- [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5)
+- [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4)
+- [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ)
+- [Logistics and exchange](Trails.lingua#r_40D59MXC3BX7K9FEVGCRY5S6F1)
+- [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28)
+} r_B6CB9BDC51A6B67584422A89AE
 
-Logic investigates valid inference and the forms through which claims can support or conflict with one another. This material covers propositions, quantification, consequence, consistency, proof, models, modality, and alternative logical systems, alongside questions about truth, paradox, ordinary reasoning, and the limits of formalisation. Share the relevant formal foundations with [ERG-012](Trails.lingua#r_1K7J2A99Z4798HQEQ7Z0CKWAE7), introducing notation at the point of use. A philosophical argument, an empirical inference, and a formal derivation should each make their standards explicit.
+Quantitative and computational practice (@plan-quantitative-and-computational-practice: 0, is #chapter, #part-of @plan-hephaestus) { r_7JPGRRFCD72G9ZT8EMV0FEPH00
+**Existing entrance:** [Inquiry](../ergon/hephaestus/inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
 
-**Related plans:** [Mathematical foundations, logic, and proof](Trails.lingua#r_1K7J2A99Z4798HQEQ7Z0CKWAE7).
+**Content home:** `institute/trails/ergon/hephaestus/inquiry/`, with subject directories for the planned pathways.
 
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_1J0J8EJ093GRB91Y0Z9353TJMR
-
-Epistemology and the life of knowledge (@plan-epistemology-and-the-life-of-knowledge: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_74PA1ZD0W1T4Y2PZEZNXRK7Y4D
-**Editorial reference:** ERG-203.
-
-Epistemology investigates knowledge, belief, truth, justification, error, and the limits of understanding. This material connects perception, memory, testimony, reasoning, practical knowledge, disagreement, scepticism, and the social conditions of inquiry. Compare accounts through arguments, counterexamples, and the practices by which people establish or challenge a claim. Link scientific evidence, historical sources, education, and the sociology of knowledge while preserving the different questions each asks.
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_74PA1ZD0W1T4Y2PZEZNXRK7Y4D
-
-Metaphysics and ontology (@plan-metaphysics-and-ontology: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_3SNF8V7B02S3QVBRC2WVSCCZW8
-**Editorial reference:** ERG-204.
-
-Metaphysics examines what exists and how reality can be understood; ontology investigates the kinds of things an account commits us to. This material explores identity, persistence, properties, relations, parts and wholes, causation, possibility, time, reduction, and emergence. Compare ways of drawing boundaries around objects, processes, persons, and systems, explaining their assumptions and consequences. Connect these questions to physical theories, living systems, social institutions, and the abstractions used in Lince without treating a useful classification as a final division of reality.
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_3SNF8V7B02S3QVBRC2WVSCCZW8
-
-Ethics, value, and moral reasoning (@plan-ethics-value-and-moral-reasoning: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_5M0CC0HK1Q4GDME0G52DEEBR7X
-**Editorial reference:** ERG-205.
-
-Ethics asks how people should act, what makes a life good, and how obligations or values can be justified. This material connects virtue, duty, consequences, care, character, moral disagreement, and metaethical questions about the meaning and basis of moral claims. Develop arguments through cases and objections, distinguishing what happens from what ought to happen. Link professional and research ethics, collective decisions, personal action, and literary depictions of moral life through the same concepts where appropriate.
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_5M0CC0HK1Q4GDME0G52DEEBR7X
-
-Action, freedom, and practical reason (@plan-action-freedom-and-practical-reason: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_36FFA1JH7A8DEDJPJEKCBS1Q4F
-**Editorial reference:** ERG-206.
-
-The philosophy of action investigates intentions, reasons, choices, habits, agency, freedom, and responsibility. This material examines how explanations of action relate to deliberation, bodily activity, social constraints, and causal accounts, including disagreements about free will and the conditions of responsible action. Routes can start with a concrete decision and deepen into competing theories. Connect these questions to ethics, social explanation, and Political-Economy while distinguishing an explanatory model of behaviour from a justification of the decision.
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_36FFA1JH7A8DEDJPJEKCBS1Q4F
-
-Mind, experience, and subjectivity (@plan-mind-experience-and-subjectivity: 0, is #chapter, #planned, #part-of @plan-philosophical-study, #related @plan-neuroscience-and-cognitive-science) { r_47VCQR824JH7PZ2VNNSKCH6B7K
-**Editorial reference:** ERG-207.
-
-Philosophy of mind examines consciousness, perception, emotion, thought, embodiment, personal identity, and the relation between mind and world. This material compares first-person description, conceptual argument, and scientific explanation, including phenomenological approaches and debates about physicalism, representation, and situated experience. Reuse relevant neuroscience and cognitive science from [ERG-104](Trails.lingua#r_13CGJGRFBS2ACJ69T0KCP7GZAQ) as evidence and context, with the philosophical assumptions visible. Literary accounts of experience can support comparison without being treated as experimental observations.
-
-**Related plans:** [Neuroscience and cognitive science](Trails.lingua#r_13CGJGRFBS2ACJ69T0KCP7GZAQ).
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_47VCQR824JH7PZ2VNNSKCH6B7K
-
-Language, meaning, and interpretation (@plan-language-meaning-and-interpretation: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_4HNGAHCTCDZCFRQ8GTM0DCG4M7
-**Editorial reference:** ERG-208.
-
-Philosophy of language investigates meaning, reference, truth, communication, use, and interpretation. This material joins arguments about how words and concepts relate to the world with hermeneutics, ambiguity, context, translation, and the interpretation of texts. Follow a concrete disagreement or passage before introducing more formal accounts where useful. Connect shared terminology in science, historical source criticism, literary interpretation, and public reasoning, explaining when a change of vocabulary changes the question itself.
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_4HNGAHCTCDZCFRQ8GTM0DCG4M7
-
-Social philosophy and political judgment (@plan-social-philosophy-and-political-judgment: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_2FWM2H1GDRH93WW2QV15MNHMEA
-**Editorial reference:** ERG-209.
-
-Social and political philosophy investigate freedom, justice, equality, authority, property, recognition, power, and the justification of collective arrangements. This material compares arguments about how people live and decide together, connecting ethical principles with institutions, work, conflict, and cooperation. Share the institutional and empirical accounts developed in Political-Economy and Sociology, while making normative premises explicit. A route can investigate a particular arrangement through its reasons, effects, criticisms, and possible alternatives.
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_2FWM2H1GDRH93WW2QV15MNHMEA
-
-Aesthetics and philosophy of art (@plan-aesthetics-and-philosophy-of-art: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_28Z7XY50BG67Y8WWMVFRVWK0QW
-**Editorial reference:** ERG-210.
-
-Aesthetics investigates experience, form, beauty, expression, imagination, taste, and artistic value. This material asks how works acquire meaning, how interpretations and judgments are supported, and how artistic practices relate to their historical and social settings. Begin with particular works and contrasting readings, then develop the relevant philosophical arguments. Literature provides a continuing connection through narrative, poetic form, fictional worlds, emotional response, criticism, and the relationship between a work and its reader.
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_28Z7XY50BG67Y8WWMVFRVWK0QW
-
-Religion, existence, and the meaning of life (@plan-religion-existence-and-the-meaning-of-life: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_6HFHAD3C09XQ0Y1N0HMQ15414J
-**Editorial reference:** ERG-211.
-
-This material examines philosophical questions about religion, belief, reason, suffering, mortality, purpose, and ways of living. Compare arguments concerning religious claims and secular accounts of meaning, relating them to metaphysics, ethics, experience, and historical traditions. A route can begin with a text or existential question and trace its assumptions and objections. Keep the distinction between understanding an account, evaluating its arguments, and adopting it as a way of life explicit.
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_6HFHAD3C09XQ0Y1N0HMQ15414J
-
-History and traditions of philosophy (@plan-history-and-traditions-of-philosophy: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_17Q7Z11WNMH2ZWVXCZT2ASB2RK
-**Editorial reference:** ERG-212.
-
-The history of philosophy investigates how questions, arguments, texts, and traditions developed and were reinterpreted. This material connects ancient, medieval, modern, and contemporary philosophy through particular problems and primary works, including analytic, dialectical, phenomenological, hermeneutic, pragmatic, and critical approaches and Brazilian and Latin American debates. Use historical context, translations, commentary, and disagreements to understand an argument before comparing it across periods. Offer both chronological routes and routes following one question through several traditions.
-
-**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
-} r_17Q7Z11WNMH2ZWVXCZT2ASB2RK
-
-Quantitative and computational practice (@plan-quantitative-and-computational-practice: 0, is #chapter, #part-of @trails) { r_7JPGRRFCD72G9ZT8EMV0FEPH00
-Shared quantitative and computational practice is available through the [Inquiry entrance](../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+Shared quantitative and computational practice is available through the [Inquiry entrance](../ergon/hephaestus/inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
 
 **Pathways:** Interpret quantities, tables, and graphs; keep a balance; reproduce a small calculation. Start from the required arithmetic and introduce units, notation, or code when used; operating a table does not require completing programming.
 
-**Available:** [Quantitative and technical literacy](../inquiry/quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2), from arithmetic and complete technical-mathematics books through drawings, balances, uncertainty, advanced model reasoning, and independent studies.
+**Available:** [Quantitative and technical literacy](../ergon/hephaestus/inquiry/quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2), from arithmetic and complete technical-mathematics books through drawings, balances, uncertainty, advanced model reasoning, and independent studies.
 
-**Available:** [Reproducible computational work](../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), from a first saved calculation and complete programming/research-software books through independent checks, environments, workflows, numerical and stochastic validation, preservation, and sustained scholarly projects. It reuses quantitative and metrology Records with distinct continuations.
+**Available:** [Reproducible computational work](../ergon/hephaestus/inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), from a first saved calculation and complete programming/research-software books through independent checks, environments, workflows, numerical and stochastic validation, preservation, and sustained scholarly projects. It reuses quantitative and metrology Records with distinct continuations.
 
 **Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
 } r_7JPGRRFCD72G9ZT8EMV0FEPH00
 
-Reasoning and communication (@plan-reasoning-and-communication: 0, is #chapter, #planned, #part-of @trails, #contains @plan-scientific-reasoning-and-method, #contains @plan-technical-reading-writing-and-visual-communication) { r_4HHN23A6WFE0YZ8394FZ4A5DTB
+Reasoning and communication (@plan-reasoning-and-communication: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-scientific-reasoning-and-method, #contains @plan-technical-reading-writing-and-visual-communication) { r_4HHN23A6WFE0YZ8394FZ4A5DTB
+**Existing entrance:** [Inquiry](../ergon/hephaestus/inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Content home:** `institute/trails/ergon/hephaestus/inquiry/`, with subject directories for the planned pathways.
+
 Proposed branch Record: `@reasoning-communication-map`. Organising Record: `@inquiry-map`.
 
 **Pathways:** Reconstruct and question an argument; compare explanation with evidence; read and explain a technical passage. Introduce terminology and argument structure within the route; specialist notation gets its own linked preparation.
@@ -270,12 +216,16 @@ Technical communication explains complex ideas and procedures while preserving t
 **Planning context:** [Reasoning and communication](Trails.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB).
 } r_25XMNVFPR8DZ9N117APVD4ZDJ7
 
-Measurement and research (@plan-measurement-and-research: 0, is #chapter, #planned, #part-of @trails, #contains @plan-research-design-and-experimentation) { r_63SRHN81RMJ2MTA76HE11C5WR0
+Measurement and research (@plan-measurement-and-research: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-research-design-and-experimentation) { r_63SRHN81RMJ2MTA76HE11C5WR0
+**Existing entrance:** [Inquiry](../ergon/hephaestus/inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Content home:** `institute/trails/ergon/hephaestus/inquiry/`, with subject directories for the planned pathways.
+
 Proposed branch Record: `@measurement-research-map`. Organising Record: `@inquiry-map`.
 
 **Pathways:** Make and report a bounded measurement; design an informative comparison; follow an investigation from question to conclusion. Begin with quantities and observations; introduce uncertainty, sampling, and later statistical methods where the selected question needs them.
 
-**Available:** [Measurement and metrology](../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), from an accessible first measurement through calibration, traceability, nonlinear and multivariate uncertainty, sampling, physical measurement families, laboratory comparisons, and independent research. Shared quantitative Records retain distinct continuations for each selection.
+**Available:** [Measurement and metrology](../ergon/hephaestus/inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), from an accessible first measurement through calibration, traceability, nonlinear and multivariate uncertainty, sampling, physical measurement families, laboratory comparisons, and independent research. Shared quantitative Records retain distinct continuations for each selection.
 
 ## Planned pathways
 
@@ -292,10 +242,14 @@ Research design turns a question into a study capable of providing useful eviden
 **Planning context:** [Measurement and research](Trails.lingua#r_63SRHN81RMJ2MTA76HE11C5WR0).
 } r_46ZFQQBMNRDP7HA63J3B7AJR8H
 
-Learning and teaching (@plan-learning-and-teaching: 0, is #chapter, #planned, #part-of @trails, #contains @plan-teaching-apprenticeship-and-assessment) { r_1JERVDF9ND9GX4T1AGV0PE1HT3
+Learning and teaching (@plan-learning-and-teaching: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-teaching-apprenticeship-and-assessment) { r_1JERVDF9ND9GX4T1AGV0PE1HT3
+**Existing entrance:** [Inquiry](../ergon/hephaestus/inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Content home:** `institute/trails/ergon/hephaestus/inquiry/`, with subject directories for the planned pathways.
+
 Proposed branch Record: `@learning-teaching-map`. Organising Record: `@inquiry-map`.
 
-**Pathways:** Organise one's learning; teach a selected idea; hand over a practical method. The required subject knowledge depends on what is being taught; general pedagogy does not require completing a STEM degree.
+**Pathways:** Organise one's learning; teach a selected idea; hand over a practical method. The required subject knowledge depends on what is being taught; general pedagogy does not require completing a Hephaestus curriculum.
 
 ## Planned pathways
 
@@ -312,7 +266,11 @@ Teaching reproduces a society's ability to understand and perform skilled work. 
 **Planning context:** [Learning and teaching](Trails.lingua#r_1JERVDF9ND9GX4T1AGV0PE1HT3).
 } r_757VJ3M3MM162D3AEZ2TWFSSQM
 
-Knowledge stewardship (@plan-knowledge-stewardship: 0, is #chapter, #planned, #part-of @trails, #contains @plan-knowledge-stewardship-and-open-publication) { r_7T9WCQ0Q5TA1Q0VXQJ74Y25F53
+Knowledge stewardship (@plan-knowledge-stewardship: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-knowledge-stewardship-and-open-publication) { r_7T9WCQ0Q5TA1Q0VXQJ74Y25F53
+**Existing entrance:** [Inquiry](../ergon/hephaestus/inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB).
+
+**Content home:** `institute/trails/ergon/hephaestus/inquiry/`, with subject directories for the planned pathways.
+
 Proposed branch Record: `@knowledge-stewardship-map`. Organising Record: `@inquiry-map`.
 
 **Pathways:** Connect a small reading collection; describe an edition and useful passage; preserve and restore a declared selection. Start with ordinary reading and file use; introduce bibliography, provenance, publication terms, and retention as the work requires.
@@ -332,8 +290,12 @@ Knowledge stewardship keeps sources, explanations, data, software, and records d
 **Planning context:** [Knowledge stewardship](Trails.lingua#r_7T9WCQ0Q5TA1Q0VXQJ74Y25F53).
 } r_1RJHMW0B674DTNETXVQXBGVFGH
 
-Mathematics (@plan-mathematics: 0, is #chapter, #planned, #part-of @trails, #contains @plan-mathematical-foundations-logic-and-proof, #contains @plan-algebra, #contains @plan-linear-and-multilinear-algebra, #contains @plan-number-theory, #contains @plan-discrete-mathematics-and-combinatorics, #contains @plan-graphs-networks-and-discrete-relationships, #contains @plan-geometry, #contains @plan-topology, #contains @plan-calculus-and-vector-analysis, #contains @plan-real-and-complex-analysis, #contains @plan-functional-and-harmonic-analysis, #contains @plan-differential-equations-and-dynamical-systems, #contains @plan-probability-and-stochastic-processes, #contains @plan-statistics-and-inference, #contains @plan-numerical-analysis, #contains @plan-optimisation-and-operations-research, #contains @plan-applied-mathematics-and-mathematical-modelling, #contains @plan-information-and-coding-theory, #contains @plan-mathematical-cryptography, #contains @plan-game-theory-and-decision-theory) { r_6PZSEX3MTC14A74R94SJQ67B3C
-Proposed branch Record: `@mathematics-map`. Organising Record: `@stem-map`.
+Mathematics (@plan-mathematics: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-mathematical-foundations-logic-and-proof, #contains @plan-algebra, #contains @plan-linear-and-multilinear-algebra, #contains @plan-number-theory, #contains @plan-discrete-mathematics-and-combinatorics, #contains @plan-graphs-networks-and-discrete-relationships, #contains @plan-geometry, #contains @plan-topology, #contains @plan-calculus-and-vector-analysis, #contains @plan-real-and-complex-analysis, #contains @plan-functional-and-harmonic-analysis, #contains @plan-differential-equations-and-dynamical-systems, #contains @plan-probability-and-stochastic-processes, #contains @plan-statistics-and-inference, #contains @plan-numerical-analysis, #contains @plan-optimisation-and-operations-research, #contains @plan-applied-mathematics-and-mathematical-modelling, #contains @plan-information-and-coding-theory, #contains @plan-mathematical-cryptography, #contains @plan-game-theory-and-decision-theory) { r_6PZSEX3MTC14A74R94SJQ67B3C
+**Existing entrance:** [Hephaestus](../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001).
+
+**Content home:** `institute/trails/ergon/hephaestus/mathematics/`, with subject directories for the planned pathways.
+
+Proposed branch Record: `@mathematics-map`. Organising Record: `@hephaestus`.
 
 **Pathways:** Construct a mathematical argument; use equations and functions; understand linear transformations; later pursue the chosen structures, spaces, analysis, or uncertain systems. Select the relevant arithmetic, notation, and reasoning rather than placing all foundational mathematics before every application.
 
@@ -523,16 +485,20 @@ Decision theory studies choices under preferences and uncertainty; game theory s
 **Planning context:** [Mathematics](Trails.lingua#r_6PZSEX3MTC14A74R94SJQ67B3C).
 } r_2Z4K5GNESAAA2QEDAD1HSKMC8M
 
-Physics (@plan-physics: 0, is #chapter, #planned, #part-of @trails, #contains @plan-classical-mechanics, #contains @plan-continuum-and-solid-mechanics, #contains @plan-statistical-and-nonequilibrium-physics, #contains @plan-waves-and-acoustics, #contains @plan-optics-photonics-and-laser-science, #contains @plan-quantum-mechanics, #contains @plan-atomic-and-molecular-physics, #contains @plan-condensed-matter-physics, #contains @plan-soft-matter-and-complex-materials, #contains @plan-nuclear-physics, #contains @plan-particle-physics-and-quantum-fields, #contains @plan-relativity-and-gravitation, #contains @plan-plasma-physics, #contains @plan-nonlinear-physics-and-complex-systems, #contains @plan-biological-physics, #contains @plan-computational-physics, #contains @plan-experimental-physics-and-instrumentation, #contains @plan-radiation-and-medical-physics, #contains @plan-quantum-information-science, #contains @plan-nanophysics-and-surface-science) { r_5SMEYFVBAX3PK39PSDSDPWQYRQ
-Proposed branch Record: `@physics-map`. Organising Record: `@stem-map`.
+Physics (@plan-physics: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-classical-mechanics, #contains @plan-continuum-and-solid-mechanics, #contains @plan-statistical-and-nonequilibrium-physics, #contains @plan-waves-and-acoustics, #contains @plan-optics-photonics-and-laser-science, #contains @plan-quantum-mechanics, #contains @plan-atomic-and-molecular-physics, #contains @plan-condensed-matter-physics, #contains @plan-soft-matter-and-complex-materials, #contains @plan-nuclear-physics, #contains @plan-particle-physics-and-quantum-fields, #contains @plan-relativity-and-gravitation, #contains @plan-plasma-physics, #contains @plan-nonlinear-physics-and-complex-systems, #contains @plan-biological-physics, #contains @plan-computational-physics, #contains @plan-experimental-physics-and-instrumentation, #contains @plan-radiation-and-medical-physics, #contains @plan-quantum-information-science, #contains @plan-nanophysics-and-surface-science) { r_5SMEYFVBAX3PK39PSDSDPWQYRQ
+**Existing entrance:** [Physics](../ergon/hephaestus/physics/Physics.lingua#r_04A5CP8RTBERZEN4XCCDQ3T47W).
+
+**Content home:** `institute/trails/ergon/hephaestus/physics/`, with subject directories for the planned pathways.
+
+Proposed branch Record: `@physics-map`. Organising Record: `@hephaestus`.
 
 **Pathways:** Explain and measure motion, energy, a circuit, or a wave; develop more rigorous accounts of a chosen system. Offer qualitative and quantitative entrances; add algebra, calculus, linear algebra, or statistical methods at the steps that actually use them.
 
-**Available:** [Electromagnetism](../stem/physics/electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY), from familiar observations, charge, fields, voltage/current and shared mathematics through static boundaries, matter, circuits, induction, Maxwell conservation, relativity, waves, guides, radiation, scattering, computation and physical evidence. Complete technical books and public undergraduate/graduate programmes, three independently checked original calculations and sixteen advanced investigations deepen into an integrated system and independent research. Eleven shared Records retain their distinct electromagnetic continuations.
+**Available:** [Electromagnetism](../ergon/hephaestus/physics/electromagnetism/Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY), from familiar observations, charge, fields, voltage/current and shared mathematics through static boundaries, matter, circuits, induction, Maxwell conservation, relativity, waves, guides, radiation, scattering, computation and physical evidence. Complete technical books and public undergraduate/graduate programmes, three independently checked original calculations and sixteen advanced investigations deepen into an integrated system and independent research. Eleven shared Records retain their distinct electromagnetic continuations.
 
-**Available:** [Thermodynamics and heat transfer](../stem/physics/thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E), from ordinary thermal observations, systems and shared mathematics through energy/entropy/exergy balances, potentials and equilibrium, thermal machines, conduction, convection, radiation, phase change, measurements and microscopic transport. Complete books and public advanced courses, four independently checked original calculations and twenty-two advanced investigations lead into a performed physical study, an integrated thermal service and independent research/revision. Twenty shared Records retain distinct thermal continuations.
+**Available:** [Thermodynamics and heat transfer](../ergon/hephaestus/physics/thermodynamics-and-heat-transfer/Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E), from ordinary thermal observations, systems and shared mathematics through energy/entropy/exergy balances, potentials and equilibrium, thermal machines, conduction, convection, radiation, phase change, measurements and microscopic transport. Complete books and public advanced courses, four independently checked original calculations and twenty-two advanced investigations lead into a performed physical study, an integrated thermal service and independent research/revision. Twenty shared Records retain distinct thermal continuations.
 
-**Available:** [Fluid dynamics](../stem/physics/fluid-dynamics/Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ), from observed fluid motion, properties, hydrostatics and shared mathematics through conservation, constitutive laws, viscous/potential flows, pipes, boundary layers, instability/turbulence, compressible and free-surface waves, rotation/stratification, interfaces, multiple phases, rheology, transport, computation and physical evidence. Whole books and public advanced courses, four independently checked original calculations and twenty advanced studies lead into a performed experimental programme, an integrated fluid service and independent research/revision. Nineteen shared Records retain distinct fluid continuations.
+**Available:** [Fluid dynamics](../ergon/hephaestus/physics/fluid-dynamics/Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ), from observed fluid motion, properties, hydrostatics and shared mathematics through conservation, constitutive laws, viscous/potential flows, pipes, boundary layers, instability/turbulence, compressible and free-surface waves, rotation/stratification, interfaces, multiple phases, rheology, transport, computation and physical evidence. Whole books and public advanced courses, four independently checked original calculations and twenty advanced studies lead into a performed experimental programme, an integrated fluid service and independent research/revision. Nineteen shared Records retain distinct fluid continuations.
 
 ## Planned pathways
 
@@ -720,14 +686,18 @@ Nanophysics investigates matter where confinement, surfaces, and small dimension
 **Planning context:** [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ).
 } r_6QMJF5G8RY6N4MP55QC238WM2B
 
-Chemistry (@plan-chemistry: 0, is #chapter, #planned, #part-of @trails, #contains @plan-physical-chemistry-and-chemical-physics, #contains @plan-organic-chemistry, #contains @plan-inorganic-chemistry, #contains @plan-analytical-chemistry-and-chemical-quality, #contains @plan-biochemistry, #contains @plan-polymer-chemistry, #contains @plan-materials-chemistry, #contains @plan-electrochemistry, #contains @plan-surface-colloid-and-interface-chemistry, #contains @plan-theoretical-and-computational-chemistry, #contains @plan-chemical-synthesis, #contains @plan-catalysis-and-reaction-science, #contains @plan-environmental-chemistry, #contains @plan-food-and-nutritional-chemistry, #contains @plan-agricultural-chemistry, #contains @plan-medicinal-and-pharmaceutical-chemistry) { r_0AMZPCGB2MG2V6D28WFTQZN9Q6
-The [Chemistry entrance](../stem/chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0) connects the developed material through STEM.
+Chemistry (@plan-chemistry: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-physical-chemistry-and-chemical-physics, #contains @plan-organic-chemistry, #contains @plan-inorganic-chemistry, #contains @plan-analytical-chemistry-and-chemical-quality, #contains @plan-biochemistry, #contains @plan-polymer-chemistry, #contains @plan-materials-chemistry, #contains @plan-electrochemistry, #contains @plan-surface-colloid-and-interface-chemistry, #contains @plan-theoretical-and-computational-chemistry, #contains @plan-chemical-synthesis, #contains @plan-catalysis-and-reaction-science, #contains @plan-environmental-chemistry, #contains @plan-food-and-nutritional-chemistry, #contains @plan-agricultural-chemistry, #contains @plan-medicinal-and-pharmaceutical-chemistry) { r_0AMZPCGB2MG2V6D28WFTQZN9Q6
+**Existing entrance:** [Chemistry](../ergon/hephaestus/chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0).
+
+**Content home:** `institute/trails/ergon/hephaestus/chemistry/`, with subject directories for the planned pathways.
+
+The [Chemistry entrance](../ergon/hephaestus/chemistry/Chemistry.lingua#r_2NWJY1HCKPBM4T6YQSDHN8S3S0) connects the developed material through Ergon.
 
 **Pathways:** Explain composition and reaction; follow a material's transformation; investigate structure, analysis, or synthesis. Introduce chemical entities, amount, and balance before relying on them; deeper physical chemistry or computation is a continuation with explicit preparation.
 
-**Available:** [General chemistry](../stem/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), from zero through whole textbooks, university courses, quantitative reactions, structure/bonding, phases, kinetics/equilibria, electrochemistry, chemical measurement, sustained laboratory work, and advanced practical/scholarly projects. Five shared quantitative, measurement, and computational Records retain distinct continuations.
+**Available:** [General chemistry](../ergon/hephaestus/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), from zero through whole textbooks, university courses, quantitative reactions, structure/bonding, phases, kinetics/equilibria, electrochemistry, chemical measurement, sustained laboratory work, and advanced practical/scholarly projects. Five shared quantitative, measurement, and computational Records retain distinct continuations.
 
-**Available:** [Industrial chemistry](../stem/chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618), from familiar products, chemical/mathematical language, quantities and feed evidence through reaction/separation, major inorganic/organic and renewable/specialty families, product quality, operation, transfers and recovery. Complete books, university/graduate programmes, primary methods, three original calculations, sustained practical/academic branches, integrated-system work and independent scholarship provide depth. Thirteen shared Records retain distinct industrial-chemistry continuations.
+**Available:** [Industrial chemistry](../ergon/hephaestus/chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618), from familiar products, chemical/mathematical language, quantities and feed evidence through reaction/separation, major inorganic/organic and renewable/specialty families, product quality, operation, transfers and recovery. Complete books, university/graduate programmes, primary methods, three original calculations, sustained practical/academic branches, integrated-system work and independent scholarship provide depth. Thirteen shared Records retain distinct industrial-chemistry continuations.
 
 ## Planned pathways
 
@@ -879,14 +849,18 @@ Medicinal chemistry studies molecules intended to influence biological processes
 **Planning context:** [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6).
 } r_22JVJTJ7A7PR682QABEE1X42CG
 
-Engineering (@plan-engineering: 0, is #chapter, #planned, #part-of @trails, #contains @plan-engineering-design-and-systems-engineering, #contains @plan-civil-and-structural-engineering, #contains @plan-geotechnical-engineering, #contains @plan-construction-and-building-services-engineering, #contains @plan-water-and-environmental-engineering, #contains @plan-mechanical-engineering-and-machine-design, #contains @plan-manufacturing-engineering, #contains @plan-materials-engineering, #contains @plan-corrosion-degradation-and-material-protection, #contains @plan-chemical-and-process-engineering, #contains @plan-thermal-and-energy-engineering, #contains @plan-refrigeration-cryogenics-and-cold-chains, #contains @plan-batteries-and-electrochemical-energy-systems, #contains @plan-control-and-automation-engineering, #contains @plan-mechatronics-and-robotics, #contains @plan-electronic-engineering, #contains @plan-telecommunications-and-radio-engineering, #contains @plan-optical-and-photonic-engineering, #contains @plan-computer-engineering-and-architecture, #contains @plan-acoustical-and-vibration-engineering, #contains @plan-aerospace-engineering, #contains @plan-marine-and-naval-engineering, #contains @plan-transportation-and-railway-engineering, #contains @plan-automotive-and-vehicle-engineering, #contains @plan-biomedical-engineering, #contains @plan-agricultural-engineering, #contains @plan-petroleum-and-subsurface-engineering, #contains @plan-nuclear-engineering, #contains @plan-industrial-engineering-and-production-systems, #contains @plan-reliability-maintenance-and-repair-systems, #contains @plan-human-factors-and-safety-engineering) { r_15X36BC9BQB5PV6WW77ZAAJP48
-[Engineering — systems, design, construction, and operation](../stem/engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68) connects the developed material through STEM, Ergon, Inquiry, Earth, and Philosophy.
+Engineering (@plan-engineering: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-engineering-design-and-systems-engineering, #contains @plan-civil-and-structural-engineering, #contains @plan-geotechnical-engineering, #contains @plan-construction-and-building-services-engineering, #contains @plan-water-and-environmental-engineering, #contains @plan-mechanical-engineering-and-machine-design, #contains @plan-manufacturing-engineering, #contains @plan-materials-engineering, #contains @plan-corrosion-degradation-and-material-protection, #contains @plan-chemical-and-process-engineering, #contains @plan-thermal-and-energy-engineering, #contains @plan-refrigeration-cryogenics-and-cold-chains, #contains @plan-batteries-and-electrochemical-energy-systems, #contains @plan-control-and-automation-engineering, #contains @plan-mechatronics-and-robotics, #contains @plan-electronic-engineering, #contains @plan-telecommunications-and-radio-engineering, #contains @plan-optical-and-photonic-engineering, #contains @plan-computer-engineering-and-architecture, #contains @plan-acoustical-and-vibration-engineering, #contains @plan-aerospace-engineering, #contains @plan-marine-and-naval-engineering, #contains @plan-transportation-and-railway-engineering, #contains @plan-automotive-and-vehicle-engineering, #contains @plan-biomedical-engineering, #contains @plan-agricultural-engineering, #contains @plan-petroleum-and-subsurface-engineering, #contains @plan-nuclear-engineering, #contains @plan-industrial-engineering-and-production-systems, #contains @plan-reliability-maintenance-and-repair-systems, #contains @plan-human-factors-and-safety-engineering) { r_15X36BC9BQB5PV6WW77ZAAJP48
+**Existing entrance:** [Engineering](../ergon/hephaestus/engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
+
+**Content home:** `institute/trails/ergon/hephaestus/engineering/`, with subject directories for the planned pathways.
+
+[Engineering — systems, design, construction, and operation](../ergon/hephaestus/engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68) connects the developed material through Ergon, Inquiry, Earth, and Philosophy.
 
 **Pathways:** Compare designs against a need; understand a load-bearing part; diagnose a mechanism; investigate a selected process. Separate understanding, designing, making, inspecting, and maintaining routes. Geometry, CAD, mechanics, chemistry, electronics, and control belong where the chosen task uses them.
 
-**Available:** [Mining and mineral engineering](../stem/engineering/mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA), from a material need, vocabulary, maps, and resource evidence through method/layout/sequence, ground, excavation/transport, utilities, mineral processing, products, waste, closure, and continuing work. Complete books, public university courses, government methods, original calculations, sustained practical/academic projects, integrated design, and independent scholarship provide depth. Eight shared learning Records retain distinct continuations.
+**Available:** [Mining and mineral engineering](../ergon/hephaestus/engineering/mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA), from a material need, vocabulary, maps, and resource evidence through method/layout/sequence, ground, excavation/transport, utilities, mineral processing, products, waste, closure, and continuing work. Complete books, public university courses, government methods, original calculations, sustained practical/academic projects, integrated design, and independent scholarship provide depth. Eight shared learning Records retain distinct continuations.
 
-**Available:** [Electrical power engineering](../stem/engineering/electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ), from a useful electrical service, quantities and circuits through networks, transformers, machines, conversion, measurement, protection, stability, dispatch and continuing operation. Full technical books and public undergraduate/graduate programmes, three independently checked original calculations and twenty advanced investigations lead into an integrated system and independent research. Seventeen shared learning Records retain distinct power-engineering continuations.
+**Available:** [Electrical power engineering](../ergon/hephaestus/engineering/electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ), from a useful electrical service, quantities and circuits through networks, transformers, machines, conversion, measurement, protection, stability, dispatch and continuing operation. Full technical books and public undergraduate/graduate programmes, three independently checked original calculations and twenty advanced investigations lead into an integrated system and independent research. Seventeen shared learning Records retain distinct power-engineering continuations.
 
 ## Planned pathways
 
@@ -1173,8 +1147,12 @@ This field studies interactions among people, tasks, equipment, organisations, a
 **Planning context:** [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
 } r_20YMRH70QKZP2DBCSG4QX28B0J
 
-Computing (@plan-computing: 0, is #chapter, #planned, #part-of @trails, #contains @plan-foundations-of-computer-science, #contains @plan-algorithms-and-data-structures, #contains @plan-programming-languages-and-implementation, #contains @plan-software-engineering-architecture-and-lifecycle, #contains @plan-operating-systems-and-systems-programming, #contains @plan-distributed-systems-and-cloud-computing, #contains @plan-databases-and-data-engineering, #contains @plan-computer-networks-and-internet-systems, #contains @plan-cybersecurity-and-privacy-engineering, #contains @plan-artificial-intelligence, #contains @plan-machine-learning-and-predictive-modelling, #contains @plan-language-and-speech-technology, #contains @plan-computer-vision-and-image-analysis, #contains @plan-computer-graphics-and-interactive-simulation, #contains @plan-humancomputer-interaction-and-accessibility, #contains @plan-scientific-computing-and-high-performance-computing, #contains @plan-embedded-and-real-time-systems, #contains @plan-semiconductor-devices-and-fabrication, #contains @plan-integrated-circuit-design-and-microelectronics, #contains @plan-signals-sensing-and-instrumentation-technology, #contains @plan-data-storage-and-archival-technology, #contains @plan-quantum-and-emerging-computing-technologies) { r_7YRTRPQ94D66X8Y7KN7K2XCTK8
-Proposed branch Record: `@computing-map`. Organising Record: `@stem-map`.
+Computing (@plan-computing: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-foundations-of-computer-science, #contains @plan-algorithms-and-data-structures, #contains @plan-programming-languages-and-implementation, #contains @plan-software-engineering-architecture-and-lifecycle, #contains @plan-operating-systems-and-systems-programming, #contains @plan-distributed-systems-and-cloud-computing, #contains @plan-databases-and-data-engineering, #contains @plan-computer-networks-and-internet-systems, #contains @plan-cybersecurity-and-privacy-engineering, #contains @plan-artificial-intelligence, #contains @plan-machine-learning-and-predictive-modelling, #contains @plan-language-and-speech-technology, #contains @plan-computer-vision-and-image-analysis, #contains @plan-computer-graphics-and-interactive-simulation, #contains @plan-humancomputer-interaction-and-accessibility, #contains @plan-scientific-computing-and-high-performance-computing, #contains @plan-embedded-and-real-time-systems, #contains @plan-semiconductor-devices-and-fabrication, #contains @plan-integrated-circuit-design-and-microelectronics, #contains @plan-signals-sensing-and-instrumentation-technology, #contains @plan-data-storage-and-archival-technology, #contains @plan-quantum-and-emerging-computing-technologies) { r_7YRTRPQ94D66X8Y7KN7K2XCTK8
+**Existing entrance:** [Hephaestus](../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001).
+
+**Content home:** `institute/trails/ergon/hephaestus/computer-science/`, with subject directories for the planned pathways.
+
+Proposed branch Record: `@computing-map`. Organising Record: `@hephaestus`.
 
 **Pathways:** Automate a small calculation; understand a program; investigate how a computer or network works; develop a maintained application. Programming, theoretical computation, digital hardware, data analysis, and operations have connected but different entry paths.
 
@@ -1382,14 +1360,339 @@ This material examines computing approaches that depart from conventional digita
 **Planning context:** [Computing](Trails.lingua#r_7YRTRPQ94D66X8Y7KN7K2XCTK8).
 } r_5Y4E9K079P2KGYT8D1731EZ10B
 
-Earth and environment (@plan-earth-and-environment: 0, is #chapter, #planned, #part-of @trails, #contains @plan-geophysics, #contains @plan-geochemistry, #contains @plan-paleontology-and-earth-history, #contains @plan-meteorology-and-atmospheric-science, #contains @plan-climate-science, #contains @plan-ocean-and-cryosphere-sciences, #contains @plan-hydrology-and-water-science, #contains @plan-soil-science, #contains @plan-environmental-systems-science, #contains @plan-geodesy-and-surveying, #contains @plan-remote-sensing-and-earth-observation, #contains @plan-natural-hazards-and-disaster-science) { r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE
-[Earth — materials, processes, and geological history](../nature/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH) is the current entrance, connected through [Nature](../nature/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21), STEM, Philosophy, and Ergon.
+Universe and space (@plan-universe-and-space: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-observational-astronomy, #contains @plan-astrophysics, #contains @plan-cosmology, #contains @plan-planetary-science, #contains @plan-solar-and-space-environment-science) { r_38KB376VFZ30BXTGB9K0HG55ZP
+**Existing entrance:** [Hephaestus](../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001).
+
+**Content home:** `institute/trails/ergon/hephaestus/space/`, with subject directories for the planned pathways.
+
+Proposed branch Record: `@universe-space-map`. Organising Record: `@hephaestus`.
+
+**Pathways:** Understand an astronomical observation; connect light and motion to a celestial explanation; study the history or environment of a chosen world. Basic sky observation, instrument operation, and mathematical astrophysics have different preparation and resource needs.
+
+## Planned pathways
+
+- [Observational astronomy](Trails.lingua#r_2KGHM1GMWSY7YXY9RH3JG4KMDW)
+- [Astrophysics](Trails.lingua#r_1JY0RVDDS0SYCX3BXSQNX5EXE7)
+- [Cosmology](Trails.lingua#r_5SVG26YNNHQQ10GHQB7V0YRN48)
+- [Planetary science](Trails.lingua#r_7DYV5MK9CE54XHM9EHBY2S90TV)
+- [Solar and space-environment science](Trails.lingua#r_0CMC1K21QVZ8EHEKQJJ8RDP7J7)
+
+**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+} r_38KB376VFZ30BXTGB9K0HG55ZP
+
+Observational astronomy (@plan-observational-astronomy: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_2KGHM1GMWSY7YXY9RH3JG4KMDW
+**Editorial reference:** ERG-087.
+
+Observational astronomy acquires and interprets evidence about celestial objects through light and other messengers. The material connects telescopes, detectors, spectroscopy, timing, surveys, calibration, and data analysis with observatory operations and the limits imposed by instruments and observing conditions.
+
+**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
+} r_2KGHM1GMWSY7YXY9RH3JG4KMDW
+
+Astrophysics (@plan-astrophysics: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_1JY0RVDDS0SYCX3BXSQNX5EXE7
+**Editorial reference:** ERG-088.
+
+Astrophysics explains celestial systems through physical laws and observations. The material covers stars, stellar evolution, galaxies, compact objects, interstellar matter, and high-energy phenomena, connecting nuclear, gravitational, electromagnetic, and statistical physics with astronomical measurements and computational models.
+
+**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
+} r_1JY0RVDDS0SYCX3BXSQNX5EXE7
+
+Cosmology (@plan-cosmology: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_5SVG26YNNHQQ10GHQB7V0YRN48
+**Editorial reference:** ERG-089.
+
+Cosmology studies the large-scale structure, history, and evolution of the universe. This material connects gravitation, expansion, early-universe processes, background radiation, structure formation, and observational inference, distinguishing established evidence from unresolved questions about the universe's contents and fundamental description.
+
+**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
+} r_5SVG26YNNHQQ10GHQB7V0YRN48
+
+Planetary science (@plan-planetary-science: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_7DYV5MK9CE54XHM9EHBY2S90TV
+**Editorial reference:** ERG-090.
+
+Planetary science studies planets, moons, small bodies, and how planetary systems form and evolve. The material connects geology, atmospheres, interiors, orbital environments, remote observations, and spacecraft measurements, using comparisons between worlds to investigate their histories and physical possibilities.
+
+**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
+} r_7DYV5MK9CE54XHM9EHBY2S90TV
+
+Solar and space-environment science (@plan-solar-and-space-environment-science: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_0CMC1K21QVZ8EHEKQJJ8RDP7J7
+**Editorial reference:** ERG-091.
+
+This material studies the Sun and the charged-particle and electromagnetic environments surrounding planets and spacecraft. It connects solar activity, space plasmas, magnetic fields, radiation, observation networks, and space weather with effects on communications, navigation, power infrastructure, and exploration.
+
+**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
+} r_0CMC1K21QVZ8EHEKQJJ8RDP7J7
+
+Resources and materials (@plan-resources-and-materials: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-mineral-resources-extraction-and-refining-systems, #contains @plan-ceramics-glass-cement-and-mineral-products, #contains @plan-polymers-rubber-composites-and-coatings-production, #contains @plan-machine-tools-and-precision-production-infrastructure, #contains @plan-textiles-clothing-and-technical-fabrics, #contains @plan-timber-paper-and-packaging-systems) { r_08Q5J1HMAA7S3QNYSJSQ49STJ5
+**Existing entrance:** [Materials](../ergon/hephaestus/materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D).
+
+**Content home:** `institute/trails/ergon/hephaestus/materials/`, with subject directories for the planned pathways.
+
+[Resources and materials — feedstocks, useful properties, production, and recovery](../ergon/hephaestus/materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D) connects the developed material through Ergon, Engineering, Inquiry, Earth, and Philosophy.
+
+**Pathways:** Follow one material from source through processing, specification, use, and recovery. Enter through the object or feedstock; link the particular geology, chemistry, properties, machines, and quantities needed at each depth.
+
+**Available:** [Metals and metallurgical production](../ergon/hephaestus/materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1), from familiar objects, feed, phases, quantities, and product requirements through extraction/refining, metal families, structure/transformations, manufacturing, testing, operation, recovery, and independent scholarship. Complete books, university and graduate courses, primary methods, original calculations, sustained laboratory/process studies, and an integrated material system provide depth. Thirteen shared learning Records retain distinct continuations.
+
+**Available:** [Chemical feedstocks and supply systems](../ergon/hephaestus/materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q), from familiar material, function/quantity/grade and origins through chemical families, supplier-to-user evidence, storage/contact and transfers, usable inventory, planning, continuity, people, maintenance and recovery. Complete books, graduate programmes, full technical/product methods, three independently checked calculations and fourteen sustained advanced investigations deepen into a complete defended system and independent research. Fourteen shared Records retain distinct chemical-supply continuations.
+
+## Planned pathways
+
+- [Mineral resources, extraction, and refining systems](Trails.lingua#r_1T654Z06ZJ9CA149M75XP0AF95)
+- [Ceramics, glass, cement, and mineral products](Trails.lingua#r_3RDJQY81P7KTR82EDETYYE6S37)
+- [Polymers, rubber, composites, and coatings production](Trails.lingua#r_5QG0QPP2K5BB78CKWK6YFEYF5P)
+- [Machine tools and precision production infrastructure](Trails.lingua#r_54AAZ2Y0HK952ZRH8YCYBHJDPA)
+- [Textiles, clothing, and technical fabrics](Trails.lingua#r_7J4PQT2PP272F5D218AYG8W3YQ)
+- [Timber, paper, and packaging systems](Trails.lingua#r_1EK7CM15ZR70X480KKR4F150KT)
+
+**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+} r_08Q5J1HMAA7S3QNYSJSQ49STJ5
+
+Mineral resources, extraction, and refining systems (@plan-mineral-resources-extraction-and-refining-systems: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_1T654Z06ZJ9CA149M75XP0AF95
+**Editorial reference:** ERG-170.
+
+This material follows mineral resources from geological evidence to usable feedstocks. It connects exploration, extraction, concentration, refining, resource quality, water, energy, equipment, transport, and waste, revealing the dependencies that lie beneath manufactured objects and specialised scientific materials.
+
+**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
+} r_1T654Z06ZJ9CA149M75XP0AF95
+
+Ceramics, glass, cement, and mineral products (@plan-ceramics-glass-cement-and-mineral-products: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_3RDJQY81P7KTR82EDETYYE6S37
+**Editorial reference:** ERG-172.
+
+This material investigates the production of mineral-based materials used in structures, optics, electronics, and industrial equipment. It connects feedstocks, formulation, furnaces, forming, firing, finishing, and quality with energy, refractories, machinery, and the properties demanded by different applications.
+
+**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
+} r_3RDJQY81P7KTR82EDETYYE6S37
+
+Polymers, rubber, composites, and coatings production (@plan-polymers-rubber-composites-and-coatings-production: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_5QG0QPP2K5BB78CKWK6YFEYF5P
+**Editorial reference:** ERG-173.
+
+This material follows synthetic and natural materials into plastics, elastomers, composites, coatings, and adhesives. It connects feedstocks, formulation, processing, reinforcement, curing, finishing, testing, and degradation with the machines and utilities required to produce and maintain useful material performance.
+
+**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
+} r_5QG0QPP2K5BB78CKWK6YFEYF5P
+
+Machine tools and precision production infrastructure (@plan-machine-tools-and-precision-production-infrastructure: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_54AAZ2Y0HK952ZRH8YCYBHJDPA
+**Editorial reference:** ERG-174.
+
+Precision production depends on machines capable of creating and checking the components of other machines. This material connects cutting, grinding, forming, toolmaking, bearings, drives, fixtures, metrology, calibration, and repair, exposing the recursive problem of producing and maintaining the means of production.
+
+**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
+} r_54AAZ2Y0HK952ZRH8YCYBHJDPA
+
+Textiles, clothing, and technical fabrics (@plan-textiles-clothing-and-technical-fabrics: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_7J4PQT2PP272F5D218AYG8W3YQ
+**Editorial reference:** ERG-184.
+
+Textile production turns fibres into materials serving everyday and specialised needs. The material connects natural and synthetic fibres, spinning, weaving, knitting, finishing, dyeing, garment manufacture, testing, and repair with applications including protective clothing, filters, composites, and industrial products.
+
+**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
+} r_7J4PQT2PP272F5D218AYG8W3YQ
+
+Timber, paper, and packaging systems (@plan-timber-paper-and-packaging-systems: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_1EK7CM15ZR70X480KKR4F150KT
+**Editorial reference:** ERG-185.
+
+This material follows forests and other fibre resources into structural wood, paper, and packaging. It connects resource management, harvesting, milling, pulping, forming, finishing, recovery, and transport, showing how material handling and preservation depend on often overlooked biological and industrial systems.
+
+**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
+} r_1EK7CM15ZR70X480KKR4F150KT
+
+Energy and utilities (@plan-energy-and-utilities: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-electricity-infrastructure-and-energy-storage, #contains @plan-fuels-hydrogen-and-thermal-energy-supply, #contains @plan-water-sanitation-and-shared-industrial-utilities, #contains @plan-industrial-gases-vacuum-and-high-purity-supplies) { r_376AMKFFG2BY4E8T2A5Y923HV4
+**Existing entrance:** [Utilities](../ergon/hephaestus/utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX).
+
+**Content home:** `institute/trails/ergon/hephaestus/utilities/`, with subject directories for the planned pathways.
+
+Proposed branch Record: `@energy-utilities-map`. Organising Record: `@hephaestus`.
+
+**Pathways:** Account for a service's energy or water; follow a supply from source to use; investigate reliability and upkeep. Begin with relevant quantities and balances; operating, designing, and manufacturing utility equipment remain separate goals.
+
+## Planned pathways
+
+- [Electricity infrastructure and energy storage](Trails.lingua#r_5WDHZ2EBHAKP6Y0H4DABH0MC5H)
+- [Fuels, hydrogen, and thermal energy supply](Trails.lingua#r_7SK09P8H8A7Z0J80NTSFQX9H97)
+- [Water, sanitation, and shared industrial utilities](Trails.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN)
+- [Industrial gases, vacuum, and high-purity supplies](Trails.lingua#r_0FVDWAGQGSXCG2KVW13PPK1R47)
+
+**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+} r_376AMKFFG2BY4E8T2A5Y923HV4
+
+Electricity infrastructure and energy storage (@plan-electricity-infrastructure-and-energy-storage: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_5WDHZ2EBHAKP6Y0H4DABH0MC5H
+**Editorial reference:** ERG-176.
+
+Electrical infrastructure connects energy resources to dependable power at the place of use. This material follows generation, renewable systems, transmission, distribution, conversion, storage, control, and repair, including the material supply chains, balancing services, and workforce needed to sustain electrical availability.
+
+**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
+} r_5WDHZ2EBHAKP6Y0H4DABH0MC5H
+
+Fuels, hydrogen, and thermal energy supply (@plan-fuels-hydrogen-and-thermal-energy-supply: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_7SK09P8H8A7Z0J80NTSFQX9H97
+**Editorial reference:** ERG-177.
+
+This material studies systems supplying combustible fuels, hydrogen, and useful heat. It connects extraction or production, refining, biomass conversion, geothermal resources, transport, storage, distribution, and end-use equipment with material requirements, energy balances, maintenance, and dependence on shared infrastructure.
+
+**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
+} r_7SK09P8H8A7Z0J80NTSFQX9H97
+
+Water, sanitation, and shared industrial utilities (@plan-water-sanitation-and-shared-industrial-utilities: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_7B9GRCJFHVBEEQEXKWCR2QMMPN
+**Editorial reference:** ERG-178.
+
+Shared utilities provide the water, drainage, treatment, and services on which settlements and production facilities rely. This material connects sources, pumping, distribution, treatment, wastewater, reuse, monitoring, and asset maintenance, showing how ordinary service work enables advanced industrial and scientific activity.
+
+**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
+} r_7B9GRCJFHVBEEQEXKWCR2QMMPN
+
+Industrial gases, vacuum, and high-purity supplies (@plan-industrial-gases-vacuum-and-high-purity-supplies: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_0FVDWAGQGSXCG2KVW13PPK1R47
+**Editorial reference:** ERG-179.
+
+Many technologies depend on controlled gases, low pressures, and substances whose contamination is tightly limited. This material connects gas production, purification, storage, delivery, vacuum pumps, seals, filtration, analysis, and maintenance with the research and manufacturing processes these supplies enable.
+
+**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
+} r_0FVDWAGQGSXCG2KVW13PPK1R47
+
+Production and quality (@plan-production-and-quality: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-standards-interoperability-and-quality-infrastructure, #contains @plan-clean-manufacturing-and-contamination-control, #contains @plan-food-production-preservation-and-distribution-systems, #contains @plan-industrial-ecology-and-lifecycle-assessment) { r_3YPJC2P8KN1G137NF9WXVQACRZ
+**Existing entrance:** [Hephaestus](../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001).
+
+**Content home:** `institute/trails/ergon/hephaestus/production/`, with subject directories for the planned pathways.
+
+Proposed branch Record: `@production-quality-map`. Organising Record: `@hephaestus`.
+
+**Pathways:** Explain whether an output meets a specification; understand repeatability, contamination, loss, and lifecycle boundaries. Introduce the process's measurements and materials as used; advanced statistics and specialised clean production are later paths.
+
+## Planned pathways
+
+- [Standards, interoperability, and quality infrastructure](Trails.lingua#r_3CEXJ97N97KJ5KW8SGQ2GMT6MM)
+- [Clean manufacturing and contamination control](Trails.lingua#r_47NQ213DRJK1AMKQX7DTXR8E6X)
+- [Food production, preservation, and distribution systems](Trails.lingua#r_0PD1Z8HC1DYXAHK5BP6DKQJ853)
+- [Industrial ecology and lifecycle assessment](Trails.lingua#r_7E122P9GSWBT07N7KMFVT96P3B)
+
+**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+} r_3YPJC2P8KN1G137NF9WXVQACRZ
+
+Standards, interoperability, and quality infrastructure (@plan-standards-interoperability-and-quality-infrastructure: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_3CEXJ97N97KJ5KW8SGQ2GMT6MM
+**Editorial reference:** ERG-004.
+
+Quality infrastructure helps independently produced materials, components, measurements, and services work together and meet defined requirements. This material connects standardisation, interfaces, metrology, reference systems, testing, inspection, accreditation, and conformity assessment with the institutions and agreements supporting comparability, interchangeability, and confidence across laboratories, suppliers, industries, and regions.
+
+**Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
+} r_3CEXJ97N97KJ5KW8SGQ2GMT6MM
+
+Clean manufacturing and contamination control (@plan-clean-manufacturing-and-contamination-control: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_47NQ213DRJK1AMKQX7DTXR8E6X
+**Editorial reference:** ERG-181.
+
+Clean manufacturing controls particles, chemical contamination, biological contamination, and environmental conditions according to process needs. This material connects cleanrooms, airflow, filtration, garments, handling, materials, monitoring, cleaning, and qualification with the facilities and practices supporting microelectronics, precision manufacture, pharmaceuticals, and research.
+
+**Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
+} r_47NQ213DRJK1AMKQX7DTXR8E6X
+
+Food production, preservation, and distribution systems (@plan-food-production-preservation-and-distribution-systems: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_0PD1Z8HC1DYXAHK5BP6DKQJ853
+**Editorial reference:** ERG-183.
+
+This material follows food from biological production through handling, processing, storage, and distribution. It connects farms, fisheries, mills, processing facilities, refrigeration, packaging, testing, transport, and waste recovery with the recurring work required to feed people and sustain technical communities.
+
+**Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
+} r_0PD1Z8HC1DYXAHK5BP6DKQJ853
+
+Industrial ecology and lifecycle assessment (@plan-industrial-ecology-and-lifecycle-assessment: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_7E122P9GSWBT07N7KMFVT96P3B
+**Editorial reference:** ERG-188.
+
+Industrial ecology studies production systems through their exchanges of materials, energy, water, products, and wastes. This material connects material-flow accounting, input–output relationships, lifecycle assessment, industrial symbiosis, and environmental effects with supply-chain evidence, identifying dependencies, displaced impacts, recovery opportunities, and the assumptions behind comparisons between ways of meeting a need.
+
+**Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
+} r_7E122P9GSWBT07N7KMFVT96P3B
+
+Logistics and exchange (@plan-logistics-and-exchange: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-transport-logistics-warehousing-and-trade-infrastructure) { r_40D59MXC3BX7K9FEVGCRY5S6F1
+**Existing entrance:** [Hephaestus](../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001).
+
+**Content home:** `institute/trails/ergon/hephaestus/logistics/`, with subject directories for the planned pathways.
+
+Proposed branch Record: `@logistics-exchange-map`. Organising Record: `@hephaestus`.
+
+**Pathways:** Keep reliable stock; follow replenishment; plan movement and capacity; coordinate an exchange. Begin with arithmetic, units, balances, and lead time. Uncertain demand adds probability; optimisation adds its own methods; CAD is needed only if the selected design work actually uses it.
+
+## Planned pathways
+
+- [Transport, logistics, warehousing, and trade infrastructure](Trails.lingua#r_451QT681ESAD7CZ6W89GXF0AGV)
+
+**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+} r_40D59MXC3BX7K9FEVGCRY5S6F1
+
+Transport, logistics, warehousing, and trade infrastructure (@plan-transport-logistics-warehousing-and-trade-infrastructure: 0, is #chapter, #planned, #part-of @plan-logistics-and-exchange) { r_451QT681ESAD7CZ6W89GXF0AGV
+**Editorial reference:** ERG-182.
+
+Logistics moves and holds resources so they are available in the required place, condition, and time. This material connects ports, roads, rail, shipping, air transport, warehouses, packaging, tracking, inventory, and coordination, revealing how physical exchange sustains geographically specialised production.
+
+**Planning context:** [Logistics and exchange](Trails.lingua#r_40D59MXC3BX7K9FEVGCRY5S6F1).
+} r_451QT681ESAD7CZ6W89GXF0AGV
+
+Facilities and maintenance (@plan-facilities-and-maintenance: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-laboratory-facilities-and-scientific-equipment, #contains @plan-construction-housing-and-production-facilities, #contains @plan-recycling-remanufacturing-and-material-recovery, #contains @plan-digital-infrastructure-manufacture-and-operation) { r_6QB4YPHCAEQ6YT4X71ZT7SYD28
+**Existing entrance:** [Hephaestus](../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001).
+
+**Content home:** `institute/trails/ergon/hephaestus/facilities/`, with subject directories for the planned pathways.
+
+Proposed branch Record: `@facilities-maintenance-map`. Organising Record: `@hephaestus`.
+
+**Pathways:** Maintain a selected tool, room, facility, or digital service; document a fault and hand over upkeep. Start with the specific equipment and observations; add its relevant mechanics, electricity, materials, computing, or inspection methods rather than all engineering.
+
+## Planned pathways
+
+- [Laboratory facilities and scientific equipment](Trails.lingua#r_2Z45HQW78EK8ZB4CSZ8FHZSE3F)
+- [Construction, housing, and production facilities](Trails.lingua#r_50DH2REJNVWRJWE6TAVKG4G9VY)
+- [Recycling, remanufacturing, and material recovery](Trails.lingua#r_2W91J10QZNAGYA0V9EERXN18AK)
+- [Digital infrastructure manufacture and operation](Trails.lingua#r_76YZE6F8M0406MXGDC353TJBKQ)
+
+**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+} r_6QB4YPHCAEQ6YT4X71ZT7SYD28
+
+Laboratory facilities and scientific equipment (@plan-laboratory-facilities-and-scientific-equipment: 0, is #chapter, #planned, #part-of @plan-facilities-and-maintenance) { r_2Z45HQW78EK8ZB4CSZ8FHZSE3F
+**Editorial reference:** ERG-180.
+
+Laboratories are maintained systems of instruments, workspaces, utilities, supplies, methods, and skilled people. This material connects facility planning, apparatus, calibration, shared services, sample handling, equipment procurement, repair, and records, explaining what is required to keep scientific investigation possible over time.
+
+**Planning context:** [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28).
+} r_2Z45HQW78EK8ZB4CSZ8FHZSE3F
+
+Construction, housing, and production facilities (@plan-construction-housing-and-production-facilities: 0, is #chapter, #planned, #part-of @plan-facilities-and-maintenance) { r_50DH2REJNVWRJWE6TAVKG4G9VY
+**Editorial reference:** ERG-186.
+
+This material follows the creation and upkeep of places where people live, learn, and produce. It connects land, design, materials, labour, equipment, construction, utilities, commissioning, inspection, and renewal, tracing the physical and organisational prerequisites of functioning settlements and industrial facilities.
+
+**Planning context:** [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28).
+} r_50DH2REJNVWRJWE6TAVKG4G9VY
+
+Recycling, remanufacturing, and material recovery (@plan-recycling-remanufacturing-and-material-recovery: 0, is #chapter, #planned, #part-of @plan-facilities-and-maintenance) { r_2W91J10QZNAGYA0V9EERXN18AK
+**Editorial reference:** ERG-187.
+
+Material recovery investigates how used products and waste streams can return to useful service or production. This material connects collection, sorting, characterisation, disassembly, separation, reprocessing, remanufacture, and quality, including the limits created by contamination, degradation, mixed materials, and energy requirements.
+
+**Planning context:** [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28).
+} r_2W91J10QZNAGYA0V9EERXN18AK
+
+Digital infrastructure manufacture and operation (@plan-digital-infrastructure-manufacture-and-operation: 0, is #chapter, #planned, #part-of @plan-facilities-and-maintenance) { r_76YZE6F8M0406MXGDC353TJBKQ
+**Editorial reference:** ERG-189.
+
+Digital infrastructure combines manufactured computing equipment with networks, facilities, power, cooling, storage, software, and ongoing operational work. This material follows those dependencies through deployment, monitoring, upgrades, incident response, replacement, and preservation, showing the material systems behind apparently intangible digital services.
+
+**Planning context:** [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28).
+} r_76YZE6F8M0406MXGDC353TJBKQ
+
+Gaia — Earth, life, food, and health (@plan-gaia: 0, is #chapter, #part-of @plan-ergon, #contains @plan-earth-and-environment, #contains @plan-life-and-evolution, #contains @plan-food-land-and-animals, #contains @plan-health-and-care, #related "../ergon/gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21") { r_5C9BFC717E14FCCEAA6213706A
+**Existing entrance:** [Nature](../ergon/gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21).
+
+**Content home:** `institute/trails/ergon/gaia/`.
+
+Earth systems, ecology, biology, agriculture, animals, nutrition, medicine, and care belong here. Use the existing [Nature entrance](../ergon/gaia/Nature.lingua). Reuse Hephaestus mathematics, chemistry, instrumentation, and engineering where needed. A biomedical device can have its engineering home in Hephaestus while anatomy and clinical understanding remain in Gaia.
+
+- [Earth and environment](Trails.lingua#r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE)
+- [Life and evolution](Trails.lingua#r_72CYF6F3ZBTDEZ07QGWVYVPBRB)
+- [Food, land, and animals](Trails.lingua#r_7TZJ0205WDMV84BK85FENRWE64)
+- [Health and care](Trails.lingua#r_1YY66H962HAJ5XJQHYJWGZQ0Z6)
+} r_5C9BFC717E14FCCEAA6213706A
+
+Earth and environment (@plan-earth-and-environment: 0, is #chapter, #planned, #part-of @plan-gaia, #contains @plan-geophysics, #contains @plan-geochemistry, #contains @plan-paleontology-and-earth-history, #contains @plan-meteorology-and-atmospheric-science, #contains @plan-climate-science, #contains @plan-ocean-and-cryosphere-sciences, #contains @plan-hydrology-and-water-science, #contains @plan-soil-science, #contains @plan-environmental-systems-science, #contains @plan-geodesy-and-surveying, #contains @plan-remote-sensing-and-earth-observation, #contains @plan-natural-hazards-and-disaster-science) { r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE
+**Existing entrance:** [Earth](../ergon/gaia/earth/Earth.lingua).
+
+[Earth — materials, processes, and geological history](../ergon/gaia/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH) is the current entrance, connected through [Nature](../ergon/gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21), Ergon, Philosophy, and Ergon.
 
 **Pathways:** Observe a landscape, water system, soil, or weather record; connect local observations to larger processes. Begin with the chosen observations, quantities, and map use; add the relevant chemistry, mechanics, statistics, or modelling with the selected investigation.
 
-**Available:** [Geology](../nature/earth/geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06), from observations, rocks, maps, and time through tectonics, deformation, surface/water systems, regional history, resources, and infrastructure. Complete books, university/laboratory studies, structural and chronological methods, original calculations, sustained field projects, and independent scholarship provide practical and academic depth. Five shared learning Records have distinct geology continuations.
+**Available:** [Geology](../ergon/gaia/earth/geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06), from observations, rocks, maps, and time through tectonics, deformation, surface/water systems, regional history, resources, and infrastructure. Complete books, university/laboratory studies, structural and chronological methods, original calculations, sustained field projects, and independent scholarship provide practical and academic depth. Five shared learning Records have distinct geology continuations.
 
-**Available:** [Mineralogy and petrology](../nature/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN), from specimens and crystal chemistry through symmetry, mineral families, optical/analytical methods, phase relations, and advanced igneous/sedimentary/metamorphic investigation. Complete books and laboratory/course sequences lead to graduate cases, quantitative models, sustained practical projects, feedstock studies, and independent scholarship. Eight shared Records retain distinct continuations.
+**Available:** [Mineralogy and petrology](../ergon/gaia/earth/mineralogy-and-petrology/Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN), from specimens and crystal chemistry through symmetry, mineral families, optical/analytical methods, phase relations, and advanced igneous/sedimentary/metamorphic investigation. Complete books and laboratory/course sequences lead to graduate cases, quantitative models, sustained practical projects, feedstock studies, and independent scholarship. Eight shared Records retain distinct continuations.
 
 ## Planned pathways
 
@@ -1505,7 +1808,9 @@ Disaster science investigates hazardous processes, exposure, vulnerability, and 
 **Planning context:** [Earth and environment](Trails.lingua#r_3Z6AXZ9Z4Y0AT6PZSZRWTPD6QE).
 } r_7KMZES106VYJCENNKXGCYBV0KY
 
-Life and evolution (@plan-life-and-evolution: 0, is #chapter, #planned, #part-of @trails, #contains @plan-general-biology, #contains @plan-cell-and-molecular-biology, #contains @plan-developmental-and-regenerative-biology, #contains @plan-genetics-and-genomics, #contains @plan-microbiology-and-virology, #contains @plan-immunology-and-hostpathogen-interactions, #contains @plan-evolution-biodiversity-and-systematics, #contains @plan-ecology-and-conservation-biology, #contains @plan-botany-and-plant-science, #contains @plan-zoology-and-animal-physiology, #contains @plan-human-anatomy-and-physiology, #contains @plan-neuroscience-and-cognitive-science, #contains @plan-biotechnology-and-bioprocess-science, #contains @plan-bioinformatics-and-computational-biology) { r_72CYF6F3ZBTDEZ07QGWVYVPBRB
+Life and evolution (@plan-life-and-evolution: 0, is #chapter, #planned, #part-of @plan-gaia, #contains @plan-general-biology, #contains @plan-cell-and-molecular-biology, #contains @plan-developmental-and-regenerative-biology, #contains @plan-genetics-and-genomics, #contains @plan-microbiology-and-virology, #contains @plan-immunology-and-hostpathogen-interactions, #contains @plan-evolution-biodiversity-and-systematics, #contains @plan-ecology-and-conservation-biology, #contains @plan-botany-and-plant-science, #contains @plan-zoology-and-animal-physiology, #contains @plan-human-anatomy-and-physiology, #contains @plan-neuroscience-and-cognitive-science, #contains @plan-biotechnology-and-bioprocess-science, #contains @plan-bioinformatics-and-computational-biology) { r_72CYF6F3ZBTDEZ07QGWVYVPBRB
+**Existing entrance:** [Nature](../ergon/gaia/Nature.lingua).
+
 Proposed branch Record: `@life-evolution-map`. Organising Record: `@nature-map`.
 
 **Pathways:** Understand an organism and its interactions; investigate cells, heredity, development, or evolution. There are observational, historical, molecular, and quantitative entrances. A first ecology route need not wait for complete molecular biology or computational biology.
@@ -1642,7 +1947,9 @@ Computational biology investigates biological questions through data, algorithms
 **Planning context:** [Life and evolution](Trails.lingua#r_72CYF6F3ZBTDEZ07QGWVYVPBRB).
 } r_2Y3XSGGJZVH3NHFQ5A94BB26KC
 
-Food, land, and animals (@plan-food-land-and-animals: 0, is #chapter, #planned, #part-of @trails, #contains @plan-agriculture-and-agronomy, #contains @plan-animal-science-and-veterinary-science, #contains @plan-forestry-and-land-stewardship, #contains @plan-fisheries-aquaculture-and-aquatic-biology, #contains @plan-food-science-and-human-nutrition) { r_7TZJ0205WDMV84BK85FENRWE64
+Food, land, and animals (@plan-food-land-and-animals: 0, is #chapter, #planned, #part-of @plan-gaia, #contains @plan-agriculture-and-agronomy, #contains @plan-animal-science-and-veterinary-science, #contains @plan-forestry-and-land-stewardship, #contains @plan-fisheries-aquaculture-and-aquatic-biology, #contains @plan-food-science-and-human-nutrition) { r_7TZJ0205WDMV84BK85FENRWE64
+**Existing entrance:** [Farming](../ergon/gaia/farming/Farming.lingua).
+
 Proposed branch Record: `@food-land-animals-map`. Organising Record: `@nature-map`.
 
 **Pathways:** Grow and observe a food crop; follow nutrients through a food system; investigate animal, forest, or aquatic care. Introduce the organism, locality, quantities, and recurring work relevant to the selected goal; machinery design and laboratory specialisation remain distinct continuations.
@@ -1698,7 +2005,9 @@ Food science investigates food properties and processing; nutrition studies how 
 **Planning context:** [Food, land, and animals](Trails.lingua#r_7TZJ0205WDMV84BK85FENRWE64).
 } r_264041REESKFNAYEN2AHRH04YC
 
-Health and care (@plan-health-and-care: 0, is #chapter, #planned, #part-of @trails, #contains @plan-medical-and-clinical-sciences, #contains @plan-public-health-and-epidemiology, #contains @plan-pharmacology-and-toxicology) { r_1YY66H962HAJ5XJQHYJWGZQ0Z6
+Health and care (@plan-health-and-care: 0, is #chapter, #planned, #part-of @plan-gaia, #contains @plan-medical-and-clinical-sciences, #contains @plan-public-health-and-epidemiology, #contains @plan-pharmacology-and-toxicology) { r_1YY66H962HAJ5XJQHYJWGZQ0Z6
+**Existing entrance:** [Medicine](../ergon/gaia/medicine/Medicine.lingua).
+
 Proposed branch Record: `@health-care-map`. Organising Record: `@nature-map`.
 
 **Pathways:** Interpret a bounded health claim; understand a bodily process; investigate the organisation of care. Reading and evidence interpretation have their own entries; clinical practice has additional training, evidence, facilities, and professional conditions. Do not treat every reader as an aspiring clinician.
@@ -1717,7 +2026,7 @@ Medical and clinical sciences (@plan-medical-and-clinical-sciences: 0, is #chapt
 
 Medical science investigates disease, injury, prevention, diagnosis, and treatment through biological and clinical evidence. The material connects pathology, immunology, infection, clinical investigation, and the organisation of care, explaining how research and professional practice depend on laboratories, equipment, supplies, and trained teams.
 
-**Reading now:** [Medicine](../nature/medicine/Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65) introduces shared medical vocabulary, tissues, body systems, clinical questions, and evidence. Its developed regional sequence continues through musculoskeletal foundations and orthopedics to shoulder anatomy, function, possible problems, and sustained investigation, using English and Portuguese sources.
+**Reading now:** [Medicine](../ergon/gaia/medicine/Medicine.lingua#r_6DTDCDP6JQ2AV7S78QPGKM2V65) introduces shared medical vocabulary, tissues, body systems, clinical questions, and evidence. Its developed regional sequence continues through musculoskeletal foundations and orthopedics to shoulder anatomy, function, possible problems, and sustained investigation, using English and Portuguese sources.
 
 **Planning context:** [Health and care](Trails.lingua#r_1YY66H962HAJ5XJQHYJWGZQ0Z6).
 } r_7HJ8WFCVHVKEB5PT4EWBB8D72E
@@ -1738,63 +2047,251 @@ Pharmacology studies how substances affect living systems; toxicology investigat
 **Planning context:** [Health and care](Trails.lingua#r_1YY66H962HAJ5XJQHYJWGZQ0Z6).
 } r_73GP5E4MJW4TSQ4GZXMKEJ6B7G
 
-Universe and space (@plan-universe-and-space: 0, is #chapter, #planned, #part-of @trails, #contains @plan-observational-astronomy, #contains @plan-astrophysics, #contains @plan-cosmology, #contains @plan-planetary-science, #contains @plan-solar-and-space-environment-science) { r_38KB376VFZ30BXTGB9K0HG55ZP
-Proposed branch Record: `@universe-space-map`. Organising Record: `@nature-map`.
+Connected system journeys (@plan-connected-system-journeys: 0, is #chapter, #planned, #part-of @plan-ergon, #contains @plan-from-mineral-resources-to-precision-machinery, #contains @plan-from-minerals-to-microchips, #contains @plan-from-energy-supply-to-connected-computation, #contains @plan-from-water-sources-to-a-healthy-community, #contains @plan-from-soil-to-food-and-nutrient-cycles, #contains @plan-from-basic-materials-to-buildings-and-transport, #contains @plan-from-scientific-discovery-to-manufactured-application, #contains @plan-from-learner-to-a-continuing-skilled-workforce, #contains @plan-from-scattered-sources-to-a-joined-ergon-library, #contains @plan-sustaining-a-regional-ergon-ecosystem) { r_130DJVF2VF7PTVA9NBR8B9VNJA
+Proposed branch Record: `@connected-systems-map`. Planning umbrella: `@plan-ergon`. Proposed content home: `institute/trails/ergon/connected-systems/`; reuse Hephaestus and Gaia Records by reference.
 
-**Pathways:** Understand an astronomical observation; connect light and motion to a celestial explanation; study the history or environment of a chosen world. Basic sky observation, instrument operation, and mathematical astrophysics have different preparation and resource needs.
+**Pathways:** Follow a declared chain such as minerals to microchips, or sources to a continuing library. Offer an orientation through its stages with optional depth into each branch; do not concatenate every participating field into one compulsory curriculum.
 
 ## Planned pathways
 
-- [Observational astronomy](Trails.lingua#r_2KGHM1GMWSY7YXY9RH3JG4KMDW)
-- [Astrophysics](Trails.lingua#r_1JY0RVDDS0SYCX3BXSQNX5EXE7)
-- [Cosmology](Trails.lingua#r_5SVG26YNNHQQ10GHQB7V0YRN48)
-- [Planetary science](Trails.lingua#r_7DYV5MK9CE54XHM9EHBY2S90TV)
-- [Solar and space-environment science](Trails.lingua#r_0CMC1K21QVZ8EHEKQJJ8RDP7J7)
+- [From mineral resources to precision machinery](Trails.lingua#r_49NHYC1TEA3GBH0X14JXAYRVQD)
+- [From minerals to microchips](Trails.lingua#r_1C0FKKNR6ZJ67E351AR07YQ4P8)
+- [From energy supply to connected computation](Trails.lingua#r_0QBQ23Z0Q65M9P8E6E0KETT9JD)
+- [From water sources to a healthy community](Trails.lingua#r_18G1P0BNXYVA6B33KVMEEPGQ6E)
+- [From soil to food and nutrient cycles](Trails.lingua#r_0G5VH1SR5GHQ7N4JHDZQ1WAZZ3)
+- [From basic materials to buildings and transport](Trails.lingua#r_5JF7HZ7KERQ7YH7KWFVRZQ8CDD)
+- [From scientific discovery to manufactured application](Trails.lingua#r_408WW3M6RZXG3ZGD0XWN19CSZR)
+- [From learner to a continuing skilled workforce](Trails.lingua#r_5TNAFAKGJD0K7WNZM4QTKN8JZ2)
+- [From scattered sources to a joined Ergon library](Trails.lingua#r_0V8CJ3F1M8DXCQJ7PAW1M4DDM4)
+- [Sustaining a regional Ergon ecosystem](Trails.lingua#r_5DFZK87VBPQ1HWYR6RSY1YPHG3)
 
 **Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
-} r_38KB376VFZ30BXTGB9K0HG55ZP
+} r_130DJVF2VF7PTVA9NBR8B9VNJA
 
-Observational astronomy (@plan-observational-astronomy: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_2KGHM1GMWSY7YXY9RH3JG4KMDW
-**Editorial reference:** ERG-087.
+From mineral resources to precision machinery (@plan-from-mineral-resources-to-precision-machinery: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_49NHYC1TEA3GBH0X14JXAYRVQD
+**Editorial reference:** ERG-191.
 
-Observational astronomy acquires and interprets evidence about celestial objects through light and other messengers. The material connects telescopes, detectors, spectroscopy, timing, surveys, calibration, and data analysis with observatory operations and the limits imposed by instruments and observing conditions.
+This route follows the dependencies connecting geological resources to machines capable of accurate manufacturing. It joins extraction, metallurgy, energy, machine tools, bearings, controls, metrology, skilled trades, and repair, identifying the initial equipment and external contributions needed to bootstrap a productive workshop.
 
-**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
-} r_2KGHM1GMWSY7YXY9RH3JG4KMDW
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_49NHYC1TEA3GBH0X14JXAYRVQD
 
-Astrophysics (@plan-astrophysics: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_1JY0RVDDS0SYCX3BXSQNX5EXE7
-**Editorial reference:** ERG-088.
+From minerals to microchips (@plan-from-minerals-to-microchips: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_1C0FKKNR6ZJ67E351AR07YQ4P8
+**Editorial reference:** ERG-192.
 
-Astrophysics explains celestial systems through physical laws and observations. The material covers stars, stellar evolution, galaxies, compact objects, interstellar matter, and high-energy phenomena, connecting nuclear, gravitational, electromagnetic, and statistical physics with astronomical measurements and computational models.
+This route follows semiconductor production from feedstocks and purified materials to designed, fabricated, packaged, and tested chips. It connects chemistry, crystals, devices, lithography, optics, vacuum, gases, water, design software, equipment suppliers, facilities, and specialist labour, keeping unavailable methods and external dependencies visible.
 
-**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
-} r_1JY0RVDDS0SYCX3BXSQNX5EXE7
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_1C0FKKNR6ZJ67E351AR07YQ4P8
 
-Cosmology (@plan-cosmology: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_5SVG26YNNHQQ10GHQB7V0YRN48
-**Editorial reference:** ERG-089.
+From energy supply to connected computation (@plan-from-energy-supply-to-connected-computation: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_0QBQ23Z0Q65M9P8E6E0KETT9JD
+**Editorial reference:** ERG-193.
 
-Cosmology studies the large-scale structure, history, and evolution of the universe. This material connects gravitation, expansion, early-universe processes, background radiation, structure formation, and observational inference, distinguishing established evidence from unresolved questions about the universe's contents and fundamental description.
+This route explains what is required to keep useful computing and communications available. It joins energy resources, generation, grids, storage, components, computers, networks, facilities, software, and maintenance, following dependencies from physical supply to the digital tools that support other Ergon work.
 
-**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
-} r_5SVG26YNNHQQ10GHQB7V0YRN48
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_0QBQ23Z0Q65M9P8E6E0KETT9JD
 
-Planetary science (@plan-planetary-science: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_7DYV5MK9CE54XHM9EHBY2S90TV
-**Editorial reference:** ERG-090.
+From water sources to a healthy community (@plan-from-water-sources-to-a-healthy-community: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_18G1P0BNXYVA6B33KVMEEPGQ6E
+**Editorial reference:** ERG-194.
 
-Planetary science studies planets, moons, small bodies, and how planetary systems form and evolve. The material connects geology, atmospheres, interiors, orbital environments, remote observations, and spacecraft measurements, using comparisons between worlds to investigate their histories and physical possibilities.
+This route connects water, sanitation, environmental conditions, food, health evidence, and the institutions supporting a settlement. It joins natural systems with engineering, laboratories, maintenance, logistics, and professional knowledge, showing how several disciplines cooperate to sustain essential services over time.
 
-**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
-} r_7DYV5MK9CE54XHM9EHBY2S90TV
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_18G1P0BNXYVA6B33KVMEEPGQ6E
 
-Solar and space-environment science (@plan-solar-and-space-environment-science: 0, is #chapter, #planned, #part-of @plan-universe-and-space) { r_0CMC1K21QVZ8EHEKQJJ8RDP7J7
-**Editorial reference:** ERG-091.
+From soil to food and nutrient cycles (@plan-from-soil-to-food-and-nutrient-cycles: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_0G5VH1SR5GHQ7N4JHDZQ1WAZZ3
+**Editorial reference:** ERG-195.
 
-This material studies the Sun and the charged-particle and electromagnetic environments surrounding planets and spacecraft. It connects solar activity, space plasmas, magnetic fields, radiation, observation networks, and space weather with effects on communications, navigation, power infrastructure, and exploration.
+This route follows the relationships between land, soil, water, organisms, agricultural work, processing, consumption, and returned nutrients. It connects chemistry, ecology, farming, machinery, energy, logistics, nutrition, and material recovery, including the measurements and recurring tasks that preserve productive capacity.
 
-**Planning context:** [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP).
-} r_0CMC1K21QVZ8EHEKQJJ8RDP7J7
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_0G5VH1SR5GHQ7N4JHDZQ1WAZZ3
 
-History (@plan-history: 0, is #chapter, #planned, #part-of @trails, #contains @plan-historical-inquiry-and-historiography, #contains @plan-ancient-and-medieval-histories, #contains @plan-early-modern-and-modern-world-history, #contains @plan-contemporary-history, #contains @plan-history-of-brazil, #contains @plan-social-cultural-and-intellectual-history, #contains @plan-history-and-philosophy-of-science-and-technology) { r_3MKG6XS2X0W9YR8T4438CTGZ1T
+From basic materials to buildings and transport (@plan-from-basic-materials-to-buildings-and-transport: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_5JF7HZ7KERQ7YH7KWFVRZQ8CDD
+**Editorial reference:** ERG-196.
+
+This route follows the production systems behind usable places and connections between them. It joins minerals, metals, cement, glass, polymers, timber, construction equipment, vehicles, roads, railways, ports, utilities, inspection, and renewal, making the infrastructure of collective technical work visible.
+
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_5JF7HZ7KERQ7YH7KWFVRZQ8CDD
+
+From scientific discovery to manufactured application (@plan-from-scientific-discovery-to-manufactured-application: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_408WW3M6RZXG3ZGD0XWN19CSZR
+**Editorial reference:** ERG-197.
+
+This route follows an idea through evidence, reproduction, design, scale-up, qualification, and production. It connects research methods, instruments, materials, engineering, pilot facilities, supply chains, testing, documentation, and feedback, explaining why a demonstrated phenomenon and a maintained useful product require different bodies of work.
+
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_408WW3M6RZXG3ZGD0XWN19CSZR
+
+From learner to a continuing skilled workforce (@plan-from-learner-to-a-continuing-skilled-workforce: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_5TNAFAKGJD0K7WNZM4QTKN8JZ2
+**Editorial reference:** ERG-198.
+
+This route investigates how a community reproduces its capacity to investigate, build, operate, and maintain complex systems. It connects foundational education, specialised study, apprenticeship, practice, assessment, teaching, technical documentation, and succession, linking individual understanding to the continued availability of skilled work.
+
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_5TNAFAKGJD0K7WNZM4QTKN8JZ2
+
+From scattered sources to a joined Ergon library (@plan-from-scattered-sources-to-a-joined-ergon-library: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_0V8CJ3F1M8DXCQJ7PAW1M4DDM4
+**Editorial reference:** ERG-199.
+
+This route organises the work of connecting existing knowledge into a usable whole. It joins subject mapping, source selection, passage references, concise explanations, translation, authored learning routes, updates, and preservation, using ordinary Lince features to connect Institute, external, and personally retained material.
+
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_0V8CJ3F1M8DXCQJ7PAW1M4DDM4
+
+Sustaining a regional Ergon ecosystem (@plan-sustaining-a-regional-ergon-ecosystem: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_5DFZK87VBPQ1HWYR6RSY1YPHG3
+**Editorial reference:** ERG-200.
+
+This route brings together the people, knowledge, facilities, resources, services, and agreements needed to sustain advanced technical activity in a region. It connects education, research, production, utilities, logistics, maintenance, governance, and Transfers, treating outside dependencies and cooperation between specialised communities as explicit parts of the system.
+
+**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
+} r_5DFZK87VBPQ1HWYR6RSY1YPHG3
+
+Scholazein — pursuits of a well-spent life (@plan-scholazein: 0, is #chapter, #part-of @trails, #contains @plan-philosophical-study, #contains @plan-history, #contains @plan-sociology, #contains @plan-ethics-and-responsibility, #contains @plan-political-economy, #contains @plan-literature, #contains @plan-geography-and-communities, #related "../scholazein/Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6") { r_F0C67572595D006B38030FA375
+**Existing entrance:** [Scholazein](../scholazein/Scholazein.lingua#r_E8E2D1B2D2994E0AD5F5D002D6).
+
+**Content home:** `institute/trails/scholazein/`.
+
+Philosophy, its traditions, history, sociology, political-economy, literature, and art belong here. Studying work, power, and distribution connects to Ergon without reducing social inquiry to production. Use [Philosophy](../scholazein/philosophy/Philosophy.lingua) as an existing entrance; retain the art directory alongside it.
+
+- [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z)
+- [History](Trails.lingua#r_3MKG6XS2X0W9YR8T4438CTGZ1T)
+- [Sociology](Trails.lingua#r_2ENBJ86RED2J0TCGJFZARTTNQT)
+- [Ethics and responsibility](Trails.lingua#r_13ARZACNYPA4ZZHNVDSYG8C1A8)
+- [Political-Economy](Trails.lingua#r_2WPG1Y767BM24Z0K4BY6Y6T62W)
+- [Literature](Trails.lingua#r_68XTEFTFVR5ZPB68D6E1XK0SR3)
+- [Geography and communities](Trails.lingua#r_51B6N9Q9KVNQJTZRYTSJVGZ54P)
+} r_F0C67572595D006B38030FA375
+
+Philosophical study (@plan-philosophical-study: 0, is #chapter, #planned, #part-of @plan-scholazein, #contains @plan-philosophical-inquiry-argument-and-dialectic, #contains @plan-logic-and-philosophy-of-logic, #contains @plan-epistemology-and-the-life-of-knowledge, #contains @plan-metaphysics-and-ontology, #contains @plan-ethics-value-and-moral-reasoning, #contains @plan-action-freedom-and-practical-reason, #contains @plan-mind-experience-and-subjectivity, #contains @plan-language-meaning-and-interpretation, #contains @plan-social-philosophy-and-political-judgment, #contains @plan-aesthetics-and-philosophy-of-art, #contains @plan-religion-existence-and-the-meaning-of-life, #contains @plan-history-and-traditions-of-philosophy) { r_49SB3VCQS4WDEBHS2V3BSA411Z
+**Existing entrance:** [Philosophy](../scholazein/philosophy/Philosophy.lingua).
+
+Proposed branch Record: `@philosophical-inquiry-map`. Organising Record: `@philosophy`.
+
+The existing Philosophy Record is the shared entrance. Use `#philosophy` for its general learning connections and specific predicates such as `#ancient-greek-philosophy` and `#buddhism` for their respective selections. The [Buddhism and Yoga entrance](../scholazein/philosophy/karmic-philosophy/Karmic-philosophy.lingua) connects the ordered Buddhist study and the separate, single-book Yoga reading through ordinary Records. Their learning connections use `#buddhism` and `#yoga`; comparisons and sources retain their own links.
+
+**Pathways:** Begin with a philosophical question or primary text, reconstruct its argument, and compare objections and alternative accounts. Follow a problem through logic, knowledge, reality, action, value, experience, or historical traditions as relevant. Share formal foundations with Mathematics and interpretive methods with History and Literature, introducing the preparation actually used by each step.
+
+## Planned pathways
+
+- [Philosophical inquiry, argument, and dialectic](Trails.lingua#r_78KZ3J6EYBMW8FYF80GHJ2Q2AM)
+- [Logic and philosophy of logic](Trails.lingua#r_1J0J8EJ093GRB91Y0Z9353TJMR)
+- [Epistemology and the life of knowledge](Trails.lingua#r_74PA1ZD0W1T4Y2PZEZNXRK7Y4D)
+- [Metaphysics and ontology](Trails.lingua#r_3SNF8V7B02S3QVBRC2WVSCCZW8)
+- [Ethics, value, and moral reasoning](Trails.lingua#r_5M0CC0HK1Q4GDME0G52DEEBR7X)
+- [Action, freedom, and practical reason](Trails.lingua#r_36FFA1JH7A8DEDJPJEKCBS1Q4F)
+- [Mind, experience, and subjectivity](Trails.lingua#r_47VCQR824JH7PZ2VNNSKCH6B7K)
+- [Language, meaning, and interpretation](Trails.lingua#r_4HNGAHCTCDZCFRQ8GTM0DCG4M7)
+- [Social philosophy and political judgment](Trails.lingua#r_2FWM2H1GDRH93WW2QV15MNHMEA)
+- [Aesthetics and philosophy of art](Trails.lingua#r_28Z7XY50BG67Y8WWMVFRVWK0QW)
+- [Religion, existence, and the meaning of life](Trails.lingua#r_6HFHAD3C09XQ0Y1N0HMQ15414J)
+- [History and traditions of philosophy](Trails.lingua#r_17Q7Z11WNMH2ZWVXCZT2ASB2RK)
+
+**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+} r_49SB3VCQS4WDEBHS2V3BSA411Z
+
+Philosophical inquiry, argument, and dialectic (@plan-philosophical-inquiry-argument-and-dialectic: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_78KZ3J6EYBMW8FYF80GHJ2Q2AM
+**Editorial reference:** ERG-201.
+
+Philosophical inquiry begins with a question, makes its concepts and assumptions explicit, and develops an answer that can withstand criticism. This material joins close reading, conceptual analysis, argument reconstruction, dialogue, counterexamples, objections, and dialectic. Routes can begin with an everyday problem or a primary text, then compare competing accounts and examine what a distinction reveals or conceals. Reuse these methods when questioning scientific models, historical explanations, social arrangements, and interpretations of literature.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_78KZ3J6EYBMW8FYF80GHJ2Q2AM
+
+Logic and philosophy of logic (@plan-logic-and-philosophy-of-logic: 0, is #chapter, #planned, #part-of @plan-philosophical-study, #related @plan-mathematical-foundations-logic-and-proof) { r_1J0J8EJ093GRB91Y0Z9353TJMR
+**Editorial reference:** ERG-202.
+
+Logic investigates valid inference and the forms through which claims can support or conflict with one another. This material covers propositions, quantification, consequence, consistency, proof, models, modality, and alternative logical systems, alongside questions about truth, paradox, ordinary reasoning, and the limits of formalisation. Share the relevant formal foundations with [ERG-012](Trails.lingua#r_1K7J2A99Z4798HQEQ7Z0CKWAE7), introducing notation at the point of use. A philosophical argument, an empirical inference, and a formal derivation should each make their standards explicit.
+
+**Related plans:** [Mathematical foundations, logic, and proof](Trails.lingua#r_1K7J2A99Z4798HQEQ7Z0CKWAE7).
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_1J0J8EJ093GRB91Y0Z9353TJMR
+
+Epistemology and the life of knowledge (@plan-epistemology-and-the-life-of-knowledge: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_74PA1ZD0W1T4Y2PZEZNXRK7Y4D
+**Editorial reference:** ERG-203.
+
+Epistemology investigates knowledge, belief, truth, justification, error, and the limits of understanding. This material connects perception, memory, testimony, reasoning, practical knowledge, disagreement, scepticism, and the social conditions of inquiry. Compare accounts through arguments, counterexamples, and the practices by which people establish or challenge a claim. Link scientific evidence, historical sources, education, and the sociology of knowledge while preserving the different questions each asks.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_74PA1ZD0W1T4Y2PZEZNXRK7Y4D
+
+Metaphysics and ontology (@plan-metaphysics-and-ontology: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_3SNF8V7B02S3QVBRC2WVSCCZW8
+**Editorial reference:** ERG-204.
+
+Metaphysics examines what exists and how reality can be understood; ontology investigates the kinds of things an account commits us to. This material explores identity, persistence, properties, relations, parts and wholes, causation, possibility, time, reduction, and emergence. Compare ways of drawing boundaries around objects, processes, persons, and systems, explaining their assumptions and consequences. Connect these questions to physical theories, living systems, social institutions, and the abstractions used in Lince without treating a useful classification as a final division of reality.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_3SNF8V7B02S3QVBRC2WVSCCZW8
+
+Ethics, value, and moral reasoning (@plan-ethics-value-and-moral-reasoning: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_5M0CC0HK1Q4GDME0G52DEEBR7X
+**Editorial reference:** ERG-205.
+
+Ethics asks how people should act, what makes a life good, and how obligations or values can be justified. This material connects virtue, duty, consequences, care, character, moral disagreement, and metaethical questions about the meaning and basis of moral claims. Develop arguments through cases and objections, distinguishing what happens from what ought to happen. Link professional and research ethics, collective decisions, personal action, and literary depictions of moral life through the same concepts where appropriate.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_5M0CC0HK1Q4GDME0G52DEEBR7X
+
+Action, freedom, and practical reason (@plan-action-freedom-and-practical-reason: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_36FFA1JH7A8DEDJPJEKCBS1Q4F
+**Editorial reference:** ERG-206.
+
+The philosophy of action investigates intentions, reasons, choices, habits, agency, freedom, and responsibility. This material examines how explanations of action relate to deliberation, bodily activity, social constraints, and causal accounts, including disagreements about free will and the conditions of responsible action. Routes can start with a concrete decision and deepen into competing theories. Connect these questions to ethics, social explanation, and Political-Economy while distinguishing an explanatory model of behaviour from a justification of the decision.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_36FFA1JH7A8DEDJPJEKCBS1Q4F
+
+Mind, experience, and subjectivity (@plan-mind-experience-and-subjectivity: 0, is #chapter, #planned, #part-of @plan-philosophical-study, #related @plan-neuroscience-and-cognitive-science) { r_47VCQR824JH7PZ2VNNSKCH6B7K
+**Editorial reference:** ERG-207.
+
+Philosophy of mind examines consciousness, perception, emotion, thought, embodiment, personal identity, and the relation between mind and world. This material compares first-person description, conceptual argument, and scientific explanation, including phenomenological approaches and debates about physicalism, representation, and situated experience. Reuse relevant neuroscience and cognitive science from [ERG-104](Trails.lingua#r_13CGJGRFBS2ACJ69T0KCP7GZAQ) as evidence and context, with the philosophical assumptions visible. Literary accounts of experience can support comparison without being treated as experimental observations.
+
+**Related plans:** [Neuroscience and cognitive science](Trails.lingua#r_13CGJGRFBS2ACJ69T0KCP7GZAQ).
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_47VCQR824JH7PZ2VNNSKCH6B7K
+
+Language, meaning, and interpretation (@plan-language-meaning-and-interpretation: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_4HNGAHCTCDZCFRQ8GTM0DCG4M7
+**Editorial reference:** ERG-208.
+
+Philosophy of language investigates meaning, reference, truth, communication, use, and interpretation. This material joins arguments about how words and concepts relate to the world with hermeneutics, ambiguity, context, translation, and the interpretation of texts. Follow a concrete disagreement or passage before introducing more formal accounts where useful. Connect shared terminology in science, historical source criticism, literary interpretation, and public reasoning, explaining when a change of vocabulary changes the question itself.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_4HNGAHCTCDZCFRQ8GTM0DCG4M7
+
+Social philosophy and political judgment (@plan-social-philosophy-and-political-judgment: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_2FWM2H1GDRH93WW2QV15MNHMEA
+**Editorial reference:** ERG-209.
+
+Social and political philosophy investigate freedom, justice, equality, authority, property, recognition, power, and the justification of collective arrangements. This material compares arguments about how people live and decide together, connecting ethical principles with institutions, work, conflict, and cooperation. Share the institutional and empirical accounts developed in Political-Economy and Sociology, while making normative premises explicit. A route can investigate a particular arrangement through its reasons, effects, criticisms, and possible alternatives.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_2FWM2H1GDRH93WW2QV15MNHMEA
+
+Aesthetics and philosophy of art (@plan-aesthetics-and-philosophy-of-art: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_28Z7XY50BG67Y8WWMVFRVWK0QW
+**Editorial reference:** ERG-210.
+
+Aesthetics investigates experience, form, beauty, expression, imagination, taste, and artistic value. This material asks how works acquire meaning, how interpretations and judgments are supported, and how artistic practices relate to their historical and social settings. Begin with particular works and contrasting readings, then develop the relevant philosophical arguments. Literature provides a continuing connection through narrative, poetic form, fictional worlds, emotional response, criticism, and the relationship between a work and its reader.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_28Z7XY50BG67Y8WWMVFRVWK0QW
+
+Religion, existence, and the meaning of life (@plan-religion-existence-and-the-meaning-of-life: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_6HFHAD3C09XQ0Y1N0HMQ15414J
+**Editorial reference:** ERG-211.
+
+This material examines philosophical questions about religion, belief, reason, suffering, mortality, purpose, and ways of living. Compare arguments concerning religious claims and secular accounts of meaning, relating them to metaphysics, ethics, experience, and historical traditions. A route can begin with a text or existential question and trace its assumptions and objections. Keep the distinction between understanding an account, evaluating its arguments, and adopting it as a way of life explicit.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_6HFHAD3C09XQ0Y1N0HMQ15414J
+
+History and traditions of philosophy (@plan-history-and-traditions-of-philosophy: 0, is #chapter, #planned, #part-of @plan-philosophical-study) { r_17Q7Z11WNMH2ZWVXCZT2ASB2RK
+**Editorial reference:** ERG-212.
+
+The history of philosophy investigates how questions, arguments, texts, and traditions developed and were reinterpreted. This material connects ancient, medieval, modern, and contemporary philosophy through particular problems and primary works, including analytic, dialectical, phenomenological, hermeneutic, pragmatic, and critical approaches and Brazilian and Latin American debates. Use historical context, translations, commentary, and disagreements to understand an argument before comparing it across periods. Offer both chronological routes and routes following one question through several traditions.
+
+**Planning context:** [Philosophical study](Trails.lingua#r_49SB3VCQS4WDEBHS2V3BSA411Z).
+} r_17Q7Z11WNMH2ZWVXCZT2ASB2RK
+
+History (@plan-history: 0, is #chapter, #planned, #part-of @plan-scholazein, #contains @plan-historical-inquiry-and-historiography, #contains @plan-ancient-and-medieval-histories, #contains @plan-early-modern-and-modern-world-history, #contains @plan-contemporary-history, #contains @plan-history-of-brazil, #contains @plan-social-cultural-and-intellectual-history, #contains @plan-history-and-philosophy-of-science-and-technology) { r_3MKG6XS2X0W9YR8T4438CTGZ1T
 Proposed branch Record: `@history-map`. Organising Record: `@society-map`.
 
 **Pathways:** Investigate a period, society, event, practice, or changing idea through sources and competing accounts. Introduce chronology, source criticism, and relevant context alongside the question. Offer chronological, regional, and thematic routes, connecting political and economic transformations, cultural life, and the history of science and technology.
@@ -1868,7 +2365,7 @@ This material studies how scientific ideas, technical practices, instruments, an
 **Planning context:** [History](Trails.lingua#r_3MKG6XS2X0W9YR8T4438CTGZ1T).
 } r_0TXHW7BDPTZZNGWMERY21QJPAJ
 
-Sociology (@plan-sociology: 0, is #chapter, #planned, #part-of @trails, #contains @plan-sociological-theory-and-social-explanation, #contains @plan-methods-of-social-investigation, #contains @plan-social-structure-institutions-and-inequality, #contains @plan-work-knowledge-and-social-change) { r_2ENBJ86RED2J0TCGJFZARTTNQT
+Sociology (@plan-sociology: 0, is #chapter, #planned, #part-of @plan-scholazein, #contains @plan-sociological-theory-and-social-explanation, #contains @plan-methods-of-social-investigation, #contains @plan-social-structure-institutions-and-inequality, #contains @plan-work-knowledge-and-social-change) { r_2ENBJ86RED2J0TCGJFZARTTNQT
 Proposed branch Record: `@sociology-map`. Organising Record: `@society-map`.
 
 **Pathways:** Explain a social pattern or institution, compare theoretical accounts, and investigate a bounded case through observation, documents, interviews, or data. Introduce the required concepts and research methods before using them, with relevant historical, interpretive, or statistical preparation.
@@ -1915,7 +2412,7 @@ This material investigates the organisation and transformation of work, expertis
 **Planning context:** [Sociology](Trails.lingua#r_2ENBJ86RED2J0TCGJFZARTTNQT).
 } r_2FK3WWYVFYNV84AF1Z8PMWBZHP
 
-Ethics and responsibility (@plan-ethics-and-responsibility: 0, is #chapter, #planned, #part-of @trails, #contains @plan-research-ethics-and-professional-practice) { r_13ARZACNYPA4ZZHNVDSYG8C1A8
+Ethics and responsibility (@plan-ethics-and-responsibility: 0, is #chapter, #planned, #part-of @plan-scholazein, #contains @plan-research-ethics-and-professional-practice) { r_13ARZACNYPA4ZZHNVDSYG8C1A8
 Proposed branch Record: `@ethics-responsibility-map`. Organising Record: `@society-map`.
 
 **Pathways:** Examine a decision, affected parties, competing values, and responsibilities. Begin with the case and the arguments; introduce the relevant technical knowledge without making an entire profession's curriculum a prerequisite.
@@ -1930,12 +2427,12 @@ Proposed branch Record: `@ethics-responsibility-map`. Organising Record: `@socie
 Research ethics and professional practice (@plan-research-ethics-and-professional-practice: 0, is #chapter, #planned, #part-of @plan-ethics-and-responsibility) { r_0F68XVBQAG2JFA8ME14H9ATCWZ
 **Editorial reference:** ERG-006.
 
-Responsible STEM work considers the people, organisms, environments, and communities affected by investigation and application. This material introduces research integrity, consent, welfare, attribution, conflicts of interest, professional responsibility, and institutional review, connecting technical decisions to accountable practice.
+Responsible Ergon work considers the people, organisms, environments, and communities affected by investigation and application. This material introduces research integrity, consent, welfare, attribution, conflicts of interest, professional responsibility, and institutional review, connecting technical decisions to accountable practice.
 
 **Planning context:** [Ethics and responsibility](Trails.lingua#r_13ARZACNYPA4ZZHNVDSYG8C1A8).
 } r_0F68XVBQAG2JFA8ME14H9ATCWZ
 
-Political-Economy (@plan-political-economy: 0, is #chapter, #planned, #part-of @trails, #contains @plan-political-economy-value-production-and-distribution, #contains @plan-markets-organisations-and-economic-coordination, #contains @plan-money-finance-and-macroeconomic-systems, #contains @plan-states-power-and-political-institutions, #contains @plan-public-finance-collective-provision-and-commons, #contains @plan-development-inequality-and-international-political-economy, #contains @plan-history-and-methods-of-political-economy, #contains @plan-political-economy-of-production-and-infrastructure) { r_2WPG1Y767BM24Z0K4BY6Y6T62W
+Political-Economy (@plan-political-economy: 0, is #chapter, #planned, #part-of @plan-scholazein, #contains @plan-political-economy-value-production-and-distribution, #contains @plan-markets-organisations-and-economic-coordination, #contains @plan-money-finance-and-macroeconomic-systems, #contains @plan-states-power-and-political-institutions, #contains @plan-public-finance-collective-provision-and-commons, #contains @plan-development-inequality-and-international-political-economy, #contains @plan-history-and-methods-of-political-economy, #contains @plan-political-economy-of-production-and-infrastructure) { r_2WPG1Y767BM24Z0K4BY6Y6T62W
 Proposed branch Record: `@political-economy-map`. Organising Record: `@society-map`.
 
 **Pathways:** Study production, distribution, exchange, power, and political institutions together. Enter through a question about work, resources, money, a collective arrangement, or a historical change, and introduce the relevant concepts, accounts, evidence, and formal methods at the depth used. Compare explanations through Sociology, History, and Philosophy.
@@ -2018,7 +2515,7 @@ This material investigates how resources, productive capabilities, ownership, in
 **Planning context:** [Political-Economy](Trails.lingua#r_2WPG1Y767BM24Z0K4BY6Y6T62W).
 } r_787Q5KHYKT8VXDA1BD94VABJS7
 
-Literature (@plan-literature: 0, is #chapter, #planned, #part-of @trails, #contains @plan-literary-reading-forms-and-interpretation, #contains @plan-literary-theory-and-criticism, #contains @plan-literary-history-and-comparative-literature, #contains @plan-brazilian-and-portuguese-language-literature) { r_68XTEFTFVR5ZPB68D6E1XK0SR3
+Literature (@plan-literature: 0, is #chapter, #planned, #part-of @plan-scholazein, #contains @plan-literary-reading-forms-and-interpretation, #contains @plan-literary-theory-and-criticism, #contains @plan-literary-history-and-comparative-literature, #contains @plan-brazilian-and-portuguese-language-literature) { r_68XTEFTFVR5ZPB68D6E1XK0SR3
 Proposed branch Record: `@literature-map`. Organising Record: `@society-map`.
 
 **Pathways:** Read a substantial work or coherent selection, develop an interpretation from passages, and compare other readings. Introduce narrative, poetic or dramatic form, terminology, and historical context alongside the text. Deepen into criticism, comparative reading, and literary history through shared material.
@@ -2065,7 +2562,7 @@ This material develops reading routes through Brazilian and other Portuguese-lan
 **Planning context:** [Literature](Trails.lingua#r_68XTEFTFVR5ZPB68D6E1XK0SR3).
 } r_5EXKCKEGD1S9S43160RR8NT1G0
 
-Geography and communities (@plan-geography-and-communities: 0, is #chapter, #planned, #part-of @trails, #contains @plan-geography-cartography-and-geographic-information) { r_51B6N9Q9KVNQJTZRYTSJVGZ54P
+Geography and communities (@plan-geography-and-communities: 0, is #chapter, #planned, #part-of @plan-scholazein, #contains @plan-geography-cartography-and-geographic-information) { r_51B6N9Q9KVNQJTZRYTSJVGZ54P
 Proposed branch Record: `@geography-communities-map`. Organising Record: `@society-map`.
 
 **Pathways:** Explain how location, movement, settlement, and scale shape a question; read and critique a map of people and infrastructure. Introduce coordinates and spatial data when used, and connect to Earth systems without requiring geodesy or GIS programming before every geographical question.
@@ -2085,336 +2582,21 @@ Geography investigates spatial patterns and relationships; cartography and geogr
 **Planning context:** [Geography and communities](Trails.lingua#r_51B6N9Q9KVNQJTZRYTSJVGZ54P).
 } r_0WSFYNG49VM9ZG4ZH8KJA3Y0S4
 
-Resources and materials (@plan-resources-and-materials: 0, is #chapter, #planned, #part-of @trails, #contains @plan-mineral-resources-extraction-and-refining-systems, #contains @plan-ceramics-glass-cement-and-mineral-products, #contains @plan-polymers-rubber-composites-and-coatings-production, #contains @plan-machine-tools-and-precision-production-infrastructure, #contains @plan-textiles-clothing-and-technical-fabrics, #contains @plan-timber-paper-and-packaging-systems) { r_08Q5J1HMAA7S3QNYSJSQ49STJ5
-[Resources and materials — feedstocks, useful properties, production, and recovery](../ergon/materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D) connects the developed material through Ergon, Engineering, STEM, Inquiry, Earth, and Philosophy.
+Ascholia — bureaucracy and administration (@plan-ascholia: 0, is #chapter, #part-of @trails, #related "../ascholia/Ascholia.lingua#r_C13F57992B4DED1C03FB1AF28D") { r_3DA91B7AFA3EBEF057EC941003
+**Existing entrance:** [Ascholia](../ascholia/Ascholia.lingua#r_C13F57992B4DED1C03FB1AF28D).
 
-**Pathways:** Follow one material from source through processing, specification, use, and recovery. Enter through the object or feedstock; link the particular geology, chemistry, properties, machines, and quantities needed at each depth.
+**Content home:** `institute/trails/ascholia/`.
 
-**Available:** [Metals and metallurgical production](../ergon/materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1), from familiar objects, feed, phases, quantities, and product requirements through extraction/refining, metal families, structure/transformations, manufacturing, testing, operation, recovery, and independent scholarship. Complete books, university and graduate courses, primary methods, original calculations, sustained laboratory/process studies, and an integrated material system provide depth. Thirteen shared learning Records retain distinct continuations.
+Practical administrative procedures, documents, and bureaucratic obligations belong here, beginning with the existing bureaucracy/Brasil.lingua material. Link political-economy, history, and sociology for explanations of institutions.
+} r_3DA91B7AFA3EBEF057EC941003
 
-**Available:** [Chemical feedstocks and supply systems](../ergon/materials/chemical-feedstocks-and-supply-systems/Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q), from familiar material, function/quantity/grade and origins through chemical families, supplier-to-user evidence, storage/contact and transfers, usable inventory, planning, continuity, people, maintenance and recovery. Complete books, graduate programmes, full technical/product methods, three independently checked calculations and fourteen sustained advanced investigations deepen into a complete defended system and independent research. Fourteen shared Records retain distinct chemical-supply continuations.
+Lince — using and understanding the ecosystem (@plan-lince: 0, is #chapter, #part-of @trails) { r_5CC329E69581876107C84531CE
+**Existing entrance:** [Lince](Lince.lingua).
 
-## Planned pathways
+**Content home:** `institute/trails/lince/`.
 
-- [Mineral resources, extraction, and refining systems](Trails.lingua#r_1T654Z06ZJ9CA149M75XP0AF95)
-- [Ceramics, glass, cement, and mineral products](Trails.lingua#r_3RDJQY81P7KTR82EDETYYE6S37)
-- [Polymers, rubber, composites, and coatings production](Trails.lingua#r_5QG0QPP2K5BB78CKWK6YFEYF5P)
-- [Machine tools and precision production infrastructure](Trails.lingua#r_54AAZ2Y0HK952ZRH8YCYBHJDPA)
-- [Textiles, clothing, and technical fabrics](Trails.lingua#r_7J4PQT2PP272F5D218AYG8W3YQ)
-- [Timber, paper, and packaging systems](Trails.lingua#r_1EK7CM15ZR70X480KKR4F150KT)
-
-**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
-} r_08Q5J1HMAA7S3QNYSJSQ49STJ5
-
-Mineral resources, extraction, and refining systems (@plan-mineral-resources-extraction-and-refining-systems: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_1T654Z06ZJ9CA149M75XP0AF95
-**Editorial reference:** ERG-170.
-
-This material follows mineral resources from geological evidence to usable feedstocks. It connects exploration, extraction, concentration, refining, resource quality, water, energy, equipment, transport, and waste, revealing the dependencies that lie beneath manufactured objects and specialised scientific materials.
-
-**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
-} r_1T654Z06ZJ9CA149M75XP0AF95
-
-Ceramics, glass, cement, and mineral products (@plan-ceramics-glass-cement-and-mineral-products: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_3RDJQY81P7KTR82EDETYYE6S37
-**Editorial reference:** ERG-172.
-
-This material investigates the production of mineral-based materials used in structures, optics, electronics, and industrial equipment. It connects feedstocks, formulation, furnaces, forming, firing, finishing, and quality with energy, refractories, machinery, and the properties demanded by different applications.
-
-**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
-} r_3RDJQY81P7KTR82EDETYYE6S37
-
-Polymers, rubber, composites, and coatings production (@plan-polymers-rubber-composites-and-coatings-production: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_5QG0QPP2K5BB78CKWK6YFEYF5P
-**Editorial reference:** ERG-173.
-
-This material follows synthetic and natural materials into plastics, elastomers, composites, coatings, and adhesives. It connects feedstocks, formulation, processing, reinforcement, curing, finishing, testing, and degradation with the machines and utilities required to produce and maintain useful material performance.
-
-**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
-} r_5QG0QPP2K5BB78CKWK6YFEYF5P
-
-Machine tools and precision production infrastructure (@plan-machine-tools-and-precision-production-infrastructure: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_54AAZ2Y0HK952ZRH8YCYBHJDPA
-**Editorial reference:** ERG-174.
-
-Precision production depends on machines capable of creating and checking the components of other machines. This material connects cutting, grinding, forming, toolmaking, bearings, drives, fixtures, metrology, calibration, and repair, exposing the recursive problem of producing and maintaining the means of production.
-
-**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
-} r_54AAZ2Y0HK952ZRH8YCYBHJDPA
-
-Textiles, clothing, and technical fabrics (@plan-textiles-clothing-and-technical-fabrics: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_7J4PQT2PP272F5D218AYG8W3YQ
-**Editorial reference:** ERG-184.
-
-Textile production turns fibres into materials serving everyday and specialised needs. The material connects natural and synthetic fibres, spinning, weaving, knitting, finishing, dyeing, garment manufacture, testing, and repair with applications including protective clothing, filters, composites, and industrial products.
-
-**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
-} r_7J4PQT2PP272F5D218AYG8W3YQ
-
-Timber, paper, and packaging systems (@plan-timber-paper-and-packaging-systems: 0, is #chapter, #planned, #part-of @plan-resources-and-materials) { r_1EK7CM15ZR70X480KKR4F150KT
-**Editorial reference:** ERG-185.
-
-This material follows forests and other fibre resources into structural wood, paper, and packaging. It connects resource management, harvesting, milling, pulping, forming, finishing, recovery, and transport, showing how material handling and preservation depend on often overlooked biological and industrial systems.
-
-**Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
-} r_1EK7CM15ZR70X480KKR4F150KT
-
-Energy and utilities (@plan-energy-and-utilities: 0, is #chapter, #planned, #part-of @trails, #contains @plan-electricity-infrastructure-and-energy-storage, #contains @plan-fuels-hydrogen-and-thermal-energy-supply, #contains @plan-water-sanitation-and-shared-industrial-utilities, #contains @plan-industrial-gases-vacuum-and-high-purity-supplies) { r_376AMKFFG2BY4E8T2A5Y923HV4
-Proposed branch Record: `@energy-utilities-map`. Organising Record: `@ergon`.
-
-**Pathways:** Account for a service's energy or water; follow a supply from source to use; investigate reliability and upkeep. Begin with relevant quantities and balances; operating, designing, and manufacturing utility equipment remain separate goals.
-
-## Planned pathways
-
-- [Electricity infrastructure and energy storage](Trails.lingua#r_5WDHZ2EBHAKP6Y0H4DABH0MC5H)
-- [Fuels, hydrogen, and thermal energy supply](Trails.lingua#r_7SK09P8H8A7Z0J80NTSFQX9H97)
-- [Water, sanitation, and shared industrial utilities](Trails.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN)
-- [Industrial gases, vacuum, and high-purity supplies](Trails.lingua#r_0FVDWAGQGSXCG2KVW13PPK1R47)
-
-**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
-} r_376AMKFFG2BY4E8T2A5Y923HV4
-
-Electricity infrastructure and energy storage (@plan-electricity-infrastructure-and-energy-storage: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_5WDHZ2EBHAKP6Y0H4DABH0MC5H
-**Editorial reference:** ERG-176.
-
-Electrical infrastructure connects energy resources to dependable power at the place of use. This material follows generation, renewable systems, transmission, distribution, conversion, storage, control, and repair, including the material supply chains, balancing services, and workforce needed to sustain electrical availability.
-
-**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
-} r_5WDHZ2EBHAKP6Y0H4DABH0MC5H
-
-Fuels, hydrogen, and thermal energy supply (@plan-fuels-hydrogen-and-thermal-energy-supply: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_7SK09P8H8A7Z0J80NTSFQX9H97
-**Editorial reference:** ERG-177.
-
-This material studies systems supplying combustible fuels, hydrogen, and useful heat. It connects extraction or production, refining, biomass conversion, geothermal resources, transport, storage, distribution, and end-use equipment with material requirements, energy balances, maintenance, and dependence on shared infrastructure.
-
-**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
-} r_7SK09P8H8A7Z0J80NTSFQX9H97
-
-Water, sanitation, and shared industrial utilities (@plan-water-sanitation-and-shared-industrial-utilities: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_7B9GRCJFHVBEEQEXKWCR2QMMPN
-**Editorial reference:** ERG-178.
-
-Shared utilities provide the water, drainage, treatment, and services on which settlements and production facilities rely. This material connects sources, pumping, distribution, treatment, wastewater, reuse, monitoring, and asset maintenance, showing how ordinary service work enables advanced industrial and scientific activity.
-
-**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
-} r_7B9GRCJFHVBEEQEXKWCR2QMMPN
-
-Industrial gases, vacuum, and high-purity supplies (@plan-industrial-gases-vacuum-and-high-purity-supplies: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_0FVDWAGQGSXCG2KVW13PPK1R47
-**Editorial reference:** ERG-179.
-
-Many technologies depend on controlled gases, low pressures, and substances whose contamination is tightly limited. This material connects gas production, purification, storage, delivery, vacuum pumps, seals, filtration, analysis, and maintenance with the research and manufacturing processes these supplies enable.
-
-**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
-} r_0FVDWAGQGSXCG2KVW13PPK1R47
-
-Production and quality (@plan-production-and-quality: 0, is #chapter, #planned, #part-of @trails, #contains @plan-standards-interoperability-and-quality-infrastructure, #contains @plan-clean-manufacturing-and-contamination-control, #contains @plan-food-production-preservation-and-distribution-systems, #contains @plan-industrial-ecology-and-lifecycle-assessment) { r_3YPJC2P8KN1G137NF9WXVQACRZ
-Proposed branch Record: `@production-quality-map`. Organising Record: `@ergon`.
-
-**Pathways:** Explain whether an output meets a specification; understand repeatability, contamination, loss, and lifecycle boundaries. Introduce the process's measurements and materials as used; advanced statistics and specialised clean production are later paths.
-
-## Planned pathways
-
-- [Standards, interoperability, and quality infrastructure](Trails.lingua#r_3CEXJ97N97KJ5KW8SGQ2GMT6MM)
-- [Clean manufacturing and contamination control](Trails.lingua#r_47NQ213DRJK1AMKQX7DTXR8E6X)
-- [Food production, preservation, and distribution systems](Trails.lingua#r_0PD1Z8HC1DYXAHK5BP6DKQJ853)
-- [Industrial ecology and lifecycle assessment](Trails.lingua#r_7E122P9GSWBT07N7KMFVT96P3B)
-
-**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
-} r_3YPJC2P8KN1G137NF9WXVQACRZ
-
-Standards, interoperability, and quality infrastructure (@plan-standards-interoperability-and-quality-infrastructure: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_3CEXJ97N97KJ5KW8SGQ2GMT6MM
-**Editorial reference:** ERG-004.
-
-Quality infrastructure helps independently produced materials, components, measurements, and services work together and meet defined requirements. This material connects standardisation, interfaces, metrology, reference systems, testing, inspection, accreditation, and conformity assessment with the institutions and agreements supporting comparability, interchangeability, and confidence across laboratories, suppliers, industries, and regions.
-
-**Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
-} r_3CEXJ97N97KJ5KW8SGQ2GMT6MM
-
-Clean manufacturing and contamination control (@plan-clean-manufacturing-and-contamination-control: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_47NQ213DRJK1AMKQX7DTXR8E6X
-**Editorial reference:** ERG-181.
-
-Clean manufacturing controls particles, chemical contamination, biological contamination, and environmental conditions according to process needs. This material connects cleanrooms, airflow, filtration, garments, handling, materials, monitoring, cleaning, and qualification with the facilities and practices supporting microelectronics, precision manufacture, pharmaceuticals, and research.
-
-**Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
-} r_47NQ213DRJK1AMKQX7DTXR8E6X
-
-Food production, preservation, and distribution systems (@plan-food-production-preservation-and-distribution-systems: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_0PD1Z8HC1DYXAHK5BP6DKQJ853
-**Editorial reference:** ERG-183.
-
-This material follows food from biological production through handling, processing, storage, and distribution. It connects farms, fisheries, mills, processing facilities, refrigeration, packaging, testing, transport, and waste recovery with the recurring work required to feed people and sustain technical communities.
-
-**Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
-} r_0PD1Z8HC1DYXAHK5BP6DKQJ853
-
-Industrial ecology and lifecycle assessment (@plan-industrial-ecology-and-lifecycle-assessment: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_7E122P9GSWBT07N7KMFVT96P3B
-**Editorial reference:** ERG-188.
-
-Industrial ecology studies production systems through their exchanges of materials, energy, water, products, and wastes. This material connects material-flow accounting, input–output relationships, lifecycle assessment, industrial symbiosis, and environmental effects with supply-chain evidence, identifying dependencies, displaced impacts, recovery opportunities, and the assumptions behind comparisons between ways of meeting a need.
-
-**Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
-} r_7E122P9GSWBT07N7KMFVT96P3B
-
-Logistics and exchange (@plan-logistics-and-exchange: 0, is #chapter, #planned, #part-of @trails, #contains @plan-transport-logistics-warehousing-and-trade-infrastructure) { r_40D59MXC3BX7K9FEVGCRY5S6F1
-Proposed branch Record: `@logistics-exchange-map`. Organising Record: `@ergon`.
-
-**Pathways:** Keep reliable stock; follow replenishment; plan movement and capacity; coordinate an exchange. Begin with arithmetic, units, balances, and lead time. Uncertain demand adds probability; optimisation adds its own methods; CAD is needed only if the selected design work actually uses it.
-
-## Planned pathways
-
-- [Transport, logistics, warehousing, and trade infrastructure](Trails.lingua#r_451QT681ESAD7CZ6W89GXF0AGV)
-
-**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
-} r_40D59MXC3BX7K9FEVGCRY5S6F1
-
-Transport, logistics, warehousing, and trade infrastructure (@plan-transport-logistics-warehousing-and-trade-infrastructure: 0, is #chapter, #planned, #part-of @plan-logistics-and-exchange) { r_451QT681ESAD7CZ6W89GXF0AGV
-**Editorial reference:** ERG-182.
-
-Logistics moves and holds resources so they are available in the required place, condition, and time. This material connects ports, roads, rail, shipping, air transport, warehouses, packaging, tracking, inventory, and coordination, revealing how physical exchange sustains geographically specialised production.
-
-**Planning context:** [Logistics and exchange](Trails.lingua#r_40D59MXC3BX7K9FEVGCRY5S6F1).
-} r_451QT681ESAD7CZ6W89GXF0AGV
-
-Facilities and maintenance (@plan-facilities-and-maintenance: 0, is #chapter, #planned, #part-of @trails, #contains @plan-laboratory-facilities-and-scientific-equipment, #contains @plan-construction-housing-and-production-facilities, #contains @plan-recycling-remanufacturing-and-material-recovery, #contains @plan-digital-infrastructure-manufacture-and-operation) { r_6QB4YPHCAEQ6YT4X71ZT7SYD28
-Proposed branch Record: `@facilities-maintenance-map`. Organising Record: `@ergon`.
-
-**Pathways:** Maintain a selected tool, room, facility, or digital service; document a fault and hand over upkeep. Start with the specific equipment and observations; add its relevant mechanics, electricity, materials, computing, or inspection methods rather than all engineering.
-
-## Planned pathways
-
-- [Laboratory facilities and scientific equipment](Trails.lingua#r_2Z45HQW78EK8ZB4CSZ8FHZSE3F)
-- [Construction, housing, and production facilities](Trails.lingua#r_50DH2REJNVWRJWE6TAVKG4G9VY)
-- [Recycling, remanufacturing, and material recovery](Trails.lingua#r_2W91J10QZNAGYA0V9EERXN18AK)
-- [Digital infrastructure manufacture and operation](Trails.lingua#r_76YZE6F8M0406MXGDC353TJBKQ)
-
-**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
-} r_6QB4YPHCAEQ6YT4X71ZT7SYD28
-
-Laboratory facilities and scientific equipment (@plan-laboratory-facilities-and-scientific-equipment: 0, is #chapter, #planned, #part-of @plan-facilities-and-maintenance) { r_2Z45HQW78EK8ZB4CSZ8FHZSE3F
-**Editorial reference:** ERG-180.
-
-Laboratories are maintained systems of instruments, workspaces, utilities, supplies, methods, and skilled people. This material connects facility planning, apparatus, calibration, shared services, sample handling, equipment procurement, repair, and records, explaining what is required to keep scientific investigation possible over time.
-
-**Planning context:** [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28).
-} r_2Z45HQW78EK8ZB4CSZ8FHZSE3F
-
-Construction, housing, and production facilities (@plan-construction-housing-and-production-facilities: 0, is #chapter, #planned, #part-of @plan-facilities-and-maintenance) { r_50DH2REJNVWRJWE6TAVKG4G9VY
-**Editorial reference:** ERG-186.
-
-This material follows the creation and upkeep of places where people live, learn, and produce. It connects land, design, materials, labour, equipment, construction, utilities, commissioning, inspection, and renewal, tracing the physical and organisational prerequisites of functioning settlements and industrial facilities.
-
-**Planning context:** [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28).
-} r_50DH2REJNVWRJWE6TAVKG4G9VY
-
-Recycling, remanufacturing, and material recovery (@plan-recycling-remanufacturing-and-material-recovery: 0, is #chapter, #planned, #part-of @plan-facilities-and-maintenance) { r_2W91J10QZNAGYA0V9EERXN18AK
-**Editorial reference:** ERG-187.
-
-Material recovery investigates how used products and waste streams can return to useful service or production. This material connects collection, sorting, characterisation, disassembly, separation, reprocessing, remanufacture, and quality, including the limits created by contamination, degradation, mixed materials, and energy requirements.
-
-**Planning context:** [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28).
-} r_2W91J10QZNAGYA0V9EERXN18AK
-
-Digital infrastructure manufacture and operation (@plan-digital-infrastructure-manufacture-and-operation: 0, is #chapter, #planned, #part-of @plan-facilities-and-maintenance) { r_76YZE6F8M0406MXGDC353TJBKQ
-**Editorial reference:** ERG-189.
-
-Digital infrastructure combines manufactured computing equipment with networks, facilities, power, cooling, storage, software, and ongoing operational work. This material follows those dependencies through deployment, monitoring, upgrades, incident response, replacement, and preservation, showing the material systems behind apparently intangible digital services.
-
-**Planning context:** [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28).
-} r_76YZE6F8M0406MXGDC353TJBKQ
-
-Connected system journeys (@plan-connected-system-journeys: 0, is #chapter, #planned, #part-of @trails, #contains @plan-from-mineral-resources-to-precision-machinery, #contains @plan-from-minerals-to-microchips, #contains @plan-from-energy-supply-to-connected-computation, #contains @plan-from-water-sources-to-a-healthy-community, #contains @plan-from-soil-to-food-and-nutrient-cycles, #contains @plan-from-basic-materials-to-buildings-and-transport, #contains @plan-from-scientific-discovery-to-manufactured-application, #contains @plan-from-learner-to-a-continuing-skilled-workforce, #contains @plan-from-scattered-sources-to-a-joined-stem-library, #contains @plan-sustaining-a-regional-stem-ecosystem) { r_130DJVF2VF7PTVA9NBR8B9VNJA
-Proposed branch Record: `@connected-systems-map`. Organising Record: `@ergon`.
-
-**Pathways:** Follow a declared chain such as minerals to microchips, or sources to a continuing library. Offer an orientation through its stages with optional depth into each branch; do not concatenate every participating field into one compulsory curriculum.
-
-## Planned pathways
-
-- [From mineral resources to precision machinery](Trails.lingua#r_49NHYC1TEA3GBH0X14JXAYRVQD)
-- [From minerals to microchips](Trails.lingua#r_1C0FKKNR6ZJ67E351AR07YQ4P8)
-- [From energy supply to connected computation](Trails.lingua#r_0QBQ23Z0Q65M9P8E6E0KETT9JD)
-- [From water sources to a healthy community](Trails.lingua#r_18G1P0BNXYVA6B33KVMEEPGQ6E)
-- [From soil to food and nutrient cycles](Trails.lingua#r_0G5VH1SR5GHQ7N4JHDZQ1WAZZ3)
-- [From basic materials to buildings and transport](Trails.lingua#r_5JF7HZ7KERQ7YH7KWFVRZQ8CDD)
-- [From scientific discovery to manufactured application](Trails.lingua#r_408WW3M6RZXG3ZGD0XWN19CSZR)
-- [From learner to a continuing skilled workforce](Trails.lingua#r_5TNAFAKGJD0K7WNZM4QTKN8JZ2)
-- [From scattered sources to a joined STEM library](Trails.lingua#r_0V8CJ3F1M8DXCQJ7PAW1M4DDM4)
-- [Sustaining a regional STEM ecosystem](Trails.lingua#r_5DFZK87VBPQ1HWYR6RSY1YPHG3)
-
-**Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
-} r_130DJVF2VF7PTVA9NBR8B9VNJA
-
-From mineral resources to precision machinery (@plan-from-mineral-resources-to-precision-machinery: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_49NHYC1TEA3GBH0X14JXAYRVQD
-**Editorial reference:** ERG-191.
-
-This route follows the dependencies connecting geological resources to machines capable of accurate manufacturing. It joins extraction, metallurgy, energy, machine tools, bearings, controls, metrology, skilled trades, and repair, identifying the initial equipment and external contributions needed to bootstrap a productive workshop.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_49NHYC1TEA3GBH0X14JXAYRVQD
-
-From minerals to microchips (@plan-from-minerals-to-microchips: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_1C0FKKNR6ZJ67E351AR07YQ4P8
-**Editorial reference:** ERG-192.
-
-This route follows semiconductor production from feedstocks and purified materials to designed, fabricated, packaged, and tested chips. It connects chemistry, crystals, devices, lithography, optics, vacuum, gases, water, design software, equipment suppliers, facilities, and specialist labour, keeping unavailable methods and external dependencies visible.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_1C0FKKNR6ZJ67E351AR07YQ4P8
-
-From energy supply to connected computation (@plan-from-energy-supply-to-connected-computation: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_0QBQ23Z0Q65M9P8E6E0KETT9JD
-**Editorial reference:** ERG-193.
-
-This route explains what is required to keep useful computing and communications available. It joins energy resources, generation, grids, storage, components, computers, networks, facilities, software, and maintenance, following dependencies from physical supply to the digital tools that support other STEM work.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_0QBQ23Z0Q65M9P8E6E0KETT9JD
-
-From water sources to a healthy community (@plan-from-water-sources-to-a-healthy-community: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_18G1P0BNXYVA6B33KVMEEPGQ6E
-**Editorial reference:** ERG-194.
-
-This route connects water, sanitation, environmental conditions, food, health evidence, and the institutions supporting a settlement. It joins natural systems with engineering, laboratories, maintenance, logistics, and professional knowledge, showing how several disciplines cooperate to sustain essential services over time.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_18G1P0BNXYVA6B33KVMEEPGQ6E
-
-From soil to food and nutrient cycles (@plan-from-soil-to-food-and-nutrient-cycles: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_0G5VH1SR5GHQ7N4JHDZQ1WAZZ3
-**Editorial reference:** ERG-195.
-
-This route follows the relationships between land, soil, water, organisms, agricultural work, processing, consumption, and returned nutrients. It connects chemistry, ecology, farming, machinery, energy, logistics, nutrition, and material recovery, including the measurements and recurring tasks that preserve productive capacity.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_0G5VH1SR5GHQ7N4JHDZQ1WAZZ3
-
-From basic materials to buildings and transport (@plan-from-basic-materials-to-buildings-and-transport: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_5JF7HZ7KERQ7YH7KWFVRZQ8CDD
-**Editorial reference:** ERG-196.
-
-This route follows the production systems behind usable places and connections between them. It joins minerals, metals, cement, glass, polymers, timber, construction equipment, vehicles, roads, railways, ports, utilities, inspection, and renewal, making the infrastructure of collective technical work visible.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_5JF7HZ7KERQ7YH7KWFVRZQ8CDD
-
-From scientific discovery to manufactured application (@plan-from-scientific-discovery-to-manufactured-application: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_408WW3M6RZXG3ZGD0XWN19CSZR
-**Editorial reference:** ERG-197.
-
-This route follows an idea through evidence, reproduction, design, scale-up, qualification, and production. It connects research methods, instruments, materials, engineering, pilot facilities, supply chains, testing, documentation, and feedback, explaining why a demonstrated phenomenon and a maintained useful product require different bodies of work.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_408WW3M6RZXG3ZGD0XWN19CSZR
-
-From learner to a continuing skilled workforce (@plan-from-learner-to-a-continuing-skilled-workforce: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_5TNAFAKGJD0K7WNZM4QTKN8JZ2
-**Editorial reference:** ERG-198.
-
-This route investigates how a community reproduces its capacity to investigate, build, operate, and maintain complex systems. It connects foundational education, specialised study, apprenticeship, practice, assessment, teaching, technical documentation, and succession, linking individual understanding to the continued availability of skilled work.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_5TNAFAKGJD0K7WNZM4QTKN8JZ2
-
-From scattered sources to a joined STEM library (@plan-from-scattered-sources-to-a-joined-stem-library: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_0V8CJ3F1M8DXCQJ7PAW1M4DDM4
-**Editorial reference:** ERG-199.
-
-This route organises the work of connecting existing knowledge into a usable whole. It joins subject mapping, source selection, passage references, concise explanations, translation, authored learning routes, updates, and preservation, using ordinary Lince features to connect Institute, external, and personally retained material.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_0V8CJ3F1M8DXCQJ7PAW1M4DDM4
-
-Sustaining a regional STEM ecosystem (@plan-sustaining-a-regional-stem-ecosystem: 0, is #chapter, #planned, #part-of @plan-connected-system-journeys) { r_5DFZK87VBPQ1HWYR6RSY1YPHG3
-**Editorial reference:** ERG-200.
-
-This route brings together the people, knowledge, facilities, resources, services, and agreements needed to sustain advanced technical activity in a region. It connects education, research, production, utilities, logistics, maintenance, governance, and Transfers, treating outside dependencies and cooperation between specialised communities as explicit parts of the system.
-
-**Planning context:** [Connected system journeys](Trails.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA).
-} r_5DFZK87VBPQ1HWYR6RSY1YPHG3
+Lince documentation, Instinct material, habits, simulations, shared examples, and this development register live here. Their Records can be reused by any subject through ordinary links.
+} r_5CC329E69581876107C84531CE
 
 First connected pathways (@plan-first-connected-pathways: 0, is #chapter, #part-of @trails, #contains @plan-pathway-find-a-question-and-question-the-map, #contains @plan-pathway-examine-a-philosophical-question, #contains @plan-pathway-read-and-interpret-a-literary-work, #contains @plan-pathway-keep-reliable-stock-and-follow-replenishment, #contains @plan-pathway-construct-and-explain-a-mathematical-proof, #contains @plan-pathway-observe-and-explain-a-local-living-environment, #contains @plan-pathway-understand-build-and-maintain-a-low-voltage-instrument, #contains @plan-pathway-investigate-a-historical-change, #contains @plan-pathway-explain-work-power-and-distribution, #contains @plan-pathway-interpret-a-population-health-comparison) { r_3RYVEGQ60GSD3XY3EVQH0JJRED
 Develop these first subjects incrementally through sources, explanations, and ordinary learning connections. Describe the depth of study and the evidence supporting a claimed result where useful.
@@ -2457,7 +2639,7 @@ Introduce Philosophy's own study branch and the five connected views. Follow the
 } r_5NFNTGG6YY33QA6CPAZA6B13V8
 
 Examine a philosophical question (@plan-pathway-examine-a-philosophical-question: 0, is #chapter, #planned, #part-of @plan-first-connected-pathways, #related @plan-philosophical-study) { r_348ZV22NJFVQXHA0TAJ3RMNTS1
-The authored [Greek philosophy pathway](../philosophy/ancient-greek-philosophy/Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3) begins with an accessible survey and continues through [scholarly preparation, advanced seminars, independent research, and criticism and revision](../philosophy/ancient-greek-philosophy/research/Research.lingua#r_434NMA510XG7R81DAAG64PZX09). The survey is a foundation stage; full completion requires its published textual, seminar, research, and review evidence. Shared Records connect the earlier thinkers, Plato, Aristotle, the schools, and later reception, with English retained texts, Portuguese alternatives, critical editions, and language preparation at the point of use. The [academic benchmarks](../philosophy/ancient-greek-philosophy/sources/Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP) record the university evidence and its limits. Relationships remain ordinary links and references; imports support discovery.
+The authored [Greek philosophy pathway](../scholazein/philosophy/ancient-greek-philosophy/Ancient-Greek-Philosophy.lingua#r_464ZHR7ZYC234A0XX2QEW47VB3) begins with an accessible survey and continues through [scholarly preparation, advanced seminars, independent research, and criticism and revision](../scholazein/philosophy/ancient-greek-philosophy/research/Research.lingua#r_434NMA510XG7R81DAAG64PZX09). The survey is a foundation stage; full completion requires its published textual, seminar, research, and review evidence. Shared Records connect the earlier thinkers, Plato, Aristotle, the schools, and later reception, with English retained texts, Portuguese alternatives, critical editions, and language preparation at the point of use. The [academic benchmarks](../scholazein/philosophy/ancient-greek-philosophy/sources/Academic-benchmarks.lingua#r_7YDPSHERTRH41D7YR4P93PWNEP) record the university evidence and its limits. Relationships remain ordinary links and references; imports support discovery.
 
 Extend this approach with further questions and sources: identify the concepts, assumptions, argument, and strongest objection; introduce the preparation where it is used; compare a second account or counterexample. The result is a reasoned interpretation and judgment with its unresolved difficulties visible. Native keyboard and reader navigation checks remain part of publication review.
 

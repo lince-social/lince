@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Explain waiting and bottlenecks through events, variation, and system boundaries (@mine-queues: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #mining-and-mineral-engineering "Reliability-availability-utilization-and-defined-denominators.lingua#r_0MV0F4CAPSWVG9GPC1S8PDS9RB") { r_7VKF3F1X78T6E5NJNV4SQYWBZX
+**Read:** [A Review of Operations Research in Mine Planning — Newman and colleagues](../sources/Operations-Research-in-Mine-Planning.lingua#r_3WX1KW34EWEGYZ6HGEMGGQBKHS), the complete equipment/dispatch/simulation method selected and original paper; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full capacity/handling context; [Reproducible computational work](../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), the complete relevant stochastic, validation, and performance studies.
+
+Interacting equipment and work create queues, blocking, starvation, and changing bottlenecks. Mean cycle times or separate machine capacities can hide variability, synchronization, priorities, routes, failures, maintenance, and finite buffers. A larger fleet can increase waiting without increasing accepted output.
+
+Little's relation L = λW connects long-run average population, throughput, and time in a consistently defined stable system under its conditions. For invented throughput 6 arrivals/departures h⁻¹ and mean system time 0.5 h, average population is 3. Define whether the system includes service or only waiting before comparing quantities.
+
+A queue model must reflect the arrival/service/dependence and capacity assumptions appropriate to the question. An overloaded or changing system may not have the stationary average presumed by a simple formula. Discrete-event simulation needs event/state definitions, random-input evidence, warm-up/horizon, replications, and independent validation.
+
+**Work:** derive/check the example and reconstruct a complete equipment/dispatch simulation study. Independently check conservation, deterministic limits, event timing, and measured performance not used for calibration. Compare a changed dispatch/maintenance or buffer policy with uncertainty and identify the actual controlling interface.
+
+Read the complete relevant primary planning/dispatch paper and handbook capacity account. Shared reproducible/stochastic computing supports execution; the mine-specific model should preserve the work and material meaning behind its events.
+
+**Continue:** [Measure equipment performance with explicit states, periods, and definitions](Reliability-availability-utilization-and-defined-denominators.lingua#r_0MV0F4CAPSWVG9GPC1S8PDS9RB).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_7VKF3F1X78T6E5NJNV4SQYWBZX

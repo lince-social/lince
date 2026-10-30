@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Connect molecular chemistry with phases, particles, equipment and observed behavior (@ic-scales: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR", #source "../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #industrial-chemistry "../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_2RN04P6Z2PXNY10792WDY0VRPX
+**Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the whole introductory scale/examples treatment and the opening model definitions; [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), one complete process case with reactions, physical operations and equipment; [Organic Chemical Technology — Nanda Kishore, NPTEL](../sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), the corresponding introduction to unit processes and plant design.
+
+A chemical process acts across scales. Molecular structure helps explain reactivity and intermolecular forces; phase composition controls what can contact or separate; particles, droplets and pores create areas and diffusion paths; equipment organizes flow, heat and residence histories. A plant observation can combine all these effects.
+
+Distinguish a mechanism from an empirical relation and a fitted operating correlation. An observed production rate per reactor volume is not automatically the intrinsic rate per accessible catalyst site. A bulk assay cannot reveal every phase or local concentration. A nominal temperature may conceal spatial gradients or a sensor's response lag.
+
+Link each inference to the observation supporting it. Chemical identity, average composition, distribution of sizes, dissolved impurity, surface state and application performance require different measurements. Changes during sampling, preparation, transport or storage may alter the material being inferred.
+
+**Work:** trace a production-quality problem across at least three scales. Give two competing explanations, identify observations that would distinguish them, and state the sampling support and measurement limitations. Use the later kinetic, transport, analytical and equipment studies to revise the causal argument rather than assigning every discrepancy to a single convenient reaction step.
+
+**Continue:** [Units, dimensions, and equations that can make sense](../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_2RN04P6Z2PXNY10792WDY0VRPX

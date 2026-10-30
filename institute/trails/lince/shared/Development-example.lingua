@@ -1,0 +1,59 @@
+Import "../../scholazein/philosophy/Philosophy.lingua"
+Import "../../scholazein/philosophy/ancient-greek-philosophy/sources/Socratic-dialogues-Cary.lingua"
+
+Philosophy development example (@development-example: 0, #requires @philosophy-level-one, #contains @reading-state) { r_00000000000000000000004001
+This optional, local self-assessment interprets 100 as the theoretical maximum development of this field. Each level can have a percentage of mastery. Completing the first reading gives 100 percent mastery of level 1; clearing it recomputes both assertions to zero. This example is a declaration by the learner, not an Organ-issued qualification.
+} r_00000000000000000000004001
+
+Learner (@learner: 0) { r_00000000000000000000004002
+} r_00000000000000000000004002
+
+Philosophy level 1 (@philosophy-level-one: 1, #part-of @philosophy) { r_00000000000000000000004003
+Read the Apology and reconstruct one argument, its premises, its conclusion, and a possible objection.
+} r_00000000000000000000004003
+
+Philosophy theoretical maximum (@philosophy-maximum: 100, #part-of @philosophy) { r_00000000000000000000004004
+The theoretical maximum development within the field as understood by this authored framework. It is a reference point rather than a fixed syllabus.
+} r_00000000000000000000004004
+
+My first Philosophy reading (@reading-state: 0, #of @learner, #requires @philosophy-level-one, #source @apology) { r_00000000000000000000004005
+![[apology]]
+} r_00000000000000000000004005
+
+Extension @development-example "lince.source" {
+ parameters { learner { label "Learner" kind "person" default "actor" } }
+ instances ["reading-state"]
+}
+
+Extension @development-example "lince.vocabulary" {
+ definitions {
+  mastery "Self-assessed percentage of mastery of this particular level definition, from 0 to 100."
+  attained-level "Self-assessed level in this authored Philosophy framework."
+  percent "One hundredth of this authored level's requirements."
+ }
+}
+
+Extension @reading-state "lince.controls" {
+ quantities [{ label "Complete reading" value "1" } { label "Clear completion" value "0" }]
+}
+
+Karma philosophy-development {
+ Rules {
+  Rule reading-complete {
+   quantity 1
+   record @reading-state
+   condition """@reading-state"""
+   gate >0
+   carry value
+   consequences """[{"kind":"run-action","action":"{\"action\":\"assert-record\",\"subject\":\"learner\",\"predicate\":\"mastery\",\"object\":\"philosophy-level-one\",\"quantity\":\"100\",\"unit\":\"percent\"}"},{"kind":"run-action","action":"{\"action\":\"assert-record\",\"subject\":\"learner\",\"predicate\":\"attained-level\",\"object\":\"philosophy\",\"quantity\":\"1\"}"}]"""
+  } ^rec_00000000000000000000004001
+  Rule reading-cleared {
+   quantity 1
+   record @reading-state
+   condition """@reading-state"""
+   gate ==0
+   carry value
+   consequences """[{"kind":"run-action","action":"{\"action\":\"assert-record\",\"subject\":\"learner\",\"predicate\":\"mastery\",\"object\":\"philosophy-level-one\",\"quantity\":\"0\",\"unit\":\"percent\"}"},{"kind":"run-action","action":"{\"action\":\"assert-record\",\"subject\":\"learner\",\"predicate\":\"attained-level\",\"object\":\"philosophy\",\"quantity\":\"0\"}"}]"""
+  } ^rec_00000000000000000000004002
+ }
+}

@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Distinguish a pharmaceutical ingredient from a similarly named industrial material (@cs-pharma-feed: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D", #source "../../../chemistry/industrial-chemistry/sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #chemical-supply-systems "../origins/Renewable-variable-feeds-and-seasonal-supply.lingua#r_6PNGA85ENPC1AYGC6WXG6060EC") { r_2B8FK1R91VD0ESAVEHNFCYHFG3
+**Read:** [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), the entire annex and relevant primary references; [Good storage and distribution practices for medical products — WHO](../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D), the whole annex, comparing its scope; [Manufacture of Organic Fine Chemicals, BREF OFC](../../../chemistry/industrial-chemistry/sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), complete applicable ingredient-process and quality chapters.
+
+Read the whole WHO starting-material annex and choose an actual ingredient's public monograph/specification through authorized access. Identify manufacturer, grade, process/quality system, lot, sample, analytical panel, package and distribution history. A chemical test alone may not establish the manufacturing and handling conditions associated with the intended pharmaceutical use.
+
+Follow a manufacturer, broker, repacker, distributor and user on one documented route. Explain what each party knows, changes and passes on. Distinguish an active ingredient, intermediate and excipient without assuming that one document's scope covers all of them. Relabelling a technical material does not create the evidence that a different intended use requires.
+
+Develop a documentary qualification case with complaints, returns, suspect identity, a changed source and a recall scenario. Read the complete storage/distribution annex as a companion, preserving its medical-product scope. Determine which measurements and traceability checks would discriminate actual hypotheses about a failure. The exercise concerns ingredient supply and quality evidence; the detailed medicinal product, clinical use and pharmaceutical manufacturing subjects remain distinct studies. State when work uses public literature rather than access to an operating quality system or a physical lot.
+
+**Continue:** [Compare renewable feedstocks on usable material and time-dependent evidence](../origins/Renewable-variable-feeds-and-seasonal-supply.lingua#r_6PNGA85ENPC1AYGC6WXG6060EC).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_2B8FK1R91VD0ESAVEHNFCYHFG3

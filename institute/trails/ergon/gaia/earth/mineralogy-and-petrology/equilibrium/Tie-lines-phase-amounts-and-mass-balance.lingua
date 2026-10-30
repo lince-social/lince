@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Derive phase amounts from a tie line and preserve their basis (@mp-lever: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG", #source "../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ", #source "../../../../hephaestus/inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8", #mineralogy-and-petrology "../../../../hephaestus/inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8", #metals-and-metallurgical-production "../../../../hephaestus/materials/metals-and-metallurgical-production/thermodynamics/Alloy-phase-diagrams-constraints-and-actual-material-states.lingua#r_1PP21D2BEFX4GRAHT6RKQJE0B0") { r_5VBSCW4DQFHPD00EQHBQ752R87
+**Read:** [Petrology — Timothy Grove, MIT 12.109](../sources/MIT-Petrology-12-109.lingua#r_6Q1GZJKSZXQBM4N19CTRYG64TG), the complete tie-line, lever-rule, and ternary exercises; [Petrology — Stephen A. Nelson, Tulane EENS 2120](../sources/Petrology-Nelson-Tulane.lingua#r_1MNEKH4WW2GQRD4FZWNRD1GDPZ), the full corresponding phase-diagram notes; [Build a numerical validation argument across several kinds of evidence](../../../../hephaestus/inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8), independent checks and conditioning in full.
+
+For two coexisting phases α and β with component-B fractions x_α and x_β on the same basis, bulk x₀ = f_α x_α + f_β x_β and f_α+f_β = 1. If x_α < x₀ < x_β, f_β = (x₀−x_α)/(x_β−x_α). This is a balance, not a method for discovering the coexisting compositions without thermodynamic evidence.
+
+For invented mole fractions x_α = 0.20, x_β = 0.80, and x₀ = 0.35, the phase mole fractions are f_α = 0.75 and f_β = 0.25. Check 0.75×0.20 + 0.25×0.80 = 0.35. Converting these to mass or volume requires the corresponding molar masses/densities and consistent phase definitions.
+
+Near a vanishing tie-line gap, a fraction calculation can become sensitive to the input compositions. A bulk point outside the interval cannot be represented by two nonnegative fractions on that tie line. Negative phase amounts are a model/boundary diagnosis, not a geological result to round away.
+
+**Work:** derive/check the example and solve a ternary three-phase balance, checking conservation and nonnegativity independently. Analyze sensitivity to the tie-line endpoints and distinguish uncertainty in those thermodynamic predictions from uncertainty in bulk composition. Follow [Build a numerical validation argument across several kinds of evidence](../../../../hephaestus/inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8) for the shared numerical-validation step, whose mineralogy continuation leads to the original equilibrium example.
+
+**Continue:** [Build a numerical validation argument across several kinds of evidence](../../../../hephaestus/inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+
+**Continue in metals and metallurgical production:** [Read an alloy phase diagram with its basis, constraints, and processing question](../../../../hephaestus/materials/metals-and-metallurgical-production/thermodynamics/Alloy-phase-diagrams-constraints-and-actual-material-states.lingua#r_1PP21D2BEFX4GRAHT6RKQJE0B0).
+} r_5VBSCW4DQFHPD00EQHBQ752R87

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Derive potential diagrams without confusing thermodynamic possibility with process performance (@metal-potential-diagrams: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../../../chemistry/general-chemistry/sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44", #metals-and-metallurgical-production "Thermochemical-data-temperature-and-compatible-reference-states.lingua#r_3EKZWFQG2VPXAKR9QZQ81JYSF1") { r_5A36GMP668XNSSNDRF6XQ79GTC
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), all thermal-treatment, reduction, and predominance-diagram theory; [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), complete carbon-reduction and refining discussions; [NIST-JANAF Thermochemical Tables — fourth-edition reference data](../../../chemistry/general-chemistry/sources/NIST-JANAF.lingua#r_64N7R6GQB5B7NVW5KBXB3NYD44), the exact evaluated data and original references used, with their states and range.
+
+An Ellingham-style plot compares standard Gibbs energies for carefully normalized reactions. The oxygen or sulfur basis, reference states, phase changes, and chosen gas equilibria matter. A line crossing can help frame a reduction question but does not itself account for nonstandard activities, gas transport, reaction rate, heat, or a usable product.
+
+Construct predominance boundaries from ΔG = ΔG° + RT ln Q = 0 for the defined species/phases. Distinguish imposed gas partial pressures or fugacities, coupled potentials, total pressure, and activities in solutions. Omitting a stable phase or mixing incompatible data can create a misleading diagram that remains numerically neat.
+
+For an invented reaction with ΔG° = −20 kJ mol⁻¹ at 1000 K, K = exp(20000/(R×1000)). Use a dimensionless quotient and explicit reaction basis. Changing a reaction coefficient or choosing a per-mole-of-oxygen basis changes the reported ΔG and K consistently; it does not change the physical equilibrium.
+
+**Work:** reproduce a complete published reduction or roasting diagram from its original data and assumptions. Independently derive at least two boundaries, compare activities or alternative phases, and check normalization and limiting conditions. Explain how kinetics, heat supply, transport, impurity retention, and product separation can prevent a thermodynamically possible route from meeting the engineering need.
+
+**Continue:** [Build a thermochemical calculation from compatible data and a stated temperature range](Thermochemical-data-temperature-and-compatible-reference-states.lingua#r_3EKZWFQG2VPXAKR9QZQ81JYSF1).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_5A36GMP668XNSSNDRF6XQ79GTC

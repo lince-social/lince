@@ -1,0 +1,25 @@
+Import "../General-chemistry.lingua"
+
+Connect chemical potential, activities, and the reaction direction (@gc-chemical-potential: 0, is #chapter, #part-of @general-chemistry, #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "../equilibrium/Temperature-dependence-and-thermochemical-data.lingua#r_712BZKFREWN36EKPEYKTZSQ1E1", #metals-and-metallurgical-production "../../../materials/metals-and-metallurgical-production/thermodynamics/Metal-slag-solution-and-gas-activities.lingua#r_71JYY2MP09YGH0465M7EESKFPQ", #industrial-chemistry "../../industrial-chemistry/thermodynamics/Reaction-equilibria-reference-states-and-industrial-conditions.lingua#r_2XXQE3QHDAXNBB258QPPVSAKRV", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/equilibrium/Mixtures-partial-molar-properties-and-Gibbs-Duhem.lingua#r_5Y41C1P88D3EMXPZ3A4GNHBEN4") { r_5NRB2N57XAZFAEFYGEF9SK3E5H
+**Read:** [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), the complete thermodynamic/chemical-potential and activity sections; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), free energy, chemical equilibrium, and solution thermodynamics; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), the thermodynamic and equilibrium discussions.
+
+Chemical potential describes how a thermodynamic potential changes when the amount of a species changes under specified constraints. For a mixture Gibbs energy, μ_i = (∂G/∂n_i) at fixed temperature, pressure, and other component amounts. Introduce the derivative as the local change per added amount before following a more formal derivation.
+
+With μ_i = μ_i° + RT ln a_i under the chosen convention, the stoichiometric sum gives Δ_rG = Σν_i μ_i = Δ_rG° + RT ln Q. At equilibrium in an allowed interior direction, Δ_rG = 0, yielding the K relation. Reaction extent connects the derivative to the earlier species and element balances.
+
+An ideal model can make some activities proportional to partial pressure, amount fraction, or concentration relative to a standard. Those are model choices, not interchangeable definitions. Charged species and electrochemical systems require the electrical contribution and conventions to be treated consistently; the later cell Records return to that issue.
+
+**Work:** derive the quotient expression from the chemical-potential sum, checking units and reaction normalization. For ideal A ⇌ B with K = 4, calculate the sign of Δ_rG at Q = 1 and Q = 8 at the same temperature, then interpret the allowed direction. Analyze the limiting composition carefully rather than evaluating a logarithm of zero as an ordinary finite value.
+
+Read the Green Book's full relevant thermodynamic definitions and Chem1 derivations. Follow the mathematical preparation at the point of use. This shared account connects reactions, phase equilibrium, solubility, osmotic behavior, and electrochemistry without requiring separate unexplained rules for each.
+
+**Continue:** [Change temperature without mixing equilibrium and rate models](../equilibrium/Temperature-dependence-and-thermochemical-data.lingua#r_712BZKFREWN36EKPEYKTZSQ1E1).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in metals and metallurgical production:** [Define activities and reference states before comparing metallurgical equilibria](../../../materials/metals-and-metallurgical-production/thermodynamics/Metal-slag-solution-and-gas-activities.lingua#r_71JYY2MP09YGH0465M7EESKFPQ).
+
+**Continue in industrial chemistry:** [Use reaction equilibrium with explicit activities, phases and industrial conditions](../../industrial-chemistry/thermodynamics/Reaction-equilibria-reference-states-and-industrial-conditions.lingua#r_2XXQE3QHDAXNBB258QPPVSAKRV).
+
+**Continue in thermodynamics and heat transfer:** [Mixtures, partial molar properties and Gibbs–Duhem](../../../physics/thermodynamics-and-heat-transfer/equilibrium/Mixtures-partial-molar-properties-and-Gibbs-Duhem.lingua#r_5Y41C1P88D3EMXPZ3A4GNHBEN4).
+} r_5NRB2N57XAZFAEFYGEF9SK3E5H

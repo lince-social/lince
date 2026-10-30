@@ -19,6 +19,10 @@ fn real_scratch_properties_long_chooser_cancel_saved_chords_and_focus_return_kee
         assert!(association(&mut fixture, application_id).unwrap().1.shown());
         property(&mut fixture, inspector, "Hide this scratch item");
         assert!(!association(&mut fixture, application_id).unwrap().1.shown());
+        action(&mut fixture, DesktopAction::ShowScratch);
+        fixture.until(|fixture| fixture.client.keyboard_focus.as_ref() == Some(&windows[0].surface));
+        property(&mut fixture, inspector, "Hide this scratch item");
+        assert!(!association(&mut fixture, application_id).unwrap().1.shown());
         let mut notes = Vec::new();
         for _ in 0..16 {
             let note = spawn_note(&mut fixture, "A retained scratch note with a long distinguishable label", "Keep this native scratch body");

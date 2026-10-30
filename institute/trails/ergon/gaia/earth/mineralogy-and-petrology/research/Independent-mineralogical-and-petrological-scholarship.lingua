@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Conduct an independent mineralogical or petrological investigation (@mp-research: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8", #source "../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF", #source "../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF", #source "../../../../hephaestus/inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #mineralogy-and-petrology "Completion-and-specialist-continuations.lingua#r_63VQA6WVZ91KKYDQD43BYDFXRK") { r_2RWA3AAGE5KFVA8P379Q76X8XQ
+**Read:** [Modeling Metamorphic Rocks Using Equilibrium Thermodynamics — Lanari and Duesterhoeft](../sources/Metamorphic-Modeling-Lanari-Duesterhoeft.lingua#r_08B2X0N88PTC51CSQPZAGWAQV8), the complete review where equilibrium/history methods apply; [Electron-excited X-ray microanalysis by EDS at 50 — Newbury and Ritchie](../sources/NIST-Quantitative-EDS.lingua#r_7XJDCAH01NX65F6Q5YY3CBFTCF), the complete analytical paper where applicable; [Advanced Igneous Petrology — Timothy Grove, MIT 12.490](../sources/MIT-Advanced-Igneous-Petrology.lingua#r_3R0PJP97ZPE1RSGPPGY8WXXQZF), the full selected case/method studies; [Reproducible computational work](../../../../hephaestus/inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), the complete independent-reproduction and scholarly-workflow readings used.
+
+Formulate a narrow question growing from the earlier studies and build a substantial primary bibliography including foundational methods, competing accounts, and relevant later work. Read complete papers and supplements with authorized access. Separate unavailable information from evidence that a claim is false or unimportant.
+
+Possible problems include a structural/occupancy ambiguity, mineral identification in a mixture, a calibration discrepancy, an igneous source/storage history, sedimentary provenance/alteration, an effective-domain/phase relation, a petrochronological event sequence, or an impurity/mineral-host question. Keep the depth aligned with minerals and rocks while using shared chemistry, measurement, computation, and geology where needed.
+
+Reproduce a consequential published result with an explicit observation/model chain and independent numerical checks. Test a serious alternative and a prediction not merely fitted to the preferred account. Distinguish mathematical consistency, model validity, calibration, and geological applicability.
+
+**Work:** produce a research-style report with a precise question, source criticism, traceable observations, reproducible methods, independently checked results, alternatives, limitations, and a feasible discriminating investigation. Defend it against independent critique and revise conclusions where the evidence warrants. Explain which practical abilities were actually demonstrated.
+
+A demanding completion supports further independent research and appropriately scoped laboratory/field work; it does not claim knowledge of every future mineral, rock system, or method. Ordinary Record connections remain simple even when the content and later work require substantial dedication.
+
+**Continue:** [Demonstrate integrated mineral, method, process, and research understanding](Completion-and-specialist-continuations.lingua#r_63VQA6WVZ91KKYDQD43BYDFXRK).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_2RWA3AAGE5KFVA8P379Q76X8XQ

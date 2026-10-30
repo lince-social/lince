@@ -19,6 +19,7 @@ fn queued_compact_confirmation_refuses_closed_replaced_modal_output_and_locked_o
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
     for retirement in [Retire::Close, Retire::Record, Retire::Modal, Retire::Output, Retire::Lock] {
+        eprintln!("Checking compact retirement: {retirement:?}");
         let path = directory.path().join(format!("{retirement:?}"));
         std::fs::create_dir(&path).unwrap();
         let engine = persisted(&runtime, &path);
@@ -40,9 +41,10 @@ fn queued_compact_confirmation_refuses_closed_replaced_modal_output_and_locked_o
         let mut operation = None;
         if matches!(retirement, Retire::Modal) {
             activate(&mut fixture, "Cancel compact changes");
-            action(&mut fixture, DesktopAction::OpenOperation);
+            opening::operation(&mut fixture);
             operation = Some(named(&mut fixture, "operation.input"));
         }
+        let progress = fixture.inspect(|canvas| canvas.world_mut().resource::<crate::runtime::InputProgress>().clone());
         let (_, release) = fixture.pause();
         let mut lock = None;
         match retirement {
@@ -53,7 +55,7 @@ fn queued_compact_confirmation_refuses_closed_replaced_modal_output_and_locked_o
             }
             Retire::Record => {
                 fixture.desktop.worker.input(Input::Test(Box::new(move |canvas| {
-                    canvas.world_mut().get_mut::<native::protein_area::RecordBinding>(first).unwrap().uid = nucleus::new_uid("r");
+                    canvas.world_mut().get_mut::<native::protein_area::RecordBinding>(first).unwrap().area = inspector;
                 }))).unwrap();
             }
             Retire::Modal => {}
@@ -82,6 +84,12 @@ fn queued_compact_confirmation_refuses_closed_replaced_modal_output_and_locked_o
         }
         assert!(filled > 0);
         release.send(()).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(30);
+        while !progress.reached(serial) {
+            assert!(fixture.desktop.worker.failure().is_none());
+            assert!(Instant::now() < deadline, "The retired input queue did not drain before presenting recovery frames");
+            std::thread::sleep(Duration::from_millis(2));
+        }
         fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| frame.input_serial >= serial));
         assert!(group(&mut fixture, first_id).is_none());
         unique(&mut fixture);
@@ -98,6 +106,7 @@ fn queued_compact_confirmation_refuses_closed_replaced_modal_output_and_locked_o
         if let Some(operation) = operation {
             assert!(fixture.inspect(move |canvas| canvas.world_mut().get_resource::<bevy::input_focus::InputFocus>().unwrap().get() == Some(operation)));
             tap(&mut fixture, 1);
+            fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| !frame.frame.input.modal));
             assert!(absent(&mut fixture, "operation.input"));
         }
         if matches!(retirement, Retire::Output) {
@@ -142,7 +151,7 @@ fn queued_compact_confirmation_refuses_closed_replaced_modal_output_and_locked_o
         }
         assert!(absent(&mut fixture, "park.compact-chooser"));
         if matches!(retirement, Retire::Record) {
-            fixture.inspect(move |canvas| canvas.world_mut().get_mut::<native::protein_area::RecordBinding>(first).unwrap().uid = uid);
+            fixture.inspect(move |canvas| canvas.world_mut().get_mut::<native::protein_area::RecordBinding>(first).unwrap().area = first);
         }
         windowed_fullscreen::select(&mut fixture, ids[0]);
         action(&mut fixture, DesktopAction::CreateCompactGroup);

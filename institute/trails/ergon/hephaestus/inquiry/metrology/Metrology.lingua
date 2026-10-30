@@ -1,0 +1,111 @@
+Import "sources/Beginner-Uncertainty.lingua"
+Import "sources/Dimensional-Metrology.lingua"
+Import "sources/Metrology-in-Short.lingua"
+Import "sources/SI-Realizations.lingua"
+Import "sources/Traceability-NIST.lingua"
+Import "sources/International-Comparison.lingua"
+Import "sources/Statistical-Handbook.lingua"
+Import "sources/Uncertainty-NIST-1900.lingua"
+Import "sources/GUM-and-Amendment.lingua"
+Import "sources/GUM-Models.lingua"
+Import "sources/GUM-Monte-Carlo.lingua"
+Import "sources/GUM-Multivariate.lingua"
+Import "sources/GUM-Conformity.lingua"
+Import "sources/GUM-Examples-2026.lingua"
+Import "sources/Weighing-Calibration.lingua"
+Import "sources/Volume-Calibration.lingua"
+Import "sources/Digital-Multimeters.lingua"
+Import "sources/Thermal-Enclosures.lingua"
+Import "sources/Force-and-Pressure.lingua"
+Import "sources/Analytical-Uncertainty.lingua"
+Import "sources/Sampling-Uncertainty.lingua"
+Import "sources/Method-Validation.lingua"
+Import "sources/Uncertainty-Software.lingua"
+Import "sources/Reference-Materials.lingua"
+Import "sources/Laboratory-Competence.lingua"
+Import "foundations/Question-and-measurand.lingua"
+Import "foundations/Principle-procedure-result.lingua"
+Import "foundations/Definitions-and-realizations.lingua"
+Import "foundations/Traceability-chain.lingua"
+Import "foundations/References-and-certificates.lingua"
+Import "foundations/Environment-and-handling.lingua"
+Import "foundations/Instrument-response.lingua"
+Import "foundations/Sampling-and-representativeness.lingua"
+Import "foundations/Data-and-reports.lingua"
+Import "research/First-measurement-study.lingua"
+Import "calibration/Comparisons-and-corrections.lingua"
+Import "calibration/Design-and-sequence.lingua"
+Import "calibration/Response-and-regression.lingua"
+Import "calibration/Regression-uncertainty-and-inversion.lingua"
+Import "calibration/Resolution-and-quantization.lingua"
+Import "calibration/Drift-hysteresis-and-loading.lingua"
+Import "calibration/Repeatability-and-reproducibility.lingua"
+Import "calibration/Validation-and-verification.lingua"
+Import "calibration/Control-and-recalibration.lingua"
+Import "uncertainty/Model-and-budget.lingua"
+Import "uncertainty/Type-A-evaluation.lingua"
+Import "uncertainty/Type-B-and-distributions.lingua"
+Import "uncertainty/Sensitivity-and-correlation.lingua"
+Import "uncertainty/Coverage-and-degrees-of-freedom.lingua"
+Import "uncertainty/Nonlinearity-and-bias.lingua"
+Import "uncertainty/Monte-Carlo-propagation.lingua"
+Import "uncertainty/Multivariate-and-constraints.lingua"
+Import "uncertainty/Inverse-and-Bayesian-models.lingua"
+Import "uncertainty/Sampling-and-censoring.lingua"
+Import "uncertainty/Model-discrepancy-and-robustness.lingua"
+Import "uncertainty/Reporting-and-use.lingua"
+Import "applications/Measurement-families.lingua"
+Import "applications/Dimensions-geometry-and-surfaces.lingua"
+Import "applications/Mass-volume-and-flow.lingua"
+Import "applications/Temperature-and-thermal-response.lingua"
+Import "applications/Electrical-measurements.lingua"
+Import "applications/Time-and-frequency.lingua"
+Import "applications/Force-pressure-and-torque.lingua"
+Import "applications/Optical-and-imaging-measurements.lingua"
+Import "applications/Chemical-and-reference-material-measurements.lingua"
+Import "applications/Dynamic-measurements-and-time-series.lingua"
+Import "practice/Reference-life-cycle.lingua"
+Import "practice/Interlaboratory-comparisons.lingua"
+Import "practice/Conformity-and-risk.lingua"
+Import "practice/Laboratory-competence.lingua"
+Import "practice/Measurement-network-and-transfers.lingua"
+Import "research/Calibration-project.lingua"
+Import "research/Nonlinear-and-vector-project.lingua"
+Import "research/Sampling-and-comparison-project.lingua"
+Import "research/Independent-research.lingua"
+Import "research/Completion.lingua"
+Import "Reading-from-zero.lingua"
+Import "Sources.lingua"
+Import "../quantitative-literacy/Quantitative-literacy.lingua"
+
+Measurement and metrology (@metrology: 0, is #chapter, #metrology "Reading-from-zero.lingua#r_0KE3E2MMWJ9JVV3Q60WZDMW3YJ") { r_3G54ENPA974K19AB5XF0P641N5
+Understand what a measurement means, how a result becomes comparable with other results, and how to defend its uncertainty and use. Begin with an ordinary question and accessible books, then develop calibration, reference chains, physical influences, statistical models, laboratory practice, and independent scholarly investigation. The same foundations support feedstock assays, machinery, utilities, scientific experiments, semiconductor processes, and the maintenance of modern infrastructure.
+
+**Start:** [Begin measurement and metrology from zero](Reading-from-zero.lingua#r_0KE3E2MMWJ9JVV3Q60WZDMW3YJ). No previous metrology course is assumed. The route uses shared quantitative Records where their preparation is actually needed, and links other foundations when a passage calls for them.
+
+| Part | Connected readings |
+| --- | --- |
+| Meaning, references, and an accessible first study | [Begin with a question and specify the measurand](foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6) · [Principle, method, procedure, indication, and result](foundations/Principle-procedure-result.lingua#r_2PT30AZGBV9V63Z3T0G7W8FSP6) · [Definitions, realizations, dissemination, and uncertainty](foundations/Definitions-and-realizations.lingua#r_2N05W0W3N8EMV1HADRRFR79Q72) · [A documented calibration chain for a particular result](foundations/Traceability-chain.lingua#r_7XW6NVMPW7PMPJPBESW5G1757N) · [Read a reference certificate and turn it into usable information](foundations/References-and-certificates.lingua#r_0BNMDMZ7WPMYWYD9P0BAE281ZB) · [Environment, alignment, handling, and the specimen itself](foundations/Environment-and-handling.lingua#r_1RNJYM0X929ZYV4TKHKDA5FTQC) · [Range, sensitivity, loading, bandwidth, and response time](foundations/Instrument-response.lingua#r_07SCGP3DGSTJ27T288T3G50J8H) · [A specimen, a sampling target, and a result about a population](foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH) · [A measurement record another person can interpret and repeat](foundations/Data-and-reports.lingua#r_01A7WVXPKHKNSSS10X9D7PYMVC) · [First study — turn an ordinary measurement into a defensible result](research/First-measurement-study.lingua#r_3Q9EX59YKEV2MNAAMBB5NPTFCV) |
+| Design and maintain a calibration | [Calibration as a comparison with corrections and conditions](calibration/Comparisons-and-corrections.lingua#r_1A4VTANENM6ME5PE8BPRWFN7ME) · [Design a calibration that can reveal its own weaknesses](calibration/Design-and-sequence.lingua#r_1DM0C485A4H25DSVDR611QZPXC) · [Fit a response relation and inspect what the residuals say](calibration/Response-and-regression.lingua#r_182XY9TP839DMYS0DM3ZEGQ3BH) · [Use a fitted calibration without discarding coefficient uncertainty](calibration/Regression-uncertainty-and-inversion.lingua#r_33VGQWJCXFMMX2TJ245VDMHS4N) · [Resolution, rounding, thresholds, and when repetition helps](calibration/Resolution-and-quantization.lingua#r_1XRZT4EC7VWK34F5JXD8MXRQF2) · [Drift, hysteresis, loading, and a changing calibration relation](calibration/Drift-hysteresis-and-loading.lingua#r_2R85N10DD9HD65VBW8KQ6X9TDA) · [Repeatability, intermediate precision, and reproducibility](calibration/Repeatability-and-reproducibility.lingua#r_5N1ZPCZJ1S4Q3N7J7YZ11Y6A14) · [Validate the intended use and verify the particular implementation](calibration/Validation-and-verification.lingua#r_696ZGSGKBG8BPXN1MF2RZNK69W) · [Keep a measurement process under observation between calibrations](calibration/Control-and-recalibration.lingua#r_6AHX4PAFTWTDPKEZVQ3KSNP9AC) |
+| Models, uncertainty, and interpretation | [Build the measurement model before filling the uncertainty budget](uncertainty/Model-and-budget.lingua#r_0QB7F1RTYH2F2P1VDT1AW3TY7R) · [Type A evaluation — statistical information and its conditions](uncertainty/Type-A-evaluation.lingua#r_4R6T465PVRV8EYK0145W6MBMR4) · [Type B evaluation — use other information without inventing a distribution](uncertainty/Type-B-and-distributions.lingua#r_0Z1BHCHATX6CS017685KDY4FTT) · [Propagate uncertainty with sensitivities and covariance](uncertainty/Sensitivity-and-correlation.lingua#r_0EF35BB106S2F2ATJBXBR49DFR) · [Standard uncertainty, expanded uncertainty, and coverage claims](uncertainty/Coverage-and-degrees-of-freedom.lingua#r_5Q2X2FWBE479BM2WERZQNG9PCV) · [Nonlinearity can change the estimated value as well as its uncertainty](uncertainty/Nonlinearity-and-bias.lingua#r_7RZPX9400CJWKT2SH1S8WGFWMW) · [Propagate joint distributions and control the numerical approximation](uncertainty/Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E) · [Several results share information and sometimes exact constraints](uncertainty/Multivariate-and-constraints.lingua#r_4V8WXSM2RD4S9XTX4X1R1Z6P6A) · [Observation models, inverse questions, and Bayesian interpretation](uncertainty/Inverse-and-Bayesian-models.lingua#r_1TSJYTGBD1NY9Q7VP0BDFXZ94K) · [Sampling contributions, thresholds, and results near zero](uncertainty/Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG) · [Model discrepancy, double counting, and sensitivity to assumptions](uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3) · [Report a result so its uncertainty survives later use](uncertainty/Reporting-and-use.lingua#r_1DX8JW7A1K3R87MJ4W9AYVJ52D) |
+| Physical measurement families | [Compare measurement families without losing the common questions](applications/Measurement-families.lingua#r_08ZQTJTT3X336JMZC2QKWZZRRF) |
+| References, comparison, decisions, and infrastructure | [Produce, preserve, transfer, and replace the references](practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR) · [Compare laboratories, reference values, and degrees of agreement](practice/Interlaboratory-comparisons.lingua#r_4B3WR8EBCNJRGVMR6HCG66Y1S9) · [Conformity decisions, guard bands, and the risk being controlled](practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ) · [Technical competence, impartiality, and a laboratory’s actual scope](practice/Laboratory-competence.lingua#r_6XCCPCRJ4W0533QRFZR7A58WZ6) · [Maintain the measurement network that production relies on](practice/Measurement-network-and-transfers.lingua#r_61QE5K586RSSFJ7DW1B82KXSW3) |
+| Advanced projects and scholarly completion | [Sustained project — design, calibrate, validate, and report a measurement](research/Calibration-project.lingua#r_49WHGBJDWWRNE926CEV5JCWZ7P) · [Advanced project — nonlinear estimates, joint outputs, and numerical validation](research/Nonlinear-and-vector-project.lingua#r_6DDE8J43JQFVSPHW3CDEX0EE6X) · [Advanced project — sampling, validation, and comparison across a material chain](research/Sampling-and-comparison-project.lingua#r_2BTPTEFXQ5H490KJA3C7AEC1KN) · [Scholarly study — investigate and improve a measurement method](research/Independent-research.lingua#r_3S2V3ZCFMX40WZ7QMMEZ1E66V3) · [What completing measurement and metrology means](research/Completion.lingua#r_53S7BF9JY2ZA1VT8820RXYR72Z) |
+
+
+[Compare measurement families without losing the common questions](applications/Measurement-families.lingua#r_08ZQTJTT3X336JMZC2QKWZZRRF) branches into nine families and returns to shared laboratory and transfer questions. Study their physical differences, then reconstruct and investigate demanding cases in depth. The early measurement exercise, calibration project, nonlinear/vector study, sampling/comparison project, and independent investigation develop successive kinds of evidence; [What completing measurement and metrology means](research/Completion.lingua#r_53S7BF9JY2ZA1VT8820RXYR72Z) states what completing the programme means.
+
+**Sources:** [Measurement and metrology sources — books, guides, and research](Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3). The reading includes whole books and technical volumes, followed by precise clauses, worked examples, and independent source comparison. Reference media remain external; teaching values are labelled hypothetical rather than presented as industrial measurements.
+
+[Inquiry — shared ways to understand and investigate](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB), [Ergon — mathematics, science, and engineering](../../Hephaestus.lingua#r_00000000000000000000002001), and [Hephaestus](../../Hephaestus.lingua#r_00000000000000000000002001) connect the foundation to other work. [Philosophy](../../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001) provides a return for questions about concepts, abstraction, evidence, and the claims a measurement can support. Reuse these Records wherever another discipline needs them.
+
+Follow the links directly or select both endpoints of `#metrology` connections through an ordinary Protein. The same shared quantitative Record retains its separate quantitative continuation; other source and subject references do not automatically enter this selection.
+
+**Continue:** [Begin measurement and metrology from zero](Reading-from-zero.lingua#r_0KE3E2MMWJ9JVV3Q60WZDMW3YJ).
+} r_3G54ENPA974K19AB5XF0P641N5
+
+Extension @metrology "lince.vocabulary" {
+ definitions {
+  metrology "A suggested continuation through the meaning, realization, comparison, uncertainty, use, and improvement of measurements. Other learning selections and source references retain their own predicates."
+ }
+}

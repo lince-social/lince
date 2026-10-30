@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Extinction, optical theorem and conservation tests (@em-optical-theorem: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #source "../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH", #electromagnetism "../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T") { r_4FDDB20D8BRMC28ZFKTKZXMEJV
+**Read:** [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), scattering, extinction and radiation conservation; [Electromagnetic Theory — MIT 8.311, Spring 2004](../sources/Electromagnetic-Theory-MIT-8-311.lingua#r_76PF2M392RCSAEEF88YX03ZEBH), advanced scattering and wave problems.
+
+The optical theorem relates extinction to the forward scattering amplitude under a stated amplitude/time convention. Reconstruct the derivation from interference between incident and scattered fields and integrated energy balance. Extinction is scattering plus absorption for a passive object; it is not simply the power carried by the scattered field alone.
+
+A quasistatic real polarizability for a nominally lossless particle can predict scattering without a consistent radiative correction to the forward response. Analyze how a radiation-reaction/dynamic correction restores the appropriate conservation relation within its valid approximation. Do not repair a failed model by clipping negative absorption to zero and calling the output physically verified.
+
+Use the theorem as an independent test of a numerical scattering calculation: compare forward amplitude, integrated angular power and absorbed energy with the same normalization and incident field. Investigate mesh, domain and angular quadrature error separately. Periodic systems, waveguides and absorbing backgrounds require corresponding generalized statements; a free-space isolated-scatterer formula is not automatically valid. This conservation-based reasoning connects analytical approximations with practical solver validation.
+
+**Continue:** [Optical power, spectra, images, and model-defined features](../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_4FDDB20D8BRMC28ZFKTKZXMEJV

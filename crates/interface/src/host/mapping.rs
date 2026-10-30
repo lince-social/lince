@@ -152,7 +152,8 @@ impl Mapping {
             || output.raster.scale.iter().any(|scale| !scale.is_finite() || !(0.5..=4.0).contains(scale))
             || output.raster.scale[0] != output.raster.scale[1]
             || output.raster.origin != output.bounds.origin()
-            || (0..2).any(|axis| (output.bounds.size()[axis] * output.raster.scale[axis]).round() != source[axis])
+            || (0..2).any(|axis| (output.bounds.size()[axis] * output.raster.scale[axis]).round() != source[axis]
+                && output.bounds.size()[axis] != (source[axis] / output.raster.scale[axis]).round())
         { return Err("Invalid final output mapping."); }
         let pivot = output.raster.point(anchor);
         let viewport = source.map(|size| size / magnification);

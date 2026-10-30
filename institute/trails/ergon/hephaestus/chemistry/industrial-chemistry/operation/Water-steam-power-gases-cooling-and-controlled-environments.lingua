@@ -1,0 +1,19 @@
+Import "../Industrial-chemistry.lingua"
+
+Account for the utility systems that sustain useful chemical production (@ic-utilities: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X", #source "../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9", #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #source "../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH", #industrial-chemistry "Skilled-work-maintenance-repair-and-restored-chemical-production.lingua#r_0XD38YDA9FKJ5CY7YE630MVZ1D", #chemical-supply-systems "../../../materials/chemical-feedstocks-and-supply-systems/continuity/Utilities-equipment-laboratories-and-skilled-work-as-supply-dependencies.lingua#r_3E7SBW7AQV33JYSRJ47ZCPDKED") { r_1AJS35N1FXFQV7T3AKG0XG1D2C
+**Read:** [Improving Steam System Performance — U.S. DOE sourcebook](../sources/Steam-System-Performance-DOE.lingua#r_0T4Q6THGGEMSNGMGJHF42BFF6X), the entire generation, distribution, end-use, recovery and maintenance sourcebook; [Common Waste Water and Waste Gas Treatment/Management Systems in the Chemical Sector, BREF CWW](../sources/Chemical-Sector-Water-and-Waste-BREF.lingua#r_3DD06XBCANC091G38HBZ4BX7Y9), the complete relevant water inventory, saving and treatment chapters; [Production of Chlor-alkali, BREF CAK](../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the full utility and product-system account; [Biochemical conversion of corn stover to ethanol — Humbird and colleagues](../sources/Biochemical-Ethanol-Design-Humbird.lingua#r_123G817BYJFAVYGA0ZVK3J5FJH), the entire integrated utility and wastewater design sections.
+
+Chemical manufacture depends on water of appropriate quality, steam/heat, electricity, cooling, compressed gases, vacuum and other controlled environments. A utility's temperature, pressure, purity, availability and return condition matter alongside its gross quantity. The same nominal energy or water amount may not perform the same process duty.
+
+Trace generation, distribution, end use, recovery and losses on compatible boundaries. A plant can transfer an apparent improvement from one utility to another or from inside to outside its reported boundary. Shared services couple several units, so a local change may alter another process's operating state or capacity.
+
+Include purification, storage/buffering, measurement, maintenance and changed-load conditions. A good steady design point cannot establish that a process continues to meet product requirements during variable feed, utility interruption or equipment service. The actual continuity and restoration work belongs to the system account.
+
+**Work:** reconstruct a full utility inventory for one complete chemical route, independently checking material, enthalpy and electrical bases. Compare a documented heat/water/gas integration alternative at the same accepted output and operating interval. Explain which measurement or service-history evidence establishes the claimed improvement and which supporting power/water/gas studies need deeper specialist work.
+
+**Continue:** [Trace continued chemical production to skilled work, maintenance and repair evidence](Skilled-work-maintenance-repair-and-restored-chemical-production.lingua#r_0XD38YDA9FKJ5CY7YE630MVZ1D).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+
+**Continue in chemical supply systems:** [Find the services that make a nominal chemical source usable](../../../materials/chemical-feedstocks-and-supply-systems/continuity/Utilities-equipment-laboratories-and-skilled-work-as-supply-dependencies.lingua#r_3E7SBW7AQV33JYSRJ47ZCPDKED).
+} r_1AJS35N1FXFQV7T3AKG0XG1D2C

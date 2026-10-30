@@ -5,8 +5,8 @@ use std::{collections::BTreeMap, fs, path::PathBuf};
 
 #[test]
 fn medicine_entries_discover_the_readings_and_export_external_resource_references() {
-    let directory =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails/nature/medicine");
+    let directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../institute/trails/ergon/gaia/medicine");
     let temporary = tempfile::tempdir().unwrap();
     let library = Library::new(temporary.path().join("library"));
     let expected = Publication::files(&directory).unwrap().len();

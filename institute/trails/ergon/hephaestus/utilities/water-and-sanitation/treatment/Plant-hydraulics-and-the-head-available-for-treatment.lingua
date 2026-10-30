@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Plant hydraulics and the head available for treatment (@wu-plant-hydraulics: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "../../../physics/fluid-dynamics/internal/Fittings-bends-junctions-and-what-a-loss-coefficient-means.lingua#r_44H4W4CTXATB85WBAMMY1BN8WK") { r_28A2TF3RFE9PMJZ9R7QH49DMJW
+**Read:** [The Physics of Water Treatment Design](../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR), chapter 2's [Plant Hydraulics](https://aguaclara-reach.github.io/Textbook/Fluids_and_Hydraulics/Plant_Hydraulics.html). Reuse the linked fluid-mechanics treatment of fittings before continuing to chemical addition.
+
+Draw the hydraulic grade through the plant at both ordinary and limiting flow. Distinguish elevation, pressure head and velocity head. Screens, pipework, control devices, mixing, settling passages and filters all consume available head. A head allowance must still work when a filter has accumulated material or a parallel unit is unavailable.
+
+An original gross hydraulic-power calculation uses Q = 0.02 m³/s and 8 m of head at density 1,000 kg/m³ and g = 9.81 m/s²: ρgQH = 1,569.6 W. At an assumed 70% overall pump/motor efficiency, electrical input is about 2,242.3 W. This is a stated operating point, not a pump selection. Actual efficiency depends on equipment and operating condition.
+
+**Work:** Account for a gravity plant's head once, from source level to the required outlet condition. Specify which losses vary with flow, which levels are controlled, and how a dirty filter changes the operating point. Compare a single unit, unequal parallel units and one unit out of service. Trace what an overflow or loss of level control would do to residence time and product routing. Relate the calculation to real maintenance access, isolation and drain arrangements rather than drawing pipes that cannot be inspected or emptied.
+
+**Water treatment continuation:** [Fittings, bends, junctions and what a loss coefficient means](../../../physics/fluid-dynamics/internal/Fittings-bends-junctions-and-what-a-loss-coefficient-means.lingua#r_44H4W4CTXATB85WBAMMY1BN8WK).
+} r_28A2TF3RFE9PMJZ9R7QH49DMJW

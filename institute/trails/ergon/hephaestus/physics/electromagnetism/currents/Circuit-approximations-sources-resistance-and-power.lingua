@@ -1,0 +1,17 @@
+Import "../Electromagnetism.lingua"
+
+Circuit approximations, sources and power (@em-dc-network: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC", #electromagnetism "../../../inquiry/metrology/applications/Electrical-measurements.lingua#r_7FD2XHWZZG0VF0Z4BHJT43NYK1", #electrical-power-engineering "../../../engineering/electrical-power-engineering/networks/Network-theorems-nodal-equations-and-references.lingua#r_7RGN8XXYAZ6CDM7DMZJCNA19V6") { r_0Y05GYZKN18BT1FY2GGQ6476W2
+**Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 10 in full; [Electromagnetics and Applications — David H. Staelin](../sources/Electromagnetics-and-Applications-Staelin.lingua#r_45QC1TW6RXJBJE8Q5H98DZT5AC), circuit and quasistatic applications.
+
+A lumped circuit replaces spatially distributed fields by port voltages, currents and element relations over a stated band and geometry. Junction current balance follows conservation when stored charge in the chosen junction is negligible. A loop voltage balance depends on how induced magnetic flux is accounted for. Both statements have field conditions, rather than being unrelated empirical rules.
+
+Solve a source with open-circuit voltage 10 V and internal resistance 2 Ω feeding 8 Ω. The current is 1 A, terminal voltage 8 V, load power 8 W and internal dissipation 2 W. The ideal source supplies 10 W. Changing load alters both terminal voltage and useful power; a nominal voltage alone is not a complete source model.
+
+Reconstruct series/parallel reduction, nodal equations and a two-port measurement, then check total energy and current balances. Explain passive sign convention before assigning negative power to a source. Nonlinear components, thermal changes and fast edges need their own relations. This field-foundation circuit work connects to the distinct full electronic and power-engineering studies; it does not claim to finish design, protection or construction of those systems.
+
+**Continue:** [Electrical quantities — references, connections, loading, and frequency](../../../inquiry/metrology/applications/Electrical-measurements.lingua#r_7FD2XHWZZG0VF0Z4BHJT43NYK1).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in electrical power engineering:** [Network theorems, nodal equations and references](../../../engineering/electrical-power-engineering/networks/Network-theorems-nodal-equations-and-references.lingua#r_7RGN8XXYAZ6CDM7DMZJCNA19V6).
+} r_0Y05GYZKN18BT1FY2GGQ6476W2

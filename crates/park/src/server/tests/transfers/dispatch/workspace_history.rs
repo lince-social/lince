@@ -122,9 +122,9 @@ fn rendered_workspace_history_save_cancel_cold_start_and_real_held_batched_provi
         chord(&mut fixture, 3);
         chord(&mut fixture, 3);
         route(&mut fixture, &[spaces[1], spaces[0], spaces[1]]);
-        fixture.until(|fixture| fixture.client.workspace_names.iter().any(|name| name == "History B"));
-        let index = fixture.client.workspace_names.iter().position(|name| name == "History B").unwrap();
-        let workspace = fixture.client.workspaces[index].clone();
+        fixture.until(|fixture| fixture.client.workspace_name_events.iter().any(|(_, name)| name == "History B"));
+        let workspace = fixture.client.workspace_name_events.iter().rev()
+            .find(|(_, name)| name == "History B").unwrap().0.clone();
         let manager = fixture.client.workspace_manager.as_ref().unwrap().clone();
         for _ in 0..3 {
             workspace.activate();
@@ -148,7 +148,6 @@ fn rendered_workspace_history_save_cancel_cold_start_and_real_held_batched_provi
         chord(&mut reopened, 2 + position as u32);
         route(&mut reopened, &[current]);
         open(&mut reopened);
-        magnification::focus(&mut reopened, ON);
         activate(&mut reopened, ON);
         magnification::focus(&mut reopened, OFF);
         activate(&mut reopened, "Cancel layout draft");
@@ -157,7 +156,7 @@ fn rendered_workspace_history_save_cancel_cold_start_and_real_held_batched_provi
         chord(&mut reopened, 2 + position as u32);
         route(&mut reopened, &[current]);
         open(&mut reopened);
-        magnification::focus(&mut reopened, ON);
+        opening::available(&mut reopened, ON);
         activate(&mut reopened, "Cancel layout draft");
         close(&mut reopened);
         assert!(reopened.desktop.server.windows().is_empty());

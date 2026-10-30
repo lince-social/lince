@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Treat preservation and missing evidence as part of the model (@geo-taphonomy: 0, is #chapter, #part-of @geology, #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J", #source "../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #geology "../../../../hephaestus/chemistry/general-chemistry/descriptive/Nuclides-decay-and-nuclear-change.lingua#r_0Y7ZKCD61XN1RHC4HKMBDZPK35") { r_4DSNG8J9Y7W9MCWAQRAS1PYQ5D
+**Read:** [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), the preservation, reworking, gaps, and extinction/history material; [International Stratigraphic Guide, abridged version — ICS](../sources/International-Stratigraphic-Guide.lingua#r_6NAYJE2KFXGRNCWP6TEY7AZE7J), unconformity-bounded units and relationships; [Introduction to Geochronology — Pieter Vermeesch](../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the introduction and basic notions as preparation.
+
+The geological record is produced, modified, removed, and sampled through processes. Erosion, nondeposition, dissolution, metamorphism, deformation, weathering, transport, and preservation can alter what remains observable. A missing interval is evidence to investigate rather than an empty place to fill with an unconstrained story.
+
+Taphonomic reasoning examines how biological remains enter and change within the record. Distinguish an original community, a death assemblage, a transported concentration, and the sampled fossil association. Time averaging and reworking can combine evidence from different events. Similar preservation biases can affect comparisons of diversity or extinction through time.
+
+Unconformities and other discontinuities require a field/section account: what surfaces and relationships are observed, what interval/event is inferred, and what remains unresolved. A present erosional surface and an ancient surface preserved in a stratigraphic sequence need different contextual observations.
+
+**Work:** compare two historical interpretations of a deliberately incomplete hypothetical section. Explain how preservation or sampling can mimic a change in environment or biological abundance. Identify an observation that would distinguish a true event from a record-production effect, and preserve the uncertainty when it cannot yet be resolved.
+
+Read the complete historical examples and relevant guide sections. Follow [Distinguish nuclear change from ordinary chemical transformation](../../../../hephaestus/chemistry/general-chemistry/descriptive/Nuclides-decay-and-nuclear-change.lingua#r_0Y7ZKCD61XN1RHC4HKMBDZPK35) for the shared nuclide/decay/measurement foundation before numerical dating. Its geology continuation returns to the age equation, attaching physical calculations to the particular event and preservation conditions they can constrain.
+
+**Continue:** [Distinguish nuclear change from ordinary chemical transformation](../../../../hephaestus/chemistry/general-chemistry/descriptive/Nuclides-decay-and-nuclear-change.lingua#r_0Y7ZKCD61XN1RHC4HKMBDZPK35).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4DSNG8J9Y7W9MCWAQRAS1PYQ5D

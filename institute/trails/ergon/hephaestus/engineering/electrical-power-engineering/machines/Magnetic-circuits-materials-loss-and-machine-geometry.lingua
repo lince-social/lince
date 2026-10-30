@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Magnetic circuits, materials, loss and machine geometry (@pe-magnetic-design: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH", #source "../sources/Hydrogenerator-Design-Manual-USBR.lingua#r_4ENJR7JW17MTFV4J47G989AN30", #source "../../../physics/electromagnetism/sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV", #electrical-power-engineering "Windings-poles-slots-harmonics-and-manufacture.lingua#r_67S1SDAHWDDYJTXXCDAYGD9MM7") { r_26T1DAYPG9F1H903T8GS499Q25
+**Read:** [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH), chapters 1–3 in full; [Hydrogenerator Design Manual — Bureau of Reclamation](../sources/Hydrogenerator-Design-Manual-USBR.lingua#r_4ENJR7JW17MTFV4J47G989AN30), complete relevant magnetic/design development; [Electromagnetic Fields and Energy — Haus and Melcher](../../../physics/electromagnetism/sources/Electromagnetic-Fields-and-Energy-Haus-Melcher.lingua#r_1VKHEEC14B3VDGBA13T6K4JQNV), whole relevant magnetic-energy and device chapters.
+
+Connect the shared magnetic-material account with an actual machine or transformer geometry. Derive a magnetic-circuit approximation from flux, magnetomotive force and reluctance, then identify leakage, fringing and saturation that require a fuller field model. A high permeability value does not make an air gap or local saturated region negligible.
+
+Use the full [Electric Machines — MIT 6.685, Fall 2013](../sources/Electric-Machines-MIT-6-685.lingua#r_6A4HM4XV13NAZDRV92PZDJ31XH) magnetic/loss chapters and the design manual to relate lamination material/thickness, core geometry, excitation and waveform to flux and loss. Separate hysteresis, eddy and stray loss mechanisms; a fitted empirical loss expression has a declared range and material/test basis.
+
+Choose a simple original design geometry and calculate flux, inductance, field energy, force/torque and plausible thermal loss with stated input uncertainty. Compare an analytical limit and a converged field or independently documented result. Trace the material back to [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../../../materials/metals-and-metallurgical-production/Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1) and its measured processing/structure where useful. A complete design must also address insulation, winding manufacture, assembly, cooling and testing, which the next Records develop rather than hiding them inside an ideal magnetic symbol.
+
+**Continue:** [Windings, poles, slots, harmonics and manufacture](Windings-poles-slots-harmonics-and-manufacture.lingua#r_67S1SDAHWDDYJTXXCDAYGD9MM7).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_26T1DAYPG9F1H903T8GS499Q25

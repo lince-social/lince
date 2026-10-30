@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Concentrations, species and analytical bases in water (@wu-chemical-basis: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #source "../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37", #water-and-sanitation "../../../chemistry/general-chemistry/aqueous/Carbonate-water-and-open-boundaries.lingua#r_0WTZ0V8V2K18X7XJZQFAQ4KB07") { r_35TB3P0H9QMBS17JF52YF9W74Z
+**Read:** [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), chapters 2–4 on loading, measurements and analytical data; [Analytical Chemistry 2.1 — David Harvey](../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), the complete concentration, sampling and equilibrium treatment used by the selected analysis; [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), chapter 3, wastewater characterization.
+
+A reported chemical number has a basis. Nitrate as nitrate and nitrate as nitrogen describe different mass conventions; with rounded molar masses, 1 mg/L as N corresponds to about 62/14 = 4.43 mg/L as NO₃⁻. Total phosphorus as P differs from the mass of a phosphate ion. Chemical oxygen demand is an oxygen-equivalent analytical result, not a direct mass measurement of every organic compound.
+
+Separate dissolved, particulate and total fractions according to the actual method. A filtration boundary is operational and can change what is counted. Ionic strength and complexation affect free-ion activities and therefore equilibrium or toxicity interpretations; a total concentration does not identify every reactive species.
+
+Build a table for a selected analysis report: analyte, measured fraction, reporting basis, unit, method and uncertainty. Convert only when the chemistry and basis justify it. Check charge and material consistency as diagnostics, retaining plausible unmeasured species and method limitations rather than using balance closure to erase disagreement.
+
+**Continue:** [Use carbonate chemistry to connect gas, acid/base, and mineral equilibria](../../../chemistry/general-chemistry/aqueous/Carbonate-water-and-open-boundaries.lingua#r_0WTZ0V8V2K18X7XJZQFAQ4KB07).
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+} r_35TB3P0H9QMBS17JF52YF9W74Z

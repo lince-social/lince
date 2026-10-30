@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Softening, precipitation and the equilibrium after separation (@wu-softening: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Adsorption-capacity-breakthrough-and-regeneration.lingua#r_6XEHAQQ3PZ3D9DCPECDRHNZKT7") { r_7E2GH3S5J7Q26TNTE0H81RVFPZ
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lectures [8](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l08_lime_soft_1/) and [9](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l09_lime_soft_2/); [The Physics of Water Treatment Design](../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR), chapter 4's [carbonate reactions](https://aguaclara-reach.github.io/Textbook/Chemistry_of_Water_Treatment/Chemistry_Derivations.html). Revisit the shared mass/charge/speciation and solubility Records when the balances require them.
+
+Hardness and alkalinity are different accounts even when both are reported as mg/L as CaCO₃. Hardness expressed as CaCO₃ converts charge equivalents to a common basis; it does not state that all material is dissolved calcium carbonate. Using rounded equivalent masses, 40 mg/L calcium gives 100 mg/L as CaCO₃, while 24.3 mg/L magnesium gives another 100 mg/L. Total hardness is approximately 200 mg/L as CaCO₃.
+
+Precipitation requires a species/charge balance, an equilibrium or supersaturation condition, time for formation and a way to separate the solids. Reagent addition changes more than the target ion. Solubility predictions must state activities or their approximation, temperature, gas exchange and allowed solid phases. Recarbonation and final stability require a new equilibrium account after solids removal.
+
+**Work:** Construct a synthetic water with an electrically balanced ion composition. Compare an equilibrium prediction with a finite-time precipitation result, recording residual ions and sludge mass. Explain why low hardness alone does not prove stable distribution water. Investigate sensitivity to carbon dioxide exchange and competing complexation. Advance from a hand balance to the existing inspectable chemistry solver, checking conservation, residuals and phase assumptions rather than trusting a converged numerical answer.
+
+**Water treatment continuation:** [Adsorption capacity, breakthrough and regeneration](Adsorption-capacity-breakthrough-and-regeneration.lingua#r_6XEHAQQ3PZ3D9DCPECDRHNZKT7).
+} r_7E2GH3S5J7Q26TNTE0H81RVFPZ

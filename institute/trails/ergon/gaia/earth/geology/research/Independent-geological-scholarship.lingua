@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Develop and defend an independent geological investigation (@geo-research: 0, is #chapter, #part-of @geology, #source "../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J", #source "../sources/IsoplotR-Vermeesch.lingua#r_6H156FG6EJ2M5AJ1A9GV0NV3S4", #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../../../../hephaestus/inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #geology "Geology-completion-and-continuations.lingua#r_0MHXG3169B8906QN4KB9XF9QH5") { r_3HWJT4PS3ZAP0SY5968CMBK6ST
+**Read:** [Introduction to Geochronology — Pieter Vermeesch](../sources/Introduction-to-Geochronology-Vermeesch.lingua#r_30AEAXYK3VV89FDX1TF9ZKJ84J), the full relevant advanced method and practicals; [IsoplotR: A free and open toolbox for geochronology — Vermeesch](../sources/IsoplotR-Vermeesch.lingua#r_6H156FG6EJ2M5AJ1A9GV0NV3S4), the complete paper where its methods apply; [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), the full method/lab sections used; [Reproducible computational work](../../../../hephaestus/inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), the full independent-reproduction and scholarly workflow material.
+
+Formulate a narrow question arising from the preceding studies and build a substantial annotated primary bibliography, including foundational methods, competing interpretations, and recent work actually relevant to it. Read complete papers and supplements, not just abstracts or inherited textbook summaries. Record access limits and distinguish absence of evidence from unavailable evidence.
+
+Connect field/material context, observations, methods, analytical/numerical reduction, model assumptions, and interpretation. Reproduce a consequential published result where methods/data permit. Test an alternative model and an independent observable prediction; distinguish uncertainty reducible by another measurement from ambiguity that remains under the available evidence.
+
+Possible investigations include competing correlations, metamorphic/event sequences, inherited versus growth ages, basin/thermal history, facies interpretation, tectonic reconstruction, weathering/resource origins, or a groundwater/ground model. Keep depth aligned with geology while using shared chemistry, measurement, computation, and mathematics where needed.
+
+**Work:** produce a research-level report containing a precise question, source critique, reproducible methods, observations/results, independently checked calculations, alternative interpretation, limits, and a feasible next investigation. Defend it orally or in writing to a critical reader, respond to substantial objections, and publish a revised account with evidence-linked changes.
+
+Actual field/laboratory/instrument abilities require their appropriate practical demonstrations; a literature/computational investigation should state its own scope. This Record describes demanding scholarly work available to a reader, not a claim that a new research result has already been produced or a prerequisite to reading an unrelated subject.
+
+**Continue:** [Demonstrate integrated geological understanding and continue into specialist work](Geology-completion-and-continuations.lingua#r_0MHXG3169B8906QN4KB9XF9QH5).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_3HWJT4PS3ZAP0SY5968CMBK6ST

@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect dewatering with hydrogeology, changing ground, and measured pump duty (@mine-dewatering: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE", #source "../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../../../../gaia/earth/geology/water/Groundwater-head-conductivity-and-flow.lingua#r_104ZRDJ685JFSD9E3RDJVN8NQB", #mining-and-mineral-engineering "Catchment-mine-and-process-water-balances.lingua#r_0A8BRZMCFA9YTYGA9331FVDCK7") { r_3HVPDBMJY7DFH0VBW7MJERGPB1
+**Read:** [Engineering Geology Field Manual — U.S. Bureau of Reclamation](../sources/USBR-Engineering-Geology-Field-Manual.lingua#r_5WS5PNK19008B3SV6D1WWNVTRE), the complete groundwater, permeability-test, water-control, and documentation methods; [Water stewardship — Australian leading-practice handbook](../sources/Mine-Water-Stewardship-Handbook.lingua#r_4Y8Q03RFJBVBN6WVVY3EN6Q5DM), the full handbook; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete pumping/dewatering and service context; [Derive a groundwater-flow account from head, properties, and boundaries](../../../../gaia/earth/geology/water/Groundwater-head-conductivity-and-flow.lingua#r_104ZRDJ685JFSD9E3RDJVN8NQB), the full shared head, conductivity, and flow explanation.
+
+Dewatering changes groundwater conditions and interacts with excavation, structures, recharge, surrounding water users/environments, ground behavior, and closure. A pump duty is one component of a hydrogeological system whose boundaries and properties can change through time.
+
+Separate observed water levels/flows, the conceptual model, calculated drawdown/inflow, equipment performance, and consequences. Fractures, heterogeneity, storage, delayed drainage, surface connections, and evolving workings can make a simple uniform steady-flow model inadequate.
+
+For invented water density 1,000 kg m⁻³, flow 0.02 m³ s⁻¹, total head 100 m, g = 9.81 m s⁻², and assumed efficiency 0.7, P = ρgQH/η gives about 28.029 kW. This is a hydraulic energy account, not a complete pump/system selection or an established mine inflow prediction.
+
+**Work:** derive/check the example and reconstruct a full dewatering case with field methods, conceptual model, pump/system observations, water destinations, uncertainty, and response monitoring. Compare a plausible boundary/connectivity interpretation and identify a measurement capable of distinguishing it.
+
+Read full groundwater-data and water-stewardship methods plus the relevant handbook chapters. The next water-balance step connects mine inflow/outflow with the processing circuit, catchment, inventories, and lifecycle rather than treating pumped water as an isolated waste stream.
+
+**Continue:** [Close water quantities across catchment, mine, plant, storage, and returns](Catchment-mine-and-process-water-balances.lingua#r_0A8BRZMCFA9YTYGA9331FVDCK7).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_3HVPDBMJY7DFH0VBW7MJERGPB1

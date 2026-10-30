@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Adsorption capacity, breakthrough and regeneration (@wu-adsorption: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Ion-exchange-equivalents-selectivity-and-brine.lingua#r_4DQJE4EF9QH2ZJQTA1BSZ16ARM") { r_6XEHAQQ3PZ3D9DCPECDRHNZKT7
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 10](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l10_adsor_ion_ex/), adsorption and breakthrough. Distinguish equilibrium information from a flowing bed's service history.
+
+An adsorption isotherm relates equilibrium aqueous concentration to mass held per mass of adsorbent at stated conditions. A column adds transport resistance, a moving mass-transfer region, competition and finite contact time. A batch equilibrium capacity does not tell when the column outlet first exceeds the chosen criterion.
+
+An original upper-bound account uses 1,000 kg of adsorbent with an assumed usable capacity of 10 mg/g for one constituent. The inventory is 10 kg. If removal demand is 0.1 kg/hour, inventory divided by demand is 100 hours. This calculation assumes all that stated usable capacity can be reached before the outlet criterion is exceeded. Early breakthrough, competition or flow maldistribution can shorten useful service; a measured conservative working capacity belongs in the account.
+
+**Work:** Plot Cₒᵤₜ/Cᵢₙ against time and treated bed volumes. Integrate Q(Cᵢₙ−Cₒᵤₜ) to estimate captured mass, with units and sampling uncertainty. Compare that integral with independently characterized media inventory. Test changing influent concentration and a competing adsorbate. Explain the waste, energy and performance evidence needed for replacement or regeneration. For deeper work, compare equilibrium-only, film-transfer and intraparticle-diffusion models using independent experiments; do not identify all resistances from a single breakthrough curve.
+
+**Water treatment continuation:** [Ion exchange, equivalents, selectivity and brine](Ion-exchange-equivalents-selectivity-and-brine.lingua#r_4DQJE4EF9QH2ZJQTA1BSZ16ARM).
+} r_6XEHAQQ3PZ3D9DCPECDRHNZKT7

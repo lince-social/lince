@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Ion exchange, equivalents, selectivity and brine (@wu-ion-exchange: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Gas-transfer-aeration-and-where-the-removed-mass-goes.lingua#r_33B8E41J97Q9H8C60XCWGR9YVR") { r_4DQJE4EF9QH2ZJQTA1BSZ16ARM
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 10](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l10_adsor_ion_ex/), ion exchange. Revisit the earlier equivalents, charge balance and hardness explanations before calculating bed capacity.
+
+An exchanger replaces one ionic charge inventory with another. Specify resin form, counterion, target species and competing ions. Charge equivalents permit a common capacity basis, but affinity and water composition determine which ions occupy sites. Softening with a sodium-form exchanger does not simply remove all dissolved salts.
+
+In an original ideal capacity example, 100 L of media has 1 equivalent/L stated working capacity, or 100 equivalents. A water demand of 2 milliequivalents/L exhausts that inventory after 50,000 L if the assumed working capacity is fully realized for those ions. At 1,000 L/hour the ideal duration is 50 hours. Early leakage, incomplete regeneration and competitive loading change this result.
+
+**Work:** Account for incoming and outgoing ions during service, then for regenerant, rinse water and spent brine. Compare chemical capacity, working capacity and a specified outlet-leakage limit. Explain why doubling regenerant may not double restored capacity. Use a reported or synthetic breakthrough series to estimate service time without assuming a perfectly sharp front. Extend to selective contaminant removal only after naming speciation, competitors, resin evidence and residual disposal requirements. Track the extra sodium or other exchanged counterion in the product account.
+
+**Water treatment continuation:** [Gas transfer, aeration and where the removed mass goes](Gas-transfer-aeration-and-where-the-removed-mass-goes.lingua#r_33B8E41J97Q9H8C60XCWGR9YVR).
+} r_4DQJE4EF9QH2ZJQTA1BSZ16ARM

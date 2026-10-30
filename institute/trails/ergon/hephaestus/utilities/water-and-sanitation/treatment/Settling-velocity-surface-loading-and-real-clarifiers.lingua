@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Settling velocity, surface loading and real clarifiers (@wu-settling: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Granular-filtration-is-capture-plus-a-changing-hydraulic-system.lingua#r_1ZJMPX1SHXY14CQ84BV4AP87P2") { r_1S2WZCBK4CDNK20DM8MF6CHB4N
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 5](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l05_sediment_1/) and [lecture 6](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l06_sediment_2/); [The Physics of Water Treatment Design](../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR), chapter 8's [clarification introduction](https://aguaclara-reach.github.io/Textbook/Clarification/Clarifier_Intro.html) and derivations.
+
+An ideal horizontal settling basin compares a particle's fall time with its travel time. For dilute discrete particles with uniform inlet-depth distribution and no turbulence or re-entrainment, capture is min(1, vₛA/Q), where A is plan area. Derive this by drawing trajectories. For Q = 100 m³/hour and A = 50 m², Q/A = 2 m/hour. An original monodisperse class settling at 1 m/hour has 50% ideal capture; at 3 m/hour it has complete ideal capture. A 40%/60% mass mixture of these classes yields 80% ideal total capture.
+
+Those assumptions fail for flocculent, hindered or compression settling. For an isolated small sphere in creeping flow, Stokes settling gives vₛ = (ρₚ−ρ)gd²/(18μ); verify the resulting Reynolds number before trusting it. Particle shape and aggregate density matter. For growing flocs, depth and time affect their settling history; the ideal discrete-particle area argument is insufficient.
+
+**Work:** Track both clarified water and withdrawn solids, including the liquid removed with sludge. Compare a basin and inclined settling surfaces without confusing projected area, spacing, inlet distribution and solids removal. Investigate density currents, unequal outlet loading and a sludge blanket that rises into the separation zone. Use settling-column or published particle-distribution data to compare models and show which scale-up assumptions remain untested.
+
+**Water treatment continuation:** [Granular filtration is capture plus a changing hydraulic system](Granular-filtration-is-capture-plus-a-changing-hydraulic-system.lingua#r_1ZJMPX1SHXY14CQ84BV4AP87P2).
+} r_1S2WZCBK4CDNK20DM8MF6CHB4N

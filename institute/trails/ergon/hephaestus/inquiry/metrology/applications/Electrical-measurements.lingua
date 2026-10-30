@@ -1,0 +1,23 @@
+Import "../Metrology.lingua"
+
+Electrical quantities — references, connections, loading, and frequency (@met-electrical-case: 0, is #chapter, #part-of @metrology, #source "../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R", #source "../sources/SI-Realizations.lingua#r_240WHEHDVW9TR241AXP6T4STM0", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #metrology "../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR", #electromagnetism "../../../physics/electromagnetism/measurement/Voltmeters-probes-return-paths-and-loading.lingua#r_1GC52AMZ8AGAPCFD5Y0N9NWJWM", #electrical-power-engineering "../../../engineering/electrical-power-engineering/measurement/Measure-power-energy-waveforms-and-calibration.lingua#r_5P5D0PP8SNAFFR88JE8567KH83") { r_7FD2XHWZZG0VF0Z4BHJT43NYK1
+**Read:** [Calibration of digital multimeters — EURAMET cg-15](../sources/Digital-Multimeters.lingua#r_33E8Y5E35FDF0Y2RA4PSZ2H47R), the complete guide and appendix A; [Practical realizations of SI units — BIPM consultative committees](../sources/SI-Realizations.lingua#r_240WHEHDVW9TR241AXP6T4STM0), the ampere and electrical-unit documents; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), E11 Microwave Step Attenuator and E15 Voltage Reflection Coefficient.
+
+Identify the electrical quantity and its conditions: DC or AC value, waveform, frequency or bandwidth, impedance, connection scheme, load, and timing. A voltage magnitude, RMS value, peak value, and complex response are different measurands. The applicable reference and model must match them.
+
+Connections are part of the system. Lead resistance, contact potentials, leakage, guarding, grounding, input impedance, thermal effects, and timing can matter at different scales. A four-terminal resistance method addresses some lead effects; it does not remove every source of uncertainty or make the reference value exact. The meter’s digit count does not state all these influences.
+
+Read the electrical SI realization to connect quantum references with ordinary comparisons. Relations such as the Josephson voltage V = nhf/(2e) and quantized Hall resistance R = h/(ie²) involve exact SI constants in ideal models, while practical devices, corrections, and dissemination still require uncertainty evaluation. Understand the stated operating regime and physical assumptions rather than treating the equations as a complete laboratory recipe.
+
+**Work:** read cg-15 completely and reconstruct one low-voltage or resistance calibration example, including its certificate convention. Use published or simulated data where equipment is unavailable. Compare the error terms and uncertainty for two ranges and show how loading changes the interpreted quantity. Add a frequency-dependent case and explain why a DC calibration alone does not characterize it.
+
+For vector or high-frequency study use TN 1900’s attenuator or reflection-coefficient example, retaining phase and covariance where relevant. Practical work with mains, high voltage, stored energy, or specialized quantum standards belongs in an appropriately equipped and supervised laboratory.
+
+**Continue:** [Produce, preserve, transfer, and replace the references](../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in electromagnetism:** [Voltmeters, probes, return paths and loading](../../../physics/electromagnetism/measurement/Voltmeters-probes-return-paths-and-loading.lingua#r_1GC52AMZ8AGAPCFD5Y0N9NWJWM).
+
+**Continue in electrical power engineering:** [Measure power, energy, waveforms and calibration](../../../engineering/electrical-power-engineering/measurement/Measure-power-energy-waveforms-and-calibration.lingua#r_5P5D0PP8SNAFFR88JE8567KH83).
+} r_7FD2XHWZZG0VF0Z4BHJT43NYK1

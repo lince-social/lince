@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Judge a chemical method for a specified use and specimen (@gc-method: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #source "../../../inquiry/metrology/sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS", #general-chemistry "../connections/From-mineral-to-chemical-feedstock.lingua#r_4CZJW2BPR1WBMPVKS6J2PFH733") { r_35SBSG78BYDMNMGSEKHB7PGZBR
+**Read:** [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapters 14–15 completely; [The Fitness for Purpose of Analytical Methods — Eurachem](../../../inquiry/metrology/sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), the complete guide; [Quantifying Uncertainty in Analytical Measurement — Eurachem/CITAC](../../../inquiry/metrology/sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS), the complete uncertainty guide and relevant worked examples.
+
+A chemical method has a target quantity, specimen/matrix, preparation, selectivity, calibration, working range, observation model, uncertainty, and intended use. Validation gathers evidence that the method is fit for that use. Verification checks whether the particular implementation meets the stated requirements under its conditions. Read the shared metrology treatment rather than creating a separate incompatible vocabulary.
+
+An accurate reference solution can fail to reveal matrix interference or preparation loss in a real sample. Replicating the same biased process many times does not expose every systematic effect. Independent preparation, reference materials, blanks, recovery studies, alternative methods, and appropriate sampling design provide different evidence with their own limitations.
+
+Distinguish a detection/quantification claim from a reported zero or an absent component. Thresholds depend on method, uncertainty, model, and decision conditions. A specified purity or contamination limit needs a clear quantity/basis and defensible comparison, rather than a visually clean sample or a generic instrument brochure.
+
+**Work:** choose a textbook or authorized published method and draw its complete target-to-result chain. Identify which validation evidence addresses sampling, preparation, matrix, response, and computation. Reconstruct one numerical example independently and propose an experiment that could expose a remaining blind spot.
+
+Read Harvey's method-development and quality-assurance chapters and the complete relevant Eurachem guides as the sustained study develops. A practical project should report its actual evidence and limits. Computational/document analysis can establish some parts of the argument while leaving hands-on competence and specimen-specific performance to be demonstrated.
+
+**Continue:** [Explain what changes between a mineral resource and a useful chemical feedstock](../connections/From-mineral-to-chemical-feedstock.lingua#r_4CZJW2BPR1WBMPVKS6J2PFH733).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_35SBSG78BYDMNMGSEKHB7PGZBR

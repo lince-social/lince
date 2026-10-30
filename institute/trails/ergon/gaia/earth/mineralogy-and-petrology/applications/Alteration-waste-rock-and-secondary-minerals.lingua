@@ -1,0 +1,21 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Explain waste-material change through mineral reactions, transport, and conditions (@mp-tailings: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../../../../hephaestus/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #source "../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85", #mineralogy-and-petrology "Planetary-materials-shock-and-comparative-petrology.lingua#r_13MYWX75DMQXVM5XFE1ZSG9YMR", #mining-and-mineral-engineering "../../../../hephaestus/engineering/mining-and-mineral-engineering/lifecycle/Waste-rock-reactions-acidity-and-metalliferous-drainage.lingua#r_0HBC5363VH97CNXM4N9SVGCV7Y") { r_2Q8ZGJBA5R7A0BH4RF4XMQ7Q2R
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete sulfide, oxide/hydroxide, carbonate, and alteration descriptions; [General chemistry](../../../../hephaestus/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), the full relevant aqueous, redox, equilibrium/kinetic, and open-system readings; [Handbook of Mineralogy — Anthony, Bideaux, Bladh, and Nichols](../sources/Handbook-of-Mineralogy.lingua#r_10TEF3RSN7XFMKTGYGY4WR3P85), complete selected secondary-mineral entries and primary references.
+
+Excavation and processing change particle size, exposure, mineral associations, water/oxygen access, and storage conditions. Secondary phases and fluid chemistry can evolve over time; a fresh-material assay alone does not describe all later reactions or consequences.
+
+An idealized pyrite oxidation/iron-hydroxide balance is 4FeS₂ + 15O₂ + 14H₂O → 4Fe(OH)₃ + 8SO₄²⁻ + 16H⁺. This balanced reaction illustrates possible component/acidity production under the selected products; actual rates, iron/sulfur species, microbial effects, fluid exchange, and precipitation require evidence and conditions.
+
+Neutralizing minerals and other reactions modify the account. Calcite can consume acidity through CaCO₃ + 2H⁺ → Ca²⁺ + CO₂ + H₂O under an identified aqueous/gas model. Stoichiometric capacity is not the same as the rate, accessibility, or field performance of the reacting material.
+
+**Work:** independently balance/check the reactions and build a hypothetical component account with explicit mineral quantities and system boundaries. Reconstruct a documented weathering/secondary-mineral study, comparing phase identity, grain access, fluids, and measured change. Explain what tests would discriminate kinetic limitation, inaccessible neutralizer, or an alternative mineral host.
+
+Read complete mineral/reaction and original case methods. Later mine-water, environmental, recovery, and waste-management trails deepen monitoring/design and site decisions; this shared petrological account preserves the materials and reaction evidence they require.
+
+**Continue:** [Apply mineral and rock evidence to planetary samples with their actual histories](Planetary-materials-shock-and-comparative-petrology.lingua#r_13MYWX75DMQXVM5XFE1ZSG9YMR).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+
+**Continue in mining and mineral engineering:** [Predict waste chemistry from mineral reactions, transport, and time-dependent evidence](../../../../hephaestus/engineering/mining-and-mineral-engineering/lifecycle/Waste-rock-reactions-acidity-and-metalliferous-drainage.lingua#r_0HBC5363VH97CNXM4N9SVGCV7Y).
+} r_2Q8ZGJBA5R7A0BH4RF4XMQ7Q2R

@@ -1,0 +1,21 @@
+Import "../Quantitative-literacy.lingua"
+
+Dimensionless groups and the limits of dimensional reasoning (@ql-dimensionless: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #source @ql-source-street, #quantitative-literacy "Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/convection/Similarity-Reynolds-Prandtl-Peclet-and-Nusselt.lingua#r_3JWWBGHVJESEM3K1RN50QC88J5", #fluid-dynamics "../../../physics/fluid-dynamics/similarity/Choose-physical-scales-and-read-the-dimensionless-equations.lingua#r_7W3D4FHAFRQJVC08KK9Q0V4BKP") { r_7R4PTGBX4NTZWXQGPC09C1F7ZQ
+**Read:** The Art of Insight, Dimensions, including its dimensionless-group treatment; Street-Fighting Mathematics, Dimensions, in full. For a second derivation use the earlier MIT course's Buckingham Pi Theorem reading through the Art of Insight source Record. Work the derivations with units rescaled before trusting a memorized rule.
+
+Under the dimensional-similarity assumptions, n dimensional variables whose dimension exponents have rank r can be reorganized using n − r independent dimensionless groups. Rank means the number of independent dimensional directions, not simply the count of base-unit symbols printed in a table. Dimensionless variables already present remain potential arguments of the resulting relation.
+
+For a timescale T depending on L, g, and mass m, write a candidate group T^a L^b g^c m^d. Its dimensions are M^d L^(b+c) T^(a−2c). A dimensionless group requires d = 0, b = −c, a = 2c. Taking c = 1/2 gives T√(g/L). This explains the possible form T = C√(L/g) if the listed variables are complete. It does not prove that mass is irrelevant when air resistance, elastic deformation, or another omitted mechanism introduces further quantities.
+
+Angles, ratios of lengths, and initial conditions may supply additional dimensionless arguments. A valid group also needs a physically meaningful domain. Dimensional analysis does not determine a universal coefficient or establish similarity between experiments with different governing conditions.
+
+**Work:** derive the groups for an area depending only on two lengths, then for a timescale that also depends on an initial speed v. Show that v/√(gL) becomes another group. Explain why two candidate laws can share dimensions while predicting different results. Write a short derivation of the exponent constraints and verify invariance under independent changes of mass, length, and time units. This is the mathematical argument required here, not merely a list of named dimensionless numbers.
+
+**Continue:** [Small changes, derivatives, and first-order approximations](Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in thermodynamics and heat transfer:** [Similarity, Reynolds, Prandtl, Péclet and Nusselt numbers](../../../physics/thermodynamics-and-heat-transfer/convection/Similarity-Reynolds-Prandtl-Peclet-and-Nusselt.lingua#r_3JWWBGHVJESEM3K1RN50QC88J5).
+
+**Continue in fluid dynamics:** [Choose physical scales and read the dimensionless equations](../../../physics/fluid-dynamics/similarity/Choose-physical-scales-and-read-the-dimensionless-equations.lingua#r_7W3D4FHAFRQJVC08KK9Q0V4BKP).
+} r_7R4PTGBX4NTZWXQGPC09C1F7ZQ

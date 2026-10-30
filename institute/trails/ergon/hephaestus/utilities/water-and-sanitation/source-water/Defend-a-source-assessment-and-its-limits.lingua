@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Defend a source assessment and its limits (@wu-source-review: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "../treatment/Translate-raw-water-variation-into-treatment-questions.lingua#r_3M5Z05Q30W6P11QVNY3BF6ZZRS") { r_2TB6K13XR13MWGGQC401ZJA732
+**Read:** Complete [Groundwater Resource Development](../sources/Groundwater-resource-development.lingua#r_1M3NS4Y0CV4391JF136S20MVBP), including chapter 8 and the case studies; use [EPA source-water assessment](../sources/Source-water-assessment-EPA.lingua#r_5T76MTRS1XYC431J6XFG5B7FME) and [WHO/IWA water safety plan manual](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD) to critique your source assessment. Work the groundwater exercises before comparing solutions and document any model or software dependencies separately from the book.
+
+Assemble a source assessment for a documented location or a clearly labelled synthetic case. Include a boundary map, chronological quantity account, alternative source models, quality evidence, protection proposal, observation programme and assumptions about energy and maintenance. Compare surface water, groundwater and a mixed option. Explain why mean annual volume, a well test or one compliant sample cannot alone prove continuing service.
+
+Supply calculations another reader can reproduce. Retain initial conditions and time conventions; close water and constituent balances; test drought, common-cause failure and source-quality interruption. Show which conclusion survives changed assumptions and which depends on an unverified parameter. Separate modelled availability from permissions, ecological limits and treatment capability.
+
+For deeper study, reproduce one published case or analytical exercise, compare a second explanation, and use withheld observations or an independent calculation to test it. Discuss identifiability, discretization where applicable, and what would falsify the model. A polished fit is not evidence of unique parameters or a reliable forecast.
+
+**Completion for this section:** Explain the source to a newcomer, defend its quantitative account to a critical reader, and identify observations that could overturn the recommendation. The next section must translate the resulting raw-water envelope into treatment barriers and operating evidence. Source assessment does not complete treatment design, sanitation, industrial utilities or the wider water trail.
+
+**Water treatment continuation:** [Translate raw-water variation into treatment questions](../treatment/Translate-raw-water-variation-into-treatment-questions.lingua#r_3M5Z05Q30W6P11QVNY3BF6ZZRS).
+} r_2TB6K13XR13MWGGQC401ZJA732

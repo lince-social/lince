@@ -92,19 +92,19 @@ fn overlapping_items_share_visual_native_pointer_and_published_input_order() {
     native::workspace_config::set_physics(canvas.world_mut(), root, workspace, false);
     canvas.desktop_action(DesktopAction::ToggleTiling).unwrap();
     *canvas.world_mut().get_mut::<CanvasView>(root).unwrap() = CanvasView::default();
-    let dimensions = Vec2::new(600.0, 400.0);
     let items: Vec<_> = [Color::srgb(1.0, 0.0, 0.0), Color::srgb(0.0, 0.0, 1.0)]
         .into_iter()
         .enumerate()
         .map(|(index, color)| {
+            let dimensions = if index == 0 { Vec2::new(1000.0, 700.0) } else { Vec2::new(520.0, 1000.0) };
             canvas
                 .world_mut()
                 .spawn((
                     CanvasItem {
                         position: if index == 0 {
-                            bevy::math::DVec2::new(35.0, -25.0)
+                            bevy::math::DVec2::ZERO
                         } else {
-                            bevy::math::DVec2::new(-20.0, 30.0)
+                            bevy::math::DVec2::new(144.0, 420.0)
                         },
                         size: dimensions,
                     },

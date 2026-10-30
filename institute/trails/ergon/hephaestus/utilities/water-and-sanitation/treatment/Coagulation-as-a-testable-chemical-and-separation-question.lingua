@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Coagulation as a testable chemical and separation question (@wu-coagulation: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Flocculation-mixing-energy-and-aggregation.lingua#r_2GFMDN32BDXC69JAMT1Y18E56Z") { r_6J1YPAN5CB9XGSDAHBE9J03NFC
+**Read:** [The Physics of Water Treatment Design](../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR), chapter 4's [coagulant chemistry](https://aguaclara-reach.github.io/Textbook/Chemistry_of_Water_Treatment/Chemistry_Intro.html) and chapter 6's [rapid-mix introduction](https://aguaclara-reach.github.io/Textbook/Rapid_Mix/RM_Intro.html); [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lecture 6. Compare the explanations rather than assuming one particle-interaction model describes every water.
+
+Coagulation changes interactions that otherwise keep fine particles dispersed; the resulting material must still be separated. Distinguish reagent distribution, surface interactions, precipitate formation and subsequent aggregation. pH, alkalinity, organic matter, particle population and coagulant composition affect what a dose does. “More reagent” is not a universal improvement.
+
+Build a jar-test question around the actual intended train. Hold the sample history, mixing sequence, sampling depth and separation interval explicit. Compare a blank, replicated conditions and a range of candidate settings. Measure the outcomes relevant to the treatment question, including residual constituents where needed. A visually clear beaker does not demonstrate pathogen control or absence of dissolved hazards.
+
+**Work:** Design a study using supplied or published measurements before any physical experiment. Separate the effect of pH from dose by controlling or recording both. Explain why a condition that yields low settled turbidity might not be best for filtration, residual handling or total operation. Retest a proposed setting against changed raw-water temperature and composition. For advanced study, compare competing mechanistic models using their predictions for a held-out water rather than selecting the model with the most adjustable parameters.
+
+**Water treatment continuation:** [Flocculation, mixing energy and aggregation](Flocculation-mixing-energy-and-aggregation.lingua#r_2GFMDN32BDXC69JAMT1Y18E56Z).
+} r_6J1YPAN5CB9XGSDAHBE9J03NFC

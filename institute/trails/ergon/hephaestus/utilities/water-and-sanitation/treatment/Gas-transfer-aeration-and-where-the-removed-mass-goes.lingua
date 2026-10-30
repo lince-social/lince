@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Gas transfer, aeration and where the removed mass goes (@wu-gas-transfer: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Defend-the-physical-and-chemical-treatment-account.lingua#r_4KVPW53P76JBPM38N5AJRXNBX0") { r_33B8E41J97Q9H8C60XCWGR9YVR
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 11](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l11_air_striping/); [The Physics of Water Treatment Design](../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR), chapter 11's [dissolved-gas introduction](https://aguaclara-reach.github.io/Textbook/Dissolved_Gas/DG_Intro.html). Reuse the chemistry Record on Henry-law conventions before mixing constants from different sources.
+
+Equilibrium determines the concentration compatible with a gas composition, temperature and pressure; transfer kinetics determine how quickly water approaches it. For a uniform batch with constant gas-side condition, no competing reaction and lumped coefficient KLa, dC/dt = KLa(C*−C). Thus the deficit C*−C declines exponentially. Define which concentration units and interface model produced the coefficient.
+
+In an original synthetic oxygen-transfer calculation, C* = 8 mg/L, initial C = 2 mg/L and KLa = 0.5/hour. After two hours C = 8−6/e ≈ 5.793 mg/L. A target of 7 mg/L would take ln(6)/0.5 ≈ 3.584 hours in this ideal model. Oxygen consumption, changing gas composition or temperature would require a different balance.
+
+**Work:** Fit a transfer experiment with baseline and sensor lag considered separately. Compare a batch, continuous mixed vessel and packed contactor. For stripping, close the gas-phase contaminant account as well as the water account: a smaller aqueous concentration can mean transfer to an exhaust that requires treatment. Investigate carbon-dioxide exchange and resulting pH changes, gas supersaturation, fouling and pressure loss. A fitted lumped coefficient is conditional on geometry, operation and fluid properties, not a universal material constant.
+
+**Water treatment continuation:** [Defend the physical and chemical treatment account](Defend-the-physical-and-chemical-treatment-account.lingua#r_4KVPW53P76JBPM38N5AJRXNBX0).
+} r_33B8E41J97Q9H8C60XCWGR9YVR

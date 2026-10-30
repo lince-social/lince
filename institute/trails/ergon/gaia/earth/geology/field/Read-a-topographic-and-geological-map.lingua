@@ -1,0 +1,21 @@
+Import "../Geology.lingua"
+
+Read a map’s scale, legend, geometry, and geological claims (@geo-maps: 0, is #chapter, #part-of @geology, #source "../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #source "../sources/Geologic-Map-Symbolization.lingua#r_7DHXSTN5K3KF1EPTPG18RM5K1K", #geology "Coordinates-datums-and-terrain-data.lingua#r_53936KRB4P2H90E3R2F9CNJRAJ", #mining-and-mineral-engineering "../../../../hephaestus/engineering/mining-and-mineral-engineering/evidence/Mine-survey-reference-frames-and-spatial-control.lingua#r_1ZDJAQC4S016X5KHEY4RK8GKBE") { r_7W0VVA0MX0Z4K810G34SAMHSZC
+**Read:** [Laboratory Manual for Introductory Geology — Deline, Harris, and Tefend](../sources/Introductory-Geology-Laboratory-Manual.lingua#r_7G68RZ432EQWTB84DSVJ4JCZ2Z), the complete map/topography exercises; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), the complete Reading Geological Maps exercise; [Digital Cartographic Standard for Geologic Map Symbolization — FGDC/USGS](../sources/Geologic-Map-Symbolization.lingua#r_7DHXSTN5K3KF1EPTPG18RM5K1K), introduction and all symbol sections used by the selected map.
+
+A map combines a spatial reference, selected observations, symbols, interpretation, and a purpose. Read its title, authors, edition/date, scale, coordinate reference, legend, units, source information, and explanatory text before using a colored area as a geological fact. A topographic contour and a geological contact represent different quantities.
+
+Contours connect equal elevations under the map's reference. Their spacing helps interpret slope only with scale and contour interval. Geological units, contacts, orientation symbols, faults, and inferred/covered boundaries summarize interpretations supported by observations of varying quality. Symbol conventions and local legends determine what the marks mean.
+
+A plan view is not a full three-dimensional model. Contacts interact with topography and structure, and buried geometry may remain uncertain. A regional map's line width, generalization, and original evidence limit site-scale use. Adding digital zoom cannot create resolution absent from the observations.
+
+**Work:** read one authorized geological map and its explanatory report alongside its topographic base. Identify observed versus inferred contacts, representative orientation symbols, stratigraphic relations, and an uncertainty requiring field or subsurface evidence. Draw a preliminary cross-section with assumptions labelled rather than treating it as uniquely determined.
+
+Complete the map exercises in the manual and MIT course. Compare FGDC symbol meanings with the selected Brazilian or other regional legend; preserve actual conventions. The later orientation and structural sequence will make the geometric interpretation quantitative.
+
+**Continue:** [Preserve coordinate, elevation, and terrain-data meaning](Coordinates-datums-and-terrain-data.lingua#r_53936KRB4P2H90E3R2F9CNJRAJ).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+
+**Continue in mining and mineral engineering:** [Preserve spatial control from exploration observations to operating geometry](../../../../hephaestus/engineering/mining-and-mineral-engineering/evidence/Mine-survey-reference-frames-and-spatial-control.lingua#r_1ZDJAQC4S016X5KHEY4RK8GKBE).
+} r_7W0VVA0MX0Z4K810G34SAMHSZC

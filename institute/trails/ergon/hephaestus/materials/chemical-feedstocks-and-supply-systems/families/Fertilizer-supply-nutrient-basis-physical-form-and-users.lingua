@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Follow fertiliser ingredients through nutrient and physical requirements (@cs-fertilizer-supply: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Storage-Handling-and-Transport-Solid-Fertilizers.lingua#r_7QADF65GMMER3S52G9ANCVR2G8", #source "../../../chemistry/industrial-chemistry/sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB", #source "../sources/Chemical-Supply-Chain-Profiles-EPA.lingua#r_0E09Q6T7CC9HNWZB3N84E7K21A", #chemical-supply-systems "../../../chemistry/industrial-chemistry/organic/Methanol-synthesis-feed-ratio-equilibrium-and-isolation.lingua#r_71944T5PP4PCJE3MV3B1WTYQK5") { r_282XJZ5C7NJD9JGPYRWQV933Z4
+**Read:** [Storage, handling and transportation of solid mineral fertilizers — Fertilizers Europe](../sources/Storage-Handling-and-Transport-Solid-Fertilizers.lingua#r_7QADF65GMMER3S52G9ANCVR2G8), the complete 2015 guide; [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../../../chemistry/industrial-chemistry/sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), complete applicable fertiliser and feed/process chapters; [Water-treatment chemical supply-chain profiles — EPA](../sources/Chemical-Supply-Chain-Profiles-EPA.lingua#r_0E09Q6T7CC9HNWZB3N84E7K21A), the full selected precursor profiles.
+
+A fertiliser supply joins chemistry, particle behaviour and a user's application method. Identify a particular product's nutrient-reporting basis, actual compounds, moisture and particle properties. Distinguish percentage nitrogen from conventional oxide-equivalent reporting for other nutrients; the reported value is not a claim that those oxides are necessarily present as free substances.
+
+Trace one nitrogen, one phosphate and one mixed or potassium-bearing supply from its feed to storage, handling and use. Use the shared manufacturing material for chemistry and the entire industry storage guide for the movement/state history. Granule breakdown, segregation, moisture uptake or contamination can change handling or composition experienced by a user even when an average nutrient analysis is unchanged.
+
+Develop a source-to-user balance and explain the evidence at production, dispatch and receipt. Compare bulk solids and packaged supply, including who owns the material at each operation and who maintains the required equipment. Evaluate a proposed alternative on usable nutrient delivery, impurity/physical requirements, transport and continuity. Treat the case as a particular formulation with actual documents; its conclusions should not be generalised to all products called fertiliser.
+
+**Continue:** [Connect methanol synthesis with mixed-carbon feeds, equilibrium, recycle and product quality](../../../chemistry/industrial-chemistry/organic/Methanol-synthesis-feed-ratio-equilibrium-and-isolation.lingua#r_71944T5PP4PCJE3MV3B1WTYQK5).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_282XJZ5C7NJD9JGPYRWQV933Z4

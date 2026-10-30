@@ -1,0 +1,49 @@
+Import "Water-sanitation-and-industrial-utilities.lingua"
+
+Water and sanitation sources — complete books, methods and operating evidence (@wu-sources: 0, is #chapter, #part-of @water-and-sanitation) { r_7AMRJFFR11FF35KJM7Y7M05B3M
+Begin with the Portuguese [Manual de Saneamento — Funasa, fifth edition](sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE) and the complete [Introduction to Drinking Water Treatment — TU Delft](sources/Introduction-to-Drinking-Water-Treatment-TU-Delft.lingua#r_0XXF9PBVKKD6FWSJRVDTCKQXP4) course. Work the physical design argument in [The Physics of Water Treatment Design — AguaClara](sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR) as treatment becomes quantitative. The [Guidelines for drinking-water quality — WHO, 2026 consolidated edition](sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F) guidance and [Potabilidade e vigilância da água — Ministério da Saúde](sources/Potabilidade-e-Vigilancia-Vigiagua.lingua#r_0MJJ4WY69D303TQ11X6TNZZ779) references supply public-health and jurisdictional context; their purposes differ from a calculation of hydraulic capacity or removal efficiency.
+
+The biological-treatment volumes, [Biological Wastewater Treatment — Chen and colleagues, second edition](sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37) and [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS) support sustained wastewater and evidence study. [Water and Wastewater Treatment Engineering — MIT 1.85](sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60) supplies graduate problems and design work. [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R) connects industrial water chemistry with continuing operation; [WaterTAP — inspectable water-treatment models](sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD) makes more detailed process models inspectable.
+
+Read each source's edition and access notes. Authorized free reading, permission to redistribute and permission to adapt are distinct. A public course may assign copyrighted books that it does not provide. Keep each selected version and its notices when retaining it in a personal library. All books, PDFs, software, datasets, recordings and standards are external references.
+
+[Manual de Saneamento — Funasa, fifth edition](sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE)
+
+[Introduction to Drinking Water Treatment — TU Delft](sources/Introduction-to-Drinking-Water-Treatment-TU-Delft.lingua#r_0XXF9PBVKKD6FWSJRVDTCKQXP4)
+
+[The Physics of Water Treatment Design — AguaClara](sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR)
+
+[Water and Wastewater Treatment Engineering — MIT 1.85](sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60)
+
+[Guidelines for drinking-water quality — WHO, 2026 consolidated edition](sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F)
+
+[Water safety plan manual — WHO and IWA, second edition](sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD)
+
+[Potabilidade e vigilância da água — Ministério da Saúde](sources/Potabilidade-e-Vigilancia-Vigiagua.lingua#r_0MJJ4WY69D303TQ11X6TNZZ779)
+
+[Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R)
+
+[WaterTAP — inspectable water-treatment models](sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD)
+
+[Biological Wastewater Treatment — Chen and colleagues, second edition](sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37)
+
+[Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS)
+
+[Wastewater Characteristics, Treatment and Disposal — von Sperling](sources/Wastewater-Characteristics-Treatment-and-Disposal.lingua#r_59N8AH8ZNEKJK3HC4J32RV50XC)
+
+[Basic Principles of Wastewater Treatment — von Sperling](sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV)
+
+[Waste Stabilisation Ponds — von Sperling](sources/Waste-Stabilisation-Ponds.lingua#r_6KF1B0Z7Q1RDRX1S4DSDJA1D7J)
+
+[Anaerobic Reactors — Chernicharo](sources/Anaerobic-Reactors-Chernicharo.lingua#r_1AW64A0Q4V7K5SHSNVJYHNZM6F)
+
+[Activated Sludge and Aerobic Biofilm Reactors — von Sperling](sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua#r_0WMGVEM60J63M01SJJDQ9357GE)
+
+[Sludge Treatment and Disposal — Andreoli, von Sperling and Fernandes](sources/Sludge-Treatment-and-Disposal.lingua#r_01W2VM1NE64Y1FDRJRM0RYKYY4)
+
+[Treatment Wetlands — Dotro and colleagues](sources/Treatment-Wetlands-Dotro-and-Colleagues.lingua#r_2PS18EZMVASRD626G9JXRV2M7G)
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+
+**Source assessment readings:** [Groundwater Resource Development — Konikow and Bredehoeft](sources/Groundwater-resource-development.lingua#r_1M3NS4Y0CV4391JF136S20MVBP) · [Source-water assessment and protection — US EPA](sources/Source-water-assessment-EPA.lingua#r_5T76MTRS1XYC431J6XFG5B7FME) · [Flow-duration curves — Searcy](sources/Flow-duration-curves-Searcy.lingua#r_1EVXR6WCTJQQ232DZ605K7G1D6).
+} r_7AMRJFFR11FF35KJM7Y7M05B3M

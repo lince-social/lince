@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Chronology, low flow and the water that is available (@wu-source-chronology: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Storage-yield-and-a-checkable-service-account.lingua#r_6Y62DXWMCG6J7VX3N2B2WK8AW6") { r_5AQS99X6KYXV8BQAGKE4PRQ41M
+**Read:** [Searcy’s flow-duration study](../sources/Flow-duration-curves-Searcy.lingua#r_1EVXR6WCTJQQ232DZ605K7G1D6); keep its historical methodology distinct from contemporary supply decisions. Prepare a chronological series before sorting it. Identify the station, interval, units, missing values, quality flags and period of record. A daily mean cannot establish an instantaneous pumping limit or reveal every short contamination event.
+
+A flow-duration curve reports how often a flow is equalled or exceeded in the observed period. State the ranking and plotting-position convention. Reorder the same observations and the curve is unchanged, but the required storage may change. This is why a frequency curve alone cannot establish drought endurance. Seasonal subsets can disclose deficits concealed by a whole-year summary.
+
+For a candidate abstraction, subtract only explicitly modelled constraints from source flow. Environmental releases, other users, intake limits and quality shutdowns are separate constraints; a historical percentile is not permission to abstract that amount. A wet season's excess cannot serve a dry month unless usable storage or another source carries it forward.
+
+**Work:** Use the two invented six-day inflow sequences (8, 0, 0, 8, 0, 0) and (8, 8, 0, 0, 0, 0), in volume units per day, with demand 2 each day. Their sorted values and total inflow coincide. With initial storage zero, capacity 8, and daily inflow admitted before demand, verify that the first sequence meets all demand while the second leaves 2 units unmet on the last day after earlier spill. Explain how changing the within-day operating assumption changes the model. Then compare seasonal and full-record duration curves from a documented source, retaining chronology for storage analysis.
+
+**Continue:** [Storage, yield and a checkable service account](Storage-yield-and-a-checkable-service-account.lingua#r_6Y62DXWMCG6J7VX3N2B2WK8AW6).
+} r_5AQS99X6KYXV8BQAGKE4PRQ41M

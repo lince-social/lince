@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Continuum fields, molecular scales and relaxation (@fd-continuum: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "../../../inquiry/metrology/applications/Force-pressure-and-torque.lingua#r_20DYJT66R1TCW9M8X96TH7KGHT") { r_52W3FJ90C69MPGFW3QNYXA6Q80
+**Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapters 1 and 3, continuum and field descriptions; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), continuum, boundary and scale arguments.
+
+A continuum field represents an average over enough molecules to define a useful local density, velocity or temperature. The averaging region must also be small compared with the variation being resolved. These two requirements supply a physical scale separation, not a claim that matter is literally continuous at every length.
+
+For a dilute gas, compare molecular mean free path with the relevant geometric or gradient scale through the Knudsen number. Also compare relaxation time with the timescale of forcing. A small passage or a low-pressure gas can require slip, temperature-jump or kinetic descriptions even when its bulk speed is modest. Liquids need their own molecular and interfacial reasoning.
+
+Identify the smallest resolved length in a proposed calculation and explain the property averaging behind one cell. Increasing the number of cells does not repair an inappropriate continuum model. Distinguish this physical limitation from numerical discretization error. Return to the microscopic transport readings when the scale separation fails.
+
+**Continue:** [Force, pressure, and torque — reference geometry and load history](../../../inquiry/metrology/applications/Force-pressure-and-torque.lingua#r_20DYJT66R1TCW9M8X96TH7KGHT).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_52W3FJ90C69MPGFW3QNYXA6Q80

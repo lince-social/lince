@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Blending sources and preserving the quality account (@wu-source-blending: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Defend-a-source-assessment-and-its-limits.lingua#r_2TB6K13XR13MWGGQC401ZJA732") { r_7EDYBY9RDZM9G34S64TM8ZZGD2
+**Read:** [Manual de Saneamento](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE) on source selection and supply; revisit the trail's concentration, alkalinity and analytical-basis foundations. Treat blending as a new water state whose evidence must be established, not as the arithmetic averaging of every quality indicator.
+
+For two simultaneously mixed, conservative dissolved constituents with no reaction or losses, mixed concentration is (Q₁C₁ + Q₂C₂)/(Q₁ + Q₂), with compatible flow and concentration units. An original example mixes 60 m³/hour at 20 mg/L with 40 m³/hour at 80 mg/L: 44 mg/L, or 4.4 kg/hour entering and leaving. Verify the mass conversion independently. If a hypothetical process requires at most 50 mg/L, the high-concentration fraction can be at most one half under this model. This number is a teaching constraint, not a drinking-water criterion.
+
+Do not average pH this way: acid–base equilibrium, buffering and speciation matter. Mixing can also change precipitation, corrosion or disinfectant demand. Biological quality cannot be established simply by diluting a hazardous source. The conservative balance only answers the constituent question for which its assumptions hold.
+
+**Work:** Add uncertain source concentrations, flow errors and an unavailable source. Determine whether a blend meeting the nominal target still meets it at declared bounds, and how much deliverable volume remains. Distinguish independent sources from sources vulnerable to the same drought, flood, contamination or power loss. Define the sampling, validation and isolation evidence needed before treating a proposed blend as an operational option.
+
+**Continue:** [Defend a source assessment and its limits](Defend-a-source-assessment-and-its-limits.lingua#r_2TB6K13XR13MWGGQC401ZJA732).
+} r_7EDYBY9RDZM9G34S64TM8ZZGD2

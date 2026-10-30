@@ -140,6 +140,7 @@ fn real_client_ime_and_controlled_pending_paste_preserve_a_stale_settings_draft_
     replace(&path, &source(&original, 900));
     accepted(&mut fixture, 900);
     assert_eq!(value(&mut fixture, field), ("800".into(), true, false));
+    ime.exchange(&mut fixture);
     ime.method.set_preedit_string(String::new(), 0, 0);
     ime.method.commit(ime.serial());
     let deadline = Instant::now() + Duration::from_secs(30);
@@ -151,6 +152,7 @@ fn real_client_ime_and_controlled_pending_paste_preserve_a_stale_settings_draft_
     tap(&mut fixture, 30);
     fixture.desktop.key(29, false, 31).unwrap();
     fixture.inspect(|_| ());
+    ime.exchange(&mut fixture);
     let old_serial = ime.serial();
     let (paste, wake) = fixture.inspect(move |canvas| {
         let world = canvas.world_mut();
@@ -166,7 +168,17 @@ fn real_client_ime_and_controlled_pending_paste_preserve_a_stale_settings_draft_
     assert!(!fixture.inspect(|canvas| { let world = canvas.world_mut(); world.query::<&Name>().iter(world).any(|name| name.as_str() == "configuration.review") }));
     assert_eq!(value(&mut fixture, field), ("800".into(), false, true));
     assert!(fixture.inspect(|canvas| { let world = canvas.world_mut(); world.query::<&Text>().iter(world).any(|text| text.0.contains("Finish typing")) }));
-    magnification::focus(&mut fixture, DWELL);
+    super::opening::click_entity(&mut fixture, field, DWELL);
+    fixture.desktop.key(29, true, 32).unwrap();
+    tap(&mut fixture, 30);
+    fixture.desktop.key(29, false, 33).unwrap();
+    fixture.until(|fixture| !fixture.desktop.input_pending());
+    fixture.inspect(move |canvas| {
+        let world = canvas.world_mut();
+        assert_eq!(world.resource::<bevy::input_focus::InputFocus>().get(), Some(field));
+        let input = world.get::<bevy::text::EditableText>(field).unwrap();
+        assert_eq!(input.editor.raw_selection().text_range(), 0..3);
+    });
     *paste.lock().unwrap() = Some(Ok("700".into()));
     wake.ring();
     let deadline = Instant::now() + Duration::from_secs(30);

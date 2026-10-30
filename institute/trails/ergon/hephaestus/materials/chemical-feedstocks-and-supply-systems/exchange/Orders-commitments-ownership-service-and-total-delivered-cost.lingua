@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Relate purchasing decisions to a usable delivered service (@cs-purchase: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Gestao-de-Operacoes-e-Logistica-Rosa.lingua#r_6J7SWGEMAKMNVKVNGATZW4EB2J", #source "../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #chemical-supply-systems "../../../chemistry/industrial-chemistry/operation/Storage-packaging-custody-and-changed-material-state.lingua#r_0GJDC7Y0YXE6K708NH5C0QW4A3") { r_1Y6QHYPF59NJGDFTSD0CP1VSRE
+**Read:** [Gestão de Operações e Logística I — Rodrigo de Alvarenga Rosa](../sources/Gestao-de-Operacoes-e-Logistica-Rosa.lingua#r_6J7SWGEMAKMNVKVNGATZW4EB2J), the complete purchasing, order and inventory material; [Caustic Soda Handbook — OxyChem](../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME), the complete billing and concentration account; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), the complete cost/service and transport analysis.
+
+Represent an order with product/grade, quantity basis, date/window, location, delivery form and acceptance evidence. Separate the commercial commitment from physical receipt and technical release. Determine who controls transport, owns contact equipment, carries inventory and responds to a failed delivery; these arrangements affect the system even when the unit price is unchanged.
+
+Compare direct purchase, distributor supply, consignment and a longer-term service arrangement for the same chemical need. Use hypothetical terms clearly labelled or actual authorized documents; do not infer legal obligations from a generic trade label. Calculate delivered usable cost including active content, freight, package/tank, testing, conditioning, waste/returns and the stated inventory/continuity costs.
+
+For a transparent example, compare 100 cost units per tonne of a 0.50 solution with 70 per tonne at 0.32: before other costs the active-content prices are 200 and 218.75 units per tonne. Then add explicit transport and receiving assumptions and examine sensitivity. Keep currencies, dates, taxes and what is included in a price visible. A lower invoice can entail a different technical system, while an expensive grade may provide no benefit for a particular use.
+
+**Continue:** [Preserve chemical identity and useful state through storage and transfers](../../../chemistry/industrial-chemistry/operation/Storage-packaging-custody-and-changed-material-state.lingua#r_0GJDC7Y0YXE6K708NH5C0QW4A3).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_1Y6QHYPF59NJGDFTSD0CP1VSRE

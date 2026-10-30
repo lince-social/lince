@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A mixed tank responds to its entire inlet history (@wu-mixed-tank: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Plug-flow-tanks-in-series-and-the-cost-of-bypass.lingua#r_1T0HJNCK514E2CNW07W80HRZVZ") { r_44K797MS8S8T2RC8B9ST195TQT
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 3](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l03_react_tank_1/), mixed tanks and first-order kinetics. Begin with a nonreacting tank before adding reaction.
+
+For constant volume V, equal inlet/outlet flow Q, spatially uniform concentration C and first-order loss kC, the balance is dC/dt = (Q/V)(Cᵢₙ − C) − kC. Define τ = V/Q. At steady state Cₛ = Cᵢₙ/(1+kτ). For a constant inlet after time zero, C(t) = Cₛ + (C(0)−Cₛ) exp[−(1/τ+k)t]. Derive it by checking the derivative, initial condition and limiting value.
+
+An original example has V = 100 m³, Q = 10 m³/hour, k = 0.1/hour and a step from zero to 20 mg/L inlet concentration. Then τ = 10 hours, Cₛ = 10 mg/L and after 5 hours C = 10(1−e⁻¹), about 6.321 mg/L. At steady state the 200 g/hour incoming load splits into 100 g/hour leaving and 100 g/hour transformed. State what happens to reaction products before calling the transformation beneficial.
+
+**Work:** Reconstruct the nonreacting step response, then a pulse and an inlet shutdown. For piecewise constant inputs, pass the final concentration of one interval into the next. Compare a larger tank with a faster reaction without assuming the two can be identified from one outlet observation. Distinguish a tracer response, which tests transport, from a reactive test, which combines transport and kinetics.
+
+**Water treatment continuation:** [Plug flow, tanks in series and the cost of bypass](Plug-flow-tanks-in-series-and-the-cost-of-bypass.lingua#r_1T0HJNCK514E2CNW07W80HRZVZ).
+} r_44K797MS8S8T2RC8B9ST195TQT

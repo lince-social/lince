@@ -22,6 +22,18 @@ fn the_identity_mapping_keeps_nominal_density_and_independent_asymmetric_targets
         assert_eq!(mapping.map_rectangle(output.bounds).unwrap().size(), physical.map(f64::from));
         assert_eq!(mapping.raster, output.raster);
     }
+    let mut rounded = output([1000, 720], QuarterTurn::Normal, 1.5);
+    rounded.bounds = Rectangle::new(rounded.bounds.origin(), rounded.bounds.size().map(f64::round)).unwrap();
+    rounded.usable = Some(rounded.bounds);
+    let mapping = Mapping::new(&rounded, QuarterTurn::Normal, 1.0, [1100.0, 250.0], 1).unwrap();
+    assert_eq!(mapping.logical_bounds(), rounded.bounds);
+    assert_eq!(mapping.raster, rounded.raster);
+    assert_eq!(mapping.visible_rectangle(rounded.bounds).unwrap().size(), [1000.0, 720.0]);
+    assert_eq!(mapping.logical_to_physical([1100.0, 250.0]), Some([150.0, 300.0]));
+    assert_eq!(mapping.physical_to_logical([150.0, 300.0]), Some([1100.0, 250.0]));
+    rounded.bounds = Rectangle::new(rounded.bounds.origin(), [668.0, 480.0]).unwrap();
+    assert!(Mapping::new(&rounded, QuarterTurn::Normal, 1.0, [1100.0, 250.0], 1).is_err());
+
 }
 
 #[test]

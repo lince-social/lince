@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Build a metallographic interpretation from representative material and complementary methods (@metal-metallography: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/ASM-Metallography-and-Microstructures.lingua#r_4XHEJ1ZHW0B1YNG9AWCEC491ME", #source "../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM", #metals-and-metallurgical-production "../../../../gaia/earth/mineralogy-and-petrology/analysis/Electron-microanalysis-standards-and-sample-volume.lingua#r_4DM5842PJRXRJHV6XXFZXGBMS1") { r_49FZQQ7605P52WTNB3AETF71AP
+**Read:** [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the complete microscopy, preparation, quantitative, experiment, and alloy-observation material; [Metallography and Microstructures — ASM Handbook, volume 9](../sources/ASM-Metallography-and-Microstructures.lingua#r_4XHEJ1ZHW0B1YNG9AWCEC491ME), entire applicable preparation, interpretation, quantitative, and alloy-specific chapters, when available; [A Guide to the Solidification of Steels — Jernkontoret](../sources/Guide-to-Solidification-of-Steels.lingua#r_37E0W03MBAM4KMY33EF8BMT9WM), the full experimental-method and relevant structure account.
+
+After the shared compositional-map step, connect specimens to material identity, location, orientation, processing/service history, and the question being investigated. Cutting, mounting, grinding/polishing, etching, cleaning, and observation can alter or reveal different features. Preparation artifacts can resemble pores, cracks, particles, boundaries, or compositional differences.
+
+Choose optical, electron, diffraction/orientation, chemical, and other methods by their physical signal, support/resolution, calibration, and interpretation limits. A polished section is a two-dimensional sample; phase/grain populations and spatial connectivity need an appropriate sampling/stereological or three-dimensional account.
+
+Compare independent evidence for phase identity, composition, orientation, defects, and property mechanisms. Contrast and automated segmentation/indexing are models of observations, not unquestionable material facts. Preserve processing steps, thresholds, uncertainty, rejected regions, and representative sampling rather than presenting only the most illustrative image.
+
+**Work:** reconstruct a complete metallographic investigation with full preparation and observation methods. Independently check a quantitative population or geometry result, compare an alternative phase/artifact explanation, and use a complementary measurement to discriminate it. Explain the relationship between specimen observations and the full product population. Practical preparation/observation uses suitable laboratory facilities and methods; supplied-image interpretation states its actual limits.
+
+**Continue:** [Interpret electron microanalysis through standards, corrections, and spatial context](../../../../gaia/earth/mineralogy-and-petrology/analysis/Electron-microanalysis-standards-and-sample-volume.lingua#r_4DM5842PJRXRJHV6XXFZXGBMS1).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_49FZQQ7605P52WTNB3AETF71AP

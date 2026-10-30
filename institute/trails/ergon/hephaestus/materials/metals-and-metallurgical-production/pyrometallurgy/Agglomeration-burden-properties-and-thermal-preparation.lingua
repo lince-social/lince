@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Evaluate feed preparation through the physical and chemical behavior required downstream (@metal-agglomeration: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0", #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD", #metals-and-metallurgical-production "../../../engineering/mining-and-mineral-engineering/processing/Calcination-transformations-heat-and-processing-boundaries.lingua#r_13PQDG6YPAFH3MW1DABBX0G2YG") { r_4NFC3DTZSP7TN7Q8TDXQPVA68Q
+**Read:** [Ironmaking and Steelmaking — Gour Gopal Roy, NPTEL](../sources/Ironmaking-and-Steelmaking-NPTEL.lingua#r_0XJNFP35VJ24ZR6AZJ78EY03G0), the complete feed, sintering, pelletization, coke, and burden-testing sequence; [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the whole agglomeration and thermal-preparation material; [Iron and Steel Production — European Commission BREF](../sources/Iron-and-Steel-Production-BREF.lingua#r_1R9HC6SENF991ZZQA5WKH2C8HD), complete agglomeration and burden-system chapters.
+
+Agglomeration can change size distribution, porosity, strength, permeability, reactivity, and handling. Sinter, pellets, briquettes, and other prepared feeds have different production histories and properties. A target size or bulk composition alone does not define their behavior during heating, reduction, transport, or softening/melting.
+
+Connect the preparation mechanism with feed mineralogy, fines, binders/fluxes, water, thermal history, phase formation, and measured properties. Mechanical degradation and evolving porosity can alter gas access and flow through a burden. A favorable room-temperature strength test does not establish every hot/reducing-condition property.
+
+Preserve the whole material/energy/residual account, including returned fines, binders, recycled dust, gases, and inventory. An improvement at the preparation unit may change slag quantity, impurities, fuel duty, permeability, or final product quality elsewhere.
+
+**Work:** reconstruct a complete agglomeration/burden study with representative feed, methods, phase/structure observations, and relevant property tests. Independently check material and energy quantities and compare an alternative preparation route. Explain which observed property best predicts the downstream response and where that relationship remains uncertain. Follow the shared calcination step for thermal transformation balances before developing roasting and reduction in their metallurgical contexts.
+
+**Continue:** [Connect thermal preparation with reaction, phase change, heat, and product quality](../../../engineering/mining-and-mineral-engineering/processing/Calcination-transformations-heat-and-processing-boundaries.lingua#r_13PQDG6YPAFH3MW1DABBX0G2YG).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_4NFC3DTZSP7TN7Q8TDXQPVA68Q

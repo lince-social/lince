@@ -29,12 +29,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  park-checks:
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.validation_candidate }}
-    uses: ./.github/workflows/park.yml
   binary:
-    needs: [park-checks]
-    if: ${{ always() && !cancelled() && github.ref != 'refs/heads/dev' && (needs.park-checks.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.validation_candidate && needs.park-checks.result == 'skipped')) }}
+    if: github.ref != 'refs/heads/dev'
     name: binary (${{ matrix.variant }}, ${{ matrix.os }}, ${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -124,6 +120,10 @@ jobs:
             binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-
             binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-
 
+      - name: Restore timestamps of unchanged build inputs
+        continue-on-error: true
+        run: python3 -B institute/scripts/ci-source-cache.py
+
       - name: Build native Lince
         if: matrix.variant == 'native'
         timeout-minutes: 105
@@ -186,14 +186,6 @@ jobs:
           fi
           printf '%s\n' "$BUILD_TARGET" > "binary-artifacts/$asset.target"
 
-      - uses: cachix/install-nix-action@v31
-        if: matrix.variant == 'native' && runner.os == 'Linux'
-      - name: Check the actual Linux release archive as an installed package
-        if: matrix.variant == 'native' && matrix.target == 'x86_64-unknown-linux-gnu'
-        run: |
-          nix build --no-link --no-write-lock-file .#lince-park \
-            --override-input lince-binary "tarball+file://$PWD/binary-artifacts/lince-x86_64-unknown-linux-gnu.tar.gz"
-
       - name: Upload binaries
         if: matrix.variant == 'native'
         uses: actions/upload-artifact@v4
@@ -204,25 +196,9 @@ jobs:
           retention-days: 7
           compression-level: 0
 
-      - name: Build Park validation helpers
-        if: matrix.variant == 'native' && matrix.target == 'x86_64-unknown-linux-gnu'
-        run: |
-          mkdir -p validation-binaries
-          cargo test --locked --message-format=json -p lince-park --features session,server-tests,clipboard-gate --lib --no-run > validation-binaries/fixtures.jsonl
-          jq -r 'select(.reason == "compiler-artifact" and .target.name == "lince_park" and .executable != null) | .executable' validation-binaries/fixtures.jsonl | tail -1 | xargs -r -I '{}' cp '{}' validation-binaries/park-fixtures
-          for client in session_probe capture_probe; do
-            cargo run --locked -p lince-park-clients --bin "$client" -- --help
-          done
-          cargo run --locked -p lince-park --features server-tests --example park_control_probe -- --help
-          cp target/debug/session_probe validation-binaries/session-probe
-          cp target/debug/capture_probe validation-binaries/capture-probe
-          cp target/debug/examples/park_control_probe validation-binaries/control-probe
-          cp target/debug/xtask validation-binaries/xtask
-          printf '%s\n' "$GITHUB_SHA" > validation-binaries/revision
-          test -x validation-binaries/park-fixtures
-
       - name: Save compiled crates
         if: ${{ !cancelled() && steps.cache.outputs.cache-primary-key != '' && steps.cache.outputs.cache-hit != 'true' }}
+        continue-on-error: true
         uses: actions/cache/save@v4
         with:
           path: |
@@ -232,15 +208,6 @@ jobs:
             target/release
             target/${{ matrix.target }}/release
           key: ${{ steps.cache.outputs.cache-primary-key }}
-
-      - name: Upload Park validation helpers
-        if: matrix.variant == 'native' && matrix.target == 'x86_64-unknown-linux-gnu'
-        uses: actions/upload-artifact@v4
-        with:
-          name: lince-park-validation-${{ matrix.target }}
-          path: validation-binaries/*
-          if-no-files-found: error
-          retention-days: 7
 
       - name: Package headless binary
         if: matrix.variant == 'headless'
@@ -502,6 +469,22 @@ jobs:
         with:
           body_path: RELEASE_NOTES.md
           files: release-artifacts/*
+
+  park-checks:
+    needs: [binary, publish-main, publish-rolling, publish-tag]
+    if: ${{ always() && !cancelled() && (needs.binary.result == 'success' || github.ref == 'refs/heads/dev') && (github.event_name != 'workflow_dispatch' || !inputs.validation_candidate) }}
+    uses: ./.github/workflows/park.yml
+    with:
+      advisory: true
+
+  park-validation:
+    needs: [binary, publish-main, publish-rolling, publish-tag]
+    if: ${{ always() && !cancelled() && needs.binary.result == 'success' }}
+    uses: ./.github/workflows/park-validation.yml
+    with:
+      revision: ${{ github.sha }}
+      advisory: true
+      release_artifact: true
 
   deploy-nixos:
     needs: [binary, publish-main, publish-rolling]

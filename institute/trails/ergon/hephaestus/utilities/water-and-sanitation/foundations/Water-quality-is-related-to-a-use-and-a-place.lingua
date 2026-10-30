@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Water quality is related to a use and a place (@wu-purpose: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F", #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #water-and-sanitation "../../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H") { r_3WKPW5Q04M3S2KF8EPB2K0FTDK
+**Read:** [Guidelines for drinking-water quality — WHO, 2026 consolidated edition](../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F), the conceptual framework and microbial, chemical and acceptability chapters; [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), chapters 2–3, industrial purposes and makeup water.
+
+Drinking water, irrigation water, boiler feed, cooling water and semiconductor rinse water answer different questions. A constituent important to one use may be irrelevant to another, and a treatment that meets one purpose can leave an important hazard or performance problem for another.
+
+Describe a requirement as a constituent or property, its basis and unit, the location and time of assessment, a measurement method and a justified criterion. Include physical delivery conditions such as pressure, temperature and availability. Distinguish an aesthetic observation, a health-based requirement, an ecological condition and an equipment specification.
+
+For one water sample, ask separately about microbial quality, particles, dissolved ions, organic matter and the relevant trace contaminants. Conductivity alone cannot identify all dissolved chemicals; clarity cannot establish absence of pathogens. An industrial grade does not automatically establish potability. Connect each proposed measurement with the decision it can support.
+
+**Continue:** [Mass and component balances — account for every stream](../../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H).
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+} r_3WKPW5Q04M3S2KF8EPB2K0FTDK

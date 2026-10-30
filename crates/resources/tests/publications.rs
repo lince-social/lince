@@ -5,7 +5,7 @@ use std::{fs, path::PathBuf};
 
 fn philosophy() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../institute/trails/philosophy/Philosophy.lingua")
+        .join("../../institute/trails/scholazein/philosophy/Philosophy.lingua")
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn philosophy_is_a_navigable_graph_of_separate_ordinary_documents() {
             .unwrap()
             .parent()
             .unwrap()
-            .join("shared")
+            .join("../lince/shared")
             .join(name);
         let scheme = Publication::load(&library, path.to_str().unwrap(), &[], false).unwrap();
         assert_eq!(scheme.documents.len(), expected_documents);
@@ -178,7 +178,7 @@ fn export_moves_without_losing_the_book_or_declared_dependencies() {
         .unwrap()
         .parent()
         .unwrap()
-        .join("shared/Development-example.lingua");
+        .join("../lince/shared/Development-example.lingua");
     let source = Publication::load(&library, source_path.to_str().unwrap(), &[], false).unwrap();
     let destination = temporary.path().join("export");
     let exported = source.export(&library, &destination, true).unwrap();

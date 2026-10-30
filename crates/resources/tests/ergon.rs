@@ -10,15 +10,15 @@ use std::{
 #[test]
 fn mining_preserves_shared_routes_and_three_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("stem/engineering/mining-and-mineral-engineering");
+    let directory = trails.join("ergon/hephaestus/engineering/mining-and-mineral-engineering");
     let expected_documents = [
         directory.clone(),
-        trails.join("nature/earth/mineralogy-and-petrology"),
-        trails.join("nature/earth/geology"),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
-        trails.join("stem/chemistry/general-chemistry"),
+        trails.join("ergon/gaia/earth/mineralogy-and-petrology"),
+        trails.join("ergon/gaia/earth/geology"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/chemistry/general-chemistry"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -97,7 +97,7 @@ fn mining_preserves_shared_routes_and_three_original_examples_after_relocation()
         .filter(|document| {
             document
                 .uri
-                .contains("/stem/engineering/mining-and-mineral-engineering/")
+                .contains("/ergon/hephaestus/engineering/mining-and-mineral-engineering/")
         })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
@@ -259,14 +259,14 @@ fn mining_preserves_shared_routes_and_three_original_examples_after_relocation()
 #[test]
 fn mineralogy_petrology_preserves_shared_learning_and_two_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("nature/earth/mineralogy-and-petrology");
+    let directory = trails.join("ergon/gaia/earth/mineralogy-and-petrology");
     let expected_documents = [
         directory.clone(),
-        trails.join("nature/earth/geology"),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
-        trails.join("stem/chemistry/general-chemistry"),
+        trails.join("ergon/gaia/earth/geology"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/chemistry/general-chemistry"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -344,7 +344,7 @@ fn mineralogy_petrology_preserves_shared_learning_and_two_original_examples_afte
         .filter(|document| {
             document
                 .uri
-                .contains("/nature/earth/mineralogy-and-petrology/")
+                .contains("/ergon/gaia/earth/mineralogy-and-petrology/")
         })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
@@ -502,7 +502,7 @@ fn mineralogy_petrology_preserves_shared_learning_and_two_original_examples_afte
 #[test]
 fn quantitative_readings_discover_relocate_and_select_without_absorbing_sources() {
     let directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../institute/trails/inquiry/quantitative-literacy");
+        .join("../../institute/trails/ergon/hephaestus/inquiry/quantitative-literacy");
     let temporary = tempfile::tempdir().unwrap();
     let library = Library::new(temporary.path().join("library"));
     let files = Publication::files(&directory).unwrap();
@@ -651,13 +651,13 @@ fn quantitative_readings_discover_relocate_and_select_without_absorbing_sources(
 #[test]
 fn geology_reuses_foundations_and_preserves_its_selection_and_geometry_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("nature/earth/geology");
+    let directory = trails.join("ergon/gaia/earth/geology");
     let expected_documents = [
         directory.clone(),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
-        trails.join("stem/chemistry/general-chemistry"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/chemistry/general-chemistry"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -725,7 +725,7 @@ fn geology_reuses_foundations_and_preserves_its_selection_and_geometry_after_rel
     let mut expected: BTreeSet<_> = publication
         .documents
         .iter()
-        .filter(|document| document.uri.contains("/nature/earth/geology/"))
+        .filter(|document| document.uri.contains("/ergon/gaia/earth/geology/"))
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
         .filter(|record| record.slug.as_deref() != Some("geo-sources"))
@@ -898,7 +898,8 @@ fn external_references(publication: &Publication) -> BTreeSet<String> {
 
 #[test]
 fn metrology_reuses_shared_steps_with_its_own_continuations_and_relocates_them() {
-    let inquiry = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails/inquiry");
+    let inquiry = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../institute/trails/ergon/hephaestus/inquiry");
     let directory = inquiry.join("metrology");
     let quantitative = inquiry.join("quantitative-literacy");
     let temporary = tempfile::tempdir().unwrap();
@@ -959,7 +960,11 @@ fn metrology_reuses_shared_steps_with_its_own_continuations_and_relocates_them()
     let mut expected: BTreeSet<_> = publication
         .documents
         .iter()
-        .filter(|document| document.uri.contains("/inquiry/metrology/"))
+        .filter(|document| {
+            document
+                .uri
+                .contains("/ergon/hephaestus/inquiry/metrology/")
+        })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
         .filter(|record| record.slug.as_deref() != Some("met-sources"))
@@ -1054,7 +1059,8 @@ fn metrology_reuses_shared_steps_with_its_own_continuations_and_relocates_them()
 
 #[test]
 fn reproducible_computation_preserves_shared_routes_and_inline_examples_after_relocation() {
-    let inquiry = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails/inquiry");
+    let inquiry = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../institute/trails/ergon/hephaestus/inquiry");
     let directory = inquiry.join("reproducible-computation");
     let expected_documents = [
         &directory,
@@ -1127,7 +1133,11 @@ fn reproducible_computation_preserves_shared_routes_and_inline_examples_after_re
     let mut expected: BTreeSet<_> = publication
         .documents
         .iter()
-        .filter(|document| document.uri.contains("/inquiry/reproducible-computation/"))
+        .filter(|document| {
+            document
+                .uri
+                .contains("/ergon/hephaestus/inquiry/reproducible-computation/")
+        })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
         .filter(|record| record.slug.as_deref() != Some("rc-sources"))
@@ -1260,12 +1270,12 @@ fn reproducible_computation_preserves_shared_routes_and_inline_examples_after_re
 #[test]
 fn chemistry_discovers_shared_foundations_and_relocates_its_bounded_learning_selection() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("stem/chemistry/general-chemistry");
+    let directory = trails.join("ergon/hephaestus/chemistry/general-chemistry");
     let expected_documents = [
         directory.clone(),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -1335,7 +1345,11 @@ fn chemistry_discovers_shared_foundations_and_relocates_its_bounded_learning_sel
     let mut expected: BTreeSet<_> = publication
         .documents
         .iter()
-        .filter(|document| document.uri.contains("/stem/chemistry/general-chemistry/"))
+        .filter(|document| {
+            document
+                .uri
+                .contains("/ergon/hephaestus/chemistry/general-chemistry/")
+        })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
         .filter(|record| record.slug.as_deref() != Some("gc-sources"))
@@ -1470,16 +1484,16 @@ fn chemistry_discovers_shared_foundations_and_relocates_its_bounded_learning_sel
 #[test]
 fn metallurgy_preserves_shared_routes_and_three_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("ergon/materials/metals-and-metallurgical-production");
+    let directory = trails.join("ergon/hephaestus/materials/metals-and-metallurgical-production");
     let expected_documents = [
         directory.clone(),
-        trails.join("stem/engineering/mining-and-mineral-engineering"),
-        trails.join("nature/earth/mineralogy-and-petrology"),
-        trails.join("nature/earth/geology"),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
-        trails.join("stem/chemistry/general-chemistry"),
+        trails.join("ergon/hephaestus/engineering/mining-and-mineral-engineering"),
+        trails.join("ergon/gaia/earth/mineralogy-and-petrology"),
+        trails.join("ergon/gaia/earth/geology"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/chemistry/general-chemistry"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -1559,7 +1573,7 @@ fn metallurgy_preserves_shared_routes_and_three_original_examples_after_relocati
         .filter(|document| {
             document
                 .uri
-                .contains("/ergon/materials/metals-and-metallurgical-production/")
+                .contains("/ergon/hephaestus/materials/metals-and-metallurgical-production/")
         })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
@@ -1751,17 +1765,17 @@ fn metallurgy_preserves_shared_routes_and_three_original_examples_after_relocati
 #[test]
 fn industrial_chemistry_preserves_shared_routes_and_three_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("stem/chemistry/industrial-chemistry");
+    let directory = trails.join("ergon/hephaestus/chemistry/industrial-chemistry");
     let expected_documents = [
         directory.clone(),
-        trails.join("ergon/materials/metals-and-metallurgical-production"),
-        trails.join("stem/engineering/mining-and-mineral-engineering"),
-        trails.join("nature/earth/mineralogy-and-petrology"),
-        trails.join("nature/earth/geology"),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
-        trails.join("stem/chemistry/general-chemistry"),
+        trails.join("ergon/hephaestus/materials/metals-and-metallurgical-production"),
+        trails.join("ergon/hephaestus/engineering/mining-and-mineral-engineering"),
+        trails.join("ergon/gaia/earth/mineralogy-and-petrology"),
+        trails.join("ergon/gaia/earth/geology"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/chemistry/general-chemistry"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -1842,7 +1856,7 @@ fn industrial_chemistry_preserves_shared_routes_and_three_original_examples_afte
         .filter(|document| {
             document
                 .uri
-                .contains("/stem/chemistry/industrial-chemistry/")
+                .contains("/ergon/hephaestus/chemistry/industrial-chemistry/")
         })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
@@ -2011,18 +2025,19 @@ fn industrial_chemistry_preserves_shared_routes_and_three_original_examples_afte
 #[test]
 fn chemical_supply_preserves_shared_routes_and_three_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("ergon/materials/chemical-feedstocks-and-supply-systems");
+    let directory =
+        trails.join("ergon/hephaestus/materials/chemical-feedstocks-and-supply-systems");
     let expected_documents = [
         directory.clone(),
-        trails.join("stem/chemistry/industrial-chemistry"),
-        trails.join("ergon/materials/metals-and-metallurgical-production"),
-        trails.join("stem/engineering/mining-and-mineral-engineering"),
-        trails.join("nature/earth/mineralogy-and-petrology"),
-        trails.join("nature/earth/geology"),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
-        trails.join("stem/chemistry/general-chemistry"),
+        trails.join("ergon/hephaestus/chemistry/industrial-chemistry"),
+        trails.join("ergon/hephaestus/materials/metals-and-metallurgical-production"),
+        trails.join("ergon/hephaestus/engineering/mining-and-mineral-engineering"),
+        trails.join("ergon/gaia/earth/mineralogy-and-petrology"),
+        trails.join("ergon/gaia/earth/geology"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/chemistry/general-chemistry"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -2104,7 +2119,7 @@ fn chemical_supply_preserves_shared_routes_and_three_original_examples_after_rel
         .filter(|document| {
             document
                 .uri
-                .contains("/ergon/materials/chemical-feedstocks-and-supply-systems/")
+                .contains("/ergon/hephaestus/materials/chemical-feedstocks-and-supply-systems/")
         })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
@@ -2283,12 +2298,12 @@ fn chemical_supply_preserves_shared_routes_and_three_original_examples_after_rel
 #[test]
 fn electromagnetism_preserves_shared_routes_and_three_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("stem/physics/electromagnetism");
+    let directory = trails.join("ergon/hephaestus/physics/electromagnetism");
     let expected_documents = [
         directory.clone(),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -2358,7 +2373,11 @@ fn electromagnetism_preserves_shared_routes_and_three_original_examples_after_re
     let mut expected: BTreeSet<_> = publication
         .documents
         .iter()
-        .filter(|document| document.uri.contains("/stem/physics/electromagnetism/"))
+        .filter(|document| {
+            document
+                .uri
+                .contains("/ergon/hephaestus/physics/electromagnetism/")
+        })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
         .filter(|record| record.slug.as_deref() != Some("em-sources"))
@@ -2515,13 +2534,13 @@ fn electromagnetism_preserves_shared_routes_and_three_original_examples_after_re
 #[test]
 fn power_engineering_preserves_shared_routes_and_three_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("stem/engineering/electrical-power-engineering");
+    let directory = trails.join("ergon/hephaestus/engineering/electrical-power-engineering");
     let expected_documents = [
         directory.clone(),
-        trails.join("stem/physics/electromagnetism"),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/physics/electromagnetism"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -2598,7 +2617,7 @@ fn power_engineering_preserves_shared_routes_and_three_original_examples_after_r
         .filter(|document| {
             document
                 .uri
-                .contains("/stem/engineering/electrical-power-engineering/")
+                .contains("/ergon/hephaestus/engineering/electrical-power-engineering/")
         })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
@@ -2767,14 +2786,14 @@ fn power_engineering_preserves_shared_routes_and_three_original_examples_after_r
 #[test]
 fn thermodynamics_preserves_six_routes_and_four_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("stem/physics/thermodynamics-and-heat-transfer");
+    let directory = trails.join("ergon/hephaestus/physics/thermodynamics-and-heat-transfer");
     let expected_documents = [
         directory.clone(),
-        trails.join("stem/physics/electromagnetism"),
-        trails.join("stem/chemistry/general-chemistry"),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/physics/electromagnetism"),
+        trails.join("ergon/hephaestus/chemistry/general-chemistry"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -2852,7 +2871,7 @@ fn thermodynamics_preserves_six_routes_and_four_original_examples_after_relocati
         .filter(|document| {
             document
                 .uri
-                .contains("/stem/physics/thermodynamics-and-heat-transfer/")
+                .contains("/ergon/hephaestus/physics/thermodynamics-and-heat-transfer/")
         })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
@@ -3030,15 +3049,15 @@ fn thermodynamics_preserves_six_routes_and_four_original_examples_after_relocati
 #[test]
 fn fluid_dynamics_preserves_seven_routes_and_four_original_examples_after_relocation() {
     let trails = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../institute/trails");
-    let directory = trails.join("stem/physics/fluid-dynamics");
+    let directory = trails.join("ergon/hephaestus/physics/fluid-dynamics");
     let expected_documents = [
         directory.clone(),
-        trails.join("stem/physics/thermodynamics-and-heat-transfer"),
-        trails.join("stem/physics/electromagnetism"),
-        trails.join("stem/chemistry/general-chemistry"),
-        trails.join("inquiry/quantitative-literacy"),
-        trails.join("inquiry/metrology"),
-        trails.join("inquiry/reproducible-computation"),
+        trails.join("ergon/hephaestus/physics/thermodynamics-and-heat-transfer"),
+        trails.join("ergon/hephaestus/physics/electromagnetism"),
+        trails.join("ergon/hephaestus/chemistry/general-chemistry"),
+        trails.join("ergon/hephaestus/inquiry/quantitative-literacy"),
+        trails.join("ergon/hephaestus/inquiry/metrology"),
+        trails.join("ergon/hephaestus/inquiry/reproducible-computation"),
     ]
     .iter()
     .map(|path| Publication::files(path).unwrap().len())
@@ -3111,7 +3130,11 @@ fn fluid_dynamics_preserves_seven_routes_and_four_original_examples_after_reloca
     let mut expected: BTreeSet<_> = publication
         .documents
         .iter()
-        .filter(|document| document.uri.contains("/stem/physics/fluid-dynamics/"))
+        .filter(|document| {
+            document
+                .uri
+                .contains("/ergon/hephaestus/physics/fluid-dynamics/")
+        })
         .filter(|document| !document.uri.contains("/sources/"))
         .flat_map(|document| &document.project.records)
         .filter(|record| record.slug.as_deref() != Some("fd-sources"))
@@ -3282,6 +3305,188 @@ fn fluid_dynamics_preserves_seven_routes_and_four_original_examples_after_reloca
         .iter()
         .flat_map(|document| &document.project.records)
     {
+        for assertion in &record.assertions {
+            if predicates.contains(&assertion.predicate.as_str()) {
+                let (location, uid) = assertion
+                    .object_uri
+                    .as_ref()
+                    .unwrap()
+                    .rsplit_once('#')
+                    .unwrap();
+                assert_eq!(location, locations[uid]);
+            }
+        }
+    }
+    assert!(!moved.join("files").exists());
+}
+
+#[test]
+fn water_treatment_draft_preserves_its_selection_and_shared_routes_after_relocation() {
+    let directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../institute/trails/ergon/hephaestus/utilities/water-and-sanitation");
+    let temporary = tempfile::tempdir().unwrap();
+    let library = Library::new(temporary.path().join("library"));
+    let publication = Publication::load(
+        &library,
+        directory
+            .join("Water-sanitation-and-industrial-utilities.lingua")
+            .to_str()
+            .unwrap(),
+        &[],
+        false,
+    )
+    .unwrap();
+    assert!(publication.parameters.is_empty());
+    assert!(publication.instances.is_empty());
+    assert!(publication.resources().unwrap().is_empty());
+    let records: BTreeMap<_, _> = publication
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+        .map(|record| (record.slug.as_deref().unwrap(), record))
+        .collect();
+    let edges = learning_edges(&publication, "water-and-sanitation");
+    let selected: BTreeSet<_> = edges
+        .iter()
+        .flat_map(|(from, to)| [from.clone(), to.clone()])
+        .collect();
+    let mut expected: BTreeSet<_> = publication
+        .documents
+        .iter()
+        .filter(|document| {
+            document.uri.contains("/utilities/water-and-sanitation/")
+                && !document.uri.contains("/sources/")
+        })
+        .flat_map(|document| &document.project.records)
+        .filter(|record| record.slug.as_deref() != Some("wu-sources"))
+        .map(|record| record.uid.clone())
+        .collect();
+    for slug in [
+        "ql-units",
+        "ql-balances",
+        "gc-solubility",
+        "gc-carbonate",
+        "gc-activities",
+        "gc-balances-equilibrium",
+        "met-chemistry-case",
+        "met-sampling-target",
+        "met-sampling-uncertainty",
+        "gc-rate-laws",
+        "fd-fittings",
+    ] {
+        expected.insert(records[slug].uid.clone());
+    }
+    assert_eq!(selected, expected);
+    let mut reached = BTreeSet::new();
+    let mut pending = vec![records["water-and-sanitation"].uid.clone()];
+    while let Some(uid) = pending.pop() {
+        if reached.insert(uid.clone()) {
+            pending.extend(
+                edges
+                    .iter()
+                    .filter(|(from, _)| *from == uid)
+                    .map(|(_, to)| to.clone()),
+            );
+        }
+    }
+    assert_eq!(reached, selected);
+    for (shared, next, original) in [
+        ("gc-rate-laws", "wu-mixed-tank", "general-chemistry"),
+        ("fd-fittings", "wu-treatment-dosing", "fluid-dynamics"),
+    ] {
+        assert!(edges.contains(&(records[shared].uid.clone(), records[next].uid.clone())));
+        assert!(
+            learning_edges(&publication, original)
+                .iter()
+                .any(|(from, _)| *from == records[shared].uid)
+        );
+    }
+    let identities: BTreeSet<_> = records.values().map(|record| record.uid.clone()).collect();
+    for entry in [
+        "source-water/Defend-a-source-assessment-and-its-limits.lingua",
+        "treatment/An-inspectable-comparison-of-treatment-flow-models.lingua",
+        "sources/Groundwater-resource-development.lingua",
+    ] {
+        let discovered = Publication::load(
+            &library,
+            directory.join(entry).to_str().unwrap(),
+            &[],
+            false,
+        )
+        .unwrap();
+        let discovered_identities: BTreeSet<_> = discovered
+            .documents
+            .iter()
+            .flat_map(|document| &document.project.records)
+            .map(|record| record.uid.clone())
+            .collect();
+        assert_eq!(discovered_identities, identities, "{entry}");
+    }
+    let predicates = [
+        "water-and-sanitation",
+        "general-chemistry",
+        "fluid-dynamics",
+        "quantitative-literacy",
+        "metrology",
+        "reproducible-computation",
+        "geology",
+        "electromagnetism",
+        "electrical-power-engineering",
+        "thermodynamics-and-heat-transfer",
+    ];
+    let routes: BTreeMap<_, _> = predicates
+        .into_iter()
+        .map(|predicate| (predicate, learning_edges(&publication, predicate)))
+        .collect();
+    let original_code = records["wu-reactor-comparison"]
+        .body
+        .split("```python\n")
+        .nth(1)
+        .unwrap()
+        .split("\n```")
+        .next()
+        .unwrap()
+        .to_owned();
+    let references = external_references(&publication);
+    let destination = temporary.path().join("export");
+    let exported = publication.export(&library, &destination, false).unwrap();
+    let entry = exported.strip_prefix(&destination).unwrap().to_owned();
+    let moved = temporary.path().join("moved");
+    fs::rename(destination, &moved).unwrap();
+    let reopened = Publication::load(
+        &Library::new(temporary.path().join("fresh-library")),
+        moved.join(entry).to_str().unwrap(),
+        &[],
+        false,
+    )
+    .unwrap();
+    assert_eq!(external_references(&reopened), references);
+    for (predicate, original) in routes {
+        assert_eq!(
+            learning_edges(&reopened, predicate),
+            original,
+            "{predicate}"
+        );
+    }
+    let locations: BTreeMap<_, _> = reopened
+        .documents
+        .iter()
+        .flat_map(|document| {
+            document
+                .project
+                .records
+                .iter()
+                .map(|record| (record.uid.as_str(), document.base.as_str()))
+        })
+        .collect();
+    for record in reopened
+        .documents
+        .iter()
+        .flat_map(|document| &document.project.records)
+    {
+        if record.slug.as_deref() == Some("wu-reactor-comparison") {
+            assert!(record.body.contains(&original_code));
+        }
         for assertion in &record.assertions {
             if predicates.contains(&assertion.predicate.as_str()) {
                 let (location, uid) = assertion

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Join material and energy balances with actual phases, temperatures, and work (@metal-enthalpy: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #metals-and-metallurgical-production "../../../chemistry/general-chemistry/kinetics/Reaction-versus-transport.lingua#r_72WYPRVE8CS893QJVFB49FZ9HE") { r_685N41C1X9JPJKRZRMF2PYACFE
+**Read:** [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the complete thermochemistry, heat-balance, furnace, and extraction exercises; [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), all heat-transfer lectures and complete applicable problem sets; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), one whole process/energy case with its measured boundaries.
+
+An energy balance needs a defined boundary, time basis, material streams, reference state, heat/work terms, and inventory. Sensible heating, phase change, reaction enthalpy, chemical energy, electrical work, gas heating, heat loss, and recovery must be treated consistently. Mixing a formation-enthalpy calculation with separately counted fuel/reaction heat can double count energy.
+
+For an invented 1000 kg charge with constant cₚ = 0.8 kJ kg⁻¹ K⁻¹, a 500 K sensible-temperature rise requires 400 MJ under the stated model. Adding a 200 kJ kg⁻¹ phase-change term for all the charge adds 200 MJ. These terms alone do not determine input energy: reaction, gas, losses, heat recovery, and changing properties remain to be specified.
+
+Compare thermal duty, power, residence/throughput, and efficiency on matched boundaries. A measured fuel or electrical input per tonne of gross feed is not automatically comparable with another route's input per tonne of accepted product. Transient storage and intermittent operation can matter.
+
+**Work:** reconstruct a complete roasting, smelting, refining, or remelting heat/material balance from the public course or technical case. Independently check the reference state and conserved elements before testing energy closure. Compare an alternative heat-recovery or feed-moisture account and quantify which uncertainty controls the result. The shared reaction-versus-transport step next introduces why a balanced feasible duty does not yet determine process rate.
+
+**Continue:** [Distinguish chemical rate from mixing, diffusion, and heat-transfer effects](../../../chemistry/general-chemistry/kinetics/Reaction-versus-transport.lingua#r_72WYPRVE8CS893QJVFB49FZ9HE).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_685N41C1X9JPJKRZRMF2PYACFE

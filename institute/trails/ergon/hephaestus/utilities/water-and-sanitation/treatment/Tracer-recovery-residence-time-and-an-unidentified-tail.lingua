@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Tracer recovery, residence time and an unidentified tail (@wu-tracer-rtd: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "An-inspectable-comparison-of-treatment-flow-models.lingua#r_60R13CDHVZVM7NK55904VX5EAF") { r_7P13ENQNXS4KPBJEFTZMKXTDBM
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 4](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l04_react_tank_2/), residence-time distributions. Start with mass recovery before normalizing a curve.
+
+For a pulse of conservative tracer under steady flow, subtract the baseline and integrate Q C(t) over the outlet history to estimate recovered mass. With constant Q, E(t) = C(t)/∫C(t)dt has units of inverse time and integrates to one. Its mean is ∫tE(t)dt. If a fraction of the injected tracer was missed, normalizing what was observed can conceal the problem. A variable-flow experiment needs the mass-flux history and a carefully stated injection/operating protocol.
+
+Define F(t) = ∫₀ᵗE(s)ds; t₁₀ is where 10% of the recovered distribution has exited. It is not the mean and is not automatically V/Q. For an ideal mixed tank, E(t) = exp(−t/τ)/τ, so t₁₀ = −τ ln(0.9), about 0.10536τ. A long mean residence can coexist with an early exiting fraction.
+
+**Work:** Use the synthetic tracer mass fractions 0.1, 0.6, 0.3 at travel times 1, 5, 10 hours. Check mean 6.1 hours and variance 7.89 hours². At k = 0.1/hour, the separately modelled parcels leave a combined fraction 0.564766 of the entering reactive substance; applying exp(−k times mean residence) gives about 0.543351 instead. Explain the discrepancy. Investigate how a missed early pulse and an unobserved tail change mean and t₁₀. RTD alone does not specify every nonlinear reaction or micromixing process.
+
+**Water treatment continuation:** [An inspectable comparison of treatment flow models](An-inspectable-comparison-of-treatment-flow-models.lingua#r_60R13CDHVZVM7NK55904VX5EAF).
+} r_7P13ENQNXS4KPBJEFTZMKXTDBM

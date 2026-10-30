@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Observe a fluid and the service it provides (@fd-observation: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #fluid-dynamics "../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_2N3M0S840BRKVXMQ7QPNK77X5Z
+**Read:** [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), complete introductory motion and visualization demonstrations with their notes; [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), introductory physical examples and modelling discussion.
+
+Choose a small physical system and draw its fluid path: supply, container, passage, outlet and surroundings. State the purpose, such as carrying heat, transporting a dissolved substance, moving a piston or keeping a surface clean. Identify what the fluid touches and what can change during use.
+
+Record observations separately from explanations. A curved water jet, an oscillating surface or a pressure reading is an observation; a claim about turbulence, cavitation or an obstructed passage is an interpretation that needs evidence. Estimate length and time scales and describe where material enters, leaves or accumulates.
+
+For the same system, ask three questions: what moves, what forces act, and what quantity is conserved? Sketch one proposed measurement for each. Revisit the drawing throughout the reading as properties, geometry, boundaries and uncertainty become explicit. The fluid is part of a working system whose walls, instruments, energy supply and maintenance also affect its behavior.
+
+**Continue:** [Units, dimensions, and equations that can make sense](../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_2N3M0S840BRKVXMQ7QPNK77X5Z

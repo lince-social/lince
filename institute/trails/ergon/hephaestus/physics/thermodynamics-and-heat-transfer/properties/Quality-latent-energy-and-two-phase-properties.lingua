@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Quality, latent energy and two-phase properties (@th-phase-properties: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H") { r_12PVBRDY4725K5W1XTVQFDZRFX
+**Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), phase diagrams and tables; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), liquids, vapours and elementary processes; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), pure-substance phase equilibrium.
+
+In a liquid/vapour equilibrium mixture of a pure substance, mass quality x is the vapour mass fraction. Under the stated equilibrium assumptions, a mass-specific extensive property such as enthalpy is h = (1−x)h_f + xh_g. Volume fraction is generally different because the phase densities differ greatly.
+
+For an original normalized teaching pair h_f = 100 and h_g = 2500 kJ/kg, x = 0.2 gives h = 580 kJ/kg. These illustrative values are not a water-property table. A superheated-vapour state does not have an equilibrium mixture quality obtained by extending that interpolation beyond x = 1.
+
+Distinguish equilibrium phase fractions, metastable states, nucleation and actual two-phase flow. A throttling valve may produce a lower temperature and a mixture while enthalpy is approximately conserved; its entropy generally increases. Reconstruct the state from a proper property model rather than equating cooling with extracted work.
+
+**Continue:** [Mass and component balances — account for every stream](../../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_12PVBRDY4725K5W1XTVQFDZRFX

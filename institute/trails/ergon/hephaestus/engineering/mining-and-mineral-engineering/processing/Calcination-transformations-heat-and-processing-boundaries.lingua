@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Connect thermal preparation with reaction, phase change, heat, and product quality (@mine-calcination: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #mining-and-mineral-engineering "Thickening-filtration-drying-and-returned-water.lingua#r_2PSR8EW4FE03WDD42928AJXD53", #metals-and-metallurgical-production "../../../materials/metals-and-metallurgical-production/pyrometallurgy/Roasting-reactions-gas-potentials-and-solid-products.lingua#r_0NKV4BHR9Z7W2Y2H4Y1SDAH519") { r_13PQDG6YPAFH3MW1DABBX0G2YG
+**Read:** [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the entire sixth-edition calcination chapter; [General chemistry](../../../chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), reuse reactions, thermochemistry, equilibrium, and kinetics as needed; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), a complete applicable thermal/process case and its cited method.
+
+Calcination changes a material through heating under a specified atmosphere and history. Dehydration, dehydroxylation, carbonate decomposition, oxidation/reduction, and phase transformations have different mass, gas, heat, equilibrium, and kinetic accounts. A temperature alone does not specify the resulting material.
+
+State the feed composition and physical form, reaction model, gas conditions, residence-time/temperature distribution, and required product phases or reactivity. Particle interiors, heat transfer, gas transport, porosity, sintering, and evolving surface area can separate an equilibrium prediction from actual conversion. Useful product properties may depend on avoiding both under-treatment and excessive densification.
+
+For ideal pure CaCO₃ → CaO + CO₂, use the chemical molar masses to derive the solid and gas mass fractions. Then distinguish reaction enthalpy, sensible heating, moisture removal, heat loss, gas handling, and heat recovery. An industrial duty cannot be inferred from reaction enthalpy alone.
+
+**Work:** reconstruct a full published industrial-mineral thermal-treatment case. Independently check the reaction/material account and an energy balance, compare phase evidence with the proposed mechanism, and evaluate an alternative atmosphere or residence history using its actual evidence. Track impurity behavior, product specification, emissions, refractory wear, and operational variability. Later metallurgy and thermal-process trails deepen refining and reactor design while reusing this transformation account.
+
+**Continue:** [Treat dewatering as coupled solids, water, structure, and energy work](Thickening-filtration-drying-and-returned-water.lingua#r_2PSR8EW4FE03WDD42928AJXD53).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+
+**Continue in metals and metallurgical production:** [Explain roasting through coupled reactions, gas conditions, heat, and product evidence](../../../materials/metals-and-metallurgical-production/pyrometallurgy/Roasting-reactions-gas-potentials-and-solid-products.lingua#r_0NKV4BHR9Z7W2Y2H4Y1SDAH519).
+} r_13PQDG6YPAFH3MW1DABBX0G2YG

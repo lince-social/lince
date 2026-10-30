@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Follow nonconforming or returned material to an actual disposition (@cs-returns: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY", #source "../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D", #source "../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43", #chemical-supply-systems "../../../chemistry/industrial-chemistry/environment/Reagent-solvent-catalyst-recovery-and-closed-loop-limits.lingua#r_58CA7PDF4F2TMB6G0V7VBGCPQN") { r_00A3Q2KZ6FB44RZEJMZJ7DQQWP
+**Read:** [Good trade and distribution practices for pharmaceutical starting materials — WHO](../sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY), complete complaints, recall, returns and nonconforming-material sections; [Good storage and distribution practices for medical products — WHO](../sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D), the complete applicable return/stock-quality discussion; [Emissions from Storage — European Commission BREF](../sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43), complete applicable handling and environmental-pathway chapters.
+
+Describe a returned delivery or rejected lot without silently treating it as either usable stock or vanished mass. Preserve identity, quantity, condition/history, reason for return, contact system, decision evidence and receiving party. A material suitable for one recovery route may be unsuitable for a different user's process.
+
+Read the complete WHO returned/nonconforming/recall sections and apply their evidential distinctions to a documented chemical case. Compare producer return, qualified reprocessing, another authorized use and final treatment/disposal. Repacking or relabelling alone does not establish a new grade or remove the history that caused rejection.
+
+Close the material and package balances through the chosen disposition. Include transport, temporary storage, testing, responsibility and the time required to reach a decision. Examine whether an interruption creates more returns or expired stock and whether those streams overload the available recovery capacity. Build a disposition table that separates established technical capability, permitted institutional arrangement and unresolved proposal. A literature-based case can specify the required work and evidence without claiming the returned material has actually been processed or accepted.
+
+**Continue:** [Evaluate chemical recovery through actual selectivity, quality and continuing losses](../../../chemistry/industrial-chemistry/environment/Reagent-solvent-catalyst-recovery-and-closed-loop-limits.lingua#r_58CA7PDF4F2TMB6G0V7VBGCPQN).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_00A3Q2KZ6FB44RZEJMZJ7DQQWP

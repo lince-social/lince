@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Account for an electrolytic cell through electrochemical, electrical, and thermal terms (@metal-cells: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #metals-and-metallurgical-production "../../../chemistry/general-chemistry/electrochemistry/Electrolysis-charge-efficiency-and-products.lingua#r_769ZEZ2WVT6XC6RT11VM55WEAT") { r_6Y3CD4F9VN7TNTJ0MVKS5ABK3K
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the complete cell reduction/refining and furnace/energy context; [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), all electrometallurgy and applicable molten-salt theory; [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the full energy-account and compatible quantity methods.
+
+A cell joins electrode reactions with electrolyte transport, electrical paths, geometry, heat, material delivery, and product removal. Define the reaction basis and distinguish minimum reversible electrical work, actual electrical input, heat exchange, and chemical energy changes. For a defined electrolytic reaction, reversible work relates to ΔG, while thermoneutral behavior also involves ΔH and the complete heat account.
+
+State voltage contributions with a consistent sign convention: reversible potential difference, electrode losses, electrolyte/contact resistance, and other electrical effects. Current distribution and local geometry can produce different deposit or gas behavior even under the same total current. A mean measured voltage does not identify every local loss.
+
+Compare charge/current, useful production, efficiency, energy per accepted product, heating/cooling, electrode/electrolyte consumption, and maintenance on one period/boundary. Changing a local voltage loss may alter thermal balance, deposit quality, and operating stability elsewhere.
+
+**Work:** reconstruct a complete aqueous or molten-salt cell case. Independently close charge, target/impurity mass, and electrical/thermal accounts with the actual states and references. Compare a geometry or operating-state alternative using measured polarization/conductivity and product evidence. Explain which losses are observed, inferred, or unresolved. Follow the shared electrolysis step next before applying Faraday's account to useful metallurgical output.
+
+**Continue:** [Account for electrical charge, chemical amount, and competing electrode products](../../../chemistry/general-chemistry/electrochemistry/Electrolysis-charge-efficiency-and-products.lingua#r_769ZEZ2WVT6XC6RT11VM55WEAT).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_6Y3CD4F9VN7TNTJ0MVKS5ABK3K

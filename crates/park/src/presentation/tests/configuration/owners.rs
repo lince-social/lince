@@ -46,10 +46,11 @@ fn count_choices(canvas: &mut Presentation) -> usize {
 }
 
 fn choose(canvas: &mut Presentation, index: usize, file: bool, pointer: bool, size: [u32; 2]) {
+    eprintln!("Choosing conflict {index}: file={file}, pointer={pointer}");
     let name = format!("configuration.review.choice.{index}.{}", if file { "file" } else { "local" });
     let entity = named(canvas, &name).unwrap();
     tab_to(canvas, entity);
-    if pointer { click(canvas, entity, size); settle(canvas); }
+    if pointer { reveal(canvas, entity); click(canvas, entity, size); settle(canvas); }
     else { key(canvas, KeyCode::Space, true); key(canvas, KeyCode::Space, false); }
 }
 
@@ -65,19 +66,39 @@ fn continue_review(canvas: &mut Presentation, size: [u32; 2]) {
 }
 
 fn bind(canvas: &mut Presentation, command: &str, function: KeyCode, file: bool, size: [u32; 2]) {
+    eprintln!("Capturing {command}: {function:?}, file={file}");
     let button = super::super::shortcuts::capture_button(canvas, command);
     click(canvas, button, size);
     let capture = settle(canvas);
     assert!(capture.input.keyboard_capture && capture.input.bindings.is_empty());
-    key(canvas, KeyCode::SuperLeft, true);
     let modifier = if file { KeyCode::AltLeft } else { KeyCode::ControlLeft };
-    key(canvas, modifier, true);
-    key(canvas, function, true);
-    key(canvas, function, false);
-    key(canvas, modifier, false);
-    key(canvas, KeyCode::SuperLeft, false);
+    for (physical, pressed) in [(KeyCode::SuperLeft, true), (modifier, true), (function, true), (function, false), (modifier, false), (KeyCode::SuperLeft, false)] {
+        let logical = match physical {
+            KeyCode::SuperLeft => bevy::input::keyboard::Key::Super,
+            KeyCode::AltLeft => bevy::input::keyboard::Key::Alt,
+            KeyCode::ControlLeft => bevy::input::keyboard::Key::Control,
+            _ => bevy::input::keyboard::Key::Unidentified(bevy::input::keyboard::NativeKey::Unidentified),
+        };
+        canvas.key(physical, logical, None, pressed, false).unwrap();
+    }
+    settle(canvas);
+    let validate = named_button(canvas, "Validate combination");
+    let disabled = canvas.app.world().get::<bevy::ui::InteractionDisabled>(validate).is_some();
+    let observed = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let received = observed.clone();
+    canvas.world_mut().entity_mut(validate).observe(move |_: On<bevy::ui_widgets::Activate>| {
+        received.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    });
     press(canvas, "Validate combination", size);
-    assert!(!settle(canvas).input.keyboard_capture);
+    let frame = settle(canvas);
+    let activations = observed.load(std::sync::atomic::Ordering::SeqCst);
+    if disabled || activations != 1 || frame.input.keyboard_capture {
+        super::super::shortcuts::capture("configuration-binding-validation", size, &frame);
+        let world = canvas.world_mut();
+        let status = world.query::<&Text>().iter(world).filter(|text| ["captur", "ombination", "reserved", "Mod+", "Ctrl+", "Alt+"].iter().any(|value| text.0.contains(value)))
+            .map(|text| text.0.clone()).collect::<Vec<_>>();
+        panic!("{command} ({function:?}, file={file}) did not validate: disabled={disabled}, activations={activations}, capture={}, status={status:?}", frame.input.keyboard_capture);
+    }
 }
 
 #[test]
@@ -138,7 +159,9 @@ fn eight_rendered_binding_conflicts_scroll_to_the_last_choice_preserve_parent_dr
         assert_eq!(std::fs::read(profile.join("interface.lingua")).unwrap(), external);
         press(&mut canvas, "Save all changes", size);
         assert!(active_dwell(&mut canvas, 900));
-        press(&mut canvas, lince_interface::i18n::Token::CloseEditMode.text(), size);
+        let close = labelled(&mut canvas, lince_interface::i18n::Token::CloseEditMode.text());
+        reveal(&mut canvas, close);
+        click(&mut canvas, close, size);
         let verify = |frame: &Frame| {
             for (index, (_, action, function)) in commands.iter().enumerate() {
                 let modifiers = Modifiers { super_key: true, control: index % 2 == 0, alt: index % 2 == 1, shift: false };
@@ -153,7 +176,9 @@ fn eight_rendered_binding_conflicts_scroll_to_the_last_choice_preserve_parent_dr
         drop(receiver);
         let (mut reopened, _receiver) = launch(&profile, size, scale);
         assert!(active_dwell(&mut reopened, 900));
-        press(&mut reopened, lince_interface::i18n::Token::CloseEditMode.text(), size);
+        let close = labelled(&mut reopened, lince_interface::i18n::Token::CloseEditMode.text());
+        reveal(&mut reopened, close);
+        click(&mut reopened, close, size);
         verify(&settle(&mut reopened));
         reopened.finish().unwrap();
     }

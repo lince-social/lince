@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Design a ventilation survey that can test a model and reveal measurement limits (@mine-vent-surveys: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY", #source "../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #source "../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK", #mining-and-mineral-engineering "Heat-moisture-and-the-underground-environment.lingua#r_2PDZHZRMAKXHKNGVK8T6MA018F") { r_343FK10KGW4QMZF44AW6NTZDQ7
+**Read:** [Subsurface Ventilation Engineering — Malcolm J. McPherson](../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY), the complete measurement/survey, network, and relevant density chapters; [Measurement and metrology](../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), the complete relevant flow, pressure, thermal, correlation, and uncertainty readings; [NR-22 — Segurança e Saúde Ocupacional na Mineração](../sources/NR-22-Mineracao.lingua#r_2MFMFMPEV36SZGMYM8YAZYEQHK), the full applicable current ventilation/observation context.
+
+A ventilation survey connects air quantities, pressure/density/temperature conditions, geometry, fan/work states, instruments, and timing. Define locations and reference conditions before comparing measurements or inferring resistance. A network can change during a survey as work, doors, controls, or equipment states change.
+
+Velocity profiles, traverses, local disturbances, cross-section, leakage, pressure references, instrument calibration, drift, and support affect the result. Several observations may share systematic uncertainty. Adding instrument digits does not remove an unrepresentative traverse or an unstable reference.
+
+Mass/pressure closure tests are useful diagnostics under a defined model; forcing closure can conceal missing paths, state changes, density effects, or measurement error. Reconciled values are estimates under assumptions, not a replacement for the original observations.
+
+**Work:** reconstruct a complete book survey case with conditions, raw observations, methods, calibrations, uncertainty, and model. Independently check one flow/pressure/resistance result and a closure relation. Compare an alternative leakage or changing-state explanation and design an observation that could distinguish it.
+
+Read full survey and network chapters, then perform suitable supervised instrument work where practical competence is claimed. The later advanced ventilation study requires validating predictions with observations not used only to fit the preferred resistance values.
+
+**Continue:** [Join heat and moisture balances with actual environmental observations](Heat-moisture-and-the-underground-environment.lingua#r_2PDZHZRMAKXHKNGVK8T6MA018F).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_343FK10KGW4QMZF44AW6NTZDQ7

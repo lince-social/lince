@@ -1,0 +1,19 @@
+Import "../General-chemistry.lingua"
+
+Let measurement information determine the precision of a chemical claim (@gc-precision: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../reactions/Equations-and-conservation.lingua#r_4MBY18QY4B7YZY9VFFZNW489C4") { r_25GXFBHM1573BAYA8PFWH0YW97
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 1’s measurements, uncertainty, and calculation sections; [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), uncertainty and numerical-value conventions; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), The measure of matter.
+
+An exact stoichiometric coefficient, a defined constant, a rounded reference value, and a measured concentration carry different kinds of information. Preserve that distinction through a calculation. A calculator can print many digits from uncertain inputs; its output precision does not establish chemical certainty.
+
+Significant-figure rules help avoid obviously excessive reporting, but they do not replace an uncertainty model. Shared preparation errors can correlate several solutions, a blank can shift all observations, and specimen heterogeneity can dominate an excellent instrument's repeatability. Use [Measurement and metrology](../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5) for the general evaluation and return to the relevant chemical measurement when its mechanism matters.
+
+Define the target quantity before applying a formula. Purity might mean a mass fraction, an amount fraction, a component-specific assay, or conformance with a particular specification. A percent value without its denominator and chemical identity cannot support a reproducible mass balance. Temperature affects volume-based concentrations and can matter in converting between preparation and use conditions.
+
+**Work:** calculate an amount from a hypothetical mass and molar mass twice: first with labelled hard input bounds, then with stated standard uncertainties and independence assumptions. Explain why the two reported intervals answer different questions. Identify which factors cancel or remain correlated when two aliquots come from the same prepared stock.
+
+Keep intermediate precision until final reporting and independently check a magnitude by estimation. A later research project should defend its uncertainty and applicability, not merely follow a decimal-place convention. The early textbook chapter supplies practical arithmetic; the shared metrology sources supply the deeper interpretation when the question requires it.
+
+**Continue:** [Write a reaction equation that preserves atoms and charge](../reactions/Equations-and-conservation.lingua#r_4MBY18QY4B7YZY9VFFZNW489C4).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_25GXFBHM1573BAYA8PFWH0YW97

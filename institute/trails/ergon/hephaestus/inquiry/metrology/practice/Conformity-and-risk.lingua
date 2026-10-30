@@ -1,0 +1,25 @@
+Import "../Metrology.lingua"
+
+Conformity decisions, guard bands, and the risk being controlled (@met-conformity: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY", #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/Laboratory-Competence.lingua#r_0RT4JM2Q799A0FYNA35H1Q8Y2Z", #metrology "Laboratory-competence.lingua#r_6XCCPCRJ4W0533QRFZR7A58WZ6", #industrial-chemistry "../../../chemistry/industrial-chemistry/evidence/Accepted-product-specification-uncertainty-and-material-history.lingua#r_6HX6NFZ58DCT2JJ3H8EDCWWMTE", #chemical-supply-systems "../../../materials/chemical-feedstocks-and-supply-systems/quality/Release-quarantine-rejection-and-the-meaning-of-available-stock.lingua#r_26JB8E5GXQDGWZJ406RDA6T14N", #electrical-power-engineering "../../../engineering/electrical-power-engineering/operation/Qualification-acceptance-and-independent-power-evidence.lingua#r_3F9EEPEZRVVNPKJHJ690DFGW0D") { r_41AJHYZ4Q8B821Z892PNNK1MEJ
+**Read:** [Measurement uncertainty in conformity assessment — JCGM 106](../sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY), the complete guide, including examples and risk definitions; [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), uncertainty interpretation and reporting; [Laboratory competence — ISO/IEC 17025 and open technical guidance](../sources/Laboratory-Competence.lingua#r_0RT4JM2Q799A0FYNA35H1Q8Y2Z), the publisher’s scope description and the full standard where authorized.
+
+Separate the tolerance interval for a property from the acceptance interval for a reported result. A decision rule connects the result and uncertainty to a statement about requirements. The appropriate rule depends on the intended use and applicable agreement or regulation; uncertainty by itself does not choose the policy.
+
+A guarded upper acceptance limit might be T − g for tolerance limit T and guard band g. Under an explicitly assumed normal state-of-knowledge distribution for the quantity with mean y and standard deviation u, a result y = 9.8 and u = 0.1 has probability about 2.28% above T = 10. This is a conditional numerical illustration. It does not establish a population-wide false-acceptance rate or justify that distribution for a real item.
+
+Specific risk associated with a particular observed result and global risk over a production and measurement process require different information. The latter needs a model or evidence for the population and selection process as well as measurement behavior. Guard bands can trade false acceptance against false rejection; a universal “uncertainty must be one tenth of tolerance” slogan cannot replace that analysis.
+
+**Work:** read JCGM 106 in full. Reconstruct one example and state the quantity distribution, measurement information, acceptance rule, and risk definition. Compare unguarded and guarded rules for a labelled teaching population. Show how rounding a result or changing the assumed distribution can affect a near-limit decision.
+
+Write the decision statement separately from the result and preserve the agreed rule and edition. A laboratory can report a quantity competently while a different party decides how to use it. The receiving party should be able to distinguish the measured evidence from the value judgement or contractual choice governing acceptance.
+
+**Continue:** [Technical competence, impartiality, and a laboratory’s actual scope](Laboratory-competence.lingua#r_6XCCPCRJ4W0533QRFZR7A58WZ6).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in industrial chemistry:** [Connect product acceptance with measured evidence and the material actually transferred](../../../chemistry/industrial-chemistry/evidence/Accepted-product-specification-uncertainty-and-material-history.lingua#r_6HX6NFZ58DCT2JJ3H8EDCWWMTE).
+
+**Continue in chemical supply systems:** [Make a release decision with an explicit uncertainty and consequence](../../../materials/chemical-feedstocks-and-supply-systems/quality/Release-quarantine-rejection-and-the-meaning-of-available-stock.lingua#r_26JB8E5GXQDGWZJ406RDA6T14N).
+
+**Continue in electrical power engineering:** [Qualification, acceptance and independent evidence](../../../engineering/electrical-power-engineering/operation/Qualification-acceptance-and-independent-power-evidence.lingua#r_3F9EEPEZRVVNPKJHJ690DFGW0D).
+} r_41AJHYZ4Q8B821Z892PNNK1MEJ

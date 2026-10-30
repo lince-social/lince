@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Conservative discretization, time steps and material interfaces (@th-discretization: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q", #source "../sources/FiPy-Partial-Differential-Equations-with-Python.lingua#r_0CA1GV7T9X876WS57M2KH93SZB", #source "../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7", #thermodynamics-and-heat-transfer "../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8") { r_5P6TT8JGHD2QA2KZ8TNFEPYFKP
+**Read:** [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q), the complete numerical approach and diffusion examples; [FiPy: Partial Differential Equations with Python](../sources/FiPy-Partial-Differential-Equations-with-Python.lingua#r_0CA1GV7T9X876WS57M2KH93SZB), the full paper; [Convecção e métodos numéricos — Maliska, UFSC](../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7), the finite-volume course progression.
+
+Integrate the local balance over each cell so a shared face flux enters one cell and leaves its neighbour with the opposite sign. This makes global conservation inspectable. For two half-cells with different conductivities, derive the face conductance from serial resistances rather than choosing an arbitrary mean.
+
+Distinguish spatial truncation, time-integration error, iterative error and input/model uncertainty. An explicit update requires a stability condition and can require a stronger monotonicity condition to avoid unphysical overshoots. Implicit stability does not remove time-resolution or nonlinear-convergence requirements.
+
+Read the complete relevant [FiPy — conservative finite-volume modelling](../sources/FiPy-Conservative-Finite-Volume-Methods.lingua#r_5C155DKGJ5WYGV18EJ1SC41G0Q) numerical method and [Convecção e métodos numéricos — Maliska, UFSC](../sources/Conveccao-and-Numerical-Methods-Maliska-UFSC.lingua#r_71K7JMRA8M0N3Y8EKMZJT9NGQ7) lectures. Derive the small system in [An inspectable conservative transient layered slab](An-inspectable-conservative-transient-layered-slab.lingua#r_6B5B7E7C3Z1APY0RYAC09P12ET), test it against a separate analytical/exact discrete result and refine both space and time. Preserve material/interface locations during refinement so the physical problem itself is not changed inadvertently.
+
+**Continue:** [Build a numerical validation argument across several kinds of evidence](../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_5P6TT8JGHD2QA2KZ8TNFEPYFKP

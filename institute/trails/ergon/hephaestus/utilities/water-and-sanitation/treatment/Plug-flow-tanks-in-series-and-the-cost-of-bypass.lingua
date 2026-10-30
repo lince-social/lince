@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Plug flow, tanks in series and the cost of bypass (@wu-plug-series: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Tracer-recovery-residence-time-and-an-unidentified-tail.lingua#r_7P13ENQNXS4KPBJEFTZMKXTDBM") { r_1T0HJNCK514E2CNW07W80HRZVZ
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 3](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l03_react_tank_1/) and [lecture 4](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l04_react_tank_2/). Derive the model differences before selecting a formula.
+
+For ideal plug flow with uniform travel time τ and the same constant first-order kinetics, Cₒᵤₜ/Cᵢₙ = exp(−kτ). For n equal ideal mixed tanks in series with total volume V, multiply their steady fractions to obtain (1+kτ/n)⁻ⁿ. As n grows this tends to exp(−kτ). Equal total volume does not imply equal treatment performance.
+
+For the original kτ = 1 example, fractions remaining are 0.5 for one tank, 0.444444 for two, 0.4096 for four, and about 0.367879 for ideal plug flow. These are predictions of a declared reaction/flow model, not measured removal credits. If a fraction b bypasses a treatment branch whose measured outlet fraction is r, the combined fraction is b+(1−b)r. With b = 0.02 and r = 0.001, the result is 0.02098: about 1.678 log₁₀ reduction despite three-log treatment in the branch. If diversion changes the branch flow, recompute its performance rather than holding r fixed without justification.
+
+**Work:** Derive the series limit using logarithms, compare unequal tanks, and locate the assumptions that fail when there is exchange flow or short-circuiting. Explain why averaging percentage removals gives the wrong result for serial units. Compare complete bypass, finite short-circuit travel and leakage after treatment as different physical models.
+
+**Water treatment continuation:** [Tracer recovery, residence time and an unidentified tail](Tracer-recovery-residence-time-and-an-unidentified-tail.lingua#r_7P13ENQNXS4KPBJEFTZMKXTDBM).
+} r_1T0HJNCK514E2CNW07W80HRZVZ

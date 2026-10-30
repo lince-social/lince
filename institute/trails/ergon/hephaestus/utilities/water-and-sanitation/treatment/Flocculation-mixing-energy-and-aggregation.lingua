@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Flocculation, mixing energy and aggregation (@wu-flocculation: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Settling-velocity-surface-loading-and-real-clarifiers.lingua#r_1S2WZCBK4CDNK20DM8MF6CHB4N") { r_2GFMDN32BDXC69JAMT1Y18E56Z
+**Read:** [The Physics of Water Treatment Design](../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR), chapter 3's [energy dissipation and mixing](https://aguaclara-reach.github.io/Textbook/Fluid_Deformation_and_Energy_Dissipation/FDED_Intro.html) and chapter 7's [flocculation introduction](https://aguaclara-reach.github.io/Textbook/Flocculation/Floc_Intro.html), followed by its derivations and design challenge.
+
+Particles must meet and attach to become useful aggregates, but stronger mixing can also alter or break them. Rapid initial chemical distribution and later aggregation serve different purposes. Treat particle/floc structure, collision and attachment as distinct questions.
+
+A conventional volume-averaged measure is G = √[P/(μV)], where P is power dissipated in the fluid, μ dynamic viscosity and V the mixed volume. Its unit is s⁻¹. In an original idealized example, P = 10 W, μ = 0.001 Pa·s and V = 10 m³ give G ≈ 31.623 s⁻¹. A 600-second nominal interval gives Gt ≈ 18,974, dimensionless. Motor input is not automatically dissipated fluid power, and equal Gt can conceal different local shear histories.
+
+**Work:** Compare 60 seconds at 100 s⁻¹ with 600 seconds at 10 s⁻¹: equal products do not prove equal aggregates or separation. Explain what needs measuring to distinguish collision opportunity, attachment and breakage. Work the book's hydraulic-flocculator challenge, then test peak flow, altered viscosity and short-circuiting. Deepen into population balances, aggregation/breakage kernels and scale dependence; require independent particle or settling evidence rather than inferring every parameter from one turbidity endpoint.
+
+**Water treatment continuation:** [Settling velocity, surface loading and real clarifiers](Settling-velocity-surface-loading-and-real-clarifiers.lingua#r_1S2WZCBK4CDNK20DM8MF6CHB4N).
+} r_2GFMDN32BDXC69JAMT1Y18E56Z

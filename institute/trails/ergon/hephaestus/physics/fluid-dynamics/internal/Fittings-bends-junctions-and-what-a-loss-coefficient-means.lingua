@@ -1,0 +1,17 @@
+Import "../Fluid-dynamics.lingua"
+
+Fittings, bends, junctions and what a loss coefficient means (@fd-fittings: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #fluid-dynamics "Pump-curves-operating-points-and-connected-fluid-networks.lingua#r_38PV7C2PG9F67V9SENTE32AD5Y", #water-and-sanitation "../../../utilities/water-and-sanitation/treatment/Chemical-feed-rates-stock-strength-and-measurement.lingua#r_7JRV3FGMS5HCGZMA0GFJSX2B4M") { r_44H4W4CTXATB85WBAMMY1BN8WK
+**Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), internal-flow losses and momentum applications; [Introduction to Fluid Mechanics and Fluid Engineering — Suman Chakraborty](../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2), expansion, fittings and pipe-system lectures; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), control-volume and loss problems.
+
+A local-loss model writes h_L=K U_ref²/(2g). The reference velocity, location of pressure measurements and inclusion of downstream recovery belong to the definition of K. Calling a fitting a minor loss does not mean its contribution is small. Closely spaced disturbances can interact, so adding isolated coefficients is an assumption to examine.
+
+Derive a sudden-expansion estimate using mass, momentum and mechanical energy under the model's assumptions; for the idealized fully mixed endpoints its loss is (U_1−U_2)²/(2g). Explain why static-pressure recovery can occur while total mechanical head decreases. For a junction, maintain each branch's mass and energy account and distinguish a loss coefficient from force on the pipe supports.
+
+Compare two independently documented coefficients only after matching geometry, Reynolds number, opening and reference speed. An installed valve's position is not automatically a reproducible flow resistance. Design observations that separate straight-pipe resistance from a fitting's loss and identify when a three-dimensional flow calculation or direct test is justified.
+
+**Continue:** [Pump curves, operating points and connected fluid networks](Pump-curves-operating-points-and-connected-fluid-networks.lingua#r_38PV7C2PG9F67V9SENTE32AD5Y).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Water treatment continuation:** [Chemical feed rates, stock strength and measurement](../../../utilities/water-and-sanitation/treatment/Chemical-feed-rates-stock-strength-and-measurement.lingua#r_7JRV3FGMS5HCGZMA0GFJSX2B4M).
+} r_44H4W4CTXATB85WBAMMY1BN8WK

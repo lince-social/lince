@@ -91,7 +91,7 @@ pub(crate) fn pointer(
     ),
     (owners, order): (
         Query<(&VisualOwner, &GlobalTransform)>,
-        Query<&super::stacking::Order>,
+        Query<(&super::stacking::Order, &super::stacking::Plane)>,
     ),
     parents: Query<&ChildOf>,
     assets: Query<
@@ -254,12 +254,12 @@ pub(crate) fn pointer(
                                 .is_ok_and(|(owner, _)| cards.contains(owner.0))
                     })
                     .or(Some(closest))
-            } else if order.contains(closest.0) {
+            } else if let Ok((_, plane)) = order.get(closest.0) {
                 hits.iter()
-                    .filter(|(mesh, hit)| {
-                        (hit.distance - closest.1.distance).abs() <= 1e-4 && order.contains(*mesh)
+                    .filter(|(mesh, _)| {
+                        order.get(*mesh).is_ok_and(|(_, candidate)| candidate == plane)
                     })
-                    .max_by_key(|(mesh, _)| order.get(*mesh).ok().copied())
+                    .max_by_key(|(mesh, _)| order.get(*mesh).ok().map(|(order, _)| *order))
                     .or(Some(closest))
             } else {
                 Some(closest)

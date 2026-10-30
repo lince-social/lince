@@ -1,0 +1,56 @@
+Import "Chemical-feedstocks-and-supply-systems.lingua"
+
+Chemical supply sources — books, methods, complete cases and research (@cs-sources: 0, is #chapter, #part-of @chemical-supply-systems) { r_76J82CV79QKHQ2CSCT63MFYJYN
+These external sources support substantial reading and increasingly specific methods. Keep complete books, course programmes and technical chapters together with the precise later passages used in an argument. The source Records distinguish editions, open licences, free copyrighted reading, authorized commercial access and actual inspection limits. No external book, PDF, article, dataset, image, lecture, software or model is stored here.
+
+## Books and graduate programmes
+
+- [Fundamentos da Logística — Glávio Leal Paura](sources/Fundamentos-da-Logistica-Paura.lingua#r_0YB9YHAW4GYQDK0NHA4JN2KA77).
+- [Gestão de Operações e Logística I — Rodrigo de Alvarenga Rosa](sources/Gestao-de-Operacoes-e-Logistica-Rosa.lingua#r_6J7SWGEMAKMNVKVNGATZW4EB2J).
+- [Inventory Analytics — Roberto Rossi](sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C).
+- [Warehouse & Distribution Science — Bartholdi and Hackman](sources/Warehouse-and-Distribution-Science.lingua#r_1QVYHWFDZJB0PMG6V9CB2M4H10).
+- [Graduate Logistics Systems — MIT ESD.260J](sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8).
+- [Graduate Supply Chain Planning — MIT 15.762J](sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P).
+- [Fundamentals of Supply Chain Theory — Snyder and Shen](sources/Fundamentals-of-Supply-Chain-Theory-Snyder-Shen.lingua#r_4MFFYSAE67RQNHCV2AAQ1X0GXJ).
+
+## Material quality, history and measurement
+
+- [Good trade and distribution practices for pharmaceutical starting materials — WHO](sources/Pharmaceutical-Starting-Materials-WHO.lingua#r_7H51215T44S69TD3R0499VMTTY).
+- [Good storage and distribution practices for medical products — WHO](sources/Good-Storage-and-Distribution-WHO.lingua#r_64EPQ96J7NE7QCWQ28SPXJ8V4D).
+- [Validation of Measurement Procedures that Include Sampling — Eurachem](sources/Validation-Including-Sampling-Eurachem.lingua#r_0H2SA2SC85XXDYT629N3E3KGXA).
+- [Supply Chain Traceability Principles: A Manufacturing Meta-Framework — NIST IR 8536](sources/Manufacturing-Supply-Chain-Traceability-NIST.lingua#r_7CK4NN1QW48PPVA9XKMGNHZWDZ).
+- [High-purity polymer materials and chemical-delivery components — SEMI F57](sources/High-Purity-Polymer-Delivery-Components-SEMI.lingua#r_4CJR70PGX15X3VQENBZ0S1RA25).
+
+## Storage, transport and chemical information
+
+- [Chemical warehousing — HSE HSG71](sources/Chemical-Warehousing-HSE-HSG71.lingua#r_6MKP347GP6BY1H1PCKCJKAV91R).
+- [Storage of flammable liquids in tanks — HSE HSG176](sources/Flammable-Liquid-Tanks-HSE-HSG176.lingua#r_3J96NXWJF945DTPAPBRQPT177R).
+- [Emissions from Storage — European Commission BREF](sources/Emissions-from-Storage-BREF.lingua#r_4QFPS62AY03WVQB72BMNJQGC43).
+- [Globally Harmonized System of Classification and Labelling of Chemicals — UN](sources/Chemical-Classification-and-Communication-GHS.lingua#r_3JK41Y6PYJ4063TNSBZ6ZJ50PG).
+- [Recommendations on the Transport of Dangerous Goods — UN Model Regulations](sources/Dangerous-Goods-Model-Regulations-UN.lingua#r_608ADXFZHPBDY8MYGJZ9M1BG06).
+- [Code of Practice for Packing of Cargo Transport Units — IMO, ILO and UNECE](sources/Cargo-Transport-Units-Code.lingua#r_4YS4SQPG6WKX5TWAF48M0VV9X1).
+- [Transporte rodoviário de produtos perigosos — ANTT](sources/Transporte-de-Produtos-Perigosos-ANTT.lingua#r_1WNZJ2G2BMBH2YQZ78N09GV8S1).
+- [Manual de Produtos Químicos — CETESB](sources/Manual-de-Produtos-Quimicos-CETESB.lingua#r_0XHPTEZZDB1M5KN5JPPZYPW79D).
+
+## Complete product and gas-supply references
+
+- [Caustic Soda Handbook — OxyChem](sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME).
+- [Hydrogen Peroxide: Safety & Handling — Solvay](sources/Hydrogen-Peroxide-Safety-and-Handling-Solvay.lingua#r_4HBTDKE1JB2QCDMN29A4XHX3BQ).
+- [Methanol Safe Handling Manual — Methanol Institute](sources/Methanol-Safe-Handling-Manual.lingua#r_01VD6M07PMPE9J0W00Z9KD5WC0).
+- [Storage, handling and transportation of solid mineral fertilizers — Fertilizers Europe](sources/Storage-Handling-and-Transport-Solid-Fertilizers.lingua#r_7QADF65GMMER3S52G9ANCVR2G8).
+- [Oxygen Pipeline and Piping Systems — EIGA Doc 13/20](sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV).
+- [Good practices guide for loading and unloading of cryogenic liquid tankers — AIGA](sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C).
+
+## Supply dependence, continuity and research
+
+- [Understanding Water Treatment Chemical Supply Chains and the Risk of Disruptions — EPA](sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C).
+- [Water-treatment chemical supply-chain profiles — EPA](sources/Chemical-Supply-Chain-Profiles-EPA.lingua#r_0E09Q6T7CC9HNWZB3N84E7K21A).
+- [Supply Chain Resilience: Guide for Water and Wastewater Utilities — EPA](sources/Chemical-Supply-Resilience-EPA.lingua#r_2NVE96BRQ8Q3WYFP2ZQ3NTE11F).
+- [Enterprise-wide Optimization: A New Frontier in Process Systems Engineering — Grossmann](sources/Enterprise-wide-Optimization-Grossmann.lingua#r_4XD1X5QN83H40RBMGJVSZY9Y8V).
+- [Supply chain management for the process industry — Songsong Liu](sources/Process-Industry-Supply-Chain-Management-Liu.lingua#r_5W74Q34MKEJAWVS30JV4QH01YQ).
+- [Information Distortion in a Supply Chain: The Bullwhip Effect — Lee, Padmanabhan and Whang](sources/Information-Distortion-and-the-Bullwhip-Effect.lingua#r_5ZF9C4P38W8ZDJTP9HWVD0HYM6).
+
+Chemical manufacturing methods and their fuller source collection are shared through [Industrial chemistry — chemical transformations, useful products and continuing production](../../chemistry/industrial-chemistry/Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618), including [Industrial Chemical Technology I — Adebayo, NOUN](../../chemistry/industrial-chemistry/sources/Industrial-Chemical-Technology-I-NOUN.lingua#r_2026VMVXVJQGK3WTH1P17FE8T9), [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../../chemistry/industrial-chemistry/sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR), [Organic Chemical Technology — Nanda Kishore, NPTEL](../../chemistry/industrial-chemistry/sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), [Production of Chlor-alkali, BREF CAK](../../chemistry/industrial-chemistry/sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), [Large Volume Inorganic Chemicals — Ammonia, Acids and Fertilisers, BREF LVIC-AAF](../../chemistry/industrial-chemistry/sources/Ammonia-Acids-Fertilisers-BREF.lingua#r_45NWBJYAMXXSRV071A57EM02GB), [Production of Large Volume Organic Chemicals, BREF LVOC](../../chemistry/industrial-chemistry/sources/Large-Volume-Organic-Chemicals-BREF.lingua#r_78ET6A4D7AX8HPQTYAMZMAG16B), [Production of Polymers, BREF POL](../../chemistry/industrial-chemistry/sources/Polymer-Production-BREF.lingua#r_01PXATYT6P16206KQ3VDX34K1F), [Production of Speciality Inorganic Chemicals, BREF SIC](../../chemistry/industrial-chemistry/sources/Speciality-Inorganic-Chemicals-BREF.lingua#r_04G7NFYXE76QCB3DXCRJC1FSCP) and [Manufacture of Organic Fine Chemicals, BREF OFC](../../chemistry/industrial-chemistry/sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K). Quantitative, measurement and computational methods remain available through [Quantitative and technical literacy](../../inquiry/quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2), [Measurement and metrology](../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5) and [Reproducible computational work](../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ). A public catalogue or abstract identifies a work; obtain and read the complete method before making a claim that depends on it.
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_76J82CV79QKHQ2CSCT63MFYJYN

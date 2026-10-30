@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Heat flux, calorimetry, guarding and energy accounting (@th-heat-flux-measurement: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Heat-Flux-Sensor-Calibration-NIST.lingua#r_6RP9VC0545310FNGXY9B50PN16", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T", #thermodynamics-and-heat-transfer "../research/Traceable-thermal-properties-and-radiation-measurements.lingua#r_6W5QAJWM3SCEDMD9WHNGJNS6DE") { r_0C5CNS266C7247SV38JME1TKPP
+**Read:** [Heat-flux sensor calibration — NIST SP 250-65](../sources/Heat-Flux-Sensor-Calibration-NIST.lingua#r_6RP9VC0545310FNGXY9B50PN16), the complete calibration report; [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), guarding, balance and uncertainty; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), calorimetry and first-law measurement.
+
+A heat-flux sensor samples a local interaction with its mounting and environment. Its reading is not automatically the total heat flow through an irregular surface. A calorimeter instead infers energy transfer from a carefully defined balance, often including electrical work, storage, loss and mass flow.
+
+Derive the measurement equation for each method. Include sensor area, angular response where relevant, thermal shunting, contact, time response, radiation/convection conditions and calibration transfer. Map the spatial field before multiplying one flux reading by a whole area.
+
+Compare a guarded steady experiment with a transient electrical-substitution or mixing account. Seek an independently measured energy closure rather than calibrating every unknown to force agreement. Report drift, equilibrium criteria and residuals. The complete NIST heat-flux calibration report supplies a primary method to scrutinize; it does not confer calibration on a sensor merely because its model number is familiar.
+
+**Continue:** [Optical power, spectra, images, and model-defined features](../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T) · [Advanced study: traceable thermal measurements](../research/Traceable-thermal-properties-and-radiation-measurements.lingua#r_6W5QAJWM3SCEDMD9WHNGJNS6DE).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_0C5CNS266C7247SV38JME1TKPP

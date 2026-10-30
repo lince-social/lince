@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+From fields to detector signals and noise (@em-detection: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Experimental-Physics-MIT-Junior-Lab.lingua#r_55H9HGYP31B14NSEEAZY27PW5E", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #electromagnetism "../../../inquiry/quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX") { r_3FQB4EV0F0QVWBSE9QBZDHT7AH
+**Read:** [Experimental Physics I and II — MIT Junior Lab](../sources/Experimental-Physics-MIT-Junior-Lab.lingua#r_55H9HGYP31B14NSEEAZY27PW5E), complete applicable noise or radio experiment guide and reporting material; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), detector/fixture calibration and material observables.
+
+An instrument reports a response to a field interaction over finite space, time, spectrum and polarization. A photodetector reading, loop-probe voltage, antenna receiver output and absorbed calorimetric power are different measurands. A model must connect the predicted field to the actual detector/port response rather than compare unlike quantities.
+
+Describe bandwidth, responsivity, spatial averaging, integration time, linear range and background. Coherent detection retains phase relative to a reference; square-law detection usually reports an averaged intensity-related quantity. Noise, drift and systematic coupling require different statistical and physical treatments. A thermal-noise experiment relates dissipative response to fluctuations, with quantum corrections becoming relevant in the appropriate frequency/temperature regime.
+
+Reconstruct a full applicable [Experimental Physics I and II — MIT Junior Lab](../sources/Experimental-Physics-MIT-Junior-Lab.lingua#r_55H9HGYP31B14NSEEAZY27PW5E) guide and the reused optical/electrical metrology examples. Derive the signal chain, calibrate its reference and propagate correlated uncertainties. Compare an alternative probe geometry or detection bandwidth to expose model dependence. A visually convincing field animation does not establish what an actual sensor would measure, and a published apparatus drawing alone does not demonstrate that the reader has performed the experiment.
+
+**Continue:** [Discretization — approximate a changing process and check it](../../../inquiry/quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3FQB4EV0F0QVWBSE9QBZDHT7AH

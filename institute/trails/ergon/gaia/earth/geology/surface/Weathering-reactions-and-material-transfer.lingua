@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Explain weathering through reactions, fragmentation, and transport conditions (@geo-weathering: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../../../../hephaestus/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #geology "Soil-profiles-regolith-and-parent-material.lingua#r_6M1BCEWCJFN5MSFV00F3G22AV6") { r_68BN017EPADZ0CG7V3JJ8R8TSA
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 5 in full; [General chemistry](../../../../hephaestus/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), aqueous reaction, equilibrium, kinetic, and open-system foundations where needed; [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), weathering/soil and material-context chapters.
+
+Weathering changes exposed materials through physical disaggregation and chemical/biological processes; erosion removes or transports material. Distinguish alteration at its source from later movement. Temperature, water, gases, organisms, surface area, mineral composition, and time influence rates and products.
+
+Hydrolysis, dissolution, oxidation/reduction, precipitation, and ion exchange connect rocks with soils and waters. A balanced reaction is an account of possible mass/charge transfer, not evidence that a particular rate or complete reaction occurred in the field. Open-system inputs and exports can alter the residual material's apparent composition.
+
+Compare weathering of different minerals with stability and reaction conditions rather than using a memorized ranking as a universal rate law. A rock's fractures, porosity, exposure history, and coatings influence access. A fresh-looking grain and a whole weathered rock may retain different records.
+
+**Work:** reconstruct one textbook weathering pathway with balanced chemical changes and named transported/residual products. Use the shared chemistry equilibrium/kinetic ideas to distinguish thermodynamic possibility from rate. Compare two documented weathering profiles and explain which environmental/material differences support the interpretation, including an alternative source or mixing account.
+
+Read chapter 5 as a whole before narrowing to a reaction. Connect weathering with mineral deposits, soil formation, groundwater chemistry, sediment supply, and long-term carbon cycling. Quantitative geochemistry and reactive transport remain deeper subjects; the general geological explanation should already keep system boundaries and material transfers explicit.
+
+**Continue:** [Read soils and regolith as evolving materials in a landscape](Soil-profiles-regolith-and-parent-material.lingua#r_6M1BCEWCJFN5MSFV00F3G22AV6).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_68BN017EPADZ0CG7V3JJ8R8TSA

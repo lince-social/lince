@@ -1,0 +1,27 @@
+Import "../Metrology.lingua"
+
+Chemical measurements — matrix, recovery, selectivity, and reference material (@met-chemistry-case: 0, is #chapter, #part-of @metrology, #source "../sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS", #source "../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #source "../sources/Sampling-Uncertainty.lingua#r_3Q0NEPSBDFX8Z1JWAG3C3HRHJM", #source "../sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0", #source "../sources/Reference-Materials.lingua#r_6M66GJE1X11ZY0R3517A3VEYM3", #metrology "../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR", #general-chemistry "../../../chemistry/general-chemistry/measurement/Spectroscopic-evidence-and-calibration.lingua#r_5KF8FB97G6AMW8SNB4Y21E2ZHZ", #mineralogy-and-petrology "../../../../gaia/earth/mineralogy-and-petrology/analysis/Electron-microanalysis-standards-and-sample-volume.lingua#r_4DM5842PJRXRJHV6XXFZXGBMS1", #industrial-chemistry "../../../chemistry/industrial-chemistry/evidence/Process-analysis-sampling-calibration-and-changing-material.lingua#r_2YTQZ47RWD0XWVCP9ANFGAYY0W", #water-and-sanitation "../../../utilities/water-and-sanitation/foundations/What-a-water-measurement-actually-reports.lingua#r_72DBDSDN8STAHTN78JF0KKF6XR") { r_78FAVM8QZ3F7N4DQP2DDP1R7KQ
+**Read:** [Quantifying Uncertainty in Analytical Measurement — Eurachem/CITAC](../sources/Analytical-Uncertainty.lingua#r_41N1P8BNZH26X9679RHB0THQNS), the whole guide and worked examples; [The Fitness for Purpose of Analytical Methods — Eurachem](../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), the complete guide; [Measurement uncertainty arising from sampling — Ramsey, Ellison, and Rostron](../sources/Sampling-Uncertainty.lingua#r_3Q0NEPSBDFX8Z1JWAG3C3HRHJM), the complete target-to-result treatment; [Worked measurement examples — JCGM GUM-5:2026](../sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0), chapters 1, 2, and 4; [Reference materials, certificates, and their scope — NIST](../sources/Reference-Materials.lingua#r_6M66GJE1X11ZY0R3517A3VEYM3), one complete certificate.
+
+A chemical result depends on more than an instrument signal. Specify target, sampling and preparation, component identity or speciation where relevant, concentration basis, extraction or reaction behavior, calibration relation, matrix effects, blanks, and any recovery correction. Traceability can involve reference materials and documented preparation as well as instrument calibration.
+
+A certified reference material is useful only within the scope of its property, matrix, lot, homogeneity, minimum subsample, and handling conditions. A reference solution can characterize a response while failing to reproduce preparation losses or matrix effects in an actual specimen. An independently prepared check can reveal effects hidden when calibration and validation share the same source.
+
+Read the entire Eurachem uncertainty and validation guides in stages. Compare a component budget with a validation-based evaluation and explain what each covers. Use the sampling guide when the result concerns the material target rather than only the delivered aliquot. Keep moisture and amount/mass/volume definitions explicit through [Concentrations, moisture, and changing the basis](../../quantitative-literacy/practice/Concentrations-and-bases.lingua#r_0XCSBEG82Y6TYKX1Z28R693AY5).
+
+**Work:** reconstruct a published calibration/uncertainty example and one reference-material certificate. Draw the full target-to-result chain and mark which components can be supported by the available data. Derive a simple dilution model, propagate its shared preparation contributions, and compare it with a model that falsely treats all aliquots as independent.
+
+For advanced comparison study the 2026 GUM pH, analyte, and mixture examples alongside a TN 1900 chemical example. Identify the general mathematical issue and the chemistry-specific knowledge required for each. Calculation and document studies can be performed without handling hazardous analytes or attempting an unvalidated industrial assay.
+
+**Continue in general chemistry:** [Use a spectrum as chemical evidence with an observation model](../../../chemistry/general-chemistry/measurement/Spectroscopic-evidence-and-calibration.lingua#r_5KF8FB97G6AMW8SNB4Y21E2ZHZ).
+
+**Continue:** [Produce, preserve, transfer, and replace the references](../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in mineralogy and petrology:** [Interpret electron microanalysis through standards, corrections, and spatial context](../../../../gaia/earth/mineralogy-and-petrology/analysis/Electron-microanalysis-standards-and-sample-volume.lingua#r_4DM5842PJRXRJHV6XXFZXGBMS1).
+
+**Continue in industrial chemistry:** [Build a chemical-process measurement from representative material and validated inference](../../../chemistry/industrial-chemistry/evidence/Process-analysis-sampling-calibration-and-changing-material.lingua#r_2YTQZ47RWD0XWVCP9ANFGAYY0W).
+
+**Continue in water and sanitation:** [What a water measurement actually reports](../../../utilities/water-and-sanitation/foundations/What-a-water-measurement-actually-reports.lingua#r_72DBDSDN8STAHTN78JF0KKF6XR).
+} r_78FAVM8QZ3F7N4DQP2DDP1R7KQ

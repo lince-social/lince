@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Skilled work, spares, test equipment and knowledge transfer (@pe-people-spares: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC", #source "../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR", #source "../sources/Motor-Rewind-Study-and-Good-Practice-EASA-AEMT.lingua#r_3K38XSH8DWC79G20NF55ATKEJP", #electrical-power-engineering "../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ") { r_2SMDFJH4MR8R5GAWKN9CYX8Y2P
+**Read:** [Conduct of power operations and maintenance — FIST](../sources/Conduct-of-Power-Operations-and-Maintenance-FIST.lingua#r_4JS2N9S01A3KTMH37TXMVSPPYC), both complete manuals; [Improving Motor and Drive System Performance — DOE](../sources/Improving-Motor-and-Drive-System-Performance-DOE.lingua#r_71MGTGWBE9B62SJ1GS6Y3W8MKR), whole management, repair/service and economics sections; [Motor rewind studies and good practice — EASA/AEMT](../sources/Motor-Rewind-Study-and-Good-Practice-EASA-AEMT.lingua#r_3K38XSH8DWC79G20NF55ATKEJP), both full studies and the complete authorized practice method.
+
+A maintained power system depends on people who can interpret models, measurements and physical conditions, as well as on tools, spares, calibration and supporting services. A nominally redundant component does not supply continuity if both copies need the same unavailable part, specialist or auxiliary resource.
+
+Trace a realistic repair from diagnosis through compatible material/part supply, storage condition, workshop/facility access, skilled work, calibration, assembly, settings/model changes and return-to-service evidence. Compare calendar lead time with the actual usable service reserve. Preserve what must be communicated between a manufacturer, repair shop, operator and connected system.
+
+Read the complete operational/maintenance, motor-system and repair sources. Construct a documented case in which a spare or repair changes one electrical/material parameter; analyse its effect on loss, thermal condition, protection or control. Distinguish a part number from technical compatibility and a training record from demonstrated current competence. [Hephaestus](../../../Hephaestus.lingua#r_00000000000000000000002001), [Resources and materials — feedstocks, useful properties, production, and recovery](../../../materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D) and [Engineering — systems, design, construction, and operation](../../Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68) connect the wider production/workforce systems while the power case retains its actual functional and evidence requirements.
+
+**Continue:** [Conformity decisions, guard bands, and the risk being controlled](../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_2SMDFJH4MR8R5GAWKN9CYX8Y2P

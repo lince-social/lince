@@ -70,6 +70,12 @@ pub(crate) fn remember(world: &mut World, root: Entity) {
     }
 }
 
+fn input_owner(world: &World) -> Option<Entity> {
+    world.get_resource::<bevy::input_focus::InputFocus>()
+        .and_then(|focus| focus.get())
+        .filter(|input| world.get::<bevy::window::PrimaryWindow>(*input).is_none())
+}
+
 pub(super) fn restore_missing(world: &mut World) {
     let roots: Vec<_> = world.query::<(Entity, &Workspaces)>().iter(world)
         .map(|(root, spaces)| (root, spaces.canvas_id.clone(), spaces.saved_focus.clone()))
@@ -96,7 +102,7 @@ pub(super) fn restore_missing(world: &mut World) {
             }
             if saved.active.is_some() && super::active(world, root) == Some(saved.workspace)
                 && (crate::native::shortcuts::keyboard_owned(world)
-                    || world.get_resource::<bevy::input_focus::InputFocus>().and_then(|focus| focus.get())
+                    || input_owner(world)
                         .is_some_and(|input| active_target.is_none_or(|target| !contains_input(world, input, target))))
             {
                 continue;
@@ -126,7 +132,7 @@ pub(super) fn restore_missing(world: &mut World) {
             world.resource_mut::<FocusState>().0.insert((root, saved.workspace), state);
             if active.is_some()
                 && super::active(world, root) == Some(saved.workspace)
-                && world.get_resource::<bevy::input_focus::InputFocus>().and_then(|focus| focus.get()).is_none()
+                && input_owner(world).is_none()
                 && let Some(target) = active_target
             {
                 keyboard_focus(world, target);

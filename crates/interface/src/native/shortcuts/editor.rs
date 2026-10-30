@@ -452,7 +452,7 @@ fn button(world: &mut World, parent: Entity, action: Change, value: &str) -> (En
         .unwrap()
         .set_label(value);
     let text = label(world, entity, value, 14.0);
-    world.entity_mut(text).insert(TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter));
+    world.entity_mut(text).insert((TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter), Pickable::IGNORE));
     (entity, text)
 }
 

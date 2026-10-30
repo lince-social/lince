@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Explain a water service before choosing equipment (@wu-foundation-review: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE", #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #source "../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F", #water-and-sanitation "../source-water/A-catchment-is-a-water-account-with-boundaries.lingua#r_0RWVH5WS933CGBP80NHR40WT2B") { r_1W8ZYY57AZEJ50E80HZHN59QSW
+**Read:** [Manual de Saneamento — Funasa, fifth edition](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), review the complete introductory water and sanitation reading; [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), revisit chapters 2–4 and 12; [Guidelines for drinking-water quality — WHO, 2026 consolidated edition](../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F), the framework and relevant quality chapters.
+
+Return to the initial tap, drain or production connection. Present a water and constituent account, a bilingual map of quantities, a justified quality question and an observation plan. Explain where public-health, environmental and equipment requirements apply.
+
+Use at least one unfamiliar case to distinguish concentration from load, pH from alkalinity, an indicator from a pathogen, and an instrument result from a validated process. Show how a missing stream, a changed sample or an unrecognized reporting basis could change the conclusion.
+
+Defend a provisional treatment question in terms of what must be changed and what evidence would demonstrate that change. Keep unknown source conditions and service dependencies visible. The next work develops the source and hydraulic evidence needed before a treatment train can be selected responsibly.
+
+**Return:** [Water, sanitation and industrial utilities — from sources to continuing service](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+
+**Continue:** [A catchment is a water account with boundaries](../source-water/A-catchment-is-a-water-account-with-boundaries.lingua#r_0RWVH5WS933CGBP80NHR40WT2B).
+} r_1W8ZYY57AZEJ50E80HZHN59QSW

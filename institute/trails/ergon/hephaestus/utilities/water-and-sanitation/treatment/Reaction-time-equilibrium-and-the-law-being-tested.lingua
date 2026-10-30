@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Reaction time, equilibrium and the law being tested (@wu-treatment-rate: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "../../../chemistry/general-chemistry/kinetics/Reaction-rates-and-rate-laws.lingua#r_2RAAQPESP3HCEDY95PCFTXVVYZ") { r_0SR4YC3ZNQ5JV2A158KJ9876VX
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 3](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l03_react_tank_1/). Use the shared chemistry rate-law Record on the next connection for the underlying evidence and notation.
+
+An equilibrium statement says where a system tends under specified constraints; a rate law describes how fast it changes. Neither alone describes a flowing treatment vessel. Distinguish a chemical reaction from transport to a surface and from physical transfer out of the water stream. Temperature, pH, competing constituents and surface condition can change an apparent rate constant.
+
+For an original ideal batch calculation, first-order disappearance means dC/dt = −kC, with constant nonnegative k. Separating variables gives C/C₀ = exp(−kt). If C halves in 30 minutes under the stated conditions, k = ln(2)/30 min⁻¹ and one quarter remains after 60 minutes. This is a synthetic kinetic law, not an organism-inactivation claim or operational dose recommendation.
+
+**Work:** Explain the units of k, distinguish natural logarithms from base-ten reductions, and sketch the concentration and log-concentration histories. Identify an observation that would reject the constant first-order assumption. Fit hypothetical data in the measurement scale appropriate to their error rather than automatically treating a logarithmic fit as unbiased. Compare predictions outside the fitted range, and explain why doubling a reactant dose need not double the fitted rate.
+
+**Water treatment continuation:** [Define a reaction rate and infer a law from appropriate evidence](../../../chemistry/general-chemistry/kinetics/Reaction-rates-and-rate-laws.lingua#r_2RAAQPESP3HCEDY95PCFTXVVYZ).
+} r_0SR4YC3ZNQ5JV2A158KJ9876VX

@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Close the process water and constituent balances (@wu-process-balance: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Reaction-time-equilibrium-and-the-law-being-tested.lingua#r_0SR4YC3ZNQ5JV2A158KJ9876VX") { r_7SJZKT1THHTDWS2YY0XAHP5SEX
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 3](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l03_react_tank_1/), the control-volume reasoning; revisit this trail's foundational water and constituent account.
+
+Choose a vessel or a connected process as the boundary. For a species, accumulation = incoming mass rate − outgoing mass rate + net production within the boundary. For total water, account for backwash, sludge water, drains and evaporation where relevant. A recycle arrow is internal when the whole plant is enclosed but external to an individual unit.
+
+In an original steady teaching example, a separator receives 100 m³/hour containing 100 mg/L of suspended solids. Its 98 m³/hour product contains 5 mg/L. With no reaction, accumulation or other stream, the 2 m³/hour residual carries 9.51 kg/hour: 4,755 mg/L. Product mass is 0.49 kg/hour and incoming mass 10 kg/hour. Concentration reduction is 95%, whereas the fraction of incoming solids absent from the product is 95.1%. They differ because flows differ.
+
+**Work:** Check all conversions and close both balances. Then allow solids to accumulate in the unit: the steady inference about residual concentration is no longer justified. Add a measured residual flow and determine the implied accumulation. For an entire plant, distinguish gross intake, net product and internal circulation, and explain how returning residual water upstream changes process loading without creating new source water. Carry uncertainty in flow and concentration into the inferred residual rather than treating a difference between large measured loads as exact.
+
+**Water treatment continuation:** [Reaction time, equilibrium and the law being tested](Reaction-time-equilibrium-and-the-law-being-tested.lingua#r_0SR4YC3ZNQ5JV2A158KJ9876VX).
+} r_7SJZKT1THHTDWS2YY0XAHP5SEX

@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Evaluate solution recovery through speciation, reaction, kinetics, and final product evidence (@metal-precipitation: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78", #source "../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W", #source "../sources/Extracao-de-Ouro-CETEM.lingua#r_5TP6BXRQ7NWKZQZ94WCBQRR8PN", #metals-and-metallurgical-production "../../../chemistry/general-chemistry/electrochemistry/Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A") { r_6FAVZYK3GT4M5NA2AP2KXG3WEA
+**Read:** [Principles of Extractive Metallurgy — Tarun Kumar Kundu, NPTEL](../sources/Principles-of-Extractive-Metallurgy-NPTEL.lingua#r_7VCNEHN5VCQDDQTZ512PSHFZ78), the full solution reduction and recovery material; [Non-ferrous Extractive Metallurgy — Ray and Pugazhenthy, NPTEL](../sources/Nonferrous-Extractive-Metallurgy-NPTEL.lingua#r_29G1ZF58Y8EG123MNX3ZRNRE2W), complete hydrometallurgical and relevant refining cases; [Extração de Ouro: Princípios, Tecnologia e Meio Ambiente — CETEM](../sources/Extracao-de-Ouro-CETEM.lingua#r_5TP6BXRQ7NWKZQZ94WCBQRR8PN), all applicable recovery/refining chapters and methods.
+
+Precipitation converts dissolved species into a solid phase; cementation couples metal displacement with oxidation/reduction. Each needs balanced reactions, activities/speciation, thermodynamic conditions, kinetics, and a separation account. A favorable equilibrium threshold does not guarantee a pure, filterable, or readily usable product.
+
+Co-precipitation, adsorption, inclusion/occlusion of liquor, fine particles, metastable phases, and incomplete equilibration can change selectivity. Reagent dose and bulk pH alone do not specify the local path or resulting particle population. Cementation also requires an account of reductant consumption, residual reductant, unwanted reactions, and associated impurities.
+
+Track target and impurity through solution, solid, wash, gas where relevant, returns, and inventory. A recovered compound may require washing, thermal conversion, further refining, or a product-specific characterization before it is a useful metal/feedstock. Compare complete recovery routes on that final basis.
+
+**Work:** reconstruct a full precipitation or cementation study with solution and product methods. Independently derive the reaction/speciation and constituent balances, compare predicted versus measured selectivity, and investigate an alternative contamination or kinetic explanation. Design a discriminating test and compare another recovery route using reagent/water/energy, separation, residuals, and actual product-quality evidence. Follow the shared Nernst step next for the thermodynamic basis of electrochemical routes.
+
+**Continue:** [Use the Nernst relation with the actual reaction quotient](../../../chemistry/general-chemistry/electrochemistry/Nernst-quotients-and-cell-conditions.lingua#r_2V1NHR9TS7CD4ESB9PMAN3MJ5A).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_6FAVZYK3GT4M5NA2AP2KXG3WEA

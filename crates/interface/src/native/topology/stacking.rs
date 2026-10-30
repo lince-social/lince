@@ -21,7 +21,7 @@ pub(crate) struct Order {
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash, ExtractComponent)]
-pub(super) struct Plane([u64; 4]);
+pub(crate) struct Plane([u64; 4]);
 
 impl Plane {
     pub(super) fn new(normal: bevy::math::DVec3, point: bevy::math::DVec3) -> Self {

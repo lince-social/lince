@@ -1,0 +1,15 @@
+Import "../Thermodynamics-and-heat-transfer.lingua"
+
+Lumped capacity, Biot number and response time (@th-lumped: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE", #source "../../../inquiry/metrology/applications/Temperature-and-thermal-response.lingua#r_480AQX951V9NFA6AB86KJA1QZD", #thermodynamics-and-heat-transfer "Semi-infinite-conduction-diffusion-length-and-similarity.lingua#r_3H9JEH6W8JEQXVRSM8Q4JMX7YW") { r_57VKB47NKFZ5FDGMVK9RAQ0WJ3
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete lumped/transient analysis; [Differential Equations — MIT 18.03SC](../sources/Differential-Equations-MIT-18-03SC.lingua#r_1VJHPM3DQ0PWYNFYKD11EKGCZE), first-order linear equations and fitting interpretation; [Temperature of what, when, and under which thermal conditions?](../../../inquiry/metrology/applications/Temperature-and-thermal-response.lingua#r_480AQX951V9NFA6AB86KJA1QZD), measurement response and thermal conditions.
+
+The lumped-capacity approximation treats an object's temperature as spatially uniform while it exchanges heat. Compare internal conduction resistance with external transfer resistance using a defined characteristic length and Biot number. A familiar small-Biot rule is an approximation criterion tied to geometry and the desired error, not a proof for every measurement.
+
+For constant capacity C and conductance G to a fixed ambient, T−T∞ decays exponentially with time constant C/G. Derive the solution and total transferred energy. With radiation, phase change or variable properties, a single exponential may no longer apply.
+
+Compare the lumped prediction with a spatially resolved analytical or numerical solution as Biot number changes. Evaluate surface, centre and average temperature separately. A thermocouple response experiment also requires a sensor model; agreement of two fitted time constants does not establish spatial uniformity.
+
+**Continue:** [Semi-infinite conduction, diffusion length and similarity](Semi-infinite-conduction-diffusion-length-and-similarity.lingua#r_3H9JEH6W8JEQXVRSM8Q4JMX7YW).
+
+**Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+} r_57VKB47NKFZ5FDGMVK9RAQ0WJ3

@@ -93,7 +93,7 @@ pub(super) fn item(canvas: &mut Presentation, root: Entity, size: Vec2, position
 }
 
 pub(super) fn close(canvas: &mut Presentation, size: [u32; 2]) {
-    let button = named_button(canvas, lince_interface::i18n::Token::CloseEditMode.text());
+    let button = labelled(canvas, lince_interface::i18n::Token::CloseEditMode.text());
     super::displays::reveal(canvas, button);
     click(canvas, button, size);
     settle(canvas);

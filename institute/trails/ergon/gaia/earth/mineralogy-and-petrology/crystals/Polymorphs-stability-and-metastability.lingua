@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Distinguish structural identity, equilibrium stability, and preserved metastability (@mp-polymorphs: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../../../../hephaestus/chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S", #source "../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV", #mineralogy-and-petrology "Nucleation-growth-and-textural-history.lingua#r_4W51WE1Z1RRCJE9N3KBK5C3MQ6") { r_7D6WBSRHBGAH7ZWA1ZMTJKDSVX
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete polymorphism and relevant mineral descriptions; [Interpret vapor pressure, phase change, and a phase diagram](../../../../hephaestus/chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S), the full shared phase-change explanation; [Petrology — Dexter Perkins, open textbook](../sources/Petrology-Perkins.lingua#r_6P7JBVJJ3P1BT6QKDGC7BN6VWV), the complete relevant phase/indicator-mineral treatment.
+
+Polymorphs share a chemical composition while differing in structure. Their stability depends on conditions and the adopted thermodynamic description. A structural transformation can change density, optical response, mechanical behavior, and reaction pathways without changing the ideal bulk elemental formula.
+
+Equilibrium phase boundaries compare Gibbs energies under defined conditions. Observing a phase outside a simple stability field can reflect kinetic persistence, compositional effects, uncertainty, a mistaken identification, or a model limitation. The diagram alone does not determine which explanation applies.
+
+Transitions can involve distinct mechanisms and barriers. Nucleation, diffusion, defects, strain, grain size, fluids, and time influence the preserved result. A mineral interpreted as a pressure/temperature indicator needs evidence that the relevant structure formed or equilibrated during the event being inferred, rather than being inherited or retrogressed.
+
+**Work:** compare a familiar polymorph pair and the Al₂SiO₅ system using the full mineral/phase treatments. Distinguish composition, structure, stability field, experimental calibration, and natural texture. Propose an alternative history for a preserved phase association and identify which observation could distinguish it.
+
+Read the full polymorphism and phase-change discussion. The later metamorphic and experimental studies deepen phase relations and kinetics. This step establishes why chemical analysis alone cannot distinguish every mineral or justify a unique pressure-temperature interpretation.
+
+**Continue:** [Connect crystal growth with driving force, transport, and preserved textures](Nucleation-growth-and-textural-history.lingua#r_4W51WE1Z1RRCJE9N3KBK5C3MQ6).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_7D6WBSRHBGAH7ZWA1ZMTJKDSVX

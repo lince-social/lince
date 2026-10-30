@@ -1,0 +1,91 @@
+Import "treatment/Translate-raw-water-variation-into-treatment-questions.lingua"
+Import "treatment/Close-the-process-water-and-constituent-balances.lingua"
+Import "treatment/Reaction-time-equilibrium-and-the-law-being-tested.lingua"
+Import "../../chemistry/general-chemistry/kinetics/Reaction-rates-and-rate-laws.lingua"
+Import "treatment/A-mixed-tank-responds-to-its-entire-inlet-history.lingua"
+Import "treatment/Plug-flow-tanks-in-series-and-the-cost-of-bypass.lingua"
+Import "treatment/Tracer-recovery-residence-time-and-an-unidentified-tail.lingua"
+Import "treatment/An-inspectable-comparison-of-treatment-flow-models.lingua"
+Import "treatment/Plant-hydraulics-and-the-head-available-for-treatment.lingua"
+Import "../../physics/fluid-dynamics/internal/Fittings-bends-junctions-and-what-a-loss-coefficient-means.lingua"
+Import "treatment/Chemical-feed-rates-stock-strength-and-measurement.lingua"
+Import "treatment/Coagulation-as-a-testable-chemical-and-separation-question.lingua"
+Import "treatment/Flocculation-mixing-energy-and-aggregation.lingua"
+Import "treatment/Settling-velocity-surface-loading-and-real-clarifiers.lingua"
+Import "treatment/Granular-filtration-is-capture-plus-a-changing-hydraulic-system.lingua"
+Import "treatment/Softening-precipitation-and-the-equilibrium-after-separation.lingua"
+Import "treatment/Adsorption-capacity-breakthrough-and-regeneration.lingua"
+Import "treatment/Ion-exchange-equivalents-selectivity-and-brine.lingua"
+Import "treatment/Gas-transfer-aeration-and-where-the-removed-mass-goes.lingua"
+Import "treatment/Defend-the-physical-and-chemical-treatment-account.lingua"
+Import "sources/Groundwater-resource-development.lingua"
+Import "sources/Source-water-assessment-EPA.lingua"
+Import "sources/Flow-duration-curves-Searcy.lingua"
+Import "source-water/A-catchment-is-a-water-account-with-boundaries.lingua"
+Import "source-water/Chronology-low-flow-and-the-water-that-is-available.lingua"
+Import "source-water/Storage-yield-and-a-checkable-service-account.lingua"
+Import "source-water/Aquifer-pumping-capture-and-storage-depletion.lingua"
+Import "source-water/Well-tests-intakes-and-observations-that-constrain-a-source.lingua"
+Import "source-water/Source-contamination-pathways-and-protection.lingua"
+Import "source-water/Blending-sources-and-preserving-the-quality-account.lingua"
+Import "source-water/Defend-a-source-assessment-and-its-limits.lingua"
+Import "sources/Manual-de-Saneamento-Funasa.lingua"
+Import "sources/Introduction-to-Drinking-Water-Treatment-TU-Delft.lingua"
+Import "sources/Physics-of-Water-Treatment-Design-AguaClara.lingua"
+Import "sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua"
+Import "sources/Drinking-Water-Quality-WHO-2026.lingua"
+Import "sources/Water-Safety-Plan-Manual-WHO.lingua"
+Import "sources/Potabilidade-e-Vigilancia-Vigiagua.lingua"
+Import "sources/Industrial-Water-Treatment-UFC-3-230-13.lingua"
+Import "sources/WaterTAP-Process-Models.lingua"
+Import "sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua"
+Import "sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua"
+Import "sources/Wastewater-Characteristics-Treatment-and-Disposal.lingua"
+Import "sources/Basic-Principles-of-Wastewater-Treatment.lingua"
+Import "sources/Waste-Stabilisation-Ponds.lingua"
+Import "sources/Anaerobic-Reactors-Chernicharo.lingua"
+Import "sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua"
+Import "sources/Sludge-Treatment-and-Disposal.lingua"
+Import "sources/Treatment-Wetlands-Dotro-and-Colleagues.lingua"
+Import "foundations/Read-water-and-sanitation-from-zero.lingua"
+Import "foundations/A-tap-a-drain-and-the-work-between-them.lingua"
+Import "foundations/Water-quantities-units-and-English-Portuguese-language.lingua"
+Import "foundations/Water-quality-is-related-to-a-use-and-a-place.lingua"
+Import "foundations/Track-water-and-constituents-through-the-same-boundary.lingua"
+Import "foundations/Read-a-water-system-drawing-and-its-boundaries.lingua"
+Import "foundations/Microorganisms-indicators-and-routes-of-exposure.lingua"
+Import "foundations/Concentrations-species-and-analytical-bases-in-water.lingua"
+Import "foundations/Alkalinity-hardness-buffering-and-carbonate-boundaries.lingua"
+Import "foundations/Oxygen-redox-and-the-changing-forms-of-constituents.lingua"
+Import "foundations/Treatment-barriers-and-the-evidence-for-their-performance.lingua"
+Import "foundations/Read-health-environmental-and-equipment-requirements.lingua"
+Import "foundations/A-water-sampling-plan-that-answers-a-defined-question.lingua"
+Import "foundations/What-a-water-measurement-actually-reports.lingua"
+Import "foundations/Nondetects-variable-flow-and-honest-performance-data.lingua"
+Import "foundations/Explain-a-water-service-before-choosing-equipment.lingua"
+Import "Sources.lingua"
+Import "../../physics/fluid-dynamics/Fluid-dynamics.lingua"
+Import "../../../gaia/earth/geology/Geology.lingua"
+Import "../../engineering/electrical-power-engineering/Electrical-power-engineering.lingua"
+
+Water, sanitation and industrial utilities — from sources to continuing service (@water-and-sanitation: 0, is #chapter, #water-and-sanitation "foundations/Read-water-and-sanitation-from-zero.lingua#r_0KN6MHTA9SM9R7MK2CGT9KDJ35") { r_7B9GRCJFHVBEEQEXKWCR2QMMPN
+Follow water from a source to its users and through collection, treatment, recovery and the receiving environment. Begin with [Read water and sanitation from zero](foundations/Read-water-and-sanitation-from-zero.lingua#r_0KN6MHTA9SM9R7MK2CGT9KDJ35), ordinary quantities and the work behind a tap, a drain or a factory water connection. Develop the physical, chemical, biological and institutional explanations as the questions become more demanding.
+
+Use whole books and complete courses alongside the connecting explanations. Shared mathematics, measurements, chemistry, groundwater, fluid and electrical steps appear where their ideas are needed and retain their other continuations. The reading deepens into operation, design, modelling, experiments and independent research.
+
+**Source assessment:** Continue after the foundation review through [catchment accounts](source-water/A-catchment-is-a-water-account-with-boundaries.lingua#r_0RWVH5WS933CGBP80NHR40WT2B), chronological availability, storage, aquifer capture, observation design, protection and blending. Finish with a defended source assessment; physical/chemical treatment follows, with later sections still under development.
+
+**Physical and chemical treatment:** After source assessment, follow [treatment questions](treatment/Translate-raw-water-variation-into-treatment-questions.lingua#r_3M5Z05Q30W6P11QVNY3BF6ZZRS) through balances, shared chemical kinetics, mixed/plug-flow models, tracer evidence, hydraulics, dosing, coagulation, flocculation, settling, granular filtration, softening, adsorption, exchange and gas transfer. The [section review](treatment/Defend-the-physical-and-chemical-treatment-account.lingua#r_4KVPW53P76JBPM38N5AJRXNBX0) demands a reproducible process account; membranes, microbial barriers and subsequent sections remain under development.
+
+**Foundations:** [Read water and sanitation from zero](foundations/Read-water-and-sanitation-from-zero.lingua#r_0KN6MHTA9SM9R7MK2CGT9KDJ35) · [A tap, a drain and the work between them](foundations/A-tap-a-drain-and-the-work-between-them.lingua#r_4BZY7VTHAE6B6WH956HKPZY906) · [Water quantities, units and English–Portuguese language](foundations/Water-quantities-units-and-English-Portuguese-language.lingua#r_6TB0A6YZ5C8E890HQ1BYSFE0F3) · [Water quality is related to a use and a place](foundations/Water-quality-is-related-to-a-use-and-a-place.lingua#r_3WKPW5Q04M3S2KF8EPB2K0FTDK) · [Track water and constituents through the same boundary](foundations/Track-water-and-constituents-through-the-same-boundary.lingua#r_4SA70P0BR6C7ADCR7MDV78D2D8) · [Read a water-system drawing and its boundaries](foundations/Read-a-water-system-drawing-and-its-boundaries.lingua#r_4EDEN8TRVC7KRWYHTJZ18G9VG9) · [Microorganisms, indicators and routes of exposure](foundations/Microorganisms-indicators-and-routes-of-exposure.lingua#r_6AFSE0XFBRE8Y27W0W57HGD017) · [Concentrations, species and analytical bases in water](foundations/Concentrations-species-and-analytical-bases-in-water.lingua#r_35TB3P0H9QMBS17JF52YF9W74Z) · [Alkalinity, hardness, buffering and carbonate boundaries](foundations/Alkalinity-hardness-buffering-and-carbonate-boundaries.lingua#r_59GA6HCRGGMESSYPMGFW2T7BE0) · [Oxygen, redox and the changing forms of constituents](foundations/Oxygen-redox-and-the-changing-forms-of-constituents.lingua#r_7SJ9QMVSF9TWJG7Z36EZ8R1YC4) · [Treatment barriers and the evidence for their performance](foundations/Treatment-barriers-and-the-evidence-for-their-performance.lingua#r_4KN934MCH4BZF0JMKMYN0VYRRB) · [Read health, environmental and equipment requirements](foundations/Read-health-environmental-and-equipment-requirements.lingua#r_20CZ4H0Z5Z92MH7VM5ED5K54J5) · [A water-sampling plan that answers a defined question](foundations/A-water-sampling-plan-that-answers-a-defined-question.lingua#r_2017E3G9XVF21MMQHJYNDQ2S7W) · [What a water measurement actually reports](foundations/What-a-water-measurement-actually-reports.lingua#r_72DBDSDN8STAHTN78JF0KKF6XR) · [Nondetects, variable flow and honest performance data](foundations/Nondetects-variable-flow-and-honest-performance-data.lingua#r_2W5V6AZSRSXK1CKFJ20BSAFN5F) · [Explain a water service before choosing equipment](foundations/Explain-a-water-service-before-choosing-equipment.lingua#r_1W8ZYY57AZEJ50E80HZHN59QSW).
+
+[Water and sanitation sources — complete books, methods and operating evidence](Sources.lingua#r_7AMRJFFR11FF35KJM7Y7M05B3M) identifies the readings and their access conditions. Related work connects through [Utilities — water, energy and the services that sustain other work](../Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX), [Hephaestus](../../Hephaestus.lingua#r_00000000000000000000002001), [Engineering — systems, design, construction, and operation](../../engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68), [Earth — materials, processes, and geological history](../../../gaia/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH), [Ergon — useful labor and productive knowledge](../../../Ergon.lingua#r_FE78A5A2D2A3261F711703DCC1) and [Inquiry — shared ways to understand and investigate](../../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB). Questions about evidence, purposes and responsibility continue through [Philosophy](../../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001). The linked specialist subjects retain their own full scope.
+
+**Continue:** [Read water and sanitation from zero](foundations/Read-water-and-sanitation-from-zero.lingua#r_0KN6MHTA9SM9R7MK2CGT9KDJ35).
+} r_7B9GRCJFHVBEEQEXKWCR2QMMPN
+
+Extension @water-and-sanitation "lince.vocabulary" {
+ definitions {
+  water-and-sanitation "Continue through water sources, quality, treatment, sanitation, industrial uses and the evidence and work that sustain service."
+ }
+}

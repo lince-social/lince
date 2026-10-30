@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Use units and scale checks before interpreting an engineering result (@mine-quantities: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../../../inquiry/quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #mining-and-mineral-engineering "../../../../gaia/earth/geology/field/Read-a-topographic-and-geological-map.lingua#r_7W0VVA0MX0Z4K810G34SAMHSZC") { r_6MH33DS4N0VE6CQFYKPBZ9A7G2
+**Read:** [Quantitative and technical literacy](../../../inquiry/quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2), the full relevant quantity, unit, geometry, rate, and process-account readings; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete units/conversion and representative engineering examples; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the full relevant material-basis explanations.
+
+Mass, volume, density, grade, flow, energy, power, pressure, force, time, and availability appear throughout a mine. Define each quantity, basis, reference, and unit. Tonnes per hour can represent dry solids, wet material, contained constituent, or a nominal rating; those are not interchangeable capacities.
+
+For an invented uniform block 10 m by 10 m by 10 m at 2.7 t m⁻³, mass is 2,700 t. At a hypothetical elemental mass fraction 0.01, contained element is 27 t before mining/processing losses. This arithmetic does not establish a resource category, economic extraction, or a saleable product.
+
+Distinguish operating time, scheduled time, calendar time, event duration, and rate averaging. A daily total and an instantaneous instrument reading need a compatible aggregation account. Equipment efficiency, availability, utilization, recovery, and reliability have distinct definitions and denominators.
+
+**Work:** derive/check the block example and convert several reported mine/plant quantities, retaining wet/dry and constituent bases. Give an order-of-magnitude check for a flow or energy calculation before using a detailed model. Identify a discrepancy that cannot be resolved by unit conversion alone.
+
+Read the shared quantitative foundation where unfamiliar, and full handbook examples with their conventions. Continue through [Read a map’s scale, legend, geometry, and geological claims](../../../../gaia/earth/geology/field/Read-a-topographic-and-geological-map.lingua#r_7W0VVA0MX0Z4K810G34SAMHSZC) for the shared map-reading step before the mine survey/geometry application.
+
+**Continue:** [Read a map’s scale, legend, geometry, and geological claims](../../../../gaia/earth/geology/field/Read-a-topographic-and-geological-map.lingua#r_7W0VVA0MX0Z4K810G34SAMHSZC).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_6MH33DS4N0VE6CQFYKPBZ9A7G2

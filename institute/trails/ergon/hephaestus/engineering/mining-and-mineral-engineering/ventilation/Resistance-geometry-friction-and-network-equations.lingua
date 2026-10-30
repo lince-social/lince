@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Relate pressure losses to geometry, flow, conditions, and measured resistance (@mine-resistance: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #mining-and-mineral-engineering "Fan-curves-system-interaction-and-power.lingua#r_4AENEE3DAAX9N3N9KHVE0RBX4G") { r_5YSPMRHHR0Q3KTE7XA6KJWBQVR
+**Read:** [Subsurface Ventilation Engineering — Malcolm J. McPherson](../sources/McPherson-Subsurface-Ventilation.lingua#r_3KH110VQV6VEA56FVWV8D7W6AY), the complete friction, geometry, resistance, and network theory chapters; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full ventilation calculation/context sections; [Measurement and metrology](../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), pressure/flow, correlation, and uncertainty as needed.
+
+For a specified constant-density turbulent-flow approximation, a branch loss can be represented as Δp = R Q|Q| with a consistent direction convention. Resistance has units Pa s² m⁻⁶, equivalently N s² m⁻⁸. Its value reflects geometry, roughness, fittings, condition, and the model; it is not a universal property of an airway name.
+
+A Darcy-type duct relation Δp = f_D (L/D_h)ρv²/2 requires its friction-factor convention, hydraulic diameter, flow regime, and conditions. Fanning and Darcy factors differ by convention. Area, velocity, leakage, changes in shape, and local losses need their own account before combining observations.
+
+Series branches share flow under a no-leak steady account and add pressure losses. Parallel paths share an identified endpoint pressure difference and their flows add. In a larger network, mass continuity and signed pressure-loop equations require compatible reference/density assumptions.
+
+**Work:** derive the resistance units and simple series/parallel relations. Reconstruct a measured branch resistance from a complete survey example, preserving instrument/support uncertainty. Compare a changed geometry/condition account and identify which observation distinguishes it from leakage, density, or measurement error.
+
+Read the full physical and network chapters. The following fan and original small-network studies use a deliberately limited model; the advanced project returns to the book's complete multi-branch, environment, and measurement methods.
+
+**Continue:** [Find an operating point from compatible fan and system models](Fan-curves-system-interaction-and-power.lingua#r_4AENEE3DAAX9N3N9KHVE0RBX4G).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_5YSPMRHHR0Q3KTE7XA6KJWBQVR

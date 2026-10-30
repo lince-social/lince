@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Translate a strategic plan into tasks, readiness, and feedback at shorter timescales (@mine-operating-plan: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25", #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #mining-and-mineral-engineering "../../../../gaia/earth/geology/structures/Stress-strain-and-deformation-history.lingua#r_4TM454JHNMW1X3RF37NBDRXTXT") { r_28TW1F4Z2GG8HTSTF4N3D8SPXC
+**Read:** [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the complete planning, layout, operating, and capacity context; [SME Mining Engineering Handbook — Peter Darling, third edition](../sources/SME-Mining-Engineering-Handbook.lingua#r_4Y1TJWVHWWCYTYAKZKMAEAVX25), the complete relevant planning/operations chapters; [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the full lifecycle and system connections.
+
+A long-range plan aggregates activities over periods and supports strategic choices. An operating plan needs physically sequenced work, access, prepared faces, equipment, people, supplies, services, maintenance, and changing conditions. Disaggregating a target number does not create that readiness.
+
+Separate scheduled capacity, available capacity, actual operating time, delays, rehandling, and measured output. Define event and state records consistently before comparing production with plan. A missed target can reflect an incorrect assumption, unprepared work, constrained service, measurement discrepancy, or several interacting causes.
+
+Feedback should connect observations to the model and decision they can change. Updated grade/ground/plant information can revise destinations, sequence, or investigation needs. Preserve actual deviations and handoff conditions rather than overwriting the original plan or treating every difference as operator failure.
+
+**Work:** reconstruct a complete published/teaching operating period from a strategic target through prepared tasks, dependencies, resources, events, measurements, and revisions. Independently check one capacity/time/material account and explain the limiting interface. Compare two responses to a consequential deviation and the evidence supporting them.
+
+Read full planning, layout, and operation sections. Continue through [Distinguish force, stress, strain, and the history producing a structure](../../../../gaia/earth/geology/structures/Stress-strain-and-deformation-history.lingua#r_4TM454JHNMW1X3RF37NBDRXTXT) for shared stress/strain foundations before developing the ground model, excavation response, support, and monitoring that constrain real extraction sequences.
+
+**Continue:** [Distinguish force, stress, strain, and the history producing a structure](../../../../gaia/earth/geology/structures/Stress-strain-and-deformation-history.lingua#r_4TM454JHNMW1X3RF37NBDRXTXT).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_28TW1F4Z2GG8HTSTF4N3D8SPXC

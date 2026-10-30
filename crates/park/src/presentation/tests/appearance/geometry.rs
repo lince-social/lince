@@ -4,7 +4,7 @@ fn marker(pixels: &[u8], size: [u32; 2]) -> ([f64; 2], usize) {
     let mut sum = [0.0; 2];
     let mut count = 0;
     for (index, pixel) in pixels.chunks_exact(4).enumerate() {
-        if pixel[0] < 35 && pixel[1] > 110 && pixel[2] < 35 {
+        if pixel[1] > 110 && pixel[1].saturating_sub(pixel[0]) > 80 && pixel[1].saturating_sub(pixel[2]) > 80 {
             sum[0] += (index % size[0] as usize) as f64 + 0.5;
             sum[1] += (index / size[0] as usize) as f64 + 0.5;
             count += 1;

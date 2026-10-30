@@ -889,7 +889,12 @@ impl Presentation {
             .write_message(bevy::window::WindowEvent::WindowFocused(event.clone()));
         self.app.world_mut().write_message(event);
         if !focused {
-            native::layout::desktop::cancel_scratch_interactions(self.app.world_mut());
+            if native::shortcuts::keyboard_owned(self.app.world())
+                || self.app.world().get_resource::<lince_interface::host::input::InputActivity>()
+                    .is_none_or(|activity| !activity.active())
+            {
+                native::layout::desktop::cancel_scratch_interactions(self.app.world_mut());
+            }
             native::layout::desktop::overview::file_drag(self.app.world_mut(), window, None);
             self.manipulation = None;
             native::layout::desktop::manipulation::pointer::cancel(self.app.world_mut());

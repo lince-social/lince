@@ -1,0 +1,19 @@
+Import "../Quantitative-literacy.lingua"
+
+Scaling — what changes when a process becomes larger? (@ql-scaling: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #quantitative-literacy "Dimensionless-groups.lingua#r_7R4PTGBX4NTZWXQGPC09C1F7ZQ", #fluid-dynamics "../../../physics/fluid-dynamics/similarity/Physical-models-conflicting-similarity-and-scale-effects.lingua#r_4YXMPWTHM9X4WSM304JNBWVS37") { r_5XVMAPM10GAFS130TFV3RH2YDK
+**Read:** The Art of Insight, Proportional reasoning and Dimensions, completely, then its Easy cases chapter. Complete the related problems. Revisit the geometric scaling and logarithmic-graph readings when a proposed power law is difficult to interpret.
+
+Scaling asks how one quantity varies when another changes within a model. For similar shapes, surface-to-volume ratio decreases as 1/L. That geometric fact alone does not establish the cooling time, mechanical strength, mixing quality, or economics of a larger system. Each depends on mechanisms and additional quantities.
+
+For a dimensional estimate of a gravity-dominated timescale from length L and acceleration g, seek T proportional to L^a g^b. Matching length and time exponents gives a + b = 0 and −2b = 1, so T is proportional to √(L/g). A dimensionless coefficient and any dependence on omitted dimensionless variables remain undetermined. The familiar pendulum period additionally needs a dynamical model and an amplitude condition.
+
+**Work:** double every length of a hypothetical container. Determine factors for volume, surface area, wall material at constant thickness, and wall material at proportionally scaled thickness. Explain why these are different manufacturing choices. Then use the gravity-timescale estimate to predict how a fourfold length change affects time while holding the governing assumptions fixed.
+
+Compare two proposed scale-up claims and list the quantities held fixed, those that necessarily change, and those omitted. A laboratory result can fail at production scale because transport, contamination, strength, or control conditions no longer have the assumed relation. The specialist trails supply those mechanisms; this shared Record teaches how to expose the scaling question before assuming that multiplying every throughput by a constant is a process design.
+
+**Continue:** [Dimensionless groups and the limits of dimensional reasoning](Dimensionless-groups.lingua#r_7R4PTGBX4NTZWXQGPC09C1F7ZQ).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in fluid dynamics:** [Physical models, conflicting similarity and scale effects](../../../physics/fluid-dynamics/similarity/Physical-models-conflicting-similarity-and-scale-effects.lingua#r_4YXMPWTHM9X4WSM304JNBWVS37).
+} r_5XVMAPM10GAFS130TFV3RH2YDK

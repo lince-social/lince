@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Source contamination pathways and protection (@wu-source-protection: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Blending-sources-and-preserving-the-quality-account.lingua#r_7EDYBY9RDZM9G34S64TM8ZZGD2") { r_6ZM37SHMBFXZRZ0XK2PWWS5E5R
+**Read:** [EPA source-water assessment](../sources/Source-water-assessment-EPA.lingua#r_5T76MTRS1XYC431J6XFG5B7FME), all four linked pages; [WHO/IWA water safety plan manual](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD), system description, hazard assessment, control measures and improvement planning. Translate the assessment method into a source–pathway–receptor argument. A possible contaminant source is not proof that contamination reaches the intake.
+
+Map the contributing area, record land uses and potential releases, then investigate routes to the abstraction point. Include natural geochemistry as well as farms, roads, settlements and industry. Record uncertainty in boundaries; a neat circle around a well is not evidence of its capture zone. Karst, fractures and changing pumping can defeat a simple distance ranking.
+
+An original teaching case has an upstream fuel depot, a fertilized field and a deep mineralized layer. For each, state a release or mobilization event, transport pathway, timing, relevant constituent, observation point and feasible interruption or protection measure. Do not rank them solely by distance. A near site with no connected pathway may differ from a distant site linked by rapid flow.
+
+**Work:** Prepare a map, evidence table and source-protection proposal. Separate known observations, plausible hypotheses and uninvestigated areas. Explain who can perform each action and how its effect would be checked. Include an event that invalidates normal sampling assumptions, such as flooding or an intake-depth change. Present the result in language that a water user can understand, with unresolved evidence visible. Use the Brazilian source and surveillance references for the actual jurisdiction; the EPA process is methodological reading, not a substitute for local requirements.
+
+**Continue:** [Blending sources and preserving the quality account](Blending-sources-and-preserving-the-quality-account.lingua#r_7EDYBY9RDZM9G34S64TM8ZZGD2).
+} r_6ZM37SHMBFXZRZ0XK2PWWS5E5R

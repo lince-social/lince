@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Translate a useful metal product into composition, structure, form, and test evidence (@metal-specification: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Aluminium-Automotive-Manual.lingua#r_73MPKA19MDBSQ96195B818Z49T", #source "../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB", #source "../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #metals-and-metallurgical-production "../../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H") { r_1XE5CFK55A0FXE6NMYC52D07MC
+**Read:** [Aluminium Automotive Manual — European Aluminium and collaborators](../sources/Aluminium-Automotive-Manual.lingua#r_73MPKA19MDBSQ96195B818Z49T), complete Materials/Products chapters and one complete design/application case; [Non-ferrous Metals Industries — European Commission BREF](../sources/Nonferrous-Metals-Industries-BREF.lingua#r_19ZD7KKDWVWM20MXVNCQZJMCDB), complete selected product/quality and process descriptions; [Measurement and metrology](../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), reuse measurement definitions, uncertainty, comparison, and conformity reasoning.
+
+A usable product may require a composition range, limits for specified impurities, microstructural state, mechanical/electrical behavior, dimensions, surface condition, and an identified test basis. A generic purity percentage does not necessarily control the impurity most consequential for a later process or application.
+
+Distinguish a material designation, a product standard, a purchase specification, a test method, and an observed result. Acceptance depends on the actual applicable edition, specimen/support, conditions, decision criteria, and traceability. A value measured on a coupon does not automatically describe every location or every service condition of a whole product.
+
+Connect each requirement with its purpose and evidence. Conductivity, corrosion, forming, joining, surface treatment, or semiconductor-related use may require different impurity and structure control. A less pure alloy can be better suited to one task than a purer element; the function defines the question.
+
+**Work:** select a real externally documented product specification and a full route producing it. Translate each consequential requirement into the measurement, sampling, material state, and process control needed. Compare two process routes on delivered accepted product, retaining measurement uncertainty and untested conditions. Identify an apparently favorable generic purity or hardness claim that is insufficient for the actual use, and explain the missing evidence.
+
+**Continue:** [Mass and component balances — account for every stream](../../../inquiry/quantitative-literacy/practice/Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_1XE5CFK55A0FXE6NMYC52D07MC

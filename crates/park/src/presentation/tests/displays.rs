@@ -58,10 +58,7 @@ pub(super) fn reveal(canvas: &mut Presentation, entity: Entity) {
             ancestor = world.get::<ChildOf>(current).map(ChildOf::parent);
         }
         let (scroll, visible, axes) = scroll.expect("An offscreen control needs a visible scrollable ancestor");
-        let center = world
-            .get::<UiGlobalTransform>(scroll)
-            .unwrap()
-            .transform_point2(Vec2::ZERO);
+        let center = visible.center();
         let extent = world.get::<ComputedNode>(scroll).unwrap().size();
         let before = world.get::<ScrollPosition>(scroll).unwrap().0;
         let content = world.get::<ComputedNode>(scroll).unwrap().content_size;

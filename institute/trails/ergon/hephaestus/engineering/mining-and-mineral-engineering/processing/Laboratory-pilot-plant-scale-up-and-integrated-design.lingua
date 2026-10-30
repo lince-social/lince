@@ -1,0 +1,17 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Defend scale-up through mechanisms, test design, and independent operating evidence (@mine-scale-up: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J", #source "../sources/Principles-of-Mineral-Processing-SME.lingua#r_71VWXMG9R3MYJ2QWA8QKEPPGMY", #mining-and-mineral-engineering "../../../../gaia/earth/mineralogy-and-petrology/applications/Alteration-waste-rock-and-secondary-minerals.lingua#r_2Q8ZGJBA5R7A0BH4RF4XMQ7Q2R") { r_3VK1ZRG6NNVS5BCKWZ808762WQ
+**Read:** [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the whole manual as the sustained testwork programme, with all methods actually used; [Usinas de Beneficiamento de Minérios do Brasil — CETEM](../sources/CETEM-Usinas-de-Beneficiamento.lingua#r_62ZD994C9YYXB1YDVFQST5B27J), a whole plant case and comparison case; [Principles of Mineral Processing — Fuerstenau and Han](../sources/Principles-of-Mineral-Processing-SME.lingua#r_71VWXMG9R3MYJ2QWA8QKEPPGMY), complete applicable modeling/unit-operation chapters and primary references, when available.
+
+A laboratory test defines a feed, preparation, apparatus, history, and measurement system. Scaling equipment changes residence-time distribution, heat/mass transfer, mixing, particle presentation, wear, and control. Similar geometry or equal nominal time does not establish dynamic similarity or an unchanged recovery model.
+
+Build a progression from characterization and discriminating laboratory tests to variability campaigns, pilot work, and operating validation. State which parameter is measured, empirically fitted, or assumed to transfer. Test size/domain variability and the coupled behavior of recycle, water, reagents, solids handling, and product specification.
+
+A complete flowsheet design joins capacities, availability, control ranges, maintenance access, utilities, storage, abnormal feed, residuals, and lifecycle costs. Compare alternatives on common boundaries rather than optimizing each unit separately. A larger installed capacity may not improve delivered quality when another operation or utility constrains the system.
+
+**Work:** choose one complete CETEM plant case and trace its underlying testwork or published design basis. Reconstruct a process model, derive the scale-up assumptions, and test it against independent data rather than the calibration case. Compare an alternative flowsheet and an adverse-feed scenario with full balances and uncertainty. Specify the additional test that would most change the decision and why. Preserve unsolved questions for the integrated research study.
+
+**Continue:** [Explain waste-material change through mineral reactions, transport, and conditions](../../../../gaia/earth/mineralogy-and-petrology/applications/Alteration-waste-rock-and-secondary-minerals.lingua#r_2Q8ZGJBA5R7A0BH4RF4XMQ7Q2R).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_3VK1ZRG6NNVS5BCKWZ808762WQ

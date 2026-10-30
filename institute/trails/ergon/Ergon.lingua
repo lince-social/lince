@@ -1,23 +1,11 @@
-Ergon (@ergon: 0, is #chapter, #making-and-maintenance "../nature/farming/Farming.lingua#r_13YG8DNJGT3QRX08G4BAMD92F3", #making-and-maintenance "../nature/nutrition/Meal-preparation.lingua#r_21WM7WVKWGZFKZB2WTXWF97MBP", #making-and-maintenance "../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB", #making-and-maintenance "../stem/STEM.lingua#r_4B137J3ZBVM7TD2NA797H2CZ7E", #making-and-maintenance "../nature/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH", #making-and-maintenance "../stem/engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68", #making-and-maintenance "materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D", #making-and-maintenance "utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX") { r_00000000000000000000002001
-Build useful knowledge through reading, observation, practice, and shared work.
+Ergon — useful labor and productive knowledge (@ergon: 0, is #chapter, #ergon "hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #ergon "gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21") { r_FE78A5A2D2A3261F711703DCC1
+Follow [Hephaestus](hephaestus/Hephaestus.lingua) for mathematics, hard sciences, engineering, computing, and productive infrastructure. Follow [Gaia](gaia/Nature.lingua) for Earth, life, food, and health. Shared productive journeys connect their Records without duplicating them. Questions about reasons, values, and institutions connect to [Philosophy](../scholazein/philosophy/Philosophy.lingua).
 
-Follow materials, energy, equipment, skills, information, and maintenance through the systems that make useful things possible. [Shared inquiry](../inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB), [STEM](../stem/STEM.lingua#r_4B137J3ZBVM7TD2NA797H2CZ7E), and [quantitative and technical literacy](../inquiry/quantitative-literacy/Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2) supply connected foundations. The quantitative readings develop units, drawings, material balances, usable output, measurement, and an infrastructure account from substantial external books and original studies.
-
-Find original materials through the [Open Textbook Library](https://open.umn.edu/opentextbooks), [LibreTexts](https://libretexts.org/), [Appropedia](https://www.appropedia.org/), and [Project Gutenberg](https://www.gutenberg.org/).
-
-Choose a particular work, record its direct download link and attribution, and connect selected passages or practical activities through ordinary Records. These links are starting points for authors.
-
-[Earth — materials, processes, and geological history](../nature/earth/Earth.lingua#r_5H7Y6QD1FW4Z0JJ6C7SH4DDHXH) begins with [Geology — Earth materials, processes, history, and investigation](../nature/earth/geology/Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06) for the materials, deposits, water pathways, and ground histories underlying extraction and infrastructure. The resource and infrastructure studies connect geological evidence with processing, construction, and maintenance questions.
-
-Follow extraction, processing, and their supporting work through [Engineering — systems, design, construction, and operation](../stem/engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68), beginning with [Mining and mineral engineering — extraction, processing, and continuing work](../stem/engineering/mining-and-mineral-engineering/Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
-
-Follow feedstocks, useful material properties, production, and recovery through [Resources and materials — feedstocks, useful properties, production, and recovery](materials/Materials.lingua#r_14HP6K610XB12E2WGNK9A6VN8D).
-
-**Water and sanitation:** [Utilities — water, energy and the services that sustain other work](utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX) follows water sources, quality, delivery, treatment, recovery and the work required to maintain service.
-} r_00000000000000000000002001
+[Development register](../lince/Trails.lingua#r_07E6A8FE1217C77B83EEDF55EC).
+} r_FE78A5A2D2A3261F711703DCC1
 
 Extension @ergon "lince.vocabulary" {
-    definitions {
-        making-and-maintenance "A continuation into knowledge and practical examples for producing and maintaining useful things."
-    }
+ definitions {
+  ergon "A continuation through ergon — useful labor and productive knowledge."
+ }
 }

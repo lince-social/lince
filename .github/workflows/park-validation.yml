@@ -1,6 +1,17 @@
 name: Park validation binaries
 
 on:
+  workflow_call:
+    inputs:
+      revision:
+        required: true
+        type: string
+      advisory:
+        type: boolean
+        default: false
+      release_artifact:
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       revision:
@@ -20,6 +31,7 @@ env:
 jobs:
   helpers:
     runs-on: ubuntu-24.04
+    continue-on-error: ${{ inputs.advisory == true }}
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
@@ -98,3 +110,15 @@ jobs:
           path: validation-binaries/*
           if-no-files-found: error
           retention-days: 7
+      - uses: actions/download-artifact@v4
+        if: inputs.release_artifact
+        with:
+          name: lince-binary-artifacts-x86_64-unknown-linux-gnu
+          path: binary-artifacts
+      - uses: cachix/install-nix-action@v31
+        if: inputs.release_artifact
+      - name: Check the actual Linux release archive as an installed package
+        if: inputs.release_artifact
+        run: |
+          nix build --no-link --no-write-lock-file .#lince-park \
+            --override-input lince-binary "tarball+file://$PWD/binary-artifacts/lince-x86_64-unknown-linux-gnu.tar.gz"

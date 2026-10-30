@@ -1,0 +1,17 @@
+Import "../Industrial-chemistry.lingua"
+
+Explain why recycle, purge and fresh-feed accounts must be solved together (@ic-recycle: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529", #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ", #industrial-chemistry "../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8") { r_4JBQH57WVMDA799QCG1KNDRQGV
+**Read:** [LearnChemE — chemical-process self-study modules](../sources/LearnChemE-Process-Self-Study.lingua#r_4KM1THP1QA2SZ5JJ9E1HSMN529), the complete recycle mass-balance and purge-stream modules; [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the complete continuous-reactor and connected material-account examples; [Haber–Bosch ammonia in an energy landscape — Smith, Hill and Torrente-Murciano](../sources/Haber-Bosch-Ammonia-Smith-Hill-Torrente.lingua#r_6CX46VQ3D3W0W059Y55D44MMAQ), the full synthesis-loop and separation/energy analysis, preserving its different real chemistry.
+
+Recycle returns unconverted material or a useful carrier to an earlier operation. It can raise overall utilization without changing a single-pass reaction probability. It also returns impurities, demands circulation/separation work and couples equipment capacity to material that is not new production.
+
+For a deliberately ideal A→B isomerization model, let x be single-pass conversion, p the purge fraction of unreacted material after perfect B removal, and F_A the fresh A flow. The steady reactor inlet is R_A=F_A/[1−(1−p)(1−x)]. Product flow is xR_A and A purge is p(1−x)R_A. The fresh-feed account closes as F_A=product+A purge.
+
+If fresh inert arrives at F_I and neither reacts nor separates into product, its reactor circulation is R_I=F_I/p. Reducing purge can sharply increase inert circulation even while A utilization improves. The p→0 limit with positive inert feed has no finite steady inert inventory; pretending otherwise hides the missing outlet.
+
+**Work:** derive these equations independently, identify all idealizations, and compare pass/overall conversion, reactor circulation and purge composition for several p and x. Extend a published gas-loop account with realistic separation, side reactions, finite inventories and energy duties before making any physical-process claim. The next original calculation checks the ideal account exactly.
+
+**Continue:** [Build a numerical validation argument across several kinds of evidence](../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8).
+
+**Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+} r_4JBQH57WVMDA799QCG1KNDRQGV

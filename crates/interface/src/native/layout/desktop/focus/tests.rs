@@ -122,7 +122,8 @@ fn saved_native_focus_restores_follow_but_explicit_unfocus_stays_unfocused() {
     let bytes = serde_json::to_vec(&saved).unwrap();
     world.get_mut::<Workspaces>(root).unwrap().saved_focus = serde_json::from_slice(&bytes).unwrap();
     world.remove_resource::<FocusState>();
-    world.resource_mut::<bevy::input_focus::InputFocus>().clear();
+    let primary = world.spawn((bevy::window::Window::default(), bevy::window::PrimaryWindow)).id();
+    world.resource_mut::<bevy::input_focus::InputFocus>().set(primary, bevy::input_focus::FocusCause::Navigated);
     frame(&mut world);
     assert!(following(&world, root));
     assert_eq!(world.resource::<bevy::input_focus::InputFocus>().get(), Some(native));
@@ -145,10 +146,12 @@ fn saved_focus_waits_for_a_native_target_and_cannot_replace_another_editor_input
     let saved = snapshot(&world, root);
     world.get_mut::<Workspaces>(root).unwrap().saved_focus = saved.clone();
     world.remove_resource::<FocusState>();
-    world.resource_mut::<bevy::input_focus::InputFocus>().set(application, bevy::input_focus::FocusCause::Pressed);
+    let editor = world.spawn((crate::native::sand::editable("Another editor's draft"), ChildOf(application))).id();
+    world.resource_mut::<bevy::input_focus::InputFocus>().set(editor, bevy::input_focus::FocusCause::Pressed);
     frame(&mut world);
     assert!(!following(&world, root));
-    assert_eq!(world.resource::<bevy::input_focus::InputFocus>().get(), Some(application));
+    assert_eq!(world.resource::<bevy::input_focus::InputFocus>().get(), Some(editor));
+    assert_eq!(world.get::<bevy::text::EditableText>(editor).unwrap().value().to_string(), "Another editor's draft");
     assert_eq!(snapshot(&world, root), saved);
     world.resource_mut::<bevy::input_focus::InputFocus>().clear();
     world.entity_mut(native).insert(crate::native::castle::Pending);

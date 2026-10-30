@@ -54,7 +54,7 @@ pub(super) fn open(world: &mut World, anchor: Target, add: bool) -> Result<(), &
     let choices = choices.into_iter().enumerate().map(|(ordinal, target)| {
         let caption = caption(world, &target, ordinal, false);
         let button = input_settings::button(world, list, overlay, &caption, Edit::Choice(target.placement));
-        world.entity_mut(button.0).insert((Name::new(format!("compact.choice.{}", target.entity.to_bits())), crate::native::topology::presentation::VisualOwner(target.entity)));
+        world.entity_mut(button.0).insert((Name::new(format!("compact.choice.{}", target.entity.to_bits())), crate::native::capture::render::TargetSource(target.entity)));
         let name = name(world, &target, ordinal);
         if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(button.0) { node.set_role(accesskit::Role::CheckBox); node.set_label(name); node.set_toggled(accesskit::Toggled::False); }
         Choice { target, selected: false, button, ordinal }

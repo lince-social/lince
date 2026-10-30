@@ -1,0 +1,41 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+An inspectable comparison of treatment flow models (@wu-reactor-comparison: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Plant-hydraulics-and-the-head-available-for-treatment.lingua#r_28A2TF3RFE9PMJZ9R7QH49DMJW") { r_60R13CDHVZVM7NK55904VX5EAF
+**Read:** Revisit [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lectures 3–4. This original calculation compares explicitly stated ideal models; it is not a plant design or a prediction of microbial safety.
+
+The program uses hours, m³ and mg/L consistently. It computes the mixed-tank step response, serial/plug-flow fractions, bypass mixing and a discrete tracer example. Save the code locally and change one assumption at a time. The functions deliberately use the small, positive teaching cases shown; extend input handling and physical assumptions before attempting other uses.
+
+```python
+from math import exp, expm1, fsum, log, log10
+
+volume = 100.0
+flow = 10.0
+rate = 0.1
+inlet = 20.0
+initial = 0.0
+elapsed = 5.0
+residence = volume / flow
+relaxation = flow / volume + rate
+steady = inlet / (1.0 + rate * residence)
+response = initial * exp(-relaxation * elapsed) + steady * (-expm1(-relaxation * elapsed))
+series = [(n, (1.0 + rate * residence / n) ** (-n)) for n in (1, 2, 4, 100)]
+plug = exp(-rate * residence)
+bypass = 0.02 + 0.98 * 0.001
+tracer = ((1.0, 0.1), (5.0, 0.6), (10.0, 0.3))
+mean = fsum(t * weight for t, weight in tracer)
+variance = fsum(weight * (t - mean) ** 2 for t, weight in tracer)
+remaining = fsum(weight * exp(-rate * t) for t, weight in tracer)
+print("mixed_step_mg_per_L", response)
+print("series_remaining", series)
+print("plug_remaining", plug)
+print("bypass_remaining_and_log_reduction", bypass, -log10(bypass))
+print("mixed_t10_hours", -residence * log(0.9))
+print("tracer_mean_variance_remaining", mean, variance, remaining)
+```
+
+**Investigate:** Derive the outputs independently. Numerically integrate the mixed-tank balance at successively smaller time steps and compare with its exact response. For the tracer example, compare summing the three reacted masses with using the mean alone. Explain when Jensen's inequality applies to this exponential comparison. Add a reactive inlet pulse and an outlet observation model; test whether several parameter choices explain the same sparse measurements. Use held-out observations and a conservative tracer to separate kinetic and hydraulic explanations.
+
+Retain the model, units, assumptions and source of each input with every result. Smaller numerical error does not reduce uncertainty in an incorrect flow model.
+
+**Water treatment continuation:** [Plant hydraulics and the head available for treatment](Plant-hydraulics-and-the-head-available-for-treatment.lingua#r_28A2TF3RFE9PMJZ9R7QH49DMJW).
+} r_60R13CDHVZVM7NK55904VX5EAF

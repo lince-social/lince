@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Begin with a rock, a landscape, and a question about its history (@geo-question: 0, is #chapter, #part-of @geology, #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD", #source "../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682", #geology "Observation-description-and-interpretation.lingua#r_5K44604V7MR09287Y20AWVNRXB") { r_4E4VEKFKRQKTEWG4VN53KM9SHA
+**Read:** [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 1 in full; [Introduction to Historical Geology — Estrada and contributing authors](../sources/Introduction-to-Historical-Geology.lingua#r_1JKSSECEDW0M9QG30TJ1D9KHZD), What is Historical Geology? in full; [Geodiversidade do Brasil — Cassio Roberto da Silva and contributors](../sources/Geodiversidade-do-Brasil.lingua#r_2ZQN8TT3KZYS9MCFGZV5A1V682), the introduction and opening Earth-history chapters.
+
+Geology connects present observations with Earth materials, processes, and histories. Begin with a question: what explains a layered outcrop, a ridge, a stream deposit, or the ground beneath a proposed structure? A useful answer identifies the observations, competing explanations, constraints, and evidence that could change the interpretation.
+
+Separate what is seen from what is inferred. Grain size, color, an orientation, a contact, and a fossil are observations under a method and scale; depositional environment, deformation history, or formation age are interpretations needing support. A feature can preserve several events, and missing exposure can leave more than one history consistent with the available evidence.
+
+Modern processes help develop explanations of past ones, but rates, conditions, organisms, atmosphere, and tectonic settings have changed. Geological reasoning combines physical/chemical laws, historical ordering, comparison, measurement, and tests of alternative accounts. A plausible story becomes stronger through specific independent constraints.
+
+**Work:** describe one accessible example or authorized published outcrop image. Write an observation-only account, two possible explanations, and an observation that would distinguish them. Identify what cannot be inferred from a single view. Keep the original record so a later reinterpretation does not erase its evidence.
+
+Read the complete opening chapters and the Brazilian overview alongside the English programme. [Philosophy](../../../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001) and [Inquiry — shared ways to understand and investigate](../../../../hephaestus/inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB) provide a return for questions about evidence, models, and historical explanation. The later field and scholarly work deepens this same beginning rather than replacing it with memorized rock names.
+
+**Continue:** [Keep observations and interpretations connected but distinguishable](Observation-description-and-interpretation.lingua#r_5K44604V7MR09287Y20AWVNRXB).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_4E4VEKFKRQKTEWG4VN53KM9SHA

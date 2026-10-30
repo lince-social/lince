@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Granular filtration is capture plus a changing hydraulic system (@wu-granular-filtration: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Softening-precipitation-and-the-equilibrium-after-separation.lingua#r_7E2GH3S5J7Q26TNTE0H81RVFPZ") { r_1ZJMPX1SHXY14CQ84BV4AP87P2
+**Read:** [MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), [lecture 7](https://ocw.mit.edu/courses/1-85-water-and-wastewater-treatment-engineering-spring-2006/resources/l07_filtration/); [The Physics of Water Treatment Design](../sources/Physics-of-Water-Treatment-Design-AguaClara.lingua#r_1V2KMP22J5KMQF65K8Q7ZXXBAR), chapter 9's [filtration introduction](https://aguaclara-reach.github.io/Textbook/Filtration/Filtration_Intro.html), design challenge and theory. Read the treatment-specific assumptions alongside porous-flow physics.
+
+A granular bed is not simply a sieve with a single hole size. Transport to grains and attachment influence capture, while retained material changes hydraulic resistance. Track filtrate quality, flow and head loss through an entire run, including the early period after cleaning. Slow biological filtration, rapid granular filtration and membrane filtration require different models and operating evidence.
+
+In an original capacity example, four beds of 10 m² each carry 100 m³/hour at 2.5 m/hour superficial loading. With one bed isolated, the remaining beds carry 3.333 m/hour if total flow is unchanged. That arithmetic does not establish that the altered loading is acceptable. If a cycle draws 100 m³ raw water and sends 4 m³ to backwash waste plus 2 m³ to filter-to-waste, only 94 m³ is delivered under the stated no-other-loss account.
+
+**Work:** Plot flow, differential head and outlet quality on one time axis, identifying a defensible end-of-run criterion from the selected process evidence. Account for backwash water, residual solids, bed expansion, media loss and return-to-service observations. Test whether cleaning all units on a fixed clock can coincide with a demand peak. For advanced study, compare attachment/deposition models with observed breakthrough and head loss; fitting one history does not independently validate the other.
+
+**Water treatment continuation:** [Softening, precipitation and the equilibrium after separation](Softening-precipitation-and-the-equilibrium-after-separation.lingua#r_7E2GH3S5J7Q26TNTE0H81RVFPZ).
+} r_1ZJMPX1SHXY14CQ84BV4AP87P2

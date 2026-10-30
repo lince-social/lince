@@ -1,0 +1,19 @@
+Import "../Geology.lingua"
+
+Keep a field record that survives reinterpretation and transfer (@geo-field-record: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK", #source "../sources/GeMS-Map-Schema.lingua#r_6JP32YH79HZAV8JYYKVV1WER0J", #geology "../../../../hephaestus/inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH") { r_3FKHJDJF9DDFFMVTVQJN7PAX34
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), the field-mapping and orientation record guidance; [Levantamento da geodiversidade — SGB technical guide, volume 5 version 4](../sources/SGB-Geodiversity-Methods.lingua#r_7QW5KYAYK9SB2MT3R6MNCFAQWK), observation/database/product relationships; [GeMS — Geologic Map Schema — USGS](../sources/GeMS-Map-Schema.lingua#r_6JP32YH79HZAV8JYYKVV1WER0J), the observation, orientation, references, and confidence concepts.
+
+Assign each observation and specimen an identity and preserve location/reference, date, observer, method, scale/orientation, description, context, and uncertainty. A photograph needs a connection to the actual feature and field note; a specimen needs its source, orientation where relevant, and handling history. An isolated rock name cannot reconstruct that evidence.
+
+Separate original observations, interpreted units, corrected measurements, working hypotheses, and later laboratory results. Preserve relationships across maps, sections, images, specimens, analyses, and revisions. A revised interpretation should explain what changed without silently replacing the original description or losing a link between specimen and location.
+
+Use ordinary tables, sketches, and Records at the scale of the work. A structured format can help transfer information, but its fields do not guarantee that a critical observation was made or interpreted correctly. Identify gaps explicitly and keep confidence/locational quality distinct from a categorical material name.
+
+**Work:** produce a small original field-record set with linked sketches, observations, and hypothetical or authorized specimen descriptions. Have another reader trace a mapped conclusion back to the original record. Introduce and correct one identity or orientation error, preserving the reason for the correction.
+
+Follow [A specimen, a sampling target, and a result about a population](../../../../hephaestus/inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH) for the shared distinction between a specimen, a sampling target, and a population result. Its geology continuation returns to a concrete sampling design. Reuse that general measurement reasoning while retaining the unique spatial and historical context of geological evidence.
+
+**Continue:** [A specimen, a sampling target, and a result about a population](../../../../hephaestus/inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_3FKHJDJF9DDFFMVTVQJN7PAX34

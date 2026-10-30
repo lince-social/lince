@@ -1,0 +1,17 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Connect atomic diffusion with concentration profiles, mobility, and actual thermal history (@metal-diffusion: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ", #source "../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW", #metals-and-metallurgical-production "../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8") { r_0939YMHD8KWFA8ZRJAPDJHQ6BX
+**Read:** [Phase Transitions — Bhadeshia and Yan](../sources/Phase-Transitions-Bhadeshia-Yan.lingua#r_2PMPJ2B4GPGDT62S567TX1DCPJ), the entire diffusion and further diffusion-mechanism chapters; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the full atomic diffusion notes, question sheets, and graduate irreversible-process material; [Materials Processing — Chris Schuh, MIT 3.044](../sources/Materials-Processing-MIT-3-044.lingua#r_4V5BA7W1TFKGRTGNHN7ZTAK1TW), all applicable mass-transfer and transient-model exercises.
+
+Define the species, phase, reference frame, mechanism, and driving force. Vacancy/interstitial motion, grain boundaries, interfaces, dislocations, and coupled multicomponent diffusion can produce different transport behavior. A tracer diffusivity, interdiffusion coefficient, and fitted effective coefficient are not automatically identical.
+
+For constant D on a semi-infinite one-dimensional domain initially at concentration c₀ with a fixed surface concentration cₛ for t > 0, c(x,t) = cₛ + (c₀−cₛ) erf[x/(2√Dt)] under the stated model. Verify the initial, surface, and far-field limits. A temperature history generally changes diffusivity and may also change phases, boundaries, and available diffusion paths.
+
+For invented D = 10⁻¹⁴ m² s⁻¹ and t = 3600 s, √Dt = 6 μm; this is a characteristic scale, not a universally defined penetration depth. The concentration at x = 12 μm uses erf(1). Interpret a profile through its boundary/history evidence rather than assigning a single diffusivity from one apparent width.
+
+**Work:** reconstruct a full diffusion/couple or heat-treatment study. Derive the appropriate profile model, independently check mass and limiting cases, compare two possible mechanisms/boundaries, and fit/test parameters on separate evidence. Explain how preparation, spatial resolution, phase change, and temperature uncertainty affect the result. Follow the shared numerical-validation step before the original finite-volume example, which deliberately uses a different, exactly stated periodic domain.
+
+**Continue:** [Build a numerical validation argument across several kinds of evidence](../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_0939YMHD8KWFA8ZRJAPDJHQ6BX

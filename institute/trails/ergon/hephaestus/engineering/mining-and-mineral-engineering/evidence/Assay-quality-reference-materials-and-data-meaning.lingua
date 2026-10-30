@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Evaluate assay evidence before turning a table into a model (@mine-assays: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B", #source "../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA", #source "../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5", #mining-and-mineral-engineering "Geological-domains-and-resource-model-support.lingua#r_7VHF7KCE47W8X9N53M7W07C0RY") { r_492CDYN0TG4DF9KX8ZM8KA19J5
+**Read:** [Tratamento de Minérios: Práticas Laboratoriais — Sampaio, França, and Braga](../sources/CETEM-Praticas-Laboratoriais.lingua#r_44AAWXB1D7MBR9B0V3TYB8GF9B), the complete relevant preparation, characterization, and analytical-control methods; [Tratamento de Minérios — CETEM, sixth edition](../sources/Tratamento-de-Minerios-CETEM.lingua#r_04ZQFADZ3NC3T6QDPQ565W1ERA), the full sampling/characterization treatment; [Measurement and metrology](../../../inquiry/metrology/Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5), chemical measurements, reference materials, uncertainty, and decision criteria as needed.
+
+An assay result needs a measurand, sample/preparation identity, method, calibration/standards, detection/quantification information, uncertainty, and reporting basis. A numerical value alone cannot establish representative grade, mineral host, recoverability, or a reporting category.
+
+Certified/reference materials, blanks, duplicates, check laboratories, and other controls test different parts of the chain. Their matrix, concentration, preparation stage, independence, and acceptance criteria affect interpretation. A laboratory certificate does not by itself demonstrate that field collection or domain selection was representative.
+
+Non-detects, censored values, variable detection limits, conversions, corrections, and outliers need explicit treatment. Replacing every non-detect with zero or deleting an inconvenient high value can alter spatial estimates and balances. Preserve original and derived fields with traceable transformations.
+
+**Work:** reconstruct a complete assay/control dataset from a published or teaching example. Identify which controls assess contamination, bias, repeatability, preparation, or representativeness. Check units and transformations independently, compare a plausible alternative treatment of censored/extreme observations, and explain the effect on the intended inference.
+
+Read full characterization/laboratory methods and the shared chemical-metrology material as needed. The following domain/model work should inherit an explicit account of data quality and uncertainty, not assume a clean spreadsheet has already answered those questions.
+
+**Continue:** [Build domains from geological evidence and the property being modeled](Geological-domains-and-resource-model-support.lingua#r_7VHF7KCE47W8X9N53M7W07C0RY).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_492CDYN0TG4DF9KX8ZM8KA19J5

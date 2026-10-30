@@ -1,0 +1,21 @@
+Import "../Quantitative-literacy.lingua"
+
+Vectors, coordinate systems, and spatial meaning (@ql-vectors: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-algebra, #quantitative-literacy "../study/Foundation-review.lingua#r_66P3KR79E835QXT45SKDC2FWYY", #electromagnetism "../../../physics/electromagnetism/mathematics/Vectors-coordinate-fields-and-flux.lingua#r_65BCQQW5JWE20Y2P34YD6AD09V", #fluid-dynamics "../models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52") { r_477P2M3HVZQ0PT56SF027VP68J
+**Read:** Algebra and Trigonometry 2e chapter 10's sections on vectors and the dot product. Use its polar-coordinate sections for another view of a two-dimensional displacement. A full linear-algebra treatment can follow later; this reading develops the spatial language actually used in drawings and elementary physical calculations.
+
+A vector's components refer to a basis and coordinate convention. In an orthonormal two-dimensional frame, the magnitude of (x,y) is √(x² + y²). Adding components is meaningful only when they use the same frame and units. A point's position depends on an origin; a displacement is the difference between positions in a shared coordinate description.
+
+The dot product a·b = |a||b|cos θ extracts a projection and can represent work when the vectors are force and displacement. The same algebra applied to two direction vectors is a geometric relation with a different physical meaning. A scalar product does not erase the need to name the quantities.
+
+**Work:** describe the same displacement in a frame rotated through 90° and verify that its magnitude is unchanged. Add two nonparallel displacements by both a scale drawing and components. Find the projection of (3,4) m along the unit direction (1,0). Explain why 3 m + 4 m is not the magnitude of the resulting vector.
+
+Record right- or left-handed convention and axis labels when a CAD or imaging tool exports coordinates. Reflection, rotation, and change of units can look similar in a viewer while changing the interpretation of a manufacturing drawing or a specimen orientation.
+
+**Continue:** [Bring the numerical and spatial foundation together](../study/Foundation-review.lingua#r_66P3KR79E835QXT45SKDC2FWYY).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in electromagnetism:** [Vectors, coordinate fields and flux](../../../physics/electromagnetism/mathematics/Vectors-coordinate-fields-and-flux.lingua#r_65BCQQW5JWE20Y2P34YD6AD09V).
+
+**Continue in fluid dynamics:** [Small changes, derivatives, and first-order approximations](../models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52).
+} r_477P2M3HVZQ0PT56SF027VP68J

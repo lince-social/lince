@@ -1,0 +1,23 @@
+Import "../Metrology.lingua"
+
+Time intervals, frequency, synchronization, and stability (@met-time-frequency: 0, is #chapter, #part-of @metrology, #source "../sources/SI-Realizations.lingua#r_240WHEHDVW9TR241AXP6T4STM0", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #metrology "../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR", #electromagnetism "../../../physics/electromagnetism/currents/Complex-amplitude-frequency-and-sign-conventions.lingua#r_5TBWGB70EQDF2DWG4NAWA8QRBK", #electrical-power-engineering "../../../engineering/electrical-power-engineering/measurement/Time-reference-synchrophasors-and-frequency-estimation.lingua#r_5V4HEC50TPTSMZCXAV49AK2S78") { r_49ST8P3R51TD437BJC5H0WH9TC
+**Read:** [Practical realizations of SI units — BIPM consultative committees](../sources/SI-Realizations.lingua#r_240WHEHDVW9TR241AXP6T4STM0), the full second document and relevant frequency recommendations; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), the time-series model discussion; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), a time-dependent measurement example.
+
+A clock reading, elapsed interval, frequency, fractional frequency offset, phase difference, and synchronized event timestamp are related but distinct results. State the time scale, reference, averaging interval, acquisition bandwidth, and delay convention. A timestamp with many digits can still have a large or unknown relation to the intended event.
+
+The SI second is defined through the specified caesium transition frequency. A practical realization and transfer involve physical corrections, comparison links, noise, and stability. Frequency accuracy or agreement with a reference is not identical to stability over a chosen averaging time. Network synchronization adds transport delay and asymmetry questions beyond the oscillator itself.
+
+For nonoverlapping averages of fractional frequency y_k over interval τ, a two-sample Allan-variance estimate is [Σ(y_(k+1) − y_k)²]/[2(M − 1)] for M such averages under its stated use. This statistic exposes changes over a timescale; it is not automatically the variance of the full-record mean or a universal correction for drift. Dead time and the noise process affect interpretation.
+
+**Work:** read the full second-realization document and identify a reference-transfer path. Construct a teaching time series with white fluctuations, another with a constant offset, and another with drift. Compare ordinary spread and consecutive-average differences and explain what each hides or reveals. Calculate how a fractional frequency offset of 10^−6 accumulates 0.0864 s over one day under the constant-offset model.
+
+For a production or computing transfer, define whether the required claim concerns event order, elapsed duration, or agreement of clocks between sites. Preserve delays, uncertainty, and time-scale conventions so those claims are not confused.
+
+**Continue:** [Produce, preserve, transfer, and replace the references](../practice/Reference-life-cycle.lingua#r_1ZS7B98GYPWX6S7BFZ5S6CY6YR).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in electromagnetism:** [Complex amplitude, frequency and sign conventions](../../../physics/electromagnetism/currents/Complex-amplitude-frequency-and-sign-conventions.lingua#r_5TBWGB70EQDF2DWG4NAWA8QRBK).
+
+**Continue in electrical power engineering:** [Time reference, synchrophasors and frequency estimation](../../../engineering/electrical-power-engineering/measurement/Time-reference-synchrophasors-and-frequency-estimation.lingua#r_5V4HEC50TPTSMZCXAV49AK2S78).
+} r_49ST8P3R51TD437BJC5H0WH9TC

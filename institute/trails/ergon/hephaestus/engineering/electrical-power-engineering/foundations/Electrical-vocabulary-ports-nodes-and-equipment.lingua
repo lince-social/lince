@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Electrical vocabulary, ports, nodes and equipment (@pe-language: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/DC-Electrical-Circuit-Analysis-Fiore.lingua#r_4A9FXBXKNPS4JV50QQ3TVPS2GV", #source "../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G", #electrical-power-engineering "../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_4EGYDJC4Z79BQZ6E7WDZX7P0VC
+**Read:** [DC Electrical Circuit Analysis — James M. Fiore](../sources/DC-Electrical-Circuit-Analysis-Fiore.lingua#r_4A9FXBXKNPS4JV50QQ3TVPS2GV), complete introductory quantities, components and network chapters; [Sistemas elétricos de potência — Arlei Bichels](../sources/Sistemas-Eletricos-de-Potencia-Bichels.lingua#r_5T4SVBJ6FAPQWJPVNQV4Y6427G), introductory system/component representations.
+
+A voltage is a potential difference or defined terminal measurement between points; current is a signed flow of charge through a selected boundary. A port pairs voltage with an oriented current. A circuit node is an idealized equipotential connection within a chosen model; an actual extended busbar or earth structure can have spatial voltage differences.
+
+Distinguish generator, converter, transformer, motor, feeder, bus, switch, disconnector, breaker, fuse, relay, sensor and controller by function. A relay decides or signals; a breaker interrupts current within its ratings. An isolating device is not automatically suitable for interrupting fault current. A transformer changes AC terminal relationships while conserving power only in an ideal lossless model; it is not a source of net energy.
+
+Keep Portuguese equivalents alongside meaning: tensão, corrente, potência ativa/reativa/aparente, barramento, alimentador, disjuntor, seccionador, relé, neutro and condutor de proteção. Neutral, protective conductor and an abstract zero-volt reference have distinct roles. Draw a counterexample to each tempting equivalence. The later installation and fault studies replace ideal labels with explicit physical ratings, paths and operating evidence.
+
+**Continue:** [Units, dimensions, and equations that can make sense](../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_4EGYDJC4Z79BQZ6E7WDZX7P0VC

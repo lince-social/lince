@@ -290,7 +290,7 @@ async fn main() {
         ),
     ] {
         let uri = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../institute/trails/philosophy")
+            .join("../../institute/trails/scholazein/philosophy")
             .join(path)
             .to_string_lossy()
             .into_owned();
@@ -335,7 +335,7 @@ async fn main() {
         .unwrap();
     assert_eq!(before, after);
     let uri = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../institute/trails/shared/Assessment-example.lingua")
+        .join("../../institute/trails/lince/shared/Assessment-example.lingua")
         .to_string_lossy()
         .into_owned();
     let castle = lince_sandbox::sync_castle::open_source(app.world_mut(), root, &uri);

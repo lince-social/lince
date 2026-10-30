@@ -1,0 +1,15 @@
+Import "../Fluid-dynamics.lingua"
+
+Separate input, numerical, sampling and model uncertainty (@fd-uncertainty: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #source "../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6", #fluid-dynamics "../../../inquiry/quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX") { r_4RNG06S89GFF2HKSX4SSMNPWCK
+**Read:** [CFD verification and validation — NPARC Alliance](../sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV), full error, uncertainty, verification and validation treatments; [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), case-specific comparison data and model variants; [Uncertainty quantification in particle image velocimetry — Sciacchitano](../sources/PIV-Uncertainty-Sciacchitano.lingua#r_4PHTCFRTAGSCNV1TK192VZHGQ6), uncertainty in velocity-derived conclusions.
+
+A predicted pressure loss or force depends on measured inputs, numerical approximation, statistical sampling where relevant and the physical model. Keep those sources distinguishable. Refining a mesh can reduce discretization error while leaving uncertain roughness or a biased turbulence closure unchanged.
+
+Propagate input uncertainty using a justified linearization, sampling or interval analysis, retaining correlated geometry and calibration quantities. Test nonlinear sensitivity near transition, choking, separation or a constitutive threshold. Estimate numerical and sampling contributions through their own evidence, then compare prediction and measurement on a common observable and uncertainty basis.
+
+Report which uncertainty dominates the actual decision and which additional evidence would reduce it. Avoid adding a broad uncertainty band merely to cover every disagreement. Reassess the model and operating domain when systematic residual structure remains, and preserve competing explanations until the observations can distinguish them.
+
+**Continue:** [Discretization — approximate a changing process and check it](../../../inquiry/quantitative-literacy/models/Limits-and-discretization.lingua#r_5FA5RGRRQHG8P107F8AVJ2SGEX).
+
+**Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+} r_4RNG06S89GFF2HKSX4SSMNPWCK

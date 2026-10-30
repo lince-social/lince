@@ -1,0 +1,15 @@
+Import "../Electromagnetism.lingua"
+
+Inverse fields, identifiability and regularization (@em-inverse: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69", #source "../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91", #electromagnetism "../../../inquiry/metrology/uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3") { r_3SFTJFY73PCPPREDHPDKKPQC9E
+**Read:** [3D electromagnetic modelling and inversion — Oldenburg and colleagues](../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69), whole preprint and applicable complete case; [Measuring Permittivity and Permeability — NIST TN 1536](../sources/Measuring-Permittivity-and-Permeability-NIST-TN-1536.lingua#r_6BH70T5QSNJ7P7RKZ0G133CM91), transmission/reflection inversion and uncertainty.
+
+Forward problems predict measurements from geometry, sources and material parameters. Inverse problems infer those quantities from finite noisy observations. They can be nonunique or unstable even when every forward solve is accurate. A good fit therefore does not prove one uniquely recovered physical structure.
+
+Return to the harmonic boundary field whose fine spatial modes decay exponentially with distance. Inverting that decay amplifies noise and model errors. Construct two different source distributions producing indistinguishable distant data within uncertainty. Compare regularization, prior information and an added measurement geometry; distinguish information supplied by data from information imposed by the reconstruction.
+
+Study the complete [3D electromagnetic modelling and inversion — Oldenburg and colleagues](../sources/Open-Electromagnetic-Modelling-and-Inversion.lingua#r_5N6Z2MJVEW5GP1XW9J28J1AM69) and its reproducible cases for a connection to geophysical exploration. Then investigate a dielectric slab's complex transmission/reflection with unknown thickness and permittivity. Phase wraps, fixtures and correlated calibration errors can create multiple plausible solutions. Use independently measured geometry or a second band as evidence, and report model/regularization sensitivity alongside a statistical interval. A reconstruction should predict a held-out observable and state what remains unresolved, rather than equating a finely meshed image with uniquely known matter.
+
+**Continue:** [Model discrepancy, double counting, and sensitivity to assumptions](../../../inquiry/metrology/uncertainty/Model-discrepancy-and-robustness.lingua#r_13PJ61YH29120EKV42ZT1SQTG3).
+
+**Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+} r_3SFTJFY73PCPPREDHPDKKPQC9E

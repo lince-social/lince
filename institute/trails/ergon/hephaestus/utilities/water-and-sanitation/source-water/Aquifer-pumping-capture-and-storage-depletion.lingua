@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Aquifer pumping, capture and storage depletion (@wu-source-capture: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Well-tests-intakes-and-observations-that-constrain-a-source.lingua#r_33V2BHHRAESJC6434PABCV64PD") { r_5AW9VP5PXSX9VPSEWXJQ9K67J9
+**Read:** [Groundwater Resource Development](../sources/Groundwater-resource-development.lingua#r_1M3NS4Y0CV4391JF136S20MVBP), sections 3.2–3.6 and chapter 4, then chapter 5. Revisit the shared geology explanation of groundwater head, conductivity and flow rather than treating a well as an underground container.
+
+Pumping can be balanced by storage loss, additional recharge or reduced natural discharge. Which component supplies the well changes over time. Compare the pumped system with the same system without pumping under the same external conditions. Natural recharge before development is not by itself the sustainable pumping rate. Stabilizing water levels can coexist with a continuing reduction in stream or spring flow.
+
+In an original incremental example, pumping is 500 m³/day. Relative to the unpumped comparison, recharge increases by 50 and natural discharge decreases by 150 m³/day. The remaining 300 m³/day comes from storage. If those average rates persist for 30 days, the storage loss is 9,000 m³. Identify which terms are measured, estimated or assumed, and test their uncertainty rather than assigning the residual an automatic physical explanation.
+
+**Work:** Draw the unpumped and pumped budgets side by side. Explain why an apparent equilibrium does not answer questions about wetlands, other wells, contamination or pumping cost. Read the book's case studies and identify observations that discriminate between competing boundary conditions. Progress to its analytical stream-depletion exercise: inspect assumptions about aquifer geometry, river connection, pumping history and storage before using the solution. Compare near-stream and distant wells at equal pumping rates and examine effects after pumping stops. A delayed effect is not an absent effect.
+
+**Continue:** [Well tests, intakes and observations that constrain a source](Well-tests-intakes-and-observations-that-constrain-a-source.lingua#r_33V2BHHRAESJC6434PABCV64PD).
+} r_5AW9VP5PXSX9VPSEWXJQ9K67J9

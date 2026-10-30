@@ -1,0 +1,15 @@
+Import "../Electrical-power-engineering.lingua"
+
+Current/voltage transformers, saturation and polarity (@pe-instrument-transformers: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE", #source "../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD", #electrical-power-engineering "../../../inquiry/metrology/applications/Time-and-frequency.lingua#r_49ST8P3R51TD437BJC5H0WH9TC") { r_3PF6HPV3MFDEE7PBB6Z25QVJ37
+**Read:** [Power System Protection — S. A. Soman, IIT Bombay](../sources/Power-System-Protection-Soman-NPTEL.lingua#r_52Z22QR7WGDJHAFBDMPFGYCXJE), all current/voltage-transformer lectures and tutorials; [Protective relay operation, maintenance and tests — FIST 3-8](../sources/Protective-Relay-Field-Tests-FIST-3-8.lingua#r_5MSER4KEH301A73PTXK505CCSD), complete applicable instrument/interface and functional-test methods.
+
+Instrument transformers scale high-energy system quantities into a measurement/protection interface while adding ratio/phase errors, bandwidth and state-dependent response. Their model includes burden, magnetization, polarity, wiring and rated conditions. A protection-class application and an energy-metering application can require different evidence.
+
+Derive secondary quantities and the effect of burden with a consistent terminal/polarity convention. Analyze how DC offset and remanence can saturate a current transformer during a fault, distorting the signal used by a relay. A correct steady sinusoidal ratio is not proof of an accurate transient replica. Capacitive voltage-transformer dynamics introduce other distortions.
+
+Compare an actual test/measurement with the model and uncertainty. Track core, ratio, terminals, secondary circuits, test facilities and connected devices in the evidence. Physical handling/testing needs equipment-specific qualified procedures; a numerical model does not establish the state of a real secondary circuit. Later differential, distance and relay-testing Records show how a measurement-interface error can become a protection-system failure even when the relay algorithm is mathematically correct.
+
+**Continue:** [Time intervals, frequency, synchronization, and stability](../../../inquiry/metrology/applications/Time-and-frequency.lingua#r_49ST8P3R51TD437BJC5H0WH9TC).
+
+**Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+} r_3PF6HPV3MFDEE7PBB6Z25QVJ37

@@ -1,0 +1,78 @@
+Import "../General-chemistry.lingua"
+
+An inspectable solver for a complete ideal titration model (@gc-solver: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #general-chemistry "../electrochemistry/Cells-electrodes-and-free-energy.lingua#r_71ACM8HAWDABKYZHW6E653JQJX") { r_0228516WK8JJ014E9XC51TNZZY
+**Read:** [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), exact numerical acid/base solutions and titration models; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapters 6 and 9’s systematic derivations; [Reproducible computational work](../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), reconstructible code and independent numerical checks as needed.
+
+Save this original example as equilibrium.py in a personal exercise directory. It uses only the Python standard library and invented model parameters. The system is 25.00 mL of 0.01000 mol L⁻¹ uncharged monoprotic acid HA, with 0–50 mL of 0.01000 mol L⁻¹ ideal strong base added. Volumes are assumed additive, temperature fixed, and no additional equilibria or gas/solid exchanges included. The base supplies a monovalent spectator cation Na⁺.
+
+All computed concentration numbers use mol L⁻¹. The concentration-form constants have numerical values K_a,c = 10⁻⁵ and K_w,c = 10⁻¹⁴ in compatible units. The pH uses the ideal reference concentration c° = 1 mol L⁻¹. These are a defined teaching model rather than a validated real-buffer preparation or measurement procedure.
+
+```python file=equilibrium.py
+import json
+import math
+
+def solve(added_base_ml):
+    if not math.isfinite(added_base_ml) or not 0 <= added_base_ml <= 50:
+        raise ValueError("base volume must be finite and between 0 and 50 mL")
+    acid_l = 0.025
+    base_l = added_base_ml / 1000
+    final_l = acid_l + base_l
+    total = 0.010 * acid_l / final_l
+    sodium = 0.010 * base_l / final_l
+    ka = 1e-5
+    kw = 1e-14
+
+    def charge(log_h):
+        h = 10 ** log_h
+        anion = total * ka / (ka + h)
+        return h + sodium - anion - kw / h
+
+    lower = -16.0
+    upper = 2.0
+    if charge(lower) >= 0 or charge(upper) <= 0:
+        raise ValueError("root is outside the declared teaching bracket")
+    for _ in range(100):
+        middle = (lower + upper) / 2
+        if charge(middle) > 0:
+            upper = middle
+        else:
+            lower = middle
+        if upper - lower < 1e-13:
+            break
+    log_h = (lower + upper) / 2
+    h = 10 ** log_h
+    hydroxide = kw / h
+    anion = total * ka / (ka + h)
+    acid = total * h / (ka + h)
+    mass_residual = acid + anion - total
+    charge_residual = h + sodium - anion - hydroxide
+    if abs(mass_residual) > 1e-12 or abs(charge_residual) > 1e-12:
+        raise ArithmeticError("balance residual exceeds the teaching tolerance")
+    return {
+        "base_ml": added_base_ml,
+        "pH": -log_h,
+        "H_mol_L": h,
+        "OH_mol_L": hydroxide,
+        "HA_mol_L": acid,
+        "A_mol_L": anion,
+        "Na_mol_L": sodium,
+        "total_acid_mol_L": total,
+        "mass_residual_mol_L": mass_residual,
+        "charge_residual_mol_L": charge_residual,
+    }
+
+if __name__ == "__main__":
+    results = [solve(volume) for volume in (0.0, 12.5, 25.0, 30.0, 50.0)]
+    print(json.dumps(results, sort_keys=True, indent=2, allow_nan=False))
+```
+
+The solver combines acid balance and acid equilibrium analytically, then finds the root of the charge balance in log₁₀ h. For this model the charge function increases strictly with h because its derivative is 1 + C_TK_a,c/(K_a,c+h)² + K_w,c/h². The declared bracket has opposite signs over the specified input range, supporting one physical root. A general multicomponent or phase-changing system needs a new analysis of existence, domain, and numerical method.
+
+**Independent checks:** derive 25.00 mL as the stoichiometric equivalence volume; compare the zero-addition result with the weak-acid quadratic when water is negligible; compare the far-excess base result with an independently derived excess-ion balance; substitute every result into acid equilibrium, water equilibrium, mass balance, and charge balance. Plot species as well as pH. Explain the small departure from the approximate half-equivalence rule and why equivalence pH is above the model's neutral point.
+
+**Work:** reconstruct the same model independently with higher-precision arithmetic or another justified solver, preserving the chemical equations and predeclared comparison tolerance. Refine the bracket/iteration criteria and inspect residual scales. Add an invalid volume and a changed acid constant, predicting the failure or changed result before running. Then identify what activities, calibration, temperature dependence, additional species, or nonadditive volumes would require in a real study. Numerical convergence and small residuals validate aspects of the stated computation, not the specimen's chemistry.
+
+**Continue:** [Connect an electrochemical cell with a balanced reaction and energy account](../electrochemistry/Cells-electrodes-and-free-energy.lingua#r_71ACM8HAWDABKYZHW6E653JQJX).
+
+**Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+} r_0228516WK8JJ014E9XC51TNZZY

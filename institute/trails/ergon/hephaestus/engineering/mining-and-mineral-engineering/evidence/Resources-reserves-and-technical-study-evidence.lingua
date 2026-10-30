@@ -1,0 +1,19 @@
+Import "../Mining-and-mineral-engineering.lingua"
+
+Use resource and reserve categories through their complete definitions and evidence (@mine-classification: 0, is #chapter, #part-of @mining-and-mineral-engineering, #source "../sources/Resource-and-Reserve-Reporting-CRIRSCO-CBRR.lingua#r_2CZZ64T1W8VC542VCNCH2E6DSR", #source "../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA", #source "../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2", #mining-and-mineral-engineering "../../../../gaia/earth/mineralogy-and-petrology/applications/Grain-associations-liberation-and-process-mineralogy.lingua#r_03BD9ADDV2B62T8RF26S61R77C") { r_752AR316YAX12F1XBWQ5E6B0B8
+**Read:** [Resources, reserves, and technical-study definitions — CRIRSCO and CBRR](../sources/Resource-and-Reserve-Reporting-CRIRSCO-CBRR.lingua#r_2CZZ64T1W8VC542VCNCH2E6DSR), the complete template and guide; [Hard Rock Miner’s Handbook — Jack de la Vergne, fifth edition](../sources/Hard-Rock-Miners-Handbook.lingua#r_18YBY5XX4TFS7ZQSKTQMW34EFA), the full evaluation/reserve discussion with dated conventions distinguished; [Introduction to Mining Engineering — Penn State MNG 230](../sources/Penn-State-Introduction-to-Mining.lingua#r_5NAY6K47Y4Y61V4JF74JJNV4Q2), the complete evaluation and technical-study sequence.
+
+Exploration targets/results, mineral resources, and mineral reserves describe different claims under identified reporting standards. Read the actual definitions, confidence, modifying factors, study scope, responsibilities, and evidence. A teaching calculation of grade times volume does not itself establish any category.
+
+Reserve conversion connects geological confidence with technical, processing, economic, environmental, social, legal, infrastructural, and other relevant factors under the chosen framework. A factor is not satisfied merely because a report includes its heading. Feasibility evidence and uncertainty should be traceable to the particular proposal and date.
+
+Distinguish a conceptual/scoping comparison, a pre-feasibility study, a feasibility study, an operating plan, and a public reporting statement. Their purposes, assumptions, detail, confidence, and requirements differ. The CRIRSCO template is advisory for code development/comparison; applicable national/regional rules require their own identified current source.
+
+**Work:** read the full 2024 template and 2022 Portuguese CBRR guide, preserving their roles/versions. Reconstruct an authorized public technical claim's evidence chain and identify unresolved factors. Compare two studies whose tonnage/grade labels look similar but whose supports, assumptions, or reporting categories differ.
+
+Follow [Relate mineral associations to liberation without mistaking a section for every particle](../../../../gaia/earth/mineralogy-and-petrology/applications/Grain-associations-liberation-and-process-mineralogy.lingua#r_03BD9ADDV2B62T8RF26S61R77C) for the shared mineral-association and process-mineralogy step. Its mining continuation returns to geometallurgical interpretation, connecting geological inventory with the behavior actually relevant to extraction and concentration.
+
+**Continue:** [Relate mineral associations to liberation without mistaking a section for every particle](../../../../gaia/earth/mineralogy-and-petrology/applications/Grain-associations-liberation-and-process-mineralogy.lingua#r_03BD9ADDV2B62T8RF26S61R77C).
+
+**Return:** [Mining and mineral engineering — extraction, processing, and continuing work](../Mining-and-mineral-engineering.lingua#r_22HJPS3RTK5EX1J55YJP75PHYA).
+} r_752AR316YAX12F1XBWQ5E6B0B8

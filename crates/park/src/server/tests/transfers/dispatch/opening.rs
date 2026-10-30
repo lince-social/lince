@@ -77,13 +77,21 @@ fn tap(fixture: &mut Fixture, code: u32) {
     fixture.desktop.key(code, false, 11).unwrap();
 }
 
+pub(super) fn operation(fixture: &mut Fixture) {
+    fixture.desktop.key(125, true, 20).unwrap();
+    tap(fixture, 25);
+    fixture.desktop.key(125, false, 21).unwrap();
+    fixture.until(|fixture| !fixture.desktop.input_pending()
+        && fixture.desktop.current.as_ref().is_some_and(|frame| frame.frame.input.modal && frame.frame.input.editor.is_some()));
+}
+
 pub(super) fn activate(fixture: &mut Fixture, caption: &str) {
     eprintln!("Activating control: {caption}");
     let entity = available(fixture, caption);
     click_entity(fixture, entity, caption);
 }
 
-fn available(fixture: &mut Fixture, caption: &str) -> Entity {
+pub(super) fn available(fixture: &mut Fixture, caption: &str) -> Entity {
     let deadline = Instant::now() + Duration::from_secs(30);
     loop {
         if let Some(entity) = element(fixture, caption)
@@ -130,17 +138,20 @@ fn control(fixture: &mut Fixture, uid: &str, action: usize) {
     click_entity(fixture, entity, &name);
 }
 
-fn visible(fixture: &mut Fixture, entity: Entity) -> bool {
-    fixture.inspect(move |canvas| canvas.native_test_points(entity)).is_some_and(|(output, points)| {
-        let frame = &fixture.desktop.current.as_ref().unwrap().frame;
-        let point = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).sum::<f64>() * 0.25);
-        let extent: [f64; 2] = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).fold(f64::NEG_INFINITY, f64::max)
-            - points.iter().map(|point| point[axis]).fold(f64::INFINITY, f64::min));
-        extent.into_iter().all(|value| value >= 1.0)
-            && frame.input.mappings.get(output).is_some_and(|mapping| mapping.logical_bounds().contains(point))
-            && frame.input.native_pointer.target(point).is_some()
-    })
+fn point(fixture: &mut Fixture, entity: Entity) -> Option<[f64; 2]> {
+    let (output, points) = fixture.inspect(move |canvas| canvas.native_test_points(entity))?;
+    let frame = &fixture.desktop.current.as_ref()?.frame;
+    let center: [f64; 2] = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).sum::<f64>() * 0.25);
+    let extent: [f64; 2] = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).fold(f64::NEG_INFINITY, f64::max)
+        - points.iter().map(|point| point[axis]).fold(f64::INFINITY, f64::min));
+    if extent.into_iter().any(|value| value < 1.0) { return None; }
+    std::iter::once(center).chain(points.map(|corner| std::array::from_fn(|axis| center[axis] + (corner[axis] - center[axis]) * 0.75)))
+        .find(|point| frame.input.mappings.get(output).is_some_and(|mapping| mapping.logical_bounds().contains(*point))
+            && matches!(fixture.desktop.target_at(*point), crate::desktop::input::Target::Native)
+            && frame.input.native_pointer.target(*point).is_some_and(|target| target.contains(entity)))
 }
+
+fn visible(fixture: &mut Fixture, entity: Entity) -> bool { point(fixture, entity).is_some() }
 
 fn scroll_toward(fixture: &mut Fixture, entity: Entity) -> bool {
     let request = fixture.inspect(move |canvas| {
@@ -186,12 +197,7 @@ pub(super) fn click_entity(fixture: &mut Fixture, entity: Entity, caption: &str)
         if visible(fixture, entity) || !scroll_toward(fixture, entity) { break; }
     }
     if !visible(fixture, entity) { magnification::focus_entity(fixture, entity, caption); }
-    let (output, points) = fixture.inspect(move |canvas| canvas.native_test_points(entity))
-        .expect("The ordinary control needs its actual presented projection");
-    let point = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).sum::<f64>() * 0.25);
-    let frame = &fixture.desktop.current.as_ref().unwrap().frame;
-    assert!(frame.input.mappings.get(output).unwrap().logical_bounds().contains(point));
-    assert!(frame.input.native_pointer.target(point).is_some(), "The visible opening control needs an actual native input recipient");
+    let point = point(fixture, entity).unwrap_or_else(|| panic!("The visible opening control {caption} needs its own actual native input recipient"));
     fixture.desktop.move_pointer(point, 20).unwrap();
     fixture.tick();
     fixture.desktop.button(272, true, 21).unwrap();
@@ -438,12 +444,19 @@ fn queued_stale(fixture: &mut Fixture, request: lince_interface::host::OpeningRe
     let before = arrangement(fixture);
     let before_decision = decision(fixture, live);
     let focus = fixture.client.keyboard_focus.as_ref().map(|surface| surface.id());
+    let progress = fixture.inspect(|canvas| canvas.world_mut().resource::<crate::runtime::InputProgress>().clone());
     let (_, release) = fixture.pause();
     let mut serial = fixture.desktop.worker.input(Input::ReapplyOpening(request)).unwrap();
     let mut queued = 1;
     while let Ok(next) = fixture.desktop.worker.input(Input::Pointer([0.0; 2])) { serial = next; queued += 1; assert!(queued <= 128); }
     assert_eq!(queued, 128);
     release.send(()).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while !progress.reached(serial) {
+        assert!(fixture.desktop.worker.failure().is_none());
+        assert!(Instant::now() < deadline, "The stale Reapply input queue did not drain before presenting recovery frames");
+        std::thread::sleep(Duration::from_millis(2));
+    }
     fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| frame.input_serial >= serial));
     assert_eq!(arrangement(fixture), before);
     assert_eq!(decision(fixture, live), before_decision);
@@ -452,6 +465,7 @@ fn queued_stale(fixture: &mut Fixture, request: lince_interface::host::OpeningRe
 }
 
 fn races(fixture: &mut Fixture, runtime: &tokio::runtime::Runtime, engine: &engine::Engine, window: &ClientWindow, id: SurfaceId, half: &str) -> (ClientWindow, wl_buffer::WlBuffer) {
+    eprintln!("Checking stale Reapply after a rule revision");
     let captured = request(fixture, id);
     let (_, mut rule) = rule(runtime, engine, "editor half");
     rule.revision += 1;
@@ -461,6 +475,7 @@ fn races(fixture: &mut Fixture, runtime: &tokio::runtime::Runtime, engine: &engi
     retired(fixture, &captured);
     queued_stale(fixture, captured, id);
 
+    eprintln!("Checking stale Reapply after a window override revision");
     let captured = request(fixture, id);
     let overrides = runtime.block_on(store::records::all_extensions(&engine.store.pool, WINDOW_NAMESPACE)).unwrap();
     assert_eq!(overrides.len(), 1);
@@ -472,10 +487,11 @@ fn races(fixture: &mut Fixture, runtime: &tokio::runtime::Runtime, engine: &engi
     retired(fixture, &captured);
     queued_stale(fixture, captured, id);
 
+    eprintln!("Checking stale Reapply after an output scale change");
     let captured = request(fixture, id);
     let scale = fixture.desktop.current.as_ref().unwrap().frame.geometry.as_ref().unwrap().outputs[0].raster.scale[0];
     fixture.desktop.server.configure_scaled_outputs(&[Monitor { id: OutputId(1), name: OUTPUT.into(), origin: [40, 0], size: fixture.size.map(|value| value as i32) }],
-        &std::collections::BTreeMap::from([(OutputId(1), scale)])).unwrap();
+        &std::collections::BTreeMap::from([(OutputId(1), scale + 0.25)])).unwrap();
     fixture.desktop.server.registered_output_catalog().unwrap();
     fixture.desktop.invalidate_outputs().unwrap();
     retired(fixture, &captured);
@@ -494,6 +510,7 @@ fn races(fixture: &mut Fixture, runtime: &tokio::runtime::Runtime, engine: &engi
     let mut retained = Vec::new();
     repaint(fixture, window, id, &mut retained);
 
+    eprintln!("Checking stale Reapply after window replacement");
     let captured = request(fixture, id);
     window.role.destroy();
     window.xdg.destroy();

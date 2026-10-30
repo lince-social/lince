@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Translate raw-water variation into treatment questions (@wu-treatment-envelope: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Close-the-process-water-and-constituent-balances.lingua#r_7SJZKT1THHTDWS2YY0XAHP5SEX") { r_3M5Z05Q30W6P11QVNY3BF6ZZRS
+**Read:** [TU Delft drinking-water treatment](../sources/Introduction-to-Drinking-Water-Treatment-TU-Delft.lingua#r_0XXF9PBVKKD6FWSJRVDTCKQXP4), the introductory water-quality and treatment-scheme material; [Manual de Saneamento](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), treatment in the water-supply chapter. Carry the source assessment forward as a range of conditions, not a single convenient sample.
+
+List what the proposed water use requires, what enters the plant, and what each candidate process changes. Separate particles, dissolved species, microorganisms, gas and temperature. Screening, sedimentation, filtration, adsorption, precipitation and disinfection answer different questions. Removal from the product stream is not destruction: a constituent may move into sludge, concentrate, spent media or exhaust gas.
+
+Make an original process table with columns for incoming state, intended transformation, outlet evidence, residual stream and failure observation. For a turbid surface water, distinguish destabilizing fine particles, growing aggregates, separating them and validating microbial barriers. For a mineralized groundwater, ask which species are dissolved, whether they can be oxidized or precipitated, and what remains dissolved afterward. Neither case is a recipe without source-specific evidence.
+
+**Work:** Draw two alternative process sequences for the same hypothetical source. Mark the uncertain steps and observations needed to choose between them. Test the sequence against a cold season, a storm pulse and one unavailable process unit. Explain how a change in raw-water quality could invalidate a dose, settling assumption or downstream barrier. Keep final health requirements separate from preliminary process calculations; later microbial-barrier Records must address the evidence for disinfection.
+
+**Water treatment continuation:** [Close the process water and constituent balances](Close-the-process-water-and-constituent-balances.lingua#r_7SJZKT1THHTDWS2YY0XAHP5SEX).
+} r_3M5Z05Q30W6P11QVNY3BF6ZZRS

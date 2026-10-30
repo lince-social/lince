@@ -1,0 +1,21 @@
+Import "../Geology.lingua"
+
+Distinguish force, stress, strain, and the history producing a structure (@geo-stress-strain: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX", #source "../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N", #geology "Orientations-strike-dip-trend-and-plunge.lingua#r_4SACPSFSMY1MM5BV2QM5MJN8QR", #mining-and-mineral-engineering "../../../../hephaestus/engineering/mining-and-mineral-engineering/ground/Rock-mass-models-intact-material-and-excavation-scale.lingua#r_1DMB4100MSM5KM3XE6FT4MADKF") { r_4TM454JHNMW1X3RF37NBDRXTXT
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), the complete Kinematics and Strain, Stress, and relevant Fabrics sections; [Physical Geology, second edition — Steven Earle](../sources/Physical-Geology-Earle.lingua#r_5GWEYVQGR176TXMQT0S881ZSKX), chapter 12 in full; [Introduction to Geology — Perron and Jagoutz, MIT 12.001](../sources/MIT-Introduction-to-Geology.lingua#r_423FFVY46CGEN2F2263F95KX6N), deformation notes and exercise.
+
+Stress describes force per area resolved on oriented surfaces; strain describes changes in geometry under a specified reference and measure. A high strain does not uniquely establish a present high stress. Geological structures record a history involving loading, material properties, fluids, temperature, time, and possibly several overprinting events.
+
+Decompose traction into normal and shear components for an identified plane. Use the structural text's sign and orientation conventions consistently; compression-positive and tension-positive traditions can make identical symbols mean opposite things. State whether a diagram uses total or effective quantities and which fluid-pressure assumption supports it.
+
+Small-strain and finite-strain descriptions differ. Rotations may change an object's orientation without stretching it; accumulated deformation generally cannot be reconstructed simply by adding finite changes as scalars. Distinguish a displacement field, a strain measure, and the pattern of observed markers.
+
+**Work:** complete the stress and kinematics/strain sections and their exercises. Derive normal and shear traction for a simple specified two-dimensional stress state, making the plane orientation and sign convention explicit. Compare two deformation paths that could leave a similar final marker shape and identify additional evidence needed to distinguish them.
+
+Read the complete structural treatment rather than inferring mechanics directly from a photograph of a fold. The broader mechanics trail will deepen tensor methods and constitutive theory; here the geological aim is a defensible connection among observations, geometry, physical model, and deformation history.
+
+**Continue:** [Measure and communicate planes and lines without ambiguous conventions](Orientations-strike-dip-trend-and-plunge.lingua#r_4SACPSFSMY1MM5BV2QM5MJN8QR).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+
+**Continue in mining and mineral engineering:** [Build a ground model from material, structures, water, stress, and scale](../../../../hephaestus/engineering/mining-and-mineral-engineering/ground/Rock-mass-models-intact-material-and-excavation-scale.lingua#r_1DMB4100MSM5KM3XE6FT4MADKF).
+} r_4TM454JHNMW1X3RF37NBDRXTXT

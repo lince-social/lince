@@ -1,0 +1,19 @@
+Import "../Mineralogy-and-petrology.lingua"
+
+Connect a mineral formula with atoms, sites, charge, and measured composition (@mp-atomic: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../../../../hephaestus/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V", #mineralogy-and-petrology "../../../../hephaestus/chemistry/general-chemistry/states/Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA") { r_559FNR7H67KS8GMHM91CX3DQ4F
+**Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete Mineral Chemistry chapter and normalization examples; [General chemistry](../../../../hephaestus/chemistry/general-chemistry/General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V), amount, bonding, composition, and measurement foundations as needed.
+
+A mineral formula summarizes a structural/chemical account, not merely an alphabetical list of detected elements. Distinguish elemental mass fraction, oxide-equivalent mass fraction, mole proportions, atoms per formula unit, site occupancy, and oxidation state. Their denominators and assumptions differ.
+
+Use the chemistry foundations for moles, bonding, and charge. An oxide report often expresses measured elements as conventional oxides; it does not establish that those separate oxide minerals occur in the sample. Reporting total iron as FeO also does not independently measure every iron atom's oxidation state.
+
+A site model places particular occupants into an identified structural arrangement with multiplicities, vacancies, and constraints. A charge-balanced candidate formula may be chemically possible without being the correct structure, oxidation state, or species. Several site allocations can fit the same bulk elemental information.
+
+**Work:** convert a simple ideal mineral formula to element and oxide-equivalent proportions with stated atomic weights, then reverse the calculation. Explain which information is lost in the conversion. Compare a measured composition with an ideal endmember, preserving analytical total, uncertainty, possible mixed analysis, and unmeasured components.
+
+Read the entire mineral-chemistry chapter. Follow [Connect crystal structure, defects, and composition with material properties](../../../../hephaestus/chemistry/general-chemistry/states/Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA) for shared crystalline/disordered-material foundations; its mineralogy continuation develops lattices quantitatively. Later original normalization work will expose both the useful bookkeeping and the limits of inferring a full mineral identity from an oxide table.
+
+**Continue:** [Connect crystal structure, defects, and composition with material properties](../../../../hephaestus/chemistry/general-chemistry/states/Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA).
+
+**Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+} r_559FNR7H67KS8GMHM91CX3DQ4F

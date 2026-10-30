@@ -20,6 +20,7 @@ fn queued_scratch_properties_and_choices_cannot_reveal_closed_replaced_modal_out
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
     for retirement in [Retire::Close, Retire::Record, Retire::Modal, Retire::Output, Retire::Lock] {
+        eprintln!("Checking scratch retirement: {retirement:?}");
         let path = directory.path().join(format!("{retirement:?}"));
         std::fs::create_dir(&path).unwrap();
         let engine = persisted(&runtime, &path);
@@ -32,6 +33,7 @@ fn queued_scratch_properties_and_choices_cannot_reveal_closed_replaced_modal_out
         let (application, placement) = application(&mut fixture, ids[0]);
         let (inspector, _, uid) = windowed_fullscreen::inspect(&mut fixture, ids[0]);
         property(&mut fixture, inspector, "Mark as scratch");
+        assert!(association(&mut fixture, placement).is_some_and(|(_, scratch)| scratch.shown()), "The {retirement:?} fixture must mark the original application before retiring anything");
         let mut choice = None;
         let button = if matches!(retirement, Retire::Record) {
             windowed_fullscreen::button(&mut fixture, inspector, "Unmark and restore home")
@@ -47,9 +49,10 @@ fn queued_scratch_properties_and_choices_cannot_reveal_closed_replaced_modal_out
         let captured = fixture.desktop.current.as_ref().unwrap().frame.input.native_pointer.target(point).unwrap();
         let operation = if matches!(retirement, Retire::Modal) {
             activate(&mut fixture, "Cancel scratch selection");
-            action(&mut fixture, DesktopAction::OpenOperation);
+            opening::operation(&mut fixture);
             Some(named(&mut fixture, "operation.input"))
         } else { None };
+        let progress = fixture.inspect(|canvas| canvas.world_mut().resource::<crate::runtime::InputProgress>().clone());
         let (_, release) = fixture.pause();
         let mut lock = None;
         match retirement {
@@ -59,7 +62,7 @@ fn queued_scratch_properties_and_choices_cannot_reveal_closed_replaced_modal_out
             }
             Retire::Record => {
                 fixture.desktop.worker.input(Input::Test(Box::new(move |canvas| {
-                    canvas.world_mut().get_mut::<native::protein_area::RecordBinding>(application).unwrap().uid = nucleus::new_uid("r");
+                    canvas.world_mut().get_mut::<native::protein_area::RecordBinding>(application).unwrap().area = inspector;
                 }))).unwrap();
             }
             Retire::Modal => {}
@@ -85,9 +88,15 @@ fn queued_scratch_properties_and_choices_cannot_reveal_closed_replaced_modal_out
         }
         assert!(filled > 0);
         release.send(()).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(30);
+        while !progress.reached(serial) {
+            assert!(fixture.desktop.worker.failure().is_none());
+            assert!(Instant::now() < deadline, "The retired input queue did not drain before presenting recovery frames");
+            std::thread::sleep(Duration::from_millis(2));
+        }
         fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| frame.input_serial >= serial));
         if matches!(retirement, Retire::Close) { assert!(association(&mut fixture, placement).is_none()); }
-        else { assert_eq!(association(&mut fixture, placement).unwrap().1.shown(), matches!(retirement, Retire::Record)); }
+        else { assert_eq!(association(&mut fixture, placement).map(|(_, scratch)| scratch.shown()), Some(matches!(retirement, Retire::Record)), "The {retirement:?} stale input changed the original scratch association"); }
         let expected_uid = uid.clone();
         assert!(fixture.inspect(move |canvas| canvas.world_mut().get::<native::full_record::window::Metadata>(inspector)
             .is_some_and(|metadata| metadata.uid == expected_uid && metadata.placement == placement && metadata.live != matches!(retirement, Retire::Close))));
@@ -101,6 +110,7 @@ fn queued_scratch_properties_and_choices_cannot_reveal_closed_replaced_modal_out
         if let Some(operation) = operation {
             assert!(fixture.inspect(move |canvas| canvas.world_mut().get_resource::<bevy::input_focus::InputFocus>().unwrap().get() == Some(operation)));
             fixture.desktop.key(1, true, 40).unwrap(); fixture.desktop.key(1, false, 41).unwrap();
+            fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| !frame.frame.input.modal));
             assert!(absent(&mut fixture, "operation.input"));
         }
         if matches!(retirement, Retire::Output) {
@@ -123,15 +133,15 @@ fn queued_scratch_properties_and_choices_cannot_reveal_closed_replaced_modal_out
             assert!(association(&mut fixture, id).is_none());
             assert!(fixture.inspect(move |canvas| {
                 let world = canvas.world_mut();
-                !world.query::<(&Name, &native::topology::presentation::VisualOwner)>().iter(world)
-                    .any(|(name, owner)| name.as_str().starts_with("scratch.choice.") && owner.0 == entity)
+                !world.query::<&Name>().iter(world)
+                    .any(|name| name.as_str() == format!("scratch.choice.{}", entity.to_bits()))
             }));
             replacement = Some((window, buffer, surface));
             (entity, id)
         } else { (application, placement) };
         if !absent(&mut fixture, "park.scratch-chooser") { activate(&mut fixture, "Cancel scratch selection"); }
         if matches!(retirement, Retire::Record) {
-            fixture.inspect(move |canvas| canvas.world_mut().get_mut::<native::protein_area::RecordBinding>(application).unwrap().uid = uid);
+            fixture.inspect(move |canvas| canvas.world_mut().get_mut::<native::protein_area::RecordBinding>(application).unwrap().area = application);
             property(&mut fixture, inspector, "Unmark and restore home");
             assert!(association(&mut fixture, placement).is_none());
         } else {

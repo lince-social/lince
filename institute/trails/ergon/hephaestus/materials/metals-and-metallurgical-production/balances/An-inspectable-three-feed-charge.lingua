@@ -1,0 +1,105 @@
+Import "../Metals-and-metallurgical-production.lingua"
+
+Choose a bounded three-feed charge with exact balances and a stated impurity limit (@metal-charge-example: 0, is #chapter, #part-of @metals-and-metallurgical-production, #source "../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43", #source "../sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #source "../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ", #metals-and-metallurgical-production "../../../chemistry/general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H") { r_3WVFHB258A1DYT3PE8KX78EGD5
+**Read:** [Materials, energy, and heat balances in metallurgical processes — Satish Ch. Koria](../sources/Metallurgical-Material-and-Heat-Balances-NPTEL.lingua#r_38NWQRDJH3RVM3NNGB71RR1X43), the complete quantities, charge, and extraction-balance exercises; [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1), the whole quality/impurity and process-system context; [Reproducible computational work](../../../inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ), reuse independent numerical checks, input meaning, and reproducibility.
+
+This invented exercise blends three nonreacting dry feeds with complete mass retention. It minimizes a linear feed cost for a fixed mass and target solute fraction, subject to a different impurity limit and feed-availability bounds. It does not model melting losses, chemical reactions, phase equilibria, heat, uncertainty, or an actual industrial recipe.
+
+Two independent equality balances define a line in three feed masses. Its intersection with the bounded availability/impurity inequalities is a closed interval or an empty set. A linear cost attains a minimum at an endpoint. The code enumerates candidate intersections with each bound, checks exact feasibility, and compares their costs. Exact fractions refer to the decimal representations of the finite numerical inputs, not perfect knowledge of a physical assay.
+
+```python file=three_feed_charge.py
+from fractions import Fraction
+import json
+import math
+
+def fraction(value, lower, upper):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("supply a finite numerical value")
+    try:
+        number = float(value)
+    except (ValueError, OverflowError) as error:
+        raise ValueError("supply a bounded numerical value") from error
+    if not math.isfinite(number) or not lower <= number <= upper:
+        raise ValueError("value outside exercise bounds")
+    return Fraction(str(number))
+
+def linear(matrix, rhs):
+    rows = [list(row) + [value] for row, value in zip(matrix, rhs)]
+    for column in range(3):
+        pivot = next((i for i in range(column, 3) if rows[i][column]), None)
+        if pivot is None:
+            return None
+        rows[column], rows[pivot] = rows[pivot], rows[column]
+        divisor = rows[column][column]
+        rows[column] = [value/divisor for value in rows[column]]
+        for i in range(3):
+            if i != column:
+                factor = rows[i][column]
+                rows[i] = [left-factor*right for left,right in zip(rows[i],rows[column])]
+    return tuple(row[3] for row in rows)
+
+def solve(feeds, mass=100, target_solute=0.04, max_impurity=0.001):
+    if not isinstance(feeds, (list, tuple)) or len(feeds) != 3:
+        raise ValueError("supply exactly three feeds")
+    mass = fraction(mass, 1e-6, 1000)
+    target = fraction(target_solute, 0, 1)
+    impurity_limit = fraction(max_impurity, 0, 1)
+    checked = []
+    names = []
+    for feed in feeds:
+        if not isinstance(feed, dict) or set(feed) != {"name", "solute", "impurity", "cost", "limit"}:
+            raise ValueError("each feed needs name, solute, impurity, cost, and limit")
+        name = feed["name"]
+        if not isinstance(name, str) or not 1 <= len(name) <= 40 or name in names:
+            raise ValueError("feed names must be unique nonempty strings")
+        solute = fraction(feed["solute"], 0, 1)
+        impurity = fraction(feed["impurity"], 0, 1)
+        if solute+impurity > 1:
+            raise ValueError("distinct constituent fractions exceed total feed")
+        checked.append((solute,impurity,fraction(feed["cost"],0,10000),fraction(feed["limit"],0,1000)))
+        names.append(name)
+    solutes, impurities, costs, limits = tuple(zip(*checked))
+    if len(set(solutes)) < 2:
+        raise ValueError("the two equality balances are not independent")
+    one = Fraction(1)
+    zero = Fraction(0)
+    planes = []
+    for i in range(3):
+        unit = tuple(one if j == i else zero for j in range(3))
+        planes.extend([(unit,zero),(unit,limits[i])])
+    planes.append((impurities,mass*impurity_limit))
+    candidates = set()
+    for row, bound in planes:
+        amounts = linear([(one,one,one),solutes,row],[mass,mass*target,bound])
+        if amounts is None or any(not zero <= amount <= limit for amount,limit in zip(amounts,limits)):
+            continue
+        if sum(amount*grade for amount,grade in zip(amounts,impurities)) > mass*impurity_limit:
+            continue
+        candidates.add(amounts)
+    if not candidates:
+        raise ValueError("no feasible charge in the bounded exercise")
+    cost = lambda amounts:sum(amount*price for amount,price in zip(amounts,costs))
+    best = min(candidates,key=lambda amounts:(cost(amounts),amounts))
+    return {"feed_mass_t":{name:str(amount) for name,amount in zip(names,best)},
+            "total_cost_units":str(cost(best)), "product_mass_t":str(sum(best)),
+            "solute_fraction":str(sum(x*c for x,c in zip(best,solutes))/mass),
+            "impurity_fraction":str(sum(x*c for x,c in zip(best,impurities))/mass),
+            "feasible_vertices":len(candidates)}
+
+if __name__ == "__main__":
+    feeds = [
+        {"name":"primary", "solute":0, "impurity":0, "cost":5, "limit":100},
+        {"name":"scrap", "solute":0.05, "impurity":0.002, "cost":1, "limit":100},
+        {"name":"master", "solute":0.5, "impurity":0, "cost":8, "limit":100},
+    ]
+    print(json.dumps(solve(feeds),sort_keys=True))
+```
+
+The default charge is 47 t primary, 50 t scrap, and 3 t master feed, with cost 309 units, 4% solute, and 0.1% impurity. Independently reduce the balances to one free variable and prove the feasible interval and cost slope. Removing the impurity restriction admits a different optimum: useful scrap content is constrained by the whole quality account, not its price alone.
+
+**Work:** check total/constituent balances, bounds, nonnegative feeds, all candidate endpoints, ties, reordered feeds, changed availability/target/impurity, and rejected singular/infeasible/nonfinite inputs. Compare the exact mathematical optimum with an omitted physical effect. A feasible optimal blend under stated assumptions is not evidence of actual melt quality, process safety, or a complete production cost.
+
+**Continue:** [Connect chemical potential, activities, and the reaction direction](../../../chemistry/general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H).
+
+**Return:** [Metals and metallurgical production — feed, refining, structure, useful products, and recovery](../Metals-and-metallurgical-production.lingua#r_59BDAQXT81552YF5F8TH4KQQH1).
+} r_3WVFHB258A1DYT3PE8KX78EGD5

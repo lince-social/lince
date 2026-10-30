@@ -317,11 +317,19 @@ fn workspace_navigation_operation_commands_preserve_editor_drafts_outputs_and_li
             == DesktopAction::MoveWorkspaceLater
             && binding.key == KeyCode::F8
             && binding.modifiers.super_key));
+        let close = super::displays::labelled(
+            &mut canvas,
+            lince_interface::i18n::Token::CloseEditMode.text(),
+        );
+        super::displays::reveal(&mut canvas, close);
+        click(&mut canvas, close, size);
+        assert!(!settle(&mut canvas).input.modal);
         let toast =
             super::displays::labelled(&mut canvas, lince_interface::i18n::Token::CloseToast.text());
         click(&mut canvas, toast, size);
         settle(&mut canvas);
         assert!(canvas.app.world().get_entity(toast).is_err());
+        native::edit_mode::EditAction::Open.apply(canvas.world_mut(), root);
         native::edit_mode::EditAction::Workspaces.apply(canvas.world_mut(), root);
         settle(&mut canvas);
         let field = {

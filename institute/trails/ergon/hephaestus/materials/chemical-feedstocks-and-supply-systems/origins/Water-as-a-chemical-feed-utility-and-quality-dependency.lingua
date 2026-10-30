@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Distinguish supplied water, solvent, utility and contaminant roles (@cs-water-feed: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C", #source "../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME", #source "../sources/High-Purity-Polymer-Delivery-Components-SEMI.lingua#r_4CJR70PGX15X3VQENBZ0S1RA25", #chemical-supply-systems "../../../chemistry/industrial-chemistry/inorganic/Chlor-alkali-cells-co-products-energy-and-quality.lingua#r_4QSMP063PRGB1934XC88JC9F63") { r_4F1V95R9ZFGVVJ3BKZAMQGMBD3
+**Read:** [Understanding Water Treatment Chemical Supply Chains and the Risk of Disruptions — EPA](../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C), the full report, including the user and precursor connections; [Caustic Soda Handbook — OxyChem](../sources/Caustic-Soda-Handbook-OxyChem.lingua#r_1MRFTA19NDBFBQXC69CCRQPAME), the entire property and dilution sections; [High-purity polymer materials and chemical-delivery components — SEMI F57](../sources/High-Purity-Polymer-Delivery-Components-SEMI.lingua#r_4CJR70PGX15X3VQENBZ0S1RA25), the public scope, followed by authorized full methods in an advanced study.
+
+Water can be a reaction feed, solvent, wash fluid, coolant, steam source or product constituent. These roles have different quality and continuity requirements. A supply interruption can affect chemical production even when the reagent itself is in stock; a water-quality change can invalidate a dilution or cleaning step without changing its nominal volume.
+
+Draw a user's water connections with each stream's purpose, quality evidence, treatment, storage and return path. Include the chemicals needed to make that water fit for use. This exposes a reciprocal dependency: chemical manufacture needs water services, and water services need chemicals. Use the EPA cases to distinguish a national overview from a specific site's vulnerabilities.
+
+Work a dilution account only as a quantity model, explicitly stating that concentration, mixing heat, contamination and equipment suitability remain separate physical questions. Compare delivery of a concentrated qualified material with delivery of a diluted material on active content, transport mass, water quality and point-of-use requirements. Use the later utility trails for full water-system engineering; this Record supplies the interface by which chemical availability and accepted water support one another.
+
+**Continue:** [Connect chlor-alkali production with brine, cells, co-products and downstream duties](../../../chemistry/industrial-chemistry/inorganic/Chlor-alkali-cells-co-products-energy-and-quality.lingua#r_4QSMP063PRGB1934XC88JC9F63).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_4F1V95R9ZFGVVJ3BKZAMQGMBD3

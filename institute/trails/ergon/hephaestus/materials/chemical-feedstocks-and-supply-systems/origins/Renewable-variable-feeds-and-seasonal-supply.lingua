@@ -1,0 +1,15 @@
+Import "../Chemical-feedstocks-and-supply-systems.lingua"
+
+Compare renewable feedstocks on usable material and time-dependent evidence (@cs-renewable-feed: 0, is #chapter, #part-of @chemical-supply-systems, #source "../../../chemistry/industrial-chemistry/sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0", #source "../../../chemistry/industrial-chemistry/sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #chemical-supply-systems "../quality/Qualify-the-actual-source-and-the-actual-route.lingua#r_61RKSTFXH4ZXAD0069T2SCMM6X") { r_6PNGA85ENPC1AYGC6WXG6060EC
+**Read:** [Organic Chemical Technology — Nanda Kishore, NPTEL](../../../chemistry/industrial-chemistry/sources/Organic-Chemical-Technology-Kishore.lingua#r_1ERYESBGNKCKMDY0NPHJKCVJG0), complete natural-feed, fermentation and renewable-product teaching; [Manufacture of Organic Fine Chemicals, BREF OFC](../../../chemistry/industrial-chemistry/sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), complete applicable bioprocess and common-operation chapters; [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the complete planning/coordination programme applied to the seasonal case.
+
+Renewable chemical supply can begin with oils, sugars, lignocellulosic materials, fermentation-derived products or recovered biological streams. Describe an actual product's function and conversion route, then identify the composition, moisture, biological state, seasonal availability and storage history that change its usable yield or specification.
+
+Follow two contrasting sources to the same type of intermediate. Preserve feed-lot variability instead of replacing it with a single average. Calculate quantities on dry/active and as-delivered bases, including transport and storage changes. Compare a local seasonal source with a more continuous or geographically distant source on evidence, conditioning, lead time and interruption exposure.
+
+Use complete relevant manufacturing courses and process chapters, then trace the supporting reagents, enzymes/catalysts, utility water and analytical work. A renewable-origin claim does not by itself settle land/water burden, purity, equipment compatibility or reliable availability. Build a scenario in which a harvest, drying, storage or utility problem changes supply and identify where an alternative could actually enter the user's process. Keep agronomy and biochemical conversion depth in the shared and future specialist subjects while making the supplied-material interface explicit here.
+
+**Continue:** [Qualify a supplier through the material and route they actually control](../quality/Qualify-the-actual-source-and-the-actual-route.lingua#r_61RKSTFXH4ZXAD0069T2SCMM6X).
+
+**Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+} r_6PNGA85ENPC1AYGC6WXG6060EC

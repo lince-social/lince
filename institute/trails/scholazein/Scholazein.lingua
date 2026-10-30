@@ -1,0 +1,11 @@
+Scholazein — pursuits of a well-spent life (@scholazein: 0, is #chapter, #scholazein "philosophy/Philosophy.lingua#r_00000000000000000000001001") { r_E8E2D1B2D2994E0AD5F5D002D6
+Begin with [Philosophy](philosophy/Philosophy.lingua), including Ancient Greek philosophy, Buddhism, and Yoga. History, sociology, political-economy, literature, and art are neighbouring areas to develop. Their planned scopes are linked in the register; existing Records remain reusable across these areas.
+
+[Development register](../lince/Trails.lingua#r_F0C67572595D006B38030FA375).
+} r_E8E2D1B2D2994E0AD5F5D002D6
+
+Extension @scholazein "lince.vocabulary" {
+ definitions {
+  scholazein "A continuation through scholazein — pursuits of a well-spent life."
+ }
+}

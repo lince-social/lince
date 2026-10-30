@@ -1,0 +1,68 @@
+Import "../Geology.lingua"
+
+Derive, calculate, and independently check a three-point geological plane (@geo-plane-example: 0, is #chapter, #part-of @geology, #source "../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW", #source "../../../../hephaestus/inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8", #geology "Stereonets-and-directional-populations.lingua#r_380V6STKXAYNFT1AKQ6P6CK4YM") { r_1X60JZT3S9BPQQ5B2J4BFDRCW9
+**Read:** [Geological Structures: a Practical Introduction — Waldron and Snyder](../sources/Geological-Structures-Waldron-Snyder.lingua#r_2RC4KMK6ADFX90708NZH2F6RRW), the complete three-point problem treatment and Lab 2; [Build a numerical validation argument across several kinds of evidence](../../../../hephaestus/inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8), independent checks, conditioning, and numerical criteria.
+
+Use local Cartesian coordinates: x east, y north, z up, all metres. Assume three observations belong to the same planar surface representable as a height. Write z = z₀ + a(x−x₀) + b(y−y₀). Subtract the first observation from the other two and solve the resulting two-by-two system for a and b. Three noncollinear points determine this model; fitting them exactly is not independent geological validation.
+
+For invented points (0,0,100), (100,0,80), and (0,100,90), the result is z = 100−0.2x−0.1y. The downward horizontal gradient is (0.2,0.1). Dip is atan(√(a²+b²)), about 12.604°, with dip azimuth atan2(−a,−b) clockwise from north, about 63.435°. Right-hand strike is about 333.435°.
+
+```python file=geological_plane.py
+import json
+import math
+
+def coordinate(value):
+    if isinstance(value, bool):
+        raise ValueError("coordinates must be finite numbers")
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError) as error:
+        raise ValueError("coordinates must be finite numbers") from error
+    if not math.isfinite(result) or abs(result) > 1e9:
+        raise ValueError("coordinate outside the exercise bounds")
+    return result
+
+def fit_plane(points):
+    if not isinstance(points, (list, tuple)) or len(points) != 3:
+        raise ValueError("exactly three points are required")
+    converted = []
+    for point in points:
+        if not isinstance(point, (list, tuple)) or len(point) != 3:
+            raise ValueError("each point needs east, north, and up")
+        converted.append(tuple(coordinate(value) for value in point))
+    x0, y0, z0 = converted[0]
+    dx1, dy1, dz1 = (converted[1][i] - converted[0][i] for i in range(3))
+    dx2, dy2, dz2 = (converted[2][i] - converted[0][i] for i in range(3))
+    scale = max(abs(dx1), abs(dy1), abs(dx2), abs(dy2))
+    determinant = dx1 * dy2 - dx2 * dy1
+    if scale == 0 or abs(determinant) <= 1e-12 * scale * scale:
+        raise ValueError("vertical, degenerate, or poorly conditioned height plane")
+    a = (dz1 * dy2 - dz2 * dy1) / determinant
+    b = (dx1 * dz2 - dx2 * dz1) / determinant
+    dip = math.degrees(math.atan(math.hypot(a, b)))
+    azimuth = None if a == b == 0 else math.degrees(math.atan2(-a, -b)) % 360
+    return {
+        "origin": [x0, y0, z0], "east_gradient": a, "north_gradient": b,
+        "dip_degrees": dip, "dip_azimuth_degrees": azimuth,
+        "right_hand_strike_degrees": None if azimuth is None else (azimuth - 90) % 360,
+    }
+
+def height(plane, east, north):
+    x0, y0, z0 = plane["origin"]
+    return math.fsum((z0, plane["east_gradient"] * (coordinate(east) - x0),
+                     plane["north_gradient"] * (coordinate(north) - y0)))
+
+if __name__ == "__main__":
+    result = fit_plane([(0, 0, 100), (100, 0, 80), (0, 100, 90)])
+    result["height_at_50_50_m"] = height(result, 50, 50)
+    print(json.dumps(result, sort_keys=True, allow_nan=False))
+```
+
+The exercise rejects nonfinite/oversized coordinates and near-degenerate horizontal geometry. Horizontal planes have undefined strike/dip direction here, represented by null; vertical planes require a different representation. The relative determinant cutoff is an explicit exercise criterion, not a universal field uncertainty model.
+
+**Work:** derive a normal vector by an independent cross product and compare orientations. Test all point permutations, a common translation, a consistent length-unit rescaling, a horizontal case, and rejected geometry. Check an independent fourth observation and explain whether residuals support planarity. Introduce measurement uncertainty or fit several points only with an explicit observation/error model, not by treating this exact three-point solver as a validated geological inference.
+
+**Continue:** [Use stereographic constructions and directional data with explicit conventions](Stereonets-and-directional-populations.lingua#r_380V6STKXAYNFT1AKQ6P6CK4YM).
+
+**Return:** [Geology — Earth materials, processes, history, and investigation](../Geology.lingua#r_3CK43VQS79NK0STWNPSCS8YM06).
+} r_1X60JZT3S9BPQQ5B2J4BFDRCW9

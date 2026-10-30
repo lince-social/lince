@@ -39,7 +39,7 @@ pub(super) fn open(world: &mut World, destination: Destination, choices: Vec<Tar
     let choices = choices.into_iter().enumerate().map(|(index, target)| {
         let name = caption(world, &target, index);
         let button = input_settings::button(world, list, overlay, &name, Edit::Choose(index));
-        world.entity_mut(button.0).insert((Name::new(format!("scratch.choice.{index}")), crate::native::topology::presentation::VisualOwner(target.entity)));
+        world.entity_mut(button.0).insert((Name::new(format!("scratch.choice.{}", target.entity.to_bits())), crate::native::capture::render::TargetSource(target.entity)));
         if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(button.0) { node.set_role(accesskit::Role::RadioButton); node.set_toggled(accesskit::Toggled::False); }
         (target, button)
     }).collect();

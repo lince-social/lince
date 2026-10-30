@@ -1,0 +1,29 @@
+Import "../Metrology.lingua"
+
+A specimen, a sampling target, and a result about a population (@met-sampling-target: 0, is #chapter, #part-of @metrology, #source "../sources/Sampling-Uncertainty.lingua#r_3Q0NEPSBDFX8Z1JWAG3C3HRHJM", #source "../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY", #metrology "Data-and-reports.lingua#r_01A7WVXPKHKNSSS10X9D7PYMVC", #geology "../../../../gaia/earth/geology/field/Representative-and-question-driven-sampling.lingua#r_6QN1CSY2N7BMX998S6J7M9FVTS", #mining-and-mineral-engineering "../../../engineering/mining-and-mineral-engineering/evidence/Sampling-design-support-and-material-heterogeneity.lingua#r_6G69EKR23DGV02YYHKMNNTZF0W", #industrial-chemistry "../../../chemistry/industrial-chemistry/feedstocks/Characterize-a-feed-for-its-chemical-and-physical-response.lingua#r_4SGD9MAA6F3FBXHX5JR40TWWWM", #chemical-supply-systems "../../../materials/chemical-feedstocks-and-supply-systems/quality/Sample-a-delivery-with-its-actual-target-and-history.lingua#r_1VK6CJ1S37DSVXSBAZ5XQDXDMR", #water-and-sanitation "../../../utilities/water-and-sanitation/foundations/A-water-sampling-plan-that-answers-a-defined-question.lingua#r_2017E3G9XVF21MMQHJYNDQ2S7W") { r_0F0VEC42GPQPRZM0S7MXF7GAEH
+**Read:** [Measurement uncertainty arising from sampling — Ramsey, Ellison, and Rostron](../sources/Sampling-Uncertainty.lingua#r_3Q0NEPSBDFX8Z1JWAG3C3HRHJM), the whole guide’s first conceptual reading, then the empirical and modelling approaches; [The Fitness for Purpose of Analytical Methods — Eurachem](../sources/Method-Validation.lingua#r_5XXJY86AVZZ7XRT71EY7TRYDJY), sampling and sample-handling sections.
+
+Decide whether the result concerns the specimen in front of the instrument or a larger target such as a delivery, stockpile, water body, batch, wafer, or time interval. Sampling and physical preparation are part of the measurement when the target’s property is the measurand. An excellent analysis of an unrepresentative specimen may answer the specimen question accurately while answering the delivery question poorly.
+
+Describe the target’s boundaries, spatial or temporal variation, selection mechanism, increments, compositing, subsampling, preparation, and preservation. A convenient sample and a random sample are different designs. A mean of specimen results does not become a valid target estimate merely because many decimals are averaged.
+
+For a heterogeneous lot, repeated instrument readings on the same prepared aliquot mainly reveal one part of variation. Independent samples taken across the target and independently prepared reveal additional components. A hierarchical design can separate these under assumptions; an operator label alone cannot reveal every level of the hierarchy.
+
+**Work:** draw a hypothetical powder-delivery sampling process from the whole lot to the test portion. Identify possible segregation, moisture changes, contamination, and losses at each stage. Compare a duplicate analysis of one portion with duplicate sampling followed by duplicate analyses. State which uncertainty questions each design can answer.
+
+Use a paper or harmless-material study first. An actual sampling procedure for hazardous, pressurized, infectious, or valuable industrial material needs its specific facilities and competence. The shared lesson is methodological: define the target and the claim before deciding how many observations to collect, and preserve sample identity and preparation history so later analysis does not silently change the question.
+
+**Continue:** [A measurement record another person can interpret and repeat](Data-and-reports.lingua#r_01A7WVXPKHKNSSS10X9D7PYMVC).
+
+**Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in geology:** [Sample for the target question without erasing geological structure](../../../../gaia/earth/geology/field/Representative-and-question-driven-sampling.lingua#r_6QN1CSY2N7BMX998S6J7M9FVTS).
+
+**Continue in mining and mineral engineering:** [Design sampling for the material population and decision being investigated](../../../engineering/mining-and-mineral-engineering/evidence/Sampling-design-support-and-material-heterogeneity.lingua#r_6G69EKR23DGV02YYHKMNNTZF0W).
+
+**Continue in industrial chemistry:** [Characterize feed variability for the actual chemistry and process response](../../../chemistry/industrial-chemistry/feedstocks/Characterize-a-feed-for-its-chemical-and-physical-response.lingua#r_4SGD9MAA6F3FBXHX5JR40TWWWM).
+
+**Continue in chemical supply systems:** [Extend representative sampling across the supplier-to-user transfer](../../../materials/chemical-feedstocks-and-supply-systems/quality/Sample-a-delivery-with-its-actual-target-and-history.lingua#r_1VK6CJ1S37DSVXSBAZ5XQDXDMR).
+
+**Continue in water and sanitation:** [A water-sampling plan that answers a defined question](../../../utilities/water-and-sanitation/foundations/A-water-sampling-plan-that-answers-a-defined-question.lingua#r_2017E3G9XVF21MMQHJYNDQ2S7W).
+} r_0F0VEC42GPQPRZM0S7MXF7GAEH

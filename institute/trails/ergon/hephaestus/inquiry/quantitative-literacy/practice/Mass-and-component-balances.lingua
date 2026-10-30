@@ -1,0 +1,33 @@
+Import "../Quantitative-literacy.lingua"
+
+Mass and component balances — account for every stream (@ql-balances: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #source @ql-source-algebra, #quantitative-literacy "Yield-and-recovery.lingua#r_2G5J64TBJZ1NBBT1DS2FT81B20", #general-chemistry "../../../chemistry/general-chemistry/reactions/Reaction-extent-and-species-balances.lingua#r_5NMK6VYMTG3QWD994R4VPP4M1Y", #mining-and-mineral-engineering "../../../engineering/mining-and-mineral-engineering/processing/Read-a-flowsheet-and-define-streams-and-boundaries.lingua#r_1DRPSJDFXNJ1P5TJEGS6HPTEXD", #metals-and-metallurgical-production "../../../materials/metals-and-metallurgical-production/balances/Conserved-elements-charge-inventory-and-recovery.lingua#r_1B1CBH4MSY63JZCHDPZHCJ095E", #industrial-chemistry "../../../chemistry/industrial-chemistry/balances/Conserved-elements-streams-and-chemical-transformation.lingua#r_71NDSP7R3M8W3B7511NVQ4HW6V", #chemical-supply-systems "../../../materials/chemical-feedstocks-and-supply-systems/inventory/An-inventory-account-with-real-material-states.lingua#r_24JXC52Y2G46R68RA3PSN276CV", #thermodynamics-and-heat-transfer "../../../physics/thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M", #fluid-dynamics "../../../physics/fluid-dynamics/balances/Systems-control-volumes-and-the-Reynolds-transport-theorem.lingua#r_2K8N085T7ET89K52K52W8QASMT", #water-and-sanitation "../../../utilities/water-and-sanitation/foundations/Track-water-and-constituents-through-the-same-boundary.lingua#r_4SA70P0BR6C7ADCR7MDV78D2D8") { r_163GVDJGRJ1DD4JT2398GM371H
+**Read:** The Art of Insight's complete Symmetry and conservation chapter, then its Proportional reasoning chapter. Use Algebra and Trigonometry 2e chapter 11 to solve the independent linear constraints. This reading introduces generic accounting; reaction stoichiometry, phase equilibrium, and process design deepen in chemistry and process engineering.
+
+Choose a time or batch basis and draw a boundary with every entering and leaving stream. For a nonreacting two-product separator at steady state, F = C + T and Fg_f = Cg_c + Tg_t, where flow values and mass fractions share the same dry or wet basis. State what the component is; a mineral's fraction is not necessarily the mass fraction of its contained metal.
+
+With hypothetical F = 1000 kg/h, g_f = 0.02, and C = 100 kg/h at g_c = 0.15, the tail stream is 900 kg/h and contains 5 kg/h of the component, so g_t = 5/900, about 0.00556. Both total mass and component mass close. The product's grade and component recovery are different quantities.
+
+**Work:** derive these balances from a sketch, solve them in a different order, and substitute the results back. Add a recycle stream and show that it cancels from the overall boundary balance while remaining in the unit-operation balance. Describe how accumulation, an unmeasured water stream, or dust losses would change the equations.
+
+A small residual does not prove that every measurement is correct; errors can cancel. If measured streams do not close, report the residual, time basis, and uncertainty before inventing a loss term to force agreement. Later reconciliation methods require explicit assumptions about the measurements and dependencies.
+
+**Continue in general chemistry:** [Use reaction extent to connect species changes with conserved elements](../../../chemistry/general-chemistry/reactions/Reaction-extent-and-species-balances.lingua#r_5NMK6VYMTG3QWD994R4VPP4M1Y).
+
+**Continue:** [Yield, recovery, purity, and usable output](Yield-and-recovery.lingua#r_2G5J64TBJZ1NBBT1DS2FT81B20).
+
+**Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in mining and mineral engineering:** [Read a flowsheet as a material, water, energy, and information account](../../../engineering/mining-and-mineral-engineering/processing/Read-a-flowsheet-and-define-streams-and-boundaries.lingua#r_1DRPSJDFXNJ1P5TJEGS6HPTEXD).
+
+**Continue in metals and metallurgical production:** [Close conserved-element and inventory accounts before judging metallurgical performance](../../../materials/metals-and-metallurgical-production/balances/Conserved-elements-charge-inventory-and-recovery.lingua#r_1B1CBH4MSY63JZCHDPZHCJ095E).
+
+**Continue in industrial chemistry:** [Close element accounts while allowing species, phases and useful products to change](../../../chemistry/industrial-chemistry/balances/Conserved-elements-streams-and-chemical-transformation.lingua#r_71NDSP7R3M8W3B7511NVQ4HW6V).
+
+**Continue in chemical supply systems:** [Balance usable, quarantined, expired and returned chemical quantities](../../../materials/chemical-feedstocks-and-supply-systems/inventory/An-inventory-account-with-real-material-states.lingua#r_24JXC52Y2G46R68RA3PSN276CV).
+
+**Continue in thermodynamics and heat transfer:** [Control-volume mass and energy balances](../../../physics/thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M).
+
+**Continue in fluid dynamics:** [Systems, control volumes and the Reynolds transport theorem](../../../physics/fluid-dynamics/balances/Systems-control-volumes-and-the-Reynolds-transport-theorem.lingua#r_2K8N085T7ET89K52K52W8QASMT).
+
+**Continue in water and sanitation:** [Track water and constituents through the same boundary](../../../utilities/water-and-sanitation/foundations/Track-water-and-constituents-through-the-same-boundary.lingua#r_4SA70P0BR6C7ADCR7MDV78D2D8).
+} r_163GVDJGRJ1DD4JT2398GM371H

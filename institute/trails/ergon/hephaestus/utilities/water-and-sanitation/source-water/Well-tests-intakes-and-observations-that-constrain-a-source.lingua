@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Well tests, intakes and observations that constrain a source (@wu-source-observations: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Source-contamination-pathways-and-protection.lingua#r_6ZM37SHMBFXZRZ0XK2PWWS5E5R") { r_33V2BHHRAESJC6434PABCV64PD
+**Read:** [Manual de Saneamento](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), abstraction and source material; [Groundwater Resource Development](../sources/Groundwater-resource-development.lingua#r_1M3NS4Y0CV4391JF136S20MVBP), chapter 4's estimation methods and chapter 6's cases. Revisit the groundwater flow and transport Records linked from this trail's geology material. Distinguish a well's mechanical delivery capacity from a water body's ability to supply it without unacceptable consequences.
+
+A time series of pumping rate and water level supports a different inference from a single static depth. Record the datum, well geometry, screen intervals, measurement times, other pumping and recovery period. Drawdown is change relative to a stated reference, not depth below an arbitrary ruler. Specific capacity Q/drawdown is an observed ratio with a test duration; it is not automatically aquifer transmissivity. Well losses, partial penetration, leakage and boundaries can produce alternative interpretations.
+
+For an intake, record water levels and quality at candidate depths, access during floods and droughts, sediment and debris, approach conditions, interruption procedures and maintenance access. An apparent short-term intake capacity says little about dry-season availability. A second intake can share the same catchment failure; two pumps can share one power supply.
+
+**Work:** Design an observation programme, not a real drilling or abstraction operation. Supply a hypothetical pumping schedule and identify the observations needed to test a model. Hold back part of a recovery series and ask whether a model fitted to pumping predicts it. State which parameters are non-identifiable and which extra observation could help. Compare surface intake and well options using availability, quality, energy, maintainability and uncertainty, with each conclusion tied to an observation or explicit assumption.
+
+**Continue:** [Source contamination pathways and protection](Source-contamination-pathways-and-protection.lingua#r_6ZM37SHMBFXZRZ0XK2PWWS5E5R).
+} r_33V2BHHRAESJC6434PABCV64PD

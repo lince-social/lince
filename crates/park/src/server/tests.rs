@@ -104,6 +104,7 @@ struct Client {
     workspace_manager: Option<ext_workspace_manager_v1::ExtWorkspaceManagerV1>,
     workspaces: Vec<ext_workspace_handle_v1::ExtWorkspaceHandleV1>,
     workspace_names: Vec<String>,
+    workspace_name_events: Vec<(ext_workspace_handle_v1::ExtWorkspaceHandleV1, String)>,
     workspace_coordinates: Vec<(ext_workspace_handle_v1::ExtWorkspaceHandleV1, Vec<u32>)>,
     workspace_done: usize,
     workspace_removed: usize,
@@ -468,7 +469,10 @@ impl Dispatch<ext_workspace_handle_v1::ExtWorkspaceHandleV1, ()> for Client {
     fn event(state: &mut Self, proxy: &ext_workspace_handle_v1::ExtWorkspaceHandleV1,
         event: ext_workspace_handle_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
         match event {
-            ext_workspace_handle_v1::Event::Name { name } => state.workspace_names.push(name),
+            ext_workspace_handle_v1::Event::Name { name } => {
+                state.workspace_name_events.push((proxy.clone(), name.clone()));
+                state.workspace_names.push(name);
+            }
             ext_workspace_handle_v1::Event::Coordinates { coordinates } => {
                 let coordinates = coordinates.chunks_exact(4)
                     .map(|value| u32::from_ne_bytes(value.try_into().unwrap())).collect();

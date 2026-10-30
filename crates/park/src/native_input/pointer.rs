@@ -73,6 +73,11 @@ pub struct Target {
 }
 
 impl Target {
+    #[cfg(all(test, feature = "server-tests"))]
+    pub(crate) fn contains(&self, entity: Entity) -> bool {
+        self.geometry.iter().any(|geometry| geometry.lineage.contains(&entity))
+    }
+
     pub(crate) fn output(&self) -> Option<OutputId> {
         self.geometry.first().map(|geometry| geometry.output).or_else(|| self.background.as_ref().map(|background| background.output))
     }

@@ -179,12 +179,18 @@ pub(crate) struct Presented {
 impl Composition {
     pub(crate) fn enable_client_formats(&mut self, renderer: &GlesRenderer, server: &mut Server, frame: &crate::presentation::Frame) -> io::Result<()> {
         use smithay::backend::allocator::{Format, Modifier};
+        use std::os::unix::fs::{FileTypeExt, MetadataExt};
         if self.linear_color_available() && frame.encoding == lince_interface::host::color::NativeEncoding::LinearRelative {
             server.enable_hdr_color_management()?;
         } else { server.enable_sdr_color_management(); }
         let supported = renderer.egl_context().dmabuf_texture_formats();
+        let device = || smithay::backend::egl::EGLDevice::device_for_display(renderer.egl_context().display()).ok()
+            .and_then(|device| device.render_device_path().or_else(|_| device.drm_device_path()).ok())
+            .and_then(|path| std::fs::metadata(path).ok())
+            .filter(|metadata| metadata.file_type().is_char_device())
+            .map(|metadata| metadata.rdev());
         server.enable_dmabuf_formats(frame.client_formats.iter().copied().map(|code| Format { code, modifier: Modifier::Linear })
-            .filter(|candidate| supported.iter().any(|format| format == candidate)));
+            .filter(|candidate| supported.iter().any(|format| format == candidate)), device)?;
         Ok(())
     }
 

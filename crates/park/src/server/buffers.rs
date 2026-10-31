@@ -2,7 +2,7 @@ use super::*;
 use smithay::{
     backend::allocator::{Buffer, Format, Fourcc, Modifier, dmabuf::Dmabuf},
     delegate_dmabuf,
-    wayland::dmabuf::{DmabufGlobal, DmabufHandler, DmabufState, ImportNotifier},
+    wayland::dmabuf::{DmabufFeedbackBuilder, DmabufGlobal, DmabufHandler, DmabufState, ImportNotifier},
 };
 
 pub(super) struct Buffers {
@@ -22,11 +22,7 @@ impl Buffers {
 }
 
 impl Server {
-    pub fn enable_dmabuf(&mut self) {
-        self.enable_dmabuf_formats([Format { code: Fourcc::Argb8888, modifier: Modifier::Linear }]);
-    }
-
-    pub fn enable_dmabuf_formats(&mut self, formats: impl IntoIterator<Item = Format>) {
+    pub fn enable_dmabuf_formats(&mut self, formats: impl IntoIterator<Item = Format>, device: impl FnOnce() -> Option<rustix::fs::Dev>) -> io::Result<()> {
         if self.state.dmabuf.global.is_none() {
             let mut accepted = Vec::new();
             for format in formats {
@@ -34,13 +30,16 @@ impl Server {
                     && matches!(format.code, Fourcc::Argb8888 | Fourcc::Abgr8888 | Fourcc::Abgr2101010 | Fourcc::Abgr16161616f)
                     && !accepted.contains(&format) { accepted.push(format); }
             }
-            if accepted.is_empty() { return; }
-            self.state.dmabuf.global = Some(self.state.dmabuf.state.create_global::<State>(
-                &self.display.handle(),
-                accepted.clone(),
-            ));
+            if accepted.is_empty() { return Ok(()); }
+            self.state.dmabuf.global = Some(if let Some(device) = device() {
+                let feedback = DmabufFeedbackBuilder::new(device, accepted.iter().copied()).build().map_err(io::Error::other)?;
+                self.state.dmabuf.state.create_global_with_default_feedback::<State>(&self.display.handle(), &feedback)
+            } else {
+                self.state.dmabuf.state.create_global::<State>(&self.display.handle(), accepted.iter().copied())
+            });
             self.state.dmabuf.formats = accepted;
         }
+        Ok(())
     }
 }
 

@@ -141,6 +141,15 @@ struct Hardware {
 
 pub use crate::environment::{environment_ready, reexec_environment};
 
+fn active_vt() -> io::Result<i32> {
+    std::fs::read_to_string("/sys/class/tty/tty0/active")?
+        .trim()
+        .strip_prefix("tty")
+        .and_then(|value| value.parse::<i32>().ok())
+        .filter(|vt| (1..=63).contains(vt))
+        .ok_or_else(|| io::Error::other("The kernel did not identify an active virtual terminal."))
+}
+
 pub fn run(
     configuration: Configuration,
     instance: &InstanceGuard,
@@ -328,6 +337,7 @@ pub fn run(
     eprintln!("Park Wayland display: {}", socket.display());
     let result: io::Result<()> = (|| {
         while desktop.running {
+            let mut vt_request = None;
             if stopped.load(Ordering::Acquire) && !logout_requested {
                 desktop.logout()?;
                 logout_requested = true;
@@ -335,43 +345,13 @@ pub fn run(
             for event in events.drain(..) {
                 match event {
                     Event::Session(SessionEvent::PauseSession) => {
-                        desktop.server.tablet_reset(crate::desktop::renderer::capture::monotonic().as_millis() as u32);
-                        hardware.active = false;
-                        hardware.devices.active(false);
-                        for screen in hardware.screens.values_mut() {
-                            screen.power.pause(&mut desktop.server, screen.pending && screen.prepared.is_none());
-                            if let Some(prepared) = screen.prepared.take() { hardware.retired.push(prepared); }
-                            screen.adaptive_sync.effective = None;
-                            screen.adaptive_sync.pending = false;
-                            screen.adaptive_sync.reason = Some("The physical session is inactive; adaptive sync will be confirmed after resume.".into());
-                            screen.color.invalidate();
-                        }
-                        hardware.publish_adaptive_sync(&mut desktop.server);
-                        hardware.publish_color(&mut desktop.server);
-                        libinput.suspend();
-                        hardware.outputs.pause();
-                        desktop.event(smithay::backend::winit::WinitEvent::Focus(false))?;
+                        hardware.pause(&mut desktop, &mut libinput, &mut vt_keys)?;
+                        lock_frame_pending = false;
                     }
                     Event::Session(SessionEvent::ActivateSession) => {
-                        hardware.outputs.activate(false).map_err(error)?;
-                        libinput
-                            .resume()
-                            .map_err(|_| io::Error::other("Could not resume input"))?;
-                        hardware.active = true;
-                        hardware.devices.active(true);
-                        hardware.resume_output_requests(&desktop.server);
-                        for screen in hardware.screens.values_mut() {
-                            screen.pending = false;
-                            screen.protected = false;
-                            screen.output.reset_buffers();
-                            screen.power.reconfigure();
-                        }
-                        hardware.rescan(&mut desktop.server)?;
-                        desktop.size = hardware.size;
-                        desktop.invalidate_outputs()?;
-                        desktop.event(smithay::backend::winit::WinitEvent::Focus(true))?;
+                        hardware.resume(&mut desktop, &mut libinput)?;
                     }
-                    Event::Presented(crtc, presentation_time, hardware_clock) => {
+                    Event::Presented(crtc, presentation_time, hardware_clock) if hardware.active && session.is_active() => {
                         let mut color_fallback = None;
                         if let Some(screen) = hardware.screens.get_mut(&crtc) {
                             let submitted = match screen.output.frame_submitted() {
@@ -433,7 +413,7 @@ pub fn run(
                             desktop.redraw = true;
                         }
                     }
-                    Event::Device(event) if hardware.active => {
+                    Event::Device(event) if hardware.active && session.is_active() => {
                         let device_id = match event {
                             UdevEvent::Added { device_id, .. }
                             | UdevEvent::Changed { device_id }
@@ -446,11 +426,29 @@ pub fn run(
                         desktop.size = hardware.size;
                         desktop.invalidate_outputs()?;
                     }
-                    Event::Input(event) if hardware.active => {
-                        hardware.input(&mut desktop, event, &mut session, &mut vt_keys)?
+                    Event::Input(event) if hardware.active && session.is_active() && vt_request.is_none() => {
+                        hardware.input(&mut desktop, event, &mut vt_request, &mut vt_keys)?
                     }
                     Event::Error(message) => eprintln!("Park display: {message}"),
-                    Event::Device(_) | Event::Input(_) => {}
+                    Event::Presented(..) | Event::Device(_) | Event::Input(_) => {}
+                }
+            }
+            if !session.is_active() {
+                hardware.pause(&mut desktop, &mut libinput, &mut vt_keys)?;
+                lock_frame_pending = false;
+            }
+            if let Some(vt) = vt_request {
+                match active_vt() {
+                    Ok(current) if current == vt => {}
+                    Ok(_) => {
+                        hardware.pause(&mut desktop, &mut libinput, &mut vt_keys)?;
+                        lock_frame_pending = false;
+                        if let Err(failure) = session.change_vt(vt) {
+                            if session.is_active() { hardware.resume(&mut desktop, &mut libinput)?; }
+                            desktop.send(Input::Feedback(format!("Could not switch virtual terminal: {failure}")))?;
+                        }
+                    }
+                    Err(failure) => desktop.send(Input::Feedback(format!("Could not determine the active virtual terminal: {failure}")))?,
                 }
             }
             if activation.take_show() {
@@ -549,6 +547,46 @@ pub fn run(
 }
 
 impl Hardware {
+    fn pause(&mut self, desktop: &mut Desktop, libinput: &mut Libinput, vt_keys: &mut HashSet<u32>) -> io::Result<()> {
+        if !self.active { return Ok(()); }
+        self.active = false;
+        self.devices.active(false);
+        vt_keys.clear();
+        desktop.server.tablet_reset(crate::desktop::renderer::capture::monotonic().as_millis() as u32);
+        for screen in self.screens.values_mut() {
+            screen.power.pause(&mut desktop.server, screen.pending && screen.prepared.is_none());
+            if let Some(prepared) = screen.prepared.take() { self.retired.push(prepared); }
+            screen.adaptive_sync.effective = None;
+            screen.adaptive_sync.pending = false;
+            screen.adaptive_sync.reason = Some("The physical session is inactive; adaptive sync will be confirmed after resume.".into());
+            screen.color.invalidate();
+        }
+        self.publish_adaptive_sync(&mut desktop.server);
+        self.publish_color(&mut desktop.server);
+        libinput.suspend();
+        self.outputs.pause();
+        desktop.event(smithay::backend::winit::WinitEvent::Focus(false))
+    }
+
+    fn resume(&mut self, desktop: &mut Desktop, libinput: &mut Libinput) -> io::Result<()> {
+        if self.active { return Ok(()); }
+        self.outputs.activate(false).map_err(error)?;
+        libinput.resume().map_err(|_| io::Error::other("Could not resume input"))?;
+        self.active = true;
+        self.devices.active(true);
+        self.resume_output_requests(&desktop.server);
+        for screen in self.screens.values_mut() {
+            screen.pending = false;
+            screen.protected = false;
+            screen.output.reset_buffers();
+            screen.power.reconfigure();
+        }
+        self.rescan(&mut desktop.server)?;
+        desktop.size = self.size;
+        desktop.invalidate_outputs()?;
+        desktop.event(smithay::backend::winit::WinitEvent::Focus(true))
+    }
+
     fn tablet_input<E>(&mut self, desktop: &mut Desktop, event: &E, phase: lince_interface::host::input::TabletPhase)
     where E: smithay::backend::input::TabletToolEvent<LibinputInputBackend> + smithay::reexports::input::event::tablet_tool::TabletToolEventTrait {
         if let Some(report) = self.devices.tablet_event(event, phase)
@@ -847,7 +885,7 @@ impl Hardware {
         &mut self,
         desktop: &mut Desktop,
         event: InputEvent<LibinputInputBackend>,
-        session: &mut LibSeatSession,
+        vt_request: &mut Option<i32>,
         vt_keys: &mut HashSet<u32>,
     ) -> io::Result<()> {
         desktop.flush_touch()?;
@@ -961,7 +999,7 @@ impl Hardware {
                     };
                     if let Some(vt) = vt {
                         vt_keys.insert(code);
-                        session.change_vt(vt as i32).map_err(error)?;
+                        *vt_request = Some(vt as i32);
                         return Ok(());
                     }
                 }

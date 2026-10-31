@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of polymer aging and outdoor life (@mat-polymer-life-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG", #source "../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT", #source "../sources/Atomic-Oxygen-Durability-NASA.lingua#r_1RMMZEYQQCZ08VRYTHCQBEEHJ0", #materials-engineering "Defend-the-degradation-and-service-evidence-account.lingua#r_3FBQS7VXVJBP1D8TGNGYGWR8DJ") { r_7JFQVSY2PPPC6G6AYVVNWECSSQ
+**Read:** [Polymer-composite weathering protocols — NIST SP 1200-15](../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG) and [Outdoor polymer service-life inference — Duan and colleagues](../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT) in full, with underlying measurement and statistical methods. Use [Spacecraft polymer atomic-oxygen durability — NASA-HDBK-6024](../sources/Atomic-Oxygen-Durability-NASA.lingua#r_1RMMZEYQQCZ08VRYTHCQBEEHJ0) as a deliberately different ground-to-service comparison.
+
+Reconstruct formulation, conditioning, spectrum, temperature, humidity and response measurement for a polymer study. Connect a chemical or morphological signal with a required function. Derive a reaction/transport or dose account, compare alternative acceleration assumptions and independently verify the inference. Distinguish inaccessible proprietary feed details from quantities that were actually measured.
+
+**Deliver:** A reproducible model, depth or specimen-size reasoning, covariance/variability treatment, functional-threshold sensitivity and an outdoor or independently held-out prediction. Explain any missing raw-data limitation without manufacturing observations. Compare laboratory and service damage evidence before interpreting an acceleration factor. Propose and justify a new observation that would separate the principal competing explanations.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the degradation and service-evidence account](Defend-the-degradation-and-service-evidence-account.lingua#r_3FBQS7VXVJBP1D8TGNGYGWR8DJ).
+
+} r_7JFQVSY2PPPC6G6AYVVNWECSSQ

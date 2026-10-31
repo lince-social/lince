@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Base subtraction and a defined calibration factor (@gas-gauge-factor: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #industrial-gases-and-vacuum "Drift-recalibration-and-the-state-that-was-calibrated.lingua#r_35EW803ZTWXQPK115DVFCPZHBX") { r_3Z5TE7BDQKX9ZFTNV5903W121P
+**Read:** [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), §X; use the shared regression and inverse-calibration Records for coefficient uncertainty.
+
+Let ΔPref=Pref−Pref,0 and ΔI=I−I₀ denote changes above base conditions when a known calibration gas is added. Define fc=ΔPref/ΔI so multiplication by fc corrects the indicated increment. Explicitly state this direction: some sources or software use its reciprocal.
+
+For hypothetical ΔPref=10⁻⁴ Pa and ΔI=1.1×10⁻⁴ Pa, fc≈0.909091. A factor determined from an added gas does not necessarily characterize the residual mixture at base pressure. A pressure-dependent factor also needs a stated argument and interpolation domain; the absolute indication and base-subtracted increment are not interchangeable near the background.
+
+Subtraction can remove a stable offset but adds uncertainty from the base observation and its evolution. If the same base estimate is used at several calibration points, it introduces correlated errors. Do not treat the resulting points as independent merely because they are separate rows.
+
+**Work:** Reconstruct a calibration curve with a pressure-dependent response and shared uncertain baseline. Compare a constant factor, a fitted response and a local interpolation. Test the inverse prediction at withheld conditions and distinguish parameter uncertainty from model inadequacy.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Drift, recalibration and the state that was calibrated](Drift-recalibration-and-the-state-that-was-calibrated.lingua#r_35EW803ZTWXQPK115DVFCPZHBX).
+
+} r_3Z5TE7BDQKX9ZFTNV5903W121P

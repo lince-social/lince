@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Define an integrated gas and vacuum system study (@gas-integrated-entry: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "Integrated-study-of-clean-process-gas-and-vacuum.lingua#r_4JVXDSP8CMTXWJSAJZSDJE3T62", #industrial-gases-and-vacuum "Integrated-study-of-a-cryogenic-helium-service.lingua#r_5BPE5NDG1R8P7R92M9QFYNVJG9", #industrial-gases-and-vacuum "Integrated-study-of-distributed-compressed-air.lingua#r_4VDCF340FHRSVXMTG758MY3SGE") { r_688Z4AZXX4VM5E2000V86HCXMS
+**Read:** Revisit [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR) and [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN) in full, selecting the detailed references needed for the chosen system.
+
+Choose a useful service with a demanding, documented requirement. Carry its gas source, separation, storage, transport, surfaces, measurement, operation and recovery through one consistent account. A detailed boundary should expose what is inside the study and what remains an externally specified service.
+
+The next three investigations offer sustained applications: clean process delivery, cryogenic helium service and distributed compressed air. Each uses the same underlying physical knowledge while demanding different combinations. Follow one deeply and compare its conclusions with another; the links also permit returning to individual earlier studies where a gap appears.
+
+**Work:** Define the system, evidence and unresolved question before choosing software or equipment. State the intended contribution: a validated model, improved measurement, revised operating interpretation or documented failure/recovery analysis. A catalog of components alone is insufficient.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Integrated study of clean process gas and vacuum](Integrated-study-of-clean-process-gas-and-vacuum.lingua#r_4JVXDSP8CMTXWJSAJZSDJE3T62), [Integrated study of a cryogenic helium service](Integrated-study-of-a-cryogenic-helium-service.lingua#r_5BPE5NDG1R8P7R92M9QFYNVJG9), [Integrated study of distributed compressed air](Integrated-study-of-distributed-compressed-air.lingua#r_4VDCF340FHRSVXMTG758MY3SGE).
+
+} r_688Z4AZXX4VM5E2000V86HCXMS

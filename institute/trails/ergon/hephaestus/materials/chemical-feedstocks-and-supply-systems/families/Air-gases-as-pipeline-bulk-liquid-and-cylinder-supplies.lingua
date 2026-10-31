@@ -1,6 +1,6 @@
 Import "../Chemical-feedstocks-and-supply-systems.lingua"
 
-Compare ways to supply a specified gas to its user (@cs-gas-supply: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV", #source "../sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #chemical-supply-systems "../origins/Water-as-a-chemical-feed-utility-and-quality-dependency.lingua#r_4F1V95R9ZFGVVJ3BKZAMQGMBD3") { r_5SM8V9DE71V106BQ9NYPKXPG52
+Compare ways to supply a specified gas to its user (@cs-gas-supply: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV", #source "../sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C", #source "../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8", #chemical-supply-systems "../origins/Water-as-a-chemical-feed-utility-and-quality-dependency.lingua#r_4F1V95R9ZFGVVJ3BKZAMQGMBD3", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/foundations/Follow-gas-from-production-to-accepted-use.lingua#r_7VHSYJMZ2MV3DGACKQZWKTCA2J") { r_5SM8V9DE71V106BQ9NYPKXPG52
 **Read:** [Oxygen Pipeline and Piping Systems — EIGA Doc 13/20](../sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV), the full technical publication for the oxygen case; [Good practices guide for loading and unloading of cryogenic liquid tankers — AIGA](../sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C), the entire tanker-transfer guide; [Graduate Logistics Systems — MIT ESD.260J](../sources/Graduate-Logistics-Systems-MIT.lingua#r_4NMCCS7JPNK6CD9V9Z4XTQPKR8), the complete relevant inventory and network teaching.
 
 After the shared air-gas chemistry, compare pipeline supply, bulk cryogenic liquid with vaporisation, packaged compressed gas and production at the user site. Use the same required composition, contaminant panel, flow/pressure range, uptime and operating context. The cheapest nominal gas quantity may not be the cheapest accepted service once storage, reserve, maintenance and analysis are included.
@@ -12,4 +12,7 @@ Develop a complete oxygen or nitrogen supply case using the whole relevant assoc
 **Continue:** [Distinguish supplied water, solvent, utility and contaminant roles](../origins/Water-as-a-chemical-feed-utility-and-quality-dependency.lingua#r_4F1V95R9ZFGVVJ3BKZAMQGMBD3).
 
 **Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+
+**Continue in gas and vacuum systems:** [Follow gas from production to accepted use](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/foundations/Follow-gas-from-production-to-accepted-use.lingua#r_7VHSYJMZ2MV3DGACKQZWKTCA2J).
+
 } r_5SM8V9DE71V106BQ9NYPKXPG52

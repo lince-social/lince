@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Indentation, dynamic tests and property identifiability (@mat-response-inference: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "../mechanical/Connect-microstructure-specimens-and-service-scales.lingua#r_6FV480V38FP5DNWVB527TPRKXM") { r_3FVAZT9NN6TYQ3ZGV8FZAY3XAN
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Experimental Solutions and Engineering Viscoelasticity; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), mechanical-property and creep-testing packages; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), contact and constitutive sections. Consult [Measure and interpret hardness with the actual scale, specimen, and influence model](../../../materials/metals-and-metallurgical-production/testing/Hardness-scales-reference-blocks-and-material-inference.lingua#r_23KBCN29CE7WNS4Y2QJC9ZEHD1) for scale, calibration and specimen effects.
+
+A measured signal can depend on more unknowns than one experiment resolves. Indentation depth depends on tip geometry, elastic/plastic response, pile-up or sink-in, surface condition, time and instrument compliance. A resonant frequency depends on specimen geometry, density, boundary conditions and stiffness, not stiffness alone.
+
+Several parameter sets may reproduce one curve while predicting different histories. Establish identifiability with varied conditions and independent structural evidence. Adding fit parameters can improve residuals while making interpretation less reliable.
+
+**Work:** Compare tensile, indentation and dynamic estimates for one material without forcing them to mean the same modulus or strength. Fit a small constitutive model to one experiment, then predict another protocol. Report correlations, calibration uncertainty and model mismatch, including a plausible alternative explanation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect microstructure, specimens and service scales](../mechanical/Connect-microstructure-specimens-and-service-scales.lingua#r_6FV480V38FP5DNWVB527TPRKXM).
+
+} r_3FVAZT9NN6TYQ3ZGV8FZAY3XAN

@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Model states, stoichiometric matrices and calibration (@wu-process-models: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "A-biological-treatment-investigation-from-inlet-to-solids.lingua#r_1MTSMQTEZ6WVZ99B0AZBYE977H") { r_4D90QCDBVY5YJ1W4YD82JQQF3Z
+**Read:** Work the modelling sections of [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37) and chapter 10 of [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G) in depth. Continue through the full advanced book while treating its process-specific chapters as connected investigations, not a list of acronyms.
+
+A process model names states, transformations, rates and transport. A stoichiometric matrix maps process rates into state changes. Conservation can be checked algebraically: an element or equivalent-balance vector must annihilate the applicable transformation matrix after every relevant state is included. An apparently sophisticated model can violate its own accounting if units or state definitions are mixed.
+
+**Work:** Write a minimal substrate–biomass model, then add decay products, inert solids and a nitrogen transformation one at a time. For each addition state what new observations could identify it. Map measured total COD, nitrogen and solids onto model states explicitly, including combinations that observations cannot separate. Keep influent fractionation distinct from kinetic fitting.
+
+Separate parameter estimation from validation. Examine parameter correlations, initial-state uncertainty, temperature dependence and structural discrepancy. Hold out a disturbance or seasonal period. Reproduce a published model with a pinned implementation and check mass residuals, numerical convergence and predictions before attempting optimization. Explain why several parameter sets can fit the same effluent series yet predict different sludge or aeration demands.
+
+**Continue:** [A biological-treatment investigation from inlet to solids](A-biological-treatment-investigation-from-inlet-to-solids.lingua#r_1MTSMQTEZ6WVZ99B0AZBYE977H).
+} r_4D90QCDBVY5YJ1W4YD82JQQF3Z

@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Phosphorus removal needs a solid destination (@wu-phosphorus: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Anaerobic-conversion-acids-gas-and-biomass-retention.lingua#r_4S19SPE58WJ3Z0Z67XAWK9D2ZR") { r_3DKJ8SAQ59TN0RWRSVZH23FCPD
+**Read:** [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G), chapters 3 and 5, then the related configurations in chapter 6; [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), phosphorus metabolism and models. Compare biological uptake with chemical precipitation without treating them as equivalent mechanisms.
+
+Changing dissolved phosphate into biomass or precipitated solids does not make phosphorus disappear. Removal from a plant boundary requires an outgoing phosphorus-bearing stream. Biological accumulation depends on process conditions and substrates; chemical capture depends on speciation, competing reactions and effective separation. A molar reagent ratio is only one part of the evidence.
+
+In an original steady boundary account, 1,000 m³/day at 8 mg P/L delivers 8 kg P/day. If 1 kg P/day leaves in the final liquid, the other 7 kg/day must leave in solids or another identified output; otherwise inventory is increasing or the account is incomplete. Report phosphorus on an elemental P basis rather than confusing it with phosphate mass.
+
+**Work:** Trace phosphorus release and capture across reactor zones, sludge storage, digestion and returned liquors. Compare a biological and a chemical route using the same final separation and destination boundaries. Investigate how a proposed chemical addition affects alkalinity, sludge quantity and downstream processing. Develop a low-concentration sampling and analytical plan before claiming the process can reliably meet a small numerical target.
+
+**Continue:** [Anaerobic conversion, acids, gas and biomass retention](Anaerobic-conversion-acids-gas-and-biomass-retention.lingua#r_4S19SPE58WJ3Z0Z67XAWK9D2ZR).
+} r_3DKJ8SAQ59TN0RWRSVZH23FCPD

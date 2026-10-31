@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Metals, disorder and localized electronic transport (@mat-disordered-transport: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB", #source "../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #materials-engineering "Ionic-transport-defects-and-electrochemical-potential.lingua#r_1EVDJ0GHG53VWBE05RZXKJ4BXA") { r_3V91SWN19M9SMNX9ZYA8Z7VK9K
+**Read:** [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), Drude, Sommerfeld and band discussions; [Solid State Physics — David Tong](../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB), electron dynamics; [Nano-to-Macro Transport Processes — MIT 2.57](../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), carrier scattering. Compare these assumptions with the functional Cambridge readings.
+
+A perfect periodic lattice is already included in a Bloch state; resistivity is not explained by repeatedly treating each identical lattice site as a random obstacle. Thermal motion, impurities, defects, boundaries and interactions provide distinct scattering mechanisms. Adding separate resistivities is an approximation with conditions, especially when mechanisms interact.
+
+Amorphous materials, disordered semiconductors and conductive polymers may require localized states, hopping, percolation or other descriptions. Fitting an activated resistance does not uniquely prove a band gap. Grain boundaries, contacts and chemistry can generate similar temperature trends.
+
+**Work:** Compare a metallic conductor, a doped semiconductor and a disordered conducting material using actual state, temperature range, geometry and uncertainty. Test at least two transport models against held-out conditions, and describe a structural or spectroscopic measurement that could distinguish their mechanisms.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Ionic transport, defects and electrochemical potential](Ionic-transport-defects-and-electrochemical-potential.lingua#r_1EVDJ0GHG53VWBE05RZXKJ4BXA).
+
+} r_3V91SWN19M9SMNX9ZYA8Z7VK9K

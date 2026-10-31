@@ -1,0 +1,10 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cold-atom vacuum comparison — Barker and colleagues (@gas-cold-atom-source: 0, is #reference, #part-of @gas-sources) { r_63YN75QRE9J59QPJ0Y55XYR6AV
+Daniel S. Barker, James A. Fedchak, Jacek Kłos, Julia Scherschligt, Abrar A. Sheikh, Eite Tiesinga and Stephen P. Eckel. *Accurate measurement of the loss rate of cold atoms due to background gas collisions for the quantum-based cold atom vacuum standard*, AVS Quantum Science 5, 035001 (2023), DOI 10.1116/5.0147686. [Author version](https://arxiv.org/abs/2302.12143v2) · [Full 13-page PDF](https://arxiv.org/pdf/2302.12143v2), revised 17 August 2023.
+
+Read the full experiment, density realization, loss modeling, comparison and appendices, then the later glancing-collision study. Metadata and selected apparatus, fitting and uncertainty passages were inspected on 30 October 2026. Figure 2 on PDF page 4 was visually checked; its data were not digitized or the experiment independently reproduced. The data-availability statement directs readers to request data from the authors; a public complete raw dataset was not established.
+
+The manuscript is readable under arXiv's distribution licence; general adaptation permission was not established. Keep the paper external and distinguish a theoretical primary realization from its experimental validation.
+
+} r_63YN75QRE9J59QPJ0Y55XYR6AV

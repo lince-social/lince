@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A fan delivers the flow at its installed operating point (@cm-fan-system: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "Fan-energy-follows-flow-pressure-and-efficiency.lingua#r_46BX2KX6PS3EFMDWYZ38MC5RY1") { r_4E2ZC8G9M14NATFDPVGY4GC8J2
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), section 4.5.4, especially fan/system interaction; the complete network readings in [Pump curves, operating points and connected fluid networks](../../../physics/fluid-dynamics/internal/Pump-curves-operating-points-and-connected-fluid-networks.lingua#r_38PV7C2PG9F67V9SENTE32AD5Y).
+
+A fan curve and system curve meet at an operating point. Inlet distortion, outlet connections, density, speed, loading and dampers can alter the installed result. A free-delivery rating does not determine flow through a real filter and duct system.
+
+For a hypothetical fan Δpfan=A s²−BQ² and system Δpsystem=RQ+KQ², s is speed relative to a reference and all coefficients have the appropriate SI units. Solve (B+K)Q²+RQ−As²=0 for the positive flow. This ideal curve excludes stall and changes in efficiency.
+
+**Work:** Use A=1000 Pa, B=20 Pa/(m³/s)², K=10 Pa/(m³/s)² and R=100 Pa/(m³/s) at s=1. Compare doubling R with increasing speed to preserve the original Q. Check both pressure and electrical power; do not assume the same response under fixed speed and fixed flow.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Fan energy follows flow, pressure and efficiency](Fan-energy-follows-flow-pressure-and-efficiency.lingua#r_46BX2KX6PS3EFMDWYZ38MC5RY1).
+
+} r_4E2ZC8G9M14NATFDPVGY4GC8J2

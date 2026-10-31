@@ -1,6 +1,6 @@
 Import "../Electromagnetism.lingua"
 
-Hall effect, conductivity tensors and carrier inference (@em-hall: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "../induction/Faraday-law-Lenz-law-and-changing-flux.lingua#r_15N270EPVSG2RM9NEK94YGX7RR") { r_4HGZYF44KNT5Y68SWNWZ8Q0WV6
+Hall effect, conductivity tensors and carrier inference (@em-hall: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7", #source "../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H", #electromagnetism "../induction/Faraday-law-Lenz-law-and-changing-flux.lingua#r_15N270EPVSG2RM9NEK94YGX7RR", #materials-engineering "../../../engineering/materials-engineering/functional/Metals-disorder-and-localized-electronic-transport.lingua#r_3V91SWN19M9SMNX9ZYA8Z7VK9K") { r_4HGZYF44KNT5Y68SWNWZ8Q0WV6
 **Read:** [Física III — Bernhard Johannes Lesche, UFJF](../sources/Fisica-III-Lesche-UFJF.lingua#r_0A3ZH3ZNQ5PGJ4Y05BSSCBAJE7), Hall effect and magnetic-force notes; [Classical Electromagnetism — Richard Fitzpatrick](../sources/Classical-Electromagnetism-Fitzpatrick.lingua#r_7NH7AZZH3NZ2FHJ4K5VBT49F6H), charged transport and magnetic response.
 
 In a simple one-carrier conductor, transverse Lorentz force redistributes charge until an opposing electric force balances it. Derive the Hall voltage for a rectangular sample and state the direction convention, carrier charge, current direction, magnetic-field direction and thickness. Reversing current or B should reverse the ideal Hall signal; unwanted voltage offsets need not do so.
@@ -12,4 +12,6 @@ Use a four-terminal geometry, polarity reversals and uncertainty to separate lon
 **Continue:** [Faraday law, Lenz law and changing flux](../induction/Faraday-law-Lenz-law-and-changing-flux.lingua#r_15N270EPVSG2RM9NEK94YGX7RR).
 
 **Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+**Continue in materials engineering:** [Metals, disorder and localized electronic transport](../../../engineering/materials-engineering/functional/Metals-disorder-and-localized-electronic-transport.lingua#r_3V91SWN19M9SMNX9ZYA8Z7VK9K).
+
 } r_4HGZYF44KNT5Y68SWNWZ8Q0WV6

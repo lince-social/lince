@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Grinding, finishing and surface integrity (@mech-surface-finishing: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #mechanical-engineering "Casting-and-forming-link-shape-to-material-history.lingua#r_19YHXYKPTRQRZ54W0Q1ERJBW0S", #materials-engineering "../../materials-engineering/processing/Polymer-flow-rheology-and-the-range-of-a-measurement.lingua#r_4YZT4D7QGF0497PWZZT3BETAEG") { r_12K4CHMHGKAMEDRWYQGS5P7FEB
+**Read:** [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), machining/surface measurement; [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), precision-process and error discussions; revisit the material and residual-stress studies.
+
+Grinding, honing, lapping and polishing remove or modify surface material through different contacts. They can improve form or texture within their capabilities while also introducing heat, residual stress, embedded particles or altered near-surface structure. A smooth appearance does not establish the required material condition.
+
+Separate roughness, waviness, form, burrs and damage. A seal surface, rolling contact and bonded interface can require different textures. State the measurement bandwidth and location instead of giving one surface number without its definition.
+
+**Work:** Compare two finishing sequences for a shaft seat or sliding face. Predict the material and geometry each operation changes, then specify complementary inspection for form, texture and integrity. Account for cleaning, edge condition and dimensional allowance. Explain how an apparently improved finish could worsen lubrication, adhesion or fatigue in the chosen service.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Casting and forming link shape to material history](Casting-and-forming-link-shape-to-material-history.lingua#r_19YHXYKPTRQRZ54W0Q1ERJBW0S).
+
+**Continue in materials engineering:** [Polymer flow, rheology and the range of a measurement](../../materials-engineering/processing/Polymer-flow-rheology-and-the-range-of-a-measurement.lingua#r_4YZT4D7QGF0497PWZZT3BETAEG).
+
+} r_12K4CHMHGKAMEDRWYQGS5P7FEB

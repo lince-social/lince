@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Electronic states before functional properties (@mat-electronic-entry: 0, is #chapter, #part-of @materials-engineering, #source "../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "../../../chemistry/general-chemistry/bonding/Molecular-orbitals-and-extended-electronic-states.lingua#r_726ETM9745704A826Y42QSVD0T") { r_5J37PG08JJQ7N9RVWGSXFHEXJN
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), molecular orbitals; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures on electrons, molecules and extended states. Continue into the shared molecular-orbital Record linked next.
+
+The arrangement and occupation of electronic states connect chemistry to conduction, optical response and magnetism. A band sketch separates allowed states and occupation under specified assumptions; it does not alone determine carrier mobility, lifetime or an engineered device's behavior.
+
+Distinguish a material's chemical family from its functional response. Doping, defects, disorder, temperature and interfaces can alter a response without changing every aspect of its structural classification. A fuller functional-property treatment will follow the structure and transport foundations.
+
+**Work:** Reconstruct a simple molecule-to-extended-state argument, identifying what changes as the number of interacting sites grows. Explain which measurement could test the proposed electronic description. Carry that question into the shared chemistry Record, then compare the structures that support those states.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect molecular orbitals with magnetism and extended electronic states](../../../chemistry/general-chemistry/bonding/Molecular-orbitals-and-extended-electronic-states.lingua#r_726ETM9745704A826Y42QSVD0T).
+
+} r_5J37PG08JJQ7N9RVWGSXFHEXJN

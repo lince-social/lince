@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Dewatering capture and the load returned in liquor (@wu-dewatering: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Digestion-gas-recovery-and-the-heat-that-must-be-supplied.lingua#r_65VY5Z1WK0DN1CZ8FHETKW7NWT") { r_2SVBKCZCX4H4DKTADBA5FZV7CY
+**Read:** [Sludge Treatment and Disposal — Andreoli, von Sperling and Fernandes](../sources/Sludge-Treatment-and-Disposal.lingua#r_01W2VM1NE64Y1FDRJRM0RYKYY4), thickening, conditioning and dewatering; [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G), sidestream management. Compare technologies using their declared feed and performance definitions.
+
+Capture efficiency concerns solids mass, while cake concentration concerns the handled mixture. A process can produce a concentrated cake and still lose substantial fine solids into the liquid. Returned liquor can contain soluble nutrients that are not predicted by dry-solids capture alone.
+
+In an original example, 1,000 kg/day dry solids enter in 50,000 kg/day wet feed. At 95% dry-solids capture and 20% cake mass fraction, cake is 4,750 kg/day wet, containing 950 kg dry solids and 3,800 kg water. The other 45,250 kg/day carries 50 kg dry solids. Close water and solids separately; adding polymer or wash water changes the inlet account.
+
+**Work:** Compare intermittent dewatering with continuous return using the same daily load. If 40 m³/day of liquor contains 800 mg ammonium-N/L, its returning nitrogen is 32 kg/day, which can be significant despite its small flow. Develop a sampling and storage account that resolves this pulse. Include conditioning supply, wear, cleaning, operator time and the destination's acceptance limits in a technology comparison.
+
+**Continue:** [Digestion, gas recovery and the heat that must be supplied](Digestion-gas-recovery-and-the-heat-that-must-be-supplied.lingua#r_65VY5Z1WK0DN1CZ8FHETKW7NWT).
+} r_2SVBKCZCX4H4DKTADBA5FZV7CY

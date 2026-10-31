@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Assembly sequence, cleanliness and retained constraints (@mech-assembly-sequence: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #mechanical-engineering "Alignment-thermal-state-and-geometric-verification.lingua#r_4S1JS0TG093GXKSQ2AJSCQB4HH") { r_3VYM9AYY6V47Z93YTQ1J13C7CX
+**Read:** [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), mounting, housings and seals; [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), assembly and the project; [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), interface inspection.
+
+Assembly establishes contacts, alignment, preload and cleanliness that the design assumes. Plan the order so parts can be inserted, located, measured and adjusted without damaging already established features. A part that fits in a model may be impossible to insert through the available path.
+
+Trace pressing or tightening forces through the intended surfaces. Avoid transferring a mounting load through a sensitive rolling contact merely because that path is convenient. Keep debris, burrs and trapped fluids from changing seating or creating hidden loads. Use the actual component's installation limits and methods.
+
+**Work:** Develop an exploded arrangement and a reversible sequence for the selected machine. Identify intermediate measurements and the state each establishes. Compare predicted preload/clearance with a measurable assembly quantity. Demonstrate access for inspection and replacement, including how the reference frame will be recovered after disassembly.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Alignment, thermal state and geometric verification](Alignment-thermal-state-and-geometric-verification.lingua#r_4S1JS0TG093GXKSQ2AJSCQB4HH).
+
+} r_3VYM9AYY6V47Z93YTQ1J13C7CX

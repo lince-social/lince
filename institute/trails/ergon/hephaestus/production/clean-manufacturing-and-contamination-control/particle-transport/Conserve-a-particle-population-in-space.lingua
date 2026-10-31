@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Conserve a particle population in space (@cm-transport-equation: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "An-absorbing-reflecting-or-reacting-boundary.lingua#r_5RFVPYGGS65A3NH94DM0YBQRC8") { r_1BFJWEWCRVH6HN99JAYZ8D2YCW
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Mass Diffusion; revisit [Advection, diffusion, reaction and conservative scalar balances](../../../physics/fluid-dynamics/transport/Advection-diffusion-reaction-and-conservative-scalar-balances.lingua#r_1K58Z7J4TJTKSNRNK4ENXN4YPM).
+
+For a defined particle class with number density c, one drift–diffusion model has flux J=(u+v_d)c−D∇c and conservation ∂c/∂t+∇·J=S. Here S includes generation, transformation and exchange with other classes on the declared number basis. If the class changes through coagulation, a number source is not the same thing as creation of material mass.
+
+Integrating over a fixed region gives d∫c dV/dt=−∮J·n dA+∫S dV. Choose outward normal n and preserve that sign convention at each boundary. A local equation and its integrated inventory must tell the same story.
+
+**Work:** Derive the integral relation from a small-box balance. Apply it to an inlet, outlet and collecting wall. Distinguish a prescribed concentration from a prescribed flux and show why a single room-average removal coefficient can conceal where collected material actually accumulates.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [An absorbing, reflecting or reacting boundary](An-absorbing-reflecting-or-reacting-boundary.lingua#r_5RFVPYGGS65A3NH94DM0YBQRC8).
+
+} r_1BFJWEWCRVH6HN99JAYZ8D2YCW

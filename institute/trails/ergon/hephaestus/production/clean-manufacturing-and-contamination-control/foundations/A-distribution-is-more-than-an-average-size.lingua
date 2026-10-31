@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A distribution is more than an average size (@cm-distribution: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "Air-samples-and-surface-samples-have-different-denominators.lingua#r_54C0X26G9K41P87TQDZ279SXKN") { r_1AXAAEZSZECHDWQ0GVPERT8S5Z
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), size calibration; [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), particulate characterization. Use the shared ratios, geometry and graph material where needed.
+
+Record both the size interval and how many observations belong to it. A cumulative count above a threshold differs from the count within a bin. A number-weighted median need not equal a mass-weighted median, because large particles carry more mass. Bin width matters when a plotted height represents density per size or per logarithmic size interval.
+
+A mean loses information about tails, modes and possible aggregates. Comparisons should preserve the measured range and treatment of values outside it. A clean-looking plot can conceal an instrument's inability to observe the range that matters to the product.
+
+**Work:** Construct a small hypothetical population, plot bin counts and cumulative counts, and verify that both describe the same total. Calculate number- and mass-weighted summaries under a stated spherical model. Change one large particle and explain the different effects on those summaries.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Air samples and surface samples have different denominators](Air-samples-and-surface-samples-have-different-denominators.lingua#r_54C0X26G9K41P87TQDZ279SXKN).
+
+} r_1AXAAEZSZECHDWQ0GVPERT8S5Z

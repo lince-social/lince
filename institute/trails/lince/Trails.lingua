@@ -44,6 +44,12 @@ Use evidence appropriate to the subject: reasoning in mathematics, methods and o
 
 For practical work, describe relevant inputs, skills, equipment, quantities, energy, transport, maintenance, losses, recovery, and cooperation. Link important upstream and supporting knowledge without making the learner reproduce every industry.
 
+Assess potentially hazardous or dual-use material before developing it, including the effect of combining Records, exercises and cited passages. Follow applicable safety boundaries. Where operational detail would enable serious harm, keep a brief account of the topic's importance and scientific context, with a concise, relevant caution. Apply the same judgment to source selections and reused material; links must not serve as a workaround for unsafe instructions.
+
+Use benign examples, simulations, published observations and analysis to develop understanding safely. Keep practical work within appropriate competence, facilities and safeguards. Completion means a connected, accurate understanding of the field within these limits; it never requires dangerous experimentation or the publication of unsafe procedures.
+
+When a stop involving sensitive material is reported, mark the specific unfinished portion as **TODO — sensitive data** in its developed trail and its planning Record here, then continue with the next available task. Keep the reason and remaining safe scope explicit. A deferred portion stays unfinished; revisit it only within the safety guidance.
+
 ## Content development and verification
 
 Choose a useful subject, select sources, write or reuse Records, and connect them with meaningful assertions. Check the actual passages and explanations, publish a useful selection through normal Sync/source workflows, then correct and deepen it.
@@ -66,11 +72,11 @@ The linked planning Records describe knowledge to develop. ERG labels are editor
 | [Mathematics](Trails.lingua#r_6PZSEX3MTC14A74R94SJQ67B3C) | 20 |
 | [Physics](Trails.lingua#r_5SMEYFVBAX3PK39PSDSDPWQYRQ) | 20 |
 | [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6) | 16 |
-| [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48) | 31 |
+| [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48) | 29 |
 | [Computing](Trails.lingua#r_7YRTRPQ94D66X8Y7KN7K2XCTK8) | 22 |
 | [Universe and space](Trails.lingua#r_38KB376VFZ30BXTGB9K0HG55ZP) | 5 |
 | [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5) | 6 |
-| [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4) | 4 |
+| [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4) | 2 |
 | [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ) | 4 |
 | [Logistics and exchange](Trails.lingua#r_40D59MXC3BX7K9FEVGCRY5S6F1) | 1 |
 | [Facilities and maintenance](Trails.lingua#r_6QB4YPHCAEQ6YT4X71ZT7SYD28) | 4 |
@@ -148,6 +154,10 @@ Hephaestus — hard sciences and productive work (@plan-hephaestus: 0, is #chapt
 **Content home:** `institute/trails/ergon/hephaestus/`.
 
 This is the home of the former STEM hard-science plans: mathematics, physics, chemistry, engineering, computing, astronomy, materials, energy, manufacturing, logistics, facilities, and maintenance, with shared inquiry and learning methods. Start from [Hephaestus](../ergon/hephaestus/Hephaestus.lingua). Develop each subject in a descriptive subdirectory beneath its field directory. Pure theory belongs here as fully as its applications; immediate industrial usefulness is not a requirement.
+
+**Development handoff — 30 October 2026:** The objective remains the complete Hephaestus formation, from accessible beginnings through advanced theory, production systems and independent scholarly work. At this checkpoint, 134 planned subjects remain across the sixteen groups below. This inventory is not a limit on coverage. The current unfinished subject is [ERG-181, Clean manufacturing and contamination control](Trails.lingua#r_47NQ213DRJK1AMKQX7DTXR8E6X); its handoff below identifies the exact continuation and remaining work. Continue one subject at a time, preserving shared foundations and the full scope of the other planned subjects.
+
+The [Ergon development ledger](../../anicca/Ergon.md) contains earlier completed subjects, source-inspection limits, verification evidence and detailed checkpoints. Read it alongside the current Records and worktree; historical counts describe their checkpoints, not necessarily the latest files. The latest qualification-and-monitoring checkpoint is verified. Its next specialist-manufacturing extension has not yet been started.
 
 - [Quantitative and computational practice](Trails.lingua#r_7JPGRRFCD72G9ZT8EMV0FEPH00)
 - [Reasoning and communication](Trails.lingua#r_4HHN23A6WFE0YZ8394FZ4A5DTB)
@@ -849,7 +859,7 @@ Medicinal chemistry studies molecules intended to influence biological processes
 **Planning context:** [Chemistry](Trails.lingua#r_0AMZPCGB2MG2V6D28WFTQZN9Q6).
 } r_22JVJTJ7A7PR682QABEE1X42CG
 
-Engineering (@plan-engineering: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-engineering-design-and-systems-engineering, #contains @plan-civil-and-structural-engineering, #contains @plan-geotechnical-engineering, #contains @plan-construction-and-building-services-engineering, #contains @plan-water-and-environmental-engineering, #contains @plan-mechanical-engineering-and-machine-design, #contains @plan-manufacturing-engineering, #contains @plan-materials-engineering, #contains @plan-corrosion-degradation-and-material-protection, #contains @plan-chemical-and-process-engineering, #contains @plan-thermal-and-energy-engineering, #contains @plan-refrigeration-cryogenics-and-cold-chains, #contains @plan-batteries-and-electrochemical-energy-systems, #contains @plan-control-and-automation-engineering, #contains @plan-mechatronics-and-robotics, #contains @plan-electronic-engineering, #contains @plan-telecommunications-and-radio-engineering, #contains @plan-optical-and-photonic-engineering, #contains @plan-computer-engineering-and-architecture, #contains @plan-acoustical-and-vibration-engineering, #contains @plan-aerospace-engineering, #contains @plan-marine-and-naval-engineering, #contains @plan-transportation-and-railway-engineering, #contains @plan-automotive-and-vehicle-engineering, #contains @plan-biomedical-engineering, #contains @plan-agricultural-engineering, #contains @plan-petroleum-and-subsurface-engineering, #contains @plan-nuclear-engineering, #contains @plan-industrial-engineering-and-production-systems, #contains @plan-reliability-maintenance-and-repair-systems, #contains @plan-human-factors-and-safety-engineering) { r_15X36BC9BQB5PV6WW77ZAAJP48
+Engineering (@plan-engineering: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-engineering-design-and-systems-engineering, #contains @plan-civil-and-structural-engineering, #contains @plan-geotechnical-engineering, #contains @plan-construction-and-building-services-engineering, #contains @plan-water-and-environmental-engineering, #related "../ergon/hephaestus/engineering/mechanical-engineering-and-machine-design/Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R", #contains @plan-manufacturing-engineering, #related "../ergon/hephaestus/engineering/materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9", #contains @plan-corrosion-degradation-and-material-protection, #contains @plan-chemical-and-process-engineering, #contains @plan-thermal-and-energy-engineering, #contains @plan-refrigeration-cryogenics-and-cold-chains, #contains @plan-batteries-and-electrochemical-energy-systems, #contains @plan-control-and-automation-engineering, #contains @plan-mechatronics-and-robotics, #contains @plan-electronic-engineering, #contains @plan-telecommunications-and-radio-engineering, #contains @plan-optical-and-photonic-engineering, #contains @plan-computer-engineering-and-architecture, #contains @plan-acoustical-and-vibration-engineering, #contains @plan-aerospace-engineering, #contains @plan-marine-and-naval-engineering, #contains @plan-transportation-and-railway-engineering, #contains @plan-automotive-and-vehicle-engineering, #contains @plan-biomedical-engineering, #contains @plan-agricultural-engineering, #contains @plan-petroleum-and-subsurface-engineering, #contains @plan-nuclear-engineering, #contains @plan-industrial-engineering-and-production-systems, #contains @plan-reliability-maintenance-and-repair-systems, #contains @plan-human-factors-and-safety-engineering) { r_15X36BC9BQB5PV6WW77ZAAJP48
 **Existing entrance:** [Engineering](../ergon/hephaestus/engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68).
 
 **Content home:** `institute/trails/ergon/hephaestus/engineering/`, with subject directories for the planned pathways.
@@ -862,6 +872,8 @@ Engineering (@plan-engineering: 0, is #chapter, #planned, #part-of @plan-hephaes
 
 **Available:** [Electrical power engineering](../ergon/hephaestus/engineering/electrical-power-engineering/Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ), from a useful electrical service, quantities and circuits through networks, transformers, machines, conversion, measurement, protection, stability, dispatch and continuing operation. Full technical books and public undergraduate/graduate programmes, three independently checked original calculations and twenty advanced investigations lead into an integrated system and independent research. Seventeen shared learning Records retain distinct power-engineering continuations.
 
+**Available:** [Mechanical engineering and machine design — useful mechanisms and continuing service](../ergon/hephaestus/engineering/mechanical-engineering-and-machine-design/Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R) develops familiar machine observations into statics, dynamics, material behavior, machine elements, detailed manufacture, measurement, assembly and continuing service. Eleven shared quantitative, metrology and metallurgy Records retain their own routes. Four original programs, twelve advanced studies, an integrated machine investigation and independent research support demanding completion.
+
 ## Planned pathways
 
 - [Engineering design and systems engineering](Trails.lingua#r_5D5DKFNT3H92YSKQDMK57J8C5R)
@@ -869,9 +881,7 @@ Engineering (@plan-engineering: 0, is #chapter, #planned, #part-of @plan-hephaes
 - [Geotechnical engineering](Trails.lingua#r_46GGRBHN61GRGGJGPG6Z0NJC2W)
 - [Construction and building services engineering](Trails.lingua#r_7B7XA50X22S5KYZTH6GH7Z8MZ3)
 - [Water and environmental engineering](Trails.lingua#r_0BZ54TBQY0HJWKEA0WPBZH512Z)
-- [Mechanical engineering and machine design](Trails.lingua#r_5NWYP53Y9K2ENTZFTSB04XDGRG)
 - [Manufacturing engineering](Trails.lingua#r_2TZNXHZF699S1XABAMCZHHWSS4)
-- [Materials engineering](Trails.lingua#r_0H1WTFTWYFVEH9WB88C3XC4NF5)
 - [Corrosion, degradation, and material protection](Trails.lingua#r_60HNJRQPCFWC9FMQ7WBR4XM0ZA)
 - [Chemical and process engineering](Trails.lingua#r_7JR1TSS73ENXHDTX07BZEZBNVJ)
 - [Thermal and energy engineering](Trails.lingua#r_4NAAQXAJG8KPDKW1PH8696DQ6V)
@@ -897,6 +907,9 @@ Engineering (@plan-engineering: 0, is #chapter, #planned, #part-of @plan-hephaes
 - [Human factors and safety engineering](Trails.lingua#r_20YMRH70QKZP2DBCSG4QX28B0J)
 
 **Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+
+**Available:** [Materials engineering — structure, processing and useful behavior](../ergon/hephaestus/engineering/materials-engineering/Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9) develops composition, structure and evidence; equilibrium and transformations; material families and mechanical/functional response; processing, degradation, selection, service and recovery. Multiscale modeling, measurement inference and primary investigations lead into independent research with defense and revision. The route includes 351 authored Records, 72 shared learning Records, 24 advanced studies and seven original numerical programs, with discovery and relocated publication verified.
+
 } r_15X36BC9BQB5PV6WW77ZAAJP48
 
 Engineering design and systems engineering (@plan-engineering-design-and-systems-engineering: 0, is #chapter, #planned, #part-of @plan-engineering) { r_5D5DKFNT3H92YSKQDMK57J8C5R
@@ -939,14 +952,6 @@ Water and environmental engineering design systems that manage water, wastes, po
 **Planning context:** [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
 } r_0BZ54TBQY0HJWKEA0WPBZH512Z
 
-Mechanical engineering and machine design (@plan-mechanical-engineering-and-machine-design: 0, is #chapter, #planned, #part-of @plan-engineering) { r_5NWYP53Y9K2ENTZFTSB04XDGRG
-**Editorial reference:** ERG-120.
-
-Mechanical engineering applies mechanics, materials, energy, and design to physical machines. The material connects mechanisms, loads, bearings, gears, transmissions, tolerances, lubrication, thermal behaviour, and manufacturability, following designs into assembly, inspection, operation, repair, and the replacement of worn components.
-
-**Planning context:** [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
-} r_5NWYP53Y9K2ENTZFTSB04XDGRG
-
 Manufacturing engineering (@plan-manufacturing-engineering: 0, is #chapter, #planned, #part-of @plan-engineering) { r_2TZNXHZF699S1XABAMCZHHWSS4
 **Editorial reference:** ERG-121.
 
@@ -954,14 +959,6 @@ Manufacturing engineering designs the processes and systems that turn designs in
 
 **Planning context:** [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
 } r_2TZNXHZF699S1XABAMCZHHWSS4
-
-Materials engineering (@plan-materials-engineering: 0, is #chapter, #planned, #part-of @plan-engineering) { r_0H1WTFTWYFVEH9WB88C3XC4NF5
-**Editorial reference:** ERG-122.
-
-Materials engineering selects, processes, and improves materials for intended performance. This material connects composition, microstructure, manufacturing history, properties, degradation, testing, and failure across metals, ceramics, polymers, and composites, showing why material specifications and processing conditions are part of every engineered design.
-
-**Planning context:** [Engineering](Trails.lingua#r_15X36BC9BQB5PV6WW77ZAAJP48).
-} r_0H1WTFTWYFVEH9WB88C3XC4NF5
 
 Corrosion, degradation, and material protection (@plan-corrosion-degradation-and-material-protection: 0, is #chapter, #planned, #part-of @plan-engineering) { r_60HNJRQPCFWC9FMQ7WBR4XM0ZA
 **Editorial reference:** ERG-123.
@@ -1155,6 +1152,8 @@ Computing (@plan-computing: 0, is #chapter, #planned, #part-of @plan-hephaestus,
 Proposed branch Record: `@computing-map`. Organising Record: `@hephaestus`.
 
 **Pathways:** Automate a small calculation; understand a program; investigate how a computer or network works; develop a maintained application. Programming, theoretical computation, digital hardware, data analysis, and operations have connected but different entry paths.
+
+**Available foundations:** [Basic electronics](../ergon/hephaestus/computer-science/Basic%20Eletronics.lingua) develops circuits through connected embedded systems; [Reproducible computational work](../ergon/hephaestus/inquiry/reproducible-computation/Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ) develops programming and computational investigation. These can be reused while the broader computing subjects below are developed.
 
 ## Planned pathways
 
@@ -1493,7 +1492,7 @@ This material follows forests and other fibre resources into structural wood, pa
 **Planning context:** [Resources and materials](Trails.lingua#r_08Q5J1HMAA7S3QNYSJSQ49STJ5).
 } r_1EK7CM15ZR70X480KKR4F150KT
 
-Energy and utilities (@plan-energy-and-utilities: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-electricity-infrastructure-and-energy-storage, #contains @plan-fuels-hydrogen-and-thermal-energy-supply, #contains @plan-water-sanitation-and-shared-industrial-utilities, #contains @plan-industrial-gases-vacuum-and-high-purity-supplies) { r_376AMKFFG2BY4E8T2A5Y923HV4
+Energy and utilities (@plan-energy-and-utilities: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-electricity-infrastructure-and-energy-storage, #contains @plan-fuels-hydrogen-and-thermal-energy-supply) { r_376AMKFFG2BY4E8T2A5Y923HV4
 **Existing entrance:** [Utilities](../ergon/hephaestus/utilities/Utilities.lingua#r_23Z5YYXGRA1JDFD4BAM955JMNX).
 
 **Content home:** `institute/trails/ergon/hephaestus/utilities/`, with subject directories for the planned pathways.
@@ -1502,14 +1501,17 @@ Proposed branch Record: `@energy-utilities-map`. Organising Record: `@hephaestus
 
 **Pathways:** Account for a service's energy or water; follow a supply from source to use; investigate reliability and upkeep. Begin with relevant quantities and balances; operating, designing, and manufacturing utility equipment remain separate goals.
 
+**Available:** [Water, sanitation and industrial utilities](../ergon/hephaestus/utilities/water-and-sanitation/Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN) develops from ordinary quantities and service questions through sources, treatment, distribution, wastewater, residuals, industrial reuse and continuing operation. Complete books and public courses, six original calculations, comparative system studies and independent research provide increasing depth. Thirteen shared learning Records retain their other continuations; advanced drinking-water, wastewater and industrial studies branch and meet again at uncertainty and research.
+
+**Available:** [Industrial gases, vacuum and high-purity supplies](../ergon/hephaestus/utilities/industrial-gases-vacuum-and-high-purity-supplies/Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF) develops from everyday service and shared quantities through production/separation, molecular transport, pumps, surfaces, storage, delivery and measurement. Operation, failure investigation, reliability, commissioning, maintenance, energy and recovery lead into nineteen advanced investigations, integrated clean-process/cryogenic/compressed-air systems and independent research. Complete books, courses and primary methods support 265 connected learning Records, including forty-one reused steps, with thirty-five source Records. Publication checks preserve the selected route, shared routes, source references and original calculations after export and relocation.
+
 ## Planned pathways
 
 - [Electricity infrastructure and energy storage](Trails.lingua#r_5WDHZ2EBHAKP6Y0H4DABH0MC5H)
 - [Fuels, hydrogen, and thermal energy supply](Trails.lingua#r_7SK09P8H8A7Z0J80NTSFQX9H97)
-- [Water, sanitation, and shared industrial utilities](Trails.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN)
-- [Industrial gases, vacuum, and high-purity supplies](Trails.lingua#r_0FVDWAGQGSXCG2KVW13PPK1R47)
 
 **Planning context:** [Trails — Knowledge to learn and use](Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
+
 } r_376AMKFFG2BY4E8T2A5Y923HV4
 
 Electricity infrastructure and energy storage (@plan-electricity-infrastructure-and-energy-storage: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_5WDHZ2EBHAKP6Y0H4DABH0MC5H
@@ -1528,30 +1530,16 @@ This material studies systems supplying combustible fuels, hydrogen, and useful 
 **Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
 } r_7SK09P8H8A7Z0J80NTSFQX9H97
 
-Water, sanitation, and shared industrial utilities (@plan-water-sanitation-and-shared-industrial-utilities: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_7B9GRCJFHVBEEQEXKWCR2QMMPN
-**Editorial reference:** ERG-178.
-
-Shared utilities provide the water, drainage, treatment, and services on which settlements and production facilities rely. This material connects sources, pumping, distribution, treatment, wastewater, reuse, monitoring, and asset maintenance, showing how ordinary service work enables advanced industrial and scientific activity.
-
-**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
-} r_7B9GRCJFHVBEEQEXKWCR2QMMPN
-
-Industrial gases, vacuum, and high-purity supplies (@plan-industrial-gases-vacuum-and-high-purity-supplies: 0, is #chapter, #planned, #part-of @plan-energy-and-utilities) { r_0FVDWAGQGSXCG2KVW13PPK1R47
-**Editorial reference:** ERG-179.
-
-Many technologies depend on controlled gases, low pressures, and substances whose contamination is tightly limited. This material connects gas production, purification, storage, delivery, vacuum pumps, seals, filtration, analysis, and maintenance with the research and manufacturing processes these supplies enable.
-
-**Planning context:** [Energy and utilities](Trails.lingua#r_376AMKFFG2BY4E8T2A5Y923HV4).
-} r_0FVDWAGQGSXCG2KVW13PPK1R47
-
-Production and quality (@plan-production-and-quality: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-standards-interoperability-and-quality-infrastructure, #contains @plan-clean-manufacturing-and-contamination-control, #contains @plan-food-production-preservation-and-distribution-systems, #contains @plan-industrial-ecology-and-lifecycle-assessment) { r_3YPJC2P8KN1G137NF9WXVQACRZ
-**Existing entrance:** [Hephaestus](../ergon/hephaestus/Hephaestus.lingua#r_00000000000000000000002001).
+Production and quality (@plan-production-and-quality: 0, is #chapter, #planned, #part-of @plan-hephaestus, #contains @plan-standards-interoperability-and-quality-infrastructure, #contains @plan-clean-manufacturing-and-contamination-control, #contains @plan-food-production-preservation-and-distribution-systems, #contains @plan-industrial-ecology-and-lifecycle-assessment, #related "../ergon/hephaestus/production/Production.lingua#r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4") { r_3YPJC2P8KN1G137NF9WXVQACRZ
+**Existing entrance:** [Production and quality](../ergon/hephaestus/production/Production.lingua#r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4).
 
 **Content home:** `institute/trails/ergon/hephaestus/production/`, with subject directories for the planned pathways.
 
-Proposed branch Record: `@production-quality-map`. Organising Record: `@hephaestus`.
+Branch Record: `@production-quality-map`. Organising Record: `@hephaestus`.
 
 **Pathways:** Explain whether an output meets a specification; understand repeatability, contamination, loss, and lifecycle boundaries. Introduce the process's measurements and materials as used; advanced statistics and specialised clean production are later paths.
+
+**Current draft:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../ergon/hephaestus/production/clean-manufacturing-and-contamination-control/Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN) contains 268 authored learning steps plus its entrance, twenty-six source Records and sixty-six reused foundations. The 335-Record learning route develops quantities, sampling, biological foundations, particle transport, surfaces, chemistry and cleaning, facility systems, aerosol and surface measurement, qualification and monitoring. Independently checked models and an original settling/diffusion calculation support twenty-four investigations. Continuing operation, specialist manufacturing and final research remain in development. Specialist microbial laboratory methods remain a deferred sensitive-data TODO.
 
 ## Planned pathways
 
@@ -1571,12 +1559,34 @@ Quality infrastructure helps independently produced materials, components, measu
 **Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
 } r_3CEXJ97N97KJ5KW8SGQ2GMT6MM
 
-Clean manufacturing and contamination control (@plan-clean-manufacturing-and-contamination-control: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_47NQ213DRJK1AMKQX7DTXR8E6X
+Clean manufacturing and contamination control (@plan-clean-manufacturing-and-contamination-control: 0, is #chapter, #planned, #part-of @plan-production-and-quality, #related "../ergon/hephaestus/production/clean-manufacturing-and-contamination-control/Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN") { r_47NQ213DRJK1AMKQX7DTXR8E6X
 **Editorial reference:** ERG-181.
+
+**TODO — sensitive data:** Specialist microbial laboratory methods are deferred after the user reported a stop during research involving sensitive biological source material. Their role in contamination control remains in scope; further coverage must stay within safe scientific context, interpretation and concise caution. Skip this portion for now and continue with specialist manufacturing and continuing operation.
 
 Clean manufacturing controls particles, chemical contamination, biological contamination, and environmental conditions according to process needs. This material connects cleanrooms, airflow, filtration, garments, handling, materials, monitoring, cleaning, and qualification with the facilities and practices supporting microelectronics, precision manufacture, pharmaceuticals, and research.
 
 **Planning context:** [Production and quality](Trails.lingua#r_3YPJC2P8KN1G137NF9WXVQACRZ).
+**Current draft:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../ergon/hephaestus/production/clean-manufacturing-and-contamination-control/Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN) contains 268 authored learning steps plus its entrance, twenty-six source Records and sixty-six reused foundations. The 335-Record learning route develops quantities, sampling, biological foundations, particle transport, surfaces, chemistry and cleaning, facility systems, aerosol and surface measurement, qualification and monitoring. Independently checked models and an original settling/diffusion calculation support twenty-four investigations. Continuing operation, specialist manufacturing and final research remain in development. Specialist microbial laboratory methods remain a deferred sensitive-data TODO.
+
+## Development handoff — 30 October 2026
+
+Continue from [Review what qualification and monitoring have established](../ergon/hephaestus/production/clean-manufacturing-and-contamination-control/studies/Review-what-qualification-and-monitoring-have-established.lingua#r_45F6FDPJHZ5MG7Y0K55BMA3H0X), `@cm-qualification-review`. This is the current final learning Record. Preserve the developed entrance identity `r_7D8SQ8BVQDZQBDBGC6DP0JAMZN`; this planning Record has its own identity and remains unfinished.
+
+The latest extension added thirty-three learning Records, four reused foundations and three investigations. The subject has 296 own files: 269 learning Records including the entrance, twenty-six sources and an index. Verification passed 118 numerical comparisons, exact 335-Record selection and directed reachability, preservation of reused content and routes, and discovery of the same 3,046 documents from seventeen entrances. Sources remain outside the learning selection. Hephaestus and this register parse; the earlier parser delay is resolved. Full runtime export, relocation and reopening validation for this unfinished subject is still pending.
+
+Continue in this order:
+
+1. Develop semiconductor and precision-manufacturing cases, then optical or space-hardware cases. Connect contamination sources, contact materials, process steps, utilities, measurement and qualification to useful yield or performance. Begin with the existing [source collection](../ergon/hephaestus/production/clean-manufacturing-and-contamination-control/Sources.lingua#r_3AA0Q34WMJ3580S9QP4CZ24AG0), particularly the NASA contamination-engineering report and semiconductor-cleaning proceedings, and the shared materials, gas and metrology Records. Inspect focused primary research before adding advanced explanations of critical-area/yield models, defect clustering, optical scatter or absorption, films, deposition and preservation. Distinguish inspected passages from assigned reading and actual experimental reproduction from checked teaching models.
+2. Complete the remaining specialist process comparisons, including safe systems-level treatment of pharmaceutical production and another relevant controlled process. Integrate the earlier chemical, surface, facility and qualification investigations into complete production accounts. Keep the microbial-method TODO deferred. Deepen thermophoretic, acoustic, optical and coupled surface-force models where relevant and supported; their introductory mentions do not yet provide a complete quantitative treatment.
+3. Develop continuing operation: intervention, deviation investigation, restoration after change, maintenance and service access, packaging, storage and transport, people and knowledge transfer, utilities, energy, waste and lifecycle tradeoffs. Follow how useful performance is maintained across organizations and over time.
+4. Finish the advanced investigations and research progression. Assign substantial foundational readings and precise specialist passages, independently check worked calculations, reconstruct a bounded published result, compare competing explanations, design an informative study and require a defensible independent contribution. Preserve the limits of available data and the agreed safety boundaries.
+5. Add and run the subject's publication integration test using the existing patterns in [the Ergon publication tests](../../../crates/resources/tests/ergon.rs). Verify exact learning membership and reachability, discovery from several entries, distinct continuations of reused Records, source exclusion, and preservation of source URLs, local references and the original particle-column program through export, relocation and fresh-library reopening. Run the relevant Cargo check and Lingua checks. Keep unfinished portions explicitly recorded; retire this planning leaf and its pending inventory entry only when its completion requirements are satisfied. Then continue the remaining Hephaestus subjects.
+
+Preserve the existing architecture while extending the content: ordinary Records, `#clean-manufacturing` outgoing assertions, references and discovery imports. New learning files import the developed entrance; the entrance discovers the new files and any required shared Records. Reused Records keep their original content, imports and other routes, adding only the new continuation. An ordinary source or contextual reference must not expand the selected learning route. Keep books, articles and other external source media outside the repository.
+
+The [development ledger](../../anicca/Ergon.md) holds the detailed verification and source history. Useful local artifacts, if still present, are `/tmp/clean-qualification-publication.json`, `/tmp/clean-qualification-audit-result.json`, `/tmp/clean-qualification-numerics.json`, `/tmp/audit-clean-qualification.py` and `/tmp/check-clean-qualification.py`. The qualification draft generator and publisher have already run; do not rerun them over authored files. The repository Records are authoritative, and continuation must remain possible if temporary artifacts are gone. Recheck the worktree and applicable instructions before changing it; preserve unrelated work.
+
 } r_47NQ213DRJK1AMKQX7DTXR8E6X
 
 Food production, preservation, and distribution systems (@plan-food-production-preservation-and-distribution-systems: 0, is #chapter, #planned, #part-of @plan-production-and-quality) { r_0PD1Z8HC1DYXAHK5BP6DKQJ853

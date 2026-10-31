@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Minimum separation work and actual products (@gas-separation-work: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #industrial-gases-and-vacuum "../../../chemistry/industrial-chemistry/thermodynamics/Mixtures-phases-and-stability-in-industrial-separations.lingua#r_77RX7N6YCX25E5PTTMHQ7X9ZRQ") { r_21SM5HAW75C2KW89ZZJP5ZT9AP
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), separation theory; [Connect mixture phase equilibria with stable states and actual separation duties](../../../chemistry/industrial-chemistry/thermodynamics/Mixtures-phases-and-stability-in-industrial-separations.lingua#r_77RX7N6YCX25E5PTTMHQ7X9ZRQ); [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), thermodynamic background.
+
+For ideal mixtures separated reversibly and isothermally at a common pressure, use the change in mixing Gibbs energy. For streams with amount flows ṅs and fractions xᵢs, the mixing contribution is RT[Σout ṅsΣᵢxᵢs ln xᵢs−Σin ṅsΣᵢxᵢs ln xᵢs]. Define 0 ln 0 by its zero limit. Additional pressure, phase and temperature changes require their own terms.
+
+Complete unmixing is one special product definition. Partial recovery and an impure product require balances for every outlet, including the residue. Comparing energy per unit product is meaningful only with matching composition, pressure, recovery and boundaries. A reversible bound is not the measured electricity demand of a plant.
+
+**Example:** Complete unmixing of one mole of an ideal 0.79/0.21 binary feed at 300 K and common pressure has a mixing-work bound of approximately 1,281.98 J. Recovering 80% of its second constituent in a 90% product instead gives 0.186667 mol product and 0.813333 mol residue, whose second-constituent fraction is about 0.0516393. That different task has a bound of approximately 718.151 J per mole of feed. These are hypothetical ideal-mixture bounds, not plant electricity predictions.
+
+**Work:** Derive the complete-unmixing result for a hypothetical 0.79/0.21 binary mixture. Then choose a partial-recovery product, determine the residue composition by balance and compute the corresponding bound. Explain why a change in recovery can change both the denominator and the thermodynamic task.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Connect mixture phase equilibria with stable states and actual separation duties](../../../chemistry/industrial-chemistry/thermodynamics/Mixtures-phases-and-stability-in-industrial-separations.lingua#r_77RX7N6YCX25E5PTTMHQ7X9ZRQ).
+
+} r_21SM5HAW75C2KW89ZZJP5ZT9AP

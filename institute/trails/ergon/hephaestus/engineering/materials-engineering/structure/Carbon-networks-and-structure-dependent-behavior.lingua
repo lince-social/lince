@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Carbon networks and structure-dependent behavior (@mat-carbon-structures: 0, is #chapter, #part-of @materials-engineering, #source "../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "Polymer-chains-networks-and-molecular-distributions.lingua#r_6FW8JBJ0ZFVEM3ZQBGGMHJGBGJ") { r_0X0MN8J8KHHBSX23GN95JGMG67
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), bonding and solid-state sections; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), bonding and network-structure lectures; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), atomic-scale structure and anisotropy.
+
+Diamond and graphite illustrate why elemental identity does not specify a unique material response. Their bonding arrangements and connectivity differ. Graphite's layered structure invites directional questions; a single-layer, finite-flake or defective specimen is not identical to bulk graphite in every measurement.
+
+Distinguish structure, morphology and manufacturing history when comparing fibres, powders, films and bulk pieces. Surface chemistry, interfaces, orientation and porosity can dominate the behavior of a manufactured carbon product. A remarkable value measured on one carefully prepared specimen is not automatically a design value for a larger assembly.
+
+**Work:** Compare two carbon forms through a drawn bonding network and one direction-dependent observation. Identify the specimen scale and method behind a published property. Explain which structural change would be needed for the proposed transformation and why an equilibrium preference alone would not establish its rate.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Polymer chains, networks and molecular distributions](Polymer-chains-networks-and-molecular-distributions.lingua#r_6FW8JBJ0ZFVEM3ZQBGGMHJGBGJ).
+
+} r_0X0MN8J8KHHBSX23GN95JGMG67

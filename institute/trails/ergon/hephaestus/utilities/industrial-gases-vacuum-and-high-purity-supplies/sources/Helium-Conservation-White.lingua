@@ -1,0 +1,10 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Conservation of helium while maintaining high system purity — White and colleagues (@gas-helium-conservation-source: 0, is #reference, #part-of @gas-sources) { r_3DSV0B9MRH66ZES2M2H75FPJWR
+M. White, J. Theilacker and M. Barba, Fermilab. *Conservation of Helium while Maintaining High System Purity*, 2023 Cryogenic Engineering Conference/International Cryogenic Materials Conference manuscript, FERMILAB-CONF-23-360-TD. [arXiv:2308.16299v1](https://arxiv.org/abs/2308.16299v1), submitted 21 August 2023 · [Complete eight-page PDF](https://arxiv.org/pdf/2308.16299v1).
+
+Read the complete derivation, assumptions and experimental comparison. Metadata, introduction, modeling assumptions, selected equations and experimental discussion were inspected on 30 October 2026. Table 1, the ultimate-pressure equation and both figures were checked visually on PDF pages 2, 6, 7 and 8. The version links [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); attribute the authors and identify adaptations.
+
+The manuscript provides plotted experimental traces, but a complete raw-data/code package was not established. Its pressure cutoff and purity requirements describe the studied installation. The trail's separate species-balance example tests how the chosen objective changes a conclusion; it does not claim reproduction of Fermilab's apparatus or fitted leak model. All media remain external.
+
+} r_3DSV0B9MRH66ZES2M2H75FPJWR

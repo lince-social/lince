@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Oscillators, normal modes and quantized energy (@mat-quantized-modes: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0", #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB", #materials-engineering "Ensembles-occupations-and-thermal-averages.lingua#r_5TGDDVPR8H1ED4GYHKRYBBMSQC") { r_6CMAWXNPG98G7Z40VBPWVK864W
+**Read:** [Quantum Mechanics — David Tong](../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0), section 2.2; [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), chapters 2 and 7–9; [Solid State Physics — David Tong](../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB), chapter 4.
+
+Start with two masses joined by springs: write the force equations, separate normal modes and check that rigid translation costs no spring energy when the boundary permits it. A mode is a collective displacement pattern. Quantization assigns its harmonic energy levels (n+1/2)ℏω; it does not make each atom an isolated oscillator with an arbitrary frequency.
+
+For a monatomic nearest-neighbour chain with spacing a, mass m and spring stiffness K, derive ω²=4K sin²(ka/2)/m. Near k=0, recover a sound speed a√(K/m). A basis with several atoms produces additional branches; acoustic and optical describe their mode behavior, not whether every optical branch visibly emits light.
+
+**Work:** Compare a finite mass-spring matrix with the periodic dispersion. Count modes without double counting opposite wavevectors and retain the dimensionality when later predicting heat capacity.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Ensembles, occupations and thermal averages](Ensembles-occupations-and-thermal-averages.lingua#r_5TGDDVPR8H1ED4GYHKRYBBMSQC).
+
+} r_6CMAWXNPG98G7Z40VBPWVK864W

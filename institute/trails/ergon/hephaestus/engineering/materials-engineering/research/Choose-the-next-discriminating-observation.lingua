@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Choose the next discriminating observation (@mat-discriminating-observation: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Informatics-Ramprasad.lingua#r_6CKWYT91KQJRX7EWD6TK53VFRM", #source "../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0", #source "../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND", #materials-engineering "Integrated-investigations-of-materials-from-process-to-service.lingua#r_34GENBHMAZCNRYFJSED1T11C3Q") { r_5Q11TMSRHBWKFYP64DKM7RC5XY
+**Read:** [Machine learning and materials informatics — Ramprasad and colleagues](../sources/Materials-Informatics-Ramprasad.lingua#r_6CKWYT91KQJRX7EWD6TK53VFRM), uncertainty and adaptive design; [Epoxy conversion from rheology — Romberg and colleagues, 2024](../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0), competing models; [Mesoscale tensile blind predictions — AM-Bench 2022](../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND), multiple observables.
+
+The next useful experiment may reduce uncertainty, separate mechanisms, test a transfer between scales or discover an improved material. These are different objectives. An adaptive method can balance exploration and exploitation only within its stated model and feasible observations. A small predicted uncertainty does not guarantee that missing classes of behavior have been considered.
+
+Compare candidate observations by their expected ability to alter a consequential conclusion, their cost and their sensitivity to nuisance variables. A measurement where competing models disagree but both are dominated by an uncontrolled artifact may be less useful than a modest experiment with a clear interpretation.
+
+**Work:** Take two explanations that fit your present evidence. Predict three candidate observations under each, propagate uncertainty and choose one experiment with a reasoned tradeoff. Specify controls and a result that would leave the ambiguity unresolved. Reassess the choice after a hypothetical unexpected result without retroactively describing that result as predicted.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Integrated investigations of materials from process to service](Integrated-investigations-of-materials-from-process-to-service.lingua#r_34GENBHMAZCNRYFJSED1T11C3Q).
+
+} r_5Q11TMSRHBWKFYP64DKM7RC5XY

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+When the simple coagulation model fails (@cm-coagulation-limits: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9", #clean-manufacturing "../../../inquiry/quantitative-literacy/practice/Rates-and-accumulation.lingua#r_0NTXN5E5ZJ1A8C149BQF4G2YCZ") { r_1XPSGKZR954R770RGQFCF2EEX0
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), the complete coagulation notes, including interactions and different mechanisms; [Aerosols and coagulation — Chiang C. Mei, MIT](../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9), assumptions behind the diffusion solution.
+
+The absorbing-sphere model assumes dilute independent transport, a specified contact boundary and capture after encounter. Flow shear, differential settling, electrical interactions, breakup and evolving aggregate structure can change the kernel or the outcome. A steady pair-diffusion solution also needs its relaxation scale to be short relative to the population's change.
+
+When particles become so small that their transport is not a continuum diffusion process over the encounter distance, a continuum kernel needs further justification. Multiplying a single-particle slip factor into an encounter law does not by itself establish a valid transition-regime collision model.
+
+**Work:** Compare a constant kernel, a size-dependent Brownian kernel and one additional mechanism from a primary study. Preserve number and mass definitions across the comparison. Identify the measurements that would discriminate their predictions rather than judging them only by a fitted total count.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Rates, accumulation, and the boundary of an account](../../../inquiry/quantitative-literacy/practice/Rates-and-accumulation.lingua#r_0NTXN5E5ZJ1A8C149BQF4G2YCZ).
+
+} r_1XPSGKZR954R770RGQFCF2EEX0

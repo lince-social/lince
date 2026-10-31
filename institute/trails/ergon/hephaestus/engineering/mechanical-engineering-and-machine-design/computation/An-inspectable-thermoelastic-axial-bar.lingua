@@ -1,0 +1,105 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+An inspectable thermoelastic axial bar (@mech-bar-example: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "Verification-validation-and-a-meaningful-stress-result.lingua#r_4Z0234631TP38BBV5E4CZSE6A3") { r_5ADP35GB2A1A5V37FEFWQB9HVB
+**Read:** Derive the two-node axial element in [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Finite Element Analysis, and [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), chapter 7 and section 8.1. The following original Python program exposes a small assembled model without requiring a commercial solver.
+
+Each segment has a positive length, constant axial rigidity EA, uniform free strain and uniform axial line force. Nodes share axial displacements; applied nodal forces and prescribed displacements complete the problem. All positive forces act along increasing coordinate and tensile section force is positive. Use consistent units, such as m, N, N for EA, dimensionless strain and N/m for line load. A free strain can represent a specified thermal expansion αΔT; the program does not solve temperature.
+
+The code assembles a symmetric tridiagonal stiffness system, eliminates the prescribed displacements, solves the remaining equations and recovers element forces, reactions and elastic strain energy. At least one displacement constraint removes the rigid translation. It assumes small axial deformation and linear elasticity; no bending, contact, yielding or buckling is modelled.
+
+```python
+import math
+
+
+def axial_bar(lengths, rigidities, free_strains, line_loads, nodal_loads, prescribed):
+    lengths, rigidities, free_strains, line_loads, nodal_loads = (
+        [float(value) for value in values]
+        for values in (lengths, rigidities, free_strains, line_loads, nodal_loads)
+    )
+    count = len(lengths)
+    if not 1 <= count <= 10000:
+        raise ValueError("provide between one and ten thousand elements")
+    if any(len(values) != count for values in (rigidities, free_strains, line_loads)):
+        raise ValueError("each element needs length, EA, free strain and line load")
+    if len(nodal_loads) != count + 1:
+        raise ValueError("one applied force is required for each node")
+    if not all(math.isfinite(value) for values in (lengths, rigidities, free_strains, line_loads, nodal_loads) for value in values):
+        raise ValueError("input quantities must be finite")
+    if min(lengths) <= 0 or min(rigidities) <= 0:
+        raise ValueError("element lengths and axial rigidities must be positive")
+    if not prescribed:
+        raise ValueError("at least one displacement constraint is required")
+    constraints = {}
+    for index, value in prescribed.items():
+        if type(index) is not int or not 0 <= index <= count:
+            raise ValueError("constraint indices must identify existing nodes")
+        value = float(value)
+        if not math.isfinite(value):
+            raise ValueError("prescribed displacements must be finite")
+        constraints[index] = value
+    diagonal = [0.0] * (count + 1)
+    off = [0.0] * count
+    applied = nodal_loads.copy()
+    rhs = nodal_loads.copy()
+    for i, (length, ea, strain, load) in enumerate(zip(lengths, rigidities, free_strains, line_loads)):
+        stiffness, thermal, distributed = ea / length, ea * strain, load * length / 2
+        diagonal[i] += stiffness
+        diagonal[i + 1] += stiffness
+        off[i] = -stiffness
+        applied[i] += distributed
+        applied[i + 1] += distributed
+        rhs[i] += distributed - thermal
+        rhs[i + 1] += distributed + thermal
+    for index, value in sorted(constraints.items()):
+        if index > 0:
+            rhs[index - 1] -= off[index - 1] * value
+            off[index - 1] = 0.0
+        if index < count:
+            rhs[index + 1] -= off[index] * value
+            off[index] = 0.0
+        diagonal[index] = 1.0
+        rhs[index] = value
+    if not all(math.isfinite(value) for values in (diagonal, off, applied, rhs) for value in values):
+        raise ValueError("assembled quantities outside representable range")
+    for i in range(1, count + 1):
+        if diagonal[i - 1] <= 0:
+            raise ValueError("unresolved or ill-conditioned stiffness system")
+        multiplier = off[i - 1] / diagonal[i - 1]
+        diagonal[i] -= multiplier * off[i - 1]
+        rhs[i] -= multiplier * rhs[i - 1]
+    displacement = [0.0] * (count + 1)
+    for i in range(count, -1, -1):
+        if diagonal[i] <= 0 or not math.isfinite(diagonal[i]) or not math.isfinite(rhs[i]):
+            raise ValueError("unresolved or ill-conditioned stiffness system")
+        following = off[i] * displacement[i + 1] if i < count else 0.0
+        displacement[i] = (rhs[i] - following) / diagonal[i]
+    reactions = [-force for force in applied]
+    section_force = []
+    energy = 0.0
+    for i, (length, ea, strain) in enumerate(zip(lengths, rigidities, free_strains)):
+        mechanical = (displacement[i + 1] - displacement[i]) / length - strain
+        force = ea * mechanical
+        section_force.append(force)
+        reactions[i] -= force
+        reactions[i + 1] += force
+        energy += 0.5 * ea * length * mechanical * mechanical
+    if not all(math.isfinite(value) for value in displacement + reactions + section_force + [energy]):
+        raise ValueError("result outside representable range")
+    return displacement, section_force, reactions, energy
+
+
+if __name__ == "__main__":
+    result = axial_bar([0.25, 0.25], [2e7, 2e7], [0.0006, 0.0006], [0, 0], [0, 1000, 0], {0: 0, 2: 0})
+    print("displacements, element forces, reactions, strain energy", result)
+```
+
+The displayed fixed-end example returns middle-node displacement 6.25×10⁻⁶ m, element forces −11,500 and −12,500 N, and support reactions +11,500 and −12,500 N. The 1000 N applied middle force balances their sum. The prescribed uniform expansion produces compression even though both endpoint displacements are zero.
+
+Under a distributed load the constant force recovered from a linear element is an approximation to the varying section-force field. Compare it at the element midpoint or as an average, then refine the mesh; exact nodal values for a special one-dimensional case do not imply an exact continuous displacement field. Finite precision and stiffness contrasts also require residual and conditioning checks.
+
+**Investigate:** Independently solve a free heated bar, a restrained heated bar, a stepped bar with an intermediate load and a bar with support settlement. Check every unconstrained nodal residual and whole-body force balance. Verify the zero-load rigid-translation case when all imposed displacements shift equally. For a uniform bar under constant line load, compare with the quadratic exact displacement and demonstrate field convergence between nodes. Thermal free strain changes the energy/work accounting; do not use half the mechanical external work as a universal stored-energy formula.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Verification, validation and a meaningful stress result](Verification-validation-and-a-meaningful-stress-result.lingua#r_4Z0234631TP38BBV5E4CZSE6A3).
+
+} r_5ADP35GB2A1A5V37FEFWQB9HVB

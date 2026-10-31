@@ -1,0 +1,11 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Benchmark Simulation Model no. 2 — IWA technical description (@wu-bsm2: 0, is #reference, #part-of @wu-sources) { r_7S4V5ZYP2VFKZ6VHSBS4Z2G5BF
+J. Alex, L. Benedetti, J. Copp, K. V. Gernaey, U. Jeppsson, I. Nopens, M. N. Pons, C. Rosen, J. P. Steyer and P. Vanrolleghem. Benchmark Simulation Model no. 2 (BSM2), task-group technical description. [IWA model and input-data page](https://iwa-mia.org/benchmarking/) · [Complete 99-page report](https://iwa-mia.org/wp-content/uploads/2018/01/BSM_TG_Tech_Report_no_3_BSM2_General_Description.pdf).
+
+Read the full process equations, interfaces, initialization, assessment and sensor/control account. Reproduce the stated baseline and implementation checks before changing a controller. Follow the official input-data link and preserve its version and definitions.
+
+The report and institutional page were inspected on 30 October 2026. The PDF bears a 2018 author copyright notice and a DRAFT page label, despite the indexed filename containing FINAL; retain that exact provenance. It is freely readable, with no blanket adaptation licence asserted here. The page provides influent data and describes some MATLAB files as available on request; no request was sent. Distinguish the public mathematical specification from implementation access and proprietary software dependencies.
+
+**Return:** [Water and sanitation sources](../Sources.lingua#r_7AMRJFFR11FF35KJM7Y7M05B3M).
+} r_7S4V5ZYP2VFKZ6VHSBS4Z2G5BF

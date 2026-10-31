@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Pressure reference, stress and a pressure measurement (@fd-pressure: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Hydrostatic-balance-gravity-and-density-variation.lingua#r_0BMK5JN8XP72JR1WQG5B52PFMS") { r_5KKK4Q5KPBS1CCXVZ72RYBJMKK
+Pressure reference, stress and a pressure measurement (@fd-pressure: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Hydrostatic-balance-gravity-and-density-variation.lingua#r_0BMK5JN8XP72JR1WQG5B52PFMS", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/foundations/Pressure-references-and-forces-on-a-boundary.lingua#r_6AZ7NMEDKWCM16PDFZHC1T6XXK", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/transport/Pressure-directions-product-protection-and-containment.lingua#r_0KK91FXJ7R5G0DK6AMEDTBKA9H") { r_5KKK4Q5KPBS1CCXVZ72RYBJMKK
 **Read:** [University Physics Volume 1 — OpenStax](../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), pressure and pressure-measurement sections; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 4, surface forces and pressure.
 
 In a fluid at rest under ordinary isotropic conditions, the traction on a small surface is normal to it and its compressive part is described by pressure. Choose a unit outward normal n for a control surface: the pressure force on its enclosed material is −p n per unit area. A moving viscous fluid also transmits deviatoric stress.
@@ -12,4 +12,10 @@ Draw the fluid, sensing element and reference side of a measurement. Explain how
 **Continue:** [Hydrostatic balance, gravity and density variation](Hydrostatic-balance-gravity-and-density-variation.lingua#r_0BMK5JN8XP72JR1WQG5B52PFMS).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in gas and vacuum systems:** [Pressure references and forces on a boundary](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/foundations/Pressure-references-and-forces-on-a-boundary.lingua#r_6AZ7NMEDKWCM16PDFZHC1T6XXK).
+
+
+**Continue in clean manufacturing:** [Pressure directions, product protection and containment](../../../production/clean-manufacturing-and-contamination-control/transport/Pressure-directions-product-protection-and-containment.lingua#r_0KK91FXJ7R5G0DK6AMEDTBKA9H).
+
 } r_5KKK4Q5KPBS1CCXVZ72RYBJMKK

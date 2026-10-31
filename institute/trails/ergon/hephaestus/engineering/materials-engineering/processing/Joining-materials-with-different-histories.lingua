@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Joining materials with different histories (@mat-process-joining: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "../../../materials/metals-and-metallurgical-production/manufacturing/Joining-weld-metallurgy-heat-affected-zones-and-dissimilar-materials.lingua#r_4D14X4AKXB4YK072HE2FCYD68A") { r_7F6416KYG4G5V19BPTR470D986
+**Read:** [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), joining; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapter 10; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), joining; the shared metallurgy joint Record.
+
+Joining creates an interface and often a new thermal, chemical and stress history. Mechanical fastening, adhesive bonding, brazing and welding transfer load differently. Dissimilar materials introduce wetting, reaction, galvanic or thermal-mismatch questions; changing the joining method changes which ones control performance.
+
+**Work:** Compare two joints for a defined material pair and service condition. Explain preparation, contact geometry, heat input, reaction products, cure or cooling and residual stress. Predict a failure location before examining fracture or section evidence. Separate cohesive, interfacial and substrate failure and report what the test actually stressed. Carry the joint's material history into inspection and future service decisions.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Explain a joint through chemistry, heat, flow, transformations, and evidence across its regions](../../../materials/metals-and-metallurgical-production/manufacturing/Joining-weld-metallurgy-heat-affected-zones-and-dissimilar-materials.lingua#r_4D14X4AKXB4YK072HE2FCYD68A).
+
+} r_7F6416KYG4G5V19BPTR470D986

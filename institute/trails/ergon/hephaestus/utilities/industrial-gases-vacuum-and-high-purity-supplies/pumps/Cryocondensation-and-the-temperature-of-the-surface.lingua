@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cryocondensation and the temperature of the surface (@gas-cryocondensation: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Cryosorption-trapping-and-finite-gas-capacity.lingua#r_16FYKH4H2JVB7F6JEKG03K0VRF") { r_1GBND36P3QBSW8RGB37AHP8EFE
+**Read:** [Vacuum technology for superconducting devices — Paolo Chiggiato](../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9), cryopumping; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.5; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), section 2.1.9. Revisit the cryogenic course's heat balances.
+
+A sufficiently cold surface can retain incoming molecules in a condensed phase. Evaporation from that phase competes with capture. Its temperature-dependent equilibrium vapor pressure provides a relevant limiting scale, while actual gas and surface temperatures and molecular accommodation determine the net exchange.
+
+A large initial capture speed does not guarantee unlimited useful loading. Condensed layers alter thermal resistance, geometry and heat capacity. Incoming gas carries sensible and phase-change energy; radiation, supports and instrumentation add heat. The relevant temperature is the loaded surface's temperature, not only a refrigerator's nominal set point.
+
+**Work:** Write net incident-minus-evaporating molecular flux under explicitly stated equilibrium-surface assumptions. Add a thermal-resistance model for a growing layer. Explain how loading can reduce useful pumping despite unchanged refrigerator control, and identify observations needed to distinguish thermal deterioration from loss of accessible area.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Cryosorption, trapping and finite gas capacity](Cryosorption-trapping-and-finite-gas-capacity.lingua#r_16FYKH4H2JVB7F6JEKG03K0VRF).
+
+} r_1GBND36P3QBSW8RGB37AHP8EFE

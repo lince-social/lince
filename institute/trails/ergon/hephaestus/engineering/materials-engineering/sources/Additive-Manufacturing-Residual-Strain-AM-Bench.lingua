@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Manufacturing history and measured residual strain — AM-Bench 2018 (@mat-am-residual: 0, is #reference, #part-of @mat-sources) { r_1JF3D3C7YNFKCJET729ADPZWPM
+Lyle Levine, Thien Phan, Maria Strantza and colleagues. *AM Bench 2018 Residual Elastic Strain Measurements of 3D Additive Manufacturing Builds of IN625 Artifacts Using Neutron Diffraction and Synchrotron X-ray Diffraction*, NIST data publication, DOI 10.18434/mds2-3052. [Data, README and measurement documents](https://data.nist.gov/pdr/lps/ark:/88434/mds2-3052), [build description](https://www.nist.gov/ambench/amb2018-01-description), [residual-strain results](https://www.nist.gov/ambench/results-chal-amb2018-01-rs-part-residual-strains).
+
+Read the manufacturing description, final methods and data documentation together. Reconstruct the specimen and coordinate system, then compare a model's observable with the measurements. Retain differences between the announced protocol and actual work rather than silently combining them.
+
+Dataset metadata, README, the IN625 neutron text table and its measurement document were inspected on 30 October 2026, including the geometry figure. Coordinates locate centers of approximately 1.5 mm cubic gauge volumes; column order is X position, Z position, YY strain, XX strain, ZZ strain. The inspected table has 204 distinct sampling locations. Sampling is asymmetric near some surfaces. Keep dimensionless strain distinct from microstrain and millimetres from metres.
+
+The dataset refers to NIST public-data terms; retain attribution, version and access date. Its associated 2019 journal paper was not fully inspected because direct access failed. The public dataset and methods remain usable independently. All data files stay external.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_1JF3D3C7YNFKCJET729ADPZWPM

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Material state, processing and the meaning of a property (@mech-material-state: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #mechanical-engineering "Displacement-strain-and-rigid-motion.lingua#r_4EYCPJSR65WYQKHSN682KNH47F") { r_5J8VMN2HS2ZZ4NBTQCBWWNGPAH
+**Read:** [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Atomistics of Elasticity, Stress–Strain Curves and Dislocation Basis of Yield and Creep. Follow the metallurgical source links for a deeper investigation of the selected metal.
+
+A material name does not specify one universal property set. Composition, heat treatment, cold work, porosity, texture, grain structure, residual stress, surface condition, temperature and loading rate can change the response. A cast, wrought, welded or additively produced part may require different evidence even when its nominal alloy designation matches.
+
+Connect a reported property to its definition, specimen orientation, preparation, sampling population and method. Modulus, strength, ductility, hardness, toughness and fatigue resistance are different quantities. Raising one does not automatically raise the others. A mean measured strength does not define a lower-tail design value or its confidence.
+
+**Work:** Compare two documented material conditions for a proposed part. Build a table of useful properties with their units, test conditions, source and uncertainty or observed scatter. Explain the mechanism behind at least one difference. Identify which manufacturing steps can change that state after the initial test and how the delivered part's condition would be checked.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Displacement, strain and rigid motion](Displacement-strain-and-rigid-motion.lingua#r_4EYCPJSR65WYQKHSN682KNH47F).
+
+} r_5J8VMN2HS2ZZ4NBTQCBWWNGPAH

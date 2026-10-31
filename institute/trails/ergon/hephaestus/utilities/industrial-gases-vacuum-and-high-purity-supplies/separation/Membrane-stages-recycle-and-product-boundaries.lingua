@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Membrane stages, recycle and product boundaries (@gas-membrane-system: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #industrial-gases-and-vacuum "Drying-and-trace-water-are-separate-questions.lingua#r_5VFPSY2KNZR8B47AW31RH3ACN0") { r_3YGX2QK15YW2V7ADMKB97PTKKY
+**Read:** [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH), the membrane system diagram and feed conditioning; the full membrane sections of the existing industrial separations course.
+
+A module divides feed into permeate and retentate. At steady state F=P+R and Fzᵢ=Pyᵢ+Rxᵢ on a consistent molar basis. Stage cut P/F affects composition and recovery. These balances must hold even when a transport model is elaborate.
+
+Cascades and recycle can recover valuable constituents or improve purity, while changing compression work and internal flows. A recycle can make equipment process much more gas than the net product amount suggests. Feed contamination can damage a membrane or alter performance independently of the nominal inlet composition used in a model.
+
+**Work:** Close a hypothetical two-stage binary separation with one recycle. Check nonnegative streams and fractions summing to one. Explain why a favorable single-stage selectivity does not settle the system design. Compare a membrane and adsorption arrangement at the same delivery pressure, accepted composition, demand history and recovery boundary.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Drying and trace water are separate questions](Drying-and-trace-water-are-separate-questions.lingua#r_5VFPSY2KNZR8B47AW31RH3ACN0).
+
+} r_3YGX2QK15YW2V7ADMKB97PTKKY

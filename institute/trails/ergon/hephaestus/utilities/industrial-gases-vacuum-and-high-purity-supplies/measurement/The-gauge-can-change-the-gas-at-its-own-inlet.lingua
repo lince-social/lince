@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+The gauge can change the gas at its own inlet (@gas-gauge-loading: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "../../../inquiry/metrology/foundations/Traceability-chain.lingua#r_7XW6NVMPW7PMPJPBESW5G1757N") { r_1KSEFRSR9NJ56SGBFVWG6ZAXPC
+**Read:** [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), gauge mounting, surfaces and backgrounds; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), gas-source and measurement mechanisms; revisit [Nonisothermal molecular flow and thermal transpiration](../transport/Nonisothermal-molecular-flow-and-thermal-transpiration.lingua#r_1JARQ781E49AMGWPAJG8WK6BXW).
+
+A hot filament, pumping surfaces, a narrow port and a temperature difference can create a local condition distinct from the process being measured. The gauge can release gas, remove gas, alter chemistry or select trajectories. Its presence belongs in the physical model.
+
+For a simple molecular-flow connection of conductance C to a chamber at pc, a gauge volume with gas source Qg and pumping speed Sg has steady pressure pg=(Cpc+Qg)/(C+Sg), with consistent throughput units and constant-temperature linear assumptions. It can read above or below the chamber's local pressure. The equality pg=pc requires additional conditions.
+
+At molecular equilibrium between different temperatures, the thermal-transpiration relation also enters. It is not a universal correction for every pressure regime; geometry and transition-flow behavior must be treated within an applicable model.
+
+**Work:** Use hypothetical C=0.01 m³/s, Sg=0.002 m³/s, Qg=10⁻⁸ Pa·m³/s and pc=10⁻⁵ Pa to obtain pg≈9.16667×10⁻⁶ Pa. Remove each perturbing term in turn and explain what independent observation could expose the loading.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A documented calibration chain for a particular result](../../../inquiry/metrology/foundations/Traceability-chain.lingua#r_7XW6NVMPW7PMPJPBESW5G1757N).
+
+} r_1KSEFRSR9NJ56SGBFVWG6ZAXPC

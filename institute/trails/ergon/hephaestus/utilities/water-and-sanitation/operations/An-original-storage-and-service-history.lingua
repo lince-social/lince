@@ -1,0 +1,58 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+An original storage and service history (@wu-service-example: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Effective-Utility-Management-EPA-USDA.lingua#r_5W9CSGM4NJKGFDES86XNMQFBRD", #water-and-sanitation "Interruption-restoration-and-the-evidence-for-returning-service.lingua#r_3XQQ1GBTMB02T47TT6PEG457CD") { r_4AYPYP03NDY4K96AYAY2JQE45W
+**Read:** Return to the source/storage and distribution Records, then [Effective utility management — rural and small systems guidebook](../sources/Effective-Utility-Management-EPA-USDA.lingua#r_5W9CSGM4NJKGFDES86XNMQFBRD) for the difference between an equipment statistic and delivered service.
+
+This original model uses volumes per interval. Accepted inflow is available during that interval, essential demand is served first, other demand follows, and excess remaining volume spills. Rejected inflow is diverted outside storage. The acceptance flag is a supplied decision, not a water-quality model; the example assumes stored water remains suitable and ignores pressure and spatial distribution.
+
+```python
+from math import isfinite
+
+
+def service_history(initial, capacity, periods):
+    if not all(isfinite(value) for value in (initial, capacity)):
+        raise ValueError("storage inputs must be finite")
+    if capacity <= 0 or not 0 <= initial <= capacity:
+        raise ValueError("invalid capacity or initial storage")
+    storage = initial
+    rows = []
+    for inflow, accepted, essential, other in periods:
+        if not isinstance(accepted, bool):
+            raise ValueError("acceptance must be a declared boolean decision")
+        if not all(isfinite(value) and value >= 0 for value in (inflow, essential, other)):
+            raise ValueError("period volumes must be finite and nonnegative")
+        available = storage + (inflow if accepted else 0.0)
+        if not isfinite(available):
+            raise ValueError("available volume outside numerical range")
+        served_essential = min(available, essential)
+        available -= served_essential
+        served_other = min(available, other)
+        available -= served_other
+        spill = max(0.0, available - capacity)
+        storage = min(available, capacity)
+        rows.append({
+            "storage": storage,
+            "diverted": 0.0 if accepted else inflow,
+            "served_essential": served_essential,
+            "served_other": served_other,
+            "unmet_essential": essential - served_essential,
+            "unmet_other": other - served_other,
+            "spill": spill,
+        })
+    return rows
+
+
+if __name__ == "__main__":
+    periods = [(10, True, 10, 5), (30, False, 10, 10), (0, True, 10, 5), (20, True, 10, 0)]
+    for row in service_history(10, 30, periods):
+        print(row)
+```
+
+The displayed case begins with 10 m³, receives 60 m³, diverts 30, delivers 30 and finishes with 10. Unmet essential and other demand are each 15 m³. Summing capacity or average input would conceal when shortage occurs. Priority is a declared assumption whose consequences must be discussed with the people affected.
+
+**Work:** Independently check every interval and the whole balance. Reverse the order of inflows, introduce spill, remove demand and test empty initial storage. Explain why the assumed within-interval order matters; refine the interval or model continuous flow before comparing with an actual tank. Advanced extensions add quality state, pressure constraints, repair events and uncertain demand, with independent checks retained after each change.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Interruption, restoration and the evidence for returning service](Interruption-restoration-and-the-evidence-for-returning-service.lingua#r_3XQQ1GBTMB02T47TT6PEG457CD).
+
+} r_4AYPYP03NDY4K96AYAY2JQE45W

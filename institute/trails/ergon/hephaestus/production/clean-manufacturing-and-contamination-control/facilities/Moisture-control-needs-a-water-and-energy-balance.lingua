@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Moisture control needs a water and energy balance (@cm-humidity-loads: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "../../../physics/thermodynamics-and-heat-transfer/transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3") { r_6KFH4611TBEBZ10C1ENQZMYQ26
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), chapter 8.1 mixture definitions; [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), thermal conditions; [Water amount fraction, dew point and relative humidity](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/Water-amount-fraction-dew-point-and-relative-humidity.lingua#r_7TFNVNBF898TTQ2RQ8A18ZTF79) and its complete NIST reading.
+
+For an ideal moist-air mixture, humidity ratio w=0.622pv/(p−pv) is water mass per dry-air mass. It differs from the water mass fraction w/(1+w). Relative humidity also depends on temperature. Cooling can therefore change relative humidity without removing water, until condensation or another exchange occurs.
+
+At hypothetical p=100 kPa, reducing pv from 2 kPa to 1 kPa changes w from approximately 0.012694 to 0.006283 kg/kg dry air. At dry-air flow 1 kg/s, the implied water removal is about 0.006411 kg/s. The cooling load must also include sensible energy and the enthalpy carried by condensate.
+
+**Work:** Derive w from ideal partial pressures and molecular-mass ratio. Close dry-air and water balances through mixing, a cooling/dehumidifying stage and reheat. Explain why heating alone lowers relative humidity without making a stream drier on a water-per-dry-air basis. Locate condensation-sensitive surfaces and distinguish room air from a cold local interface.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Lumped capacity, Biot number and response time](../../../physics/thermodynamics-and-heat-transfer/transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3).
+
+} r_6KFH4611TBEBZ10C1ENQZMYQ26

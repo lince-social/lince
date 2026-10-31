@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Continuous rinsing has an inlet limit and an integrated discharge (@cm-rinse-continuous: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "Stagnant-regions-can-control-the-last-part-of-a-rinse.lingua#r_009PWTQVRDNMHY9CH7ST2W1FA3") { r_1ZE1NGJ94T8924QK4483MSXDBW
+**Read:** Revisit the earlier well-mixed transport account and [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E)'s process context.
+
+For a constant well-mixed liquid volume V with equal inflow and outflow Q, no reaction and no internal source, V dc/dt=Q(cin−c). At constant inlet, c=cin+(c0−cin)exp(−Qt/V). A 99% reduction of the excess over cin requires Qt/V=ln 100≈4.605, rather than a claim that one volume exchange replaces all material.
+
+The discharged amount is the integral of Qc over time. Together with inflow and the final inventory, it closes the material balance. A retained surface reservoir or a stagnant pocket adds exchange terms and can dominate the late behavior.
+
+**Work:** Derive the transient and integrated discharge independently. Compare the well-mixed result with ideal plug displacement under the same water use. Specify an experiment that discriminates them. Determine the final concentration when the rinse supply itself contains the target component, and explain why more time cannot overcome that inlet floor in this model.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Stagnant regions can control the last part of a rinse](Stagnant-regions-can-control-the-last-part-of-a-rinse.lingua#r_009PWTQVRDNMHY9CH7ST2W1FA3).
+
+} r_1ZE1NGJ94T8924QK4483MSXDBW

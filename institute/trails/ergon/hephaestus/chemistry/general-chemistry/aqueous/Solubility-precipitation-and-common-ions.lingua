@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Predict precipitation with free species activities and phase constraints (@gc-solubility: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Complexation-and-conditional-equilibria.lingua#r_2GGA9G5GPPJ46R3D8ZMR8FHNMK", #water-and-sanitation "../../../utilities/water-and-sanitation/foundations/Oxygen-redox-and-the-changing-forms-of-constituents.lingua#r_7SJ9QMVSF9TWJG7Z36EZ8R1YC4") { r_0XQ9C6TADMA2K20WJH8NZC9CVV
+Predict precipitation with free species activities and phase constraints (@gc-solubility: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "Complexation-and-conditional-equilibria.lingua#r_2GGA9G5GPPJ46R3D8ZMR8FHNMK", #water-and-sanitation "../../../utilities/water-and-sanitation/foundations/Oxygen-redox-and-the-changing-forms-of-constituents.lingua#r_7SJ9QMVSF9TWJG7Z36EZ8R1YC4", #clean-manufacturing "Complexation-and-conditional-equilibria.lingua#r_2GGA9G5GPPJ46R3D8ZMR8FHNMK") { r_0XQ9C6TADMA2K20WJH8NZC9CVV
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 15’s solubility and precipitation material; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 6’s solubility and competing-equilibrium examples; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), solubility products and important solubility systems.
 
 A solubility equilibrium relates the activities of specified dissolved species to a specified solid phase under conditions. Distinguish the ion activity product Q from K_sp and verify whether the solid phase is present or can form on the observation timescale. Different polymorphs, hydrates, complexes, or reaction products can require different models.
@@ -18,4 +18,7 @@ Read the full solubility/equilibrium chapter and laboratory activity. Later mine
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
 
 **Continue in water and sanitation:** [Oxygen, redox and the changing forms of constituents](../../../utilities/water-and-sanitation/foundations/Oxygen-redox-and-the-changing-forms-of-constituents.lingua#r_7SJ9QMVSF9TWJG7Z36EZ8R1YC4).
+
+**Continue in clean manufacturing:** [Track free species and complexes without losing the component total](Complexation-and-conditional-equilibria.lingua#r_2GGA9G5GPPJ46R3D8ZMR8FHNMK).
+
 } r_0XQ9C6TADMA2K20WJH8NZC9CVV

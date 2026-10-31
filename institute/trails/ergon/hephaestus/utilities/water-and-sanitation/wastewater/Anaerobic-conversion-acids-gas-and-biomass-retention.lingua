@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Anaerobic conversion, acids, gas and biomass retention (@wu-anaerobic: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Model-states-stoichiometric-matrices-and-calibration.lingua#r_4D90QCDBVY5YJ1W4YD82JQQF3Z") { r_4S19SPE58WJ3Z0Z67XAWK9D2ZR
+**Read:** Work the whole [Anaerobic Reactors — Chernicharo](../sources/Anaerobic-Reactors-Chernicharo.lingua#r_1AW64A0Q4V7K5SHSNVJYHNZM6F); use [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lecture 22, for a graduate comparison and [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37) for advanced anaerobic models. Separate liquid-treatment reactor assumptions from sludge-digester assumptions.
+
+Hydrolysis, fermentation and methane-forming pathways depend on different conditions and populations. A rapid acid-production response can coexist with slower methane conversion. Liquid hydraulic time and retained biomass time can differ substantially. An outlet COD result alone cannot reveal dissolved gas, escaped gas, remaining solids or the reason for lost performance.
+
+**Work:** Draw COD, carbon, alkalinity and gas pathways for one specified configuration. Track loading, temperature, volatile acids, buffering and biomass inventory through a published disturbance. Compare plausible inhibition, overload, washout and gas-collection explanations before choosing one. Use provided operational datasets or a professionally supervised setting; methane and confined-space hazards are not subjects for improvised household experiments.
+
+For advanced study, reproduce a documented model's state definitions and acid–base relations, check element and charge conservation, and compare reduced and detailed models against withheld observations. Include post-treatment, dissolved methane, odour, corrosion, flare or energy-use arrangements and residual handling in the final service account.
+
+**Continue:** [Model states, stoichiometric matrices and calibration](Model-states-stoichiometric-matrices-and-calibration.lingua#r_4D90QCDBVY5YJ1W4YD82JQQF3Z).
+} r_4S19SPE58WJ3Z0Z67XAWK9D2ZR

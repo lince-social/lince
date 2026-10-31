@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Describe motion before predicting its causes (@mech-motion: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "../../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52") { r_3Q1N06EMG3MPWM99KQN8G4TVM8
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 1–2 and the first problem set. Revisit the quantitative functions, graphs and vectors when a notation is unfamiliar. Use [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), 18.01SC differentiation, for the next mathematical step.
+
+Observe a sliding drawer, slowly turned handle or small pendulum. Define a position relative to a stated origin, orientation and clock. A sequence of positions describes motion; it does not yet identify the forces causing it. Displacement can vanish after a round trip while the travelled distance remains positive.
+
+Velocity is the rate of change of position. Acceleration is the rate of change of velocity; a changing direction matters even at constant speed. A plot must identify its quantity, units, sampling times and reference frame. A motion seen from a rotating part can differ from the same motion seen from the floor.
+
+**Work:** Draw position, velocity and acceleration histories for a part that starts, travels at constant speed and stops. Explain why an ideal abrupt velocity jump would require an impulse, and why a finite real stopping interval matters. Estimate a measurement interval capable of revealing that interval. Continue through the shared derivative introduction before taking two derivatives of a motion law.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Small changes, derivatives, and first-order approximations](../../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52).
+
+} r_3Q1N06EMG3MPWM99KQN8G4TVM8

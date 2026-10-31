@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Physical and chemical vapor deposition (@mat-vapor-deposition: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT", #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #materials-engineering "Atomic-layer-deposition-saturation-and-conformality.lingua#r_3S35J4F23HYVAZ8WKXWPRPR0XT") { r_4V99KWWZSQVC6QQ0GG4VH6569B
+**Read:** [Microfabrication and material integration — MIT 6.777J, 2007](../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT), lecture 2, especially thin films; [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), section 7.5; the earlier transport and nucleation readings.
+
+Evaporation, sputtering and chemical vapor deposition differ in how material is supplied and incorporated. Arrival direction and energy, surface mobility, gas transport and reaction affect growth, conformality, impurities, grain structure and stress. A nominal deposition rate omits many conditions needed to reproduce a useful film.
+
+**Work:** Draw a species balance between source, gas, surface and exhaust for two processes. Compare a transport-limited and reaction-limited regime and predict how changed pressure, temperature or feature geometry would affect uniformity. Inspect deposited material and the substrate after processing. Treat the older course's temperature ranges and process categories as examples, not universal current restrictions on where a method can be used.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Atomic layer deposition, saturation and conformality](Atomic-layer-deposition-saturation-and-conformality.lingua#r_3S35J4F23HYVAZ8WKXWPRPR0XT).
+
+} r_4V99KWWZSQVC6QQ0GG4VH6569B

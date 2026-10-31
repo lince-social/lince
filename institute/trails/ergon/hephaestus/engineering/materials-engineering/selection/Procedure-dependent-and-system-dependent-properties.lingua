@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Procedure-dependent and system-dependent properties (@mat-property-procedure: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "Functions-constraints-objectives-and-free-variables.lingua#r_1B87JWV0TC39K2C2S59BMZ0FQQ") { r_6KKXGWVK47M4CB4KZ48MKJAPT0
+**Read:** [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), the complete procedural and system-dependent examples; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), testing and design; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), properties and stress grades.
+
+Hardness depends on an indenter and loading procedure. Fracture measurements depend on geometry, constraint and crack preparation. Wear depends on a contact system. Thermal conductivity may depend on orientation, moisture, pores and the scale of the measurement. Such observations can be useful precisely because the procedure is specified; removing it destroys part of the meaning.
+
+Distinguish an experimental response from a constitutive parameter inferred using a model. Instrument correction and specimen conditioning enter the inference. A model parameter can agree across some tests and fail to transfer when mechanisms or length scales change.
+
+**Work:** Choose a hardness, fracture or wear comparison and reconstruct its measurement chain. Explain which transformation, if any, makes results comparable. Derive one conversion only where its assumptions hold and present a counterexample. Decide whether the available evidence supports family screening, a detailed prediction or neither.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Functions, constraints, objectives and free variables](Functions-constraints-objectives-and-free-variables.lingua#r_1B87JWV0TC39K2C2S59BMZ0FQQ).
+
+} r_6KKXGWVK47M4CB4KZ48MKJAPT0

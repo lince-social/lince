@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Parts, interfaces and the path of a load (@mech-parts: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #mechanical-engineering "Read-a-machine-drawing-as-a-description-of-geometry.lingua#r_5DMS4ESA6V4JP2CQR8B7S1YWBN") { r_0GDXXPH3HG15NE437QEDYMSTZ8
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), the opening principles and the later connection/bearing illustrations, without yet assuming you can design every component. Use [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7)'s machine image to practice identifying functions.
+
+A shaft may transmit torque, a bearing may constrain motion, a frame may carry reaction forces, and a fastener may hold contacting parts together. These descriptions depend on the arrangement. The same physical part can support, align, seal and transmit force at once.
+
+**Work:** Draw a connection map for the selected machine. Trace a useful output load back through its contacts and supporting structure. Trace the energy input separately. Identify lubrication, sealing, measurement and access for maintenance; these often determine whether an apparently simple mechanism can continue working.
+
+Compare the entire assembly with one isolated component. An interaction internal to the assembly becomes an external load when that component is isolated. This change of boundary is the basis of the free-body diagrams that follow, not an extra physical force.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Read a machine drawing as a description of geometry](Read-a-machine-drawing-as-a-description-of-geometry.lingua#r_5DMS4ESA6V4JP2CQR8B7S1YWBN).
+
+} r_0GDXXPH3HG15NE437QEDYMSTZ8

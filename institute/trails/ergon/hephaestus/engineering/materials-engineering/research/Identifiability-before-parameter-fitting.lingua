@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Identifiability before parameter fitting (@mat-identifiability: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0", #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #materials-engineering "Homogenization-and-the-meaning-of-an-effective-property.lingua#r_7GGJ90AQEVPCWPRMFE3PVD0WS7") { r_1A1YWQT30VVSZR0HJPZDX0TM9X
+**Read:** [Epoxy conversion from rheology — Romberg and colleagues, 2024](../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0), models and comparisons; [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), inference and evaluation. Use the preceding measurement operator as an explicit counterexample to assuming that every fitted parameter is observable.
+
+A parameter is identifiable only to the extent that distinct values produce distinguishable observations under the available experiments. If a measurement depends on a product AB, it cannot separate A and B without additional information. More digits in a fitted solution do not repair that ambiguity. Bounds and priors add information whose source must be acknowledged.
+
+Locally, the sensitivity matrix Jᵢⱼ=∂yᵢ/∂θⱼ maps parameter changes into observable changes. Nearly dependent columns indicate combinations that are difficult to distinguish. Nonlinear models may have distant alternative solutions even when local sensitivity looks adequate. A narrow interval conditional on one model does not exclude a competing mechanism.
+
+**Work:** Construct a two-parameter example with indistinguishable predictions, then add an observable that separates the parameters. Check units and scaling before comparing sensitivities. Apply the argument to cure/rheology or a material transport measurement. Show how a good fit can coexist with an unreliable changed-condition prediction.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Homogenization and the meaning of an effective property](Homogenization-and-the-meaning-of-an-effective-property.lingua#r_7GGJ90AQEVPCWPRMFE3PVD0WS7).
+
+} r_1A1YWQT30VVSZR0HJPZDX0TM9X

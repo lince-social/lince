@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Throttling, expansion and why cooling is conditional (@gas-expansion: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "Liquefaction-cycles-and-refrigeration-duty.lingua#r_4Z6EFX7NR3QHV6YR6XJP5Y0FW3") { r_0NAHQM6Q4W7WMAA10BN1RE8WC4
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), liquefaction and refrigeration; [Turbines, compressors, valves, mixers and nozzles](../../../physics/thermodynamics-and-heat-transfer/balances/Turbines-compressors-valves-mixers-and-nozzles.lingua#r_5FNNDS9HS3F0FDBD0MX1H5D8YJ) and real-fluid states.
+
+For a steady adiabatic valve with negligible work and kinetic/potential changes, inlet and outlet specific enthalpies are equal. This does not mean temperature is constant. The Joule–Thomson coefficient μJT=(∂T/∂p)h determines the local temperature change and depends on the fluid state. An ideal gas with enthalpy depending only on temperature has μJT=0.
+
+A work-producing expansion can reduce enthalpy and follows a different account. Compare ideal isentropic and actual turbine performance using the same inlet and outlet conditions. Two-phase formation may limit equipment choices. A gas that cools in one temperature range need not cool in another.
+
+**Work:** Derive the valve and turbine energy statements. Use a documented real-fluid model or table to compare two inlet states under throttling. Track phase appearance and explain the role of precooling in a liquefaction cycle. Verify that a claimed temperature drop is consistent with the energy boundary.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Liquefaction cycles and refrigeration duty](Liquefaction-cycles-and-refrigeration-duty.lingua#r_4Z6EFX7NR3QHV6YR6XJP5Y0FW3).
+
+} r_0NAHQM6Q4W7WMAA10BN1RE8WC4

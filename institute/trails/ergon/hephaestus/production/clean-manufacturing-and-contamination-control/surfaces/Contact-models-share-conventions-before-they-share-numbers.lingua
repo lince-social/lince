@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Contact models share conventions before they share numbers (@cm-contact-conventions: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "JKR-contact-connects-load-area-and-pull-off.lingua#r_3HPDFHZR35Z41K4QEAEQET886M") { r_425C0AZ76A3BN6W8MEPGVY0D15
+**Read:** [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), part 1; [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Particle Adhesion and Detachment Models, pages 1–3.
+
+Use particle radius R, contact radius a, compressive applied normal load P, and work of adhesion W. Define 1/E*=(1−ν₁²)/E₁+(1−ν₂²)/E₂. The Clarkson notes use diameter d=2R and K=4E*/3. Substituting these explicitly prevents a modulus or radius convention from becoming a factor error.
+
+The shared Hertz model gives a³=3PR/(4E*) for a smooth nonadhesive elastic sphere on a half-space under positive compression. Adhesion permits contact at zero applied load and some tensile loading. It does not remove requirements about elastic response, contact size, shape and boundary dimensions.
+
+**Work:** Convert the notes' Hertz expression dP/(2K) into the radius/effective-modulus form. Mark the sign of P for compression and separation. State whether a measured force includes weight, an applied field, instrument offsets or only the imposed normal load before comparing it with a theoretical pull-off value.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [JKR contact connects load, area and pull-off](JKR-contact-connects-load-area-and-pull-off.lingua#r_3HPDFHZR35Z41K4QEAEQET886M).
+
+} r_425C0AZ76A3BN6W8MEPGVY0D15

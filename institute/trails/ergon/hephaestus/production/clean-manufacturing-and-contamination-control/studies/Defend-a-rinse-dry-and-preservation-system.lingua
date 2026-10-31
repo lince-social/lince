@@ -1,0 +1,13 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend a rinse, dry and preservation system (@cm-study-rinse: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "Review-cleaning-before-designing-the-facility-and-its-controls.lingua#r_1GWH14SX8FEJ49VV0SN0XDAM06") { r_07NVYTM0NA06NSBRY7WK29MXC7
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E) in full; the Chang and colleagues rinsing article in [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2); the complete WHO water-system reading assigned by [High-purity water is a distribution and measurement problem too](../../../utilities/water-and-sanitation/industrial/High-purity-water-is-a-distribution-and-measurement-problem-too.lingua#r_72TZ7SZVXT1GPW21YQABMTFQSF).
+
+Develop a model from incoming liquid through retained volume, contact regions, discharge, drying and storage. Begin with ideal batch and continuous balances, then add one justified slow reservoir or surface process. Close the amount account and report the relevant water, energy and waste quantities.
+
+**Work:** Compare predictions against independent integration or an analytical limit. Identify an observable that distinguishes mixing, diffusion-limited release and a chemical source. Assess removal and substrate change separately in the primary rinsing study. Defend point-of-use measurements, final residue distribution and a preservation comparison. Explain what changes when the part geometry, material or rinse supply changes.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review cleaning before designing the facility and its controls](Review-cleaning-before-designing-the-facility-and-its-controls.lingua#r_1GWH14SX8FEJ49VV0SN0XDAM06).
+
+} r_07NVYTM0NA06NSBRY7WK29MXC7

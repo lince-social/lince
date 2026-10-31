@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Free-energy reference paths and coexistence (@mat-research-free-energy: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH", #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #materials-engineering "Passing-information-between-material-scales.lingua#r_6VNHKM5W9E5353SNZSSZHW103F") { r_48AHYHP56GCCHYBZKWHJ16Q42F
+**Read:** [Atomistic computer modeling of materials — MIT 3.320](../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH), free-energy methods; [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), thermodynamic potentials; the earlier phase equilibrium and assessed-calculation sections.
+
+Potential energy at a minimum is not a finite-temperature free energy. Entropy, accessible states and ensemble constraints matter. For a sufficiently sampled differentiable canonical family Hλ at fixed temperature, ∂F/∂λ=⟨∂Hλ/∂λ⟩λ. Integrating between a known reference and the target provides a free-energy difference when the path and sampling support the relation.
+
+Numerical quadrature, imperfect equilibration and reference-state errors all contribute. Crossing a poorly sampled transition can invalidate a smooth-looking integral. Comparing phases requires compatible composition and thermodynamic constraints; coexistence conditions involve the appropriate chemical potentials or common tangents, not arbitrary energy zeros.
+
+**Work:** Derive thermodynamic integration from the partition function. Verify it for a solvable classical model, then examine a course material example. Refine both the integration grid and sampling length, close a reversible cycle where possible, and separate hysteresis from equilibrium. Explain how the free-energy uncertainty affects a predicted phase boundary.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Passing information between material scales](Passing-information-between-material-scales.lingua#r_6VNHKM5W9E5353SNZSSZHW103F).
+
+} r_48AHYHP56GCCHYBZKWHJ16Q42F

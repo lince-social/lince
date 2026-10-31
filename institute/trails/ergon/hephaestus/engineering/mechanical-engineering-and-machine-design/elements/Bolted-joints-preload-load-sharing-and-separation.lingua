@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Bolted joints, preload, load sharing and separation (@mech-bolted-joints: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/Fastener-Design-Manual-NASA.lingua#r_78PXGW34SMJ44D965DX01WGZH5", #mechanical-engineering "Fastener-assembly-torque-friction-and-retained-clamp-force.lingua#r_78399315PYGFJH6YT01P90F3V7") { r_0WE9J7C67D53R2DNFH1TEGFNRA
+**Read:** [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lecture 10; [Fastener Design Manual — NASA-RP-1228](../sources/Fastener-Design-Manual-NASA.lingua#r_78PXGW34SMJ44D965DX01WGZH5), fatigue, torque and design-criteria sections. Treat the notes' suggested preload fractions as contextual examples, not a universal assembly instruction.
+
+A preloaded joint initially stretches the bolt and compresses the clamped members. In a simple concentric linear model before separation, the fraction of an external separating load P added to the bolt is C=k_b/(k_b+k_m). Bolt tension is F_i+CP and remaining member compression is F_i−(1−C)P. Actual load-introduction locations and joint geometry can change this model.
+
+With k_b=100 MN/m, k_m=400 MN/m and preload F_i=10 kN, C=0.2. A 5 kN separating load gives 11 kN bolt tension and 6 kN remaining compression. The ideal separation threshold is 12.5 kN; beyond it, continue with the changed contact state rather than allowing fictitious tensile compression.
+
+**Work:** Derive the compatibility diagram and check total force balance. Compare preload uncertainty, gasket compliance, temperature mismatch and eccentric loading. Explain why preload can reduce alternating bolt stress while also raising mean stress. Investigate slip, fretting, embedment and fatigue at the first engaged threads separately.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Fastener assembly, torque, friction and retained clamp force](Fastener-assembly-torque-friction-and-retained-clamp-force.lingua#r_78399315PYGFJH6YT01P90F3V7).
+
+} r_0WE9J7C67D53R2DNFH1TEGFNRA

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Wavefunctions, probability and the Schrödinger equation (@mat-wavefunctions: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0", #materials-engineering "Confinement-tunnelling-and-atomic-levels.lingua#r_1Y5B4VQ2GSFS259WRA07B2A4YW") { r_6NVG77KZEJVXBZWTCKE5FC54JN
+**Read:** [Quantum Mechanics — David Tong](../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0), chapters 1–2 through the infinite well, and chapter 3's measurement discussion.
+
+The wavefunction specifies a quantum state; its modulus squared gives a position probability density under the stated normalization. The time-dependent Schrödinger equation evolves amplitudes. Stationary-state energies arise from a Hamiltonian and boundary conditions, not from an arbitrary plot of a wave.
+
+For a particle of mass m confined by infinite walls at 0 and L, derive normalized sine states and E_n=ℏ²π²n²/(2mL²). Check dimensions and orthogonality. Doubling L reduces each energy by four; changing confinement is therefore physically different from merely redrawing an axis.
+
+**Work:** Construct a two-state superposition and calculate a probability in a finite interval. Explain why its time-dependent density can differ from either stationary state. Derive probability conservation with the appropriate current, then identify which assumptions fail for an effective model that deliberately permits loss.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Confinement, tunnelling and atomic levels](Confinement-tunnelling-and-atomic-levels.lingua#r_1Y5B4VQ2GSFS259WRA07B2A4YW).
+
+} r_6NVG77KZEJVXBZWTCKE5FC54JN

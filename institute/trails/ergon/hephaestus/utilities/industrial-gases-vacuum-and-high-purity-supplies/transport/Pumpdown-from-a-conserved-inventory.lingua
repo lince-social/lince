@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pumpdown from a conserved inventory (@gas-pumpdown: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Nonisothermal-molecular-flow-and-thermal-transpiration.lingua#r_1JARQ781E49AMGWPAJG8WK6BXW") { r_5XBD9Y0BVH0W7ZZ0QK0604C1VR
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), evacuation and pump selection; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), time-dependent gas release. Keep the ideal first model and its extensions distinct.
+
+At fixed volume and temperature, a constant source Q and constant effective pumping speed S give V dp/dt=Q−Sp. For S>0, p(t)=Q/S+[p(0)−Q/S]exp(−St/V). The time constant is V/S; the asymptote Q/S expresses continuing source-removal balance.
+
+A real pumpdown crosses flow regimes and changes the exposed surfaces' release history. Pump speed, conductance and gas composition may vary with pressure; temperature and phase changes can change inventory. A slow late-time tail need not mean the same mechanism as slow initial removal of the chamber's gas.
+
+**Work:** Derive the solution and its S→0 limit. Calculate time to a target pressure and identify when the target is unreachable under the model. Compare two traces with different V, S and Q. State which independent observation could distinguish low effective speed from increased surface release.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Nonisothermal molecular flow and thermal transpiration](Nonisothermal-molecular-flow-and-thermal-transpiration.lingua#r_1JARQ781E49AMGWPAJG8WK6BXW).
+
+} r_5XBD9Y0BVH0W7ZZ0QK0604C1VR

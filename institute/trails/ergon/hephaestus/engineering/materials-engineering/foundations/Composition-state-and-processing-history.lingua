@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Composition, state and processing history (@mat-state: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #source "../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #materials-engineering "../../../chemistry/general-chemistry/foundations/Substances-mixtures-and-phases.lingua#r_07Y9PYVRA9HSVSZWQC4N0X8ZZS") { r_6CTKRDPFS788YKREASEADB6Q58
+**Read:** [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309), alloy, heat-treatment and polymer sections; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), substances, mixtures and phases, through the shared Record linked next.
+
+A material name does not specify a unique physical state. Composition, phase proportions, grain structure, defects, residual stress, surface condition, moisture and temperature can all matter. Two specimens with the same nominal chemistry can respond differently after different processing histories.
+
+Distinguish the state of a particular specimen from a supplier's designation or a broad family. A phase is not the same thing as a grain, and a component in a chemical description is not necessarily a physically separate piece. The shared chemistry treatment establishes those distinctions before composition accounting.
+
+**Work:** Describe two plausible histories for one nominal material that would produce different useful behavior. State which evidence could distinguish them. Record what is known about an actual specimen without filling unknown details with the typical values of a named grade.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Substances, mixtures, components, and phases](../../../chemistry/general-chemistry/foundations/Substances-mixtures-and-phases.lingua#r_07Y9PYVRA9HSVSZWQC4N0X8ZZS).
+
+} r_6CTKRDPFS788YKREASEADB6Q58

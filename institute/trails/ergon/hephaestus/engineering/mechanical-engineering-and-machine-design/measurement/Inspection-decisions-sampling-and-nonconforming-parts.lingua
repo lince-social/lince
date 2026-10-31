@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Inspection decisions, sampling and nonconforming parts (@mech-inspection-decision: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "../manufacturing/Plan-the-process-chain-from-required-function.lingua#r_35THW33JT9E3Z5G0H2RCGJT9NC") { r_497ARAWRSTFZ7W09BGBJF80VMF
+**Read:** [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), inspection and decision-rule discussion; [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), variation and quality. Use the shared metrology account to interpret uncertainty.
+
+An acceptance decision combines a specification, measurement result, uncertainty and an agreed rule. A result near a limit can carry different false-accept/false-reject risks from one far inside it. Guard bands express a particular decision policy; there is no universal choice independent of consequences and assumptions.
+
+Sampling a batch also introduces uncertainty about unobserved items. Repeating one reading improves knowledge of that setup's repeatability, not automatically the coverage of a surface or a production population. Keep lot identity and chronology when investigating a drifting process.
+
+**Work:** Compare two explicit decision rules for a dimension near a limit. Distinguish individual conformity from batch acceptance. For a nonconforming part, evaluate remeasurement, rework, functional reassessment or rejection using the actual requirement and material condition. Record what changed; silently widening a limit after failure does not verify the original claim.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Plan the process chain from required function](../manufacturing/Plan-the-process-chain-from-required-function.lingua#r_35THW33JT9E3Z5G0H2RCGJT9NC).
+
+} r_497ARAWRSTFZ7W09BGBJF80VMF

@@ -138,7 +138,7 @@ fn control(fixture: &mut Fixture, uid: &str, action: usize) {
     click_entity(fixture, entity, &name);
 }
 
-fn point(fixture: &mut Fixture, entity: Entity) -> Option<[f64; 2]> {
+pub(super) fn point(fixture: &mut Fixture, entity: Entity) -> Option<[f64; 2]> {
     let (output, points) = fixture.inspect(move |canvas| canvas.native_test_points(entity))?;
     let frame = &fixture.desktop.current.as_ref()?.frame;
     let center: [f64; 2] = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).sum::<f64>() * 0.25);

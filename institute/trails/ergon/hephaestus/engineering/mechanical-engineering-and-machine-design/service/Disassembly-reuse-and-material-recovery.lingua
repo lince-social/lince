@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Disassembly, reuse and material recovery (@mech-recovery: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #mechanical-engineering "../project/Define-a-small-horizontal-measuring-carriage.lingua#r_4HGWPM4DBAAEHVAAAPZNK93CF5", #materials-engineering "../../materials-engineering/recovery/From-used-products-to-qualified-material-feed.lingua#r_7FJBF1TMVQQVA23HR6YW1TNMWR") { r_0VT0VXMB3D4PXCRTJFPCQYXWFQ
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), process and resource comparisons; [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), dismounting; follow the metallurgy recovery studies for material evidence.
+
+End-of-service decisions depend on the remaining function, material identity and history. Reusing a verified assembly, remanufacturing a component and recovering its material preserve different amounts of work. Each requires access, separation and evidence appropriate to the next use.
+
+Mixed coatings, bonded interfaces and unknown alloys can hinder recovery. Record identities and process history when the machine is made, rather than expecting them to be reconstructed from appearance years later. A part removed without visible damage may still have accumulated fatigue or lost its required surface state.
+
+**Work:** Disassemble the machine concept on paper, following actual tool and extraction access. Identify reusable assemblies, condition-dependent components and material streams. Compare two connection designs by useful service and recovery, including repair resources. Revise one interface to preserve future knowledge or function.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Define a small horizontal measuring carriage](../project/Define-a-small-horizontal-measuring-carriage.lingua#r_4HGWPM4DBAAEHVAAAPZNK93CF5).
+
+**Continue in materials engineering:** [From used products to qualified material feed](../../materials-engineering/recovery/From-used-products-to-qualified-material-feed.lingua#r_7FJBF1TMVQQVA23HR6YW1TNMWR).
+
+} r_0VT0VXMB3D4PXCRTJFPCQYXWFQ

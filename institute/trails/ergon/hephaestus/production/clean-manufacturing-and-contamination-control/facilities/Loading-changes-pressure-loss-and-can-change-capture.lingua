@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Loading changes pressure loss and can change capture (@cm-filter-loading: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "../../../physics/fluid-dynamics/internal/Pump-curves-operating-points-and-connected-fluid-networks.lingua#r_38PV7C2PG9F67V9SENTE32AD5Y") { r_4JDER94109W5PN70AHZ2TBC34Q
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), airflow resistance, loading, moisture and aging; revisit particle adhesion and cleaning compatibility.
+
+Collected material changes the flow paths and medium state. Pressure loss, penetration and mechanical integrity need separate observations. A higher resistance does not uniquely establish improved capture, and a low resistance can result from a leak or damage.
+
+An illustrative system relation Δp=RQ+KQ² combines a linear resistance and an inertial contribution. R and K depend on the installed geometry and state. Wetting, cake formation or deformation can change that relation rather than merely changing one constant.
+
+**Work:** Compare pressure-loss curves before and after a declared loading condition at several flows. Explain how to distinguish changed media from changed bypass. Couple the measured relation to the fan operating point and identify when constant-flow control would conceal a growing energy or pressure requirement.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Pump curves, operating points and connected fluid networks](../../../physics/fluid-dynamics/internal/Pump-curves-operating-points-and-connected-fluid-networks.lingua#r_38PV7C2PG9F67V9SENTE32AD5Y).
+
+} r_4JDER94109W5PN70AHZ2TBC34Q

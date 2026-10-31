@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Physical aging, chemical change and reversible conditioning (@mat-aging: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #source "../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG", #materials-engineering "Chain-scission-crosslinking-and-oxidative-change.lingua#r_7SXAGGS87SK6N8KEKRDNS01MW1") { r_0Q4R0Y9ECQH5FX72JVXZ0F999R
+**Read:** [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), relaxation and glass transition; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), moisture relations; [Polymer-composite weathering protocols — NIST SP 1200-15](../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG), conditioning and chemical characterization.
+
+A change in stiffness or dimension may reflect physical relaxation, crystallization, absorbed water, plasticizer migration or chemical reaction. Several can occur together. Reversibility after controlled conditioning is useful evidence but is not a complete mechanism test; some physical changes are slow to reverse and some chemical effects are partly masked by drying.
+
+**Work:** Compare mechanical, thermal, mass and spectroscopic observations before exposure, after exposure and after a justified reconditioning procedure. Separate specimen temperature during measurement from prior exposure temperature. Use the earlier time-dependent mechanics to explain a shifted relaxation response without automatically invoking chain scission. State what independent molecular or composition evidence would support chemical degradation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Chain scission, crosslinking and oxidative change](Chain-scission-crosslinking-and-oxidative-change.lingua#r_7SXAGGS87SK6N8KEKRDNS01MW1).
+
+} r_0Q4R0Y9ECQH5FX72JVXZ0F999R

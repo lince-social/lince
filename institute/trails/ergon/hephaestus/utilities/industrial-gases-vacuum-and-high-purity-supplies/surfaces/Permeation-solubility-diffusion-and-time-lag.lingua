@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Permeation, solubility, diffusion and time lag (@gas-permeation: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Surface-recombination-and-competing-rate-limits.lingua#r_22XY0HDTJPDV2SC4SQ2K1V3NFR") { r_2S353Q6480P1366RP7MKP3HKAT
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), polymer and bulk-transport sections; the shared diffusion and gas-separation material. Define the penetrant and concentration basis before comparing coefficients.
+
+For a simple planar membrane with Henry-law surface concentration c=Hp and constant diffusivity D, steady molar flux is J=DH(p₁−p₂)/L. Permeability DH combines solubility and mobility; a large permeability does not by itself identify which is large. Dissociative dissolution, swelling, trapping and nonlinear sorption require different relations.
+
+For an initially empty homogeneous slab with an imposed constant upstream concentration and a zero downstream concentration, the asymptotic cumulative-transmission line has time lag L²/(6D). This is a specific boundary-value result, not the first-arrival time of a molecule or a universal leak-detection delay.
+
+**Work:** Derive the steady profile and units. Obtain the time lag by integrating the transient diffusion balance. Compare two thicknesses to distinguish steady permeability from transport time. Explain how an elastomer seal can transmit gas with no open gap, and which evidence distinguishes that process from a real through-hole leak.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Surface recombination and competing rate limits](Surface-recombination-and-competing-rate-limits.lingua#r_22XY0HDTJPDV2SC4SQ2K1V3NFR).
+
+} r_2S353Q6480P1366RP7MKP3HKAT

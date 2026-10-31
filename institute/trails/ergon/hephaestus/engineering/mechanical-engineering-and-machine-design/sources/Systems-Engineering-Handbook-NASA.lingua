@@ -1,0 +1,13 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Systems Engineering Handbook — NASA (@mech-nasa-systems: 0, is #reference, #part-of @mech-sources) { r_7ZQFZ9E1NAVG27SE2R5S24PDBQ
+NASA, *Systems Engineering Handbook*, NASA/SP-2016-6105 Rev 2. [Official PDF](https://www.nasa.gov/wp-content/uploads/2018/09/nasa_systems_engineering_handbook_0.pdf), 297 pages. The report identifier is 2016; the publication record was released in 2017.
+
+Read chapters 2 and 4–5, then relevant technical-management sections in chapter 6, to connect requirements, implementation, integration, verification, validation and transition. Apply the reasoning to the actual machine; institutional forms and organizational scale are not prerequisites for creating a Record or following this route.
+
+The contents, introductory material and selected requirements/acceptance passages were inspected on 30 October 2026. This is publicly available US-government guidance, with any credited third-party components subject to their own notices. Do not assume every illustration shares the status of government-authored text. The historical handbook does not by itself establish current requirements for another organization. Keep its PDF external.
+
+**Return:** [Mechanical-engineering sources](../Sources.lingua#r_06RZYPZEFNMZ6MZ690QB1WN1Z2).
+The clean-manufacturing qualification section additionally inspected the official [Product Realization web chapter](https://www.nasa.gov/reference/5-0-product-realization/), particularly integration, verification and validation passages. It applies the reasoning about configuration, evidence and intended use to benign manufactured objects. NASA flight-unit qualification terminology and institutional procedures are not asserted as universal industrial requirements.
+
+} r_7ZQFZ9E1NAVG27SE2R5S24PDBQ

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Thermodynamic databases, models and reproducible equilibrium (@mat-calphad: 0, is #chapter, #part-of @materials-engineering, #source "../../../materials/metals-and-metallurgical-production/sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "../study/Join-equilibrium-kinetics-and-measured-material-history.lingua#r_2PF9SQQQ225YJBHRW9ENRANFEK") { r_0ZNVJX93RBZ93YEZ0A8ERHVK0R
+**Read:** [Open thermodynamic modelling — pycalphad](../../../materials/metals-and-metallurgical-production/sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR), the original paper, current binary and phase-fraction examples, and the original assessment behind one selected database; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapters 7–9.
+
+A CALPHAD calculation combines phase models, assessed parameters, allowed constituents/phases, constraints and a numerical equilibrium search. Open solver code does not make every database open or every assessed region equally well supported. A visually smooth diagram can hide extrapolation or an omitted competing phase.
+
+Begin by reproducing the declared symmetric solution independently. Then choose an authorized public database, identify its assessment/version and reproduce one documented binary calculation. Compare selected chemical potentials, fractions and balances, not only the plot. Keep software, database and conditions together in the reader's reproducible work.
+
+**Work:** Remove or restore one candidate phase and explain the resulting constrained/metastable calculation. Compare a predicted boundary with independent experimental evidence and sensitivity to uncertain parameters. Inspect the software documentation for method limitations and distinguish a historical paper's implementation from the version actually used.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Join equilibrium, kinetics and measured material history](../study/Join-equilibrium-kinetics-and-measured-material-history.lingua#r_2PF9SQQQ225YJBHRW9ENRANFEK).
+
+} r_0ZNVJX93RBZ93YEZ0A8ERHVK0R

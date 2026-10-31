@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Choose advanced questions from the integrated machine (@mech-integrated-evidence: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #mechanical-engineering "Advanced-study-of-process-variation-and-assembly-function.lingua#r_3VSEQQWX9D03SN91Q6Y34Q1Q77", #mechanical-engineering "Advanced-study-of-thermal-structural-and-measurement-loops.lingua#r_6SHSY5HQJA8XWKAY9GW6CVXQSR", #mechanical-engineering "Advanced-study-of-failure-prognosis-and-restoration.lingua#r_61M6ZQR4JBTJDPTVZ714SYNQH0") { r_1K3DREDB84Q51716DGFVYEMQTW
+**Read:** Complete [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E)'s available lecture sequence and substantial exercises. Read [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4) progressively as a full advanced text, using its detailed examples after the mechanics, measurement and machine-element foundations.
+
+The three studies linked next extend different parts of the same physical account: how production variation establishes function, how structural and thermal behavior affect useful-point accuracy, and how evidence supports failure and restoration decisions. Shared Records and the same machine may support all three.
+
+**Work:** Complete each investigation with explicit questions, derived predictions, independent evidence, competing explanations and revision. Choose a question that can fail: a process might not produce the expected geometry, a thermal model might not transfer to another history, or a proposed maintenance indicator might track load rather than damage. Preserve the underlying measurements and the limits of their availability.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Advanced study of process variation and assembly function](Advanced-study-of-process-variation-and-assembly-function.lingua#r_3VSEQQWX9D03SN91Q6Y34Q1Q77).
+
+**Continue:** [Advanced study of thermal, structural and measurement loops](Advanced-study-of-thermal-structural-and-measurement-loops.lingua#r_6SHSY5HQJA8XWKAY9GW6CVXQSR).
+
+**Continue:** [Advanced study of failure, prognosis and restoration](Advanced-study-of-failure-prognosis-and-restoration.lingua#r_61M6ZQR4JBTJDPTVZ714SYNQH0).
+
+} r_1K3DREDB84Q51716DGFVYEMQTW

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Surface memory and recovery after an exposure (@gas-delivery-memory: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #industrial-gases-and-vacuum "Sampling-delay-and-the-condition-at-the-point-of-use.lingua#r_4BRA287PZMBRYP29VRS8ACY8E4") { r_27W7RWBFC2N67XS3AMHQ09C8VX
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), adsorption/desorption and measurement passages; [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), stability and assigned composition.
+
+The delivery surface can store water or another trace species and release it later. Earlier surface residence and diffusion models therefore apply to a positive-pressure analytical line as well as a vacuum chamber. A gas with low source impurity can acquire contamination during transport; a changed concentration can be delayed or distorted by surface exchange.
+
+Represent the gas and surface inventories separately. If ng is the impurity in the gas and ns on the surface, adsorption contributes −ra to ṅg and +ra to ṅs; desorption contributes the opposite signs. Their sum must leave only external inflow, outflow, reaction or leakage. A fitted exponential with no stated storage mechanism can hide a balance error.
+
+Exposure history, humidity, temperature, surface preparation and elapsed time matter. A small sample line may have a much larger surface-to-gas-volume ratio than the production pipe it is intended to represent. Purging clears mobile gas before it necessarily clears the surface inventory.
+
+**Work:** Predict the response to a step up and a step down in impurity. Explain why different recovery times can reveal nonlinear adsorption or multiple states. Keep blank history and response time with any claimed detection or acceptance result.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Sampling delay and the condition at the point of use](Sampling-delay-and-the-condition-at-the-point-of-use.lingua#r_4BRA287PZMBRYP29VRS8ACY8E4).
+
+} r_27W7RWBFC2N67XS3AMHQ09C8VX

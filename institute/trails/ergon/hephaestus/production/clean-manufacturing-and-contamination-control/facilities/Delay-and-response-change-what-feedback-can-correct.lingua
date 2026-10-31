@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Delay and response change what feedback can correct (@cm-control-response: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Demand-Controlled-Cleanroom-Filtration-Faulkner-Fisk-Walton.lingua#r_2W1ADE030W9RFA8ATDKSYVT6XP", #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Interpret-demand-controlled-filtration-as-an-experiment.lingua#r_32CWEQ81YV8044EHHTK8CJCPTA") { r_2EFADYE29MH7D2E2EVF51N19KQ
+**Read:** [Demand-controlled cleanroom filtration — Faulkner, Fisk and Walton](../sources/Demand-Controlled-Cleanroom-Filtration-Faulkner-Fisk-Walton.lingua#r_2W1ADE030W9RFA8ATDKSYVT6XP), control routines; [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), control elements; revisit the existing dynamic measurement and control foundations.
+
+A bounded sensor model is τs dy/dt=C−y. A transport delay can shift the input to C(t−L). For a step from C0 to C1 after that delay, y=C1+(C0−C1)exp[−(t−L)/τs]. Physical contamination can reach the process before the reported signal reaches its decision level.
+
+For hypothetical τs=30 s, the sensor takes about 89.87 s after the input step to register 95% of its change. An additional transport delay adds to that elapsed time; increasing controller gain does not remove the delay.
+
+**Work:** Combine a room recovery model with the sensor model and a bounded actuator response. Check the actual concentration and observed signal separately. Examine sampling interval, saturation and a failed reading. Explain which disturbances require prevention at the source or boundary rather than correction after detection.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Interpret demand-controlled filtration as an experiment](Interpret-demand-controlled-filtration-as-an-experiment.lingua#r_32CWEQ81YV8044EHHTK8CJCPTA).
+
+} r_2EFADYE29MH7D2E2EVF51N19KQ

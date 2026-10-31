@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Separate streams before combining their treatment problems (@wu-stream-segregation: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK", #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #source "../sources/Usos-Consuntivos-da-Agua-ANA.lingua#r_74SR4SEK71SX7RTST2NB6Z5YJG", #water-and-sanitation "A-reuse-loop-must-close-its-water-and-contaminant-balances.lingua#r_3VW32HDCMEXER9KQ5B4W83QVAR") { r_20YW03N9TF3TSN1PE5F6NQ0V8N
+**Read:** [Guidelines for Water Reuse — EPA and USAID, 2012](../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK), industrial applications and project planning; [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), makeup-water processes; [Manual de Usos Consuntivos da Água no Brasil — ANA, segunda edição](../sources/Usos-Consuntivos-da-Agua-ANA.lingua#r_74SR4SEK71SX7RTST2NB6Z5YJG), chapter 3. Compare national or sectoral estimates with measurements of the particular plant.
+
+Mixing can destroy a useful distinction. A relatively clean condensate, a salty blowdown, an oily wash stream and a short concentrated cleaning discharge can require different handling. A combined mean can conceal an incompatible batch or make a recoverable stream harder to reuse. Segregation also needs reliable piping, identification, collection and maintenance.
+
+For an original mixing example, 80 m³/hour at 0.1 kg/m³ and 20 m³/hour at 2 kg/m³ form 100 m³/hour at 0.48 kg/m³ for a conserved constituent. Treating all 100 m³/hour may differ greatly from handling the 20 m³/hour separately. The arithmetic says nothing about an unmeasured volatile, reactive or microbiological constituent.
+
+**Work:** Map normal, cleaning, start-up and upset streams by time and origin. Compare segregated treatment, a common treatment train and a reuse cascade using consistent output requirements. Track incompatible mixtures and cross-connections explicitly. For deeper study, measure or reconstruct a time-varying inlet rather than assigning each process a constant coefficient, then quantify the consequences of a wrongly routed batch.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [A reuse loop must close its water and contaminant balances](A-reuse-loop-must-close-its-water-and-contaminant-balances.lingua#r_3VW32HDCMEXER9KQ5B4W83QVAR).
+
+} r_20YW03N9TF3TSN1PE5F6NQ0V8N

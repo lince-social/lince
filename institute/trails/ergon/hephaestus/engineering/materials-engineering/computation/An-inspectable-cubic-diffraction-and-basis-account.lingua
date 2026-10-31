@@ -1,0 +1,67 @@
+Import "../Materials-engineering.lingua"
+
+An inspectable cubic diffraction and basis account (@mat-diffraction-example: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "../measurement/Distinguish-missing-reflections-disorder-and-model-ambiguity.lingua#r_7JPN5HBJ0RCEMB8C0NT8J0V74Y") { r_66FJKYSBM5M286T6WWS4ACZMBW
+**Read:** The preceding basis-interference derivation, [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF)'s diffraction package and the full shared Bragg/indexing treatment. This original Python program uses only the standard library.
+
+Lengths use one consistent unit. Each site is (x,y,z,f), with coordinates in the conventional cubic cell and a nonnegative real constant scattering weight. The calculation returns spacing, accessible first-order 2θ and the basis intensity factor. It deliberately omits multiplicity, angle-dependent form factors, absorption, polarization, thermal motion, preferred orientation and instrument response; it is not a simulated full powder pattern.
+
+```python
+from math import asin, cos, degrees, fsum, hypot, isfinite, pi, sin
+
+def cubic_reflection(hkl, cell_edge, wavelength, sites):
+    if len(hkl) != 3 or any(type(i) is not int for i in hkl):
+        raise ValueError("three integer indices required")
+    if not any(hkl) or any(abs(i) > 1000000 for i in hkl):
+        raise ValueError("nonzero teaching indices with magnitude at most 1000000")
+    if not all(isfinite(x) and x > 0 for x in (cell_edge, wavelength)):
+        raise ValueError("positive finite lengths required in the same unit")
+    sites=tuple(sites)
+    if not sites:
+        raise ValueError("a basis is required")
+    real=[]
+    imaginary=[]
+    weights=[]
+    for site in sites:
+        if len(site) != 4 or not all(isfinite(x) for x in site):
+            raise ValueError("finite x, y, z and scattering weight required")
+        x,y,z,weight=site
+        if not all(0 <= q < 1 for q in (x,y,z)) or weight < 0:
+            raise ValueError("fractional coordinates in [0,1), nonnegative weights")
+        phase=2*pi*((hkl[0]*x+hkl[1]*y+hkl[2]*z) % 1.0)
+        real.append(weight*cos(phase))
+        imaginary.append(weight*sin(phase))
+        weights.append(weight)
+    try:
+        total=fsum(weights)
+    except OverflowError as error:
+        raise ValueError("unrepresentable total scattering weight") from error
+    if not isfinite(total) or total <= 0:
+        raise ValueError("positive finite total scattering weight required")
+    amplitude=complex(fsum(real),fsum(imaginary))
+    intensity=amplitude.real*amplitude.real+amplitude.imag*amplitude.imag
+    if not isfinite(intensity):
+        raise ValueError("unrepresentable intensity")
+    norm=hypot(*hkl)
+    spacing=cell_edge/norm
+    if spacing <= 0:
+        raise ValueError("unrepresentable spacing")
+    sine=(wavelength/cell_edge)*(norm/2)
+    angle=2*degrees(asin(sine)) if sine <= 1 else None
+    return dict(spacing=spacing, two_theta_degrees=angle,
+                amplitude=amplitude, intensity_factor=intensity)
+
+bcc=((0.0,0.0,0.0,1.0),(.5,.5,.5,1.0))
+fcc=((0.0,0.0,0.0,1.0),(0.0,.5,.5,1.0),
+     (.5,0.0,.5,1.0),(.5,.5,0.0,1.0))
+for indices in ((1,0,0),(1,1,0),(1,1,1),(2,0,0)):
+    print(indices,cubic_reflection(indices,.4,.154,fcc))
+```
+
+For the equal-weight FCC basis, (100) and (110) have zero ideal intensity, while (111) and (200) give 16. Floating-point cancellation may leave tiny residuals. With a=0.4 nm and λ=0.154 nm, the allowed (111) spacing is about 0.230940 nm and its 2θ about 38.953°. An inaccessible reflection returns no angle while retaining its structural factor. Index magnitudes are bounded for this teaching calculation.
+
+**Work:** Derive exact parity results before running the program. Compare BCC, FCC and a two-species body-centred arrangement. Shift every site by the same fractional vector modulo one and check intensity invariance. Separate geometric inaccessibility, systematic cancellation and an instrument's failure to detect a weak reflection.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Distinguish missing reflections, disorder and model ambiguity](../measurement/Distinguish-missing-reflections-disorder-and-model-ambiguity.lingua#r_7JPN5HBJ0RCEMB8C0NT8J0V74Y).
+
+} r_66FJKYSBM5M286T6WWS4ACZMBW

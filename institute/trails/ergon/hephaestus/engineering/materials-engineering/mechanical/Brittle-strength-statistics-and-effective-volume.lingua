@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Brittle strength statistics and effective volume (@mat-brittle-statistics: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Slow-crack-growth-and-thermal-shock.lingua#r_69V7B3WSVP1ZHS473BTQ5ZAXCE") { r_25682GXNPKXGRZVRQRV5C7JX7Q
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), the complete Statistics of Fracture module and exercises; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Ceramics reliability and Brittle Fracture statistics; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), section 5.3.3.4.
+
+For one homogeneous volume-flaw population in a simple uniaxial tensile weakest-link model, survival can be written S=exp[−∫_V(σ₊(x)/σ₀)^m dV/V₀], where σ₊ is the tensile part, V₀ is a reference volume, m>0 and σ₀>0. A surface-flaw model uses an area measure instead. Mixed flaw populations, multiaxial fields and interacting damage need a justified extension.
+
+At uniform stress, fixed survival requires σ∝V^(−1/m). With m=10, increasing volume by 100 lowers the equal-survival stress to about 0.631 of its original value. At V=V₀ and σ=σ₀, failure probability is 1−exp(−1), about 63.2%; σ₀ is not generally the mean strength.
+
+**Work:** Fit and criticize a documented specimen population, retaining runouts, exclusions and fracture origins. Compare likelihood-based estimation with a probability plot and quantify parameter uncertainty. Integrate a nonuniform stress field rather than substituting the full component volume at its peak stress. Do not interpret a large fitted m or one teaching threshold as proof of acceptable reliability.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Slow crack growth and thermal shock](Slow-crack-growth-and-thermal-shock.lingua#r_69V7B3WSVP1ZHS473BTQ5ZAXCE).
+
+} r_25682GXNPKXGRZVRQRV5C7JX7Q

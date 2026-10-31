@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of diffusion and parameter identifiability (@mat-diffusion-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #materials-engineering "Defend-the-equilibrium-and-kinetic-account-of-a-material.lingua#r_4PD31PS0HVJH7GH02JXQ2BMHPC") { r_7XSP66B9DXGRKQZY3VC2F430B6
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), all diffusion lectures and available problems; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), Diffusion; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), defects, activities and interfaces; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), transport/dynamics where relevant.
+
+Choose a measured concentration, uptake or release history with documented geometry and boundary conditions. Derive the simplest defensible model, then compare at least one alternative involving surface exchange, variable diffusivity, trapping or microstructural paths.
+
+**Derive and verify:** Solve a limiting case analytically; check a conservative numerical solution against it and demonstrate space/time refinement. Fit an informative subset of observations and predict a withheld time, thickness or temperature. Examine whether more than one parameter combination explains the same data.
+
+**Investigate:** Design a second measurement that separates competing mechanisms. Treat preparation, spatial resolution and composition calibration as part of the evidence. Explain the useful processing timescale with uncertainty, avoiding extrapolation through a mechanism change.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the equilibrium and kinetic account of a material](Defend-the-equilibrium-and-kinetic-account-of-a-material.lingua#r_4PD31PS0HVJH7GH02JXQ2BMHPC).
+
+} r_7XSP66B9DXGRKQZY3VC2F430B6

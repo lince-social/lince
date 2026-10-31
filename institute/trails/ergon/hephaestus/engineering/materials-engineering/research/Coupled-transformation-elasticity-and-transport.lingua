@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Coupled transformation, elasticity and transport (@mat-coupled-fields: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Phase-Field-Verification-PFHub.lingua#r_7KGRCP4TAWMTKVM4VZ5GVYT34K", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "Calibration-uses-evidence-and-consumes-a-test.lingua#r_0QN0B0DCXHZEA7M8AP8P04AQYZ") { r_66ESP9270QECCHMVK1MRRPHKC2
+**Read:** [Phase-field verification — PFHub and Jokisaari and colleagues](../sources/Phase-Field-Verification-PFHub.lingua#r_7KGRCP4TAWMTKVM4VZ5GVYT34K), the full dendritic-growth/elasticity paper; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), elastic eigenstrain and heterogeneous response; earlier latent heat, diffusion and phase-change work.
+
+Composition, order, temperature and displacement can affect one another. A coherent transformation changes elastic energy; diffusion redistributes composition; released heat changes driving force and mobility. State the common thermodynamic potential and the coupling terms rather than adding independently fitted equations without checking their compatibility.
+
+Quasistatic mechanical equilibrium and a time-dependent transformation may be justified by separated time scales. Their numerical solution can still introduce splitting error. Boundary restraint can alter the preferred morphology; an equilibrium shape does not specify how quickly it forms. Conserved species and energy need their appropriate balances when phases change.
+
+**Work:** Reproduce one coupled benchmark, first with each coupling disabled and then restored. Derive the sign and units of the coupling contributions. Check convergence and equilibrium limits, and test how a boundary change alters the result. Identify the measurements required before assigning physical time or claiming prediction of a real microstructure.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Calibration uses evidence and consumes a test](Calibration-uses-evidence-and-consumes-a-test.lingua#r_0QN0B0DCXHZEA7M8AP8P04AQYZ).
+
+} r_66ESP9270QECCHMVK1MRRPHKC2

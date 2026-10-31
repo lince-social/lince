@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Atomistic computer modeling of materials — MIT 3.320 (@mat-atomistic-course: 0, is #reference, #part-of @mat-sources) { r_12NX0AYTQYSKNAS77BMZP9DQDH
+Gerbrand Ceder and Nicola Marzari, MIT 3.320, Spring 2005. [Lecture sequence](https://ocw.mit.edu/courses/3-320-atomistic-computer-modeling-of-materials-sma-5107-spring-2005/pages/lecture-notes/), [five computational laboratories](https://ocw.mit.edu/courses/3-320-atomistic-computer-modeling-of-materials-sma-5107-spring-2005/pages/labs/).
+
+Study the complete graduate course alongside the earlier quantum, statistical and solid-state books. Work through potentials, first-principles calculations, molecular dynamics, Monte Carlo, free energies and coarse graining. Recover the physical question and convergence argument in every lab. Numerical agreement with a supplied example is only a beginning.
+
+Lecture/lab indexes and selected labs 2 and 4 were inspected on 30 October 2026. Some annotated slides are incomplete, although original slides are supplied. Historical GULP, Moldy and Java dependencies are not bundled or verified here. Use current [Quantum ESPRESSO documentation](https://www.quantum-espresso.org/documentation/) or [LAMMPS documentation](https://docs.lammps.org/stable/) where appropriate, documenting the actual version, inputs and differences from the historical exercise. Both projects provide GPL software; potentials and other inputs need their own provenance and terms.
+
+MIT OCW uses CC BY-NC-SA with component exceptions. Keep course material and software external. The labs have not been executed as part of authoring this source Record.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_12NX0AYTQYSKNAS77BMZP9DQDH

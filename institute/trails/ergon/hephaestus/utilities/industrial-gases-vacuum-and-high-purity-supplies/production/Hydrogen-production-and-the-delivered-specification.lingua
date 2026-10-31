@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Hydrogen production and the delivered specification (@gas-hydrogen-service: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "Helium-source-recovery-and-cryogenic-service.lingua#r_5N4GP9YRZMNWE1BJSS0H0S50F2") { r_4D1RRVKY1SZ6HM2XS9KSXBJFC8
+**Read:** [Compare hydrogen routes on delivered amount, purity and complete material/energy boundaries](../../../chemistry/industrial-chemistry/inorganic/Hydrogen-production-purity-energy-and-connected-products.lingua#r_671AHTBHPTB522FV4SGAQJYKNZ) in full; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), hydrogen specifications/applications; [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), hydrogen liquefaction where relevant.
+
+Keep the production route and the delivered function in the same account. Reforming, electrolysis or another chemical route can produce different impurity patterns and supporting-resource demands. Purification, drying, compression or liquefaction and delivery can be substantial parts of the service.
+
+An application may be limited by a specific impurity, catalyst sensitivity, material compatibility or storage condition rather than major-component percentage. Hydrogen's molecular transport and interactions with materials matter to leakage, permeation and mechanical performance. Cryogenic service additionally requires its actual thermophysical and molecular-state behavior.
+
+**Work:** Extend the shared chemical comparison to a stated point-of-use specification. Follow residual water and one route-specific impurity through conditioning and analysis. Compare two delivery states at equal accepted amount and service conditions. Identify which claims require a dedicated hydrogen-material or low-temperature study rather than a generic compressed-gas analogy.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Helium source, recovery and cryogenic service](Helium-source-recovery-and-cryogenic-service.lingua#r_5N4GP9YRZMNWE1BJSS0H0S50F2).
+
+} r_4D1RRVKY1SZ6HM2XS9KSXBJFC8

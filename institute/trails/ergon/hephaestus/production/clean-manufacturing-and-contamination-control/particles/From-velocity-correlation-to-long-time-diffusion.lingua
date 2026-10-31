@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+From velocity correlation to long-time diffusion (@cm-brownian-time: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "../../../physics/electromagnetism/electrostatics/Coulomb-force-superposition-and-test-charge.lingua#r_4BCJ9YGVJSTWDV9S67V2RDR1YD") { r_2QB1W26140JYEBM8BA09FY3QVG
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), the full Brownian-motion derivation and Mass Diffusion's finite-time result.
+
+For a stationary one-coordinate velocity with correlation R_v(s)=(k_B T/m)exp(−|s|/τ), displacement variance is 2∫₀ᵗ(t−s)R_v(s)ds. Integration gives 2D[t−τ(1−exp(−t/τ))], with D=k_B Tτ/m. At t much greater than τ it approaches 2Dt; at t much less than τ its leading behavior is (k_B T/m)t².
+
+The short-time behavior retains correlated velocity rather than making independent position jumps at every arbitrarily small interval. The long-time diffusivity is the integral of the velocity correlation. A numerical random walk must match the intended limiting model and observed timescale.
+
+**Work:** Perform the integral and recover both asymptotic limits. Compare against numerical quadrature of the correlation expression. Explain why the diffusion model's nondifferentiable paths do not assert that a massive physical particle has infinite instantaneous speed.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Coulomb force, superposition and a test charge](../../../physics/electromagnetism/electrostatics/Coulomb-force-superposition-and-test-charge.lingua#r_4BCJ9YGVJSTWDV9S67V2RDR1YD).
+
+} r_2QB1W26140JYEBM8BA09FY3QVG

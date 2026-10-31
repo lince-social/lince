@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Cam motion laws, contact and jerk (@mech-cams: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "../elements/Shafts-combine-bending-torsion-stiffness-and-fatigue.lingua#r_4JH2SPCN8R1KNZVMFDX7CQ865G") { r_2STDE1FSJGESYEMJARPXKJS5KY
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 5, cams and followers; use the contact and vibration studies to examine the physical limits.
+
+A cam prescribes a follower motion through its profile and contact geometry. Start from desired displacement versus cam angle, then derive velocity, acceleration and jerk at the intended speed. A smooth displacement curve can still have abrupt acceleration at a dwell transition.
+
+For a rise h over angle β, let u=θ/β on 0≤u≤1 and s=h(10u³−15u⁴+6u⁵). This polynomial has zero slope and second derivative at both ends, making displacement, velocity and acceleration continuous with a stationary dwell at constant cam speed. Its third derivative is nonzero at the ends, so jerk still jumps at the dwell boundary. Doubling constant speed doubles velocity, quadruples acceleration and multiplies jerk by eight.
+
+Pressure angle, profile curvature, roller radius and contact force constrain the geometry. Spring preload or a positive-return arrangement must maintain the intended contact under the actual inertia and load; a displacement law alone does not establish that.
+
+**Work:** Compare polynomial and cycloidal rise laws through a full rise–dwell–return cycle. Derive the required forces and assess contact loss, local stress, vibration and manufacturing curvature. Explain which requirements are incompatible with merely shrinking the base circle.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Shafts combine bending, torsion, stiffness and fatigue](../elements/Shafts-combine-bending-torsion-stiffness-and-fatigue.lingua#r_4JH2SPCN8R1KNZVMFDX7CQ865G).
+
+} r_2STDE1FSJGESYEMJARPXKJS5KY

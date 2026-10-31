@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Segmentation turns an image into a measurement model (@cm-surface-segmentation: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ") { r_3MV4SVK77B5D1AEXX09RVT0TCF
+**Read:** [Prepare and interpret microscopy with a contrast model](../../../engineering/materials-engineering/measurement/Prepare-and-interpret-microscopy-with-a-contrast-model.lingua#r_2WXVFFSYPQSVRF0PPA8DS1F6RN) and [Optical power, spectra, images, and model-defined features](../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T), image interpretation and uncertainty. Revisit [Projected area coverage and overlapping particles](../foundations/Projected-area-coverage-and-overlapping-particles.lingua#r_0GVZSD2JQQAKPQN64XG4BR21WR) for coverage versus individual particle area.
+
+Segmentation assigns pixels or regions to a class. Its output depends on background correction, threshold, connectivity, edge treatment and the feature definition. Report those choices with the result. An algorithm can be reproducible while assigning the wrong physical meaning to a class.
+
+For a circular projected particle of radius r and a small boundary-location error δr, area A = πr² has first-order relative change δA/A ≈ 2δr/r. With r = 5 µm and δr = 0.2 µm, the first-order change is 8%; the exact outward area change is 8.16%. Small objects can therefore have large area uncertainty even with a modest absolute boundary error.
+
+Two touching particles may be counted as one region. Splitting them changes count and size statistics while leaving total covered area similar. Conversely, overlap means the sum of individual projected areas can exceed the covered fraction of the image.
+
+**Work:** Use a synthetic image with isolated, touching and overlapping circles. Compare count, covered area and equivalent-circle diameter under two documented segmentation choices. Propagate scale and boundary uncertainty separately. Explain which result best addresses the process question and which features the image cannot resolve.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Chemical measurements — matrix, recovery, selectivity, and reference material](../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ).
+
+} r_3MV4SVK77B5D1AEXX09RVT0TCF

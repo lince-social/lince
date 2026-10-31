@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Specimen history can change the surface before observation (@cm-surface-history: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #clean-manufacturing "Choose-fields-of-view-to-answer-a-spatial-question.lingua#r_6B7GD708V4TV4AFFYHA1AW6ZZV") { r_0FXJ11A76DENK61HS14A18W5N0
+**Read:** [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5), specimen preparation and compatibility; [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), collection and blanks. Revisit [Blanks, recovery and the origin of a signal](../evidence/Blanks-recovery-and-the-origin-of-a-signal.lingua#r_3NHG85VQ6ZKJCQ5XSRT60FKM74) and [Nonvolatile residue is defined by an analytical operation](../cleaning/Nonvolatile-residue-is-defined-by-an-analytical-operation.lingua#r_1QVN0HZS2ACY1X3HQ3MAFX6KNN).
+
+Handling, transport, storage, vacuum exposure and the measuring probe can change a surface. A solvent may remove the material of interest; exposure to air may create a new layer; a beam can modify a sensitive specimen. Specify the intended state and which transformations separate it from the observation.
+
+Distinguish a product specimen from a witness coupon. A witness can be useful evidence of a shared exposure, but its temperature, orientation, material and location can change deposition or retention. Matching elapsed time alone does not establish equivalent contamination.
+
+Keep a chain of specimen state, location, contact history and elapsed time. A blank follows selected parts of that chain. Compare an untouched region or a second specimen where that is informative; measurement itself may prevent observing the original state again.
+
+**Work:** Draw a surface's history from production through a proposed measurement. Mark which quantities may change at each stage and which observations could reveal the change. For a hypothetical witness beside a product, identify the assumptions needed to use its result as evidence about the product. State the narrower conclusion supported when those assumptions are uncertain.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Choose fields of view to answer a spatial question](Choose-fields-of-view-to-answer-a-spatial-question.lingua#r_6B7GD708V4TV4AFFYHA1AW6ZZV).
+
+} r_0FXJ11A76DENK61HS14A18W5N0

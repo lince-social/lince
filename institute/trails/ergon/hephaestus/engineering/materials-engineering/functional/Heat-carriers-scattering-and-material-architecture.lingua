@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Heat carriers, scattering and material architecture (@mat-thermal-carriers: 0, is #chapter, #part-of @materials-engineering, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #source "../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB", #materials-engineering "../../../physics/thermodynamics-and-heat-transfer/microscopic/Carrier-distributions-Boltzmann-transport-and-the-diffusive-limit.lingua#r_56YMTX9EKB6BF03EA8HR0ED9EQ") { r_7TGNWHEGNTGQ6FS578X8JEKX77
+**Read:** [Nano-to-Macro Transport Processes — MIT 2.57](../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), the full carrier-transport progression; [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), Thermal and Electrical Conduction; [Solid State Physics — David Tong](../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB), phonons and electron dynamics.
+
+Thermal conductivity describes energy flow under specified conditions; heat capacity describes stored energy per temperature change. A high capacity does not ensure rapid heat spreading. For an isotropic kinetic approximation, κ≈C vℓ/3 when C is volumetric capacity and v and mean free path ℓ represent the relevant carriers. Real spectra require mode-dependent velocities, populations and scattering.
+
+Grains, boundaries, defects, pores and interfaces can change heat transport while also changing strength and electrical response. Distinguish an electronic contribution from vibrational and radiative contributions. The Wiedemann–Franz relation is a conditional electronic transport result, not a rule linking total thermal conductivity to DC conductivity in every solid.
+
+**Work:** Trace units and estimate a mean free path from a declared model. Then read the shared kinetic and interface Records, comparing a bulk coupon with a film and explaining where the same fitted conductivity ceases to represent the same measurement.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Carrier distributions, Boltzmann transport and the diffusive limit](../../../physics/thermodynamics-and-heat-transfer/microscopic/Carrier-distributions-Boltzmann-transport-and-the-diffusive-limit.lingua#r_56YMTX9EKB6BF03EA8HR0ED9EQ).
+
+} r_7TGNWHEGNTGQ6FS578X8JEKX77

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Scalars, vectors and anisotropic property tensors (@mat-anisotropy: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #materials-engineering "Grains-texture-and-aggregate-properties.lingua#r_7WA8PG19FDCAKAD6GW83F29PMW") { r_6MMGRJ4WYQA6Y3FG8E3Q855FFN
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Tensors in Materials Science, in full with its mathematical preparation and questions; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), lecture 20 and the opening of 21; [Crystallographic teaching pamphlets — IUCr](../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), crystal physics.
+
+Density is a scalar. Heat flux and temperature gradient are vectors related in a linear local model by q=−K∇T, where K is a second-rank conductivity tensor. Under an orthogonal change of Cartesian basis with vector rule v′=Qv, K′=QKQᵀ. The physical prediction must be invariant when both coordinates and components are transformed consistently.
+
+For a two-dimensional principal K=diag(2,8) in W m⁻¹ K⁻¹, a 45° rotation Q with rows (cosθ,−sinθ) and (sinθ,cosθ) gives diagonal entries 5 and off-diagonal entries −3. A temperature gradient generally produces flux not parallel to it. The longitudinal response nᵀKn is tied to a specified imposed gradient, not every boundary-value experiment.
+
+**Work:** Derive the transformation, preserve q·∇T under rotation and check positivity for positive principal conductivities. Compare one crystal with an oriented and a randomly oriented aggregate. Explain why elastic stiffness needs a different tensor rank and why “cubic” does not mean every property is isotropic.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Grains, texture and aggregate properties](Grains-texture-and-aggregate-properties.lingua#r_7WA8PG19FDCAKAD6GW83F29PMW).
+
+} r_6MMGRJ4WYQA6Y3FG8E3Q855FFN

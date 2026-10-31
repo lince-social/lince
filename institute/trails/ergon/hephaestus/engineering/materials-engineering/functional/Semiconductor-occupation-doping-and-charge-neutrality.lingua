@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Semiconductor occupation, doping and charge neutrality (@mat-doping: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS", #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #source "../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN", #materials-engineering "From-carrier-population-to-measured-current.lingua#r_087VW2TPEQP1NFNM75PYPY4M0W") { r_4SQDKPVMSM67790JFPCGKDSKB7
+**Read:** [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), chapter 16; [Introdução à Física do Estado Sólido — Lucy V. C. Assali](../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS), the complete semiconductor lecture; [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), carriers and Fermi-level discussion; [Electrical, Optical, and Magnetic Properties of Materials — MIT 3.23](../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN), semiconductor and carrier topics.
+
+In a nondegenerate parabolic-band approximation n=Nc exp[(μ−Ec)/kBT] and p=Nv exp[(Ev−μ)/kBT]. Intrinsic neutrality n=p gives μ_i=(Ec+Ev)/2+(kBT/2)ln(Nv/Nc). Exact mid-gap placement therefore needs Nc=Nv. The Cambridge introductory page's simple symmetric diagram should not be generalized to unequal effective masses or valley degeneracies.
+
+For Nv/Nc=4 and θ=0.025 eV, the intrinsic shift is +0.01732868 eV. A doped specimen additionally requires ionized donor/acceptor and defect charge balance. Nominal dopant concentration is not automatically mobile-carrier concentration: activation, compensation, degeneracy and temperature matter.
+
+**Work:** Derive mass action np=NcNv exp(−Eg/kBT), solve a documented neutrality problem across freeze-out, extrinsic and intrinsic regimes, and compare with full Fermi integrals when the dilute approximation fails. State the density-of-states and ionization assumptions rather than claiming all solids share one band diagram.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [From carrier population to measured current](From-carrier-population-to-measured-current.lingua#r_087VW2TPEQP1NFNM75PYPY4M0W).
+
+} r_4SQDKPVMSM67790JFPCGKDSKB7

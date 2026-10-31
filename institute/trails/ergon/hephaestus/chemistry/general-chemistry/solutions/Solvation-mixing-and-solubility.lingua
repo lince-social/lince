@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Explain solution formation through interactions and thermodynamic conditions (@gc-solution-interactions: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #general-chemistry "Colligative-properties-and-membranes.lingua#r_0988XHVEHBKG1WHB3MKRYNHRQH") { r_4PY91PEG2715V7F8H7MVGP4S95
+Explain solution formation through interactions and thermodynamic conditions (@gc-solution-interactions: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #general-chemistry "Colligative-properties-and-membranes.lingua#r_0988XHVEHBKG1WHB3MKRYNHRQH", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/cleaning/Dissolution-has-finite-capacity-and-a-material-balance.lingua#r_6DBQF4MW0NF1FC83VN3JE8CG28") { r_4PY91PEG2715V7F8H7MVGP4S95
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 11 in full; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the complete solutions unit; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the corresponding solution/equilibrium activities.
 
 Solution formation combines disruption and formation of interactions, molecular/ionic arrangements, and entropy changes. A useful qualitative “like dissolves like” rule needs a physical account and can fail outside its intended range. Specify solvent, solute, composition, temperature, pressure, and relevant chemical speciation.
@@ -16,4 +16,7 @@ Complete the whole solutions/colloids chapter and corresponding Chem1 unit. Retu
 **Continue:** [Use colligative relations with a specified particle and solution model](Colligative-properties-and-membranes.lingua#r_0988XHVEHBKG1WHB3MKRYNHRQH).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in clean manufacturing:** [Dissolution has finite capacity and a material balance](../../../production/clean-manufacturing-and-contamination-control/cleaning/Dissolution-has-finite-capacity-and-a-material-balance.lingua#r_6DBQF4MW0NF1FC83VN3JE8CG28).
+
 } r_4PY91PEG2715V7F8H7MVGP4S95

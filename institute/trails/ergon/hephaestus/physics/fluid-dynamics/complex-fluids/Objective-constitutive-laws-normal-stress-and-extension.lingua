@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Objective constitutive laws, normal stress and extension (@fd-objective-models: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #fluid-dynamics "History-dependence-thixotropy-and-elastic-instability.lingua#r_50D2X9FX0CF87WVGH3WT85M8ET") { r_0B3J7Q6R99JJHRQCCETNB4TH52
+Objective constitutive laws, normal stress and extension (@fd-objective-models: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB", #fluid-dynamics "History-dependence-thixotropy-and-elastic-instability.lingua#r_50D2X9FX0CF87WVGH3WT85M8ET", #materials-engineering "../measurement/Rheometry-from-instrument-torque-to-material-response.lingua#r_4WYS6QXWBP6XESABJZPJ7H1TSA") { r_0B3J7Q6R99JJHRQCCETNB4TH52
 **Read:** [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), constitutive equations, normal stresses and strong flows; [Macromolecular Hydrodynamics — Armstrong and McKinley](../sources/Macromolecular-Hydrodynamics-MIT-2-341J.lingua#r_4VRCY0V06HMS11NTC3XHS84QQB), public problems and syllabus references for differential constitutive equations.
 
 A tensor constitutive law must transform consistently when an observer changes coordinates and rigidly rotates. Simply replacing the scalar time derivative in a shear-memory formula with componentwise derivatives can create an observer-dependent prediction. Follow the construction of objective derivatives and declare the velocity-gradient convention used.
@@ -12,4 +12,6 @@ Compare Oldroyd-B with a finite-extensibility or anisotropic-drag alternative in
 **Continue:** [History dependence, thixotropy and elastic instability](History-dependence-thixotropy-and-elastic-instability.lingua#r_50D2X9FX0CF87WVGH3WT85M8ET).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+**Continue in materials engineering:** [Rheometry from instrument torque to material response](../measurement/Rheometry-from-instrument-torque-to-material-response.lingua#r_4WYS6QXWBP6XESABJZPJ7H1TSA).
+
 } r_0B3J7Q6R99JJHRQCCETNB4TH52

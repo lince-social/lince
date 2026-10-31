@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Exposure integrals, contact time and decaying residual (@wu-contact-exposure: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "UV-fluence-reactor-validation-and-operating-envelopes.lingua#r_1FSGHH3PH8RJ6P04C8Y1HKD373") { r_138VGFV5C77G55DVMWPVJQMVBH
+**Read:** [WHO drinking-water guidelines](../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F), chapter 7's treatment and operational-control material; revisit the earlier reactor and tracer Records. Use [Vigiagua and Brazilian requirements](../sources/Potabilidade-e-Vigilancia-Vigiagua.lingua#r_0MJJ4WY69D303TQ11X6TNZZ779) to locate the applicable treatment, monitoring and response requirements rather than deriving them from a teaching model.
+
+For a hypothetical first-order disinfectant residual C(t) = C₀ exp(−kd t), integrated exposure over one ideal parcel's travel time T is C₀[1−exp(−kdT)]/kd. If kd = 0, the limit is C₀T. Its units are concentration times time. This mathematical integral is distinct from a jurisdiction's prescribed CT method and credited contact time.
+
+An original example takes C₀ = 1 mg/L, kd = 0.02/minute and T = 30 minutes. Exposure is about 22.559 mg·min/L. Using the initial residual times 30 gives 30; using the final residual times 30 gives about 16.464. The difference demonstrates why concentration history matters. No organism-specific inactivation is assigned to these values.
+
+**Work:** Recompute the integral by numerical quadrature, then combine two parcels with different travel times without substituting their mean into a nonlinear response. Distinguish applied dose, immediate demand, measured residual, water residence and credited time. Explain what pH, temperature, particles and reaction partners would change in an actual model. A larger nominal tank or residual reading cannot repair an unmeasured short circuit. Extend only with experimentally supported kinetic relations and their domain of validity.
+
+**Continue:** [UV fluence, reactor validation and operating envelopes](UV-fluence-reactor-validation-and-operating-envelopes.lingua#r_1FSGHH3PH8RJ6P04C8Y1HKD373).
+} r_138VGFV5C77G55DVMWPVJQMVBH

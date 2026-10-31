@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Construct, characterize and revise a machine (@mech-project-construction: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #mechanical-engineering "../study/Choose-advanced-questions-from-the-integrated-machine.lingua#r_1K3DREDB84Q51716DGFVYEMQTW") { r_6GACHZXQYV6WAJEQ0DVZW5P693
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), project, process and quality material; [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), design/project characterization; [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), assembly and service evidence.
+
+Turn the selected design into reproducible construction knowledge: drawings, actual part identities, material state, fabrication sequence, assembly settings and measurement methods. Keep the record proportional to the machine, but sufficient for another person to explain and rebuild it. The worked carriage is a teaching model; no physical prototype is claimed here.
+
+Construct or investigate an accessible, appropriately supervised small mechanism. If equipment is unavailable, first reconstruct an openly documented experiment, identifying missing raw data and fabrication detail; this develops analysis but does not substitute for first-hand construction experience. The advanced practical work remains a real task for the learner.
+
+**Work:** Compare the as-built geometry and measured behavior with the prediction. Document at least one failed assumption and a revision, then repeat the relevant observation. Include a maintenance/reassembly cycle and explain what function survives it. Distinguish authored instructions, simulation, external measurements and measurements you personally performed.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Choose advanced questions from the integrated machine](../study/Choose-advanced-questions-from-the-integrated-machine.lingua#r_1K3DREDB84Q51716DGFVYEMQTW).
+
+} r_6GACHZXQYV6WAJEQ0DVZW5P693

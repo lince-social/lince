@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Helium recovery is a component and quality balance (@gas-recovery-balance: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR", #industrial-gases-and-vacuum "Derive-species-balances-during-pump-and-refill.lingua#r_7JX3NXD41E2T9AN2D8722RQ7YV") { r_6PMG5WG3H89XQTJ3S8MHQ3Y5ZA
+**Read:** [Conservation of helium while maintaining high system purity — White and colleagues](../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR) in full; revisit helium production, purification and reference-state flow.
+
+Draw a boundary around the circulating helium inventory. Track helium supplied, captured, purified, accepted for reuse, stored and lost. Air contamination is a separate component balance. A recovered mixed-gas volume does not directly measure recovered helium, and gas held in a buffer is not yet returned to the useful service.
+
+For a hypothetical 100 mol of helium leaving use, let capture retain 90%, purification retain 95% of the captured helium and final return retain 98% of that product. Returned helium is 83.79 mol. Losses at the three stages are 10, 4.5 and 1.71 mol, totaling 16.21 mol. These conditional component yields must not be replaced by an unweighted average.
+
+**Work:** Close both helium and impurity balances, including inventory change. Add power, cooling, adsorbent regeneration and measurement. Compare preventing a loss with recovering it later; the same return amount can require different resources and expose different failure dependencies.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Derive species balances during pump and refill](Derive-species-balances-during-pump-and-refill.lingua#r_7JX3NXD41E2T9AN2D8722RQ7YV).
+
+} r_6PMG5WG3H89XQTJ3S8MHQ3Y5ZA

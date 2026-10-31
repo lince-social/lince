@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A biological-treatment investigation from inlet to solids (@wu-biology-study: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "../residuals/Dry-solids-water-and-the-material-called-sludge.lingua#r_5XZB8HTCR2TX7S9VZZ932AHCYH") { r_1MTSMQTEZ6WVZ99B0AZBYE977H
+**Read:** Finish [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV) and [Activated Sludge and Aerobic Biofilm Reactors — von Sperling](../sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua#r_0WMGVEM60J63M01SJJDQ9357GE); work the relevant problems and design material in [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60). Develop one advanced process study with [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G) and [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), while retaining the whole-book foundation.
+
+Compare at least two justified configurations for the same declared inlet history and receiving requirements. One can be an activated-sludge system and another a pond, wetland, biofilm or anaerobic system with necessary downstream treatment. Compare complete treatment paths rather than an isolated reactor against a complete plant.
+
+**Work:** Produce water, COD, nitrogen, phosphorus and solids accounts; reactor and separation models; an oxygen/power account; and a measurement plan. Reconcile the expected output with capacity during an outage, low temperature and changing inlet composition. State which parameters are measured, inferred, taken from literature or left uncertain. Distinguish a proposed experiment from a performed one.
+
+For scholarly depth, reproduce an identified technical study, challenge its assumptions using a competing model and test one original extension independently. Explain discrepancies rather than tuning them away. The resulting account must include residuals and return liquors, which the following Records develop. Biological conversion is one part of the continuing service.
+
+**Continue:** [Dry solids, water and the material called sludge](../residuals/Dry-solids-water-and-the-material-called-sludge.lingua#r_5XZB8HTCR2TX7S9VZZ932AHCYH).
+} r_1MTSMQTEZ6WVZ99B0AZBYE977H

@@ -1,0 +1,10 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A constant-pressure flowmeter — Eckel and colleagues (@gas-small-flow-source: 0, is #reference, #part-of @gas-sources) { r_5JSJ3BT42VQZ4S2AGZBVMC89DB
+Stephen Eckel, Daniel S. Barker, James A. Fedchak, Emmanuel Newsome, Julia Scherschligt and Robert E. Vest. *A constant pressure flowmeter for extreme-high vacuum*, Metrologia 59, 045014 (2022), DOI 10.1088/1681-7575/ac7927. [Versioned author manuscript](https://arxiv.org/abs/2111.05695v3) · [Full PDF](https://arxiv.org/pdf/2111.05695v3), 20 file pages, revised 10 August 2022.
+
+Read the complete construction, measurement equation, hydraulic correction, operation and comparison. Distinguish the pressure difference that produces flow from the volume displacement used to measure it.
+
+Identity, introduction and selected balance/hydraulic passages were inspected on 30 October 2026; PDF page 2 and its schematic were checked visually. The institutional landing-page abstract differs from the revised manuscript, so use the explicit version for quantitative claims. arXiv's nonexclusive distribution licence does not grant general adaptation. The complete apparatus/results were not independently reproduced. All media remain external.
+
+} r_5JSJ3BT42VQZ4S2AGZBVMC89DB

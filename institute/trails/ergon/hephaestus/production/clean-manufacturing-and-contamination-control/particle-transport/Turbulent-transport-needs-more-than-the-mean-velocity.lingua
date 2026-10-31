@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Turbulent transport needs more than the mean velocity (@cm-turbulence-deposition: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "../computation/Define-a-bounded-settling-and-diffusion-column.lingua#r_18EAG216Z9S7QJ4BCWG5YZTMFZ") { r_7SZ6A55R1HKBN0CN7Q6PM5013M
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), the turbulent-flow and particle-measurement topics; revisit [Reynolds averaging, stress transport and the closure problem](../../../physics/fluid-dynamics/turbulence/Reynolds-averaging-stress-transport-and-the-closure-problem.lingua#r_2WR3KYF31R7RJSN20P6PKS0PM0) and its complete turbulence readings.
+
+Averaging a transport equation introduces correlations between fluctuating velocity and concentration. Particle inertia can further separate particle statistics from those of the fluid. A mean streamline plot does not show every event that transports particles toward a wall or into a protected region.
+
+An eddy diffusivity is a closure for selected averaged behavior, not the molecular Brownian diffusivity. Near-wall anisotropy, gradients in turbulence, particle response and geometry can make a constant scalar approximation inadequate. A detailed simulation still needs appropriate injection, boundary and sampling models.
+
+**Work:** Derive the averaged concentration flux and identify the unclosed term. Compare a molecular-diffusion model, an eddy-diffusivity model and a resolved or stochastic particle model for one documented flow. Explain which observations would test the deposition prediction, not only the mean air speed.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Define a bounded settling and diffusion column](../computation/Define-a-bounded-settling-and-diffusion-column.lingua#r_18EAG216Z9S7QJ4BCWG5YZTMFZ).
+
+} r_7SZ6A55R1HKBN0CN7Q6PM5013M

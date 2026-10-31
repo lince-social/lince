@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A dissolution rate needs interface and bulk conditions (@cm-dissolution-rate: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD", #clean-manufacturing "../../../chemistry/general-chemistry/aqueous/Acid-base-concepts-and-reactions.lingua#r_0EB1497NTKFZENB6Q1XQ3DQZGQ") { r_287NAVJMASVVT1WC34N4599G6Q
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), immersion and agitation; [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD), transport at an interface.
+
+In a bounded film-transfer model, dissolved mass enters a well-mixed bath at rate km As(csat−c), with km in m/s, exposed area As and mass concentration c. For constant V, area and properties while solid remains, dc/dt=(km As/V)(csat−c). The solution is c=csat−(csat−c0)exp(−km As t/V).
+
+The model stops or changes when the available solid is exhausted, the area changes, reaction controls the interface, or the bath no longer mixes as assumed. Increasing flow may change km without changing csat. A fitted coefficient can conceal geometry and transport that do not transfer to another part.
+
+**Work:** Derive the solution and combine it with the previous finite inventory. For hypothetical km As/V=0.02 s⁻¹, find the time to close 95% of the initial concentration gap, then check whether enough residue remains to reach that target. Compare early-time slopes with late-time approach to identify what one trace can constrain.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Choose an acid/base description that answers the actual question](../../../chemistry/general-chemistry/aqueous/Acid-base-concepts-and-reactions.lingua#r_0EB1497NTKFZENB6Q1XQ3DQZGQ).
+
+} r_287NAVJMASVVT1WC34N4599G6Q

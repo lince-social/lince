@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of thermal, structural and measurement loops (@mech-thermal-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #source "../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V", #mechanical-engineering "Defend-an-integrated-machine-through-its-service.lingua#r_63N2NG8PE1A88PY32FVFEX15NA") { r_6SHSY5HQJA8XWKAY9GW6CVXQSR
+**Read:** [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), especially chapters 2, 4–6 and 9; [Thermal-error measurement — Li and colleagues, 2024](../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V), complete article, methods and limitations. Use the linked thermal/fluid foundations for coupled transport.
+
+Model a precision axis through its structural and measurement loops. Include at least one load-dependent deformation, angular error, temperature field and flexible mode. Explain which effects are observed by the installed feedback and which move the useful point without appearing in that measurement.
+
+**Derive:** Compare a simple lumped thermal account with a spatial model; check conservation, boundary conditions, refinement and parameter identifiability. Propagate uncertain material and boundary parameters into displacement. Compare changes to structure, heat flow, measurement placement and compensation against the same task.
+
+**Investigate:** Reconstruct the 2024 paper's fiducial/coordinate method and separate calibration from evaluation positions and thermal histories. Its implementation uses MATLAB image-processing functions; a new open implementation needs its own checks. Investigate the reported residual disagreement instead of claiming universal accuracy from one machine. Propose or perform a distinguishable independent measurement and report what cannot be reproduced without the original data.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend an integrated machine through its service](Defend-an-integrated-machine-through-its-service.lingua#r_63N2NG8PE1A88PY32FVFEX15NA).
+
+} r_6SHSY5HQJA8XWKAY9GW6CVXQSR

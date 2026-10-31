@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Patterning, removal and the order of a layer stack (@mat-patterning: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT", #materials-engineering "Additive-processing-local-history-and-postprocessing.lingua#r_52BVQQ01AT7T0CDAEJ9VVSPJBP") { r_7XTBFG6E3125PB4FNCJ9FH3QP5
+**Read:** [Microfabrication and material integration — MIT 6.777J, 2007](../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT), lectures 1–4 and their process problems. Return to crystal orientation, diffusion and material compatibility.
+
+A sequence must deposit, define and remove selected regions while preserving the material already present. Etch selectivity, mask adhesion, directional response and feature loading are conditional. A later thermal step can change a previous dopant profile, interface or residual stress even if it leaves the intended outline intact.
+
+**Work:** Draw every cross-section in a simple patterned layered structure. Track which surfaces are exposed, which materials act as masks or stops and which must survive each step. Calculate a mask-consumption allowance from stated rates, then test whether the rate assumptions apply to the actual geometry. Explain a plausible failure of the reversed process order. This is a materials-integration foundation for the deeper microfabrication and device trails.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Additive processing, local history and postprocessing](Additive-processing-local-history-and-postprocessing.lingua#r_52BVQQ01AT7T0CDAEJ9VVSPJBP).
+
+} r_7XTBFG6E3125PB4FNCJ9FH3QP5

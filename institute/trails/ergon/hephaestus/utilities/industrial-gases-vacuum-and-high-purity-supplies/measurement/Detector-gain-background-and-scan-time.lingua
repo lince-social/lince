@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Detector gain, background and scan time (@gas-detector-response: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "A-leak-rate-needs-a-gas-boundary-and-state.lingua#r_7D768JCSZ5R20YAYF2ZR1YKT46") { r_0VZCE5DJF9J0W6MNPCPQ2BX015
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), Faraday and multiplier detection; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), analyzer operation.
+
+Separate ion production from detector response. A Faraday collector relates collected charge to current; a multiplier adds gain whose magnitude and stability need characterization. Background current, gain drift, saturation, counting losses and electronic range changes can alter reported spectra.
+
+A scan measures different mass channels at different times. If the gas changes during the scan, the resulting plot is not a simultaneous composition snapshot. Dwell time, settling, integration and noise filtering determine both uncertainty and temporal resolution.
+
+Compare a blank, a reference gas and the process using compatible settings and histories. Changing emission, detector mode or mass resolution can invalidate a direct peak-height comparison. A larger signal can reflect higher gain rather than more gas.
+
+**Work:** Construct a hypothetical two-channel scan of a changing mixture and compare it with simultaneous observation. Show how temporal aliasing can imitate a composition change. Design an acquisition sequence that tests gain drift without assuming that the process remains constant throughout it.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A leak rate needs a gas, boundary and state](A-leak-rate-needs-a-gas-boundary-and-state.lingua#r_7D768JCSZ5R20YAYF2ZR1YKT46).
+
+} r_0VZCE5DJF9J0W6MNPCPQ2BX015

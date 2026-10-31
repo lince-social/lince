@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Additional forces need their own physical model (@cm-additional-forces: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B", #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "Compare-transport-scales-before-choosing-a-dominant-mechanism.lingua#r_2DKYTTMMC01PX03Z9BDHG4GYXV") { r_4BACXJVE8YA3NZXJGXJD079Z32
+**Read:** [Fundamentals of single-particle transport — Kulkarni, Baron and Willeke](../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B), section 2.6.3 and its original references; [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), lift and unsteady-force topics.
+
+A nonuniform temperature, concentration, illumination or acoustic field can alter particle motion. Shear and unsteady fluid acceleration can introduce effects absent from a steady drag balance. Name the actual mechanism and conditions before adding a force term or drift coefficient.
+
+A migration coefficient depends on properties, particle and gas scales, boundary accommodation and the regime used to derive it. Different mechanisms cannot be represented reliably by one unexplained “extra force”. Near a surface, thermal gradients and hydrodynamic resistance can interact with adhesion and deposition.
+
+**Work:** Select one published thermophoretic, acoustic or optical example and derive its stated force or drift relation from its assumptions. Compare its timescale with settling and diffusion using that paper's conditions. Keep a specialist prediction pending when properties or boundary conditions are missing; the simple column calculation below does not include these mechanisms.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Compare transport scales before choosing a dominant mechanism](Compare-transport-scales-before-choosing-a-dominant-mechanism.lingua#r_2DKYTTMMC01PX03Z9BDHG4GYXV).
+
+} r_4BACXJVE8YA3NZXJGXJD079Z32

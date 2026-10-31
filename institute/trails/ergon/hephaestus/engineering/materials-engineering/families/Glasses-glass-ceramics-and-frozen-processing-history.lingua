@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Glasses, glass ceramics and frozen processing history (@mat-glass-families: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Thermoplastics-chain-architecture-and-morphology.lingua#r_18X611HMZS1CSBSSMNCRD75E7R") { r_4SAFR2P6MVB7Y9JRPYNCYMWVC9
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Glass Transition; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Ceramics and Brittle Fracture; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), silicate materials and thermal properties. Revisit the earlier amorphous structure and transformation-kinetics readings.
+
+A glass lacks long-range periodicity while retaining local structure. Its observed transition depends on timescale and thermal history. Network-forming and modifying chemistry influences connectivity and transport. Distinguish a glass, a partly crystallized glass ceramic and a polycrystalline ceramic even when they share elements.
+
+Cooling and annealing set residual stresses; thermal or chemical strengthening can place surfaces in compression while balancing tension elsewhere. That changes crack driving forces without making scratches or internal tension irrelevant. Controlled nucleation and growth in a glass ceramic introduce a phase population whose scale, fraction and mismatch matter.
+
+**Work:** Compare annealed glass, a strengthened glass and a documented glass ceramic through composition, thermal history, structure and test evidence. Draw a self-equilibrated residual-stress profile and explain which cracks it shields. Distinguish a viscosity/relaxation question during manufacture from a brittle-fracture question during service.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Thermoplastics, chain architecture and morphology](Thermoplastics-chain-architecture-and-morphology.lingua#r_18X611HMZS1CSBSSMNCRD75E7R).
+
+} r_4SAFR2P6MVB7Y9JRPYNCYMWVC9

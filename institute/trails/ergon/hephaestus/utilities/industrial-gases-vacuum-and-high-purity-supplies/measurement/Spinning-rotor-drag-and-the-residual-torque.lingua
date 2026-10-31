@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Spinning-rotor drag and the residual torque (@gas-rotor-gauge: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Ion-current-emission-and-gas-dependent-sensitivity.lingua#r_21QAERTG3NRFJE6NJA9HEMTPC1") { r_20KE5GG1ZM63PJ3FP6F35D5BNR
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), momentum-transfer gauges; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), spinning-rotor descriptions.
+
+A spinning-rotor gauge observes the deceleration of a suspended rotating body. Gas molecules transfer momentum at its surface, so the measured torque depends on gas density, molecular mass, temperature and momentum accommodation. The surface state is part of the measurement model.
+
+The observed deceleration also contains residual contributions unrelated to gas drag. A baseline offset or its drift becomes especially consequential when the gas-dependent component is small. Separate angular-speed measurement, drag model, temperature and baseline correction instead of treating deceleration as already calibrated pressure.
+
+A calibration can turn a stable rotor into a transfer standard over its applicable range. Transport, contamination and changes in the rotor or suspension state can change that evidence. The useful question is whether the corrected response remains stable for the actual gas and operating history.
+
+**Work:** Model an observed decay rate as a gas-dependent term plus residual torque. Show how subtracting two nearly equal values magnifies relative uncertainty. Explain what a repeated baseline observation can establish and what requires a comparison with an independent pressure reference.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Ion current, emission and gas-dependent sensitivity](Ion-current-emission-and-gas-dependent-sensitivity.lingua#r_21QAERTG3NRFJE6NJA9HEMTPC1).
+
+} r_20KE5GG1ZM63PJ3FP6F35D5BNR

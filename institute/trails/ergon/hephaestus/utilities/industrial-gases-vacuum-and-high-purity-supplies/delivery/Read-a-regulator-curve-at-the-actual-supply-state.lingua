@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Read a regulator curve at the actual supply state (@gas-regulator-curves: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9", #industrial-gases-and-vacuum "../../../physics/fluid-dynamics/compressible/Static-stagnation-and-critical-states.lingua#r_13W8RXAZ6EQG83R7AKRJF965S9") { r_1E6JC8MFED7TYMFXMDZQQP1K3K
+**Read:** [Pressure regulator flow curves — Swagelok technical bulletin](../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9), introductory figures and the chosen configuration's complete inlet-pressure and control-range curves.
+
+Read the axis definitions before comparing curves: gauge or absolute pressure, gas species, reference volume-flow conditions, inlet pressure and configuration. A family of curves describes a set of conditions, not a universal relation with one curve valid for every gas or setting.
+
+Identify the pressure change with increasing demand, the transition toward no flow, the behavior at large flow and any difference between increasing/decreasing demand. Then vary inlet pressure. A depleted cylinder can move the system into a different operating region before its total inventory is exhausted. Two stages may reduce one sensitivity while introducing intermediate storage and another set of limits.
+
+Choose a required flow interval and an acceptable pressure interval, then test the whole operating trajectory against them. Include beginning and end of supply, startup, normal demand and a changed demand. Extrapolation beyond the measured range needs separate evidence.
+
+**Work:** Annotate a manufacturer's plot without turning its illustrative curves into exact data. If digitizing, record pixel/axis uncertainty and source edition. Explain how a satisfactory steady curve could coexist with an unacceptable transient or impurity contribution from wetted surfaces.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Static, stagnation and critical states](../../../physics/fluid-dynamics/compressible/Static-stagnation-and-critical-states.lingua#r_13W8RXAZ6EQG83R7AKRJF965S9).
+
+} r_1E6JC8MFED7TYMFXMDZQQP1K3K

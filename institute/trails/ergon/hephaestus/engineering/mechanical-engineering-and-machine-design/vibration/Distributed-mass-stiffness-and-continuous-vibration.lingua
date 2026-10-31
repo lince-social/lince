@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Distributed mass, stiffness and continuous vibration (@mech-continuous-vibration: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "Nonlinear-response-contact-and-the-limits-of-a-small-motion-model.lingua#r_27Q7VJFER0RJ3RH2ENVPBPMY3B") { r_7FBSCQHXNQGXNV81TKQ4ZWKCZ4
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lecture 27, then revisit the modal analysis and [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65)'s differential-equation methods. Later material and beam Records supply the constitutive basis needed for bending vibration.
+
+A long component can deform in shapes that a single rigid coordinate cannot represent. For a uniform taut string with small transverse displacement u(x,t), constant tension T and mass per length μ, the ideal equation is μ u_tt = T u_xx. Fixing both ends gives shapes sin(nπx/L) and angular frequencies (nπ/L)√(T/μ). The assumed tension, small slope and end constraints are part of the model.
+
+For L = 1 m, T = 100 N and μ = 0.01 kg/m, wave speed is 100 m/s and the first frequency is 50 Hz. A uniform Euler–Bernoulli beam instead has bending stiffness EI and a fourth spatial derivative; its frequencies scale with √(EI/(ρA))/L² and boundary-specific constants. Confusing string and beam stiffness changes both mode shapes and scaling.
+
+Approximate a distributed displacement as a sum of shapes multiplied by time coordinates. Integrating kinetic and strain energy gives reduced M and K matrices. A coarse approximation must be checked by adding shapes or refining the spatial representation. Boundary flexibility and a mounted mass can matter more than extra numerical digits.
+
+**Work:** Derive the string result from a short segment and separation of variables. Compare a one-mode approximation with two and three modes for a specified load and observation point. Explain how measuring at a modal node can hide a mode. After learning elastic bending, derive a beam example and assess the effect of shear deformation and rotary inertia at shorter wavelengths.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Nonlinear response, contact and the limits of a small-motion model](Nonlinear-response-contact-and-the-limits-of-a-small-motion-model.lingua#r_27Q7VJFER0RJ3RH2ENVPBPMY3B).
+
+} r_7FBSCQHXNQGXNV81TKQ4ZWKCZ4

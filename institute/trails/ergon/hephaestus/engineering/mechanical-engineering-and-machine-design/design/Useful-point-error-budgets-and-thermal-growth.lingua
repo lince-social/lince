@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Useful-point error budgets and thermal growth (@mech-error-budget: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #source "../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V", #mechanical-engineering "../measurement/Connect-the-drawing-to-a-defined-dimensional-measurement.lingua#r_101DKG7DGDQ1Q0GMRBRHBFHC4Q") { r_26T2TJ8X977GFHW5Y0T2C7WBS6
+**Read:** [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), sections 2.1–2.5 and 2.8; [Thermal-error measurement — Li and colleagues, 2024](../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V), the complete measurement/model comparison when approaching the advanced study.
+
+Follow an error source to the actual useful point through geometry, stiffness and sensing. A small angular change θ across an offset h gives a first-order displacement hθ. At h=0.1 m and θ=100 μrad, the contribution is 10 μm. Moving the measurement line can matter more than adding encoder counts.
+
+A uniform 0.3 m steel reference with α=12×10⁻⁶ K⁻¹ changes length by 18 μm for 5 K. The error relative to a workpiece depends on both paths and their temperatures, not this length alone. Spatial gradients and changing constraints require more than one temperature sensor.
+
+**Work:** Draw structural and measurement paths for a stage. Allocate a functional error claim among geometry, load, temperature and sensing, retaining signs, correlations and frequency dependence. Compare correction with physical reduction of an error source. Test the model under a different load or thermal state rather than validating it only on the data used to fit it.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Connect the drawing to a defined dimensional measurement](../measurement/Connect-the-drawing-to-a-defined-dimensional-measurement.lingua#r_101DKG7DGDQ1Q0GMRBRHBFHC4Q).
+
+} r_26T2TJ8X977GFHW5Y0T2C7WBS6

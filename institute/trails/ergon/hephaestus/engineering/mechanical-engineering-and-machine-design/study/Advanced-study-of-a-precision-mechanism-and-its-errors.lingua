@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of a precision mechanism and its errors (@mech-precision-motion-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #mechanical-engineering "Defend-machine-elements-as-an-interacting-assembly.lingua#r_6R4CPQRB4ACH3KPZZZH5N3TFTN") { r_622HG8157EVRX1HBNJC391HZ77
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topics 4, 6 and 9–10; [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), constraints, flexures, alignment interfaces, screws and actuators. Use the graduate precision-design source for deeper constraint and error methods.
+
+Choose a positioning stage, guided probe, linkage or compliant mechanism. Define useful-point motion, range, load and a measurement reference before selecting a resolution. Compare two guidance/drive principles, such as screw with rolling guide and flexure with direct actuation.
+
+**Derive:** Build the kinematic and compliance models, including unwanted motion, thermal expansion, alignment, backlash or hysteresis and the relevant resonances. Propagate a declared geometric perturbation to the useful point using a Jacobian, then compare it with a finite perturbation. Locate singular or poorly conditioned configurations.
+
+**Investigate:** Separate commanded, sensed and actual useful-point motion. Measure or reconstruct repeatability and systematic error under reversal, varied load and temperature. Explain which calibration transfers to another condition and why. Compare predicted parasitic motion with an independent geometric observation. Revise the mechanism or measurement placement where the evidence shows the original claim was too broad.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend machine elements as an interacting assembly](Defend-machine-elements-as-an-interacting-assembly.lingua#r_6R4CPQRB4ACH3KPZZZH5N3TFTN).
+
+} r_622HG8157EVRX1HBNJC391HZ77

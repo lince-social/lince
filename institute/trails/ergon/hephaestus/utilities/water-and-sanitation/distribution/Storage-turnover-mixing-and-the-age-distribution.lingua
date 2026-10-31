@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Storage turnover, mixing and the age distribution (@wu-storage-age: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Transport-reaction-and-a-residual-at-the-tap.lingua#r_4VFZJD7P8XQ9S532CBP2HCQX8P") { r_2E1K7H97BZM1TE6CZ5BXGHGM5C
+**Read:** [EPANET 2.2 manual](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW), tank models and water-quality analysis; [WHO distribution-system reference](../sources/Water-Safety-in-Distribution-WHO.lingua#r_4Z856ZAJVQZR5T72ZP9ZZ92YZF) alongside the water safety plan. Reuse the earlier reactor and tracer explanations.
+
+Storage buffers mismatched supply and demand, but water in storage has a history. A nominal turnover time V/Q is not the age of every parcel. For an ideal constant-volume fully mixed tank receiving zero-age water, the mean age a obeys da/dt = 1−(Q/V)a. At steady state a = V/Q; the distribution remains broad.
+
+In an original example, V = 200 m³ and Q = 20 m³/hour give a 10-hour steady mean. Starting with zero-age water, after 10 hours the mean is 10(1−e⁻¹), about 6.321 hours. A plug-flow tank with the same nominal turnover produces a different age distribution. Dead zones or inlet/outlet short circuits change it again.
+
+**Work:** Close the level/volume account over a daily pattern and distinguish usable, reserve and inaccessible storage. Compare complete mixing, plug-flow and compartment assumptions against a tracer history. Explain how a larger tank can improve interruption resilience while worsening some water-age outcomes if operation does not change. Plan observations of level, inflow/outflow, temperature and spatial quality that can reject an unsuitable mixing model.
+
+**Continue:** [Transport, reaction and a residual at the tap](Transport-reaction-and-a-residual-at-the-tap.lingua#r_4VFZJD7P8XQ9S532CBP2HCQX8P).
+} r_2E1K7H97BZM1TE6CZ5BXGHGM5C

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Hydrogen entry, diffusion, trapping and delayed damage (@mat-hydrogen: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Hydrogen-Embrittlement-Bhadeshia.lingua#r_1VT41JGPGJ3NGXT47VKG1DFCT4", #materials-engineering "Hot-environments-and-the-formation-of-oxide-scales.lingua#r_1ZC6J4G332TKN2X45F7BJR9CZ7") { r_54Y3YXPHB3E26H57Z21382YN8Q
+**Read:** [Prevention of hydrogen embrittlement in steels — Bhadeshia](../sources/Hydrogen-Embrittlement-Bhadeshia.lingua#r_1VT41JGPGJ3NGXT47VKG1DFCT4) in full, including its cited evidence for trapping and prevention; the earlier diffusion and fracture accounts.
+
+Distinguish hydrogen entering a surface, mobile hydrogen, occupancy of different traps and damage under a particular stress history. Total hydrogen content alone does not determine the concentration available at a vulnerable region. Trap binding, capacity, release kinetics, temperature and the timescale of loading matter. A trapping strategy must be evaluated with the accompanying microstructure and mechanical properties.
+
+**Work:** Derive a dilute diffusion balance with an explicitly stated reversible-trap exchange term. Recover the no-trap limit and compare permeation and thermal-desorption observations as different inverse problems. Explain how coating, pickling, plating, welding or environment can alter entry without treating every route as equivalent. Critically assess the review's prevention claims against measured transport and mechanical outcomes, including an exposure or loading condition beyond the original fit.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Hot environments and the formation of oxide scales](Hot-environments-and-the-formation-of-oxide-scales.lingua#r_1ZC6J4G332TKN2X45F7BJR9CZ7).
+
+} r_54Y3YXPHB3E26H57Z21382YN8Q

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Restoration includes cleanliness, calibration and service (@gas-restoration: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H", #source "../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0", #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "../../../engineering/mechanical-engineering-and-machine-design/service/Failure-investigation-preserves-chronology-and-alternatives.lingua#r_2YM12BJW2NZH0A7FAC0K9DZC68") { r_6XBZHEGMYMKKT920NK10Y9WT3Y
+**Read:** [The safe isolation of plant and equipment — HSE HSG253](../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H), reinstatement; [Cleaning equipment for oxygen service — EIGA 33/18](../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0), applicable cleanliness evidence; [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), acceptance and feedback.
+
+After repair, establish the resulting configuration and material state. Correct dimensions or successful motion do not establish leak tightness, composition, surface cleanliness or sensor calibration. A repaired assembly may require evidence at several levels before the original service claim is valid again.
+
+Retain the cause of intervention, as-found observations, changed parts/materials and as-left evidence. A newly introduced component may alter permeability, adsorption, dead volume or thermal response even when nominal pressure and dimensions match.
+
+**Work:** Trace a hypothetical seal replacement through the earlier surface, delivery and measurement models. Identify which original results remain applicable and which must be re-established. Define a return-to-service claim at the point of use and show the evidence supporting it.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Failure investigation preserves chronology and alternatives](../../../engineering/mechanical-engineering-and-machine-design/service/Failure-investigation-preserves-chronology-and-alternatives.lingua#r_2YM12BJW2NZH0A7FAC0K9DZC68).
+
+} r_6XBZHEGMYMKKT920NK10Y9WT3Y

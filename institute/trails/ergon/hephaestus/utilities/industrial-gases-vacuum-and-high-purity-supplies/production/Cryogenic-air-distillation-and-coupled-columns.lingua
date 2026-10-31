@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cryogenic air distillation and coupled columns (@gas-air-distillation: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #industrial-gases-and-vacuum "Pre-purification-regeneration-and-contaminant-accumulation.lingua#r_32Z6YZ0SRCWX9CS1K2DBZWZQ2H") { r_5V9CX56GBFP2V39YK08DMJ8ECW
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), the complete air-separation sequence; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), air preparation and cold-box operation; shared chemical separation methods.
+
+A cryogenic air-separation system coordinates feed purification, refrigeration, distillation and product handling. Coupled columns can exchange condensation and boiling duties across pressure levels. Follow component and enthalpy flows through that coupling; a diagram alone does not establish that the temperature difference or energy balance is feasible.
+
+Stage efficiency, reflux, pressure drop, heat leak, feed condition and product withdrawals affect the result. Major-component separation and trace-contaminant management are connected but distinct calculations. An assumed perfect equilibrium stage is a model of contact, not a measured tray or packing performance.
+
+**Work:** Reconstruct a publicly documented column arrangement from the course. Close the nitrogen/oxygen and enthalpy balances, identify the source of refrigeration and test the condenser/reboiler temperature relation. Change one product's withdrawal and explain its effects on the other streams. State the data needed to turn a stage calculation into a scale and equipment argument.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Pre-purification, regeneration and contaminant accumulation](Pre-purification-regeneration-and-contaminant-accumulation.lingua#r_32Z6YZ0SRCWX9CS1K2DBZWZQ2H).
+
+} r_5V9CX56GBFP2V39YK08DMJ8ECW

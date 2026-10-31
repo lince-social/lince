@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Functional measurements and competing material models (@mat-functional-inference: 0, is #chapter, #part-of @materials-engineering, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN", #source "../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1", #materials-engineering "../study/Join-functional-mechanisms-with-material-evidence.lingua#r_69BHMFMVFC276M5941RXKC7KJX") { r_0QVYQFFMQNTEDKQ5FSCSZYXK1S
+**Read:** The complete method behind one electrical, thermal, optical and magnetic measurement from [Nano-to-Macro Transport Processes — MIT 2.57](../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), [Electrical, Optical, and Magnetic Properties of Materials — MIT 3.23](../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN), [Electron interactions, magnetism and superconductivity — Daniel C. Ralph](../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1) and the existing electromagnetic NIST source. Use their primary references where an experiment's details are only summarized.
+
+Separate excitation, specimen state, transducer response, calibration, forward model and parameter inference. Four-probe measurements can reduce certain contact contributions without eliminating every geometry or inhomogeneity effect. Optical inversion can trade thickness against constants; magnetic inference can trade internal-field correction against susceptibility; thermal fitting can trade interface conductance against film conductivity.
+
+**Work:** For each method draw the measurement chain and write an observable before naming a material property. Compare candidate models under changed conditions and report unresolved parameters. Maintain actual evidence separately from simulated curves and proposed experiments.
+
+Use repeatability, independently measured dimensions, uncertainty propagation, withheld data and mechanism-specific observations. A numerically precise fit is not automatically a physically unique explanation. The advanced studies now join these measurement choices to the complete readings.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Join functional mechanisms with material evidence](../study/Join-functional-mechanisms-with-material-evidence.lingua#r_69BHMFMVFC276M5941RXKC7KJX).
+
+} r_0QVYQFFMQNTEDKQ5FSCSZYXK1S

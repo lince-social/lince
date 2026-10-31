@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+The chamber material is part of the gas system (@gas-surface-entry: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #industrial-gases-and-vacuum "Separate-gas-sources-storage-and-removal.lingua#r_24T136HP25WAB5Y8384K77AZWV") { r_72F06KBVTA7W551PG3G2A19AGJ
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT) in full across this section; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.4–II.8.5; [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D), the complete study after learning the measurement methods.
+
+A vacuum chamber contains gas in several forms: freely moving molecules, adsorbed populations, material dissolved in solids, trapped pockets and condensed phases. Pumping changes some of these inventories more quickly than others. A wall can be a source, a sink and a memory of previous exposure.
+
+Composition, surface area, temperature and manufacturing history determine what the pump must handle. A quoted outgassing number without cleaning, exposure, time, temperature and measurement conditions is incomplete. The same material name can describe specimens with quite different useful behavior.
+
+**Work:** Draw gas and material reservoirs for a newly assembled chamber, a previously conditioned chamber and one recently opened to humid air. Identify the exchanges that can persist after the initial gas has been removed. Explain what observations are needed before assigning a long pressure tail to a leak.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Separate gas sources, storage and removal](Separate-gas-sources-storage-and-removal.lingua#r_24T136HP25WAB5Y8384K77AZWV).
+
+} r_72F06KBVTA7W551PG3G2A19AGJ

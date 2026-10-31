@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Inspection, inference and a qualified process window (@mat-process-qualification: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0", #source "../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT", #materials-engineering "../../mechanical-engineering-and-machine-design/manufacturing/Process-variation-capability-and-corrective-action.lingua#r_0DRWSXYX0WX5P7MRJE8D46Y9M4") { r_2S5JC4V9SWRVQX4ZP4X6EKSHTH
+**Read:** The existing metrology and shared mechanical process-variation accounts; [Epoxy conversion from rheology — Romberg and colleagues, 2024](../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0) for the difference between inferred state and an independently measured quantity; [Microfabrication and material integration — MIT 6.777J, 2007](../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT) for layer-integration examples.
+
+A qualified process connects controlled inputs and histories to evidence about accepted output within a defined range. Calibration, sampling, measurement uncertainty and variation across lots matter. A fitted process model may interpolate familiar settings yet fail after feed, tooling, geometry or equipment changes.
+
+**Work:** Define observable acceptance quantities for a selected material state, then identify hidden variables the observations cannot uniquely determine. Use independent destructive/section evidence where relevant to assess a nondestructive indication. Compare at least two process settings, preserve the rejected results and distinguish repeatability from robustness. State what change would require renewed evidence rather than silently extending an old qualification.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Process variation, capability and corrective action](../../mechanical-engineering-and-machine-design/manufacturing/Process-variation-capability-and-corrective-action.lingua#r_0DRWSXYX0WX5P7MRJE8D46Y9M4).
+
+} r_2S5JC4V9SWRVQX4ZP4X6EKSHTH

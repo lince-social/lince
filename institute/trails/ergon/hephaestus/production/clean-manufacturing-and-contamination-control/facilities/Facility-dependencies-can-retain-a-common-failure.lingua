@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Facility dependencies can retain a common failure (@cm-facility-dependencies: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "A-control-sensor-observes-one-part-of-the-facility.lingua#r_7PMBE577HPDTS73C2SJVT73PH3") { r_1GT529SK3181324S7HAY9SYV61
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), backup power and system design; [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), reliable utilities; the dependency reasoning in [Calculate diversification with the actual joint dependence](../../../materials/chemical-feedstocks-and-supply-systems/continuity/Two-suppliers-can-share-the-same-failure.lingua#r_3YJ0DPY2TX68GEYCK057JWJFJX).
+
+Two fans can share a power supply, controller, damper, cooling service, test error or maintenance action. Counting components does not establish independent capability. A backup must supply the necessary function in the relevant state, including startup and restoration.
+
+Describe what happens to airflow, pressure, temperature and exposed product when each support service is lost. A possible response is process interruption, protected hold or isolation; the physical consequence defines the needed sequence.
+
+**Work:** Draw a dependency graph for one protected process and remove one service at a time. Identify a shared cause that defeats apparently redundant equipment. Compare the time available before an important state changes with detection, response and restoration times. Carry these observations into continuing-operation studies.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A control sensor observes one part of the facility](A-control-sensor-observes-one-part-of-the-facility.lingua#r_7PMBE577HPDTS73C2SJVT73PH3).
+
+} r_1GT529SK3181324S7HAY9SYV61

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+From a required material state to a process chain (@mat-processing-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #materials-engineering "../../mechanical-engineering-and-machine-design/manufacturing/Plan-the-process-chain-from-required-function.lingua#r_35THW33JT9E3Z5G0H2RCGJT9NC") { r_2YT5QPFN4WNNHJFV88PEW1NKJC
+**Read progressively:** [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), the whole introductory course; [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), all available notes, problems and exams. Retain the earlier books on structure, kinetics, mechanics and functional response as explanations of what processing changes.
+
+Begin with a housing, insulating layer, bearing surface and bonded panel. Describe geometry, composition, structure, surface, tolerances and required behavior in use. Then work backward through the operations that can create them. A named material and a drawing are insufficient when properties depend on cooling, cure, orientation, porosity or residual stress.
+
+**Work:** Draw two credible process chains for one object. Follow material, tools, heat, atmosphere, fluids, measurements and rejected output across each operation. Explain which state variables must be passed to the next operation and which can still change. Use the shared machine-design process account for equipment and production context; the Records here deepen the material transformations. Later studies require a defensible prediction and comparison with observations, not merely selecting a familiar process name.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Plan the process chain from required function](../../mechanical-engineering-and-machine-design/manufacturing/Plan-the-process-chain-from-required-function.lingua#r_35THW33JT9E3Z5G0H2RCGJT9NC).
+
+} r_2YT5QPFN4WNNHJFV88PEW1NKJC

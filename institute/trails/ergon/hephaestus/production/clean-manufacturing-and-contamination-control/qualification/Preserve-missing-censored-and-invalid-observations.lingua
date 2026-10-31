@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Preserve missing, censored and invalid observations (@cm-monitoring-missing: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Investigate-a-signal-with-competing-physical-explanations.lingua#r_1DBCZNKZTTP4TG3YP0A1CS17A8") { r_37V4MMGQK1MWAAJ4QM2HF58YE7
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), model diagnostics and data analysis; revisit detection limits and the measurement chain.
+
+A missing interval, a value below a reporting limit, an overloaded detector and a valid zero are different records of evidence. Replacing all four with zero can manufacture an apparent improvement. A missingness mechanism related to the process, such as loss of readings during high loading, biases the observed history.
+
+Suppose 80 of 100 intended observations average 1, and the 20 missing values are known only to lie between 0 and 10. The complete mean can range from 0.8 to 2.8. The observed mean alone does not choose within this interval. This is a deterministic bound under stated limits, not a confidence interval.
+
+Keep validity flags, collection duration, units, processing versions and reasons for exclusion. A later corrected result should remain connected to the earlier value and the evidence supporting the correction. Calibration history is part of interpreting a long record, not an annotation unrelated to the numbers.
+
+**Work:** Introduce censoring, overload and state-dependent gaps into a simulated monitoring history. Compare naive substitution, bounded statements and an explicit observation model. Identify conclusions that survive the missing information and those requiring additional evidence.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Investigate a signal with competing physical explanations](Investigate-a-signal-with-competing-physical-explanations.lingua#r_1DBCZNKZTTP4TG3YP0A1CS17A8).
+
+} r_37V4MMGQK1MWAAJ4QM2HF58YE7

@@ -1,6 +1,5 @@
 use super::{Editor, allowed, text_state};
 use bevy::{
-    asset::AssetId,
     prelude::*,
     text::{EditableText, TextEdit},
 };
@@ -188,26 +187,17 @@ pub(crate) fn enqueue(world: &mut World, request: Request) {
 pub(crate) fn capture(
     world: &mut World,
     window: Entity,
-    image: AssetId<Image>,
+    pointer: &super::pointer::Snapshot,
     output: OutputId,
     mapping: lince_interface::host::raster::RasterMapping,
 ) -> Option<Target> {
     let point = world.get::<Window>(window)?.physical_cursor_position()?;
+    let logical = mapping.logical_point(point.as_dvec2().to_array());
     let focused = world
         .get_resource::<bevy::input_focus::InputFocus>()
         .and_then(|focus| focus.get());
     let editor = focused.and_then(|entity| {
-        let camera = world
-            .get::<bevy::ui::ComputedUiTargetCamera>(entity)?
-            .get()?;
-        let bevy::camera::RenderTarget::Image(target) =
-            world.get::<bevy::camera::RenderTarget>(camera)?
-        else {
-            return None;
-        };
-        if target.handle.id() != image {
-            return None;
-        }
+        let point = pointer.editor_point(entity, logical)?;
         let node = world.get::<ComputedNode>(entity)?;
         let transform = world.get::<UiGlobalTransform>(entity)?;
         let local = transform.try_inverse()?.transform_point2(point) + node.size() * 0.5;
@@ -244,7 +234,7 @@ pub(crate) fn capture(
         window: window.to_bits(),
         output,
         mapping_revision: mapping_revision(world, output)?,
-        pointer: mapping.logical_point(point.as_dvec2().to_array()),
+        pointer: logical,
         destination,
     })
 }

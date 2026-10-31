@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Investigate spatial contamination with an image model (@cm-study-surface-imaging: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "Review-the-evidence-about-the-surface.lingua#r_6ZT8HE7DSJ064B1VX5QCS4DWC8") { r_40E0NH081H4YB5EHK7ANPHD1CS
+**Read:** [Prepare and interpret microscopy with a contrast model](../../../engineering/materials-engineering/measurement/Prepare-and-interpret-microscopy-with-a-contrast-model.lingua#r_2WXVFFSYPQSVRF0PPA8DS1F6RN), [Optical power, spectra, images, and model-defined features](../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T) and [Sampling contributions, thresholds, and results near zero](../../../inquiry/metrology/uncertainty/Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG).
+
+Construct a surface with isolated, clustered and overlapping benign model particles. Specify the observed area, image blur, pixel sampling, scale and segmentation rule. Predict how changing resolution or threshold changes count, covered area and inferred size distribution.
+
+Compare a single convenient field with a declared spatial sampling design. Use the same underlying surface to evaluate missed regions and uncertainty in a whole-surface statement. Separate repeated processing of one image from collecting independent spatial evidence.
+
+Introduce a feature that could be a particle, a substrate defect or a contrast artifact. Choose a second observation that can distinguish those explanations. Preserve both the raw synthetic or published image and the processing history.
+
+**Result to explain:** A supported statement about observed coverage and a clearly scoped inference about the target surface. Derive how scale, boundary definition and spatial sampling contribute to uncertainty, and show what would change the conclusion.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review the evidence about the surface](Review-the-evidence-about-the-surface.lingua#r_6ZT8HE7DSJ064B1VX5QCS4DWC8).
+
+} r_40E0NH081H4YB5EHK7ANPHD1CS

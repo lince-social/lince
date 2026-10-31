@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of functional material and interface substitution (@mat-selection-functional-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #materials-engineering "Defend-the-selection-service-and-recovery-account.lingua#r_3EKGFH7N9TS7SSRZHCP0MX6E8W") { r_4EFHRSVJC8PB3XWWVQAG1BRWYD
+**Read:** The full functional, interface, fabrication and degradation references relevant to the chosen case; [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K); [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), selection methods.
+
+Choose a thermal/electrical layer system, optical component or magnetic material with a documented functional requirement. Compare two complete material/process alternatives. Derive field or transport response and an interacting mechanical/environmental constraint. Preserve frequency, temperature, thickness, contacts and history in the evidence.
+
+**Deliver:** A reproducible account connecting measured material state with device-level function, including independent limiting checks and a changed-condition prediction. Distinguish constituent from interface effects and identify a measurement that separates competing explanations. Compare manufacturing consistency, service degradation and repair/recovery consequences. Defend the proposed substitution or explain why evidence is insufficient, then revise the account after criticism.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the selection, service and recovery account](Defend-the-selection-service-and-recovery-account.lingua#r_3EKGFH7N9TS7SSRZHCP0MX6E8W).
+
+} r_4EFHRSVJC8PB3XWWVQAG1BRWYD

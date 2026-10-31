@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Connect material state, model and observation (@mat-research-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #source "../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH", #materials-engineering "Specimen-batch-location-and-history.lingua#r_74STGTHAW3TF9N3F5PNVCG4B8C") { r_6BM5Z0CF2SCAW4X4405N8YZNDZ
+**Read:** [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K) in full; the complete graduate sequence in [Atomistic computer modeling of materials — MIT 3.320](../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH); revisit the earlier quantum, statistical, continuum and process readings as their assumptions enter the work.
+
+The final section joins the whole subject: what a material is, how it came to be in its present state, what was measured, which model interprets it, and what can be predicted when processing or service changes. A response curve alone does not preserve this account. The same composition can produce different structures; the same apparent response can arise from different structures.
+
+Keep a specific object and question through the calculations. Follow raw observations into corrections and inferred quantities, then into a functional decision. Treat the missing observation or unresolved discrepancy as part of the result. Use the structural, polymer and functional investigations to connect all earlier sections before undertaking independent research.
+
+**Work:** Choose a manufactured object. Draw its state/history/observation chain and identify three claims that need evidence at different scales. Explain which earlier material mechanisms support each claim. State what would change your conclusion and which step currently lacks a usable source.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Specimen, batch, location and history](Specimen-batch-location-and-history.lingua#r_74STGTHAW3TF9N3F5PNVCG4B8C).
+
+} r_6BM5Z0CF2SCAW4X4405N8YZNDZ

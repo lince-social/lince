@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Compression ratio, backpressure and a pressure floor (@gas-compression-limit: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Cryocondensation-and-the-temperature-of-the-surface.lingua#r_1GBND36P3QBSW8RGB37AHP8EFE") { r_52KTJJVMK7XB6TH0HZHK70PC9T
+**Read:** [Vacuum technology for superconducting devices — Paolo Chiggiato](../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9), compression definition; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), turbomolecular performance and backing selection. Check numerator and denominator whenever a source quotes a ratio.
+
+Define K₀=pout/pin at zero net throughput for a specified gas and pump state. A simple linear molecular model is Q=S[pin−pout/K₀], with constant S and K₀ over a declared range. It represents forward and reverse transfer; it is not a universal pump curve.
+
+With an imposed inlet gas load Qg, the model gives pin=Qg/S+pout/K₀. The first term comes from useful load removal and the second from finite compression against the backing state. Conductance between chamber and inlet adds another pressure difference. For a mixture, apply the model to each constituent with its own parameters.
+
+**Example:** With S=0.1 m³/s, Qg=10⁻⁶ Pa·m³/s, pout=1 Pa and K₀=10⁴, pin=1.1×10⁻⁴ Pa. Reducing Qg alone cannot remove the 10⁻⁴ Pa backpressure contribution under these assumptions.
+
+**Work:** Derive the relation from opposing molecular transfers. Compare increasing S, improving K₀ and reducing pout. Explain which measurement distinguishes these interventions and where pressure-dependent performance would invalidate the linear model.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Cryocondensation and the temperature of the surface](Cryocondensation-and-the-temperature-of-the-surface.lingua#r_1GBND36P3QBSW8RGB37AHP8EFE).
+
+} r_52KTJJVMK7XB6TH0HZHK70PC9T

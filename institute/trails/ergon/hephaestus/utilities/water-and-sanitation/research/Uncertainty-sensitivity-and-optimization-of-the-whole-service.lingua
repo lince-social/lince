@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Uncertainty, sensitivity and optimization of the whole service (@wu-system-uncertainty: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #source "../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD", #source "../sources/Benchmark-Simulation-Model-2-IWA.lingua#r_7S4V5ZYP2VFKZ6VHSBS4Z2G5BF", #water-and-sanitation "Read-primary-water-research-and-check-what-can-be-reproduced.lingua#r_2C4RCEREJVM4WKR7CKR6VE7HZF") { r_1NHGPKNEXKPQE1C5YT5AS86BH6
+**Read:** [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), the uncertainty and modelling foundations already linked, and the complete methods underlying your selected advanced study. Use [WaterTAP — inspectable water-treatment models](../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD) and [Benchmark Simulation Model no. 2 — IWA technical description](../sources/Benchmark-Simulation-Model-2-IWA.lingua#r_7S4V5ZYP2VFKZ6VHSBS4Z2G5BF) to compare optimization or performance evaluation under explicit assumptions.
+
+Measurement error, uncertain parameters, unknown future demand and an incomplete process model are different sources of uncertainty. Sensitivity asks how an output responds to a change; identifiability asks whether observations can distinguish parameters; optimization searches within a specified model and feasible region. None establishes that omitted constraints are satisfied.
+
+**Work:** Begin with one-at-a-time changes that can be interpreted physically, then examine important interactions and correlated inputs. Check numerical convergence separately. Define quality, capacity, resource and receiving-route constraints before comparing objectives. Show where an attractive optimum is close to a poorly known feasibility boundary.
+
+Compare expected performance with adverse but credible conditions and a decision that can be revised as evidence arrives. In an advanced study, justify probability distributions or use explicit bounded scenarios when probabilities lack evidence. Report multiple objectives where a single weighted score would conceal who receives the benefit and who bears the loss. Explain the decision in plain language as well as equations.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Read primary water research and check what can be reproduced](Read-primary-water-research-and-check-what-can-be-reproduced.lingua#r_2C4RCEREJVM4WKR7CKR6VE7HZF).
+
+} r_1NHGPKNEXKPQE1C5YT5AS86BH6

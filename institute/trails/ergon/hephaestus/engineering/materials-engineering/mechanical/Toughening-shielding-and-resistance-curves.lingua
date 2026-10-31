@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Toughening, shielding and resistance curves (@mat-toughening: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Brittle-strength-statistics-and-effective-volume.lingua#r_25682GXNPKXGRZVRQRV5C7JX7Q") { r_2CJD5B1JF57RMRQPJNAP3RXFJ0
+**Read:** [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Toughening of Materials in full; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 9.4–9.6; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), zirconia and composite material descriptions.
+
+Plastic deformation, phase transformation, crack deflection, bridging and fibre pull-out can increase resistance through different mechanisms. Separate dissipation near the tip from shielding in the crack wake. A rising resistance curve depends on how those mechanisms develop with crack extension and specimen constraint.
+
+In transformation-toughened zirconia, metastable phase retention, particle size, composition, constraint and transformation strain matter. Simply increasing the fraction of a transformable phase does not guarantee a useful or stable material. An interface that transfers load strongly may inhibit a pull-out mechanism that would otherwise dissipate energy.
+
+**Work:** Compare three mechanisms using energy and length-scale arguments plus microstructural evidence. Re-derive one transformation/constraint calculation with consistent units. Distinguish initiation resistance from a developed R-curve and explain how a small test specimen can fail to reproduce a large bridging zone.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Brittle strength statistics and effective volume](Brittle-strength-statistics-and-effective-volume.lingua#r_25682GXNPKXGRZVRQRV5C7JX7Q).
+
+} r_2CJD5B1JF57RMRQPJNAP3RXFJ0

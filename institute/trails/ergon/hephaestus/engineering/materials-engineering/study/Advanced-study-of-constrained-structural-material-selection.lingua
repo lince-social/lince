@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of constrained structural material selection (@mat-selection-structural-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #materials-engineering "Defend-the-selection-service-and-recovery-account.lingua#r_3EKGFH7N9TS7SSRZHCP0MX6E8W") { r_7RHF819EVVP3F475H26NTC3S01
+**Read:** [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), selection, cost modeling and assignments; [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ), the complete structural cases; [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K) and the relevant full mechanics/process references.
+
+Choose a documented component function and compare at least three feasible material/process states, or demonstrate why fewer remain after screening. Derive requirements from loading, deformation, stability and environment. Explain which geometric freedoms are real. Compare ideal continuous dimensions with actual process dimensions and yield.
+
+**Deliver:** Independent analytical/numerical checks, property provenance, uncertainty and active-constraint transitions. Reconstruct one published comparison and test its most consequential assumption. Include service changes, inspection and a possible repair or replacement rather than stopping at initial mass. Explain what evidence supports a selection and what is still required to qualify the real component. Revise after a competing material/process proposal.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the selection, service and recovery account](Defend-the-selection-service-and-recovery-account.lingua#r_3EKGFH7N9TS7SSRZHCP0MX6E8W).
+
+} r_7RHF819EVVP3F475H26NTC3S01

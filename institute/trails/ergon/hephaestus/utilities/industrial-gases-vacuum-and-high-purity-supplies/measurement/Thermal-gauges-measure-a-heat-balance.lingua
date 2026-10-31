@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Thermal gauges measure a heat balance (@gas-thermal-gauges: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Spinning-rotor-drag-and-the-residual-torque.lingua#r_20KE5GG1ZM63PJ3FP6F35D5BNR") { r_6TNWERZHQ1T5KSZYJ3C9GDYD8B
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), thermal-conductivity principles; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), thermal gauge operation; revisit [Residual-gas heat transfer and cryogenic vacuum](../surfaces/Residual-gas-heat-transfer-and-cryogenic-vacuum.lingua#r_7DJDJC0A2FYP80GQ0XREKTE03H).
+
+A heated element exchanges energy with its supports, surrounding surfaces and gas. A thermal vacuum gauge infers pressure from part of that heat balance. The electrical power or element temperature is not a direct force-per-area measurement.
+
+In a molecular regime, gas heat transfer depends on arrival rate, molecular properties and thermal accommodation at surfaces. At other pressures, intermolecular transport and eventually convection change the response. Conductive and radiative backgrounds remain even as gas pressure decreases, limiting the useful sensitivity.
+
+A calibration curve therefore belongs to a gas and an instrument condition over a defined range. A mixture cannot generally be corrected with the arithmetic mean of two displayed-gas factors. Deposited material and changing emissivity or accommodation can shift the relationship without an obvious electrical fault.
+
+**Work:** Write a steady energy balance for the heated element and identify the term that carries pressure information. Predict how a background heat-loss change could imitate a pressure change. Choose an independent gauge principle that could distinguish those explanations.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Spinning-rotor drag and the residual torque](Spinning-rotor-drag-and-the-residual-torque.lingua#r_20KE5GG1ZM63PJ3FP6F35D5BNR).
+
+} r_6TNWERZHQ1T5KSZYJ3C9GDYD8B

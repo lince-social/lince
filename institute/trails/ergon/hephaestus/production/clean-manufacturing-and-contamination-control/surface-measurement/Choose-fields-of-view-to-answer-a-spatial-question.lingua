@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Choose fields of view to answer a spatial question (@cm-surface-fields: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #clean-manufacturing "../../../engineering/materials-engineering/measurement/Prepare-and-interpret-microscopy-with-a-contrast-model.lingua#r_2WXVFFSYPQSVRF0PPA8DS1F6RN") { r_6B7GD708V4TV4AFFYHA1AW6ZZV
+**Read:** [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), sampling boundaries; [A specimen, a sampling target, and a result about a population](../../../inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH) and [Sampling contributions, thresholds, and results near zero](../../../inquiry/metrology/uncertainty/Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG), target and sampling design.
+
+A convenient micrograph is evidence about its observed field. Estimating a whole-surface mean requires a sampling design tied to that surface. Targeted inspection of likely problem sites and random sampling answer different questions and can be used together when their roles stay explicit.
+
+In a simple independent model, suppose a small observation lands in a contaminated region with probability f and detects it perfectly. The probability that n observations all miss it is (1 − f)ⁿ. With f = 0.05 and n = 20, this is about 0.358486. For miss probability at most 0.05, n must be at least 59 under these assumptions. Spatial correlation, finite field area and imperfect detection change the model.
+
+**Work:** Derive the result and compare random points, a regular grid and targeted observations against a hypothetical striped contamination pattern. Identify a grid that repeatedly misses the pattern. Keep a map of observed areas and distinguish observed absence from an inference about unobserved areas. Relate the sampling effort to the functional consequence of a localized deposit.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Prepare and interpret microscopy with a contrast model](../../../engineering/materials-engineering/measurement/Prepare-and-interpret-microscopy-with-a-contrast-model.lingua#r_2WXVFFSYPQSVRF0PPA8DS1F6RN).
+
+} r_6B7GD708V4TV4AFFYHA1AW6ZZV

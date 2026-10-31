@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Recovery time depends on the source and the target (@cm-room-recovery: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #source "../sources/Demand-Controlled-Cleanroom-Filtration-Faulkner-Fisk-Walton.lingua#r_2W1ADE030W9RFA8ATDKSYVT6XP", #clean-manufacturing "Mixing-local-capture-and-sweeping-flow-solve-different-problems.lingua#r_1GBD94E4KFSJA339DBNGJQGPA3") { r_73DB8MF0F41B3Y31ECGRJKQT1S
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), transient contaminant analysis; [Demand-controlled cleanroom filtration — Faulkner, Fisk and Walton](../sources/Demand-Controlled-Cleanroom-Filtration-Faulkner-Fisk-Walton.lingua#r_2W1ADE030W9RFA8ATDKSYVT6XP), concentration recovery observations.
+
+With constant coefficients, write Λ=Qa+ηQr+kdV and C∞=(G+QaCa)/Λ. Then C(t)=C∞+(C0−C∞)exp(−Λt/V). For C0>Ctarget>C∞, the ideal time to reach Ctarget is (V/Λ)ln[(C0−C∞)/(Ctarget−C∞)]. A target below the asymptote is unattainable in this model.
+
+The preceding hypothetical example has C∞≈22.1774 particles/m³ and V/Λ≈20.1613 s. Closing 99% of the gap to that asymptote takes about 92.85 s; it does not mean reducing the absolute concentration to one percent of its initial value.
+
+**Work:** Derive the transient and integrated removed inventory. Compare source shutoff, reduced source and changed incoming air. Challenge a claimed recovery time by checking sampling position, starting condition, observation delay and continued release. Keep this prediction distinct from a measured operating-state qualification.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Mixing, local capture and sweeping flow solve different problems](Mixing-local-capture-and-sweeping-flow-solve-different-problems.lingua#r_1GBD94E4KFSJA339DBNGJQGPA3).
+
+} r_73DB8MF0F41B3Y31ECGRJKQT1S

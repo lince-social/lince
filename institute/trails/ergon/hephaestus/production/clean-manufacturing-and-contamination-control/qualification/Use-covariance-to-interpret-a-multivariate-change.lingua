@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Use covariance to interpret a multivariate change (@cm-monitoring-multivariate: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Assess-capability-only-for-a-supported-process-distribution.lingua#r_1S9N1XG47Z67F3GA0PVHEV83BS") { r_09WXE7CMATRG66DCJJXMXM5FPR
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), sections 6.3.4 and 6.5.4, including the distinction between estimated and known parameters.
+
+For a vector x and known baseline mean μ and positive-definite covariance Σ, squared Mahalanobis distance is D² = (x−μ)ᵀΣ⁻¹(x−μ). Under a multivariate normal baseline with those parameters known, it has a chi-squared distribution with dimension equal to the vector length. Estimated parameters, subgroup means and retrospective versus future observations require different reference distributions.
+
+For two unit-variance variables with correlation 0.9 and mean zero, x = (1,1) gives D² = 2/1.9 ≈ 1.052632, whereas x = (1,−1) gives D² = 2/0.1 = 20. Each individual coordinate is only one marginal standard deviation from zero; the unusual combination is what matters.
+
+Nearly singular covariance makes inversion sensitive. More variables than independently supported information can produce unstable apparent precision. A reduced representation must preserve the changes relevant to the physical question, including changes outside the retained components.
+
+**Work:** Derive the two-variable result, examine covariance uncertainty and compare a distance chart with separate coordinate charts. After a signal, return to the physical variables and alternative causes. A large distance does not identify the faulty component.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Assess capability only for a supported process distribution](Assess-capability-only-for-a-supported-process-distribution.lingua#r_1S9N1XG47Z67F3GA0PVHEV83BS).
+
+} r_09WXE7CMATRG66DCJJXMXM5FPR

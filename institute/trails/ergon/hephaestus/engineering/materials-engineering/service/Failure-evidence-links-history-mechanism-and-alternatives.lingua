@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Failure evidence links history, mechanism and alternatives (@mat-material-failure: 0, is #chapter, #part-of @materials-engineering, #materials-engineering "../../mechanical-engineering-and-machine-design/service/Failure-investigation-preserves-chronology-and-alternatives.lingua#r_2YM12BJW2NZH0A7FAC0K9DZC68") { r_6JQNH0AAKYQB85CXPHJJBXK1Q6
+**Read:** The shared mechanical failure-investigation Record and its complete references; revisit fracture, environmental damage and manufacturing defects.
+
+An observed fracture surface is part of a chronology. Separate initiation, growth, final overload and changes introduced during recovery or examination. A feature compatible with a mechanism may not uniquely establish it. Loading, microstructure, residual stress, environment and geometry can cooperate.
+
+Preserve competing explanations long enough to test them. Compare failed and unfailed populations without assuming their histories match. A cause at material scale may reveal a process, design, inspection or operating condition elsewhere in the system. Replacing the broken part alone need not remove that condition.
+
+**Work:** Reconstruct a published failure case from service history through specimen observations and model predictions. State which evidence discriminates between two plausible mechanisms. Propose a material/process change, then explain what new evidence would show whether it addresses the cause. Distinguish an inference from an observation and a demonstrated prevention from a proposal.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Failure investigation preserves chronology and alternatives](../../mechanical-engineering-and-machine-design/service/Failure-investigation-preserves-chronology-and-alternatives.lingua#r_2YM12BJW2NZH0A7FAC0K9DZC68).
+
+} r_6JQNH0AAKYQB85CXPHJJBXK1Q6

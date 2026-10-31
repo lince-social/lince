@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Mobility, constraints and singular configurations (@mech-mobility: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #mechanical-engineering "Four-bar-closure-transmission-and-assembly-branches.lingua#r_089ZG17934CSTR1AYBTC4ZHNBB") { r_5QN68BWP4X15CN4TD82Q4CVGYF
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 4, and [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), constraint-design and flexure notes. Revisit generalized coordinates and virtual work from the dynamics section.
+
+A free rigid body has three planar or six spatial instantaneous freedoms. A joint removes independent relative freedoms. For a generic planar mechanism with N links including ground, J₁ one-freedom lower pairs and J₂ higher pairs imposing one scalar constraint, the usual count is M = 3(N−1) − 2J₁ − J₂. It is a starting count, not proof of actual motion.
+
+A four-bar with four revolute joints gives M = 1. Redundant constraints, special geometry and disconnected motions can defeat naive counting. Write the actual closure equations g(q)=0: their Jacobian rank determines local constraint independence. At a singular position the rank or the effectiveness of the chosen input can change; global assembly branches require additional attention.
+
+**Work:** Count a four-bar, slider–crank and overconstrained guide. Write the independent equations, identify the assumed rigid parts and test nearby positions. Explain how clearance, compliance and thermal growth change the physical constraint without changing the drawing's joint symbol. Distinguish freedom, backlash and elastic displacement.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Four-bar closure, transmission and assembly branches](Four-bar-closure-transmission-and-assembly-branches.lingua#r_089ZG17934CSTR1AYBTC4ZHNBB).
+
+} r_5QN68BWP4X15CN4TD82Q4CVGYF

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Coordinates, directions and planes in a material (@mat-geometry-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #materials-engineering "../../../../gaia/earth/mineralogy-and-petrology/crystals/Cell-metric-and-reciprocal-geometry.lingua#r_6CB07MYV3Z3DK5KBGKFET4K8SM") { r_5SHPY9KV7G0H35MZB186PM7PVK
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Crystallography, Miller Indices and reciprocal-lattice explanations; [Crystallographic teaching pamphlets — IUCr](../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the matrix/mapping treatment. Continue through the shared metric and index Records linked next.
+
+The specimen's laboratory axes, a grain's crystallographic axes and an image's coordinates are different frames. State which one a direction, plane or measured property uses. Fractional coordinates refer to cell vectors, which need not be perpendicular or have equal lengths.
+
+Learn vectors, dot products and matrix/basis transformations through the shared quantitative and crystallographic readings before interpreting an orientation result. In a cubic cell the normal to (hkl) is parallel to [hkl]; that convenient correspondence is not a general rule for every metric.
+
+**Work:** Draw a specimen cut with a stated orientation. Transform a simple vector between two frames and verify its length independently. Use the subsequent metric/index studies to calculate a nonorthogonal example. Explain which orientation information is needed to connect a measured response with the atomic structure.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Calculate geometry with the cell metric and reciprocal basis](../../../../gaia/earth/mineralogy-and-petrology/crystals/Cell-metric-and-reciprocal-geometry.lingua#r_6CB07MYV3Z3DK5KBGKFET4K8SM).
+
+} r_5SHPY9KV7G0H35MZB186PM7PVK

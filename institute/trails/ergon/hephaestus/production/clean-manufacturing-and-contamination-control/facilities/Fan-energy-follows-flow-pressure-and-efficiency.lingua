@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Fan energy follows flow, pressure and efficiency (@cm-fan-energy: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Demand-Controlled-Cleanroom-Filtration-Faulkner-Fisk-Walton.lingua#r_2W1ADE030W9RFA8ATDKSYVT6XP", #clean-manufacturing "Pressure-differences-act-across-specific-flow-paths.lingua#r_5CDW9ZSGQF78AAPE12679GEDR2") { r_46BX2KX6PS3EFMDWYZ38MC5RY1
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), efficient air systems; [Demand-controlled cleanroom filtration — Faulkner, Fisk and Walton](../sources/Demand-Controlled-Cleanroom-Filtration-Faulkner-Fisk-Walton.lingua#r_2W1ADE030W9RFA8ATDKSYVT6XP), power measurements and energy baselines.
+
+At a declared operating point, air power is QΔp and electrical input is QΔp/ηtotal, with pressure and efficiency definitions matched. Integrated input over time gives energy. Fan heat can also enter the room or cooling system, depending on the boundary.
+
+Hypothetical Q=10 m³/s, Δp=500 Pa and ηtotal=0.625 require 8 kW, or 64 MWh over 8000 hours. If pressure loss scales as Q^m and efficiency is constant, power scales as Q^(m+1). The familiar cubic result needs a quadratic loss relation and the relevant similarity assumptions.
+
+**Work:** Compare linear, quadratic and mixed losses when flow is reduced to 80% of its original value. Include efficiency variation and required pressure offsets. Reconstruct energy from a time series and identify whether a quoted saving uses measured baseline operation or hypothetical full-speed operation.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Pressure differences act across specific flow paths](Pressure-differences-act-across-specific-flow-paths.lingua#r_5CDW9ZSGQF78AAPE12679GEDR2).
+
+} r_46BX2KX6PS3EFMDWYZ38MC5RY1

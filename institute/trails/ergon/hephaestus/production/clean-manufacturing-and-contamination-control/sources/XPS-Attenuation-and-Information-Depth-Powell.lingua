@@ -1,0 +1,10 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Attenuation and information depth in XPS — Cedric Powell (@cm-xps-depth-source: 0, is #reference, #part-of @cm-sources) { r_0RF0DVE5MXB1BAG8S0W48X46TV
+Cedric J. Powell. *Practical guide for inelastic mean free paths, effective attenuation lengths, mean escape depths, and information depths in x-ray photoelectron spectroscopy*, Journal of Vacuum Science & Technology A 38, 023209 (2020), DOI 10.1116/1.5141079. [NIST catalogue](https://www.nist.gov/publications/practical-guide-inelastic-mean-free-paths-effective-attenuation-lengths-mean-escape) · [Fifteen-page institutional PDF](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=929257).
+
+Read the complete guide, beginning with the definitions and then the overlayer-film and information-depth models. Track the application and measurement geometry attached to each attenuation parameter. An electron mean free path and a depth containing a specified fraction of detected signal answer different questions.
+
+Definitions, data-source discussion and selected overlayer/attenuation passages were inspected. PDF page 7, printed page 6, was viewed to check equations and geometry that text extraction damaged. The learning Records derive and check their own bounded exponential examples. Full transport calculations, reference databases and experimental results were not independently reproduced. Free institutional reading was verified; retain component credits and actual reuse terms. The PDF remains external.
+
+} r_0RF0DVE5MXB1BAG8S0W48X46TV

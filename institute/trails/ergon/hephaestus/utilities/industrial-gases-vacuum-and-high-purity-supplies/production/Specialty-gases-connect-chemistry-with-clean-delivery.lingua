@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Specialty gases connect chemistry with clean delivery (@gas-specialty: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "Gas-mixture-preparation-value-assignment-and-stability.lingua#r_0SCKEC9ZMSTEFVJM88CVJY2D93") { r_3RBDKJVMK6BED7SA30SAAK62FF
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), the full gas-family reference over time; [Explain high-purity chemicals through traceability, purification and contamination control](../../../chemistry/industrial-chemistry/specialty/High-purity-isolation-contact-materials-and-contamination.lingua#r_0A8DYYGK7WSS534DBYFKFT5HPT); relevant complete process and analytical methods.
+
+A specialty gas or volatile precursor is selected for a specific chemical, analytical or physical role. Its preparation, purification, container, contact surfaces and delivery conditions can all affect the species reaching the process. Vaporizing a liquid precursor introduces equilibrium and transfer questions that differ from supplying a permanent gas.
+
+Describe chemical identity, trace contaminants, stability, phase, pressure and permitted material contacts. Follow decomposition, adsorption and particle formation when they matter. A familiar cylinder shape or common gas-panel layout does not make chemically different supplies interchangeable.
+
+**Work:** Select one publicly documented analytical or fabrication gas and trace it from preparation to use. Explain the intended reaction or physical role, then identify the most consequential impurity and contact-surface issue. Separate documented public methods from unavailable supplier details and state how that affects any proposed reproduction.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Gas-mixture preparation, value assignment and stability](Gas-mixture-preparation-value-assignment-and-stability.lingua#r_0SCKEC9ZMSTEFVJM88CVJY2D93).
+
+} r_3RBDKJVMK6BED7SA30SAAK62FF

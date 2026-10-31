@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Powder feedstock, distributions and surface state (@mat-powder-feed: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #materials-engineering "../../../materials/metals-and-metallurgical-production/manufacturing/Powder-production-characterization-compaction-and-sintering.lingua#r_4BJPAMHBXM1S84THXZ6YFKDNH8") { r_1HRCQ6Z4XYVW85DT763HRH204V
+**Read:** [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), manufacturing from powders; [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), powder and colloid lectures; the shared metallurgy powder Record.
+
+Particle size is defined by a measurement and weighting: number, area and volume distributions can describe the same powder differently. Shape, agglomeration, moisture, oxide layers and binder alter flow, packing and reaction. A primary particle size is not the size of every agglomerate entering a die or slurry.
+
+**Work:** Compare two reported powder distributions after reconciling definitions and sampling. Relate surface-to-volume scaling to impurity and binder demand. Describe how sieving, milling, drying or recycling could change chemistry as well as size. Select measurements for both incoming powder and a later compact, and explain why a supplier's mean diameter cannot by itself establish processability or final density.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Follow powder metallurgy from particles and surfaces to consolidated material](../../../materials/metals-and-metallurgical-production/manufacturing/Powder-production-characterization-compaction-and-sintering.lingua#r_4BJPAMHBXM1S84THXZ6YFKDNH8).
+
+} r_1HRCQ6Z4XYVW85DT763HRH204V

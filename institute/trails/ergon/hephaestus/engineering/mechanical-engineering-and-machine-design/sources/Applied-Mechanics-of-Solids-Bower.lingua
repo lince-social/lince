@@ -1,0 +1,13 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Applied Mechanics of Solids — Allan F. Bower (@mech-bower-solids: 0, is #reference, #part-of @mech-sources) { r_109WFZBWMEMGHV9TGFD22H2F1W
+Allan F. Bower. [Author's free electronic text](https://solidmechanics.org/) · [Practice problems](https://solidmechanics.org/problems/problems.php) · [Demonstration finite-element codes](https://solidmechanics.org/FEA.php).
+
+The web text develops continuum equations, constitutive laws, elastic/plastic solutions, finite-element theory, fracture and deformable rods, plates and shells across ten chapters. Its appendices introduce vectors, tensors and index notation. Use complete relevant chapters and substantial problems in the advanced mechanical studies.
+
+On 30 October 2026 the home page, contents, problem index and selected deformation, elasticity, finite-element and failure passages were inspected. The home page bears copyright 2025. This is free authorized reading; no general adaptation licence is asserted. The printed text and separately sold solved-problems volume are distinct publications. Free problem statements do not imply that all companion solutions are freely supplied.
+
+Example codes use MATLAB and related computational assumptions. Their availability is not proof that they were run, verified or ported here. Some equations and figures are images, so use the actual displayed notation when checking a derivation. Text, problems, images and code remain external references.
+
+**Return:** [Mechanical-engineering sources](../Sources.lingua#r_06RZYPZEFNMZ6MZ690QB1WN1Z2).
+} r_109WFZBWMEMGHV9TGFD22H2F1W

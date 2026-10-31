@@ -1,0 +1,10 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Hybrid humidity generator — NIST SP 250-83 Revision 1 (@gas-humidity-source: 0, is #reference, #part-of @gas-sources) { r_6C1ZNNWH3JHFPV8CNY0FW26BGQ
+C. W. Meyer, T. Herman and W. W. Miller. *Calibration of Hygrometers with the Hybrid Humidity Generator*, NIST SP 250-83r1, September 2021. [Official record](https://www.nist.gov/publications/calibration-hygrometers-hybrid-humidity-generator-0) · [Complete 75-page report](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.250-83r1.pdf). DOI 10.6028/NIST.SP.250-83r1.
+
+Read the complete generator, validation, uncertainty and calibration account. Begin with §§2–3 on saturation and humidity definitions, then compare two-pressure and divided-flow operation. Follow the actual enhancement-factor, pressure, temperature and flow assumptions into a reported value.
+
+Metadata, contents and selected definitions, saturation/dilution and uncertainty passages were inspected through the browser on 30 October 2026. Direct download returned HTTP 403. The institutional full text is freely readable; retain government and third-party credits. Its calibration claims describe this documented implementation, not every hygrometer or generator. The source remains external.
+
+} r_6C1ZNNWH3JHFPV8CNY0FW26BGQ

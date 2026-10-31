@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Surface coverage connects arrival, residence and release (@cm-coverage-response: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Readsorption-couples-the-surface-and-the-gas.lingua#r_57PQVHCDK36WXXH22EVJ4AGQSW") { r_131HQSRZ2NY9Y968EB53ZN2F0Z
+**Read:** The primary readings in [Residence time, activation and surface coverage](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Residence-time-activation-and-surface-coverage.lingua#r_48MYBH8H4756WWNK4ABCM2K1RT), especially the assumptions behind equivalent sites and first-order release.
+
+Write a=sΓ/Ns and b=kdes for the shared single-site model, so dθ/dt=a−(a+b)θ under constant conditions. Its equilibrium is θ∞=a/(a+b) and its response is θ(t)=θ∞+[θ(0)−θ∞]exp[−(a+b)t], for a+b>0. If both rates are zero, coverage remains at its initial value.
+
+For hypothetical a=0.02 s⁻¹, b=0.01 s⁻¹ and θ(0)=0, coverage after 100 s is about 0.63348. Reducing arrival changes the equilibrium, whereas merely waiting under unchanged conditions does not guarantee an empty surface. A monolayer fraction is also a different quantity from particle area coverage or a thick-film mass.
+
+**Work:** Derive the solution with an integrating factor and verify it by independently integrating the differential equation. Explain why an equilibrium measurement alone identifies only a rate ratio. Combine a relaxation time with equilibrium coverage to infer the two rates, then state what evidence would reject equivalent sites, constant sticking or independent first-order release.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Readsorption couples the surface and the gas](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Readsorption-couples-the-surface-and-the-gas.lingua#r_57PQVHCDK36WXXH22EVJ4AGQSW).
+
+} r_131HQSRZ2NY9Y968EB53ZN2F0Z

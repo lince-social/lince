@@ -1,0 +1,11 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Thermal-error measurement — Li and colleagues, 2024 (@mech-thermal-paper: 0, is #reference, #part-of @mech-sources) { r_5RZ5P1Q821VSD4MQC6RRC5EW2V
+Zongze Li, Gregory W. Vogl, Edward C. Kinzel, Botond Santa and Robert G. Landers, *Machine tool thermal error measurement and prediction via wireless microscope*, Manufacturing Letters 41 (2024), 1440–1451. DOI 10.1016/j.mfglet.2024.09.171. [NIST publication](https://www.nist.gov/publications/machine-tool-thermal-error-measurement-and-prediction-wireless-microscope) and [public article PDF](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=957076), 12 pages.
+
+Read the whole article for an advanced measurement/model comparison. Reconstruct fiducial coordinates, calibration, spatial fitting, evaluation locations and residual disagreement. The reported implementation uses MATLAB image-processing functions; the article is not a complete openly licensed software package.
+
+Methods, selected results and publication/licence information were inspected on 30 October 2026. Authors' 2024 copyright, CC BY-NC-ND 4.0: public reading and the specified sharing rights do not grant unrestricted adaptation. Keep the article external. Reproduction of its experiment requires more than the text, and its machine-relative results are not a universal accuracy specification.
+
+**Return:** [Mechanical-engineering sources](../Sources.lingua#r_06RZYPZEFNMZ6MZ690QB1WN1Z2).
+} r_5RZ5P1Q821VSD4MQC6RRC5EW2V

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Liquid–vapor inventory and why pressure is not a level (@gas-phase-inventory: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "../../../physics/thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M") { r_1NRRBC1S60NXSZJ9TZ0GZB6K5B
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), the complete liquid/vapor property chapter; [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), fluid properties and storage.
+
+A pure substance with liquid and vapor in equilibrium has a saturation pressure selected by temperature. At that temperature, substantially different liquid masses can coexist at the same pressure. Pressure therefore cannot generally serve as a liquid-level measurement. A supercritical fluid has no liquid/vapor interface to locate.
+
+For a uniform equilibrium state, V=mₗvₗ+mᵥvᵥ and U=mₗuₗ+mᵥuᵥ, where subscripts distinguish liquid and vapor. With total mass m, vapor mass fraction x gives v=(1−x)vₗ+xvᵥ. Mass fraction is not the fraction of vessel volume occupied by vapor: small vapor mass may occupy much of the space. Keep mass-specific and molar properties distinct.
+
+For a mixture, equilibrium involves temperature, pressure, phase compositions and total component inventories. Preferential evaporation can change the remaining liquid and delivered vapor. The single-component saturation picture is only a starting point.
+
+**Work:** Construct two hypothetical equilibrium inventories with the same temperature, pressure and vessel volume but different total masses. Check that both have 0≤x≤1. Then explain which observation, such as calibrated level or weighing, distinguishes them and what additional uncertainty appears in a moving or stratified vessel.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Control-volume mass and energy balances](../../../physics/thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M).
+
+} r_1NRRBC1S60NXSZJ9TZ0GZB6K5B

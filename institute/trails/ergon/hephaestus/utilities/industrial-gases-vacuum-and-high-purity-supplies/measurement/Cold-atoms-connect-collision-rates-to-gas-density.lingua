@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cold atoms connect collision rates to gas density (@gas-cold-atom: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV", #source "../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F", #industrial-gases-and-vacuum "Surviving-collisions-can-change-the-next-loss-probability.lingua#r_35NY77XC5J59XQ3C9G53ZRREXD") { r_402V0CS0ZRT79P98VSFZ6JVR1V
+**Read:** [Cold-atom vacuum comparison — Barker and colleagues](../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV) in full, then [Glancing collisions in vacuum metrology — Eckel and colleagues](../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F). Revisit [Dynamic expansion from flow and conductance](Dynamic-expansion-from-flow-and-conductance.lingua#r_78VG1K2RDH38RRAJ7YXR2AKVX9) and the molecular-velocity development.
+
+A trapped sensor-atom population can lose atoms through collisions with background gas. In a simplified dilute, independent-collision model with loss coefficient K and background number density nN, N(t)=N₀exp[−(KnN+Γother)t]. Inferring p=nNkBT requires temperature, K and an account of other loss mechanisms. K has units m³/s when nN is in m⁻³.
+
+The microscopic coefficient can be predicted from scattering theory and tested against a conventional density realization. A theory-based standard still needs valid physical assumptions, characterized apparatus and uncertainty. A comparison must distinguish validating a theoretical coefficient from fitting that coefficient to the same reference later claimed to be independent.
+
+For hypothetical Γ=0.020 s⁻¹, Γother=0.002 s⁻¹, K=10⁻¹⁵ m³/s and T=300 K, nN=1.8×10¹³ m⁻³ and p≈7.45550×10⁻⁸ Pa. These coefficients are illustrative, not gas-specific experimental values.
+
+**Work:** Reconstruct the logic of the primary comparison, including the dynamic-expansion density and trap-loss fit. Identify where collision physics, trap depth, atom counting and gas composition enter. Then ask what changes when a collision transfers energy without ejecting the atom.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Surviving collisions can change the next loss probability](Surviving-collisions-can-change-the-next-loss-probability.lingua#r_35NY77XC5J59XQ3C9G53ZRREXD).
+
+} r_402V0CS0ZRT79P98VSFZ6JVR1V

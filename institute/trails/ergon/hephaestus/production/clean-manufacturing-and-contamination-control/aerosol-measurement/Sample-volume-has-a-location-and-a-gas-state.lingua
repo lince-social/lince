@@ -1,0 +1,19 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Sample volume has a location and a gas state (@cm-aerosol-volume: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #source "../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE", #clean-manufacturing "An-inlet-can-select-particles-before-the-instrument-does.lingua#r_7DTCQ6BXBRZWPRR7FM71V52YJP") { r_036ZGZ7EMDA0G4XR0BB2J28917
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), section 21.6; [CPC proportionality calibration — Owen, Mulholland and Guthrie](../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE), equation (6) and flow appendix. Revisit the gas-state reasoning in [Air-change rate, velocity and flow are different quantities](../facilities/Air-change-rate-velocity-and-flow-are-different-quantities.lingua#r_4G94H2PHRT8Q2NZQ3JSB1A06TB).
+
+The sampled volume is Vₛ = ∫Q(t)dt at a specified inlet state. Pump displacement, detector flow and total instrument exhaust can differ because of sheath flow, bypass flow or internal splitting. A nominal setting does not supply the missing flow history.
+
+For an ideal carrier gas with unchanged composition, a volume at p,T corresponds to Vref = Vₛ(p/pref)(Tref/T). Particle number conservation then gives Cref = C(pref/p)(T/Tref). State absolute pressure and kelvin temperature. This conversion does not reverse evaporation, condensation, wall losses or a change in the size threshold.
+
+**Example:** At 90 kPa and 300 K, a measured 12 L corresponds to 10.782 L at 100 kPa and 299.5 K. A lossless count of 120 represents 10 L⁻¹ at the inlet and about 11.1297 L⁻¹ at the reference state. Both describe the same particle number under the model.
+
+If flow varies from 1 to 2 L/min linearly during a four-minute interval, the sample is 6 L. Multiplying the final flow by the full time would give 8 L and underestimate concentration. Compare timing and flow calibration with the duration of the actual particle record.
+
+**Work:** Derive both state conversions from gas amount and particle-number conservation. Build a two-interval sample with different concentrations and flows; compare the volume-weighted concentration with an unweighted average of displayed concentrations.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [An inlet can select particles before the instrument does](An-inlet-can-select-particles-before-the-instrument-does.lingua#r_7DTCQ6BXBRZWPRR7FM71V52YJP).
+
+} r_036ZGZ7EMDA0G4XR0BB2J28917

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+What a particle diameter means (@cm-diameter: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "../../../inquiry/quantitative-literacy/foundations/Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2") { r_4VXPHVKHVM7244VHQEMMZ1B4MZ
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), measurement principles and sizing methods. Follow its references when comparing a particular pair of instruments.
+
+A diameter may come from an image, an equivalent volume, settling behavior, electrical mobility or optical response. For a nonspherical particle these are different definitions. An optical instrument interprets a signal using a calibration and assumptions about shape and optical properties; the displayed number is not a direct ruler measurement of every sampled particle.
+
+Specify the diameter definition before comparing distributions. Include the instrument's size interval and response to the relevant material. Agreement on a calibration aerosol does not by itself establish agreement for droplets, fibers or aggregates with different properties.
+
+**Work:** Read two instrument descriptions and identify their measured response, calibration material and reported diameter. Explain which additional evidence could support a conversion between them and when reporting both conventions separately is more honest.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Read graphs, interpolate, and question a visual claim](../../../inquiry/quantitative-literacy/foundations/Graphs-and-interpolation.lingua#r_2GDCZSQKNW5BCGN7B5D9G36HK2).
+
+} r_4VXPHVKHVM7244VHQEMMZ1B4MZ

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Compatibility includes the residue, substrate, coating and bath (@cm-compatibility: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "Solvent-cleaning-needs-a-purity-and-recovery-loop.lingua#r_5WBGRR7SET5MH9Q80WYZ6F8J23") { r_3DAN7D93CMNJSQYXXV7Y6D70ZQ
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), detergent effects and special cases; [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2), material-loss and surface-conditioning studies.
+
+The cleaning agent contacts everything exposed: substrate, oxide, coating, joint, seal and trapped region. Dissolution of an unwanted layer may accompany etching, swelling, leaching or redeposition elsewhere. A material's initial name does not specify its processed state or its acceptable change.
+
+Distinguish removing a contaminant from intentionally stripping a layer. Define allowed dimensional, chemical, mechanical and functional changes before comparing methods. A bath can also acquire material from one workpiece and transfer it to the next.
+
+**Work:** Make a compatibility account for a coated part with a joined second material. Follow the origin and destination of every measured element. Compare an unused coupon, a realistically aged part and a reused bath. Explain why a lower surface-contamination signal accompanied by a damaged coating cannot establish restored function.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Solvent cleaning needs a purity and recovery loop](Solvent-cleaning-needs-a-purity-and-recovery-loop.lingua#r_5WBGRR7SET5MH9Q80WYZ6F8J23).
+
+} r_3DAN7D93CMNJSQYXXV7Y6D70ZQ

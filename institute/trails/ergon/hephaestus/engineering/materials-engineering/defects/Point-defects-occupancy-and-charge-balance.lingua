@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Point defects, occupancy and charge balance (@mat-point-defects: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "Dislocations-as-line-defects-and-carriers-of-slip.lingua#r_61JVKWJTPQB32RTQQH29D3PWTD") { r_4TKYF4R5ZSNVGCRRQN8DXR7C0G
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), atomic-scale defects and Solid Solutions; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), crystal and thermodynamic foundations; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), composition/sites and crystal defects.
+
+Vacancies, interstitials and substitutions describe departures from an identified reference structure. The reference, site multiplicity, species and charge convention must be explicit. Defects may be thermally generated, introduced by processing or associated with composition constraints; not every missing atom is an isolated equilibrium vacancy.
+
+For a simple dilute, noninteracting vacancy model, an equilibrium fraction is proportional to exp(−ΔG_f/(k_BT)), with the free-energy convention and degeneracy specified. Interacting defects and charge neutrality require a coupled account. Quantitative equilibrium derivation follows in the later thermodynamic section.
+
+**Work:** Construct site and charge balances for one substitution/vacancy model. Compare how a compositional measurement and a density measurement constrain it. Identify an alternative arrangement consistent with the same bulk composition. Explain how preparation or measurement could change the defect population being inferred.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Dislocations as line defects and carriers of slip](Dislocations-as-line-defects-and-carriers-of-slip.lingua#r_61JVKWJTPQB32RTQQH29D3PWTD).
+
+} r_4TKYF4R5ZSNVGCRRQN8DXR7C0G

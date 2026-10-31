@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A distribution of binding states and long-time tails (@gas-binding-spectrum: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "Readsorption-couples-the-surface-and-the-gas.lingua#r_57PQVHCDK36WXXH22EVJ4AGQSW") { r_463DEHMVSDM53EVYH65H28FR78
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), the full water-outgassing model and energy-distribution discussion; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), unbaked systems.
+
+A single first-order population gives exponential release. Many populations with different rates can produce a much broader response. Write a release rate as an integral of kN₀(k)exp(−kt) over a declared rate distribution. The initial total inventory is the integral of N₀(k), not an independent infinite reservoir.
+
+For N₀(k) proportional to 1/k between finite bounds, the release is proportional to [exp(−kmin t)−exp(−kmax t)]/t. It resembles 1/t only between the two characteristic times. Extrapolating that power law indefinitely would contradict finite inventory.
+
+**Work:** Derive the bounded expression and its early/intermediate/late limits. Compare a few discrete populations with the continuous spectrum. Explain why a straight log-log segment does not uniquely identify a microscopic mechanism, and design a changed-temperature or exposure experiment that challenges the inferred distribution.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Readsorption couples the surface and the gas](Readsorption-couples-the-surface-and-the-gas.lingua#r_57PQVHCDK36WXXH22EVJ4AGQSW).
+
+} r_463DEHMVSDM53EVYH65H28FR78

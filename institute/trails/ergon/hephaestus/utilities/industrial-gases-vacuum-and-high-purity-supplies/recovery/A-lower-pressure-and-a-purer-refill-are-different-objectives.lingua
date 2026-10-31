@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A lower pressure and a purer refill are different objectives (@gas-purge-objective: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR", #industrial-gases-and-vacuum "Recovery-purity-and-separation-capacity-constrain-each-other.lingua#r_2V2GRP8FKRQABFKMKJ78PQ60QE") { r_6B6GW8109DG260H66Q3QPP6G50
+**Read:** [Conservation of helium while maintaining high system purity — White and colleagues](../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR), the cutoff discussion and figures; use the preceding independently derived species model.
+
+Take hypothetical n0=1 mol, y0=0.01 and b=0.001. If e⁻ᵏᵗ=0.1, the remaining inventory is 0.1009 mol and its impurity is 0.0019 mol: about 1.88305% of the remaining gas. After pure-helium refill, the impurity fraction is 0.0019, or 0.19%. The gas left at low pressure is less pure than initially, yet the refilled gas is purer.
+
+Pumping longer until e⁻ᵏᵗ=0.01 gives 0.01099 mol remaining with 0.00109 mol impurity. Its low-pressure impurity fraction is about 9.91811%, while the refilled fraction is 0.00109. In this model, final impurity improves monotonically toward b when y0>b; when y0<b it worsens. There is no universal finite optimum from final purity alone.
+
+Time, helium replacement, wall contamination and a required final quality can produce a different optimization problem. The paper's installation-specific cutoff must be understood in its stated operating context rather than copied as a general theorem.
+
+**Work:** Define an objective and constraints before optimizing. Compare retained helium, total helium used, completion time and final quality. Change one assumption and show whether the conclusion survives. Distinguish a criticism of a simplified inference from a refutation of the authors' measured installation.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Recovery purity and separation capacity constrain each other](Recovery-purity-and-separation-capacity-constrain-each-other.lingua#r_2V2GRP8FKRQABFKMKJ78PQ60QE).
+
+} r_6B6GW8109DG260H66Q3QPP6G50

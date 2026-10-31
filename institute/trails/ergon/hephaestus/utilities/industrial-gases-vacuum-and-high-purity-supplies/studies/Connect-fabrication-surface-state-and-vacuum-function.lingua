@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Connect fabrication, surface state and vacuum function (@gas-study-vacuum-materials: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD", #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "Review-pumping-material-history-and-the-measured-state.lingua#r_5QS86VWMREAY4AADFCSZEB5XKQ") { r_3SD8RNXQP0TW10TC2WE15TJBBY
+**Study:** [Surface finishing and vacuum coatings — Mauro Taborelli](../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD) in full; [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D) and [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), complete material/conditioning accounts; selected primary work cited by those sources.
+
+Follow a component from bulk material through forming or machining, joining, cleaning, optional coating, thermal history, assembly and use. Choose a vacuum-related function and the observations needed to establish it. Include other required mechanical, thermal or electrical functions so that a treatment is judged as part of the whole component.
+
+Compare a small-specimen result with the assembled geometry. Examine accessible area, crevices, temperature variation, film defects, contact materials and preservation between operations. For a getter coating, separate activation, species-specific pumping, capacity, adhesion and accumulated exposure cycles.
+
+**Deliver:** A traceable state-and-process account, a quantitative gas-load or capacity argument and a qualification comparison with uncertainty. Explain one result that would reject the proposed transfer from coupon to assembly. Critique unavailable process details explicitly and distinguish an educational reconstruction from a demonstrated manufacturing result.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review pumping, material history and the measured state](Review-pumping-material-history-and-the-measured-state.lingua#r_5QS86VWMREAY4AADFCSZEB5XKQ).
+
+} r_3SD8RNXQP0TW10TC2WE15TJBBY

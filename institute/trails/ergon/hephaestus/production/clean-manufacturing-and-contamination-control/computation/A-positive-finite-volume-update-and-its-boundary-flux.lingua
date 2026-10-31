@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A positive finite-volume update and its boundary flux (@cm-column-discretization: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "An-inspectable-particle-column-calculation.lingua#r_71QKY85BV2TV2Z1EKF6KPG92H2") { r_1KT82HCP2EGD3AQRSZPZ22R5HH
+**Read:** Revisit [Advection schemes, boundedness, diffusion and shock capture](../../../physics/fluid-dynamics/computation/Advection-schemes-boundedness-diffusion-and-shock-capture.lingua#r_0XH17KPCTVWEZATGC9DTC9PGFN) and the shared computational references.
+
+Divide H into equal cells of height h and store cell-average concentrations c_i. Interior upward flux is J_{i+1/2}=−w c_{i+1}−D(c_{i+1}−c_i)/h. Downward advection uses the upstream cell above the face. Use zero top flux and bottom loss (w+2D/h)c_0, with the diffusive zero concentration located half a cell below the first centre.
+
+The forward update is c_i(new)=c_i−Δt(J_{i+1/2}−J_{i−1/2})/h. The strongest loss coefficient is w/h+3D/h² at the bottom cell. Thus Δt(w/h+3D/h²)≤1 makes every update coefficient nonnegative. Interior fluxes cancel in the inventory sum; accumulate the same bottom loss in a separate deposited inventory.
+
+The scheme is first order in time and in drift-dominated spatial transport; pure diffusion has the usual second-order spatial interior approximation. Upwinding adds numerical diffusion. Near an absorbing wall with strong drift, resolving the diffusive boundary region may require a much smaller cell than the column-average result suggests.
+
+**Work:** Derive every coefficient, including the top and bottom cells, and prove the inventory cancellation. Explain why clipping negative values after an unstable step would spoil that proof. Separate positivity and conservation from an accuracy claim.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [An inspectable particle-column calculation](An-inspectable-particle-column-calculation.lingua#r_71QKY85BV2TV2Z1EKF6KPG92H2).
+
+} r_1KT82HCP2EGD3AQRSZPZ22R5HH

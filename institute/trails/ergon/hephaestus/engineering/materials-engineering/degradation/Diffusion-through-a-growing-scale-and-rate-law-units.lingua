@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Diffusion through a growing scale and rate-law units (@mat-scale-growth: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "Scale-stress-spallation-and-ambiguous-mass-change.lingua#r_516VYCBDABJ2BJNBP8FYCTSQJP") { r_6EAJ12SGY0B052E616AMGN50CN
+**Read:** [Oxide-scale growth and discontinuities — Ulrich, Glatzel and Galetz](../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K), parabolic and paralinear kinetics; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), diffusion. Revisit chemical-potential gradients and defect pathways.
+
+A simple planar model with a steady gradient across thickness x can give dx/dt=K/x and hence x²−x₀²=2Kt. Derive this result from a specified flux and stoichiometry. It assumes that the selected transport resistance and boundary states remain applicable; short-circuit paths, evolving phases and interface control can change the result.
+
+**Work:** Keep thickness, mass change per area and oxygen uptake distinct. If Δm/A=(kt)ⁿ, derive k's units from that convention; if Δm/A=k tⁿ, derive the different units. Reconstruct a measured curve with geometry, density and composition information before converting between representations. Compare fits over several intervals and identify a separate observation needed to distinguish bulk diffusion from grain-boundary transport.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Scale stress, spallation and ambiguous mass change](Scale-stress-spallation-and-ambiguous-mass-change.lingua#r_516VYCBDABJ2BJNBP8FYCTSQJP).
+
+} r_6EAJ12SGY0B052E616AMGN50CN

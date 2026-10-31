@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Advanced study — a whole wastewater plant and its controller (@wu-wastewater-study: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37", #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #source "../sources/Benchmark-Simulation-Model-2-IWA.lingua#r_7S4V5ZYP2VFKZ6VHSBS4Z2G5BF", #water-and-sanitation "Uncertainty-sensitivity-and-optimization-of-the-whole-service.lingua#r_1NHGPKNEXKPQE1C5YT5AS86BH6") { r_6DM201DBD9MR5F5BPE02V1W3ZN
+**Read:** [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37) in full with the relevant complete biological-treatment volumes, [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), and [Benchmark Simulation Model no. 2 — IWA technical description](../sources/Benchmark-Simulation-Model-2-IWA.lingua#r_7S4V5ZYP2VFKZ6VHSBS4Z2G5BF). Work the model report's equations, component definitions, interfaces and evaluation conditions before comparing strategies.
+
+Start by reproducing an identified benchmark baseline or an independently implemented public specification. Pin the influent data, units, initialization, numerical tolerance, solver and evaluation period. Compare the required check values before changing the plant or controller. A named benchmark with different initial states or loads is a different experiment.
+
+**Work:** Close water, COD, nitrogen, solids and relevant gas accounts at defined boundaries. Compare a control or process change using effluent performance, aeration and pumping, sludge production, recovery and service reliability. Include wet-weather or changed-load behavior and interactions between sludge handling and liquid treatment.
+
+Distinguish mathematical verification from evidence that the model predicts a particular plant. The public report and data do not guarantee access to every implementation; identify dependencies and use an inspectable alternative where appropriate. For advanced inquiry, test parameter identifiability, numerical stiffness or a changed process description against primary observations. Discuss unmodelled settling failures, microbial adaptation and sensor faults before interpreting a lower objective value as a better actual service.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Uncertainty, sensitivity and optimization of the whole service](Uncertainty-sensitivity-and-optimization-of-the-whole-service.lingua#r_1NHGPKNEXKPQE1C5YT5AS86BH6).
+
+} r_6DM201DBD9MR5F5BPE02V1W3ZN

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Read a controlled comparison of chamber materials (@gas-outgassing-evidence: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Radiation-and-particle-stimulated-gas-release.lingua#r_6B511QQQ1BYE3WX9XH5YW0H2Y5") { r_3AXZB985X3A539FJFE4JW6Z62Y
+**Read:** [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D) in full, including figures 4–6, tables and uncertainty; revisit [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT) for the mechanisms behind the interpretations.
+
+The study compares geometrically similar chambers while preserving their material and treatment distinctions. Water and hydrogen are examined through different histories and methods. That design helps separate some influences while leaving limits on generalization to other geometry, preparation and service conditions.
+
+Figure 4 in the accepted manuscript, PDF page 17, shows a pressure-rise example for the 304L chamber. Reconstruct the slope-to-specific-release relation, including the fixture correction and area. Distinguish the plotted evidence from an independently available raw time series; the paper states that supporting data are in the article, and a separate complete raw-data download has not been established here.
+
+**Work:** Reconstruct one reported comparison using explicitly accessible values and uncertainty. Explain which ranking survives the stated uncertainty and which mechanisms remain ambiguous. Design one follow-up comparison that could overturn the interpretation. State any digitization or missing-data limits instead of inventing unreported measurements.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Radiation and particle-stimulated gas release](Radiation-and-particle-stimulated-gas-release.lingua#r_6B511QQQ1BYE3WX9XH5YW0H2Y5).
+
+} r_3AXZB985X3A539FJFE4JW6Z62Y

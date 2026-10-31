@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Prepare and dilute a solution under an explicit amount and volume model (@gc-preparation: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/ChemCollective-Virtual-Lab.lingua#r_246CB9EYQ2A1SQFHPV15F4Q4WT", #general-chemistry "../reactions/Aqueous-species-and-net-ionic-equations.lingua#r_1D7ZRSG6A9TD5G2879FVG4NS89") { r_53MS427PJ81EAEKEBXZFCK78W6
+Prepare and dilute a solution under an explicit amount and volume model (@gc-preparation: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD", #source "../sources/ChemCollective-Virtual-Lab.lingua#r_246CB9EYQ2A1SQFHPV15F4Q4WT", #general-chemistry "../reactions/Aqueous-species-and-net-ionic-equations.lingua#r_1D7ZRSG6A9TD5G2879FVG4NS89", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/cleaning/Carry-blank-volume-area-and-recovery-through-the-mass-account.lingua#r_7MYKMA105SHGW3CRKG9FMNPTCF") { r_53MS427PJ81EAEKEBXZFCK78W6
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 3’s solution composition and dilution material in full; [Química geral no laboratório — Marcela Boroski, organizer](../sources/Quimica-geral-no-laboratorio.lingua#r_48YEN2SA34DW0FPCSTMVTW3CTD), the complete solution-preparation and standardization activities; [Virtual laboratory and quantitative exercises — ChemCollective](../sources/ChemCollective-Virtual-Lab.lingua#r_246CB9EYQ2A1SQFHPV15F4Q4WT), the introduction and an appropriate solution exercise.
 
 Amount concentration c = n/V refers to the solution's total volume under stated conditions, not automatically the volume of solvent added. Mass fraction, amount fraction, mass concentration, molality, and amount concentration use different denominators. Preserve the distinction through preparation, transfer, dilution, and interpretation.
@@ -16,4 +16,7 @@ Use a virtual activity for additional arithmetic practice if useful, while prese
 **Continue:** [Identify aqueous species and write a defensible net ionic equation](../reactions/Aqueous-species-and-net-ionic-equations.lingua#r_1D7ZRSG6A9TD5G2879FVG4NS89).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in clean manufacturing:** [Carry blank, volume, area and recovery through the mass account](../../../production/clean-manufacturing-and-contamination-control/cleaning/Carry-blank-volume-area-and-recovery-through-the-mass-account.lingua#r_7MYKMA105SHGW3CRKG9FMNPTCF).
+
 } r_53MS427PJ81EAEKEBXZFCK78W6

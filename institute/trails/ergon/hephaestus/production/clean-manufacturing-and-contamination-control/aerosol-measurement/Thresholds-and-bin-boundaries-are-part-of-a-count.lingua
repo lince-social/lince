@@ -1,0 +1,19 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Thresholds and bin boundaries are part of a count (@cm-optical-thresholds: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "A-condensation-counter-grows-particles-to-detect-them.lingua#r_35HXRPRA72SS0K0CJQH7N1TPGD") { r_79V98M79MZXQHY3VWA1BT2S708
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), calibration parameters and optical sizing. Revisit [A distribution is more than an average size](../foundations/A-distribution-is-more-than-an-average-size.lingua#r_1AXAAEZSZECHDWQ0GVPERT8S5Z) and [Filter efficiency needs a size spectrum and a measurement basis](../facilities/Filter-efficiency-needs-a-size-spectrum-and-a-measurement-basis.lingua#r_1ZJAQ08ES8NY5GGG51TSBFF322).
+
+A channel labelled above a diameter threshold includes an inference from response to size. Resolution and threshold uncertainty make the boundary probabilistic. Near that boundary, a small change in response can move many counts between bins without any change in the actual population.
+
+Under a simple additive normal pulse-error model Y = s(d) + ε with standard deviation σ, the probability of exceeding threshold h is η(d) = Φ((s(d) − h)/σ). At s(d) = h, half the particles exceed the threshold in this model. The electronics threshold, detection efficiency and assigned size are related but distinct.
+
+Nested cumulative channels are statistically dependent. If independent disjoint-bin counts are A and B, then channels X = A + B and Y = B have cov(X,Y) = var(B). Treating their difference X − Y as two independent measurements overstates its variance. Conversely, ratios of dependent channels require their covariance.
+
+**Example:** With Poisson means 80 and 20 for the disjoint bins, var(X) = 100, var(Y) = 20 and cov(X,Y) = 20. The difference has variance 80, not 120. This assumes shared counting with nested channels, not separate instruments taking independent samples.
+
+**Work:** Convert cumulative counts into disjoint counts and preserve the covariance. Move a threshold across a narrow population and show how counts change. Explain why differences between two instruments can reflect threshold calibration even when total particle numbers agree.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A condensation counter grows particles to detect them](A-condensation-counter-grows-particles-to-detect-them.lingua#r_35HXRPRA72SS0K0CJQH7N1TPGD).
+
+} r_79V98M79MZXQHY3VWA1BT2S708

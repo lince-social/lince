@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Polymer and composite parts, cure, cooling and direction (@mech-polymer-production: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "Additive-processes-build-direction-postprocessing-and-evidence.lingua#r_1K436N4414SJHM613XE7WBREV7") { r_1BQ62T9VFMC1D7PMNECM4WKKVZ
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), injection-molding and thermoforming lectures; revisit the earlier polymer/composite constitutive account and relevant source chapters.
+
+Polymer processes depend on rheology, heat transfer, shrinkage and material history. Thermoplastics, thermosets and elastomers require different descriptions. Filled or layered composites add orientation, interface and cure effects. A part printed or molded to the same shape as a metal part does not inherit the metal's stiffness or life.
+
+For diffusion-dominated cooling with similar boundary conditions, characteristic time scales with thickness squared divided by thermal diffusivity. Doubling wall thickness can increase that scale by four; actual cycle time also depends on filling, cooling channels, ejection conditions and crystallization or cure.
+
+**Work:** Compare molded, thermoformed, machined-polymer and laminated versions of a cover or light support. Identify draft, undercuts, weld lines, local thick regions and oriented reinforcement. Explain which dimensions change during cooling, moisture uptake or service. Select inspection and conditioning that match the actual functional temperature and load.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Additive processes, build direction, postprocessing and evidence](Additive-processes-build-direction-postprocessing-and-evidence.lingua#r_1K436N4414SJHM613XE7WBREV7).
+
+} r_1BQ62T9VFMC1D7PMNECM4WKKVZ

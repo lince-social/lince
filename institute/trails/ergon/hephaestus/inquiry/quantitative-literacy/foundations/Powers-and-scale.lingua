@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Exponents, scientific notation, and orders of magnitude (@ql-powers: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-prealgebra, #source @ql-source-algebra, #source @ql-source-si, #quantitative-literacy "Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_55FCWM0V49GJXKV3YN0KYGE006
+Exponents, scientific notation, and orders of magnitude (@ql-powers: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-prealgebra, #source @ql-source-algebra, #source @ql-source-si, #quantitative-literacy "Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1", #clean-manufacturing "Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_55FCWM0V49GJXKV3YN0KYGE006
 **Read:** Prealgebra 2e chapter 10's exponent rules and scientific notation, especially Integer Exponents and Scientific Notation. Continue with Algebra and Trigonometry 2e chapter 1's exponent and radical sections. Consult the SI Brochure prefix table alongside the numerical work.
 
 An exponent describes repeated multiplication or its extension. In scientific notation a nonzero value is written a × 10^n with 1 ≤ |a| < 10. Multiplication adds exponents; addition first needs compatible powers. Write the unit outside the numerical exponent expression so a power of ten cannot be confused with a power of the unit.
@@ -14,4 +14,7 @@ An order-of-magnitude estimate states a scale and the approximation being made. 
 **Continue:** [Units, dimensions, and equations that can make sense](Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
 
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in clean manufacturing:** [Units, dimensions, and equations that can make sense](Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
 } r_55FCWM0V49GJXKV3YN0KYGE006

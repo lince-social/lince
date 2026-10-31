@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Fastener assembly, torque, friction and retained clamp force (@mech-fastener-assembly: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Fastener-Design-Manual-NASA.lingua#r_78PXGW34SMJ44D965DX01WGZH5", #mechanical-engineering "Pins-interference-fits-and-contact-load-transfer.lingua#r_163CTK1HTN3FZTB5FVK0GT5HKZ") { r_78399315PYGFJH6YT01P90F3V7
+**Read:** [Fastener Design Manual — NASA-RP-1228](../sources/Fastener-Design-Manual-NASA.lingua#r_78PXGW34SMJ44D965DX01WGZH5), materials, coatings, lubrication, locking, torque and fastener groups. Read the included erratum as part of the source, and use the actual joint specification when applying a method.
+
+Torque is an installation input, while clamp force is a mechanical state. The shorthand T=KFd groups thread and bearing-surface friction with geometry. K is not a universal material constant. With T=20 N·m and nominal diameter d=10 mm, illustrative K values of 0.15 and 0.25 imply 13.333 and 8 kN respectively, before other uncertainties.
+
+Thread engagement, stripping, bearing under the head, washer behavior and joint slip need their own load paths. Locking features address particular loosening mechanisms; they do not prove that the desired preload was reached or retained. Coating, lubricant and reuse can change the torque–tension relation.
+
+**Work:** Compare calibrated torque, angle, elongation and direct-tension methods for a declared assembly. Describe what each actually measures and how its uncertainty reaches clamp force. Analyze a fastener group under force and moment, including a case where equal sharing fails. Plan tightening sequence, access, inspection and disassembly without treating a historical torque table as a specification for an unspecified joint.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Pins, interference fits and contact load transfer](Pins-interference-fits-and-contact-load-transfer.lingua#r_163CTK1HTN3FZTB5FVK0GT5HKZ).
+
+} r_78399315PYGFJH6YT01P90F3V7

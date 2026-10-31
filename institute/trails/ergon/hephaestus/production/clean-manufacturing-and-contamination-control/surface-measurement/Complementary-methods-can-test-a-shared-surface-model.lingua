@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Complementary methods can test a shared surface model (@cm-surface-convergence: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #source "../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV", #clean-manufacturing "../../../inquiry/metrology/calibration/Validation-and-verification.lingua#r_696ZGSGKBG8BPXN1MF2RZNK69W") { r_1GC9KZT5NSDZTVC1X0BMPMQFJR
+**Read:** [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), paired analytical observations; [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5), choice of method; [Attenuation and information depth in XPS — Cedric Powell](../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV), geometry and depth.
+
+Combine measurements through a model of the same specimen, state and quantity. Gravimetric extracted mass, projected area, an infrared spectrum and an electron attenuation ratio are not interchangeable numbers. Their agreement becomes informative when the model predicts each observation with its own sampling and response.
+
+For a uniform film of density ρ and thickness h, areal mass is σ = ρh. With ρ = 1 g/cm³ and h = 2 nm, σ = 0.2 µg/cm². For a patchy film, mass relates to mean thickness if density is uniform, whereas attenuation can return a smaller effective thickness. This discrepancy can expose a faulty uniform-film assumption rather than a failed instrument.
+
+An extracted sample can also include material from crevices or from a deeper layer that a surface-sensitive probe scarcely observes. Conversely, incomplete recovery can remove only a fraction of what an in-place observation detects. Match the boundaries before attributing every disagreement to error.
+
+**Work:** Build a benign hypothetical film with known area fractions, thicknesses and density. Predict mass, image coverage and two attenuation observations. Introduce an uncertain extraction recovery and ask which parameters remain identifiable. Choose the next observation for its ability to distinguish competing explanations.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Validate the intended use and verify the particular implementation](../../../inquiry/metrology/calibration/Validation-and-verification.lingua#r_696ZGSGKBG8BPXN1MF2RZNK69W).
+
+} r_1GC9KZT5NSDZTVC1X0BMPMQFJR

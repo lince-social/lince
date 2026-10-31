@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Byproducts, precursors and linked treatment decisions (@wu-byproducts: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "A-barrier-validation-and-operating-evidence-study.lingua#r_1NY6CT7T1V054Q0RJPVHGWWFV0") { r_5KA7KPJQHCMBQQ04QNFJZ6PD28
+**Read:** [WHO drinking-water guidelines](../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F), chemical aspects and Annex 5; compare the earlier coagulation, adsorption and gas-transfer readings. Read the fact sheets for the constituents relevant to the selected source instead of treating all byproducts as one substance.
+
+A treatment action changes a reaction environment. Oxidants can transform natural organic matter or inorganic constituents, and the outcome depends on precursor composition, dose, contact history and conditions. Controlling one measured endpoint does not show that all important transformations are favourable. The microbial and chemical accounts must be considered together rather than optimizing one by ignoring the other.
+
+**Work:** For a hypothetical source change, draw precursor inputs, treatment transformations and monitoring points. Compare removing a precursor upstream, changing a process condition and changing disinfectant strategy. List the evidence needed for each alternative, including distribution effects. Separate formation potential measured under a laboratory protocol from concentration under actual travel and storage conditions.
+
+Build a study using published data with both beneficial treatment outcomes and unintended products. Explain which variables are confounded and propose an observation that could distinguish the explanations. The result should identify a defensible comparison and unresolved tradeoffs, not prescribe an unsupported dose or a universal treatment sequence.
+
+**Continue:** [A barrier validation and operating evidence study](A-barrier-validation-and-operating-evidence-study.lingua#r_1NY6CT7T1V054Q0RJPVHGWWFV0).
+} r_5KA7KPJQHCMBQQ04QNFJZ6PD28

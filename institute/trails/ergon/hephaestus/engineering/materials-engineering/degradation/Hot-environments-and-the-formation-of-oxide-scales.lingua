@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Hot environments and the formation of oxide scales (@mat-hot-oxidation: 0, is #chapter, #part-of @materials-engineering, #source "../../../materials/metals-and-metallurgical-production/sources/Environmental-Degradation-of-Materials-NPTEL.lingua#r_06WSRAYJJKWNTT146BKY5BN4QQ", #source "../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Diffusion-through-a-growing-scale-and-rate-law-units.lingua#r_6EAJ12SGY0B052E616AMGN50CN") { r_1ZC6J4G332TKN2X45F7BJR9CZ7
+**Read:** [Environmental Degradation of Materials — Kallol Mondal, NPTEL](../../../materials/metals-and-metallurgical-production/sources/Environmental-Degradation-of-Materials-NPTEL.lingua#r_06WSRAYJJKWNTT146BKY5BN4QQ), high-temperature degradation; [Oxide-scale growth and discontinuities — Ulrich, Glatzel and Galetz](../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K); [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), section 5.6 on chemical attack.
+
+High-temperature reaction can create a protective barrier or a porous, cracked, volatile or poorly attached product. Identify the gas composition and relevant activities rather than calling every furnace atmosphere air. Competing oxidation, sulfidation, carburization or nitridation depend on the actual material/environment; an oxide-stability diagram does not by itself establish protection.
+
+**Work:** Write a balanced reaction and account for species entering and leaving an exposed specimen. Relate the retained scale to its underlying composition and defect transport. Explain why a favorable oxide volume ratio alone is insufficient to prove adhesion or sustained protection. Compare a constant-temperature exposure with a changing-temperature service history and list the additional observations needed to interpret each.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Diffusion through a growing scale and rate-law units](Diffusion-through-a-growing-scale-and-rate-law-units.lingua#r_6EAJ12SGY0B052E616AMGN50CN).
+
+} r_1ZC6J4G332TKN2X45F7BJR9CZ7

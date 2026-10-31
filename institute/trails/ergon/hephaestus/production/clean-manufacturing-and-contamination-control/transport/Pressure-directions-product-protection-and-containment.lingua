@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Pressure directions, product protection and containment (@cm-pressure: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "Contact-and-recontamination-after-cleaning.lingua#r_6GB54D3SVWGQ9ENHECKPQYWJ90") { r_0KK91FXJ7R5G0DK6AMEDTBKA9H
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), air systems; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), premises; [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), containment boundaries. Revisit [Pressure reference, stress and a pressure measurement](../../../physics/fluid-dynamics/statics/Pressure-reference-stress-and-a-pressure-measurement.lingua#r_5KKK4Q5KPBS1CCXVZ72RYBJMKK).
+
+A pressure difference can influence flow through a path, but the path's resistance, openings and changing boundary conditions determine the actual transfer. An indicator reading at two locations does not describe every leak, doorway or transient.
+
+Keeping unwanted material away from a product and keeping hazardous material inside a boundary are different functions. A facility may need both, with separate barriers and controlled transfers. Choose directions and interfaces from those functions and the process evidence, not from a universal rule that “clean means positive pressure”.
+
+**Work:** Draw a product-protection boundary and a containment boundary. Identify their intended flows, transfers and possible conflicts. Analyze opening an access point qualitatively and state what measurements would show whether the intended function remains established.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Contact and recontamination after cleaning](Contact-and-recontamination-after-cleaning.lingua#r_6GB54D3SVWGQ9ENHECKPQYWJ90).
+
+} r_0KK91FXJ7R5G0DK6AMEDTBKA9H

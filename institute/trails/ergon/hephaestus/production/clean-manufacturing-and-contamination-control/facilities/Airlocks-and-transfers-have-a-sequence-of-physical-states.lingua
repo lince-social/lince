@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Airlocks and transfers have a sequence of physical states (@cm-airlock-state: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Observe-flow-where-the-process-and-the-boundary-actually-are.lingua#r_1HV5QEQ2V7PBHXCAC15FVHBKBR") { r_7WTWHCP2R46ZH8RK87B41Q6NMG
+**Read:** [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), airlocks and material/personnel transfer; [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), transient airflow and contaminants.
+
+An airlock's condition changes during entry, closing, purging, waiting and exit. The item and person can carry material independent of the air. Interlocking doors can prevent a particular simultaneous opening but does not itself demonstrate adequate exchange, clean surfaces or readiness.
+
+An ideal closed, mixed airlock with constant clean supply has the same exponential recovery balance already derived. For hypothetical V=10 m³ and Q=0.5 m³/s without an internal source, reducing the concentration gap by 99% takes approximately 92.10 s. Actual exposure during transfer must be measured under its own conditions.
+
+**Work:** Draw the state sequence, including interruption and a door that does not seal as assumed. Account for air, surfaces and the object separately. Derive a condition for advancing to the next physical state and identify the observation supporting it. Evaluate throughput without replacing evidence by an arbitrary waiting time.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Observe flow where the process and the boundary actually are](Observe-flow-where-the-process-and-the-boundary-actually-are.lingua#r_1HV5QEQ2V7PBHXCAC15FVHBKBR).
+
+} r_7WTWHCP2R46ZH8RK87B41Q6NMG

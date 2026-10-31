@@ -1,0 +1,19 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Cracks, stress intensity and energy release (@mech-fracture-linear: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "../../../materials/metals-and-metallurgical-production/testing/Fracture-impact-specimen-constraint-and-structural-meaning.lingua#r_2007KW2CS5BSW54WT8ZHAQQJ18", #materials-engineering "../../../materials/metals-and-metallurgical-production/testing/Fracture-impact-specimen-constraint-and-structural-meaning.lingua#r_2007KW2CS5BSW54WT8ZHAQQJ18") { r_60ER9GS96VCBQZ4W33NH72MKP9
+**Read:** [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Introduction to Fracture Mechanics and Statistics of Fracture; [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 9.3–9.4. Continue into the shared fracture/impact Record for experimental meaning and validity.
+
+Linear elastic fracture mechanics characterizes a crack-tip field with mode-dependent stress-intensity factors. For a declared mode-I geometry, K_I = Yσ√(πa), with the crack-size definition and geometry factor Y stated. K has units of stress times square root of length. Crack length, half-length, surface depth and remaining ligament are not interchangeable inputs.
+
+For a central crack of total length 2a in an ideal infinite plate, Y = 1. At a = 1 mm and remote tension 100 MPa, K_I is about 5.605 MPa√m. Under the same model and load, a critical value 30 MPa√m would correspond to a ≈ 28.65 mm. Before accepting that result, check whether an infinite-plate geometry and small-scale yielding remain plausible at that size.
+
+For isotropic pure mode I, energy release rate G = K_I²/E′, with E′ = E for plane stress and E/(1−ν²) for plane strain. A toughness comparison needs the appropriate material condition, thickness/constraint, temperature, rate, environment and valid test definition.
+
+**Work:** Derive the dependence on stress and crack size, compare plane stress and plane strain energy release, and inspect the near-tip plastic-zone scale. Explain why a Charpy absorbed-energy value cannot simply replace a fracture-toughness value with different units and validity conditions.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Separate impact energy, fracture mechanics, mechanism, and whole-structure performance](../../../materials/metals-and-metallurgical-production/testing/Fracture-impact-specimen-constraint-and-structural-meaning.lingua#r_2007KW2CS5BSW54WT8ZHAQQJ18).
+
+**Continue in materials engineering:** [Separate impact energy, fracture mechanics, mechanism, and whole-structure performance](../../../materials/metals-and-metallurgical-production/testing/Fracture-impact-specimen-constraint-and-structural-meaning.lingua#r_2007KW2CS5BSW54WT8ZHAQQJ18).
+
+} r_60ER9GS96VCBQZ4W33NH72MKP9

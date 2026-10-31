@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Acoustic assistance can remove particles and damage structures (@cm-acoustic-clean: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #source "../sources/Particle-Removal-and-MEMS-Damage-Hirano.lingua#r_0RH4K2MTZZG42NZ4MMZE1K6G9E", #clean-manufacturing "A-microstructure-cleaning-study-needs-two-success-criteria.lingua#r_0Z5WZVMSW07NRCZPC96C84F4S9") { r_47PB7JEPT28DN4FHMPQVN4J2WB
+**Read:** [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2), Vereecke and colleagues on printed pages 145–152 and the neighboring complete particle-removal studies; [Particle removal and MEMS damage — Hirano and colleagues](../sources/Particle-Removal-and-MEMS-Damage-Hirano.lingua#r_0RH4K2MTZZG42NZ4MMZE1K6G9E). Use the full Brennen chapters assigned by the shared cavitation Record.
+
+Acoustic fields can generate streaming, oscillatory flow and bubble dynamics. Frequency alone does not specify the stresses reaching a surface. Transducer placement, coupling, bath geometry, dissolved gas, waveform and loading affect the field and its consequences.
+
+Removal and structural damage are distinct observables. A process can improve particle counts while bending a fine line, breaking a cantilever or changing a film. A spatial average can hide a damaging region or an incompletely cleaned region.
+
+**Work:** Compare two documented systems using their actual geometry, liquid conditions, particle population and damage specimen. Separate a measured acoustic quantity from electrical power supplied to the transducer. Explain which evidence supports cavitation or another mechanism, and where that attribution remains a hypothesis. Construct both removal and damage maps before selecting a process window.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A microstructure-cleaning study needs two success criteria](A-microstructure-cleaning-study-needs-two-success-criteria.lingua#r_0Z5WZVMSW07NRCZPC96C84F4S9).
+
+} r_47PB7JEPT28DN4FHMPQVN4J2WB

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Exposure histories, surfaces and service boundaries (@mat-exposure: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #source "../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "Reaction-tendency-is-not-a-deterioration-rate.lingua#r_7EDRCV87WW45YA7J7K2WKV0M7C") { r_6J73991NK6H2B8FQXE4MT8QW3P
+**Read:** [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), the guide's environment and operating context; [Outdoor polymer service-life inference — Duan and colleagues](../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT), recorded outdoor covariates; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapters 14–16.
+
+The environment at a surface can differ greatly from a weather report or bulk-fluid measurement. Crevices, deposits, evaporation, condensation, shielding and local heating change chemistry and transport. Cleaning, storage and shutdown can be more demanding than steady operation. Track wet/dry cycles and their order, not only a mean humidity or temperature.
+
+**Work:** Draw the boundary around a component and its surroundings, then another around a small vulnerable region. Specify relevant temperatures, chemical activities, flow, radiation and loading with their temporal resolution and uncertainty. Compare two histories with the same averages but different peaks or sequences. Explain which observations are missing before assuming equivalent damage. Distinguish externally imposed conditions from local conditions produced by the reacting material itself.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Reaction tendency is not a deterioration rate](Reaction-tendency-is-not-a-deterioration-rate.lingua#r_7EDRCV87WW45YA7J7K2WKV0M7C).
+
+} r_6J73991NK6H2B8FQXE4MT8QW3P

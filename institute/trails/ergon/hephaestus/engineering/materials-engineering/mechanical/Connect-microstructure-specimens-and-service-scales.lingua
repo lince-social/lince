@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Connect microstructure, specimens and service scales (@mat-response-scales: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "../study/Join-material-families-and-mechanical-evidence.lingua#r_7GCWKPEYC5TK08YKMHXSB3VWP9") { r_6FV480V38FP5DNWVB527TPRKXM
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), constitutive and failure chapters; [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), special-topic project guidance; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapters 5 and 7; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), quality and design discussions.
+
+Homogenization replaces a spatially varying body with an effective description for a stated question and scale. The representative volume must be large enough to sample relevant heterogeneity, yet small enough compared with the macroscopic variation being modeled. Damage, rare flaws and long-range correlations can defeat a simple representative-volume assumption.
+
+A microscopic modulus, a coupon curve and a component response are related through boundary conditions, structure and uncertainty. Processing texture, surface layers, joining zones and residual stress can make a single bulk property inadequate. Evidence should follow the quantities that the actual prediction needs.
+
+**Work:** Trace one microstructure-to-performance claim across at least three scales. Identify the equations and information discarded at each transition. Compare a mean response with a lower-tail failure question, and explain why agreeing with one does not verify the other. Carry the missing information into the advanced studies.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Join material families and mechanical evidence](../study/Join-material-families-and-mechanical-evidence.lingua#r_7GCWKPEYC5TK08YKMHXSB3VWP9).
+
+} r_6FV480V38FP5DNWVB527TPRKXM

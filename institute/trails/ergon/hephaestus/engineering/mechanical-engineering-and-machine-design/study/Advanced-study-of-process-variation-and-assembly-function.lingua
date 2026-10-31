@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of process variation and assembly function (@mech-manufacturing-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #mechanical-engineering "Defend-an-integrated-machine-through-its-service.lingua#r_63N2NG8PE1A88PY32FVFEX15NA") { r_3VSEQQWX9D03SN91Q6Y34Q1Q77
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), complete process/variation/quality sequence and homework; [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), full guide; [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), exact constraints and design examples.
+
+Choose a machine interface made by at least two operations and completed by assembly. Explain how tool geometry, workholding, thermal state, material history and inspection establish the delivered functional variation. Compare two process routes under the same required function and production scale.
+
+**Derive:** Connect a geometric error field to fit, motion or contact using an explicit model. Separate systematic and random variation, covariance, measurement uncertainty and inspection selection. Predict both individual-part behavior and assembly yield with assumptions that can be examined. Compare a deterministic bound, a distributional model and resampling of genuinely available data.
+
+**Investigate:** Characterize multiple parts or reproduce a documented process study with declared data access. Hold out later parts or another setup to test transfer. Examine a rejected item and a passing item near the boundary, then revise the design or process. Account for tooling, accepted output, rework and material recovery. A favorable mean dimension alone does not answer the production question.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend an integrated machine through its service](Defend-an-integrated-machine-through-its-service.lingua#r_63N2NG8PE1A88PY32FVFEX15NA).
+
+} r_3VSEQQWX9D03SN91Q6Y34Q1Q77

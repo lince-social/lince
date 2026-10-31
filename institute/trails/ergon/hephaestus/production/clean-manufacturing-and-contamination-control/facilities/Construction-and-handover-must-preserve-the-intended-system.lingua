@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Construction and handover must preserve the intended system (@cm-construction-handover: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "../studies/Investigate-air-cleaning-transfer-and-facility-resource-use.lingua#r_5SCEDM2YYTJ153K9ZPYYR2N8JK") { r_6DHN0SKFD5N9XXM4Y7FJ17HXMQ
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), component acceptance and installation; [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), design and commissioning context.
+
+Delivered components become an installed system through fabrication, storage, assembly, cleaning, testing and documentation. Each stage can change material condition, seals, flow distribution and access. A drawing alone is not evidence of the resulting configuration.
+
+Keep the actual path and material identities, installed settings, test locations, baseline observations and known limitations available for operation. Distinguish a component certificate, installed integrity, room performance and product evidence.
+
+**Work:** Choose one filter housing or utility connection and reconstruct the evidence from receipt to use. Identify a defect that component testing would miss but an installed test could reveal. Carry the resulting questions into the next formation on measurement, qualification and continuing monitoring.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Investigate air cleaning, transfer and facility resource use](../studies/Investigate-air-cleaning-transfer-and-facility-resource-use.lingua#r_5SCEDM2YYTJ153K9ZPYYR2N8JK).
+
+} r_6DHN0SKFD5N9XXM4Y7FJ17HXMQ

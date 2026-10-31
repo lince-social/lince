@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Explain temperature dependence and interpret an activation model (@gc-arrhenius: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "Mechanisms-intermediates-and-identifiability.lingua#r_5ASWQH1QT4Z4Z2PWK425QBE2WJ") { r_69Y6QZ24G1QTE9TAJJM4A6WGDJ
+Explain temperature dependence and interpret an activation model (@gc-arrhenius: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8", #general-chemistry "Mechanisms-intermediates-and-identifiability.lingua#r_5ASWQH1QT4Z4Z2PWK425QBE2WJ", #materials-engineering "../../../engineering/materials-engineering/kinetics/Random-walks-mobility-and-chemical-driving.lingua#r_6P3NBZ5E1990Q8JQR3KP3AZ35S", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Residence-time-activation-and-surface-coverage.lingua#r_48MYBH8H4756WWNK4ABCM2K1RT") { r_69Y6QZ24G1QTE9TAJJM4A6WGDJ
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 12’s collision, activation, and temperature sections; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), activation energy and Arrhenius treatment; [Principles of Chemical Science — MIT 5.111SC, Fall 2014](../sources/MIT-5-111SC.lingua#r_312Z44VT67CCX60KG27PWM6NZ8), the corresponding Unit V lectures.
 
 The Arrhenius form k = A exp(−E_a/RT) describes many reaction-rate constants over a useful range. Identify which constant, units, reaction regime, and temperature interval are being fitted. The parameters are model quantities; an observed activation energy need not equal a single bond dissociation energy or one elementary barrier in a complex mechanism.
@@ -16,4 +16,9 @@ Read the full activation/collision treatment and MIT kinetics lectures. Return t
 **Continue:** [Test a reaction mechanism against more than the overall equation](Mechanisms-intermediates-and-identifiability.lingua#r_5ASWQH1QT4Z4Z2PWK425QBE2WJ).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+**Continue in materials engineering:** [Random walks, mobility and chemical driving](../../../engineering/materials-engineering/kinetics/Random-walks-mobility-and-chemical-driving.lingua#r_6P3NBZ5E1990Q8JQR3KP3AZ35S).
+
+
+**Continue in gas and vacuum systems:** [Residence time, activation and surface coverage](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Residence-time-activation-and-surface-coverage.lingua#r_48MYBH8H4756WWNK4ABCM2K1RT).
+
 } r_69Y6QZ24G1QTE9TAJJM4A6WGDJ

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Sustainable Materials Selection in Manufactured Products — DOE, 2023 (@mat-selection-doe: 0, is #reference, #part-of @mat-sources) { r_04ADQ1BN156GM7AVH5N2T7EAJZ
+Heather Liddell, Itoro Atakpa, Sam Gage, Kayla Huang, Scott Morgan, Diane Sellers, Sabine Brueske, Alberta Carpenter and Joe Cresko. *Sustainable Materials Selection in Manufactured Products: A Framework for Design-Integrated Life Cycle Thinking with Case Studies*, August 2023. [Complete DOE report](https://www.energy.gov/sites/default/files/2023-09/Materials%20Substitution%20Working%20Report_August%202023_final_compliant_v2_0.pdf), 87 PDF pages.
+
+Read the whole report, reconstructing the insulation-panel, shipping-pallet and automotive B-pillar cases. Compare the assumptions that turn material properties into a required component quantity. A screening calculation remains distinct from a complete product qualification or life-cycle assessment.
+
+Contents, section 2.2, selected pallet scope and B-pillar mass/performance passages were inspected on 30 October 2026. Tables 23–24 on printed page 52 were also inspected visually. The report explicitly assumes equal mechanical properties for its primary/secondary variants and identifies that assumption for refinement. Those example values are not certified grade data.
+
+Authorized public government report; some images carry separate commercial credits, so no blanket open licence is claimed. Keep all source files external. Manufacturing bandwidth quantities are not automatically whole-life inventories; historical costs and scenarios retain their dates.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_04ADQ1BN156GM7AVH5N2T7EAJZ

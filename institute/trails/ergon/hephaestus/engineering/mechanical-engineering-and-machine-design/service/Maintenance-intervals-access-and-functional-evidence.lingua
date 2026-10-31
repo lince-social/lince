@@ -1,0 +1,20 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Maintenance intervals, access and functional evidence (@mech-maintenance: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY", #mechanical-engineering "Failure-investigation-preserves-chronology-and-alternatives.lingua#r_2YM12BJW2NZH0A7FAC0K9DZC68", #materials-engineering "../../materials-engineering/service/Failure-evidence-links-history-mechanism-and-alternatives.lingua#r_6JQNH0AAKYQB85CXPHJJBXK1Q6", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Maintenance-tasks-must-address-an-identified-mechanism.lingua#r_6XK2YC9A7KJD7V60X4801TZJ37") { r_0GJDWMZFSFC6Y6DYH6G07BP5F1
+**Read:** [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), lubrication, inspection and replacement; [Diagnostic and prognostic capabilities — Vogl, Weiss and Helu](../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY), maintenance decisions and validation.
+
+Choose maintenance from failure mechanisms, consequences, detectability and the work needed to restore function. Calendar time, operating hours and load cycles describe different exposure. Inspection can itself disturb alignment, cleanliness or preload, so more frequent intervention is not automatically better.
+
+For an ideal repairable process alternating independent operating and repair intervals, long-run availability is mean operating time divided by the sum of mean operating and repair times. With 100 h and 5 h means it is about 0.9524. This simple ratio does not describe startup quality, scheduled downtime, dependent failures or stock delays without extending the model.
+
+**Work:** Compare scheduled replacement, condition-based intervention and run-to-failure for three different components. Justify each using its function and failure evidence. Include spare-part identity, access, retained settings and post-maintenance verification. Calculate the effect of a supply delay and identify a design change that reduces restoration time without masking a recurring cause.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Failure investigation preserves chronology and alternatives](Failure-investigation-preserves-chronology-and-alternatives.lingua#r_2YM12BJW2NZH0A7FAC0K9DZC68).
+
+**Continue in materials engineering:** [Failure evidence links history, mechanism and alternatives](../../materials-engineering/service/Failure-evidence-links-history-mechanism-and-alternatives.lingua#r_6JQNH0AAKYQB85CXPHJJBXK1Q6).
+
+
+**Continue in gas and vacuum systems:** [Maintenance tasks must address an identified mechanism](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Maintenance-tasks-must-address-an-identified-mechanism.lingua#r_6XK2YC9A7KJD7V60X4801TZJ37).
+
+} r_0GJDWMZFSFC6Y6DYH6G07BP5F1

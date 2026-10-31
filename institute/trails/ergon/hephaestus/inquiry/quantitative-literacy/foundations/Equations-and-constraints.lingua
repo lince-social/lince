@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Equations, unknowns, systems, and constraints (@ql-equations: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-2, #source @ql-source-prealgebra, #source @ql-source-algebra, #quantitative-literacy "Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2") { r_2XGYVPEJSA3GYYV0K6PYXCHXVZ
+Equations, unknowns, systems, and constraints (@ql-equations: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-2, #source @ql-source-prealgebra, #source @ql-source-algebra, #quantitative-literacy "Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/transport/A-well-mixed-volume-with-generation-and-removal.lingua#r_4CMY99W2FJ2EE3KNTFAJP15FGZ") { r_2XGYVPEJSA3GYYV0K6PYXCHXVZ
 **Read:** Math for Trades, Volume 2, Working with Equations completely. Continue with Prealgebra 2e chapter 8 and Algebra and Trigonometry 2e chapter 2, then chapter 11's two- and three-variable linear systems. Work verbal, symbolic, and application exercises.
 
 An expression can be evaluated; an equation asserts an equality that may constrain unknowns. State the allowed domain before manipulating it. Dividing by a symbol can discard the case where it is zero, and squaring can introduce a solution that fails the original equation. Substitute every proposed solution back into the original physical conditions.
@@ -14,4 +14,7 @@ Nonnegativity, capacity, integer counts, and specification limits restrict feasi
 **Continue:** [Functions, tables, domains, and inverse questions](Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2).
 
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in clean manufacturing:** [A well-mixed volume with generation and removal](../../../production/clean-manufacturing-and-contamination-control/transport/A-well-mixed-volume-with-generation-and-removal.lingua#r_4CMY99W2FJ2EE3KNTFAJP15FGZ).
+
 } r_2XGYVPEJSA3GYYV0K6PYXCHXVZ

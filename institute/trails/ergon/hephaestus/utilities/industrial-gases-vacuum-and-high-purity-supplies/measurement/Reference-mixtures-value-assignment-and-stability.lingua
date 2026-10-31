@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Reference mixtures, value assignment and stability (@gas-reference-values: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #industrial-gases-and-vacuum "Blanks-recovery-memory-and-the-observed-stream.lingua#r_1FT0TW15Q9X0Y6A6DNAT4Z79HX") { r_483X32DBFKZKQ49KXTZJMEAZBD
+**Read in full:** [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), including certification, stability and uncertainty; revisit [Gas-mixture preparation, value assignment and stability](../production/Gas-mixture-preparation-value-assignment-and-stability.lingua#r_0SCKEC9ZMSTEFVJM88CVJY2D93).
+
+A reference mixture needs a defined composition value, uncertainty, traceability and validity conditions. Preparation by mass or amount supplies one route to a value; analytical comparison and stability evidence test what the package actually delivers. Those tasks address different possible errors.
+
+Cylinder surfaces, adsorption, reaction, pressure history and regulator/sample-line behavior can make delivered composition differ from an assumed homogeneous inventory. A reference certificate belongs to the specified package and use conditions. It is not an unlimited guarantee after every transfer or change.
+
+Dilution propagates both the reference's uncertainty and the uncertainty of flows, other gas composition and mixing. Shared references create correlations between calibration points. Calling each point an independent standard can understate uncertainty in a fitted response.
+
+**Work:** Follow one hypothetical reference from preparation through value assignment, storage, withdrawal and use in calibration. Separate the observations supporting composition, homogeneity and stability. Derive the covariance between two diluted points made from the same uncertain stock mixture.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Blanks, recovery, memory and the observed stream](Blanks-recovery-memory-and-the-observed-stream.lingua#r_1FT0TW15Q9X0Y6A6DNAT4Z79HX).
+
+} r_483X32DBFKZKQ49KXTZJMEAZBD

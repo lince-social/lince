@@ -1,0 +1,11 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Engineering Statics — Baker and Haynes (@mech-statics-book: 0, is #reference, #part-of @mech-sources) { r_3DXGKGQSPPA9YDNH2WSB8XRN80
+Daniel W. Baker and William Haynes. Engineering Statics: Open and Interactive. [Author site](https://engineeringstatics.org/) · [Complete PDF](https://engineeringstatics.org/pdf/statics.pdf) · [Source repository](https://github.com/dantheboatman/EngineeringStatics).
+
+The inspected PDF is dated 26 September 2026. Its cover, licence, contents and selected statics passages were inspected on 30 October 2026; a temporary reading copy was retained outside the repository. The ten chapters proceed from basic quantities and vectors through equilibrium, moments, structures, centroids, internal actions, friction and geometric inertia. Work the whole text and exercises progressively.
+
+Text is CC BY-NC-SA 4.0; GeoGebra components are identified as CC BY-NC-SA 3.0 with additional component notices. Keep attribution and the actual edition. The PDF gives a static reading version; interactive examples have their own online/software requirements. The book supplies a statics foundation, not a complete machine-design education.
+
+**Return:** [Mechanical-engineering sources](../Sources.lingua#r_06RZYPZEFNMZ6MZ690QB1WN1Z2).
+} r_3DXGKGQSPPA9YDNH2WSB8XRN80

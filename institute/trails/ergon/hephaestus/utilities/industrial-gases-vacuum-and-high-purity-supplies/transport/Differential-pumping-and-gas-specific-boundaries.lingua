@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Differential pumping and gas-specific boundaries (@gas-differential: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "../studies/Defend-a-vacuum-transport-account.lingua#r_7M3TZYFEPWVTK808QB3MDMF7CN") { r_5EJKA3QXDNNHFF5R8YF0JV296Q
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), conductance and applications; [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), partial-pressure analysis; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), distributed sources.
+
+Several pumped volumes separated by restrictions can maintain different gas environments while allowing a beam, sample or other useful connection. The pressure ratio comes from conductance, effective pumping, imposed flow and local sources. It is not determined by the number of stages alone.
+
+Constituents can have different molecular conductances, pumping speeds and wall interactions. A total-pressure target can conceal a limiting contaminant. Measurement ports and downstream instruments add their own conductances, gas sources and pumping effects.
+
+**Work:** Solve a two-stage steady balance for a declared gas input, then add a source in the second chamber. Repeat for two constituents with different conductance and speed. Explain how an apparently improved upstream vacuum could leave the specimen's contaminant flux unchanged. Identify measurements that would discriminate input gas, backstreaming and local release.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Defend a vacuum transport account](../studies/Defend-a-vacuum-transport-account.lingua#r_7M3TZYFEPWVTK808QB3MDMF7CN).
+
+} r_5EJKA3QXDNNHFF5R8YF0JV296Q

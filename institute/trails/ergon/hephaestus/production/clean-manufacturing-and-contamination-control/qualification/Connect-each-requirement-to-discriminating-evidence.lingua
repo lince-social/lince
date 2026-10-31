@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Connect each requirement to discriminating evidence (@cm-qualification-evidence: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #clean-manufacturing "Cover-operating-conditions-and-their-interactions.lingua#r_74E8BPWBQGCKEYXXSWSYX501ZE") { r_33HA0EAAXHMA73J2V5YW99AN6V
+**Read:** [Systems Engineering Handbook — NASA](../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), chapter 5's verification methods, analysis and reporting. Revisit [Validate the surface method for the decision it supports](../surface-measurement/Validate-the-surface-method-for-the-decision-it-supports.lingua#r_7PSDBG99EP9AFB7KGM3W5HN8S2).
+
+Inspection, analysis, demonstration and measurement support different parts of an argument. A physical inspection can establish a connection; a model can predict a consequence; a measurement can challenge the model under particular conditions. Combining them is useful when their assumptions and dependencies are visible.
+
+For each requirement, identify the observation, configuration, comparison rule and unresolved uncertainty. A simulation validated against one operating state needs additional justification before extrapolation. Reusing a supplier's result requires knowing what specimen and boundary it represents.
+
+Two apparently independent reports may share the same calibration, model or unverified assumption. Agreement then supplies less new information than two independent observations. End-to-end evidence tests interactions that separate component checks can miss.
+
+**Work:** Map an airflow, a surface-loading and a functional requirement to evidence for a benign enclosure. Include one shared reference error and one interface failure. Design an observation that can distinguish a correct collection of components from an incorrectly integrated system.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Cover operating conditions and their interactions](Cover-operating-conditions-and-their-interactions.lingua#r_74E8BPWBQGCKEYXXSWSYX501ZE).
+
+} r_33HA0EAAXHMA73J2V5YW99AN6V

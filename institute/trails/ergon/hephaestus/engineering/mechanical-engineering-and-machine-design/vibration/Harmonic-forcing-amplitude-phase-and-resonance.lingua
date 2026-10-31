@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Harmonic forcing, amplitude, phase and resonance (@mech-forced-vibration: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "Isolation-base-motion-and-force-transmission.lingua#r_3VD5F5GCYEFAF8DE89MKBF7JQE") { r_58DVFP03HYVJCJ55C1VZ9DNY3N
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 20–21 and recitation 10; [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), complex exponentials and sinusoidal response in 18.03SC.
+
+For m x_double_dot + c x_dot + kx = F₀ cos(ωt), write the steady particular response as the real part of X exp(iωt). Substitution gives X = F₀/(k − mω² + i cω). Its magnitude has length units, and its phase must use a quadrant-aware argument. The complete response also includes the transient required by the initial state.
+
+At low frequency X approaches F₀/k. At high frequency inertia dominates and the displacement is approximately opposite in phase to the force. For c > 0, forcing at ω_n gives amplitude F₀/(cω_n); the peak displacement frequency is slightly below ω_n when ζ < 1/√2. At zero damping and exact resonance no bounded steady harmonic displacement exists.
+
+With m = 2 kg, k = 800 N/m, c = 8 N·s/m and F₀ = 10 N, forcing at 20 rad/s gives 0.0625 m amplitude and a 90° lag. That travel may violate a real machine's small-motion, spring-linearity or contact assumptions. Computing it does not establish that the physical assembly can execute it.
+
+**Work:** Derive the magnitude and phase from real sine and cosine coefficients as well as complex notation. Sketch the static, resonant and high-frequency limits, compare transient and settled motion, and state how observation duration depends on damping. Separate resonance, instability and a large externally imposed motion.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Isolation, base motion and force transmission](Isolation-base-motion-and-force-transmission.lingua#r_3VD5F5GCYEFAF8DE89MKBF7JQE).
+
+} r_58DVFP03HYVJCJ55C1VZ9DNY3N

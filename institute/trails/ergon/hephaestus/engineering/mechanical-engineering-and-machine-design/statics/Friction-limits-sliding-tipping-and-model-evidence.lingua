@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Friction limits, sliding, tipping and model evidence (@mech-friction: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Area-properties-and-the-axis-they-refer-to.lingua#r_618K6RKDD6352XXPC8PWRZNHQ1") { r_5ECR1WXHQQZPEQZF5BK535CTRA
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapter 9 in full, including wedges, screws, belts and bearings. Return to specialized tribology when actual contact performance becomes the question.
+
+The elementary dry-friction model bounds static tangential force by μs N; equality applies at impending slip in that model. A stationary contact does not always carry the maximum possible friction. The normal force must follow the actual load geometry and contact conditions.
+
+For an original level-floor example, a 200 N weight with μs = 0.3 has an ideal sliding threshold 60 N for a horizontal push that adds no vertical force. If its centre of mass lies above the middle of a base of half-width 0.2 m and the push acts at height 0.8 m, the tipping threshold is 200 × 0.2 / 0.8 = 50 N. Tipping occurs first under these assumptions. A different push height changes the comparison.
+
+**Work:** Derive both thresholds from force/moment balance and test sensitivity to friction and geometry. Explain why the coefficient depends on surfaces and conditions and why this simple model does not predict wear, lubrication, contact temperature or a real bearing's life.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Area properties and the axis they refer to](Area-properties-and-the-axis-they-refer-to.lingua#r_618K6RKDD6352XXPC8PWRZNHQ1).
+
+} r_5ECR1WXHQQZPEQZF5BK535CTRA

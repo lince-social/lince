@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Supercritical cleaning requires the correct phase path (@cm-supercritical-clean: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "Aqueous-cleaning-is-a-sequence-of-controlled-material-transfers.lingua#r_6QNP3V3G9YECVJ9WAT44T8W20J") { r_080SFA4Q8M4KF3PT77S3FEZPF3
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), section 2.1 and figure 2; [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2), the complete supercritical-method articles selected on printed pages 214–278.
+
+A pure fluid is supercritical above both its critical temperature and critical pressure. A triple point has a different meaning: three phases coexist. Taborelli's prose uses triple point in the supercritical discussion while its diagram labels the appropriate region above the critical point; use the phase definition explicitly.
+
+A dense fluid's solvent behavior depends on density, temperature, pressure and composition. Adding a cosolvent changes the mixture and can create new phase boundaries or residual material. Depressurization, dissolved-soil precipitation and extraction of the substrate matter as much as the state during exposure.
+
+**Work:** Draw a qualitative pressure–temperature path and distinguish where a liquid–vapor interface exists. Then formulate a mixture/material balance for a selected proceedings experiment. Identify evidence for removal, compatibility and final residual agent. Do not transfer a pure-CO2 critical point into a multicomponent phase diagram without justification.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Aqueous cleaning is a sequence of controlled material transfers](Aqueous-cleaning-is-a-sequence-of-controlled-material-transfers.lingua#r_6QNP3V3G9YECVJ9WAT44T8W20J).
+
+} r_080SFA4Q8M4KF3PT77S3FEZPF3

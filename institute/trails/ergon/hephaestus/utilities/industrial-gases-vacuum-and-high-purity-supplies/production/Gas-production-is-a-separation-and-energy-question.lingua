@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Gas production is a separation and energy question (@gas-production-entry: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #industrial-gases-and-vacuum "Feed-air-is-a-changing-mixture.lingua#r_74TZSTYT1JYPFT357JQ7ATP965") { r_1WBQXTD5E47X0FTE6MWCDPBWQK
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), gas properties, liquefaction and separation; [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), equilibrium and transport; [Follow oxygen, nitrogen and other air-derived products through separation and use](../../../chemistry/industrial-chemistry/inorganic/Air-separation-oxygen-nitrogen-and-gas-specification.lingua#r_2WT6DXK7CD9M2VQ1Q8JSC49PS4) and [Inorganic Chemical Technology — Nanda Kishore, NPTEL](../../../chemistry/industrial-chemistry/sources/Inorganic-Chemical-Technology-Kishore.lingua#r_77Z8T5RFYFNNXZ7XKZFKPRKDKR).
+
+Separate the useful molecule's origin from its final delivery state. Air gases require separation of a mixture. Hydrogen can require chemical conversion followed by separation. Carbon dioxide may be recovered from another process, while helium and rare gases depend on particular source streams and recovery opportunities.
+
+Compare product amount, purity, recovery, pressure and phase together. Increasing recovery can carry additional impurities or energy demand. A route making several products needs an account of their simultaneous demand and destination. A purified laboratory sample and a continuous industrial supply pose different scale and continuity questions.
+
+**Work:** Draw an origin-to-product account for nitrogen, hydrogen and helium. Identify which operations create a species, separate it, change its phase or merely transfer it. Write a constituent balance around each major step and locate the first missing process datum.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Feed air is a changing mixture](Feed-air-is-a-changing-mixture.lingua#r_74TZSTYT1JYPFT357JQ7ATP965).
+
+} r_1WBQXTD5E47X0FTE6MWCDPBWQK

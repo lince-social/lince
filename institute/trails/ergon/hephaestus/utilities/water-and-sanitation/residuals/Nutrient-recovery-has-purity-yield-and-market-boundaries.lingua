@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Nutrient recovery has purity, yield and market boundaries (@wu-nutrient-recovery: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "A-whole-plant-account-keeps-internal-returns-internal.lingua#r_5FGS6C0E9B8BJJPXSPEX4B6DXJ") { r_6R8KJS0MEHN25HM49Z3CF8F09T
+**Read:** [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G), recovery and sidestream discussion; [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), advanced nutrient processes; revisit the chemical precipitation and equilibrium foundations. Read a current primary study for the specific recovery process being investigated.
+
+Recovering nitrogen or phosphorus means producing a stream with an identified composition, yield and destination. Precipitation, separation, drying, storage and use are different steps. A thermodynamically favourable solid does not establish a fast, selective or maintainable process. The remaining liquor and impurities stay in the account.
+
+For an original ideal struvite example use MgNH₄PO₄·6H₂O with rounded atomic masses giving 245.3 g/mol and 31.0 g P/mol. Recovering 1 kg elemental P entirely as pure struvite corresponds to about 7.913 kg product, with one mole each of magnesium and ammonium per mole of phosphorus. Real recovery requires activity/speciation, competing ions, supersaturation, separation and product-quality evidence; the ratio is not a reagent dosing recipe.
+
+**Work:** Close nutrient balances around both the recovery unit and the whole plant, avoiding a double credit for internally recycled material. Compare recovered product quality and delivered cost with the use it would actually displace. Include chemical and energy inputs, maintenance, rejected product and market interruption. Extend into nucleation, crystal growth and process control only after checking the simpler material and equilibrium accounts.
+
+**Continue:** [A whole-plant account keeps internal returns internal](A-whole-plant-account-keeps-internal-returns-internal.lingua#r_5FGS6C0E9B8BJJPXSPEX4B6DXJ).
+} r_6R8KJS0MEHN25HM49Z3CF8F09T

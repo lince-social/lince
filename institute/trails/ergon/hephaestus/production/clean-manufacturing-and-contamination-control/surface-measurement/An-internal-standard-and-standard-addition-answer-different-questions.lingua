@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+An internal standard and standard addition answer different questions (@cm-residue-calibration: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #clean-manufacturing "Elemental-composition-and-molecular-identity-are-distinct-claims.lingua#r_61FBSE6VRARM1DXNAH5DM84WCK") { r_1SMQ8FT113SR7EW4KHN52FYBZZ
+**Read:** [Analytical Chemistry 2.1 — David Harvey](../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 5, with chapters 10 and 12 for application; [Chemical measurements — matrix, recovery, selectivity, and reference material](../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ), matrix and reference material.
+
+An internal standard can track shared variation when its behavior is sufficiently related to the analyte. A simple response-ratio model is S_a/S_i = k c_a/c_i. The relative response k still needs evidence, and introducing a standard after extraction does not characterize losses that occurred before its addition.
+
+Standard addition observes how response changes when a known analyte amount is added to the specimen matrix. For constant final volume V_f and original sample volume V₀, a linear model is y = k(C₀V₀ + C_sV_s)/V_f + b. After a justified blank correction, plotting y against added amount C_sV_s gives an x-intercept −C₀V₀. Variable final volumes require explicit correction; the intercept does not automatically represent concentration.
+
+**Example:** With V₀ = 2 mL, V_f = 10 mL, C₀ = 3 µg/mL, k = 2 signal units per µg/mL and zero blank, additions of 0, 2 and 4 µg produce signals 1.2, 1.6 and 2.0. The amount-axis intercept is −6 µg.
+
+**Work:** Recover the original concentration and introduce an uncorrected blank or matrix-dependent response. Explain why added and native analyte must behave comparably. Choose a calibration design for a benign teaching dataset and state precisely which stages of the measurement it checks.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Elemental composition and molecular identity are distinct claims](Elemental-composition-and-molecular-identity-are-distinct-claims.lingua#r_61FBSE6VRARM1DXNAH5DM84WCK).
+
+} r_1SMQ8FT113SR7EW4KHN52FYBZZ

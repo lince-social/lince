@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Hysteresis and texture change what a contact angle means (@cm-wetting-texture: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #clean-manufacturing "A-liquid-bridge-combines-curvature-pressure-and-contact-lines.lingua#r_5PJNH8PWE9XKJQ0GAJNKNJX9SD") { r_1E6A7H8H132MT9BH18D1PDP12K
+**Read:** [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), lecture 15, sections 15.1–15.4. Reconstruct the energy changes instead of relying only on its final summary.
+
+For ideal complete liquid penetration of a texture, Wenzel's relation is cos θ*=r cos θ, with r the developed-to-projected area ratio. For a liquid supported on solid fraction f with trapped vapor elsewhere, the ideal Cassie relation is cos θ*=f(1+cos θ)−1. The equations describe different states. They do not determine whether a real sample reaches either state or remains trapped by an energy barrier.
+
+With θ=120°, r=1.5 and f=0.4, the two ideal predictions are about 138.59° and 143.13°. A plausible apparent angle alone may not identify the underlying wetting state. An equation producing a cosine outside [−1,1] signals loss of the assumed partial-wetting description, not permission to discard the inconsistency silently.
+
+**Work:** Compare interfacial free energies per unit projected wetted area. Ignoring edges, their difference is eW−eC=−γLV[(r−f)cos θ+(1−f)]. Derive when the Cassie energy is lower, then distinguish this energetic comparison from a transition rate. Lecture 15's crossover prose reverses the inequality printed immediately before it; use the declared energy account to resolve the sign. Explain how advancing/receding measurements and imaging could distinguish states.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A liquid bridge combines curvature, pressure and contact lines](A-liquid-bridge-combines-curvature-pressure-and-contact-lines.lingua#r_5PJNH8PWE9XKJQ0GAJNKNJX9SD).
+
+} r_1E6A7H8H132MT9BH18D1PDP12K

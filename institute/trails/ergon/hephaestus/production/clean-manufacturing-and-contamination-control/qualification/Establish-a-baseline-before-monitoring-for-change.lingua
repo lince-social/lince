@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Establish a baseline before monitoring for change (@cm-monitoring-baseline: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Choose-subgroups-that-preserve-the-question-about-variation.lingua#r_131PSPRZN5MNDR7J4R3TNV2GBC") { r_1RZ3C5SHBZJGQMJPAE6VGCDD0P
+**Read:** [Keep a measurement process under observation between calibrations](../../../inquiry/metrology/calibration/Control-and-recalibration.lingua#r_6AHX4PAFTWTDPKEZVQ3KSNP9AC); [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), sections 6.1 and 6.3, with chapter 2's measurement-control cases.
+
+A baseline describes variation under declared conditions. Initial retrospective analysis asks whether the observations support that description and whether changes have identifiable causes. Subsequent monitoring compares new observations with an established rule. Using the same observations to select a model and evaluate its detection performance needs care.
+
+Keep the sequence, operating state and relevant events. A histogram alone can hide a step change or cycle. Removing an unusual point needs a defensible explanation, not merely a desire for narrower limits. Pooling distinct stable states can create a distribution that represents neither state.
+
+Monitor the measuring system as well as the process. A changed reference or counter response can imitate a facility change. Keep calibration, blanks, reference checks and missing observations connected to the monitoring record.
+
+**Work:** Construct two datasets with the same mean and variance, one stationary and one with a step. Compare their time plots and proposed baselines. Explain what evidence would justify a separate state-specific model, a corrected measurement or an investigation of the production system.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Choose subgroups that preserve the question about variation](Choose-subgroups-that-preserve-the-question-about-variation.lingua#r_131PSPRZN5MNDR7J4R3TNV2GBC).
+
+} r_1RZ3C5SHBZJGQMJPAE6VGCDD0P

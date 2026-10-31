@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Water losses, metering and repair priorities (@wu-water-losses: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Isolation-repair-and-evidence-for-return-to-service.lingua#r_2MEMR18TP2FMQ28R2VYKVWPSW1") { r_0HRENQX7K8HR31DY5KF12BFH7G
+**Read:** [Manual de Saneamento](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), water-supply operation; [EPANET 2.2 manual](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW), hydraulic components and calibration; [water safety plan manual](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD), improvement planning. Make the accounting boundary and interval explicit.
+
+An input-versus-billed difference is not automatically a leak. Distinguish authorized uses, unmetered uses, measurement error and actual physical loss. A repair programme needs evidence about location, consequence and achievable benefit as well as volume.
+
+In an original daily account, measured input is 1,000 m³, authorized consumption 800 m³ and known process/maintenance use 50 m³. The unexplained 150 m³ is an accounting residual until measurement and missing uses are investigated. If input is over-read by 5%, correcting that meter changes the residual by about 47.619 m³, not 50: true input is 1,000/1.05. Do not mix a percentage of indicated volume with a percentage of true volume.
+
+**Work:** Propagate bounded meter errors and incomplete consumption records before ranking apparent savings. Compare a night-flow observation with actual night demand and storage changes. Identify which repair or pressure change might reduce loss but alter service or surge behaviour. Evaluate a proposed intervention with before/after evidence corrected for changed demand and boundary conditions, then include excavation, materials, interruption and future maintenance in the productive-work account.
+
+**Continue:** [Isolation, repair and evidence for return to service](Isolation-repair-and-evidence-for-return-to-service.lingua#r_2MEMR18TP2FMQ28R2VYKVWPSW1).
+} r_0HRENQX7K8HR31DY5KF12BFH7G

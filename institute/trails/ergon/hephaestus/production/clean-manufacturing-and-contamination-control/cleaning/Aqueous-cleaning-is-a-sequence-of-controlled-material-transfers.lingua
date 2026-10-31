@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Aqueous cleaning is a sequence of controlled material transfers (@cm-aqueous-clean: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "../../../physics/fluid-dynamics/interfaces/Cavitation-nucleation-bubble-dynamics-and-pressure-history.lingua#r_3N65MAD5CF80Q2W5Q82GJG167S") { r_6QNP3V3G9YECVJ9WAT44T8W20J
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), detergent cleaning and its process diagram; [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2), a complete aqueous cleaning article relevant to the selected substrate.
+
+Separate gross-soil removal, the main chemical interaction, physical transport, liquid replacement and final preservation. Each step changes the starting condition of the next. The process can introduce surfactant, dissolved metal, ions, particles and water into places that later prove difficult to clear.
+
+Useful variables include formulation, temperature, time, loading, flow, geometry and bath history. A pH or conductivity reading may monitor part of that state but cannot uniquely identify every constituent or prove cleaning performance.
+
+**Work:** Define a sequence by the physical purpose of each step and the material it receives and sends onward. Compare batch and single-pass service. Identify a measurement that detects an exhausted or contaminated bath and another that tests the product. Explain which controls would need re-evaluation after changing a coating, joint geometry or cleaning agent.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Cavitation, nucleation, bubble dynamics and pressure history](../../../physics/fluid-dynamics/interfaces/Cavitation-nucleation-bubble-dynamics-and-pressure-history.lingua#r_3N65MAD5CF80Q2W5Q82GJG167S).
+
+} r_6QNP3V3G9YECVJ9WAT44T8W20J

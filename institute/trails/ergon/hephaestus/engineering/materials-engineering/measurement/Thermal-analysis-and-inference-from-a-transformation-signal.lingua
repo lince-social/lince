@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Thermal analysis and inference from a transformation signal (@mat-thermal-analysis: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #materials-engineering "../computation/Thermodynamic-databases-models-and-reproducible-equilibrium.lingua#r_0ZNVJX93RBZ93YEZ0A8ERHVK0R") { r_2XS4R10EWRPH4CM015BJP0DVFG
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), heat capacity, phase transitions and thermodynamic data; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), cooling curves and phase-diagram experiments; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), glass transition and thermal characterization.
+
+Heat-flow, mass-change and dimensional signals measure different responses. A thermal event can reflect a phase change, reaction, relaxation, evaporation or instrumental behavior. Baseline, calibration, atmosphere, sample mass, thermal contact and heating/cooling rate belong to the interpretation.
+
+Integrating a calibrated excess heat-flow signal over time gives an energy under the defined baseline and sign convention. Dividing by sample amount gives a specific or molar value. A peak temperature during finite-rate scanning is not automatically an equilibrium transition temperature; glass transition is especially timescale dependent.
+
+**Work:** Reconstruct one public thermal-analysis result using its actual method and available data. Check units and baseline sensitivity, compare a second scan rate or heating/cooling direction, and propose an independent structural measurement that distinguishes competing assignments.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Thermodynamic databases, models and reproducible equilibrium](../computation/Thermodynamic-databases-models-and-reproducible-equilibrium.lingua#r_0ZNVJX93RBZ93YEZ0A8ERHVK0R).
+
+} r_2XS4R10EWRPH4CM015BJP0DVFG

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Read a materials research literature critically (@mat-literature-research: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5", #source "../sources/Materials-Informatics-Ramprasad.lingua#r_6CKWYT91KQJRX7EWD6TK53VFRM", #materials-engineering "Formulate-an-independent-materials-question.lingua#r_0FJ6V11808915X9F70D2MHXFZP") { r_0QR9FZHTT8SABXDF8VGC2MZZTS
+**Read:** A full review relevant to your chosen material question and the primary works behind its central claims. Use [Verifying precision in density-functional calculations — Bosoni and colleagues](../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5), [Machine learning and materials informatics — Ramprasad and colleagues](../sources/Materials-Informatics-Ramprasad.lingua#r_6CKWYT91KQJRX7EWD6TK53VFRM) or the earlier processing, degradation and recovery reviews as worked starting points.
+
+Trace a claim from review to original methods, data and subsequent criticism. Record composition/state, specimen preparation, conditions, measurement operator, inference, uncertainty and limits. Several papers repeating the same dataset do not create independent confirmation. Distinguish an observed correlation, a proposed mechanism, a verified computation and a demonstrated process.
+
+Search for contradictory results and examine whether they concern the same question. Different definitions, histories or boundaries can explain apparent conflict; genuine disagreement should remain visible. Preserve dates and versions when methods or conclusions change. Access to an abstract alone cannot support a claim to have checked the full method.
+
+**Work:** Build a cited synthesis around a precise material question, comparing at least two explanations and their strongest evidence. Reconstruct one disputed inference. Identify an unresolved question whose answer would materially change understanding or use, and explain which new observation or calculation could address it.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Formulate an independent materials question](Formulate-an-independent-materials-question.lingua#r_0FJ6V11808915X9F70D2MHXFZP).
+
+} r_0QR9FZHTT8SABXDF8VGC2MZZTS

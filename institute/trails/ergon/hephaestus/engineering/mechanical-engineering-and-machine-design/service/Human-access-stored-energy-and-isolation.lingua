@@ -1,0 +1,21 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Human access, stored energy and isolation (@mech-human-access: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #mechanical-engineering "Condition-observations-diagnosis-and-prediction.lingua#r_4PJF2YX9VDRZMDF31M6C290BEP", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Failure-modes-start-with-the-physical-function.lingua#r_75BMGP7MFAJY0BZE1AVGHNSQER", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/facilities/Design-service-access-before-equipment-is-enclosed.lingua#r_2J1WF13AKSKK3TN922QJR27K7R") { r_0FD90Y234EJ4QAT78JTCYQNTEE
+**Read:** [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), mounting/dismounting and maintenance conditions; [Systems Engineering Handbook — NASA](../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), human interaction and operational scenarios. Use the actual equipment instructions for a physical intervention.
+
+Describe the person's task as part of the mechanism: loading, observation, adjustment, cleaning or replacement. Identify reachable motion, sharp or hot interfaces, trapped fluid, springs and gravity loads through their physical effects. Design access so the intended task does not require defeating a protective function.
+
+Removing electrical power does not remove elastic, gravitational, pressure or rotational energy. A 2 kg mass raised 0.5 m stores about 9.81 J in Earth's usual near-surface gravitational field; a horizontal carriage can instead retain energy in a spring or rotating element. Follow how energy is restrained, dissipated and verified absent where access is needed.
+
+**Work:** Trace one maintenance task from an operating machine to an accessible state and back. Identify every energy source and a physically observable isolation condition. Redesign an inaccessible adjustment or unsupported load. Distinguish an engineering analysis and supervised suitable equipment work from an instruction to experiment on unknown powered machinery.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Condition observations, diagnosis and prediction](Condition-observations-diagnosis-and-prediction.lingua#r_4PJF2YX9VDRZMDF31M6C290BEP).
+
+
+**Continue in gas and vacuum systems:** [Failure modes start with the physical function](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Failure-modes-start-with-the-physical-function.lingua#r_75BMGP7MFAJY0BZE1AVGHNSQER).
+
+
+**Continue in clean manufacturing:** [Design service access before equipment is enclosed](../../../production/clean-manufacturing-and-contamination-control/facilities/Design-service-access-before-equipment-is-enclosed.lingua#r_2J1WF13AKSKK3TN922QJR27K7R).
+
+} r_0FD90Y234EJ4QAT78JTCYQNTEE

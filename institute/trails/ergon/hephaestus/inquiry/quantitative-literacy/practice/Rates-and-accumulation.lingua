@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Rates, accumulation, and the boundary of an account (@ql-rates: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #source @ql-source-algebra, #quantitative-literacy "Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H", #electromagnetism "../../../physics/electromagnetism/foundations/Charge-conservation-and-current-density.lingua#r_16QY5HH6CZN53EJ3J1AERMB3TA") { r_0NTXN5E5ZJ1A8C149BQF4G2YCZ
+Rates, accumulation, and the boundary of an account (@ql-rates: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-insight, #source @ql-source-algebra, #quantitative-literacy "Mass-and-component-balances.lingua#r_163GVDJGRJ1DD4JT2398GM371H", #electromagnetism "../../../physics/electromagnetism/foundations/Charge-conservation-and-current-density.lingua#r_16QY5HH6CZN53EJ3J1AERMB3TA", #mechanical-engineering "../../../engineering/mechanical-engineering-and-machine-design/dynamics/Integrals-and-initial-value-equations-for-motion.lingua#r_317M98B1RK8CJ50DV37M9TBH5Z", #clean-manufacturing "../../../physics/fluid-dynamics/transport/Advection-diffusion-reaction-and-conservative-scalar-balances.lingua#r_1K58Z7J4TJTKSNRNK4ENXN4YPM") { r_0NTXN5E5ZJ1A8C149BQF4G2YCZ
 **Read:** The Art of Insight, Symmetry and conservation, and Algebra and Trigonometry 2e's functions and rates-of-change sections. Revisit the graph reading's time-weighted example. Read the whole conservation chapter, including problems, before using the balance merely as a slogan.
 
 For a defined stock over an interval, final stock minus initial stock equals receipts minus issues plus any internal generation minus consumption, with all terms on the same quantity basis. For total mass in an ordinary nonnuclear process, internal chemical transformation does not create or destroy total mass. A particular chemical species, usable item count, or monetary valuation may have other terms.
@@ -16,4 +16,9 @@ For a warehouse, distinguish received, inspected, available, reserved, and shipp
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
 
 **Continue in electromagnetism:** [Charge conservation and current density](../../../physics/electromagnetism/foundations/Charge-conservation-and-current-density.lingua#r_16QY5HH6CZN53EJ3J1AERMB3TA).
+**Mechanical engineering continuation:** [Integrals and initial-value equations for motion](../../../engineering/mechanical-engineering-and-machine-design/dynamics/Integrals-and-initial-value-equations-for-motion.lingua#r_317M98B1RK8CJ50DV37M9TBH5Z).
+
+
+**Continue in clean manufacturing:** [Advection, diffusion, reaction and conservative scalar balances](../../../physics/fluid-dynamics/transport/Advection-diffusion-reaction-and-conservative-scalar-balances.lingua#r_1K58Z7J4TJTKSNRNK4ENXN4YPM).
+
 } r_0NTXN5E5ZJ1A8C149BQF4G2YCZ

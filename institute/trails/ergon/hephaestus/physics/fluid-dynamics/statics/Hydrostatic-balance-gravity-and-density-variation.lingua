@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Hydrostatic balance, gravity and density variation (@fd-hydrostatics: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Manometers-layered-fluids-and-connected-pressure-paths.lingua#r_5C2HW614FRPGT2H6QD3RY30G0J") { r_0BMK5JN8XP72JR1WQG5B52PFMS
+Hydrostatic balance, gravity and density variation (@fd-hydrostatics: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #fluid-dynamics "Manometers-layered-fluids-and-connected-pressure-paths.lingua#r_5C2HW614FRPGT2H6QD3RY30G0J", #clean-manufacturing "../geophysical/Boussinesq-flow-natural-convection-plumes-and-instability.lingua#r_3D346A9GVA8D8T39K4KHG0X3W0") { r_0BMK5JN8XP72JR1WQG5B52PFMS
 **Read:** [University Physics Volume 1 — OpenStax](../sources/University-Physics-Volume-1.lingua#r_2W7QCEHZ45XDB3AWVG9NTV36F6), hydrostatic pressure and its applications; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapter 4 hydrostatics; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), hydrostatic pressure and compressible equilibrium sections.
 
 Balance the forces on a small stationary fluid element. With gravity vector g, equilibrium requires ∇p=ρg. For a vertical coordinate z increasing upward and constant gravitational magnitude, dp/dz=−ρg. For constant density, a depth h below a surface adds ρgh to its pressure.
@@ -12,4 +12,7 @@ Draw the pressure distribution and explain why container shape does not appear i
 **Continue:** [Manometers, layered fluids and connected pressure paths](Manometers-layered-fluids-and-connected-pressure-paths.lingua#r_5C2HW614FRPGT2H6QD3RY30G0J).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in clean manufacturing:** [Boussinesq flow, natural convection, plumes and instability](../geophysical/Boussinesq-flow-natural-convection-plumes-and-instability.lingua#r_3D346A9GVA8D8T39K4KHG0X3W0).
+
 } r_0BMK5JN8XP72JR1WQG5B52PFMS

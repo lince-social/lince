@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+High-temperature deformation and mechanism maps (@mat-creep-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "../../../materials/metals-and-metallurgical-production/testing/Creep-stress-relaxation-damage-and-thermal-service.lingua#r_4TT7YZNBC18HKW4QR7S2V95GVX") { r_0J74FR7D18GM5199D5TF9VM18Z
+**Read:** [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Creep Deformation of Metals in full; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Dislocation Basis of Yield and Creep; [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), creep and mechanism maps; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 3.8–3.9. Continue through the shared creep/testing Record.
+
+Time-dependent inelastic strain can involve dislocation glide/climb, diffusion and grain-boundary processes. Homologous temperature T/T_m uses absolute temperature, but a single ratio does not decide every mechanism. Stress, grain size, phase structure, atmosphere and evolving damage also matter.
+
+A model ε̇=Aσⁿd^(−p)exp(−Q/RT) summarizes a declared regime. Fitted n,p,Q can help compare hypotheses, but overlapping mechanisms and changing structure can produce apparent exponents. A deformation map is conditional on material state and normalization.
+
+**Work:** Derive log-slope tests for stress, grain size and inverse temperature, then identify what experimental control is needed to interpret them. Compare a diffusion-dominated and dislocation-dominated hypothesis. Distinguish primary, secondary and tertiary behavior from a promise that every curve has a long steady stage.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect time-dependent response with temperature, stress, mechanisms, and evolving structure](../../../materials/metals-and-metallurgical-production/testing/Creep-stress-relaxation-damage-and-thermal-service.lingua#r_4TT7YZNBC18HKW4QR7S2V95GVX).
+
+} r_0J74FR7D18GM5199D5TF9VM18Z

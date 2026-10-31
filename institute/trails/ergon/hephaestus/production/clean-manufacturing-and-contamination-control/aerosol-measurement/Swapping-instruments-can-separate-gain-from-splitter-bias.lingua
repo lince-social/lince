@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Swapping instruments can separate gain from splitter bias (@cm-aerosol-splitter: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE", #clean-manufacturing "../../../inquiry/metrology/calibration/Regression-uncertainty-and-inversion.lingua#r_33VGQWJCXFMMX2TJ245VDMHS4N") { r_5XEWTJV7GW64WFADS6MRJBCCYG
+**Read:** [CPC proportionality calibration — Owen, Mulholland and Guthrie](../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE), appendix B. The notation below is an independent derivation; keep its ratio orientation explicit when comparing the manuscript.
+
+Let two branches have concentrations CA and CB with stable ratio β = CA/CB. Let instrument indications be y₁ = g₁C and y₂ = g₂C, with zero offset and constant gains over the comparison. In configuration I, instrument 1 receives A and instrument 2 receives B, so R_I = y₁/y₂ = kβ, where k = g₁/g₂. After swapping, R_II = k/β. Therefore β = √(R_I/R_II) and k = √(R_I R_II).
+
+For β = 1.02 and k = 0.97, the ratios are 0.9894 and about 0.9509804. A direct comparison in only one orientation would confound branch imbalance with relative response. The swap separates them only if the model's stability and flow assumptions hold.
+
+Unequal sampling flows can change the branch concentrations when instruments move. Offsets, concentration-dependent gain or source evolution can also break the cancellation. A successful algebraic separation is not evidence that those conditions held.
+
+**Work:** Recover β and k from the example, then introduce a small offset or a changed branch ratio and quantify the resulting error. Propose repeated orientations and supporting flow observations to distinguish a stable bias from drift. Trace the branch correction through the subsequent calibration without applying it to the wrong ratio.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Use a fitted calibration without discarding coefficient uncertainty](../../../inquiry/metrology/calibration/Regression-uncertainty-and-inversion.lingua#r_33VGQWJCXFMMX2TJ245VDMHS4N).
+
+} r_5XEWTJV7GW64WFADS6MRJBCCYG

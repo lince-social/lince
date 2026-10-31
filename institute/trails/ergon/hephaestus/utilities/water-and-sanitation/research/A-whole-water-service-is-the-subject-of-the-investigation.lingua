@@ -1,0 +1,19 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A whole water service is the subject of the investigation (@wu-system-study: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #water-and-sanitation "Advanced-study-from-source-and-treatment-to-the-last-user.lingua#r_4PWS9Q6XMR6YYWGRTPKRS50EF7", #water-and-sanitation "Advanced-study-of-a-whole-wastewater-plant-and-its-controller.lingua#r_6DM201DBD9MR5F5BPE02V1W3ZN", #water-and-sanitation "Advanced-study-of-industrial-reuse-and-scaling.lingua#r_0KPEXT51TH929PNA76TCW0C3N7") { r_5QD5W19FRQ40Y1AWERAP6HNYJT
+**Read:** Revisit the completed source, treatment, distribution, wastewater and industrial section studies. Use [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS) for the evidence argument and the full manuals relevant to the chosen system.
+
+An integrated study begins with a question about water and the people or processes receiving its service. The boundary can include abstraction, catchment effects, treatment, storage, delivery, collection, recovery and receiving environments. Every additional boundary needs a reason; the purpose is to explain the service, not to draw every industry in the world.
+
+**Work:** Follow one source-to-use-to-return system over a declared period. Account for water, at least two meaningful constituents, energy, residuals, continuing labour and external supplies. Reconcile discrepancies before optimizing. Compare a technically plausible alternative and explain effects on upstream and downstream work.
+
+The following three studies examine drinking-water delivery, wastewater treatment and industrial reuse. Work each at the depth needed to explain its central equations and evidence, then pursue at least one through a full independent advanced investigation. Their continuations meet at uncertainty and model comparison. The same Records can support other selections without requiring a special project structure.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Advanced study — from source and treatment to the last user](Advanced-study-from-source-and-treatment-to-the-last-user.lingua#r_4PWS9Q6XMR6YYWGRTPKRS50EF7).
+
+**Continue:** [Advanced study — a whole wastewater plant and its controller](Advanced-study-of-a-whole-wastewater-plant-and-its-controller.lingua#r_6DM201DBD9MR5F5BPE02V1W3ZN).
+
+**Continue:** [Advanced study — industrial reuse and scaling](Advanced-study-of-industrial-reuse-and-scaling.lingua#r_0KPEXT51TH929PNA76TCW0C3N7).
+
+} r_5QD5W19FRQ40Y1AWERAP6HNYJT

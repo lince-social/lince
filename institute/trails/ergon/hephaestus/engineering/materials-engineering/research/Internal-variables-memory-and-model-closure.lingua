@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Internal variables, memory and model closure (@mat-model-closure: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #materials-engineering "Atomistic-questions-and-interatomic-potentials.lingua#r_0ANMANTH8ZP3MEPEFR29NCBRFB") { r_6QY3PH55T5J5QADNSX001S7Y1M
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), inelastic and time-dependent response; [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), statistical descriptions; earlier diffusion, cure, damage and viscoelastic models.
+
+A constitutive model may use internal variables for plastic strain, dislocation structure, conversion, damage or phase fractions. Those variables summarize history; they are not automatically complete measurements of microscopic state. Two specimens with the same listed variables may evolve differently if an omitted feature matters.
+
+Distinguish a balance law from a closure relation. Conservation of energy does not specify conductivity, and mechanical equilibrium does not determine a yield law. Specify evolution, initial and boundary conditions, admissible domains and the relevant thermodynamic restrictions. A model that dissipates energy can still predict the wrong mechanism or time scale.
+
+**Work:** Reconstruct one earlier constitutive model as balances plus closure and state evolution. Identify a loading history it retains and another it discards. Propose two specimens with matching initial fitted parameters but differing microstructures; state an experiment that could distinguish their subsequent response. Track which quantities can be handed to a larger-scale model and which require a new approximation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Atomistic questions and interatomic potentials](Atomistic-questions-and-interatomic-potentials.lingua#r_0ANMANTH8ZP3MEPEFR29NCBRFB).
+
+} r_6QY3PH55T5J5QADNSX001S7Y1M

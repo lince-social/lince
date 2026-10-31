@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of reactive flow and composite shaping (@mat-reactive-process-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614", #source "../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0", #materials-engineering "Defend-the-processing-and-material-state-account.lingua#r_64R9D1KEEENG63D9E88T0VBBFV") { r_0AAHWAPNY87MNKFA40SGTAWZ6Y
+**Read:** [Simultaneous rheology and cure kinetics — Romberg and Kotula, 2023](../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614) and [Epoxy conversion from rheology — Romberg and colleagues, 2024](../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0) in full, their underlying kinetic/rheological methods, and the shared advanced fluid readings. Work the original cure example independently before replacing it with a model calibrated to a real material.
+
+Reconstruct an impregnation, extrusion or cure investigation with independent flow, thermal and conversion evidence. Connect filling or shape retention to changing rheology and reaction. Compare first-order, autocatalytic or mobility-limited hypotheses only where the data identify their parameters.
+
+**Deliver:** A complete method reconstruction, independent numerical verification, inference with uncertainty and a prediction at another temperature history, geometry or filler condition. Explain which spatial gradients and residual-stress effects are omitted. Investigate a thermal or deformation limit even if final conversion appears satisfactory. Defend the interpretation against an alternative boundary or measurement explanation and revise it.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the processing and material-state account](Defend-the-processing-and-material-state-account.lingua#r_64R9D1KEEENG63D9E88T0VBBFV).
+
+} r_0AAHWAPNY87MNKFA40SGTAWZ6Y

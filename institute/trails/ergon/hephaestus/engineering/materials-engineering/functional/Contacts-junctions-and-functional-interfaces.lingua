@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Contacts, junctions and functional interfaces (@mat-contacts: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #source "../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN", #source "../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS", #materials-engineering "Polarization-from-atomic-motion-to-material-response.lingua#r_4VNCKVBPYY2T6RGSKM1MX6E896") { r_7WFR81237S894512N8R4BR81PW
+**Read:** [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), chapter 17; [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), rectifying/ohmic contacts and p–n junctions; [Electrical, Optical, and Magnetic Properties of Materials — MIT 3.23](../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN), junction and band-engineering material; [Introdução à Física do Estado Sólido — Lucy V. C. Assali](../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS), junction slides.
+
+At equilibrium a connected system has a common electrochemical potential, while charge redistribution can bend bands. A barrier height, depletion width and contact resistance depend on different physical information. Work-function differences provide an initial model; interface states, chemistry, dipoles and processing can change its prediction.
+
+Distinguish equilibrium band alignment from applied-bias quasi-Fermi levels. Generation/recombination and carrier injection matter once the device is driven. A nominally conductive bulk material can still make a poor contact; a thin interface can dominate a whole stack's electrical and thermal response.
+
+**Work:** Derive a one-dimensional depletion estimate with stated doping and boundary conditions. Check charge balance and distinguish built-in potential from a directly available external battery voltage. Compare a proposed ohmic contact and rectifier through their actual processing, measured current and temperature dependence.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Polarization from atomic motion to material response](Polarization-from-atomic-motion-to-material-response.lingua#r_4VNCKVBPYY2T6RGSKM1MX6E896).
+
+} r_7WFR81237S894512N8R4BR81PW

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Wood drying, bonding and engineered natural materials (@mat-wood-processing: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "Joining-materials-with-different-histories.lingua#r_7F6416KYG4G5V19BPTR470D986") { r_4N3TQDK8XMYHMMZWJZX4GTV33Q
+**Read:** [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapters 10–13 in full, with chapters 3–5 for moisture, anatomy and mechanics.
+
+Wood carries directional structure, biological variability and moisture-dependent dimensions into manufacturing. Drying can generate gradients, stress, checking or collapse. Bond quality depends on the actual prepared surfaces, moisture, adhesive, pressure, time and cure; a strong adhesive does not compensate for every weak boundary layer.
+
+**Work:** Reconstruct a drying and lamination sequence with species, dimensions, grain direction and moisture observations. Follow the chapter 13 distinction between target moisture and gradients or stored stress. Use chapter 10 to explain preparation, assembly and conditioning before testing a bond. Compare a moisture-cycle failure with an initial dry strength result. Trace yield, removed material and dimensional allowances through the complete accepted-panel account.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Joining materials with different histories](Joining-materials-with-different-histories.lingua#r_7F6416KYG4G5V19BPTR470D986).
+
+} r_4N3TQDK8XMYHMMZWJZX4GTV33Q

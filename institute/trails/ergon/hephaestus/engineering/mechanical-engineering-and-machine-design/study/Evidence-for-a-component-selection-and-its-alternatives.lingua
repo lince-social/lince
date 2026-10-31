@@ -1,0 +1,19 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Evidence for a component selection and its alternatives (@mech-component-evidence: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY", #mechanical-engineering "Advanced-study-of-a-transmission-shaft-and-bearing-system.lingua#r_73T6XM2GFFB5SCE4ECK5J1EBAD", #mechanical-engineering "Advanced-study-of-a-precision-mechanism-and-its-errors.lingua#r_622HG8157EVRX1HBNJC391HZ77", #mechanical-engineering "Advanced-study-of-joints-retained-load-and-maintenance.lingua#r_3BFV1HYS3SGQ3NFS6XDM87XY92") { r_0WQRGZJAWX0CXZ9EK3KKKKV747
+**Read:** Complete the relevant [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ) topics and [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7) exercises. For bearing choices, follow the full [Rolling bearings — SKF, 2018](../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY) selection sequence and the chosen family's actual data, not only the life equation.
+
+Present the requirement, candidate arrangements, load histories, calculations, dimensional interfaces and evidence for one selection. Every number needs a physical definition and operating condition. Separate measured data, published ratings, assumed values and calculated results. A selection remains revisable when a service observation contradicts an assumption.
+
+**Demonstrate:** Check at least two plausible mechanisms for the same useful function. Compare force/motion behavior, stiffness, energy, life mechanisms, supply requirements, assembly, maintenance and uncertainty. Reproduce one nontrivial source calculation independently and show a limiting-case check. Include a failed or rejected alternative and the specific evidence that changed the decision.
+
+Continue into three studies below. They may use the same machine and share calculations or observations; their questions differ. One examines a power transmission, another a precision motion, and the third the joints and maintenance condition that let the assembly retain its function.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Advanced study of a transmission, shaft and bearing system](Advanced-study-of-a-transmission-shaft-and-bearing-system.lingua#r_73T6XM2GFFB5SCE4ECK5J1EBAD).
+
+**Continue:** [Advanced study of a precision mechanism and its errors](Advanced-study-of-a-precision-mechanism-and-its-errors.lingua#r_622HG8157EVRX1HBNJC391HZ77).
+
+**Continue:** [Advanced study of joints, retained load and maintenance](Advanced-study-of-joints-retained-load-and-maintenance.lingua#r_3BFV1HYS3SGQ3NFS6XDM87XY92).
+
+} r_0WQRGZJAWX0CXZ9EK3KKKKV747

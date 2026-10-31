@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Atomic layer deposition, saturation and conformality (@mat-atomic-deposition: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Atomic-Layer-Deposition-Chemistry-and-Evidence.lingua#r_43RJYA2HWF0DWTRB766G062RHV", #materials-engineering "Patterning-removal-and-the-order-of-a-layer-stack.lingua#r_7XTBFG6E3125PB4FNCJ9FH3QP5") { r_3S35J4F23HYVAZ8WKXWPRPR0XT
+**Read:** [Atomic layer deposition — surface chemistry and evidence](../sources/Atomic-Layer-Deposition-Chemistry-and-Evidence.lingua#r_43RJYA2HWF0DWTRB766G062RHV), the complete review and primary gravimetric study. Revisit surface chemistry, kinetics and gas transport.
+
+Sequential precursor exposures and separation steps can produce self-terminating surface reactions. Growth per cycle need not equal a crystallographic monolayer: reactive sites, ligands, steric constraints, nucleation and surface state matter. A flat growth-versus-dose region on one specimen does not prove identical saturation throughout a deep porous structure.
+
+**Work:** Draw the material and surface-site account for one documented cycle. Compare mass uptake, composition, thickness and accessible surface area before inferring a unique mechanism. Vary dose, purge, temperature and cycle count in the published evidence and identify signs of condensation, decomposition or incomplete penetration. Derive a transport/reaction scaling for a recessed feature and propose independent measurements of coverage and impurity content. Keep an ideal self-limiting reaction distinct from the performance of the complete deposition apparatus.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Patterning, removal and the order of a layer stack](Patterning-removal-and-the-order-of-a-layer-stack.lingua#r_7XTBFG6E3125PB4FNCJ9FH3QP5).
+
+} r_3S35J4F23HYVAZ8WKXWPRPR0XT

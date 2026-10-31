@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Defend the integrated materials investigations (@mat-integrated-review: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #materials-engineering "Read-a-materials-research-literature-critically.lingua#r_0QR9FZHTT8SABXDF8VGC2MZZTS") { r_4SGGJ7V1GYFGDYZNKVPAB5DAXM
+**Read:** Revisit the complete sources behind the three studies, including methods, supplementary material, code/data availability and substantive criticisms. Return to [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K) when a property comparison depends on missing conditions.
+
+Present each investigation from specimen history to observed response and practical consequence. Explain every transfer between scales and every inferred quantity. Derive an important equation without relying on the original implementation, reproduce a meaningful calculation independently, and identify a result that would change the account.
+
+Compare the three studies: when did a continuum property suffice, when did microstructure need explicit treatment, and when did an interface dominate? Where did a fit hide non-identifiability? Which part of an apparently open study remained unavailable? State the consequences for any claim of reproduction.
+
+**Demonstrate:** Defend all three accounts against alternative models, sampling choices and service assumptions. Revise a substantive part after criticism. Explain what has been established, what remains conditional and what is still unknown. Continue to a personally chosen research question; completing these structured investigations is preparation for independent inquiry, not proof of universal expertise.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Read a materials research literature critically](Read-a-materials-research-literature-critically.lingua#r_0QR9FZHTT8SABXDF8VGC2MZZTS).
+
+} r_4SGGJ7V1GYFGDYZNKVPAB5DAXM

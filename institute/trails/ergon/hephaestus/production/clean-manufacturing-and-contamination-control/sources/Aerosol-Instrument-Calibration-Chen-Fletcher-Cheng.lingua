@@ -1,0 +1,12 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Calibration of aerosol instruments — Chen, Fletcher and Cheng (@cm-calibration-source: 0, is #reference, #part-of @cm-sources) { r_03PDE8353KQ9HQKJNAHRH99NPP
+Bean T. Chen, Robert A. Fletcher and Yung-Sung Cheng. *Calibration of Aerosol Instruments*, chapter 21 of *Aerosol Measurement: Principles, Techniques, and Applications*, third edition, 2011. [NIST record](https://www.nist.gov/publications/chapter-21-calibration-aerosol-instruments) · [Institutionally supplied 31-page PDF](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=901720).
+
+Read the complete chapter, beginning with sections 21.1–21.3 on response, standards and calibration design. Later sections treat apparatus, test aerosols, flow, size, counting and mass instruments. Distinguish a manufacturer's calibration from evidence under the user's actual conditions.
+
+Metadata, query form, contents, rights and selected introductory/measurement passages were inspected on 30 October 2026. This download is a Wiley author proof with unresolved queries, including figure permissions; it is not the final typeset chapter. It carries 2011 copyright and credited material. Free institutional reading does not establish open adaptation rights. Consult the finalized edition when exact wording or a disputed detail matters; keep this version distinction in scholarly comparisons. The PDF remains external.
+
+Further inspection for the aerosol-measurement formation covered particle-equivalent diameters, optical and mobility response, CPC reference comparison, flow/state, and mass-monitor passages in sections 21.6–21.8 and table 21-6. Instrument ranges and historical standard references remain specific to this chapter and edition. Text extraction loses several symbols and renders micrometre units poorly; the learning Records use explicit units and independently checked models. The complete book and experimental apparatus were not independently reproduced.
+
+} r_03PDE8353KQ9HQKJNAHRH99NPP

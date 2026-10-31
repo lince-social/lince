@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Force-based gauges and the reference side (@gas-force-gauges: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Thermal-gauges-measure-a-heat-balance.lingua#r_6TNWERZHQ1T5KSZYJ3C9GDYD8B") { r_40SN2CZ53BHYP5NCHPEHTXCDSV
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), force-based instruments; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), pressure-measurement chapter.
+
+A liquid column, piston, deforming tube or diaphragm responds to a pressure difference. Identify both sides of the sensing element. An absolute, gauge or differential reading is determined by that reference arrangement and calibration, not by the unit printed on the display.
+
+For a simplified piston realization, p=F/A after adding the relevant reference pressure and corrections. Mass, local gravity, effective area, temperature, deformation, buoyancy and fluid head can matter. For a diaphragm instrument, deformation changes an electrical quantity such as capacitance; its transfer relation, zero and hysteresis need characterization.
+
+Force response has a valuable degree of gas independence, but the complete measurement may still depend on gas through thermal effects, contamination, connecting-line behavior or chemical compatibility. A heated diaphragm gauge connected to a colder molecular-flow system needs a thermal-transpiration account.
+
+**Work:** Draw the pressure reference and measurement boundary for three instruments. Explain how a zero shift differs from a scale error. Compare an instrument's smallest displayed increment with the uncertainty caused by its actual reference and environment.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Thermal gauges measure a heat balance](Thermal-gauges-measure-a-heat-balance.lingua#r_6TNWERZHQ1T5KSZYJ3C9GDYD8B).
+
+} r_40SN2CZ53BHYP5NCHPEHTXCDSV

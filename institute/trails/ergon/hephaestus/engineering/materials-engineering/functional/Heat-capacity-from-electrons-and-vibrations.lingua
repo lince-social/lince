@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Heat capacity from electrons and vibrations (@mat-capacity: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #source "../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #materials-engineering "Heat-carriers-scattering-and-material-architecture.lingua#r_7TGNWHEGNTGQ6FS578X8JEKX77") { r_6W90X7MY5Z8KEGSW85VKYW4VXZ
+**Read:** [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), chapters 2–4 and 8–9; [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), chapter 3; [Nano-to-Macro Transport Processes — MIT 2.57](../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), microscopic energy and carrier statistics.
+
+An oscillator contributes C/kB=x² exp(x)/(exp(x)−1)², with x=ℏω/kBT. Summing over a solid's mode spectrum differs from assigning one frequency to every vibration. Explain how a three-dimensional acoustic spectrum gives the Debye low-temperature T³ law and how a simple degenerate metal adds an electronic term proportional to T. These are regimes, not universal fits over every temperature.
+
+At x=1 the oscillator contributes about 0.920674 kB. Its energy includes a temperature-independent zero-point term, which contributes no heat capacity. Keep C_V distinct from C_p; in a homogeneous isotropic equilibrium solid C_p−C_V=T V α_V² K_T with consistent total or molar quantities.
+
+**Work:** Derive the limits, fit a documented heat-capacity dataset with stated normalization, and examine residuals before adding mechanisms. Distinguish an impurity transition or magnetic contribution from a change in the fitted Debye temperature.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Heat carriers, scattering and material architecture](Heat-carriers-scattering-and-material-architecture.lingua#r_7TGNWHEGNTGQ6FS578X8JEKX77).
+
+} r_6W90X7MY5Z8KEGSW85VKYW4VXZ

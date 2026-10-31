@@ -1,0 +1,17 @@
+Import "../Materials-engineering.lingua"
+
+Slow crack growth and thermal shock (@mat-slow-cracks: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Load-transfer-and-bounds-in-composite-materials.lingua#r_7N6P23V05RFHRV08YSNSTCQ05E") { r_69V7B3WSVP1ZHS473BTQ5ZAXCE
+**Read:** [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Brittle Fracture's subcritical growth and Ceramics' thermal-shock sections; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), crack-driving and energy methods; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), thermal properties.
+
+A flaw can grow under conditions below an apparent short-time critical load. Environment, temperature, loading duration and crack-tip chemistry can alter that growth. A fitted da/dt versus K relation is conditional on its material, environment and stress-intensity range; it is not a universal fatigue law.
+
+Rapid temperature changes can generate spatial gradients and constrained expansion. A uniform fully restrained bar estimate EαΔT omits heat transfer, geometry and stress redistribution. Conductivity, heat capacity, surface transfer, flaw population, modulus, expansion and fracture resistance enter different parts of the coupled problem.
+
+The Cambridge thermal-shock page's displayed ΔT coefficient following its energy derivative lacks a square root. For its stated model, rearrangement gives ΔT=√[G_c/(πEα²)](1+2πNc²)/√c, with N having the stated crack-density basis. Check dimensions and differentiate the original energy rather than propagating the transcription.
+
+**Work:** Derive that corrected relation and identify the simplified uniform-temperature constraint it assumes. Then explain how a real quench differs. Integrate a declared subcritical-growth law between identified initial and final flaws, and show which uncertainty most changes the predicted interval.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Load transfer and bounds in composite materials](Load-transfer-and-bounds-in-composite-materials.lingua#r_7N6P23V05RFHRV08YSNSTCQ05E).
+
+} r_69V7B3WSVP1ZHS473BTQ5ZAXCE

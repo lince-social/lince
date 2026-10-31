@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Investigate a sensitive optical or mechanical surface (@cm-study-surface: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "Explain-the-foundations-before-designing-the-facility.lingua#r_4Q8V901XVQ8PTKRGG5Y26MVY5N") { r_4WJNJDQ10MXAPPZHEQFH9CDXQP
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), relevant molecular/particulate performance chapters and all of chapter 4. Select an optical surface for the report's strongest direct evidence; a mechanical comparison needs additional contact-specific sources.
+
+Trace a product function from exposure through deposited material to changed performance. Reconstruct an area or film calculation independently, preserving units, shape assumptions and material properties. Identify where the source uses measured behavior and where it uses a model.
+
+**Work:** Compare two contamination histories with equal total deposited mass but different distributions or compositions. Explain why the same mass can yield different consequences. Propose observations that would distinguish the histories, including uncertainty and inaccessible areas. Criticize a conclusion based solely on visual appearance or a room class.
+
+Produce a concise technical account with an original diagram, a checked calculation, exact reading references and a list of unresolved measurements. A plausible model is not a claim that the real object has been tested.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Explain the foundations before designing the facility](Explain-the-foundations-before-designing-the-facility.lingua#r_4Q8V901XVQ8PTKRGG5Y26MVY5N).
+
+} r_4WJNJDQ10MXAPPZHEQFH9CDXQP

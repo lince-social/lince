@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Thermosets, gels and network state (@mat-networks: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #materials-engineering "Elastomers-entropy-crosslinks-and-finite-extension.lingua#r_5AJNNNNG2S71K8675BFRVKZ88A") { r_0K7YJD6FK2S7FJCJKFK9FPVAQE
+**Read:** [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), lectures 1, 7–9 and the chain/solution foundations; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), molecular mechanisms in Engineering Viscoelasticity; [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309), polymer classification. Return to reaction extent, mixing and thermal analysis.
+
+A crosslinked network constrains long-range flow. Cure changes conversion, connectivity, mobility, shrinkage and often temperature; reaching gelation does not mean every reaction has finished. Vitrification can slow a continuing reaction. A thermoset label alone does not establish cure quality, homogeneity or maximum useful temperature.
+
+A gel combines a network with fluid. Swelling reflects chemical-potential and elastic contributions, with solvent transport and relaxation determining its time evolution. A dry network and its swollen form need different mechanical and dimensional accounts.
+
+**Work:** Explain a resin's path from low-viscosity mixture through gelation and a glassy or rubbery final state. Propose independent evidence for conversion, network response and residual stress. Use the Flory–Rehner reading to derive a declared equilibrium swelling model, identifying the network and solvent assumptions rather than applying one fit to all gels.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Elastomers, entropy, crosslinks and finite extension](Elastomers-entropy-crosslinks-and-finite-extension.lingua#r_5AJNNNNG2S71K8675BFRVKZ88A).
+
+} r_0K7YJD6FK2S7FJCJKFK9FPVAQE

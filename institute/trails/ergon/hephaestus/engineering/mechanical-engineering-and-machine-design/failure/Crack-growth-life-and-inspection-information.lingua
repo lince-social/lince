@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Crack-growth life and inspection information (@mech-crack-growth: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "../materials/Contact-pressure-compliance-and-the-loaded-interface.lingua#r_14H9DG80V3YYNWP3MP73TC1VMT") { r_5PQF88R4JPTQFQ0KEAV47WY7DW
+**Read:** [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Fatigue and Introduction to Fracture Mechanics; [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), section 9.3. Follow the chosen material's actual crack-growth evidence through the shared fatigue references.
+
+A Paris-type law da/dN = C(ΔK)^m approximates a particular growth regime. With constant geometry factor Y, constant stress range Δσ and ΔK = YΔσ√(πa), integrate da/[C(YΔσ√π)^m a^(m/2)] from the initial to final crack size. For m = 2 the integral is logarithmic; otherwise it has a power-law antiderivative. C's units depend on the chosen length and stress-intensity units.
+
+For an illustrative model with m = 3, Y = 1, Δσ = 100 MPa, C = 1×10⁻¹² m/cycle/(MPa√m)³, and crack half-length growing from 1 to 4 mm, the integral gives about 5.68 million cycles. These are teaching parameters, not material data or an inspection interval. Check the maximum stress intensity and the law's valid growth regime throughout the interval.
+
+Real crack growth can involve threshold behavior, stress ratio, closure, overload retardation, environment, changing geometry and short-crack effects. Inspection supplies uncertain information about flaw size and detection, not proof of a zero initial crack. A missed flaw and a measured flaw need different inference.
+
+**Work:** Reproduce the life integral analytically and by converged numerical quadrature. Change the initial flaw, range and exponent with consistent units. Compare a constant-Y estimate with an appropriate geometry-dependent function. Connect a proposed inspection schedule to probability of detection, sizing uncertainty, accessible surfaces and a justified structural limit rather than dividing a nominal life by an arbitrary number.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Contact pressure, compliance and the loaded interface](../materials/Contact-pressure-compliance-and-the-loaded-interface.lingua#r_14H9DG80V3YYNWP3MP73TC1VMT).
+
+} r_5PQF88R4JPTQFQ0KEAV47WY7DW

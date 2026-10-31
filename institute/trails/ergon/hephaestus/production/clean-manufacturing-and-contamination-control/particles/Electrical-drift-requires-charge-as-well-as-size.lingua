@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Electrical drift requires charge as well as size (@cm-electric-motion: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49", #clean-manufacturing "Additional-forces-need-their-own-physical-model.lingua#r_4BACXJVE8YA3NZXJGXJD079Z32") { r_1A3GAPZG0X47KDGE55XPAM636F
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Electrostatics slides; [Slip-correction measurements — Kim, Mulholland, Kukuck and Pui](../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49), electrical-mobility method; revisit [Coulomb force, superposition and a test charge](../../../physics/electromagnetism/electrostatics/Coulomb-force-superposition-and-test-charge.lingua#r_4BCJ9YGVJSTWDV9S67V2RDR1YD).
+
+For a specified charge q in a sufficiently uniform field E, force is qE and steady relative drift is BqE in the linear mobility model. Charge sign determines direction. The elementary charge is 1.602176634×10⁻¹⁹ C; a population can contain multiple charge states and neutral particles.
+
+A measured mobility can therefore correspond to different combinations of size and charge. Image forces, polarization and field gradients introduce other interactions near surfaces; a uniform-field formula does not capture them. Electrical neutralization procedures produce a charge distribution, not necessarily zero charge on every particle.
+
+**Work:** Compare drift for positive, negative and neutral particles with the same mechanical mobility. Reconstruct how an electrical mobility analyzer relates observed response to particle properties. Identify the charge assumptions needed to interpret a size distribution and how they could be checked.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Additional forces need their own physical model](Additional-forces-need-their-own-physical-model.lingua#r_4BACXJVE8YA3NZXJGXJD079Z32).
+
+} r_1A3GAPZG0X47KDGE55XPAM636F

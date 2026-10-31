@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Refine an approximation and justify its numerical accuracy (@rc-convergence: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH", #reproducible-computation "../../metrology/uncertainty/Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E") { r_1D7K129GJSMBAB3WR7Z1KJFXXK
+Refine an approximation and justify its numerical accuracy (@rc-convergence: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB", #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH", #reproducible-computation "../../metrology/uncertainty/Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/studies/Investigate-particle-transport-at-increasing-depth.lingua#r_4R2YMXXJEVP9YHX5D7BKVXNXRT") { r_1D7K129GJSMBAB3WR7Z1KJFXXK
 **Read:** [Introduction to Scientific Programming with Python — Sundnes](../sources/Scientific-Python-Sundnes.lingua#r_1V7KWH76GSD7XMA9TQVSTEQSWB), arrays/plotting and the numerical examples revisited; [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), numerical testing; [What Every Computer Scientist Should Know About Floating-Point Arithmetic — Goldberg](../sources/Floating-Point-Goldberg.lingua#r_4FHXH9WWX5Q535CD32ESSVSEHH), rounding compared with approximation error.
 
 The shared decay example uses x′ = −kx, x(0) = 100, k = 0.2 h⁻¹, and a forward time update. The exact model value after 5 h is 100 exp(−1). Refining a step studies the approximation to this stated model, not whether the model represents an actual stock or physical process. Keep that distinction visible when reporting a very precise simulation.
@@ -36,4 +36,7 @@ Numerical truncation, floating-point rounding, uncertain inputs, stochastic simu
 **Continue:** [Propagate joint distributions and control the numerical approximation](../../metrology/uncertainty/Monte-Carlo-propagation.lingua#r_5NYXBSGVDB0Q2V5VPJ7JDWRH1E).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Continue in clean manufacturing:** [Investigate particle transport at increasing depth](../../../production/clean-manufacturing-and-contamination-control/studies/Investigate-particle-transport-at-increasing-depth.lingua#r_4R2YMXXJEVP9YHX5D7BKVXNXRT).
+
 } r_1D7K129GJSMBAB3WR7Z1KJFXXK

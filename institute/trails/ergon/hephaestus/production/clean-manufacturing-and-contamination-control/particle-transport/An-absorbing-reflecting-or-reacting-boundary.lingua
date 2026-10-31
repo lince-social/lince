@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+An absorbing, reflecting or reacting boundary (@cm-boundaries: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "Near-wall-transport-and-surface-collection.lingua#r_51RJ8T68X5ASK3MJ1TYZ87JPGH") { r_5RFVPYGGS65A3NH94DM0YBQRC8
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Mass Diffusion and Diffusion to a Cylinder; [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), surface contamination.
+
+A perfectly absorbing diffusive boundary can impose c=0 at the capture surface. A reflecting boundary imposes zero total normal particle flux. A finite capture law may relate flux to surface concentration through a rate coefficient. These are different physical idealizations, even when they are drawn at the same geometric wall.
+
+The particle centre contacts a surface at a distance set by particle size. For a collector of radius a and a spherical particle of diameter d, the contact radius is a+d/2. Replacing it with a is an approximation whose importance depends on the chosen scales. Adhesion, rebound or release require additional surface-state information.
+
+**Work:** Write the boundary conditions for three models of the same collector and identify the observation that would distinguish them. Explain why setting a zero concentration gradient is not equivalent to zero total flux when there is drift toward the boundary.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Near-wall transport and surface collection](Near-wall-transport-and-surface-collection.lingua#r_51RJ8T68X5ASK3MJ1TYZ87JPGH).
+
+} r_5RFVPYGGS65A3NH94DM0YBQRC8

@@ -1,6 +1,6 @@
 Import "../Metrology.lingua"
 
-Observation models, inverse questions, and Bayesian interpretation (@met-inverse-bayesian: 0, is #chapter, #part-of @metrology, #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4", #metrology "Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG") { r_1TSJYTGBD1NY9Q7VP0BDFXZ94K
+Observation models, inverse questions, and Bayesian interpretation (@met-inverse-bayesian: 0, is #chapter, #part-of @metrology, #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4", #metrology "Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/When-a-spectrum-cannot-identify-a-mixture.lingua#r_5AQF13GWSK9SYF1V68GPWS2M1T", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/Inversion-cannot-create-information-that-the-response-loses.lingua#r_7EQ5WTVSRCQPA7WYPQ0YVTHTYX") { r_1TSJYTGBD1NY9Q7VP0BDFXZ94K
 **Read:** [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), sections 3–8 and contrasting observation-equation examples; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clause 11, including Bayesian statistical models; [Propagation of distributions using Monte Carlo — JCGM 101](../sources/GUM-Monte-Carlo.lingua#r_79V20QP3T2KZ6GD07SK5TGZ1J4), the distribution-assignment discussion.
 
 Some measurement questions estimate a parameter or latent quantity from a probability model for observations rather than from a simple explicit equation with already characterized inputs. The likelihood describes observations conditional on the unknowns and conditions. A Bayesian analysis combines it with prior information to produce a posterior distribution. Different inferential approaches must state what their intervals and probabilities mean.
@@ -16,4 +16,10 @@ Compare one observation-equation example in TN 1900 with an explicit measurement
 **Continue:** [Sampling contributions, thresholds, and results near zero](Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG).
 
 **Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in gas and vacuum systems:** [When a spectrum cannot identify a mixture](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/When-a-spectrum-cannot-identify-a-mixture.lingua#r_5AQF13GWSK9SYF1V68GPWS2M1T).
+
+
+**Continue in clean manufacturing:** [Inversion cannot create information that the response loses](../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/Inversion-cannot-create-information-that-the-response-loses.lingua#r_7EQ5WTVSRCQPA7WYPQ0YVTHTYX).
+
 } r_1TSJYTGBD1NY9Q7VP0BDFXZ94K

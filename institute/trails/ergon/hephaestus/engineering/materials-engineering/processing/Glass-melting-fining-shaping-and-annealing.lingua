@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Glass melting, fining, shaping and annealing (@mat-glass-processing: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Cementitious-materials-hydration-packing-and-curing.lingua#r_4W2FRYNVAWC89ZV8KB49M0PAA1") { r_0PER8031SPHZTNYMHXY0WW3RYJ
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), glass-production and viscous-flow lectures; the earlier glass-transition source; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), silicate and thermal behavior.
+
+Glass manufacture requires batch reactions and dissolution, chemical homogeneity, control of bubbles and inclusions, shaping and a thermal history that limits residual stress. Viscosity varies strongly with composition and temperature. A forming window must permit flow while avoiding excessive sag, crystallization or defects.
+
+**Work:** Trace a sheet, fibre or container from feed through melt, shaping and annealing. Compare flow residence, diffusion, bubble motion and stress-relaxation times using documented properties. Explain why increasing temperature can help one operation while worsening refractory interaction or volatilization. Connect the final stress profile to cooling and later cutting or fracture, keeping annealing distinct from deliberate thermal strengthening.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Cementitious materials, hydration, packing and curing](Cementitious-materials-hydration-packing-and-curing.lingua#r_4W2FRYNVAWC89ZV8KB49M0PAA1).
+
+} r_0PER8031SPHZTNYMHXY0WW3RYJ

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Trusses, frames and interacting machine members (@mech-members: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Centres-of-mass-centroids-and-distributed-weight.lingua#r_1FWP6BCNJ5094KPFT4SZ16Z84Q") { r_75BWC5200SN37PSBH35JF73XMR
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapter 6 in full. Work both joint/section methods for ideal trusses and the separate frame/machine examples.
+
+A two-force member has forces at only two points; in static equilibrium those forces must be equal, opposite and collinear. This conclusion follows from the model's loading, not from a part's slender appearance. A pin-jointed truss with joint-applied loads differs from a frame whose members carry transverse loads and moments.
+
+**Work:** Analyze an ideal triangular truss by joints and by a section cut, then compare results. Add a transverse load midway along one member and explain why the original two-force assumption no longer applies. For a simple clamp or linkage, isolate each member and carry connection forces consistently between diagrams.
+
+Check the whole assembly after solving its parts. Internal connection forces must cancel from the assembly balance. Investigate sensitivity to a nearly collinear geometry or changing lever arm; a mechanism that approaches a singular configuration can create large internal forces even with modest applied load.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Centres of mass, centroids and distributed weight](Centres-of-mass-centroids-and-distributed-weight.lingua#r_1FWP6BCNJ5094KPFT4SZ16Z84Q).
+
+} r_75BWC5200SN37PSBH35JF73XMR

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cryogenic transfer carries enthalpy and product history (@gas-cryo-transfer: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #industrial-gases-and-vacuum "../delivery/A-vaporiser-must-supply-the-required-enthalpy.lingua#r_20DWRJF14X01FJ0C7W08Z5917Y") { r_1QN5F27CQH07V8CP9B9VZGS47F
+**Read:** [Good practices guide for loading and unloading of cryogenic liquid tankers — AIGA](../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C), the full guide; [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), transfer systems; [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), commissioning and receiving context.
+
+Extend the shared transfer analysis with the thermal state of the connecting line and both vessels. Incoming liquid, returning vapor, line cooldown and retained product can all contribute to the difference between source loss and destination gain. Track each stream with its measured basis and time interval.
+
+For an idealized adiabatic flash into an equilibrium separator at specified downstream pressure, inlet enthalpy h determines vapor mass fraction x=(h−hₗ)/(hᵥ−hₗ) when h lies between the saturated-phase enthalpies. Values outside 0≤x≤1 mean this two-phase formula is outside its domain. A real hose or valve need not provide equilibrium separation or a well-defined outlet fraction at every instant.
+
+Receiving a cold product into warm equipment also exchanges energy with the equipment. Keep line inventory and its final state in the reconciliation. Flowmeters, weighing and vessel-level estimates can refer to different material boundaries and should not be compared as if they measured the same quantity.
+
+**Work:** Build a transfer balance with source, line, receiver, vapor return and uncollected discharge. Close mass and energy independently, then identify the observations that distinguish a measuring discrepancy from a physical loss or a changed phase distribution.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A vaporiser must supply the required enthalpy](../delivery/A-vaporiser-must-supply-the-required-enthalpy.lingua#r_20DWRJF14X01FJ0C7W08Z5917Y).
+
+} r_1QN5F27CQH07V8CP9B9VZGS47F

@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+An independent water investigation and its revision (@wu-independent-research: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #water-and-sanitation "Water-and-sanitation-completion-and-continuing-study.lingua#r_1Y55JX0ZNS84JVY6AP315NWBFR") { r_4H96CXY28ZRMX02010G0RXEPST
+**Read:** Complete the chosen advanced study's primary literature and revisit [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS)'s full account of inference from imperfect observations. Read supporting methods far enough to derive and criticize the central result yourself.
+
+Pose a bounded question whose answer is not supplied by repeating the preceding examples. It might concern a source/treatment interaction, an explanation of model error, a service interruption, a process alternative or an uncertainty that changes a design decision. Explain why the question matters and what evidence could decide it.
+
+**Work:** Carry out an original investigation with independently checked calculations and a defensible comparison. For empirical work, use measured observations whose provenance and permissions are clear; for computational work, keep the public data, exact model and environment reproducible. Separate data used to construct an explanation from data used to test it. Account for unresolved discrepancies and a negative or inconclusive result as carefully as a successful one.
+
+Present the result in enough detail for criticism, respond to substantive objections and revise the argument. Include an accessible explanation for someone beginning the subject. A proposed experiment remains proposed until performed. A scholarly completion claim needs an actual sustained investigation and revision, not simply a collection of links or completion of a demonstration program.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Water and sanitation — completion and continuing study](Water-and-sanitation-completion-and-continuing-study.lingua#r_1Y55JX0ZNS84JVY6AP315NWBFR).
+
+} r_4H96CXY28ZRMX02010G0RXEPST

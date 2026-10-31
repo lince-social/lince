@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Passivation, film breakdown and repassivation (@mat-passive: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5", #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #materials-engineering "../../../chemistry/general-chemistry/electrochemistry/Corrosion-passivation-and-environment.lingua#r_5HRF141YG6H9FJ8F3HKNGCA4NC") { r_4G1NCN3RFJ1A47KN9SQEHGFQWA
+**Read:** [Aqueous corrosion — Cambridge DoITPoMS](../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5), passivation and control; [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), construction materials and localized damage. Follow the shared general-chemistry corrosion Record.
+
+A passive surface is a dynamically maintained state, not an absence of chemical reactions. Film formation, dissolution, defect transport and mechanical removal compete. Potential, solution chemistry, temperature and prior history can alter the state. A designation such as stainless does not specify performance in every chloride, crevice or temperature condition.
+
+**Work:** Draw active, passive and breakdown behavior on an explicitly schematic polarization plot. Explain which parts the previous monotone two-branch calculation cannot represent. Compare a freshly prepared, preconditioned and damaged surface using independent film and loss evidence. Distinguish a measured breakdown event, sustained propagation and subsequent repassivation. Avoid turning a single laboratory potential into a universal service threshold.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Explain corrosion through coupled electrochemical and material processes](../../../chemistry/general-chemistry/electrochemistry/Corrosion-passivation-and-environment.lingua#r_5HRF141YG6H9FJ8F3HKNGCA4NC).
+
+} r_4G1NCN3RFJ1A47KN9SQEHGFQWA

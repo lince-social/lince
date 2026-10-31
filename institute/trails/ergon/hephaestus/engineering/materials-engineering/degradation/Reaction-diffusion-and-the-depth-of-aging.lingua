@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Reaction–diffusion and the depth of aging (@mat-aging-depth: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG", #source "../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT", #materials-engineering "Glass-water-and-slow-crack-propagation.lingua#r_3X59DY9KNS8Z41NCV7KAZ1M25C") { r_2YFQ8EZBR47YX18JTA9MFH9XGK
+**Read:** [Polymer-composite weathering protocols — NIST SP 1200-15](../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG), surface/bulk measurement distinctions; [Outdoor polymer service-life inference — Duan and colleagues](../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT), exposure modeling; the earlier diffusion and reaction accounts.
+
+For a teaching first-order oxygen-consumption model, ∂c/∂t=D∇²c−kc. The ratio kL²/D compares reaction with diffusion across length L. A rapidly reacting thick specimen may develop a very different interior exposure from a thin coupon even at the same external condition. The actual reaction order, changing D and damage-dependent transport need evidence.
+
+**Work:** Derive the steady planar solution for stated surface and symmetry conditions, check the k→0 limit and close the integrated species balance. Compare thicknesses and depth-resolved measurements. Explain why raising test temperature can change the controlling mechanism instead of simply multiplying a rate. Reuse the conservative diffusion program as a numerical foundation only after deriving and checking the new reaction term.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Glass, water and slow crack propagation](Glass-water-and-slow-crack-propagation.lingua#r_3X59DY9KNS8Z41NCV7KAZ1M25C).
+
+} r_2YFQ8EZBR47YX18JTA9MFH9XGK

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Elastic energy, anisotropy and the measured modulus (@mat-elastic-energy: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #materials-engineering "Thermal-mismatch-and-residual-stress-across-materials.lingua#r_3JNXSY88H7FCZH05WBRA715CJZ") { r_5478VF901Q60ZK34Z449WT9BPE
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 3.1–3.4 and tensor appendices; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Constitutive Relations and Laminated Composite Plates. Use the shared elastic-law Record immediately before this step.
+
+For a stable small-strain elastic solid with the appropriate symmetries, stored energy density is W=½ε:C:ε. The fourth-order stiffness C maps symmetric strain to stress; its inverse compliance applies on the symmetric tensor space. An isotropic material has two independent elastic constants, an orthotropic one generally nine. Directional Poisson ratios obey reciprocity, not independent arbitrary choices.
+
+Keep engineering shear γ_ij=2ε_ij distinct from tensor shear when assembling matrices and energy. A stiffness matrix entry need not equal a Young's modulus. Uniaxial stress, constrained strain, hydrostatic compression and ultrasonic propagation probe different combinations of constants.
+
+**Work:** Derive a directional modulus from compliance and compare two orientations of one documented material. Check symmetry and positive elastic energy for a proposed set of constants. Explain why an averaged polycrystal, a textured sheet, a wooden beam and a fibre ply require different homogenization assumptions.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Thermal mismatch and residual stress across materials](Thermal-mismatch-and-residual-stress-across-materials.lingua#r_3JNXSY88H7FCZH05WBRA715CJZ).
+
+} r_5478VF901Q60ZK34Z449WT9BPE

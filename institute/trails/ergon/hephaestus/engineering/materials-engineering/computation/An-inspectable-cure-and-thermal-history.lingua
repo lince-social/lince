@@ -1,0 +1,99 @@
+Import "../Materials-engineering.lingua"
+
+An inspectable cure and thermal history (@mat-cure-example: 0, is #chapter, #part-of @materials-engineering, #materials-engineering "../processing/Measure-conversion-and-shape-retention-with-independent-evidence.lingua#r_48NCQYPM0KY28VRCK8WGM8DK85") { r_591T0QHNX8Y619RXNQGF3CNPHF
+**Read:** The preceding derivation before running this original standard-library calculation. Each schedule pair is (duration in seconds, oven temperature in kelvin). The code uses fourth-order Runge–Kutta on exposure and accumulated external heat, ending each step exactly within its constant-oven segment.
+
+Returned rows contain elapsed time, conversion, specimen temperature and cumulative external heat per kilogram. The reported peak is sampled at step endpoints; refine the grid to estimate a maximum. Bounds are computational guardrails: initial/oven/reference temperatures 250–600 K; evaluated specimen states 200–800 K; positive cp and step; nonnegative Q, h, rate and activation energy. The code limits segment count and total steps and rejects excessive reaction or thermal changes per step. These checks do not prove convergence or physical validity.
+
+```python
+import math
+
+
+def cure_history(schedule, initial_temperature=300.0, initial_conversion=0.0,
+                 heat_capacity=1500.0, reaction_heat=150000.0,
+                 heat_transfer=5.0, reference_rate=0.002,
+                 activation_energy=45000.0, reference_temperature=350.0,
+                 max_step=0.5):
+    def number(value, low, high, name):
+        if type(value) not in (int, float) or not low <= value <= high:
+            raise ValueError(name)
+        return float(value)
+
+    t0 = number(initial_temperature, 250, 600, 'initial_temperature')
+    a0 = number(initial_conversion, 0, 0.999999, 'initial_conversion')
+    cp = number(heat_capacity, 100, 10000, 'heat_capacity')
+    q = number(reaction_heat, 0, 1000000, 'reaction_heat')
+    h = number(heat_transfer, 0, 1000, 'heat_transfer')
+    kr = number(reference_rate, 0, 1, 'reference_rate')
+    ea = number(activation_energy, 0, 150000, 'activation_energy')
+    tr = number(reference_temperature, 250, 600, 'reference_temperature')
+    step = number(max_step, 0.0001, 10000, 'max_step')
+    if type(schedule) not in (list, tuple) or not 1 <= len(schedule) <= 100:
+        raise ValueError('schedule')
+    segments = []
+    count = 0
+    for segment in schedule:
+        if type(segment) not in (list, tuple) or len(segment) != 2:
+            raise ValueError('segment')
+        duration = number(segment[0], 0.0001, 100000, 'duration')
+        oven = number(segment[1], 250, 600, 'oven_temperature')
+        n = math.ceil(duration / step)
+        count += n
+        if count > 200000:
+            raise ValueError('too many steps')
+        segments.append((duration, oven, n))
+    if sum(d for d, _, _ in segments) > 1000000:
+        raise ValueError('total duration')
+
+    def state(z, heat):
+        if not math.isfinite(z) or not 0 <= z <= 1000000:
+            raise ValueError('exposure outside model domain')
+        converted = (1 - a0) * -math.expm1(-z)
+        temperature = t0 + (q * converted + heat) / cp
+        if not math.isfinite(temperature) or not 200 <= temperature <= 800:
+            raise ValueError('temperature outside model domain')
+        return a0 + converted, temperature
+
+    z = heat = elapsed = 0.0
+    rows = [(0.0, a0, t0, 0.0)]
+    sampled_peak = t0
+    for duration, oven, n in segments:
+        dt = duration / n
+        if h * dt / cp > 0.25:
+            raise ValueError('refine thermal time step')
+
+        def rhs(exposure, external_heat):
+            _, temperature = state(exposure, external_heat)
+            rate = kr * math.exp(ea / 8.31446261815324 * (1 / tr - 1 / temperature))
+            if rate * dt > 0.25:
+                raise ValueError('refine reaction time step')
+            return rate, h * (oven - temperature)
+
+        for _ in range(n):
+            k1, j1 = rhs(z, heat)
+            k2, j2 = rhs(z + dt * k1 / 2, heat + dt * j1 / 2)
+            k3, j3 = rhs(z + dt * k2 / 2, heat + dt * j2 / 2)
+            k4, j4 = rhs(z + dt * k3, heat + dt * j3)
+            z += dt * (k1 + 2 * k2 + 2 * k3 + k4) / 6
+            heat += dt * (j1 + 2 * j2 + 2 * j3 + j4) / 6
+            conversion, temperature = state(z, heat)
+            sampled_peak = max(sampled_peak, temperature)
+        elapsed += duration
+        rows.append((elapsed, conversion, temperature, heat))
+    return {'segments': rows, 'sampled_peak_temperature': sampled_peak,
+            'steps': count, 'exposure': z}
+
+
+if __name__ == '__main__':
+    result = cure_history([(300.0, 350.0), (600.0, 370.0), (900.0, 300.0)])
+    for row in result['segments']:
+        print(' '.join(f'{value:.12g}' for value in row))
+    print(result['sampled_peak_temperature'])
+```
+
+**Work:** Reproduce constant-rate analytic heating, equal reaction/thermal rates, zero-reaction and adiabatic limits. Independently integrate conversion and temperature as separate variables. Halve the step, close the energy balance and compare segmented and unsplit identical holds. The displayed hypothetical case ends at conversion about 0.9996906553 and 304.3182656 K; its sampled peak is about 410.0088 K, above either heated-oven setting. Explain why final conversion alone hides the thermal excursion. Compare with an actual validated kinetic model only after obtaining the material's measured properties and relevant spatial evidence.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Measure conversion and shape retention with independent evidence](../processing/Measure-conversion-and-shape-retention-with-independent-evidence.lingua#r_48NCQYPM0KY28VRCK8WGM8DK85).
+
+} r_591T0QHNX8Y619RXNQGF3CNPHF

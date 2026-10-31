@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Compare complete measurements on a common basis (@cm-aerosol-comparison: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM", #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "../studies/Investigate-the-aerosol-observation-chain.lingua#r_0YXF2TS6BQANQ6ZRWZCTWS7ATA") { r_2DNY0NFM3FXHK15P42106Q7SE3
+**Read:** [Mobility particle size spectrometers — Wiedensohler and colleagues](../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM), inversion and instrument comparisons; [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), summary of calibration procedures. Revisit [Translate the process into observable facility requirements](../facilities/Translate-the-process-into-observable-facility-requirements.lingua#r_38A200F1H46XAJ3DRTKHZ183SV).
+
+Before comparing numbers, align the measurand: diameter convention, interval widths, concentration basis, timing, conditioning, thresholds and spatial sample. Two instruments may correctly report different quantities. An apparent agreement can also hide common losses or shared assumptions.
+
+A software comparison with identical input and a fixed response model tests computation under those assumptions. A comparison of complete instruments includes inlets, flows, conditioning, references and sensors. Agreement of the first does not establish agreement of the second, and neither alone proves suitability for a particular product.
+
+For two compatible estimates C₁ and C₂, the uncertainty of their difference includes u²(C₁) + u²(C₂) − 2cov(C₁,C₂). A shared calibration can cancel in the difference while remaining important for both absolute values. Repeatability at one state is a narrower observation than stability over production changes.
+
+**Work:** Build a comparison with one counter near the product and another connected through tubing. Predict the effects of size-dependent loss, lag and a common calibration scale. Decide which observations could separate these effects. Present the residual disagreement with its uncertainty and scope, then explain which process claim is supported and which still needs surface, chemical or biological evidence.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Investigate the aerosol observation chain](../studies/Investigate-the-aerosol-observation-chain.lingua#r_0YXF2TS6BQANQ6ZRWZCTWS7ATA).
+
+} r_2DNY0NFM3FXHK15P42106Q7SE3

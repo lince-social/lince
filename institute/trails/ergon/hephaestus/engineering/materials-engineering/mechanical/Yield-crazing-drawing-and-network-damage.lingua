@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Yield, crazing, drawing and network damage (@mat-polymer-nonlinear: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "Crystal-plasticity-slip-and-microstructural-resistance.lingua#r_04W521JDJQHFVN8PRV301MXBQH") { r_3CZFFV5SG82CF993EK0QBZ0QXA
+**Read:** [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), lectures 17–19; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Crystallinity in Polymers and Toughening; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 3.5, 3.9 and 3.10.
+
+A linear viscoelastic model cannot explain every permanent change in a polymer. Shear yielding, crazing, chain orientation, lamellar slip, cavitation, bond damage and interface debonding can compete. Crazes contain a load-bearing fibrillar structure and voids; they are not merely featureless empty cracks.
+
+Hydrostatic stress, strain rate, temperature and environment can change which mechanism is observed. Neck propagation can change the local material state even while a global load appears steady. Elastomer softening on repeated loading and permanent set require comparison with recovery times and evidence for structural damage.
+
+**Work:** Reconstruct one published polymer stress–strain/microstructure study. Explain its pre-yield, localized and post-draw regimes and distinguish recoverable delayed strain from persistent change. Compare an unnotched test with a constrained notch and explain why the same nominal stress does not imply the same mechanism.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Crystal plasticity, slip and microstructural resistance](Crystal-plasticity-slip-and-microstructural-resistance.lingua#r_04W521JDJQHFVN8PRV301MXBQH).
+
+} r_3CZFFV5SG82CF993EK0QBZ0QXA

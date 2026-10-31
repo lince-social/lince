@@ -1,0 +1,13 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend a wetting and controlled-humidity inference (@cm-study-wetting: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Origin-of-Adhesion-in-Humid-Air-Kim.lingua#r_5KY9XHR2M0AZYYGJRNTFPCPB0H", #clean-manufacturing "Review-surfaces-before-choosing-cleaning-chemistry.lingua#r_4XZBGNRTFEMMCYYE2GGA1HSSBG") { r_79HD6DSNY5B9B9AVC3F9WYVKXJ
+**Read:** [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), the full wetting, hysteresis, capillary and coating discussions; [Origin of adhesion in humid air — Kim and colleagues](../sources/Origin-of-Adhesion-in-Humid-Air-Kim.lingua#r_5KY9XHR2M0AZYYGJRNTFPCPB0H), whose abstract is only an entry to the full experiment.
+
+Choose a surface and liquid relevant to the intended function. Derive an interface-energy account and state whether the proposed geometry is a droplet, thin bridge or textured surface. Distinguish equilibrium, metastability and a moving contact line. A measured angle and a pull-off force are different observables.
+
+**Work:** Compare advancing and receding protocols, temperature and humidity control, waiting time and surface preparation. Recompute a capillary force for a specified geometry with its pressure and contact-line terms. Develop two explanations for a changed observation and propose a discriminating measurement. If using the Kim study, obtain its full methods and results before claiming to reproduce them; a failed download or catalogue abstract cannot establish experimental details.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review surfaces before choosing cleaning chemistry](Review-surfaces-before-choosing-cleaning-chemistry.lingua#r_4XZBGNRTFEMMCYYE2GGA1HSSBG).
+
+} r_79HD6DSNY5B9B9AVC3F9WYVKXJ

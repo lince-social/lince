@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Dynamic expansion from flow and conductance (@gas-dynamic-standard: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7", #source "../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV", #industrial-gases-and-vacuum "A-comparison-needs-the-same-gas-state-at-both-ports.lingua#r_5T0JCXM3DS5RCAXM9YRTX261ZY") { r_78VG1K2RDH38RRAJ7YXR2AKVX9
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), pressure realization; [Leak calibration — Ehrlich and Tison, NIST SP 250-38](../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7), primary-standard theory; [Cold-atom vacuum comparison — Barker and colleagues](../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV), the density realization.
+
+For a steady isothermal molecular-flow restriction with conductance C, throughput Q=C(p₁−p₂). If Q=ṅRT, the upstream pressure is p₁=p₂+ṅRT/C. The downstream pressure is a correction, not automatically zero. Characterize aperture area, transmission probability, gas, temperature and other gas sources.
+
+For a thin ideal aperture C=A v̄/4. A finite-thickness aperture or complex geometry needs a transmission factor. The same conductance assumptions used in vacuum design now contribute directly to the uncertainty of a reference pressure.
+
+A known flow and conductance can realize pressure without using the unknown gauge as its own reference. Comparison with a different physical method is especially informative, provided shared inputs and backgrounds are included in the covariance account.
+
+**Work:** Reconstruct the amount balance from flowmeter through aperture to pumping region. Show how ignoring downstream pressure changes the result. Explain which uncertainties are inherited from dimensions, temperature, gas properties and flow realization and which arise from nonuniform gas at the gauge ports.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A comparison needs the same gas state at both ports](A-comparison-needs-the-same-gas-state-at-both-ports.lingua#r_5T0JCXM3DS5RCAXM9YRTX261ZY).
+
+} r_78VG1K2RDH38RRAJ7YXR2AKVX9

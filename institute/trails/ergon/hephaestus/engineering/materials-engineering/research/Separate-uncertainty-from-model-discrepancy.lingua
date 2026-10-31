@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Separate uncertainty from model discrepancy (@mat-research-uncertainty: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #source "../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND", #source "../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5", #materials-engineering "Materials-descriptors-preserve-the-question.lingua#r_4KDC1NSGGAVWDWX605Z8MSQFVE") { r_2RKX2F69ZM9KMZA42YYZX7X55S
+**Read:** [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), evaluation and uncertainty; [Mesoscale tensile blind predictions — AM-Bench 2022](../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND), measurement uncertainty; [Verifying precision in density-functional calculations — Bosoni and colleagues](../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5), numerical convergence and protocol precision; shared metrology foundations.
+
+Observation noise, sampling variation, uncertain parameters, numerical approximation and missing physics are different sources of disagreement. They can interact and need not be independent or normally distributed. Propagating a parameter covariance conditional on one model does not quantify every alternative model.
+
+For a differentiable response y=f(θ), a local approximation gives variance JΣJᵀ, retaining parameter covariance. Check its validity against nonlinearity, boundaries and alternative scenarios. A prediction interval whose nominal coverage fails on held-out cases needs revision. Common calibration errors can correlate many observations and resist averaging away.
+
+**Work:** Build an uncertainty account for one earlier investigation. Compare local propagation with direct sampling or bounded scenarios; verify dimensions and correlations. Separate numerical refinement from physical-parameter variation. Construct a case where narrow conditional intervals miss observations because the model omits a mechanism, and propose an experiment that distinguishes that explanation from a calibration error.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Materials descriptors preserve the question](Materials-descriptors-preserve-the-question.lingua#r_4KDC1NSGGAVWDWX605Z8MSQFVE).
+
+} r_2RKX2F69ZM9KMZA42YYZX7X55S

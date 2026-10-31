@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Defect equilibria, charge neutrality and atmosphere (@mat-defect-equilibrium: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "Interfaces-curvature-wetting-and-size-dependent-equilibrium.lingua#r_4JQ57EYRRSQK054B18F5KFGQFQ") { r_4925ESXSJEAFKRCDX1YJGZW7NT
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapter 12 in full; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lectures 4–6 and 3.21 lectures 10–16. Return to the earlier occupancy and charge-balance Record.
+
+A defect population reflects formation free energies, available sites, interactions and conservation. For a dilute, noninteracting vacancy population, its fraction is approximately exp(−ΔG_f/k_BT). Formation entropy is part of ΔG_f; assuming a universal prefactor silently removes it. Non-dilute occupancy requires the corresponding site-balance expression.
+
+Ionic materials couple charged defects, electrons/holes and external chemical potentials. Write site balances, effective charges and mass-action relations together. A change in oxygen activity can change conductivity and nonstoichiometry even at a fixed nominal cation composition. Frozen processing populations need not equal the equilibrium population at service temperature.
+
+**Work:** Derive the dilute vacancy relation from a configurational free energy. Construct a charge-neutral intrinsic defect reaction and a donor/acceptor compensation example. Identify a limiting regime in a Brouwer diagram and check its slope from balances rather than copying a drawing.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Interfaces, curvature, wetting and size-dependent equilibrium](Interfaces-curvature-wetting-and-size-dependent-equilibrium.lingua#r_4JQ57EYRRSQK054B18F5KFGQFQ).
+
+} r_4925ESXSJEAFKRCDX1YJGZW7NT

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Lifetime, repair and replacement change the reference flow (@mat-life-duration: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #source "../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX", #materials-engineering "Sensitivity-scenarios-and-the-strength-of-a-conclusion.lingua#r_4FBAJVCBVA860XPWMHVFM29QJB") { r_0P67R52GK04MX778TQNWRHHHVQ
+**Read:** [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ), complete pallet and B-pillar discussions; [Life-cycle assessment, detailed guidance — ILCD Handbook](../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX), temporal scope and interpretation; revisit the degradation life-inference work.
+
+Compare alternatives over the same required service interval or output. Initial material quantity alone omits replacement, repair materials, downtime and changed operating efficiency. A constant lifetime is an assumption; a distribution, service-dependent hazard or deteriorating function may require a different account. Surviving specimens and incomplete observations remain evidence.
+
+If a hypothetical component lasts τ and is replaced immediately over horizon H, the number of units installed is ceil(H/τ) when H>0 and replacement exactly at the final boundary supplies no additional service. This ideal count ignores variability and residual value. Fractional average replacements describe a different population or long-run convention and must be stated.
+
+**Work:** Compare discrete finite-horizon and long-run accounts for two material choices. Add one documented repair strategy and a changing use-phase requirement. Test sensitivity to lifetime evidence rather than selecting a convenient number. Explain whether the same ranking survives a plausible shorter life or an unplanned replacement.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Sensitivity, scenarios and the strength of a conclusion](Sensitivity-scenarios-and-the-strength-of-a-conclusion.lingua#r_4FBAJVCBVA860XPWMHVFM29QJB).
+
+} r_0P67R52GK04MX778TQNWRHHHVQ

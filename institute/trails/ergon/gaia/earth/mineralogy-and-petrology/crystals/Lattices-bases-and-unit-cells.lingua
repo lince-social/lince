@@ -1,6 +1,6 @@
 Import "../Mineralogy-and-petrology.lingua"
 
-Build a crystal model from translations and an atomic basis (@mp-lattice: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Cell-metric-and-reciprocal-geometry.lingua#r_6CB07MYV3Z3DK5KBGKFET4K8SM") { r_2HS07Q4PD6XHTVGDHBJ3SDB6J3
+Build a crystal model from translations and an atomic basis (@mp-lattice: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Cell-metric-and-reciprocal-geometry.lingua#r_6CB07MYV3Z3DK5KBGKFET4K8SM", #materials-engineering "../../../../hephaestus/engineering/materials-engineering/structure/Packing-neighbours-and-density-in-simple-crystals.lingua#r_43380X5EW4XK713V0F66KH2RV4") { r_2HS07Q4PD6XHTVGDHBJ3SDB6J3
 **Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete unit-cell, lattice, and crystal-structure sections; [Crystallography Open Database — structures, citations, and CIF records](../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG), one identified structure record and its original paper; [Crystallographic teaching pamphlets — IUCr](../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the full relevant lattice/symmetry teaching treatment.
 
 A lattice describes translational repetition; a basis describes the contents attached to that repetition. A crystal structure combines them. A lattice point need not be an atom, and changing the chosen unit cell need not change the physical structure. Distinguish a primitive cell from a useful conventional cell.
@@ -16,4 +16,6 @@ Read the complete lattice/unit-cell treatment and the original structural refere
 **Continue:** [Calculate geometry with the cell metric and reciprocal basis](Cell-metric-and-reciprocal-geometry.lingua#r_6CB07MYV3Z3DK5KBGKFET4K8SM).
 
 **Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+**Continue in materials engineering:** [Packing, neighbours and density in simple crystals](../../../../hephaestus/engineering/materials-engineering/structure/Packing-neighbours-and-density-in-simple-crystals.lingua#r_43380X5EW4XK713V0F66KH2RV4).
+
 } r_2HS07Q4PD6XHTVGDHBJ3SDB6J3

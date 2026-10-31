@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A sample is an intervention in a process (@cm-sampling: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "Counts-flow-and-the-volume-observed.lingua#r_7DP46N6ST7KSVNR55QVDD1VKGP") { r_53DKT80WDMHT3647BAPNDNSXG0
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), sampling and instrument response; revisit [A specimen, a sampling target, and a result about a population](../../../inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH).
+
+Sampling changes what reaches the detector. A tube can lose particles to its wall, a container can contribute residue, a swab can recover only a fraction of the target and a sample can change during transport. Include those paths in the measurement model rather than assuming that everything observed originated in the product.
+
+Location and timing also matter. A measurement during idle conditions may miss the exposure created by handling or an intervention. Taking many samples from one convenient place does not remove the uncertainty about unobserved places.
+
+**Work:** Draw a complete sample path and label possible loss, introduction and change. Compare a spatially distributed design with repeated sampling at one location. Explain the populations to which each result could reasonably apply.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Counts, flow and the volume observed](Counts-flow-and-the-volume-observed.lingua#r_7DP46N6ST7KSVNR55QVDD1VKGP).
+
+} r_53DKT80WDMHT3647BAPNDNSXG0

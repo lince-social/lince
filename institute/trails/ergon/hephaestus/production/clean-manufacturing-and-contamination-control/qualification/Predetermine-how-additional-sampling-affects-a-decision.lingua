@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Predetermine how additional sampling affects a decision (@cm-qualification-retest: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY", #clean-manufacturing "../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ") { r_3PYMQF2KK5E8RF0SY79E5TZYYN
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), double and sequential sampling, sections 6.2.4–6.2.6; [Measurement uncertainty in conformity assessment — JCGM 106](../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY), decision rules.
+
+A staged sampling plan can be efficient when its stopping and acceptance rules are specified and evaluated as one procedure. Repeating a failed test until one result passes produces a different rule from the single test described in a report.
+
+If a fixed nonconforming state has probability a of passing each independent test, accepting after any one of m attempts has probability 1−(1−a)ᵐ. With a = 0.1 and m = 5, this is 0.40951. The numerical example assumes the state and measurement behavior remain unchanged; rework, selection and dependence alter the problem.
+
+Retesting can investigate a suspected measurement failure, but it should preserve the original observation and the evidence for its interpretation. A documented repair followed by a new test concerns a changed object. Selectively dropping unfavorable data concerns the same object with an altered decision rule.
+
+**Work:** Compare a fixed sample, a predeclared two-stage rule and an ad hoc repeat-until-pass rule on one simulated population. Evaluate the complete procedures' acceptance probabilities and sampling effort. Explain how you would report an invalid measurement without erasing an actual process failure.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Conformity decisions, guard bands, and the risk being controlled](../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ).
+
+} r_3PYMQF2KK5E8RF0SY79E5TZYYN

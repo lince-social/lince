@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Slip and the definition of the Knudsen number (@cm-slip-regime: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49", #source "../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9", #clean-manufacturing "A-slip-correlation-is-connected-to-measurement.lingua#r_5DWKWHF3HKGHC3DVJQGWBT6Y8D") { r_0W5MZKVYKNQ1STS4D83CE91Z4B
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Hydrodynamic Forces, pages 4–5; [Slip-correction measurements — Kim, Mulholland, Kukuck and Pui](../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49), introduction. Compare [Aerosols and coagulation — Chiang C. Mei, MIT](../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9), page 2 critically.
+
+Define Kn=2λ/d here, with λ the gas molecular mean free path. Some texts use λ/d instead; convert the definition before moving coefficients between formulas. A common teaching correlation is C_c=1+Kn[1.257+0.4exp(−1.1/Kn)]. The corrected resistance is ζ=3πμd/C_c. As Kn approaches zero, C_c approaches one; increasing slip lowers resistance under the stated model.
+
+Uncorrected continuum Stokes drag requires the particle scale to be large relative to the gas mean free path, alongside its low-Reynolds-number assumptions. The opposite size inequality printed in Mei's page-2 sentence is inconsistent with both this limit and the NIST introduction. A correction fitted to a regime is not a proof of every extrapolation.
+
+**Work:** Express the same correlation with Kn′=λ/d and show that its predictions are unchanged. For hypothetical λ=65 nm and d=1 µm, calculate Kn=0.13 and C_c≈1.163421. Explain why changing gas pressure can change this comparison even if particle diameter stays fixed.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A slip correlation is connected to measurement](A-slip-correlation-is-connected-to-measurement.lingua#r_5DWKWHF3HKGHC3DVJQGWBT6Y8D).
+
+} r_0W5MZKVYKNQ1STS4D83CE91Z4B

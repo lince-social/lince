@@ -1,0 +1,13 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Recover a motion from rates and initial information (@mech-accumulation-question: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "../../../inquiry/quantitative-literacy/practice/Rates-and-accumulation.lingua#r_0NTXN5E5ZJ1A8C149BQF4G2YCZ") { r_09V8H4YW03E42GB97KEEGXWYDK
+**Study:** [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), 18.01SC definite integrals and antiderivatives. The shared rates Record gives the accounting idea before this is applied to motion.
+
+Knowing a rate does not fix the starting amount. Two parts with the same velocity can begin at different positions; two parts with the same acceleration can begin with different velocities. Keep the initial time, position and velocity with a proposed motion.
+
+**Work:** A constant 0.6 m/s² acceleration lasts 2 s. Accumulate the velocity change as area under an acceleration–time graph, then add it to both 0 and 0.4 m/s initial velocities. Sketch the two velocity–time graphs. Explain why their areas, and thus displacements, differ even though the acceleration histories coincide.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Rates, accumulation, and the boundary of an account](../../../inquiry/quantitative-literacy/practice/Rates-and-accumulation.lingua#r_0NTXN5E5ZJ1A8C149BQF4G2YCZ).
+
+} r_09V8H4YW03E42GB97KEEGXWYDK

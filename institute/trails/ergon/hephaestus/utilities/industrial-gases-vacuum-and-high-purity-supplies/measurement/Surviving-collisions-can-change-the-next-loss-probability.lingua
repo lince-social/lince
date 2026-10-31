@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Surviving collisions can change the next loss probability (@gas-stateful-collisions: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F", #source "../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV", #industrial-gases-and-vacuum "../studies/Defend-a-pressure-realization-and-gauge-comparison.lingua#r_41TVN1ZCM8XK3YZ74X0EN36K3G", #industrial-gases-and-vacuum "../studies/Defend-a-gas-flow-and-leak-measurement-chain.lingua#r_4QS9AY9R1TJR1VB9MBW3BRDWDW", #industrial-gases-and-vacuum "../studies/Defend-trace-composition-through-sampling-and-inference.lingua#r_79T3S74PWKCF7DC8C59RRY0Y16") { r_35NY77XC5J59XQ3C9G53ZRREXD
+**Read:** [Glancing collisions in vacuum metrology — Eckel and colleagues](../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F), the full probability model and revised analysis; compare [Cold-atom vacuum comparison — Barker and colleagues](../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV). The following is an original teaching model, not the paper's apparatus or formula.
+
+Suppose collisions occur at constant rate λ. A sensor atom begins in state 0. Its first collision ejects it with probability a, otherwise it enters a still-trapped state 1; any subsequent collision ejects state 1. With P₀(0)=1 and P₁(0)=0, Ṗ₀=−λP₀ and Ṗ₁=(1−a)λP₀−λP₁. Survival is S=P₀+P₁=exp(−λt)[1+(1−a)λt].
+
+Except when a=1, this is not a single exponential. Its initial loss rate is aλ, while its long-time logarithmic slope approaches λ. Fitting different time intervals with one exponential can therefore give different apparent rates even though the collision rate is constant.
+
+The real research treats transferred-energy distributions, initial trapped-atom energies and further loss processes. The simple example explains why retaining memory of surviving collisions can change inference, without claiming quantitative agreement with a specific gas or trap.
+
+**Work:** Derive the solution both from the differential equations and from probabilities of zero/one collisions. Verify nonnegativity, total probability and the limits a=0 and a=1. Compare the initial and late slopes with the result of a finite-window exponential fit; propose an observation that distinguishes changing density from state-dependent survival.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Defend a pressure realization and gauge comparison](../studies/Defend-a-pressure-realization-and-gauge-comparison.lingua#r_41TVN1ZCM8XK3YZ74X0EN36K3G), [Defend a gas-flow and leak-measurement chain](../studies/Defend-a-gas-flow-and-leak-measurement-chain.lingua#r_4QS9AY9R1TJR1VB9MBW3BRDWDW), [Defend trace composition through sampling and inference](../studies/Defend-trace-composition-through-sampling-and-inference.lingua#r_79T3S74PWKCF7DC8C59RRY0Y16).
+
+} r_35NY77XC5J59XQ3C9G53ZRREXD

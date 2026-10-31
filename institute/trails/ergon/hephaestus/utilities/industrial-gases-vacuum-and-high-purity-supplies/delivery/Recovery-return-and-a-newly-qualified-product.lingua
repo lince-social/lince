@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Recovery, return and a newly qualified product (@gas-delivery-recovery: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "../studies/Defend-a-storage-and-thermal-delivery-account.lingua#r_5HJV3KXXG0B8NJ67P7SSM34YSA", #industrial-gases-and-vacuum "../studies/Defend-pressure-flow-and-supply-continuity.lingua#r_62R276CYC4HF4K8PFVSPT97FYF", #industrial-gases-and-vacuum "../studies/Distinguish-purge-dilution-dead-volume-and-surface-memory.lingua#r_3FT18T58PPXH1C5Z59CQE13ZKT") { r_1ABKY37TYJH4M78JK8DKA1CKN8
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), the chosen gas's uses and supply form; [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), refrigeration/separation context; revisit [Helium source, recovery and cryogenic service](../production/Helium-source-recovery-and-cryogenic-service.lingua#r_5N4GP9YRZMNWE1BJSS0H0S50F2) and [Hydrogen production and the delivered specification](../production/Hydrogen-production-and-the-delivered-specification.lingua#r_4D1RRVKY1SZ6HM2XS9KSXBJFC8).
+
+Recovery begins with a defined stream: gas species, amount, contamination, pressure, temperature and variability. Collecting a stream does not restore its original product state. Compression, drying, filtration, separation, storage and analysis may be needed before a use can accept it.
+
+Close a component balance across capture, purification, rejected material, useful product and changing inventory. Define recovery on an amount basis and state the denominator. A high fraction captured can coexist with a low fraction returned at required quality. Include the energy and consumables needed to maintain the recovery system.
+
+Compare direct return, downgrading to a less demanding use and reprocessing into the original grade. The best route depends on contamination and infrastructure, not just the name or market value of the gas. Returnable packages also carry a physical and documentary history that must be preserved.
+
+**Work:** Evaluate recovery for two contrasting gases and users. Separate product saved, utilities consumed, new failure dependencies and rejected streams. Propose the measurement that would most reduce uncertainty in whether the recovered product can replace new supply.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Defend a storage and thermal delivery account](../studies/Defend-a-storage-and-thermal-delivery-account.lingua#r_5HJV3KXXG0B8NJ67P7SSM34YSA), [Defend pressure, flow and supply continuity](../studies/Defend-pressure-flow-and-supply-continuity.lingua#r_62R276CYC4HF4K8PFVSPT97FYF), [Distinguish purge dilution, dead volume and surface memory](../studies/Distinguish-purge-dilution-dead-volume-and-surface-memory.lingua#r_3FT18T58PPXH1C5Z59CQE13ZKT).
+
+} r_1ABKY37TYJH4M78JK8DKA1CKN8

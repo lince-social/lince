@@ -1,6 +1,6 @@
 Import "../Thermodynamics-and-heat-transfer.lingua"
 
-Surface energy, curvature and small-system thermodynamics (@th-interfaces: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "../microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5") { r_1CF5QPBT4S6WVH8W7364J240V8
+Surface energy, curvature and small-system thermodynamics (@th-interfaces: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG", #thermodynamics-and-heat-transfer "../microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/surfaces/Work-of-adhesion-is-energy-per-created-interface-area.lingua#r_1HRZRWV42GK0F7E28RS0SAYH6S") { r_1CF5QPBT4S6WVH8W7364J240V8
 **Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), surface and phase-equilibrium discussions; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), small systems and equilibrium assumptions; [Nanoscale thermal transport II — Cahill and colleagues](../sources/Nanoscale-Thermal-Transport-II-Cahill.lingua#r_30EZYRYJ20TDTWN3JXWD9KWSFG), interfaces and size-dependent thermal behavior.
 
 When interfaces contribute appreciably, area and surface state enter the energy account. Define surface free energy, tension, composition and constraints; the simple bulk extensivity argument may no longer describe the entire small system. An interfacial property is not always transferable between clean, oxidized, coated or contaminated surfaces.
@@ -12,4 +12,7 @@ Compare a bulk prediction with a thin film, droplet or porous structure where su
 **Continue:** [Microscopic states, heat capacity and statistical bridges](../microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5).
 
 **Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Continue in clean manufacturing:** [Work of adhesion is energy per created interface area](../../../production/clean-manufacturing-and-contamination-control/surfaces/Work-of-adhesion-is-energy-per-created-interface-area.lingua#r_1HRZRWV42GK0F7E28RS0SAYH6S).
+
 } r_1CF5QPBT4S6WVH8W7364J240V8

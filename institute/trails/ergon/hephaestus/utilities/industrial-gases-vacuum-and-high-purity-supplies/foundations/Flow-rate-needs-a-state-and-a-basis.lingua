@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Flow rate needs a state and a basis (@gas-flow-basis: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "Vacuum-throughput-and-pumping-speed.lingua#r_6Y1SCSQZZKJT35V7F3YMFDVNM9") { r_7T0N86P6QE379Y7FDNF7TNBHMX
+**Read:** [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), introduction and volumetric standards; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), throughput; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), gas-property conventions.
+
+Mass flow ṁ, molar flow ṅ and actual volumetric flow V̇ describe related but different quantities. For a single gas stream, ṅ=pV̇/(ZRT) and ṁ=Mṅ. The pressure and temperature are those defining the reported volume, not automatically those at a remote instrument or process.
+
+A standard litre or normal cubic metre refers to a declared reference state. Different fields use different temperatures and pressures for that label. Convert through amount or mass, retaining composition and the reference compressibility. A meter calibrated for one gas may respond differently to another even when the display units are unchanged.
+
+**Example:** Under the ideal-gas approximation, 1 L/min referenced to 101,325 Pa and 273.15 K corresponds to approximately 0.556425 L/min at 200,000 Pa and 300 K. The conserved amount flow is the same; the reported occupied volume per time changes.
+
+**Work:** Convert a reference volumetric flow at 101,325 Pa and 273.15 K into actual flow at 200,000 Pa and 300 K under an ideal model. Repeat with stated nonideal Z values. Show a dimensional path from litres per minute to moles per second, and identify the error caused by using a gauge pressure in the gas-state equation.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Vacuum throughput and pumping speed](Vacuum-throughput-and-pumping-speed.lingua#r_6Y1SCSQZZKJT35V7F3YMFDVNM9).
+
+} r_7T0N86P6QE379Y7FDNF7TNBHMX

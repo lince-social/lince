@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Integrated study of manufacturing strain and local plasticity (@mat-integrated-metal: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Additive-Manufacturing-Residual-Strain-AM-Bench.lingua#r_1JF3D3C7YNFKCJET729ADPZWPM", #source "../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND", #materials-engineering "Defend-the-integrated-materials-investigations.lingua#r_4SGGJ7V1GYFGDYZNKVPAB5DAXM") { r_4TCVYJ9EVP1RWV2BQ3SG800H3X
+**Read:** [Manufacturing history and measured residual strain — AM-Bench 2018](../sources/Additive-Manufacturing-Residual-Strain-AM-Bench.lingua#r_1JF3D3C7YNFKCJET729ADPZWPM), all available manufacturing and measurement documents; [Mesoscale tensile blind predictions — AM-Bench 2022](../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND), complete paper and available data; earlier metallurgy, anisotropic elasticity, plasticity, diffraction and process history.
+
+First reconstruct the AM-Bench 2018 specimen, build directions, thermal/process history and neutron sampling. Read the table in its documented component order and units. At the first listed position, X=1 mm and Z=11.248 mm, the YY, XX and ZZ entries correspond to −43.5, 99.1 and 371 microstrain. Reproduce that conversion without swapping the first two components. Compare predicted observables averaged over the measurement volumes. Examine residual elastic strain, reference spacing, geometry and boundary release separately before claiming a residual-stress field. Distinguish measured absence from an unmeasured location.
+
+Then examine the 2022 tensile investigation as a separate specimen campaign. Do not merge its observations with the 2018 object as if they came from one experiment. Relate small specimen size, grain orientations, pores, area measurement and strain inference to competing mechanical predictions. Derive the engineering/true conversion and state where uniform deformation and volume assumptions fail.
+
+**Deliver:** Independently reconstructed data views, at least one verified field-to-observation calculation and one constitutive comparison. Explain the withheld-input limitations and investigate an alternative geometry, texture or process history. Connect likely service and repair consequences to supported mechanisms; do not promote a research coupon response into a qualified component allowable.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the integrated materials investigations](Defend-the-integrated-materials-investigations.lingua#r_4SGGJ7V1GYFGDYZNKVPAB5DAXM).
+
+} r_4TCVYJ9EVP1RWV2BQ3SG800H3X

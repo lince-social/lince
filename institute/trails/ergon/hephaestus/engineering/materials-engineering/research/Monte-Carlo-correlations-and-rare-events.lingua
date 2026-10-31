@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Monte Carlo, correlations and rare events (@mat-research-sampling: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH", #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #materials-engineering "Free-energy-reference-paths-and-coexistence.lingua#r_48AHYHP56GCCHYBZKWHJ16Q42F") { r_37D19PZA16N8P06FCP751R721Q
+**Read:** [Atomistic computer modeling of materials — MIT 3.320](../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH), Monte Carlo and sampling lectures/lab; [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), partition functions, ensembles and phase transitions.
+
+A sampling method targets a specified probability distribution. For symmetric trial proposals in a canonical Metropolis scheme, acceptance min(1, exp(−ΔE/(kBT))) enforces the required balance relation. Asymmetric proposals require their probability ratio. Correct acceptance alone does not ensure that the finite run explores every relevant basin.
+
+Autocorrelation, initialization and moves that cannot reach part of configuration space can dominate error. Independent chains, blocking and comparisons with exact small systems reveal different failures. Ordinary Monte Carlo steps do not automatically represent elapsed physical time. A rare transition rate additionally requires a dynamical model and its prefactor, not only a free-energy barrier.
+
+**Work:** Derive the acceptance relation and verify a small system against an exactly enumerated distribution. Compare chains started in different regions and test uncertainty estimates as sample length changes. Construct a case in which a plausible mean hides trapped sampling. For a material transition, separate equilibrium probabilities from a claim about transformation rate.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Free-energy reference paths and coexistence](Free-energy-reference-paths-and-coexistence.lingua#r_48AHYHP56GCCHYBZKWHJ16Q42F).
+
+} r_37D19PZA16N8P06FCP751R721Q

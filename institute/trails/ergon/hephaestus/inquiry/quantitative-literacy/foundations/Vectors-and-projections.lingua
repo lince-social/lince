@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Vectors, coordinate systems, and spatial meaning (@ql-vectors: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-algebra, #quantitative-literacy "../study/Foundation-review.lingua#r_66P3KR79E835QXT45SKDC2FWYY", #electromagnetism "../../../physics/electromagnetism/mathematics/Vectors-coordinate-fields-and-flux.lingua#r_65BCQQW5JWE20Y2P34YD6AD09V", #fluid-dynamics "../models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52") { r_477P2M3HVZQ0PT56SF027VP68J
+Vectors, coordinate systems, and spatial meaning (@ql-vectors: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-algebra, #quantitative-literacy "../study/Foundation-review.lingua#r_66P3KR79E835QXT45SKDC2FWYY", #electromagnetism "../../../physics/electromagnetism/mathematics/Vectors-coordinate-fields-and-flux.lingua#r_65BCQQW5JWE20Y2P34YD6AD09V", #fluid-dynamics "../models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52", #mechanical-engineering "../../../engineering/mechanical-engineering-and-machine-design/statics/Forces-are-interactions-across-the-chosen-boundary.lingua#r_1QNSVHX3MYB97RR84V0HZXZRYA", #clean-manufacturing "../../../physics/fluid-dynamics/foundations/Continuum-fields-molecular-scales-and-relaxation.lingua#r_52W3FJ90C69MPGFW3QNYXA6Q80") { r_477P2M3HVZQ0PT56SF027VP68J
 **Read:** Algebra and Trigonometry 2e chapter 10's sections on vectors and the dot product. Use its polar-coordinate sections for another view of a two-dimensional displacement. A full linear-algebra treatment can follow later; this reading develops the spatial language actually used in drawings and elementary physical calculations.
 
 A vector's components refer to a basis and coordinate convention. In an orthonormal two-dimensional frame, the magnitude of (x,y) is √(x² + y²). Adding components is meaningful only when they use the same frame and units. A point's position depends on an origin; a displacement is the difference between positions in a shared coordinate description.
@@ -18,4 +18,9 @@ Record right- or left-handed convention and axis labels when a CAD or imaging to
 **Continue in electromagnetism:** [Vectors, coordinate fields and flux](../../../physics/electromagnetism/mathematics/Vectors-coordinate-fields-and-flux.lingua#r_65BCQQW5JWE20Y2P34YD6AD09V).
 
 **Continue in fluid dynamics:** [Small changes, derivatives, and first-order approximations](../models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52).
+**Mechanical engineering continuation:** [Forces are interactions across the chosen boundary](../../../engineering/mechanical-engineering-and-machine-design/statics/Forces-are-interactions-across-the-chosen-boundary.lingua#r_1QNSVHX3MYB97RR84V0HZXZRYA).
+
+
+**Continue in clean manufacturing:** [Continuum fields, molecular scales and relaxation](../../../physics/fluid-dynamics/foundations/Continuum-fields-molecular-scales-and-relaxation.lingua#r_52W3FJ90C69MPGFW3QNYXA6Q80).
+
 } r_477P2M3HVZQ0PT56SF027VP68J

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Boundaries, stacking faults, twins and surfaces (@mat-interfaces: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "../structure/Phases-pores-inclusions-and-composite-architecture.lingua#r_6K5ZT0N8RRABWQHN25PSJTVABK") { r_6CT9K8T9PC33CV70N0J375FA2D
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), dislocations, crystallography and atomic-scale structure; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), defects and crystal interfaces.
+
+Interfaces separate regions with different orientation, structure, composition or environment. Grain boundaries, phase boundaries, twins, stacking faults and free surfaces have different defining geometry. An interface can store energy, constrain deformation, provide a transport path or host segregation.
+
+Describe an interface through both adjoining structures and their relationship. A twin is a specific orientation relation, not just a narrow grain. A stacking fault changes an ideal sequence locally. Real boundaries can have complex atomic arrangements and chemistry that an ideal sketch omits.
+
+**Work:** Compare two stacking sequences and locate their structural difference. Draw a low-angle boundary as a simple dislocation arrangement, stating its approximation. Identify an interface that helps the intended function and one that degrades it. Explain which measurement can resolve its location, orientation and chemistry at the needed scale.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Phases, pores, inclusions and composite architecture](../structure/Phases-pores-inclusions-and-composite-architecture.lingua#r_6K5ZT0N8RRABWQHN25PSJTVABK).
+
+} r_6CT9K8T9PC33CV70N0J375FA2D

@@ -1,0 +1,98 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+An inspectable network pumpdown and gas balance (@gas-network-example: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "../studies/Defend-a-complete-pumping-arrangement.lingua#r_4NP4QGB4D90P3ZB66GHH43JBAR", #industrial-gases-and-vacuum "../studies/Distinguish-surface-release-permeation-and-leaks.lingua#r_02C2T871QG74CNM5VHW3PJR8QT", #industrial-gases-and-vacuum "../studies/Connect-fabrication-surface-state-and-vacuum-function.lingua#r_3SD8RNXQP0TW10TC2WE15TJBBY") { r_0VC5EBA7F2PQHGCGYYJPKGM49D
+**Read:** The earlier conductance and inventory derivations; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), evacuation; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.7.2 pressure profiles. This original standard-library Python example follows up to sixteen well-mixed volumes at one fixed temperature, with constant molecular conductances, nonnegative constant loads and ideal linear pump removal to zero reference pressure.
+
+Use m³ for volume, Pa for pressure, m³/s for conductance and pumping speed, Pa·m³/s for loads, and seconds for time. For chamber i, Vi dpi/dt=Qi−Si pi+ΣCij(pj−pi). Each connection transfers equal and opposite amounts. Backward Euler solves all chamber pressures together; it is stable for this linear dissipative model but still has time-discretization error. The small dense matrix is factored once by Cholesky decomposition.
+
+```python
+from math import fsum, isfinite, sqrt
+
+
+def pumpdown(volumes, pressures, speeds, loads, links, dt, steps):
+    def numbers(values, positive=False):
+        values = tuple(values)
+        if any(isinstance(x, bool) for x in values):
+            raise ValueError('quantities must be finite numbers')
+        try:
+            values = tuple(float(x) for x in values)
+        except (TypeError, ValueError, OverflowError) as error:
+            raise ValueError('quantities must be finite numbers') from error
+        if any(not isfinite(x) or x < 0 or (positive and x == 0) for x in values):
+            raise ValueError('quantities are outside the model domain')
+        return values
+
+    volumes = numbers(volumes, True)
+    pressures = numbers(pressures)
+    speeds = numbers(speeds)
+    loads = numbers(loads)
+    n = len(volumes)
+    if not 1 <= n <= 16 or any(len(x) != n for x in (pressures, speeds, loads)):
+        raise ValueError('use one to sixteen matching chamber quantities')
+    dt, = numbers((dt,), True)
+    if isinstance(steps, bool) or not isinstance(steps, int) or not 0 <= steps <= 20000:
+        raise ValueError('steps must be an integer from zero to 20000')
+    if not isfinite(dt * steps):
+        raise ValueError('the requested time is not finite')
+    matrix = [[0.0] * n for _ in range(n)]
+    for i in range(n):
+        matrix[i][i] = volumes[i] + dt * speeds[i]
+    for i, j, conductance in links:
+        if any(isinstance(k, bool) or not isinstance(k, int) or not 0 <= k < n for k in (i, j)) or i == j:
+            raise ValueError('links need two different chamber indices')
+        conductance, = numbers((conductance,))
+        value = dt * conductance
+        matrix[i][i] += value
+        matrix[j][j] += value
+        matrix[i][j] -= value
+        matrix[j][i] -= value
+    if any(not isfinite(x) for row in matrix for x in row):
+        raise ValueError('matrix coefficients overflowed')
+    lower = [[0.0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1):
+            value = matrix[i][j] - fsum(lower[i][k] * lower[j][k] for k in range(j))
+            if not isfinite(value) or (i == j and value <= 0):
+                raise ArithmeticError('the matrix could not be factored reliably')
+            lower[i][j] = sqrt(value) if i == j else value / lower[j][j]
+    states = [pressures]
+    removed_steps = []
+    for _ in range(steps):
+        rhs = [volumes[i] * pressures[i] + dt * loads[i] for i in range(n)]
+        if any(not isfinite(x) for x in rhs):
+            raise ArithmeticError('the gas inventory overflowed')
+        intermediate = [0.0] * n
+        for i in range(n):
+            intermediate[i] = (rhs[i] - fsum(lower[i][j] * intermediate[j] for j in range(i))) / lower[i][i]
+        current = [0.0] * n
+        for i in range(n - 1, -1, -1):
+            current[i] = (intermediate[i] - fsum(lower[j][i] * current[j] for j in range(i + 1, n))) / lower[i][i]
+        if any(not isfinite(x) or x < 0 for x in current):
+            raise ArithmeticError('the pressure update is not finite and nonnegative')
+        pressures = tuple(current)
+        states.append(pressures)
+        removed_steps.append(dt * fsum(speeds[i] * pressures[i] for i in range(n)))
+    initial = fsum(volumes[i] * states[0][i] for i in range(n))
+    final = fsum(volumes[i] * states[-1][i] for i in range(n))
+    injected = dt * steps * fsum(loads)
+    removed = fsum(removed_steps)
+    balance_error = fsum((final, -initial, -injected, removed))
+    if any(not isfinite(x) for x in (initial, final, injected, removed, balance_error)):
+        raise ArithmeticError('the accumulated balance is not finite')
+    return {'states': states, 'injected': injected, 'removed': removed, 'balance_error': balance_error}
+
+
+if __name__ == '__main__':
+    import json
+    result = pumpdown([0.02, 0.01], [0.1, 0.1], [0.0, 0.01], [1e-5, 0.0], [(0, 1, 0.002)], 0.1, 500)
+    print(json.dumps({'pressure_Pa': result['states'][-1], 'injected_Pa_m3': result['injected'], 'removed_Pa_m3': result['removed'], 'balance_error_Pa_m3': result['balance_error']}, indent=2))
+```
+
+The stored quantity ΣVi pi is proportional to gas amount at fixed temperature. The reported balance uses the same end-of-step pump removal as the update. A small balance error checks internal accounting, not whether constant speed, molecular conductance or perfect mixing describes real equipment. Input limits keep this an inspectable small calculation; floating-point failure is reported rather than hidden by clipping a negative pressure.
+
+**Work:** Recover single-volume exponential pumpdown, closed two-volume equalization and the steady two-chamber pressure drop. Refine time steps against an independent analytical solution. Change a conductance and a pumping speed separately. Add a modeled surface reservoir only with an explicit conserved inventory; the present code does not include adsorption, changing temperature, finite compression or pump-capacity exhaustion.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Defend a complete pumping arrangement](../studies/Defend-a-complete-pumping-arrangement.lingua#r_4NP4QGB4D90P3ZB66GHH43JBAR), [Distinguish surface release, permeation and leaks](../studies/Distinguish-surface-release-permeation-and-leaks.lingua#r_02C2T871QG74CNM5VHW3PJR8QT), [Connect fabrication, surface state and vacuum function](../studies/Connect-fabrication-surface-state-and-vacuum-function.lingua#r_3SD8RNXQP0TW10TC2WE15TJBBY).
+
+} r_0VC5EBA7F2PQHGCGYYJPKGM49D

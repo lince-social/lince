@@ -1,6 +1,6 @@
 Import "../Industrial-chemistry.lingua"
 
-Connect measured process states and control actions with actual chemical behavior (@ic-control: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #industrial-chemistry "Scale-up-pilot-evidence-campaigns-and-process-change.lingua#r_471AV9S2RAXMYZ21KM20ESPCAC") { r_6MEKD6GFRHQ8VXM92NC56D0Q3A
+Connect measured process states and control actions with actual chemical behavior (@ic-control: 0, is #chapter, #part-of @industrial-chemistry, #source "../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A", #source "../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K", #source "../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W", #industrial-chemistry "Scale-up-pilot-evidence-campaigns-and-process-change.lingua#r_471AV9S2RAXMYZ21KM20ESPCAC", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Operating-states-and-the-transitions-between-them.lingua#r_2SE568V5AA9BCFHGRFB0VCTB5R") { r_6MEKD6GFRHQ8VXM92NC56D0Q3A
 **Read:** [Chemical Reactor Analysis and Design Fundamentals — Rawlings and Ekerdt](../sources/Chemical-Reactor-Analysis-Rawlings-Ekerdt.lingua#r_7YQAV27Y3J0B537Z6K5HDN8H0A), the full transient, multiple-state and coupled reactor examples; [Manufacture of Organic Fine Chemicals, BREF OFC](../sources/Organic-Fine-Chemicals-BREF.lingua#r_0DH473049K4WX7HAAY1P7SDS3K), the complete relevant batch/operation and process-monitoring treatment; [Production of Chlor-alkali, BREF CAK](../sources/Chlor-Alkali-Production-BREF.lingua#r_69QNQ29VT4NA2MXHTVWDNP8T2W), the whole relevant operating, measurement and product-system context.
 
 Process control acts on an evolving chemical/physical system through imperfect measurements and finite actuators. Temperature, pressure, composition, level and flow describe different state or output quantities. A displayed set point is not evidence that every relevant location or species is at the desired state.
@@ -14,4 +14,7 @@ Distinguish the underlying process model, controller, operating procedure and in
 **Continue:** [Extend a chemical process claim through scale, repeated operation and changed conditions](Scale-up-pilot-evidence-campaigns-and-process-change.lingua#r_471AV9S2RAXMYZ21KM20ESPCAC).
 
 **Return:** [Industrial chemistry — chemical transformations, useful products and continuing production](../Industrial-chemistry.lingua#r_3AKBAFB2ABJ0671QW6ZBQ0B618).
+
+**Continue in gas and vacuum systems:** [Operating states and the transitions between them](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Operating-states-and-the-transitions-between-them.lingua#r_2SE568V5AA9BCFHGRFB0VCTB5R).
+
 } r_6MEKD6GFRHQ8VXM92NC56D0Q3A

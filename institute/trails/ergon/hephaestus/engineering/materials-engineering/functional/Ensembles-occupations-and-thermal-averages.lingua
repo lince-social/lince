@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Ensembles, occupations and thermal averages (@mat-ensembles: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #materials-engineering "../../../physics/thermodynamics-and-heat-transfer/microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5") { r_5TGDDVPR8H1ED4GYHKRYBBMSQC
+**Read:** [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), chapters 1–3; [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), the Einstein, Debye and Sommerfeld treatments. Work the ensemble and quantum-gas problem sheets.
+
+For discrete energies E_i at temperature T, canonical probabilities are proportional to exp(−E_i/kBT). The partition function normalizes them. Mean energy and its fluctuations lead to heat capacity; the constraints determine which derivative is being taken. A grand-canonical description additionally controls chemical potential and permits particle-number fluctuations.
+
+Derive Fermi occupation 1/[exp((E−μ)/kBT)+1] for an independent fermion state and Bose occupation for a nonconserved harmonic excitation. Electron occupation includes an actual state-counting convention; spin degeneracy must be counted once. Equilibrium phonons have zero chemical potential in this description.
+
+**Work:** Solve a two-level system exactly, including energy, entropy and capacity. Compare low/high-temperature limits. Explain why a classical distribution fails for a degenerate electron gas and why the chemical potential must be adjusted when a calculation holds mean particle number fixed.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Microscopic states, heat capacity and statistical bridges](../../../physics/thermodynamics-and-heat-transfer/microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5).
+
+} r_5TGDDVPR8H1ED4GYHKRYBBMSQC

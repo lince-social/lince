@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Recovery, rejection and the concentrate balance (@wu-membrane-balance: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Flux-pressure-fouling-and-cleaning-history.lingua#r_6VPTBCGZF6G8V35BC8YK8YBNGW") { r_0C3GWHBNT8QX7GF6K95REFHDHR
+**Read:** [WaterTAP models](../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD), the [reverse-osmosis model](https://watertap.readthedocs.io/en/stable/technical_reference/unit_models/reverse_osmosis_0D.html), beginning with its state variables and balances. The following is an original constant-density, steady teaching account.
+
+Let Qf, Qp and Qc be feed, product and concentrate volume rates. With no other streams, Qf = Qp + Qc. For a conserved solute, QfCf = QpCp + QcCc. Recovery Y = Qp/Qf describes water partition; observed rejection R = 1−Cp/Cf describes concentration separation on the specified sampling basis. They are different quantities.
+
+Take Qf = 100 m³/hour, Cf = 1 kg/m³, Qp = 75 m³/hour and Cp = 0.02 kg/m³. Then recovery is 75%, observed rejection 98%, and Cc = (100−1.5)/25 = 3.94 kg/m³. Product contains 1.5 kg/hour and concentrate 98.5 kg/hour. The solute did not disappear. At a different recovery, neither Cp nor the membrane driving force can generally be assumed unchanged.
+
+**Work:** Close both balances independently, then add pretreatment waste and cleaning losses to obtain net plant recovery. Compare membrane-surface concentration with sampled feed concentration. Extend to mass-flow balances when density differs appreciably. In WaterTAP, identify fixed variables, degrees of freedom, property assumptions and the difference between a solved equation set and validated separation. Inspect sensitivity to permeability and feed composition before optimizing energy or recovery.
+
+**Continue:** [Flux, pressure, fouling and cleaning history](Flux-pressure-fouling-and-cleaning-history.lingua#r_6VPTBCGZF6G8V35BC8YK8YBNGW).
+} r_0C3GWHBNT8QX7GF6K95REFHDHR

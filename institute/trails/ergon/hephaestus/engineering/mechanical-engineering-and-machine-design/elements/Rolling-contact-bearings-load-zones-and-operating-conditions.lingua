@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Rolling-contact bearings, load zones and operating conditions (@mech-rolling-bearings: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY", #mechanical-engineering "Bearing-rating-life-and-a-variable-duty-history.lingua#r_221SRCZT8T7K1PSCK4CS7BVWN8") { r_5PV6RESCDMJD7QJD9MTJAK3CK7
+**Read:** [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lecture 7; [Rolling bearings — SKF, 2018](../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY), basics and the selection chapters B.1–B.8, followed by the relevant bearing-family section. Read the general selection argument before treating a product-table number as an answer.
+
+Balls or rollers transmit load through a changing set of contacts. Contact angle, race geometry, rolling-element length, cage behavior and internal clearance affect load sharing. Radial and axial bearing loads come from the complete shaft/housing model; they are not simply the weight divided by the number of supports.
+
+Basic dynamic and static load ratings answer different standardized questions. Speed limits, minimum load, misalignment, lubrication, contamination, fits, electrical passage and temperature introduce additional conditions. Choosing a much larger bearing can worsen friction or violate minimum-load conditions in some services.
+
+**Work:** Compare two bearing families for a declared shaft load history. Calculate the bearing reactions, then use the selected family's actual equivalent-load factors and applicable conditions. Distinguish running clearance, contact preload and mounting fit. Explain what new data are required if the housing deforms, the direction of load changes or the shaft experiences an occasional impact.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Bearing rating life and a variable duty history](Bearing-rating-life-and-a-variable-duty-history.lingua#r_221SRCZT8T7K1PSCK4CS7BVWN8).
+
+} r_5PV6RESCDMJD7QJD9MTJAK3CK7

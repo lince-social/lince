@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Thermal mismatch and residual stress across materials (@mat-mismatch: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #materials-engineering "Polymer-time-response-and-observation-windows.lingua#r_3WP9V6GG5MCVH8KS4AS9ZW110F") { r_3JNXSY88H7FCZH05WBRA715CJZ
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 3.2 and 3.4; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), thermal effects in Laminated Composite Plates; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Ceramics' thermal-shock and Toughening constraint discussions.
+
+A free strain such as thermal expansion, cure shrinkage or transformation strain need not produce stress if it is compatible and unconstrained. Bonding unlike materials or imposing a nonuniform temperature can prevent that free change. Residual stress can remain after the external processing load disappears.
+
+For a one-dimensional fully restrained elastic bar with constant E and α, heating by ΔT gives axial stress −EαΔT. A bilayer with no external force must instead satisfy force balance and, when free to bend, moment balance. Applying the fully restrained formula separately to both free layers violates those conditions.
+
+**Work:** Derive the compatible axial strain and self-balanced stresses for two bonded parallel bars, then explain the missing curvature in that idealization. Compare a metal–ceramic joint, tempered glass and a cured composite. Identify when creep, cracking or plasticity relaxes the elastic prediction.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Polymer time response and observation windows](Polymer-time-response-and-observation-windows.lingua#r_3WP9V6GG5MCVH8KS4AS9ZW110F).
+
+} r_3JNXSY88H7FCZH05WBRA715CJZ

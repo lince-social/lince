@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Counts, flow and the volume observed (@cm-count-volume: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "Zero-observations-do-not-establish-zero-contamination.lingua#r_0TDKZSZ3SD0CCBG90BVBG7S0D5") { r_7DP46N6ST7KSVNR55QVDD1VKGP
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), flow calibration and number concentration.
+
+For constant calibrated sample flow q over time t, sampled volume is V=q t. If flow changes, use V=∫q(t)dt with consistent state conventions. An ideal complete counter that observes n particles estimates concentration as n/V; size-dependent losses or incomplete detection require an explicit response model.
+
+For a hypothetical 25 counts in 0.1 m³, the estimate is 250 m⁻³. Under an independent homogeneous Poisson counting model, the estimated counting standard deviation is √25=5 counts, corresponding to 50 m⁻³ or 20 percent relative uncertainty from counting alone. Flow, calibration, sampling and spatial variability remain additional contributions.
+
+**Work:** Reproduce the calculation and compare increasing sample volume with merely displaying more decimal places. State when the Poisson assumptions would be doubtful, including aggregation, bursts or changing concentration.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Zero observations do not establish zero contamination](Zero-observations-do-not-establish-zero-contamination.lingua#r_0TDKZSZ3SD0CCBG90BVBG7S0D5).
+
+} r_7DP46N6ST7KSVNR55QVDD1VKGP

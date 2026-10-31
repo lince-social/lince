@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Tribology, lubrication, contamination and wear evidence (@mech-tribology: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #mechanical-engineering "Springs-energy-stress-stability-and-cyclic-service.lingua#r_6AQQC8GHC4CQNCMEH4J9PZMBTM", #materials-engineering "../../../materials/metals-and-metallurgical-production/testing/Contact-friction-wear-and-tribological-system-evidence.lingua#r_54DD7QV8DEW4WB6QDHYA4NXZJQ") { r_38N674EAKQ2ZE14VR5CE6S1N6W
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 10; [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), chapters 7–9 and 11. Follow a selected lubricant's actual technical data for compatibility, viscosity and service conditions.
+
+Friction and wear belong to a contact system: both surfaces, their finish and chemistry, lubricant, environment, load, motion and history. A single friction coefficient is a bounded model, not a permanent property of one bulk material. Boundary, mixed and full-film regimes can occur within one machine's duty.
+
+In a simple uniform sliding contact, frictional heating rate is μFv. With μ=0.08, F=500 N and v=0.2 m/s, it is 8 W. Decide where that energy goes. Temperature can change viscosity, expansion, clearance and then the contact itself. Lubricant replenishment, filtration and seals are part of the mechanical account.
+
+**Work:** Design a comparison that controls load, speed, temperature and initial surface condition. Measure friction, wear geometry and debris without assuming they vary together. Compare adhesive, abrasive, fatigue and corrosive explanations using actual observations. Separate grease quantity, base-oil viscosity, additive compatibility and contamination control; choosing a product name alone is not a lubrication strategy.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Springs, energy, stress, stability and cyclic service](Springs-energy-stress-stability-and-cyclic-service.lingua#r_6AQQC8GHC4CQNCMEH4J9PZMBTM).
+
+**Continue in materials engineering:** [Treat wear as behavior of a contact system with material and environmental history](../../../materials/metals-and-metallurgical-production/testing/Contact-friction-wear-and-tribological-system-evidence.lingua#r_54DD7QV8DEW4WB6QDHYA4NXZJQ).
+
+} r_38N674EAKQ2ZE14VR5CE6S1N6W

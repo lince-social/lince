@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Number, mass and area weight different particle populations (@cm-count-mass: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "What-a-particle-diameter-means.lingua#r_4VXPHVKHVM7244VHQEMMZ1B4MZ") { r_09ZNRJAEVQ4VTRSJ32F8YGE6XH
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), section 21.2; [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), section 3.2.2. This numerical comparison is an original ideal-sphere example.
+
+For equal spherical particles of diameter d and density ρ, each has mass ρπd³/6 and projected area πd²/4. Multiplying by number concentration C gives mass per gas volume; multiplying by a surface number density gives projected area per surface area. The different powers of d make different summaries emphasize different particles.
+
+For C=10⁶ m⁻³, ρ=1000 kg/m³ and d=1 µm, the hypothetical mass concentration is about 0.523599 µg/m³. Keeping the number concentration and density fixed but using d=10 µm gives about 523.599 µg/m³: one thousand times as much mass and one hundred times the summed projected area.
+
+**Work:** Derive these values with units. Construct two populations with equal total mass but different counts. Explain why a mass measurement alone cannot reconstruct their size distribution or predict an arbitrary product's response.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [What a particle diameter means](What-a-particle-diameter-means.lingua#r_4VXPHVKHVM7244VHQEMMZ1B4MZ).
+
+} r_09ZNRJAEVQ4VTRSJ32F8YGE6XH

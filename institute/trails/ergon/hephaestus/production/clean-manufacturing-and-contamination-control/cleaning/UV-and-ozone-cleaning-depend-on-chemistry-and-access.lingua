@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+UV and ozone cleaning depend on chemistry and access (@cm-uv-cleaning: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "../../../utilities/water-and-sanitation/industrial/High-purity-water-is-a-distribution-and-measurement-problem-too.lingua#r_72TZ7SZVXT1GPW21YQABMTFQSF") { r_3DSBCVKD6VVQBGSBNRQBC7W2GH
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), section 2.6; [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2), the complete lamp-cleaning and ozone/resist articles on printed pages 348–361.
+
+Photons and reactive oxygen species can change organic surface material, with products removed only if their transport and volatility permit. Light absorption, reaction depth, oxygen supply, geometry and substrate response determine the useful effect. Illumination alone, ozone alone and their combination need distinct evidence.
+
+A thin film and a thick residue can behave differently. Oxidation, cross-linking or retained products can modify the substrate or leave a changed contaminant. An apparent increase in wetting does not by itself establish the final chemical state or preserved function.
+
+**Work:** Build a reaction-and-transport account for one documented surface. Compare the spectral exposure, temperature and gas conditions with the measured chemistry. Identify a control that isolates the role of light from the reactive atmosphere, and an observation that detects substrate modification. Keep apparatus-specific operating procedures with their primary source.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [High-purity water is a distribution and measurement problem too](../../../utilities/water-and-sanitation/industrial/High-purity-water-is-a-distribution-and-measurement-problem-too.lingua#r_72TZ7SZVXT1GPW21YQABMTFQSF).
+
+} r_3DSBCVKD6VVQBGSBNRQBC7W2GH

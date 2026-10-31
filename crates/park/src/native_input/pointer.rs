@@ -41,18 +41,22 @@ impl Geometry {
             }
     }
 
-    fn hit(&self, point: [f64; 2]) -> bool {
-        if self.bounds.is_some_and(|bounds| !bounds.contains(point)) { return false; }
+    fn point(&self, point: [f64; 2]) -> Option<Vec2> {
+        if self.bounds.is_some_and(|bounds| !bounds.contains(point)) { return None; }
         let point = match &self.projection {
             Projection::Final(raster) => Vec2::from_array(raster.point(point).map(|value| value as f32)),
             Projection::Sand { pixels, item, .. } => {
-                let Some(point) = item.surface_point(point) else { return false; };
+                let point = item.surface_point(point)?;
                 Vec2::from_array(std::array::from_fn(|axis| ((point[axis] - item.mapping.surface.origin()[axis])
                     / item.mapping.surface.size()[axis] * f64::from(pixels[axis])) as f32))
             },
         };
-        point.is_finite() && self.node.contains_point(self.transform, point)
-            && self.clip.is_none_or(|clip| clip.contains(point))
+        point.is_finite().then_some(point)
+    }
+
+    fn hit(&self, point: [f64; 2]) -> bool {
+        self.point(point).is_some_and(|point| self.node.contains_point(self.transform, point)
+            && self.clip.is_none_or(|clip| clip.contains(point)))
     }
 }
 
@@ -123,6 +127,15 @@ pub(crate) struct Snapshot {
 }
 
 impl Snapshot {
+    pub(crate) fn editor_point(&self, entity: Entity, point: [f64; 2]) -> Option<Vec2> {
+        let target = self.target(point)?;
+        let hit = target.geometry.first()?;
+        if !hit.lineage.contains(&entity) { return None; }
+        let editor = self.targets.iter().find(|candidate| candidate.entity == entity
+            && candidate.output == hit.output && candidate.image == hit.image && candidate.eligible)?;
+        editor.hit(point).then(|| editor.point(point)).flatten()
+    }
+
     pub(crate) fn target(&self, point: [f64; 2]) -> Option<Target> {
         if self.overflowed || point.iter().any(|value| !value.is_finite()) { return None; }
         let mut hits = Vec::new();

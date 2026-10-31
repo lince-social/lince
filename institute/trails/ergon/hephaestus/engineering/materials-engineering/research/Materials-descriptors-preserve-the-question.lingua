@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Materials descriptors preserve the question (@mat-descriptors: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Informatics-Ramprasad.lingua#r_6CKWYT91KQJRX7EWD6TK53VFRM", #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #materials-engineering "Testing-data-models-without-specimen-leakage.lingua#r_1MR20SPDZBKPQ37214QD88XGJ2") { r_4KDC1NSGGAVWDWX605Z8MSQFVE
+**Read:** [Machine learning and materials informatics — Ramprasad and colleagues](../sources/Materials-Informatics-Ramprasad.lingua#r_6CKWYT91KQJRX7EWD6TK53VFRM), complete descriptor and application sections; [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), identity of the reported property; earlier state/history work.
+
+A data representation decides what distinctions a model can learn. Composition alone cannot distinguish heat treatments of the same alloy; a structure descriptor may omit surfaces, defects or measurement conditions. If two physically different cases receive identical inputs, no deterministic predictor using only those inputs can separate their responses.
+
+Choose invariance in relation to the output. Scalar energy should not change under a rigid rotation of an isolated configuration; a tensor response changes components with the coordinate frame. Erasing orientation can destroy the information needed for an anisotropic property. Units, normalization and missing-value handling are part of the method.
+
+**Work:** Define descriptors for a structural and a functional material question. Construct a pair of cases your initial representation cannot distinguish, then decide whether additional state information is obtainable. Test relevant symmetry transformations. Explain why a descriptor suited to a bulk equilibrium property may be insufficient for fatigue, corrosion or a processed interface.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Testing data models without specimen leakage](Testing-data-models-without-specimen-leakage.lingua#r_1MR20SPDZBKPQ37214QD88XGJ2).
+
+} r_4KDC1NSGGAVWDWX605Z8MSQFVE

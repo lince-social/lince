@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Polymer recovery changes chains, formulation and morphology (@mat-polymer-recovery: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Plastics-Recycling-Economy-NIST.lingua#r_4FMXC9V02YNV4DFSCCV0CVR8JN", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #materials-engineering "Recovered-mineral-materials-need-new-state-evidence.lingua#r_1RQ7Q7Q4M896ZPAWMSNVJJS4KR") { r_3AMNV00A30K7J8C1RC1QX9AT42
+**Read:** [The U.S. Plastics Recycling Economy — Thomas, Kneifel and Butry](../sources/Plastics-Recycling-Economy-NIST.lingua#r_4FMXC9V02YNV4DFSCCV0CVR8JN) in full; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), chain/mixing and thermal behavior; the complete prior polymer-processing and degradation readings. Follow a primary process study cited by the NIST report for the chosen feed.
+
+Sorting by a polymer family name does not resolve molecular-mass distribution, branching, copolymers, fillers, stabilizers, pigments, moisture and incompatible constituents. Thermal/shear history can change chains and morphology; contaminants or depleted additives can change subsequent processing and service. A melt-flow measurement is useful but cannot identify every cause of a changed response.
+
+Distinguish mechanical reprocessing, solvent separation/purification and reactions that change molecular structure. Pyrolysis, depolymerization and dissolution do not produce the same outputs or require the same feed. Evaluate recovered polymer, monomer, mixed chemical products and fuel according to their actual functions and balances.
+
+**Work:** Reconstruct one complete polymer recovery study with feed characterization, process conditions, material/energy flows and output evidence. Compare at least two independent characterization methods before and after processing. Explain what a second cycle would test and which uncertainty prevents a claim of indefinite reuse. Include additives and residuals in the account.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Recovered mineral materials need new state evidence](Recovered-mineral-materials-need-new-state-evidence.lingua#r_1RQ7Q7Q4M896ZPAWMSNVJJS4KR).
+
+} r_3AMNV00A30K7J8C1RC1QX9AT42

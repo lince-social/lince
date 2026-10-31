@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Trace purification, getters and reactive removal (@gas-trace-purification: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "Particles-aerosols-vapors-and-filter-evidence.lingua#r_680V115JM8QNF7WXGCY0Q2SWTM") { r_1TZY5JZTGZHK3NE5CY05JJ5NGM
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), sorption pumps and gas-specific behavior; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), surface processes; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), impurity specifications.
+
+A final purifier targets particular impurities. Adsorption, chemical reaction, catalytic conversion and permeation can each remove or transform selected species. Removing oxygen through reaction may create another constituent that needs its own downstream removal and measurement.
+
+Capacity, reaction rate, temperature, contact time and competing species determine useful performance. A material that captures one gas efficiently may pass another. Breakthrough, regeneration, poisoning, particle shedding and back diffusion affect the delivered stream. The purifier and its measurement path belong in the same gas account.
+
+**Work:** Draw a hypothetical two-stage impurity-removal sequence and balance the elements through each stage. Distinguish disappearance of the measured molecule from removal of its atoms from the product. Specify independent upstream/downstream evidence, including blank and memory effects, that would support a claimed trace-level improvement.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Particles, aerosols, vapors and filter evidence](Particles-aerosols-vapors-and-filter-evidence.lingua#r_680V115JM8QNF7WXGCY0Q2SWTM).
+
+} r_1TZY5JZTGZHK3NE5CY05JJ5NGM

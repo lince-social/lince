@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Random walks, mobility and chemical driving (@mat-random-walk: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "Conservation-Fick-laws-and-diffusion-boundaries.lingua#r_7X1A26DJF0PSVET1EXJK0V09R2") { r_6P3NBZ5E1990Q8JQR3KP3AZ35S
+**Read:** [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), Diffusion, random walks and interdiffusion; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.21 lectures 1–4 and 10–14.
+
+For independent isotropic jumps of length a occurring at total rate Γ in d dimensions, ⟨r²⟩=Γa²t=2dDt, giving D=Γa²/(2d). Correlated jumps, anisotropy and unequal populations change the relation. The rate convention must specify whether Γ is total or per direction.
+
+Near suitable equilibrium conditions, a flux can be written in terms of a chemical-potential gradient and mobility. A concentration gradient is only a simpler driving description when thermodynamic factors and other fields permit it. Uphill concentration diffusion can lower total free energy in a separating mixture.
+
+**Work:** Derive the mean-square displacement from independent increments. Reconcile a per-neighbor rate with a total rate. Explain how an electric field, stress or activity gradient changes the driving potential, and specify a frame before comparing fluxes.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Conservation, Fick laws and diffusion boundaries](Conservation-Fick-laws-and-diffusion-boundaries.lingua#r_7X1A26DJF0PSVET1EXJK0V09R2).
+
+} r_6P3NBZ5E1990Q8JQR3KP3AZ35S

@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Simultaneous rheology and cure kinetics — Romberg and Kotula, 2023 (@mat-rheo-cure: 0, is #reference, #part-of @mat-sources) { r_17JNF4M1B6SKKEWAMQAXB3B614
+Stian K. Romberg and Anthony P. Kotula. *Simultaneous rheology and cure kinetics dictate thermal post-curing of thermoset composite resins for material extrusion*. [NIST publication](https://www.nist.gov/publications/simultaneous-rheology-and-cure-kinetics-dictate-thermal-post-curing-thermoset-composite), [30-page manuscript](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=936245), [cited experimental data](https://doi.org/10.18434/mds2-2918).
+
+Read the complete article and supplementary methods. Selected formulation, rheo-Raman, normalization, conditioning, compliance, conversion and thermal-history passages were inspected on 30 October 2026. Distinguish measured rheological behavior and the proposed schedule from a complete validation of a finished printed component. The dataset citation was verified, but its files could not be inspected.
+
+The manuscript identifies an official NIST contribution not subject to copyright in the United States. Preserve attribution and distinguish any credited third-party material. Experimental chemicals, equipment, data and manuscripts remain external references.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_17JNF4M1B6SKKEWAMQAXB3B614

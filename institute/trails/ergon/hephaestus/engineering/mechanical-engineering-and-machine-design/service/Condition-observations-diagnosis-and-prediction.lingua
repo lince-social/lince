@@ -1,0 +1,20 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Condition observations, diagnosis and prediction (@mech-condition-evidence: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY", #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #mechanical-engineering "Maintenance-intervals-access-and-functional-evidence.lingua#r_0GJDWMZFSFC6Y6DYH6G07BP5F1", #materials-engineering "Maintenance-intervals-access-and-functional-evidence.lingua#r_0GJDWMZFSFC6Y6DYH6G07BP5F1", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Condition-trends-need-a-physical-comparison.lingua#r_2J8QT5CJPBNBCMFR5XDXMQXFPE") { r_4PJF2YX9VDRZMDF31M6C290BEP
+**Read:** [Diagnostic and prognostic capabilities — Vogl, Weiss and Helu](../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY), complete paper; [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), inspection, troubleshooting and damage chapters.
+
+A measurement indicates condition through a model. Increased vibration may follow load, imbalance, alignment, looseness or a changed sensor mounting. Detection asks whether behavior changed; diagnosis asks why; prognosis predicts future behavior conditional on loading and intervention. These claims require different evidence.
+
+Retain operating state, time, sensor location, calibration and processing with each observation. Compare like conditions before treating a trend as deterioration. A predictive model evaluated on randomly mixed segments of the same machine history may benefit from information unavailable in future service; separate machines or future periods when that matches the intended claim.
+
+**Work:** Compare two explanations for one condition change and propose a discriminating measurement. Establish a baseline under several loads. Evaluate missed detections and false alarms, not just average fit. Express remaining-life predictions as conditional uncertain claims and show how a maintenance action would change their interpretation.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Maintenance intervals, access and functional evidence](Maintenance-intervals-access-and-functional-evidence.lingua#r_0GJDWMZFSFC6Y6DYH6G07BP5F1).
+
+**Continue in materials engineering:** [Maintenance intervals, access and functional evidence](Maintenance-intervals-access-and-functional-evidence.lingua#r_0GJDWMZFSFC6Y6DYH6G07BP5F1).
+
+
+**Continue in gas and vacuum systems:** [Condition trends need a physical comparison](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Condition-trends-need-a-physical-comparison.lingua#r_2J8QT5CJPBNBCMFR5XDXMQXFPE).
+
+} r_4PJF2YX9VDRZMDF31M6C290BEP

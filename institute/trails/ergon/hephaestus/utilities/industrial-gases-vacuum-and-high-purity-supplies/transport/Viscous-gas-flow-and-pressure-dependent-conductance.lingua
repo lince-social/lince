@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Viscous gas flow and pressure-dependent conductance (@gas-viscous-flow: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Conductance-networks-and-effective-pumping-speed.lingua#r_6DCMXSZKNMJADBJG5CBEDSSHFH") { r_7MT7K55E3BZFY7JE54FZVV32Y9
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), laminar and transitional flow; the shared pipe-flow and compressible-flow material. State the regime before using a vacuum conductance table.
+
+For steady isothermal laminar flow of an ideal gas through a long circular tube, neglecting inertia and slip and taking viscosity constant, throughput Q=πr⁴(p₁²−p₂²)/(16μL). This follows by combining local Poiseuille flow with constant molar transfer along the tube.
+
+Writing Q=C(p₁−p₂) then gives a conductance proportional to mean pressure. Molecular conductance under its usual assumptions is pressure-independent; the two laws describe different limits. Choking, entrance effects, heating, rarefaction or strong acceleration can invalidate this derivation.
+
+**Work:** Derive the squared-pressure relation by integrating along the tube. Recover the incompressible small-pressure-difference limit. Check Reynolds and Knudsen measures using local states rather than only an upstream label. Explain why simply adding two limiting conductance formulas is not a universally valid transition model.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Conductance networks and effective pumping speed](Conductance-networks-and-effective-pumping-speed.lingua#r_6DCMXSZKNMJADBJG5CBEDSSHFH).
+
+} r_7MT7K55E3BZFY7JE54FZVV32Y9

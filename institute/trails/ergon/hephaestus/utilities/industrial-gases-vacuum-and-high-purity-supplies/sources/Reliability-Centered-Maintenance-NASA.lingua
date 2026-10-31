@@ -1,0 +1,10 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Reliability-centered maintenance — NASA, September 2008 (@gas-rcm-source: 0, is #reference, #part-of @gas-sources) { r_08ZD3ATSYCJX5586EYSY0M4N3R
+NASA. *Reliability-Centered Maintenance Guide for Facilities and Collateral Equipment*, final September 2008 edition. [Complete official PDF](https://www.nasa.gov/wp-content/uploads/2023/06/nasa-rcmguide.pdf), 472 file pages. [NASA maintenance resources](https://www.nasa.gov/fred/documents/operations-and-maintenance/).
+
+Read chapters 1–9 as a substantial maintenance foundation: function, failure, maintenance selection, condition evidence, acceptance and feedback. Continue with performance indicators and the appendices appropriate to the chosen equipment; contracting examples describe NASA's context. The full book remains available for specialist study.
+
+Cover, contents and selected failure-analysis, maintenance-interval and condition-evidence passages were inspected on 30 October 2026. The cover was checked visually: the extracted text contains a hidden “DRAFT” although the visible edition says “FINAL”. Equipment examples and intervals are historical, not current requirements for an arbitrary gas installation. This government-hosted guide includes credited external contributions; preserve their notices. The trail's probability calculations are independently specified models. All media remain external.
+
+} r_08ZD3ATSYCJX5586EYSY0M4N3R

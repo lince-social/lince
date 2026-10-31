@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Read mechanical research through claims, methods and evidence (@mech-research-reading: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #source "../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V", #source "../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY", #mechanical-engineering "Independent-mechanical-investigation-and-revision.lingua#r_59GJ8QGKR4RTAH7BTSZKPR1QWF") { r_49PYSX9B9KS56K20NBPHPAGCZ3
+**Read:** Complete [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4); compare its detailed design/test cases with [Thermal-error measurement — Li and colleagues, 2024](../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V) and [Diagnostic and prognostic capabilities — Vogl, Weiss and Helu](../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY), then follow a focused primary-reference chain from each relevant question.
+
+Read a paper or thesis by reconstructing the question, model, experiment and inference. Separate novelty from background machinery, and the demonstrated domain from a proposed application. Locate the equations, calibration, specimen or machine configuration and raw observations needed to repeat the claim.
+
+Hale's anti-backlash actuator study is useful for comparing a theoretical prediction with a measured discrepancy and a changed physical explanation. The thermal paper provides a different setting: coordinate measurement and model transfer. Neither a thesis nor a recent paper becomes universally true because of its academic form.
+
+**Work:** Re-derive one result, reproduce one available calculation, identify an unavailable dataset or process detail and compare an alternative method. Trace a disputed assumption back to its primary evidence. Write a precise criticism that changes the interpretation or motivates a discriminating experiment, rather than merely listing possible imperfections.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Independent mechanical investigation and revision](Independent-mechanical-investigation-and-revision.lingua#r_59GJ8QGKR4RTAH7BTSZKPR1QWF).
+
+} r_49PYSX9B9KS56K20NBPHPAGCZ3

@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Isolation, repair and evidence for return to service (@wu-distribution-maintenance: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "A-versioned-network-study-with-independent-checks.lingua#r_7PXZ2663Z51EV44A7JGPVTMBW7") { r_2MEMR18TP2FMQ28R2VYKVWPSW1
+**Read:** [WHO distribution-system reference](../sources/Water-Safety-in-Distribution-WHO.lingua#r_4Z856ZAJVQZR5T72ZP9ZZ92YZF), [water safety plan manual](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD) and [Vigiagua and Brazilian requirements](../sources/Potabilidade-e-Vigilancia-Vigiagua.lingua#r_0MJJ4WY69D303TQ11X6TNZZ779); use [Manual de Saneamento](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE) as Portuguese technical context. Keep educational scenarios distinct from a real supply's approved procedures.
+
+A repair changes more than a pipe component. Identify the isolated volume, affected users, alternate service, stored water, possible ingress, material compatibility and instrumentation. Valve locations on a map are useful only if their condition and actual isolation performance are known.
+
+**Work:** Develop a tabletop response to a synthetic failed valve and a broken main. State the observations that establish the boundary, the means of maintaining essential service, and the measurements and responsible decisions needed before reconnection. Use the actual applicable procedure for cleaning, disinfection, sampling and release; do not invent universal concentrations or wait times from this exercise.
+
+Prepare an asset record linking failure history, inspection, spare parts, staff skills, lead times and evidence from recommissioning. Include one spare whose nominal dimensions match but whose material or certification does not meet the stated need. Explain what must be checked before it is accepted. A maintenance plan is credible when it accounts for the people, equipment, information and supplies required to perform and verify the work.
+
+**Continue:** [A versioned network study with independent checks](A-versioned-network-study-with-independent-checks.lingua#r_7PXZ2663Z51EV44A7JGPVTMBW7).
+} r_2MEMR18TP2FMQ28R2VYKVWPSW1

@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+COD, BOD, solids and the fractions a model needs (@wu-cod-fractions: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Electron-equivalents-and-where-organic-matter-goes.lingua#r_4CXRRGEKRQQRD91C9YTC1PT82A") { r_5QEQEGB02AAYFH7MFMJ3H8W3Q2
+**Read:** Finish [Wastewater Characteristics, Treatment and Disposal — von Sperling](../sources/Wastewater-Characteristics-Treatment-and-Disposal.lingua#r_59N8AH8ZNEKJK3HC4J32RV50XC); begin the complete [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV). Use [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37) for the later fractionation and modelling depth, and [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS) for the meaning of analytical results.
+
+Chemical oxygen demand (DQO/COD) expresses an assay-defined oxygen equivalent. Biochemical oxygen demand (DBO/BOD) depends on the test conditions and observation period. Total and volatile suspended solids use other measurement procedures. They are related observations, not interchangeable names for one concentration, and neither a single COD value nor a COD/BOD ratio uniquely determines a biological model.
+
+An original hypothetical 500 mg COD/L is partitioned into 50 soluble inert, 100 readily biodegradable, 250 slowly biodegradable and 100 particulate inert. The fractions sum to 500 but the labels are model states whose estimation needs evidence. A physical filter does not necessarily separate precisely the same states. At 1,000 m³/day the total COD load is 500 kg/day, of which this model assigns 350 kg/day as biodegradable.
+
+**Work:** State the sampling, preservation, analytical definition and units behind each reported result. Compare total and filtered measurements without equating filtration with biological availability. Propose a fractionation study using laboratory observations or an identified published dataset, report unidentifiable fractions, and test how alternative assignments affect predicted aeration and sludge production.
+
+**Continue:** [Electron equivalents and where organic matter goes](Electron-equivalents-and-where-organic-matter-goes.lingua#r_4CXRRGEKRQQRD91C9YTC1PT82A).
+} r_5QEQEGB02AAYFH7MFMJ3H8W3Q2

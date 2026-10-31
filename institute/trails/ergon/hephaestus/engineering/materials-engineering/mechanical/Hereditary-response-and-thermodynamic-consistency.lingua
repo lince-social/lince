@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Hereditary response and thermodynamic consistency (@mat-hereditary: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "../computation/An-inspectable-viscoelastic-loading-history.lingua#r_7TGPDCZG9MJ9G8PSW3W070EMW4") { r_3XS8YQBY12Z2V7S11PHNEK0HG0
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), generalized models, hereditary integrals and dynamic response in Engineering Viscoelasticity; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), section 3.6 and the work/thermodynamics sections 2.5–2.6.
+
+For an initially relaxed one-dimensional linear material, σ(t)=∫₀ᵗ E(t−s) ε̇(s) ds, with jump contributions handled when the strain has ideal steps. A generalized Maxwell solid has E(t)=E_∞+Σ E_i exp(−t/τ_i), where E_∞≥0, E_i>0 and τ_i>0. Its branch stresses satisfy q̇_i+q_i/τ_i=E_i ε̇ and σ=E_∞ε+Σq_i.
+
+Stored free-energy density ψ=½E_∞ε²+Σq_i²/(2E_i) gives σ ε̇−ψ̇=Σq_i²/(E_iτ_i)≥0. Thus the model separates recoverable energy from dissipation. Creep compliance is related to the relaxation kernel through convolution; it is generally not its pointwise reciprocal.
+
+**Work:** Derive the energy identity and responses to a ramp, hold and unloading. For one Maxwell arm in parallel with E_∞>0, derive the creep retardation time τ(E_∞+E_1)/E_∞ and compare it with the relaxation time τ. Explain why fitting a sum of exponentials to a finite time window does not uniquely reveal a molecular mechanism.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [An inspectable viscoelastic loading history](../computation/An-inspectable-viscoelastic-loading-history.lingua#r_7TGPDCZG9MJ9G8PSW3W070EMW4).
+
+} r_3XS8YQBY12Z2V7S11PHNEK0HG0

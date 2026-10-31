@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Zero net airflow does not mean zero contaminant exchange (@cm-moving-boundaries: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Door-Motion-Human-Movement-and-Aerosol-Exchange-Zheng.lingua#r_7CWNYE36WG4XSVT18MFMZRV1DH", #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Airlocks-and-transfers-have-a-sequence-of-physical-states.lingua#r_7WTWHCP2R46ZH8RK87B41Q6NMG") { r_1MSWCS4S9SVVJJZQWPY8QQW1CE
+**Read:** [Door motion, human movement and aerosol exchange — Zheng and colleagues](../sources/Door-Motion-Human-Movement-and-Aerosol-Exchange-Zheng.lingua#r_7CWNYE36WG4XSVT18MFMZRV1DH), methods and validation discussion; [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), limits of large-opening models.
+
+Let q+ and q− be separately integrated flows in opposite directions across an opening. Net volume flow is q+−q−; net species transfer is q+C1−q−C2 when each incoming stream has the stated concentration. Thus zero net airflow can still exchange contaminated and cleaner air.
+
+Door motion and a moving body disturb the boundary and flow. A static pressure model omits those motions. Study the research model's geometry, moving mesh, transport approximation and validation discrepancy before transferring its conclusions to another room.
+
+**Work:** Construct an equal-counterflow example and close the amount balances in both rooms. Compare mechanical pressure, buoyant exchange and motion-induced exchange as distinct hypotheses. Specify observations that could distinguish them, including time resolution and the direction in which material crosses the opening.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Airlocks and transfers have a sequence of physical states](Airlocks-and-transfers-have-a-sequence-of-physical-states.lingua#r_7WTWHCP2R46ZH8RK87B41Q6NMG).
+
+} r_1MSWCS4S9SVVJJZQWPY8QQW1CE

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Adsorption heat, temperature and working capacity (@gas-adsorption-heat: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #industrial-gases-and-vacuum "Film-pore-and-surface-transport-in-adsorbents.lingua#r_0GZD70WHPVB0VDQBD9PPPGSTN2") { r_0EAYN81RDSK7ZCAZHYNSYJC6W7
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), thermodynamics; [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), thermal balances; the full energy-model sections of [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM) and [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H).
+
+Adsorption transfers energy as well as matter. A bed can warm during uptake and cool during desorption, changing equilibrium and rates. An isothermal laboratory capacity need not be the capacity reached during a rapid cycle. Working capacity is the difference between actual loading states traversed in that cycle.
+
+Choose either a total-energy account including gas, adsorbed population and solid, or an explicitly separated account with exchange terms. Derive their equivalence under stated assumptions. Adding a heat-of-adsorption term to a model whose total internal energy already includes that contribution can count the same effect twice.
+
+**Work:** Estimate a bed's temperature rise from a declared amount adsorbed, adsorption enthalpy and effective heat capacity. Compare the adsorption and heat-removal time scales. Explain why heating can reduce equilibrium capacity yet accelerate mass transfer, and identify the observations required to distinguish those effects.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Film, pore and surface transport in adsorbents](Film-pore-and-surface-transport-in-adsorbents.lingua#r_0GZD70WHPVB0VDQBD9PPPGSTN2).
+
+} r_0EAYN81RDSK7ZCAZHYNSYJC6W7

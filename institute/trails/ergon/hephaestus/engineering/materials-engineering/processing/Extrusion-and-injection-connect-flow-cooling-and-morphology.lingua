@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Extrusion and injection connect flow, cooling and morphology (@mat-polymer-shaping: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #materials-engineering "Reactive-processing-conversion-gelation-and-vitrification.lingua#r_07WYT3ZV0DCHFBAAEHWR4MS771") { r_6M9MR8PB8KDFASK4FA4RBJ8DEC
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), polymer processing and flow lectures; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), crystallization and dynamics; [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), casting plastics and forming.
+
+Extrusion couples conveying, melting, pressure generation, die flow and downstream cooling or drawing. Injection adds filling, packing, cooling and demolding within a changing cavity state. Flow orientation and crystallization can vary across the wall and around obstacles; weld lines and shrinkage are histories, not merely cosmetic labels.
+
+**Work:** Close material throughput and a heat balance for a specified geometry. Compare residence-time extremes with degradation and cooling requirements. Explain how holding pressure, gate freezing, cooling asymmetry and molecular orientation can affect dimensions and anisotropy. Use measured process and section data to test competing causes of warpage. Extend the analysis to blowing or drawing by adding extensional flow and a changing free surface, rather than reusing a shear-only fit.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Reactive processing, conversion, gelation and vitrification](Reactive-processing-conversion-gelation-and-vitrification.lingua#r_07WYT3ZV0DCHFBAAEHWR4MS771).
+
+} r_6M9MR8PB8KDFASK4FA4RBJ8DEC

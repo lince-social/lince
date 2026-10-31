@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Area properties and the axis they refer to (@mech-area-properties: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #mechanical-engineering "../computation/An-inspectable-beam-reaction-and-section-account.lingua#r_3ST3WWAE3FMTEGFBA2B2T57GHF") { r_618K6RKDD6352XXPC8PWRZNHQ1
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapter 10 in full. Compare its geometric integrals with the stress/deflection questions introduced in [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY).
+
+The second moment of area about an axis is an integral of squared distance over area, with units of length to the fourth power. Mass moment of inertia instead weights mass and has units mass times length squared. Both depend on the chosen axis and are not interchangeable.
+
+For an original rectangle 20 mm wide and 40 mm high, the centroidal second moment about the horizontal axis is bh³/12 = 106,666.667 mm⁴. About the vertical axis it is hb³/12 = 26,666.667 mm⁴. Rotating the same area changes the bending geometry by a factor of four. An axis shifted 30 mm from the horizontal centroidal axis gives I = Ic + A d² = 826,666.667 mm⁴.
+
+**Work:** Derive a simple shape's property by integration, then assemble a section from parts and holes using the same reference axis. Check units when converting mm⁴ to m⁴. Relate the geometry to a physical prediction only after stating the beam or torsion model that uses it.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [An inspectable beam reaction and section account](../computation/An-inspectable-beam-reaction-and-section-account.lingua#r_3ST3WWAE3FMTEGFBA2B2T57GHF).
+
+} r_618K6RKDD6352XXPC8PWRZNHQ1

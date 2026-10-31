@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Vapor jets, diffusion pumps and backstreaming (@gas-diffusion-pump: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Turbomolecular-pumping-as-directional-momentum-transfer.lingua#r_2P492EGT6DKWTQY2D1CJSABCBA") { r_1P0M8V7FVBSAB8ATFJWYTTW42Y
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), sections 2.1.6.1–2.1.6.5, including fluids, baffles and ejectors.
+
+A diffusion pump uses a directed vapor jet to transfer momentum to gas molecules, moving them toward a backed outlet. The pumping fluid is heated, expanded through jets, condensed and returned. Heating and cooling are therefore part of the pumping mechanism, not optional accessories.
+
+Some fluid molecules can travel toward the chamber. Baffles and traps reduce that transport while also changing useful conductance and heat load. The pumping fluid's vapor pressure, stability and contamination history matter. Ejector arrangements operate through related entrainment mechanisms but have their own pressure and flow ranges.
+
+**Work:** Follow both process gas and pumping fluid through a complete cycle. Compare the chamber's effective speed before and after adding a baffle. Explain how loss of cooling, degraded fluid or excessive backing pressure could change the observed pressure and contamination independently. Use source curves only within their stated operating conditions.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Turbomolecular pumping as directional momentum transfer](Turbomolecular-pumping-as-directional-momentum-transfer.lingua#r_2P492EGT6DKWTQY2D1CJSABCBA).
+
+} r_1P0M8V7FVBSAB8ATFJWYTTW42Y

@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Pressure-loaded cylinders, shells and end forces (@mech-pressure-structures: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "Bending-stress-from-curvature-and-equilibrium.lingua#r_33X1N7GV1VCKGA5Y5S0XF9DR5R") { r_2HT2CN6HMX46P23CA8VRTD7X6T
+**Read:** [Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Pressure Vessels; [Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), section 4.1 and shell theory in chapter 10. Derive the pressure resultants on a cut surface before using a membrane approximation.
+
+For a thin cylindrical wall under internal pressure difference p, away from ends and discontinuities, the approximate hoop stress is pr/t. With closed ends and no additional axial restraint, axial membrane stress is pr/(2t). A spherical membrane has equal tangential stresses pr/(2t). State the radius convention and thin-wall approximation; end loads, joints, penetrations and support constraints can introduce additional stresses.
+
+At p = 1 MPa, r = 50 mm and t = 2 mm, the cylindrical estimates are 25 MPa hoop and 12.5 MPa axial stress. A pressure acting over a piston or closed end also creates a resultant force that must pass through the assembly. Equal pressure on both sides does not produce the same differential loading as pressure applied to one side only.
+
+For a thick isotropic elastic cylinder, the axisymmetric solution has radial stress σ_r = A − B/r² and hoop stress σ_θ = A + B/r², with A and B fixed by the inner and outer pressure conditions. For inner radius a, outer radius b, internal pressure p and zero external pressure, A = pa²/(b²−a²) and B = pa²b²/(b²−a²). Radial stress is −p at a and zero at b; the hoop stress varies through the wall. Axial conditions still need a separate account.
+
+**Work:** Recover the thin-wall limit from the thick-cylinder solution. Compare open ends, closed ends and axial restraint, then include a temperature difference or interference fit. For external pressure, investigate shell instability rather than simply changing the sign of a tensile-strength calculation. These models explain mechanics; a real pressure-containing component also requires applicable design, fabrication, inspection and protection requirements, addressed with its actual service context.
+
+**Continue:** [Bending stress from curvature and equilibrium](Bending-stress-from-curvature-and-equilibrium.lingua#r_33X1N7GV1VCKGA5Y5S0XF9DR5R).
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+} r_2HT2CN6HMX46P23CA8VRTD7X6T

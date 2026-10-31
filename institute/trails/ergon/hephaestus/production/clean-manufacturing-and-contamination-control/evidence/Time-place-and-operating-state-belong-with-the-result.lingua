@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Time, place and operating state belong with the result (@cm-states: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "../transport/Transport-connects-the-source-to-the-sensitive-place.lingua#r_79HSQ4MDC0MQ3Z2GJMR6133HXG") { r_5DS9CBQ5QH29YYFY9M4P13H9E1
+**Read:** [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), premises and monitoring; [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), operating requirements.
+
+An empty room, an installed but idle process and an active operation have different sources and flows. People, moving parts, open containers and maintenance can change exposure. Measurements need their state and history, including unusual interventions and the time since cleaning or restart.
+
+A long average can hide a short event, while a brief measurement can miss an intermittent source. Match the temporal resolution to the mechanism and consequence being investigated. Instrument response time also limits what a record of measurements can reveal.
+
+**Work:** Sketch a timeline containing ordinary operation, an intervention and recovery. Propose observations that distinguish a persistent background from an event. Explain what an average alone would conceal and how you would avoid confusing a delayed detector response with delayed contamination.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Transport connects the source to the sensitive place](../transport/Transport-connects-the-source-to-the-sensitive-place.lingua#r_79HSQ4MDC0MQ3Z2GJMR6133HXG).
+
+} r_5DS9CBQ5QH29YYFY9M4P13H9E1

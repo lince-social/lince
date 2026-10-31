@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Redundancy can retain a common point of failure (@gas-redundancy: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "A-proof-test-interval-is-a-model-with-assumptions.lingua#r_0WEYAJ4V88DTB6BAFVMSGHXCMS") { r_784PY21TPWV53PCJJQ502BS7SY
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), functional analysis, and the shared supply-dependence Record.
+
+For a stated demand, suppose a common event disables both supplies with probability qc. Conditional on its absence, each supply fails independently with probability q. Joint failure is qc+(1−qc)q². For hypothetical q=0.01 and qc=0.002, it is 0.0020998, compared with 0.0001 in the model that omits the common event.
+
+The equation does not infer qc from a diagram. Two tanks may depend on one regulator; two compressors may share cooling, power, controls or maintenance errors. Standby changeover may also fail or take longer than the useful reserve permits.
+
+**Work:** Define the demand and conditional events before calculating. Draw the actual dependencies of two proposed reserve arrangements. Add a switching failure and a finite reserve, keeping overlapping events from being counted twice. Identify evidence required to estimate each probability.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A proof-test interval is a model with assumptions](A-proof-test-interval-is-a-model-with-assumptions.lingua#r_0WEYAJ4V88DTB6BAFVMSGHXCMS).
+
+} r_784PY21TPWV53PCJJQ502BS7SY

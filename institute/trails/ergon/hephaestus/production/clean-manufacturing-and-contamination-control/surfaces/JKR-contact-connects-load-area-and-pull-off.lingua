@@ -1,0 +1,19 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+JKR contact connects load, area and pull-off (@cm-jkr: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "DMT-contact-and-the-limits-of-interchanging-models.lingua#r_3VSZWJ3765FXCK58A6B5TTTEX6") { r_3HPDFHZR35Z41K4QEAEQET886M
+**Read:** [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), part 1 page 7 and its stated assumptions; [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), adhesion-model pages 1–2.
+
+For the ideal JKR sphere–plane model, the stable load-controlled contact branch is
+
+a³=(3R/(4E*)) [P+3πWR+√(6πWRP+(3πWR)²)].
+
+The positive pull-off magnitude is 3πWR/2; the corresponding applied load is negative. At zero load, a₀³=9πWR²/(2E*). At load-controlled separation, a_c³=9πWR²/(8E*), so a_c/a₀=4⁻¹ᐟ³. A finite contact area persists up to this ideal instability.
+
+The JKR limit localizes the adhesive effect near the contact relative to the elastic deformation scale. Smoothness, elastic response and a small contact relative to body dimensions remain assumptions. Loading-machine stiffness and displacement control can change stability; use the stated load-controlled result here.
+
+**Work:** Recover the zero-load and critical-load expressions from the square root. Independently write P(a)=4E*a³/(3R)−√(8πWE*a³) and find its minimum. Compare both routes. Evaluate hypothetical R=0.5 µm, W=0.05 J/m² and E*=1 GPa, checking a/R before treating the small-contact approximation as adequate.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [DMT contact and the limits of interchanging models](DMT-contact-and-the-limits-of-interchanging-models.lingua#r_3VSZWJ3765FXCK58A6B5TTTEX6).
+
+} r_3HPDFHZR35Z41K4QEAEQET886M

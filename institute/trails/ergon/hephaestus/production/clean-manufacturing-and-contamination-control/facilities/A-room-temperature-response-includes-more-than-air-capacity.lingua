@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A room-temperature response includes more than air capacity (@cm-thermal-response: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "Utility-interfaces-determine-conditions-at-the-point-of-use.lingua#r_0K8HB1MA4VJ4RR6G25Q3A66Y1W") { r_4JCTRNZQ1SZ37NEYQ3QYDMN9VM
+**Read:** [Lumped capacity, Biot number and response time](../../../physics/thermodynamics-and-heat-transfer/transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3) and its complete transient heat-transfer readings; [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), variable process loads.
+
+A simple lumped model is Ceff dT/dt=P−H(T−Ts), where Ceff is the effective thermal capacity participating on the modeled time scale and H the effective conductance to supply or surroundings. Constant P, H and Ts give T∞=Ts+P/H and time constant Ceff/H.
+
+Hypothetical Ceff=10⁶ J/K, H=2000 W/K and P=6000 W give a 500 s time constant and 3 K steady rise. Room air alone may store much less heat than the equipment and surfaces coupled to it. Several capacities and transfer paths can require several time scales.
+
+**Work:** Derive the step response and integrated energy balance. Compare temperature at the air sensor, workpiece and structural support after a process-load change. Explain what data would support a one-capacity approximation and what persistent disagreement would require a distributed model.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Utility interfaces determine conditions at the point of use](Utility-interfaces-determine-conditions-at-the-point-of-use.lingua#r_0K8HB1MA4VJ4RR6G25Q3A66Y1W).
+
+} r_4JCTRNZQ1SZ37NEYQ3QYDMN9VM

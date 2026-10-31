@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Generate humidity by equilibrium and controlled dilution (@gas-humidity-generation: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ", #industrial-gases-and-vacuum "Trace-analysis-needs-selectivity-as-well-as-sensitivity.lingua#r_0ECGKZB8R5E57RRY73HDB4G0XB") { r_4FW4DXZAADGDQQTJYSSAA13N0B
+**Read:** [Hybrid humidity generator — NIST SP 250-83 Revision 1](../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ), generator design, validation and uncertainty sections.
+
+A saturation-based generator establishes gas composition through equilibrium at measured temperature and pressure. Reaching the assumed equilibrium requires sufficient contact and controlled gradients. Two-pressure operation changes the relationship between saturation and use pressure; divided-flow operation mixes a characterized humid stream with a characterized dry stream.
+
+For molar flows Fh,Fd and fractions xh,xd, conservation gives x=(Fhxh+Fdxd)/(Fh+Fd). A nominally dry stream can set the floor of a very low-humidity mixture. Flow ratios must be on compatible amount bases; equal displayed volume flows at different states need not mean equal molar flows.
+
+With hypothetical Fh=1, Fd=99 in the same molar-flow unit, xh=0.01 and xd=10⁻⁷, x=0.000100099. Ignoring the dry-stream impurity would yield 0.0001. Whether that difference matters depends on the target uncertainty, not on the word “dry.”
+
+**Work:** Derive the sensitivities to both fractions and flows. Identify common scale errors that cancel in the ratio and independent errors that do not. Explain how a generator can be checked for incomplete saturation, surface memory and sampling-temperature effects using changed conditions.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Trace analysis needs selectivity as well as sensitivity](Trace-analysis-needs-selectivity-as-well-as-sensitivity.lingua#r_0ECGKZB8R5E57RRY73HDB4G0XB).
+
+} r_4FW4DXZAADGDQQTJYSSAA13N0B

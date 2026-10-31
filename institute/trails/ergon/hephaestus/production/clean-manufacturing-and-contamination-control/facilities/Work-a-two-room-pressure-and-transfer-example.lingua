@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Work a two-room pressure and transfer example (@cm-network-example: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Carry-contaminants-with-the-upstream-state-of-each-flow.lingua#r_7MM8R8V09M0MJS6B1HG62MH9B9") { r_07JAMYKSV9JJ9RVBA1DRDNBGHT
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), network theory and worked model setup.
+
+Take outdoor pressure as zero. Let conductances G12=0.005, G10=0.002 and G20=0.003 m³/(s Pa), with constant density and linear paths. Mechanical supply minus exhaust is S1=0.05 and S2=−0.02 m³/s. Conservation gives 0.007p1−0.005p2=0.05 and −0.005p1+0.008p2=−0.02.
+
+The solution is p1≈9.67742 Pa and p2≈3.54839 Pa. Flow from room 1 to 2 is approximately 0.0306452 m³/s. The two outward outdoor flows sum to 0.03 m³/s, equal to S1+S2. These values describe a hypothetical network, not proposed operating setpoints.
+
+**Work:** Solve by elimination and independently by numerical residual minimization. Increase room 2 extraction so S2=−0.06 m³/s and determine which paths reverse. Then add one contaminant source and use upstream concentrations for transported material. A pressure solution alone is not a contamination solution.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Carry contaminants with the upstream state of each flow](Carry-contaminants-with-the-upstream-state-of-each-flow.lingua#r_7MM8R8V09M0MJS6B1HG62MH9B9).
+
+} r_07JAMYKSV9JJ9RVBA1DRDNBGHT

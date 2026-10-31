@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Connect stored gas with a delivered service (@gas-delivery-entry: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #industrial-gases-and-vacuum "Real-gas-inventory-and-the-meaning-of-usable-amount.lingua#r_112DFGFG2FMB4PBCH12KGCKH1N") { r_72SSPTZKFHB4DTXR1MSW0KNN8S
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), the complete storage, transfer and instrumentation sequence; [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), the complete guide as the equipment becomes familiar. Keep [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ) open for the energy balances.
+
+A cylinder, liquid vessel or pipeline contains material, but the user needs a stream at a particular time, composition, pressure and temperature. Follow the intervening equipment: storage, withdrawal, vaporisation where needed, pressure reduction, distribution, local purification and measurement. Draw both the product path and the paths carrying heat, electricity, information and returned material.
+
+Distinguish capacity in m³ of vessel space, kg or mol of stored product, usable inventory above a delivery limit, maximum sustained flow and transient response. A large inventory may be unavailable because its pressure is too low, the vaporiser lacks heat or the gas has not passed its quality checks. Portuguese terms include armazenamento, retirada, vaporização, regulagem de pressão and ponto de uso.
+
+**Work:** Describe one continuous and one intermittent gas use. Give their required conditions as functions of time and identify which part of the supply chain must maintain each condition. Carry this same example through the following balances, then compare packaged gas, bulk liquid and an on-site generator without assuming that any one arrangement fits every demand.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Real-gas inventory and the meaning of usable amount](Real-gas-inventory-and-the-meaning-of-usable-amount.lingua#r_112DFGFG2FMB4PBCH12KGCKH1N).
+
+} r_72SSPTZKFHB4DTXR1MSW0KNN8S

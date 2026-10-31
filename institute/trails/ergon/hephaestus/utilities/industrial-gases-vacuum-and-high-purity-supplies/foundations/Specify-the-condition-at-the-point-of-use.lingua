@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Specify the condition at the point of use (@gas-point-of-use: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #industrial-gases-and-vacuum "../../../materials/chemical-feedstocks-and-supply-systems/families/Air-gases-as-pipeline-bulk-liquid-and-cylinder-supplies.lingua#r_5SM8V9DE71V106BQ9NYPKXPG52") { r_674TAFDHSF9QJ5FQ58JXK2WKVS
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), application/specification relation; [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), measured values and validity; [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH), the complete supply-quality scope.
+
+A useful requirement states composition and impurity limits, pressure, flow range, temperature, phase, particles, response time and availability where the gas is used. Some applications also care about local flux, molecular excitation, isotopic composition or the history of exposed surfaces. Specify what matters to the operation and how it will be observed.
+
+Separate normal demand from startup, shutdown, transient peaks and recovery after interruption. A certificate at filling does not measure contamination acquired later. A well-controlled upstream pressure does not prove sufficient downstream flow through a restrictive connection.
+
+**Work:** Turn your opening application into an explicit service requirement with units, locations and time conditions. Distinguish measured acceptance evidence from a design estimate. Identify one requirement that changes your choice of supply architecture and one that changes the analytical method.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Compare ways to supply a specified gas to its user](../../../materials/chemical-feedstocks-and-supply-systems/families/Air-gases-as-pipeline-bulk-liquid-and-cylinder-supplies.lingua#r_5SM8V9DE71V106BQ9NYPKXPG52).
+
+} r_674TAFDHSF9QJ5FQ58JXK2WKVS

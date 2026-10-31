@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Particles, solutes, vapors and films describe different states (@cm-material-forms: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW", #clean-manufacturing "../../../inquiry/quantitative-literacy/foundations/Ratios-and-percentages.lingua#r_2VBAHXE0WMP7E6WA0NNKV1N31S") { r_0NMVCDB4G4SYQWM9F3B0T45KB4
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), chapters 1–2; [Microbiology — Parker and colleagues, OpenStax](../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW), the chemistry and cell foundations as needed. Revisit [Substances, mixtures, components, and phases](../../../chemistry/general-chemistry/foundations/Substances-mixtures-and-phases.lingua#r_07Y9PYVRA9HSVSZWQC4N0X8ZZS).
+
+A contaminant may be suspended as a particle, dissolved in a liquid, present as a gas species or attached to a surface. Changing temperature, solvent or pressure can move material between these descriptions. A dissolved residue may remain after the carrier liquid evaporates; an airborne molecule may adsorb onto a sensitive surface.
+
+Write a description with substance, phase and location. “Organic contamination” is a broad chemical category, not a measured amount or proof of biological activity. “Metal contamination” can mean dissolved ions, particles or a surface deposit, each requiring different evidence.
+
+**Work:** Follow a hypothetical cleaning liquid as it wets a surface, drains and dries. Account for solvent and nonvolatile residue separately. Identify which observations would distinguish a clean dry surface from one carrying an invisible film.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Ratios, proportions, percentages, and denominators](../../../inquiry/quantitative-literacy/foundations/Ratios-and-percentages.lingua#r_2VBAHXE0WMP7E6WA0NNKV1N31S).
+
+} r_0NMVCDB4G4SYQWM9F3B0T45KB4

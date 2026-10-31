@@ -1,0 +1,12 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Air-cleaning systems — DOE-HDBK-1169-2022 (@cm-doe-source: 0, is #reference, #part-of @cm-sources) { r_09QPEZ76E9W6HS7R55X2K8TB3X
+U.S. Department of Energy. *Handbook for Use with DOE-STD-1269-2022, Air Cleaning Systems in DOE Nuclear Facilities*, April 2022. [Official record](https://www.energy.gov/ehss/articles/doe-hdbk-1169-2022) · [Complete 267-page PDF](https://www.energy.gov/sites/default/files/2026-05/DOE-HDBK-1169-2022.pdf).
+
+Begin with the system-design and aerosol/filter chapters, especially section 4.1.1 on capture and retention. Continue through component tests, installation, operation and maintenance as those topics arise. Read the full handbook for the advanced air-cleaning investigation, keeping its nuclear-facility scope explicit.
+
+Cover, foreword, contents and selected collection-mechanism passages were inspected on 30 October 2026. The official page labels the publication Archive. Its foreword distinguishes this supporting handbook from the companion standard; the trail does not treat it as a new or universally applicable requirement. Government-hosted material includes external references and credits. Technical figures have not yet been independently reconstructed. All media remain external.
+
+The facility formation additionally inspects system/zoning passages, collection and resistance, installed testing, fan/system interaction, intakes and control. Its overview particle counts, emission examples and application-specific sizing values are not adopted as transferable process inputs. The authored balances distinguish test basis, medium capture, installed bypass and useful function. Full technical figures, prescribed tests and operating facilities have not been independently reproduced.
+
+} r_09QPEZ76E9W6HS7R55X2K8TB3X

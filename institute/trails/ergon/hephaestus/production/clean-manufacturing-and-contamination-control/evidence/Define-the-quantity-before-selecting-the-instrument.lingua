@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Define the quantity before selecting the instrument (@cm-question: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "../../../inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH") { r_7X3XWKDBEHABCPSN199QAXFZR8
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), sections 21.2–21.3; revisit [Begin with a question and specify the measurand](../../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6).
+
+State the target, location, time, quantity and method conditions. “How clean is it?” could mean airborne particles above a defined size, mass of extractable residue per surface area, or recovered organisms under a specified method. An instrument can be well calibrated while answering a different question from the one the process requires.
+
+Trace the inference from product to sample, sample to signal, and signal to reported quantity. Distinguish direct observation from a model-dependent conversion. Record the conditions under which the conversion is supported.
+
+**Work:** Write three measurement questions for one process and propose suitable evidence for each. Identify a tempting but inadequate substitute measurement. Explain precisely which inferential step that substitute leaves unsupported.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A specimen, a sampling target, and a result about a population](../../../inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH).
+
+} r_7X3XWKDBEHABCPSN199QAXFZR8

@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Transport, reaction and a residual at the tap (@wu-network-quality: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "An-inspectable-demand-pressure-and-exposure-calculation.lingua#r_7MK1BYCC2XB3BSFZ6S08A9QSEK") { r_4VFZJD7P8XQ9S532CBP2HCQX8P
+**Read:** [EPANET 2.2 manual](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW), [analysis algorithms](https://usepa.github.io/EPANET2.2/12_analysis_algorithms.html), water-quality transport; compare the earlier mixed-tank and reaction Records. Use [WHO distribution-system reference](../sources/Water-Safety-in-Distribution-WHO.lingua#r_4Z856ZAJVQZR5T72ZP9ZZ92YZF) for operational context.
+
+Hydraulic travel, junction mixing, bulk reactions and wall interactions jointly affect concentration. In an original constant-flow plug segment with a first-order bulk loss only, a 1 mg/L inlet and k = 0.05/hour give exp(−0.2) ≈ 0.818731 mg/L after 4 hours. This is a synthetic tracer-like reaction example, not a required disinfectant concentration.
+
+At an ideal junction, incoming mass rates and water rates determine the mixed concentration. For 2 L/s at 0.8 mg/L and 3 L/s at 0.4 mg/L, the mixed value is 0.56 mg/L. An arithmetic mean would be wrong. A reversal changes which pipes contribute incoming water; a time-varying upstream signal cannot be represented by one permanent concentration.
+
+**Work:** Compare nonreacting source tracing, water age and reactive concentration as separate model outputs. Check mass accounting, travel delays and time-step sensitivity before calibrating rate constants. Use laboratory and network observations to investigate bulk versus wall effects; do not fit every discrepancy to one decay constant. Explain why neither water age nor a single residual value proves complete microbial or chemical safety.
+
+**Continue:** [An inspectable demand, pressure and exposure calculation](An-inspectable-demand-pressure-and-exposure-calculation.lingua#r_7MK1BYCC2XB3BSFZ6S08A9QSEK).
+} r_4VFZJD7P8XQ9S532CBP2HCQX8P

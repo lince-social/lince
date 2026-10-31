@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend pressure, flow and supply continuity (@gas-study-delivery: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9", #source "../../../physics/fluid-dynamics/sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../../../materials/chemical-feedstocks-and-supply-systems/sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV", #source "../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C", #industrial-gases-and-vacuum "Review-delivery-from-stored-state-to-accepted-use.lingua#r_5YDSGAWT2X43S7P3JQ7HPBNCA8") { r_62R276CYC4HF4K8PFVSPT97FYF
+**Read:** [Pressure regulator flow curves — Swagelok technical bulletin](../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9), complete applicable curve families; [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../../../physics/fluid-dynamics/sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM), relevant governing relations; [Oxygen Pipeline and Piping Systems — EIGA Doc 13/20](../../../materials/chemical-feedstocks-and-supply-systems/sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV) in full for an oxygen study; [Good practices guide for loading and unloading of cryogenic liquid tankers — AIGA](../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C) for the transfer boundary.
+
+Build a delivery account from source to two users with different demand histories. Define the source's changing state, regulator behavior, line loss, buffer and reserve. Calculate the time intervals in which each user can receive the required pressure, flow and temperature, rather than reporting only daily total consumption.
+
+Use manufacturer evidence within its stated domain. Preserve units, gas, pressure reference, inlet conditions and uncertainty when comparing it with a theoretical passage model. Investigate an inlet-pressure decline, a demand step and one shared-utility interruption. Show why an available source may fail to provide useful service.
+
+Check the calculations with limiting cases and independent balances. Distinguish a steady calculation, a lumped transient and a distributed transient; justify the simplest model that resolves the question. A drawing or calculation is not evidence of physical installation qualification.
+
+**Demonstrate:** A traceable demand-to-source argument, reproducible quantitative predictions, identified gaps in equipment evidence and a concrete plan for observing the changed-condition behavior. Connect the parties responsible for each interface to the information they must exchange.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review delivery from stored state to accepted use](Review-delivery-from-stored-state-to-accepted-use.lingua#r_5YDSGAWT2X43S7P3JQ7HPBNCA8).
+
+} r_62R276CYC4HF4K8PFVSPT97FYF

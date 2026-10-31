@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Symmetry as a constraint on material response (@mat-symmetry-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "../../../../gaia/earth/mineralogy-and-petrology/crystals/Point-symmetry-and-physical-properties.lingua#r_2KSSZ1DBRR07M3YX82HAAAZ1PM") { r_3G984PQ5G1ZF7C4DBBNEWAYCWM
+**Read:** [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures 14–16 and 20–21; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), crystallography and Tensors in Materials Science. Continue into the shared point-symmetry Record.
+
+A symmetry operation must preserve the specified object, including species and arrangement where relevant. External shape, an average crystal model and a physical response can have different apparent symmetries. Defects, fields, stress or texture may lower the symmetry relevant to an experiment.
+
+Use symmetry to constrain a mathematical response before fitting numbers. It can forbid a coefficient or relate components, but does not determine their magnitudes. A convenient isotropic approximation needs evidence for the aggregate and property under study.
+
+**Work:** Apply a rotation or inversion to a small labelled structural model. Explain which features are preserved and which change. Follow the shared symmetry reading, then derive a property constraint explicitly rather than memorizing a list of crystal classes.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect point symmetry with shape, structure, and property constraints](../../../../gaia/earth/mineralogy-and-petrology/crystals/Point-symmetry-and-physical-properties.lingua#r_2KSSZ1DBRR07M3YX82HAAAZ1PM).
+
+} r_3G984PQ5G1ZF7C4DBBNEWAYCWM

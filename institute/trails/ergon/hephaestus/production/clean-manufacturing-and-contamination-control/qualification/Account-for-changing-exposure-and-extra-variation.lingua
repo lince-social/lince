@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Account for changing exposure and extra variation (@cm-monitoring-rates: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Track-small-persistent-changes-with-an-EWMA.lingua#r_3AQC92YPV91KVMSWW5P2KFAHSC") { r_38JCE53EFQBBMMFNPTKTZGXS8A
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), attribute charts and process models. Revisit aerosol volume conversion, efficiency and sampling losses.
+
+If N_i is Poisson with mean cV_i for concentration c and effective observed volume V_i, N_i/V_i has variance c/V_i. Equal plotted rates can have different precision when the observed volumes differ. The relevant exposure might instead be inspected area, time or number of comparable opportunities.
+
+With c = 2 in consistent units, volumes 1 and 4 give rate standard deviations √2 and √(2/4). A common horizontal band based on an undeclared volume misrepresents the second observation. Exposure uncertainty, efficiency changes and shared calibration need their own account.
+
+Clustering or a changing underlying rate can produce variance greater than the mean. In a mixed-Poisson model with random intensity Λ, var(N) = E(Λ) + var(Λ). Increasing limits without examining why extra variation occurs can hide an important process mechanism.
+
+**Work:** Compare stable-rate, changing-exposure and clustered simulated counts. Separate an instrument-state change from a process-rate change. Choose a model whose residuals and physical assumptions can be examined, keeping the effective exposure with every observation.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Track small persistent changes with an EWMA](Track-small-persistent-changes-with-an-EWMA.lingua#r_3AQC92YPV91KVMSWW5P2KFAHSC).
+
+} r_38JCE53EFQBBMMFNPTKTZGXS8A

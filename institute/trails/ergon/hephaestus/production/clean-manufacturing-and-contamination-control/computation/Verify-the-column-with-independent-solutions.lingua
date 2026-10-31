@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Verify the column with independent solutions (@cm-column-verification: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "What-the-column-cannot-identify-from-one-observation.lingua#r_0T2Q3WGSTSNYVVBAWVZ05C8MMK") { r_6PRTB02JPZSP5QAXTAMTDMHYK6
+**Read:** Revisit [Time steps, CFL stability and temporal accuracy](../../../physics/fluid-dynamics/computation/Time-steps-CFL-stability-and-temporal-accuracy.lingua#r_60M0VT0DEYA3P6E9DC371K6PQT), [Use conservation, symmetries, and related inputs as additional oracles](../../../inquiry/reproducible-computation/software/Invariants-and-related-inputs.lingua#r_04TRFA8ARZ7JK0ANVQZYDKMKB3) and [Refine an approximation and justify its numerical accuracy](../../../inquiry/reproducible-computation/numerics/Convergence-and-tolerances.lingua#r_1D7K129GJSMBAB3WR7Z1KJFXXK).
+
+For pure diffusion, choose c(z,0)=sin(πz/(2H)). The continuum solution is c(z,t)=sin(πz/(2H))exp[−Dπ²t/(4H²)], satisfying absorption below and zero flux above. Initialize exact cell averages. Compare those averages with the calculation while refining space and time. For this discrete sine mode the diffusion eigenvalue is −4D sin²(π/(4N))/h², which supplies a separate exact discrete amplification check.
+
+For pure downward advection, each step transfers fraction p=wΔt/h of a cell inventory down one cell. The distribution of transferred cell distances after s steps is binomial. A particle starting in cell i remains only when that distance is at most i. This gives an independent finite-step check without implementing the same neighbor-update loop again.
+
+**Work:** Test both solutions, arbitrary nonnegative initial profiles, zero coefficients, inventory closure, scaling and invalid inputs. Refine a transported sharp front against its exact translated profile; its error behaves differently from a smooth diffusion mode. Explain why a correct implementation of the chosen equations still requires physical validation before use for an apparatus.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [What the column cannot identify from one observation](What-the-column-cannot-identify-from-one-observation.lingua#r_0T2Q3WGSTSNYVVBAWVZ05C8MMK).
+
+} r_6PRTB02JPZSP5QAXTAMTDMHYK6

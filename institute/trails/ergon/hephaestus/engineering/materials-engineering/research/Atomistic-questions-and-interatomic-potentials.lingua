@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Atomistic questions and interatomic potentials (@mat-atomistic-potentials: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH", #source "../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0", #materials-engineering "Density-functional-theory-model-and-convergence.lingua#r_5P52J4BW4K2W04R8VCR47357CZ") { r_0ANMANTH8ZP3MEPEFR29NCBRFB
+**Read:** [Atomistic computer modeling of materials — MIT 3.320](../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH), potentials and the first computational lab; [Quantum Mechanics — David Tong](../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0), microscopic approximations; earlier bonding, defects and crystal symmetry.
+
+Specify the question before selecting a potential: equilibrium spacing, elastic constants, a defect barrier, a surface, melting or fracture may probe different environments. Pair, many-body and learned potentials express different approximations and parameterizations. Agreement with a lattice constant does not establish reliable behavior far from that configuration.
+
+Check force and energy consistency, units, species ordering, cutoffs and boundary conditions. Differentiability and neighbor changes matter for dynamics. A parameter fit can reproduce the training observations while imposing an untested defect or surface response. Record the exact potential file and its original validation domain, including how it handles charge or composition changes.
+
+**Work:** Reproduce a small energy-versus-spacing calculation and recover force and curvature by independent differentiation. Check translation and rotation invariance where appropriate. Compare at least one observable used in fitting with a genuinely withheld defect or strained-state observation. Explain which limitation comes from numerical settings and which comes from the chosen physical description.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Density-functional theory, model and convergence](Density-functional-theory-model-and-convergence.lingua#r_5P52J4BW4K2W04R8VCR47357CZ).
+
+} r_0ANMANTH8ZP3MEPEFR29NCBRFB

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Phases, pores, inclusions and composite architecture (@mat-microstructure: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "../measurement/Prepare-and-interpret-microscopy-with-a-contrast-model.lingua#r_2WXVFFSYPQSVRF0PPA8DS1F6RN") { r_6K5ZT0N8RRABWQHN25PSJTVABK
+**Read:** [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309), units 3–4; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), microstructural examination, polymer morphology and fibre-composite introductions; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), phase proportions and textures.
+
+An engineering microstructure can contain several phases, voids, inclusions, reinforcements and designed layers. Grain boundaries within one phase differ from boundaries between phases. A pore may reduce load-bearing area, interrupt conduction or provide useful permeability depending on the task.
+
+Describe fractions, shape, size distribution, connectivity, orientation and interfaces. Equal phase fractions do not imply equal properties: isolated particles and a continuous network distribute forces, heat or electrical current differently. Processing can change connectivity without greatly changing the bulk composition.
+
+**Work:** Draw two microstructures with equal constituent fractions and predict a functional difference. Close a mass/volume/porosity account with declared densities. Identify which two-dimensional images are consistent with multiple three-dimensional arrangements and what additional observations would discriminate them.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Prepare and interpret microscopy with a contrast model](../measurement/Prepare-and-interpret-microscopy-with-a-contrast-model.lingua#r_2WXVFFSYPQSVRF0PPA8DS1F6RN).
+
+} r_6K5ZT0N8RRABWQHN25PSJTVABK

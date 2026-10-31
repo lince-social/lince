@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Three-dimensional rotation and gyroscopic coupling (@mech-gyroscopic: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #mechanical-engineering "../vibration/Rotating-imbalance-critical-speed-and-machine-loads.lingua#r_4EY3NN0859SB8AATY9X5DN5BGK") { r_39NF2TCKJBK3NP999ZKXZ6FHJR
+**Study:** [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), chapter 3 and problem sheets 2–3; [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 10–14 as the planar starting point. Read the entire rigid-body chapter before the advanced rotating-machine study.
+
+A rotation changes orientation while preserving lengths and angles. A rotation matrix R satisfies RᵀR = 1 and det R = 1. Rotations about different axes generally do not commute. Angular velocity describes instantaneous rotation; it is not usually the componentwise derivative of an arbitrary three-angle orientation parameterization.
+
+In principal body axes, Euler's equations contain products such as (I₃ − I₂)ω₂ω₃. These terms explain how torque-free angular velocity can change direction while inertial angular momentum remains fixed. For three distinct positive principal inertias, rotation about the intermediate axis is unstable to small disturbances; derive the linearized perturbation equations and their signs.
+
+For an axisymmetric rotor spinning rapidly, angular momentum has approximate magnitude I_spin Ω. A slow precession perpendicular to that momentum requires torque of magnitude approximately Ω_precession I_spin Ω under the stated approximation. With I_spin = 0.02 kg·m², Ω = 300 rad/s and precession 2 rad/s, this term is 12 N·m. Its direction matters for the bearing loads.
+
+**Work:** Verify a rotation sequence numerically and by a marked-axis drawing. Derive torque-free conservation of angular momentum and energy, then compare a symmetric and asymmetric body. Explain when the slow-precession approximation fails and how changing orientation coordinates can introduce a coordinate singularity without a physical failure.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Rotating imbalance, critical speed and machine loads](../vibration/Rotating-imbalance-critical-speed-and-machine-loads.lingua#r_4EY3NN0859SB8AATY9X5DN5BGK).
+
+} r_39NF2TCKJBK3NP999ZKXZ6FHJR

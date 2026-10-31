@@ -1,0 +1,54 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+An original batch-growth model with a conservation check (@wu-batch-example: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Biofilms-couple-growth-to-diffusion-and-detachment.lingua#r_6J9SZZDSV5ZBRG0QCSWZYWMWY6") { r_3Q9K175TBV61PNSAECSK25T3WT
+**Read:** Return to [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lectures 14–15, and the kinetic foundations in [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV). This limited example isolates substrate-limited growth before applying the much richer cycle model.
+
+For a closed, constant-volume batch with no decay, no inflow and no other limitation, X = X₀ + Y(S₀ − S). Substitute this relation into dS/dt = −μmax S X/[Y(Ks + S)]. The program integrates that one equation with classical fourth-order Runge–Kutta. It rejects an intermediate negative substrate state instead of silently clipping it. Reduce the step and verify convergence. This model contains no oxygen balance, decay products or treatment guarantee.
+
+```python
+from math import isfinite
+
+
+def batch_growth(substrate, biomass, yield_factor, maximum_growth,
+                 half_saturation, duration, steps):
+    values = (substrate, biomass, yield_factor, maximum_growth,
+              half_saturation, duration)
+    if not all(isfinite(value) for value in values):
+        raise ValueError("all parameters must be finite")
+    if min(substrate, biomass, maximum_growth, duration) < 0:
+        raise ValueError("negative concentration, rate or duration")
+    if min(yield_factor, half_saturation) <= 0:
+        raise ValueError("positive yield and saturation required")
+    if not isinstance(steps, int) or isinstance(steps, bool) or steps < 1:
+        raise ValueError("positive integer step count required")
+    initial = substrate
+    step = duration / steps
+
+    def rate(value):
+        if not isfinite(value) or value < 0 or value > initial:
+            raise ValueError("unphysical intermediate state; reduce the step")
+        cells = biomass + yield_factor * (initial - value)
+        return -maximum_growth * value * cells / (yield_factor * (half_saturation + value))
+
+    for _ in range(steps):
+        k1 = rate(substrate)
+        k2 = rate(substrate + step * k1 / 2)
+        k3 = rate(substrate + step * k2 / 2)
+        k4 = rate(substrate + step * k3)
+        substrate += step * (k1 + 2 * k2 + 2 * k3 + k4) / 6
+        rate(substrate)
+    cells = biomass + yield_factor * (initial - substrate)
+    if not isfinite(cells):
+        raise ValueError("result outside numerical range")
+    return substrate, cells
+
+
+if __name__ == "__main__":
+    for steps in (80, 160, 320, 640):
+        print(steps, batch_growth(100, 20, 0.5, 1, 10, 2, steps))
+```
+
+**Independent check:** Let A = S₀ + X₀/Y with positive S₀ and X₀. Separating variables gives μmax t = (Ks/A) ln(S₀/S) + (1 + Ks/A) ln[(A − S)/(A − S₀)]. Solve this scalar relation independently by bracketing and compare the program at several times. Verify S + X/Y = A, nonnegative states and convergence. Zero initial biomass, zero substrate or zero growth gives no conversion in this model. Add a decay state or oxygen limitation only after deriving the changed balance; do not preserve the old invariant by force.
+
+**Continue:** [Biofilms couple growth to diffusion and detachment](Biofilms-couple-growth-to-diffusion-and-detachment.lingua#r_6J9SZZDSV5ZBRG0QCSWZYWMWY6).
+} r_3Q9K175TBV61PNSAECSK25T3WT

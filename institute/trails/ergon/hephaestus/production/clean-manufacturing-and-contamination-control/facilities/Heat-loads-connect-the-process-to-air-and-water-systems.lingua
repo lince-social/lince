@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Heat loads connect the process to air and water systems (@cm-thermal-loads: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/Water-amount-fraction-dew-point-and-relative-humidity.lingua#r_7TFNVNBF898TTQ2RQ8A18ZTF79") { r_28P8T7X4TJ8G7TVHT56SE7FWG7
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), sections 2.2.1–2.2.4; the complete open-system energy readings in [Control-volume mass and energy balances](../../../physics/thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M).
+
+Process equipment, people, lights, fans and external heat transfer contribute differently over time. Nameplate electrical capacity, measured operating power, heat released to the room and heat removed directly by water are different quantities. Model coincident loads and growth allowances explicitly.
+
+For a bounded sensible-air model, heat removal is ρQcp(Treturn−Tsupply). Hypothetical ρ=1.2 kg/m³, Q=4 m³/s, cp=1005 J/(kg K) and a 5 K difference give 24.12 kW. Moisture changes, fan heat and other energy paths require additional terms.
+
+**Work:** Draw an energy balance around the room and another around the air-handling plant. Compare four 10 kW rated tools when only two operate together with a genuinely coincident four-tool load. Explain which equipment and distribution capacities must accommodate each state.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Water amount fraction, dew point and relative humidity](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/Water-amount-fraction-dew-point-and-relative-humidity.lingua#r_7TFNVNBF898TTQ2RQ8A18ZTF79).
+
+} r_28P8T7X4TJ8G7TVHT56SE7FWG7

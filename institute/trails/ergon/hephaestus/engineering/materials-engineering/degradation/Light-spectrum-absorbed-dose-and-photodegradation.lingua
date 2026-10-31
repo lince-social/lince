@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Light spectrum, absorbed dose and photodegradation (@mat-photodegradation: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG", #source "../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT", #materials-engineering "Moisture-plasticization-hydrolysis-and-interface-loss.lingua#r_4AQHR2H9AFW05XA8J7DXNXENRS") { r_00QX76X9EHD69BBP9X50MZF5WW
+**Read:** [Polymer-composite weathering protocols — NIST SP 1200-15](../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG), irradiation and spectroscopy; [Outdoor polymer service-life inference — Duan and colleagues](../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT), spectrum and intensity effects. Revisit optical absorption and energy conversion.
+
+Radiant energy reaching a surface differs from energy absorbed by particular chemical species. Spectrum, penetration, scattering, temperature and moisture affect the response. Equal total incident energy need not produce equal damage when the spectrum or intensity changes, or when oxygen supply and competing reactions respond differently.
+
+**Work:** Reconstruct the exposure spectrum and a dose definition with units and wavelength interval. Compare incident and absorbed quantities for a stated optical model. Test a reciprocity assumption using different intensities at matched dose, preserving specimen temperature and other conditions. Link a chemical response to an independently measured functional change rather than declaring any spectral change a product failure.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Moisture, plasticization, hydrolysis and interface loss](Moisture-plasticization-hydrolysis-and-interface-loss.lingua#r_4AQHR2H9AFW05XA8J7DXNXENRS).
+
+} r_00QX76X9EHD69BBP9X50MZF5WW

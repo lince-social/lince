@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Read primary water research and check what can be reproduced (@wu-primary-criticism: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #source "../sources/Benchmark-Simulation-Model-2-IWA.lingua#r_7S4V5ZYP2VFKZ6VHSBS4Z2G5BF", #source "../sources/Scaling-and-Desalination-Optimization-Amusat.lingua#r_6V1098Z0KCJKRS3YJW5A3NEMRM", #water-and-sanitation "An-independent-water-investigation-and-its-revision.lingua#r_4H96CXY28ZRMX02010G0RXEPST") { r_2C4RCEREJVM4WKR7CKR6VE7HZF
+**Read:** Follow original studies from [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), [Benchmark Simulation Model no. 2 — IWA technical description](../sources/Benchmark-Simulation-Model-2-IWA.lingua#r_7S4V5ZYP2VFKZ6VHSBS4Z2G5BF), [Scaling and desalination optimization — Amusat and colleagues](../sources/Scaling-and-Desalination-Optimization-Amusat.lingua#r_6V1098Z0KCJKRS3YJW5A3NEMRM) and the treatment manuals relevant to your question. Read full methods and supporting material, including corrections, rather than treating an abstract or a citation count as a result.
+
+Compare a laboratory treatment result, a pilot demonstration and a full-scale operating study. Their boundaries, controls, influent variation, observation periods and failure reporting may differ. A reported percentage removal needs an inlet/outlet basis, reporting limits and mass or concentration definitions; a claimed saving needs the reference service and excluded work.
+
+**Work:** Reconstruct one central table, figure or calculation. Identify precisely what was available: text, raw observations, processed data, code, dependency versions and operating details. Distinguish an inaccessible input from an unsuccessful reproduction. Keep public reading, redistribution and adaptation permissions separate when retaining sources.
+
+Write a reasoned comparison of two conflicting explanations, including evidence that could support the opposing interpretation. Check how a newer study changes the older claim instead of assuming recency settles it. If industrial details are unavailable, frame an answerable open investigation and preserve the uncertainty; do not invent the missing process recipe.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [An independent water investigation and its revision](An-independent-water-investigation-and-its-revision.lingua#r_4H96CXY28ZRMX02010G0RXEPST).
+
+} r_2C4RCEREJVM4WKR7CKR6VE7HZF

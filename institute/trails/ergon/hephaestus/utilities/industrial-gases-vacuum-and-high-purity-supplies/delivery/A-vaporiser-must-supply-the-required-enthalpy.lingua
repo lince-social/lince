@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A vaporiser must supply the required enthalpy (@gas-vaporizer: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH", #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #industrial-gases-and-vacuum "Cold-breakthrough-connects-utilities-and-material-integrity.lingua#r_02AX796VYG9KT49M0CX7SPZ788") { r_20DWRJF14X01FJ0C7W08Z5917Y
+**Read:** [Cryogenic vaporisation systems — EIGA 133/22](../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH), §§4–6 and the complete arrangement relevant to your case; [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), steady-flow energy.
+
+The required duty is approximately Q̇=ṁ(hout−hin) for steady flow with negligible shaft work and kinetic/potential changes. The outlet requirement often includes warming vapor above its saturation temperature. Supplying latent heat alone can leave gas much colder than downstream equipment or a process permits.
+
+Separate heat-transfer capability from available heat supply. An ambient exchanger depends on weather and surface condition; a heated bath depends on stored thermal energy and its utility. A thermal resistance and a heat capacity answer different questions: one limits sustained transfer, the other can buffer a temporary deficit.
+
+For a hypothetical constant enthalpy rise of 400 kJ/kg and flow of 0.050 kg/s, the required duty is 20 kW. A 6 MJ usable thermal reserve would cover 300 s only if the deficit remains 20 kW and heat transfer can maintain the required outlet condition. This is an energy bound, not a certified protection time.
+
+**Work:** Plot duty against a time-varying demand and compare it with both sustained heat input and stored thermal energy. State which measurements establish that product reaching the boundary has the required phase and temperature.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Cold breakthrough connects utilities and material integrity](Cold-breakthrough-connects-utilities-and-material-integrity.lingua#r_02AX796VYG9KT49M0CX7SPZ788).
+
+} r_20DWRJF14X01FJ0C7W08Z5917Y

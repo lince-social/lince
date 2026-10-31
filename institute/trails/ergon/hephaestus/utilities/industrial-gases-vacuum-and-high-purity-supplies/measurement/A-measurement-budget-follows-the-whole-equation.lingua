@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A measurement budget follows the whole equation (@gas-measurement-budget: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ") { r_43CV8XW3GA858G802Y97M2DWJ5
+**Read:** [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), uncertainty and reporting; [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), complete example budgets; use the shared covariance treatment.
+
+Start from the measurement equation and the definition of the result. Include reference values, calibration coefficients, response, environment, sampling, gas state and model discrepancy where they affect that equation. A list of instrument accuracy numbers is not yet an uncertainty budget.
+
+For p=I/(K Ie), the first-order relative variance contains the squared relative contributions with signs determined by the derivatives, plus covariance terms. A common calibration can cancel in one ratio and reinforce another. Repeated observations reduce only the contributions justified by their dependence structure.
+
+For a pressure difference Δp=p₁−p₂ measured with a common additive offset, that offset cancels if it is truly unchanged. A drifting offset or shared multiplicative scale behaves differently. Carry the actual model rather than choosing correlation coefficients because they make the answer smaller.
+
+**Work:** Construct a budget for one gauge comparison and one collected-flow result. Check derivatives with independent finite perturbations, then compare linear propagation with a nonlinear simulation where warranted. Report standard versus expanded uncertainty and the basis of the coverage claim; a small uncertainty cannot repair a wrong measurand or model.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Conformity decisions, guard bands, and the risk being controlled](../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ).
+
+} r_43CV8XW3GA858G802Y97M2DWJ5

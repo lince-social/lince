@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A dilution test checks proportionality without fixing the scale (@cm-aerosol-dilution: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE", #clean-manufacturing "../../../inquiry/metrology/uncertainty/Sensitivity-and-correlation.lingua#r_0EF35BB106S2F2ATJBXBR49DFR") { r_06SM1PSEGEFSGMMDASER4Z4PN4
+**Read:** [CPC proportionality calibration — Owen, Mulholland and Guthrie](../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE), full dilution and primary-calibration argument. Use [Use a fitted calibration without discarding coefficient uncertainty](../../../inquiry/metrology/calibration/Regression-uncertainty-and-inversion.lingua#r_33VGQWJCXFMMX2TJ245VDMHS4N) when fitting and applying a response relation.
+
+For a stable lossless dilution fraction f, Cdown = f Cup. If instrument response is y = gC with zero offset and constant gain, ydown/yup = f regardless of the unknown gain. Thus a constant ratio can support proportional response under the comparison conditions while leaving the absolute scale undetermined. A reference comparison supplies the missing scale.
+
+With response y = gC + b, the ratio is (gfC + b)/(gC + b). It approaches f at high concentration but approaches one as C tends to zero when b is positive. For g = 1, b = 1 concentration unit and f = 0.1, the ratio is about 0.108911 at Cup = 100 and 0.55 at Cup = 1. Treating the same ratio as a fixed physical dilution at both levels would be wrong.
+
+The diluter can itself change with pressure, temperature, flow, particle size or accumulated material. Two devices sharing similar nonlinearities can conceal an error. Compare alternative physical and statistical explanations and use independent reference information.
+
+**Work:** Reproduce the offset example, then generate a coincidence-affected response and predict the observed dilution ratio. Separate randomizing concentration order from monitoring physical stability. Explain why a good proportionality result for one reference population does not establish size-independent efficiency or validate a different material's response.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Propagate uncertainty with sensitivities and covariance](../../../inquiry/metrology/uncertainty/Sensitivity-and-correlation.lingua#r_0EF35BB106S2F2ATJBXBR49DFR).
+
+} r_06SM1PSEGEFSGMMDASER4Z4PN4

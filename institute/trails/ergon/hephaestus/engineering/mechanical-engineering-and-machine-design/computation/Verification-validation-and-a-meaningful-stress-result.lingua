@@ -1,0 +1,21 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Verification, validation and a meaningful stress result (@mech-structural-verification: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "../study/Advanced-study-of-a-thermally-loaded-precision-structure.lingua#r_329Y297RYRM63KXKS3S1164SW3", #mechanical-engineering "../study/Advanced-study-of-component-fatigue-and-damage-tolerance.lingua#r_2AAKGM024C5C8GZ18EB2BCVPN7", #mechanical-engineering "../study/Advanced-study-of-material-models-and-nonlinear-structures.lingua#r_4ECSQ4X6CYDTGR4QFZSXJCBVGP") { r_4Z0234631TP38BBV5E4CZSE6A3
+**Read:** [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Finite Element Analysis and Experimental Solutions; [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), chapters 7–8 and the relevant exact solutions in chapters 4–5.
+
+Verify the equations and numerical implementation against independent cases before interpreting a new component. Check units, coordinate frames, load resultants, reaction balance, energy, boundary conditions and limits. A patch test examines whether a simple exact field is reproduced; mesh refinement examines discretization behavior for a specified observable.
+
+State whether the result is a nodal displacement, average section force, stress at an integration point, extrapolated surface value or singular idealized peak. Refining around a mathematical singularity can increase a plotted maximum without converging to a finite physical value. A meaningful comparison may instead concern a displacement, energy-release rate or stress away from the singularity.
+
+Validate the physical model against independent observations with uncertainty. Fitting material parameters and then comparing against the same data is weaker evidence than a successful prediction under a changed load or geometry. Include plausible alternative support and material models rather than only increasing mesh density.
+
+**Work:** Produce a convergence study for the original bar and one beam or plate case. Separate solver tolerance, discretization, geometric approximation, material uncertainty and measured boundary uncertainty. Identify a result that is numerically converged but physically wrong, explain how an observation exposes it, and revise the model.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Advanced study of a thermally loaded precision structure](../study/Advanced-study-of-a-thermally-loaded-precision-structure.lingua#r_329Y297RYRM63KXKS3S1164SW3).
+
+**Continue:** [Advanced study of component fatigue and damage tolerance](../study/Advanced-study-of-component-fatigue-and-damage-tolerance.lingua#r_2AAKGM024C5C8GZ18EB2BCVPN7).
+
+**Continue:** [Advanced study of material models and nonlinear structures](../study/Advanced-study-of-material-models-and-nonlinear-structures.lingua#r_4ECSQ4X6CYDTGR4QFZSXJCBVGP).
+
+} r_4Z0234631TP38BBV5E4CZSE6A3

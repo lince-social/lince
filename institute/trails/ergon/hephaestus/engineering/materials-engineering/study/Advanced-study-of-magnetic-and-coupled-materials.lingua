@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of magnetic and coupled materials (@mat-magnetic-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1", #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #materials-engineering "Defend-the-functional-material-account.lingua#r_4R7JDE29DY1T4CNRV4Y6PDYHM9") { r_407J34ZNZB3E30D221K3B3WK5K
+**Read:** [Electron interactions, magnetism and superconductivity — Daniel C. Ralph](../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1), all seven sections and homework; [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), magnetic interactions and mean-field work; [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), magnetic and electromechanical packages; the primary study chosen from the graduate readings.
+
+Derive a magnetic ordering or superconducting screening model and identify its statistical, interaction and boundary assumptions. Compare its predicted behavior with a complete published material investigation. Then examine a functional component requiring at least one additional response, such as thermal transport, strain accommodation, insulation or spin-dependent conduction.
+
+Trace the proposed performance from composition and processing to domains, interfaces or defects and the actual measurement. Examine a regime where the model fails, including fluctuations, strong interactions, geometry, pinning or time dependence as appropriate.
+
+**Deliver:** The derivation and calculation, a primary-evidence reconstruction, a competing interpretation, a service-condition prediction and a revision after criticism. Include field/current/temperature criteria and distinguish an intrinsic material claim from a complete device's demonstrated behavior.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the functional material account](Defend-the-functional-material-account.lingua#r_4R7JDE29DY1T4CNRV4Y6PDYHM9).
+
+} r_407J34ZNZB3E30D221K3B3WK5K

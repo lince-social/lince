@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A quadrupole analyzer is a chain of transformations (@gas-qms-chain: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Quadrupole-motion-and-explicit-voltage-conventions.lingua#r_59T7RTEYGVJ5PQP29AZ9YNX6FS") { r_1VX2K1R3SKHF0CJPG0T7ZWA55V
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), complete §4; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), partial-pressure analysis chapter.
+
+Follow gas admission, ion formation, ion optics, mass filtering, detection and signal conversion. A residual-gas analyzer reports a signal associated with mass-to-charge ratio, not a direct list of neutral molecules. Each stage can depend on settings, gas, pressure and time.
+
+Electron impact can produce fragments and different charge states from one neutral species. Different neutrals can contribute to the same mass channel. The source inlet can also select composition through conductance, adsorption or a pressure-reduction system before ions are formed.
+
+Separate identifying candidate species from quantifying partial pressure. Identification uses a pattern and context; quantification needs an appropriate response model, calibration and uncertainty. A library pattern measured under different conditions can help form a hypothesis without supplying the current instrument's sensitivity.
+
+**Work:** Draw the transformation chain for an open-source-region analyzer and one sampling a higher-pressure process through an inlet. Identify which conditions must remain stable for successive scans to be compared quantitatively. Explain why a peak's disappearance can reflect changing transmission or sensitivity as well as changing gas.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Quadrupole motion and explicit voltage conventions](Quadrupole-motion-and-explicit-voltage-conventions.lingua#r_59T7RTEYGVJ5PQP29AZ9YNX6FS).
+
+} r_1VX2K1R3SKHF0CJPG0T7ZWA55V

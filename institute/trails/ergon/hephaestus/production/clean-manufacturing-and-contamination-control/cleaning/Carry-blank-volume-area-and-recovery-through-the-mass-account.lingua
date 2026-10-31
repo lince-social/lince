@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Carry blank, volume, area and recovery through the mass account (@cm-nvr-mass: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #clean-manufacturing "Chemical-identification-and-quantity-need-different-evidence.lingua#r_60067NXDGY4HCFVMEHZ98GM03N") { r_7MYKMA105SHGW3CRKG9FMNPTCF
+**Read:** [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), printed page 4; revisit the shared aliquot and metrology foundations.
+
+For a tared sample-pan mass increment Δms and a matched blank increment Δmb representing the same aliquot volume, let mnet=Δms−Δmb. If aliquot Va represents a well-mixed total extract Ve, inferred extracted mass is mext=mnet Ve/Va. With an applicable recovery fraction r and sampled area As, the inferred areal loading is σ=mext/(r As). Each correction requires evidence; a blank of different origin or volume is not automatically interchangeable.
+
+For hypothetical Δms=0.045 mg, Δmb=0.010 mg, Va=50 mL, Ve=100 mL, r=0.8 and As=200 cm², the result is 0.4375 µg/cm². This assumes the chosen recovery applies to the residue being inferred. A negative blank-corrected estimate should retain its uncertainty and analytical interpretation rather than be silently reset to zero.
+
+**Work:** Derive the result from quantities carried through each transfer. Compare mass concentration mnet/Va with surface loading. The report's printed expression mixes a mass difference and a blank/volume term without grouping; do not copy it as a dimensionally valid formula. Assess how blank uncertainty and shared balance calibration affect the result.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Chemical identification and quantity need different evidence](Chemical-identification-and-quantity-need-different-evidence.lingua#r_60067NXDGY4HCFVMEHZ98GM03N).
+
+} r_7MYKMA105SHGW3CRKG9FMNPTCF

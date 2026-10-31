@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Atmosphere, contamination and state before forming (@mat-process-atmosphere: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #source "../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT", #materials-engineering "Melt-shaping-solidification-and-final-material-state.lingua#r_49AT41H8AJ4YE9C8FHV2AN3R64") { r_145ZDZQCRMWM7ENS68BV59A671
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), material transport and processing examples; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), manufacturing conditions; [Microfabrication and material integration — MIT 6.777J, 2007](../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT), substrates and process integration. Revisit chemical potentials and defect equilibria.
+
+An atmosphere is specified by relevant partial pressures, impurities, flow and reactions with the load and furnace. Total pressure alone does not determine oxidation potential. Powder surfaces, adsorbed water, lubricants, crucibles and previous batches can contribute impurities whose importance increases with surface area or stringent electrical requirements.
+
+**Work:** Trace three impurity paths for a melt, a ceramic compact and an electronic coating. Set a material balance and identify a measurement with adequate sampling and detection limits. Separate contamination prevention from post-process removal. Explain why a high-purity feed does not guarantee a high-purity product, and why changing a lubricant or furnace lining may require rechecking an otherwise unchanged schedule.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Melt shaping, solidification and final material state](Melt-shaping-solidification-and-final-material-state.lingua#r_49AT41H8AJ4YE9C8FHV2AN3R64).
+
+} r_145ZDZQCRMWM7ENS68BV59A671

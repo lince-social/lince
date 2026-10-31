@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Model discrepancy and scale limit the research claim (@gas-research-limits: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM", #source "../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7", #source "../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV", #source "../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F", #industrial-gases-and-vacuum "Publish-a-defensible-gas-system-investigation.lingua#r_1HJHMM5T1VJWZQXR7Q5VP1HCS2") { r_3KHYR0QA40NMGYJYR1G8X7JAAN
+**Read:** Compare the complete modeling and validation accounts in [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM), [Thermal performance of cryogenic storage tanks — Aasen and colleagues](../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7) and [Cold-atom vacuum comparison — Barker and colleagues](../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV), together with [Glancing collisions in vacuum metrology — Eckel and colleagues](../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F).
+
+Numerical error, uncertain parameters, measurement error and missing physics are different sources of disagreement. Refining a mesh does not repair an incorrect constitutive relation. Fitting an effective parameter can conceal a scale-dependent process rather than establish a transferable material property.
+
+Examine relevant ratios and time scales: residence versus reaction/adsorption time, diffusion versus cycling, wall accommodation and Knudsen regime, thermal versus inventory response, and measurement response versus process transient. State where the evidence supports extrapolation and where it does not.
+
+**Work:** Construct an error and applicability account for the chosen research result. Change one scale, gas or boundary and test whether the claim survives. Explain a discrepancy that cannot be removed by numerical refinement, and propose the evidence needed to resolve it.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Publish a defensible gas-system investigation](Publish-a-defensible-gas-system-investigation.lingua#r_1HJHMM5T1VJWZQXR7Q5VP1HCS2).
+
+} r_3KHYR0QA40NMGYJYR1G8X7JAAN

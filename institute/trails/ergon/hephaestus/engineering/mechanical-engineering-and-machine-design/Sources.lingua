@@ -1,0 +1,43 @@
+Import "Mechanical-engineering-and-machine-design.lingua"
+
+Mechanical-engineering sources — complete readings and primary methods (@mech-sources: 0, is #chapter, #part-of @mechanical-engineering) { r_06RZYPZEFNMZ6MZ690QB1WN1Z2
+Begin with the complete statics book and the Slocum design companion. The dynamics course, mathematics lessons and Tong notes develop moving systems; later sources connect material behavior, machine elements, constraints and joints. Follow each source's actual edition, passages and access notes. All books, PDFs, spreadsheets, media and software remain external references. Roylance and Bower connect observed material behavior to structural models, experiments and advanced numerical methods. SKF’s catalogue and maintenance handbook connect selection with physical assembly and service evidence; their free-reading access differs from the open licences of some teaching sources.
+
+[Engineering Statics — Baker and Haynes](sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80)
+
+[Modules in Mechanics of Materials — David Roylance](sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY)
+
+[FUNdaMENTALS of Design — Alexander Slocum](sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ)
+
+[Elements of Mechanical Design — MIT 2.72, Spring 2009](sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7)
+
+[Precision Machine Design — MIT 2.75, Fall 2001](sources/Precision-Machine-Design-MIT-2-75.lingua#r_1NC9D5QBNMR4S8THM7KFNG32KB)
+
+[Fastener Design Manual — NASA-RP-1228](sources/Fastener-Design-Manual-NASA.lingua#r_78PXGW34SMJ44D965DX01WGZH5)
+
+[Engineering Dynamics — MIT 2.003SC, Fall 2011](sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3)
+
+[Classical Dynamics — David Tong](sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA)
+
+[Calculus and differential equations for dynamics — MIT Scholar courses](sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65)
+
+[Applied Mechanics of Solids — Allan F. Bower](sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W)
+
+[Rolling bearings — SKF, 2018](sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY)
+
+[Bearing maintenance handbook — SKF, 2011](sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV)
+
+[Engineering drawings for measurement — NPL Guide 79](sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48)
+
+[Desenho Técnico — Etchepare and Gravina](sources/Desenho-Tecnico-Etchepare-Gravina.lingua#r_4MDHAHPVZTA83F05M2NK2YR5PT)
+
+[Design and Manufacturing II — MIT 2.008, 2025](sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E)
+
+[Principles and Techniques for Designing Precision Machines — Hale](sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4)
+
+[Systems Engineering Handbook — NASA](sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ)
+
+[Thermal-error measurement — Li and colleagues, 2024](sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V)
+
+[Diagnostic and prognostic capabilities — Vogl, Weiss and Helu](sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY)
+} r_06RZYPZEFNMZ6MZ690QB1WN1Z2

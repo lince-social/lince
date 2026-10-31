@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Gear loads, root strength, contact and transmission error (@mech-gear-loading: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Planetary-gears-relative-motion-and-power-flow.lingua#r_03ECQDX2BH546F5TW11R15JFKJ") { r_0FE908RW7PKYPAJFRDNDSS8QHH
+**Read:** [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lecture 13; [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 6; reuse contact, material state and fatigue. The historical notes explain models, while a real selection needs the applicable current rating method and component evidence.
+
+Tangential gear force is F_t=2T/d. For a spur gear with pressure angle φ, radial separating force is F_t tan φ in the usual ideal force resolution. At T=10 N·m, d=40 mm and φ=20°, these forces are 500 N and approximately 181.985 N. They load the shaft, supports and housing as well as the tooth.
+
+Tooth-root bending, contact fatigue, scuffing, wear and overload are different limits. A basic tooth-as-cantilever estimate is useful for scaling, but does not supply the actual load distribution, dynamic factor or material life. Misalignment and face-width deflection can concentrate contact. Mesh stiffness varies through engagement and can excite the complete system.
+
+**Work:** Trace mesh forces into both shafts and bearings. Compare root and surface failure predictions using clearly stated source conventions and units. Estimate how housing displacement changes face loading, then propose a measurable transmission-error or vibration test. Include lubrication and thermal balance rather than treating gear efficiency as a universal constant.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Planetary gears, relative motion and power flow](Planetary-gears-relative-motion-and-power-flow.lingua#r_03ECQDX2BH546F5TW11R15JFKJ).
+
+} r_0FE908RW7PKYPAJFRDNDSS8QHH

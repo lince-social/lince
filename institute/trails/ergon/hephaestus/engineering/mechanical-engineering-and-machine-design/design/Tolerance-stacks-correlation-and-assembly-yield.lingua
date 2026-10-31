@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Tolerance stacks, correlation and assembly yield (@mech-tolerance-stacks: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #mechanical-engineering "Useful-point-error-budgets-and-thermal-growth.lingua#r_26T2TJ8X977GFHW5Y0T2C7WBS6") { r_3EFDXEEGHFYPJNVJNJEFH2Y6CN
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), variation/quality lectures 11–12 and their notes; [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), tolerances and inspection. Reuse metrology's uncertainty and covariance methods.
+
+For a linear clearance g=A−B−C, interval bounds combine according to signs. If A=50±0.1 mm, B=20±0.05 mm and C=29±0.05 mm, the full independent interval range is 0.8–1.2 mm. This is a possible-value bound, not a probability distribution.
+
+For random variables, Var(g)=Var(A)+Var(B)+Var(C)−2Cov(A,B)−2Cov(A,C)+2Cov(B,C). Root-sum-square applies only with the relevant covariance terms zero. If A and B share a thermal or calibration error, differencing can cancel part of it. Neither drawing limits nor a small sample establish normal distributions.
+
+**Work:** Calculate both bounds and a justified probabilistic model for a fit. Compare independent production, common-tool drift and selective assembly. Separate uncertainty of measurement from population variation. Estimate yield only after specifying the distribution, dependence and acceptance rule; investigate sensitivity to non-normal tails and drift.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Useful-point error budgets and thermal growth](Useful-point-error-budgets-and-thermal-growth.lingua#r_26T2TJ8X977GFHW5Y0T2C7WBS6).
+
+} r_3EFDXEEGHFYPJNVJNJEFH2Y6CN

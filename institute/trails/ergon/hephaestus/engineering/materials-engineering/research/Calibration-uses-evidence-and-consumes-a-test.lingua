@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Calibration uses evidence and consumes a test (@mat-calibration: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0", #source "../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND", #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #materials-engineering "Blind-prediction-and-changed-condition-tests.lingua#r_1QW5VXFDM42F0BNE1MKPX0Q1AP") { r_0QN0B0DCXHZEA7M8AP8P04AQYZ
+**Read:** [Epoxy conversion from rheology — Romberg and colleagues, 2024](../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0), alternative conversion models; [Mesoscale tensile blind predictions — AM-Bench 2022](../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND), information supplied to prediction teams; [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), data evaluation.
+
+Calibration chooses parameters or model structure using observations. Those observations then provide weaker evidence for predictive performance than information kept out of the choice. Changing a model after viewing a purported test result makes that result part of development, even if no automated fitting routine was used.
+
+Specify the observable, likelihood or loss, weighting, constraints and treatment of correlated errors. A dense curve can overwhelm sparse independent specimens if every time point is treated as an independent experiment. Regularization and parameter bounds express additional assumptions. A weighted residual sum is meaningful only with an account of its weights and error model.
+
+**Work:** Fit a small material-response model using a declared subset of conditions. Examine residual structure and parameter sensitivity, then compare a withheld temperature, rate or processing history. Repeat with a competing model of similar descriptive quality. Report all choices made after seeing results and explain which claims still have independent evidence.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Blind prediction and changed-condition tests](Blind-prediction-and-changed-condition-tests.lingua#r_1QW5VXFDM42F0BNE1MKPX0Q1AP).
+
+} r_0QN0B0DCXHZEA7M8AP8P04AQYZ

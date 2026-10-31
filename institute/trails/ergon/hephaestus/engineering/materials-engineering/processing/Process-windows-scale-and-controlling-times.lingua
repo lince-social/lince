@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Process windows, scale and controlling times (@mat-process-scales: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "../../../physics/thermodynamics-and-heat-transfer/transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3") { r_1JTQA5ZYJ6P159T05W1G05WZ7B
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), heat-flow and transport scaling; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), diffusion and transformation times. Follow the shared lumped-capacity explanation before reducing a whole part to one temperature.
+
+A process window combines useful transformations with limits on unwanted ones. Compare diffusion time L²/D, conduction time L²/a, flow residence time and reaction time. Doubling every length increases diffusion/conduction times fourfold if properties and boundary assumptions remain applicable; external heating can scale differently. A laboratory schedule is therefore not automatically a production schedule.
+
+**Work:** Nondimensionalize a selected thermal/reactive process, stating characteristic length, boundary conductance and temperature-dependent properties. Locate spatial gradients, kinetic arrest, excessive grain growth or degradation that restrict the window. Compare a lumped and spatially resolved prediction with measured surface and centre histories. Identify the observation needed to decide whether faster heating improves throughput or only steepens gradients.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Lumped capacity, Biot number and response time](../../../physics/thermodynamics-and-heat-transfer/transients/Lumped-capacity-Biot-number-and-response-time.lingua#r_57VKB47NKFZ5FDGMVK9RAQ0WJ3).
+
+} r_1JTQA5ZYJ6P159T05W1G05WZ7B

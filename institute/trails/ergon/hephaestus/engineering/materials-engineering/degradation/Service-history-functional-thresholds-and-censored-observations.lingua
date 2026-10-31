@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Service history, functional thresholds and censored observations (@mat-service-inference: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT", #source "../sources/Atomic-Oxygen-Durability-NASA.lingua#r_1RMMZEYQQCZ08VRYTHCQBEEHJ0", #source "../sources/Alkali-Aggregate-Reactivity-FHWA.lingua#r_1RPCXTH7BRN45SFFG6XC76WZNK", #materials-engineering "Uncertainty-identifiability-and-a-defensible-life-account.lingua#r_1YFJE9N7XT0TXW4RZFYHKGV1DK") { r_4BSZAEH9KEQN98Z647VA0Z4WS9
+**Read:** [Outdoor polymer service-life inference — Duan and colleagues](../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT), outdoor prediction and threshold discussion; [Spacecraft polymer atomic-oxygen durability — NASA-HDBK-6024](../sources/Atomic-Oxygen-Durability-NASA.lingua#r_1RMMZEYQQCZ08VRYTHCQBEEHJ0), flight comparisons; [Alkali-Aggregate Reactivity Facts Book — FHWA](../sources/Alkali-Aggregate-Reactivity-FHWA.lingua#r_1RPCXTH7BRN45SFFG6XC76WZNK), diagnosis/prognosis.
+
+A degradation signal is not necessarily the required function. Define failure as a stated loss of optical, mechanical, barrier or other performance, with a defensible relation to the measured response. Some specimens survive the observation period; others are removed for reasons unrelated to deterioration. These observations are censored or selected, not simply absent failures.
+
+**Work:** Reconstruct exposure histories and observation schedules for laboratory and service specimens. Keep fitting data separate from prediction data and distinguish specimen variability from parameter uncertainty. Evaluate a functional threshold against independent measurements, then show how its uncertainty affects life estimates. Explain the consequences of ignoring surviving specimens, undocumented maintenance or a change in formulation during the study.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Uncertainty, identifiability and a defensible life account](Uncertainty-identifiability-and-a-defensible-life-account.lingua#r_1YFJE9N7XT0TXW4RZFYHKGV1DK).
+
+} r_4BSZAEH9KEQN98Z647VA0Z4WS9

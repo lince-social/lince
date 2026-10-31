@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Evaluate the whole family of monitoring rules (@cm-monitoring-multiple: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Use-covariance-to-interpret-a-multivariate-change.lingua#r_09WXE7CMATRG66DCJJXMXM5FPR") { r_2E2DWW16VM0B273NQFHEFSMD3X
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chart design and multivariate monitoring. Revisit the single-point probability calculation.
+
+Multiple sensors, size channels, locations and run rules create multiple opportunities to signal. For m independent tests each with false-signal probability α, the chance of at least one is 1−(1−α)ᵐ. With α = 0.01 and m = 20 it is about 0.182093. Independence is an assumption, not a property of a dashboard.
+
+The union bound gives P(any false signal) ≤ Σα_i without requiring independence. Allocating a total error budget among tests can control one specified family-wise question, but it does not by itself optimize detection delay, cost or consequence. Repeated monitoring over time introduces another dimension of multiplicity.
+
+Correlated particle channels and shared instruments can produce several signals from one event. Count the physical evidence and its dependencies rather than treating every alert as independent confirmation. Evaluate all reset, warning and escalation rules as one procedure.
+
+**Work:** Compare independent and strongly correlated simulated sensors. Evaluate a single-point rule with and without additional run rules. State the event family, time horizon and risk being controlled, and report the sensitivity lost or gained by the chosen policy.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Use covariance to interpret a multivariate change](Use-covariance-to-interpret-a-multivariate-change.lingua#r_09WXE7CMATRG66DCJJXMXM5FPR).
+
+} r_2E2DWW16VM0B273NQFHEFSMD3X

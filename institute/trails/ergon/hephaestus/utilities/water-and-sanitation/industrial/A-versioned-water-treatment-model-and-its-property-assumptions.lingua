@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A versioned water-treatment model and its property assumptions (@wu-watertap-study: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD", #source "../sources/Scaling-and-Desalination-Optimization-Amusat.lingua#r_6V1098Z0KCJKRS3YJW5A3NEMRM", #water-and-sanitation "Defend-an-industrial-water-and-reuse-service.lingua#r_41AADHAN4S0F7PRNGEX3W85VD3") { r_596JPTZTYKY1TC7HA0MX1NFK3A
+**Read:** [WaterTAP — inspectable water-treatment models](../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD), complete selected unit/property model documentation and examples. Study [Scaling and desalination optimization — Amusat and colleagues](../sources/Scaling-and-Desalination-Optimization-Amusat.lingua#r_6V1098Z0KCJKRS3YJW5A3NEMRM) as a focused primary case after the balance and equilibrium foundations.
+
+First reproduce a simple water/solute balance independently, such as the original reuse loop. Then construct a declared treatment case in a pinned modelling environment. Record units, state variables, fixed specifications, degrees of freedom, property relations, solver, initialization, discretization and stopping criteria. A converged solver status is only one part of the evidence.
+
+**Work:** Reconcile each unit and the whole train; change discretization and starting guesses; check parameter domains and active constraints. Compare the predicted concentration or pressure with an independently calculated limiting case. Distinguish a transport equation, a fitted equipment parameter, a chemical-property prediction and an observed operating result.
+
+For the scholarly case, identify which parts of the cited article can be reproduced using its public methods/data and which depend on unavailable software or information. Compare an openly implemented chemistry relation with published results while stating that it is a changed model. Investigate recovery, fouling/scale limits, energy and residual handling together. Preserve failed or infeasible cases so the final result does not hide the boundary of the method.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Defend an industrial water and reuse service](Defend-an-industrial-water-and-reuse-service.lingua#r_41AADHAN4S0F7PRNGEX3W85VD3).
+
+} r_596JPTZTYKY1TC7HA0MX1NFK3A

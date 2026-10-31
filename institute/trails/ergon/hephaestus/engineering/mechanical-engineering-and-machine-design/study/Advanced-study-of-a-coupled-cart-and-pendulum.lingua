@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of a coupled cart and pendulum (@mech-cart-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #mechanical-engineering "Defend-a-dynamic-model-from-observation-to-advanced-analysis.lingua#r_7ZWJSTVPC38XBNB7M8S6PSKN34") { r_49E3RX6SDTHP2T2NNWV07MFA7W
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 15–26 and recitations 7–12; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), sections 2.3–2.6 and problem sheets 1–2. Complete the engineering problem sets before using the solutions to diagnose your derivation.
+
+Use a cart of mass M on a horizontal guide, a point bob of mass m on a massless rod of length l, cart spring k, cart displacement x and angle θ measured from downwards. Then T = (M+m)x_dot²/2 + ml x_dot θ_dot cosθ + ml² θ_dot²/2 and V = kx²/2 + mgl(1 − cosθ). These define a different model from the source's massive-rod recitation.
+
+**Derive:** Obtain both nonlinear equations with cart force F and joint torque τ, including the velocity-squared term. Independently check the cart/bob horizontal momentum balance and total energy. Linearize about the downward equilibrium: the mass matrix has entries M+m, ml, ml² and the stiffness matrix has diagonal k, mgl. State the coordinate units before comparing entries.
+
+For M = m = l = 1 in SI, k = 10 N/m and g = 10 m/s², the squared frequencies are 15 ± 5√5 s⁻². Recover them from the characteristic determinant, check both mode shapes, and reconstruct a nonmodal initial displacement. Then vary the cart mass, pivot damping and equilibrium orientation.
+
+**Investigate:** Compare nonlinear integration with modal predictions as amplitude grows. Include independent time-step convergence and work–energy accounting. If measuring a physical model, account for rod mass, pivot friction, guide resistance and sensor motion. Explain which differences change the equations and which enter only parameter uncertainty. Deliver a derivation, reproducible calculations and a defended comparison, not only an animation.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend a dynamic model from observation to advanced analysis](Defend-a-dynamic-model-from-observation-to-advanced-analysis.lingua#r_7ZWJSTVPC38XBNB7M8S6PSKN34).
+
+} r_49E3RX6SDTHP2T2NNWV07MFA7W

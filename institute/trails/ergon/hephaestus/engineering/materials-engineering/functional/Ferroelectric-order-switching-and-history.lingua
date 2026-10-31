@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Ferroelectric order, switching and history (@mat-ferroelectric: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #materials-engineering "Piezoelectricity-symmetry-and-mechanical-constraints.lingua#r_5ZGBZAXYXP5F3QA2XMPWVF16HF") { r_08XCVTF70MAK6YKWKZYPC0S70G
+**Read:** [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), the full Ferroelectrics package; [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), chapter 5's mean-field and Landau discussions. Compare the original structural and thermodynamic readings.
+
+Ferroelectricity involves spontaneous polarization that can be switched by an electric field under suitable conditions. Polar symmetry alone does not establish measurable switching. Domains, electrodes, defects and temperature affect the observed response; leakage current can imitate part of a polarization loop.
+
+For a simple uniform model F(P)=aP²/2+bP⁴/4−EP with b>0, derive E=aP+bP³ and the zero-field stationary states. The curvature tests local stability. This model explains a limited transition picture; it does not predict a real specimen's domain kinetics or coercive field by itself.
+
+**Work:** Compare equilibrium susceptibility, reversible cycling and switching measurements. Reconstruct a published polarization-loop method and separate displacement, leakage and instrument contributions. Explain why a fit to one loop is insufficient evidence for the claimed phase or device lifetime.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Piezoelectricity, symmetry and mechanical constraints](Piezoelectricity-symmetry-and-mechanical-constraints.lingua#r_5ZGBZAXYXP5F3QA2XMPWVF16HF).
+
+} r_08XCVTF70MAK6YKWKZYPC0S70G

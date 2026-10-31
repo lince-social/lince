@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+The people, materials and finance that keep water working (@wu-continuing-work: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Effective-Utility-Management-EPA-USDA.lingua#r_5W9CSGM4NJKGFDES86XNMQFBRD", #source "../sources/Asset-Management-for-Water-Systems-EPA.lingua#r_78ZKEFSZ16WYQ5E62DWKR8FP3N", #source "../sources/Usos-Consuntivos-da-Agua-ANA.lingua#r_74SR4SEK71SX7RTST2NB6Z5YJG", #water-and-sanitation "Defend-continuing-service-through-observation-and-change.lingua#r_17C0PJ3R16GNKATNSRSJH9JGS2") { r_2ZW9VV6JHPB69ZRZ9FC0AKHNXX
+**Read:** [Effective utility management — rural and small systems guidebook](../sources/Effective-Utility-Management-EPA-USDA.lingua#r_5W9CSGM4NJKGFDES86XNMQFBRD) and [Asset management for small water systems — US EPA](../sources/Asset-Management-for-Water-Systems-EPA.lingua#r_78ZKEFSZ16WYQ5E62DWKR8FP3N) as complete accounts. Relate [Manual de Usos Consuntivos da Água no Brasil — ANA, segunda edição](../sources/Usos-Consuntivos-da-Agua-ANA.lingua#r_74SR4SEK71SX7RTST2NB6Z5YJG)'s national demands to the local service and its upstream productive dependencies.
+
+Water continues to arrive because people inspect, clean, calibrate, schedule, purchase, repair, record and teach. A membrane, bearing, analytical reagent, motor winding, software update and trained operator each have a supply history. A technically effective design can fail when one recurring dependency is unaffordable or unavailable.
+
+For an original bounded cost example, an initial 100 units and three end-of-year costs of 10 have present value 100 + 10/1.05 + 10/1.05² + 10/1.05³ ≈ 127.2325 at a 5% discount rate, with zero residual value. Monetary price year, inflation convention and boundary must be consistent. Discounting does not measure every health, ecological or distributional consequence.
+
+**Work:** Compare two arrangements over the same service requirement and time horizon, including labour, energy, chemicals, monitoring, replacement, residual destinations and interruption. Show quantities before converting them into money. Identify who supplies and receives each item, and which claimed savings simply move work or harm outside the chosen boundary. Deepen into uncertainty, institutional incentives and maintainability through ordinary links to the wider Ergon and social knowledge.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Defend continuing service through observation and change](Defend-continuing-service-through-observation-and-change.lingua#r_17C0PJ3R16GNKATNSRSJH9JGS2).
+
+} r_2ZW9VV6JHPB69ZRZ9FC0AKHNXX

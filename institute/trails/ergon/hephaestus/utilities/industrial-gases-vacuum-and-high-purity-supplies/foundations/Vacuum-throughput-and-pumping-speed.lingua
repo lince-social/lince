@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Vacuum throughput and pumping speed (@gas-throughput: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9", #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Inventory-and-a-gas-material-balance.lingua#r_4SXQZKB25AVN9BK598YGJHDTJX") { r_6Y1SCSQZZKJT35V7F3YMFDVNM9
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), gas flow and pumping capacity; [Fundamentals of Vacuum Physics and Technology — Eshraq Al-Dmour](../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9), conductance and effective pumping speed; [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), amount-flow realizations.
+
+At a specified temperature, vacuum throughput Q=pV̇ has units Pa·m³/s. For an ideal gas, Q=ṅRT. It is often convenient because a pump's intake flow can be written Q=pS, where S is the volume removed per time at the inlet state. S is a pumping speed, not a gas velocity in metres per second.
+
+Converting throughput between different reference temperatures requires conserving amount. A Pa·m³/s has the same dimensions as a watt, but throughput is not generally mechanical or electrical power. Actual compression work depends on the process, pressure ratio and efficiency. A constant pumping-speed approximation is valid only over a stated range.
+
+**Example:** 1 mbar·L/s = 100 Pa × 0.001 m³/s = 0.1 Pa·m³/s. At 300 K this corresponds to approximately 4.00908 × 10⁻⁵ mol/s under the ideal model. Interpreting that throughput number as compressor power would describe a different physical quantity.
+
+**Work:** Convert 1 mbar·L/s into Pa·m³/s, then into mol/s at 300 K. Calculate inlet throughput at two pressures for the same hypothetical pumping speed. Explain why identical pump-speed numbers do not imply identical removed mass, power demand or attainable pressure.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Inventory and a gas material balance](Inventory-and-a-gas-material-balance.lingua#r_4SXQZKB25AVN9BK598YGJHDTJX).
+
+} r_6Y1SCSQZZKJT35V7F3YMFDVNM9

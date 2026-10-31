@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Gas-flow measurement is an inventory balance (@gas-flow-balance: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #source "../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB", #industrial-gases-and-vacuum "Pressure-volume-temperature-time-collection.lingua#r_4Y8G2Z3YBEH8450KP5DHJ1D5Z8") { r_05AG44W8BJ56CRD27A9KQXG3TN
+**Read in full:** [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5); use [A constant-pressure flowmeter — Eckel and colleagues](../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB) for low-flow implementation and the prior storage balances for physical context.
+
+Choose the boundary through which flow is to be known. Inlet amount rate minus outlet amount rate equals storage rate, with any internal production or consumption explicitly included. A change in gas inside connecting volumes can make the flow at the meter differ from the flow collected downstream.
+
+For a uniform single-phase inventory n=pV/(ZRT), its derivative includes changes in pressure, volume, temperature and Z. Constant-volume, constant-pressure and collection methods are different ways of controlling or observing these terms. They are not different definitions of flow.
+
+Keep molar, mass, actual-volume and reference-volume rates distinct. Converting to a reference volume requires the specified reference pressure, temperature, composition and real-gas model. A unit such as standard liters per minute is incomplete without that convention.
+
+**Work:** Draw a meter, switching valves, connecting volume and collection vessel. Derive the relation between flow through the meter and the observed collector accumulation. Identify terms that vanish only under additional conditions and show how a transient could violate an otherwise plausible steady equality.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Pressure–volume–temperature–time collection](Pressure-volume-temperature-time-collection.lingua#r_4Y8G2Z3YBEH8450KP5DHJ1D5Z8).
+
+} r_05AG44W8BJ56CRD27A9KQXG3TN

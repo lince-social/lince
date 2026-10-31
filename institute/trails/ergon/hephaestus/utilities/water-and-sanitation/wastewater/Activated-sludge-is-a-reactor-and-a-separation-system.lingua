@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Activated sludge is a reactor and a separation system (@wu-activated-sludge: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Settling-flux-blankets-and-the-limits-of-a-single-index.lingua#r_1MAYFYXBANP0CPDB34EJPEGT05") { r_57AYPADG7XBVN45P200V6Y9ACT
+**Read:** Complete the activated-sludge portion of [Activated Sludge and Aerobic Biofilm Reactors — von Sperling](../sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua#r_0WMGVEM60J63M01SJJDQ9357GE); work [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lectures 17–18 and associated problems. Continue with [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37) for more detailed reactor and settling models.
+
+Follow influent, mixed liquor, clarified effluent, return activated sludge and waste activated sludge. Returning solids supports a biomass inventory; wasting and effluent loss determine its departure. The reactor and separator constrain one another. Increasing return flow is not a universal cure for poor settling or low biological activity.
+
+For an original ideal separator with no effluent solids and no waste drawn from its underflow, let incoming fresh flow be Q, return flow RQ, mixed-liquor concentration X and return concentration Xr. Solids balance gives (1 + R)X = RXr, so R = X/(Xr − X). With X = 3 and Xr = 9 kg/m³, R = 0.5. Introducing wasting, effluent solids or inventory change requires the full balance.
+
+**Work:** Draw the hydraulic and solids accounts for two wasting locations and identify which flow contains which concentration. Diagnose a synthetic case where ammonia removal deteriorates while effluent suspended solids also rise: list competing biological and separation explanations and evidence to distinguish them. Extend to transient inventory and sensor uncertainty before proposing control changes.
+
+**Continue:** [Settling flux, blankets and the limits of a single index](Settling-flux-blankets-and-the-limits-of-a-single-index.lingua#r_1MAYFYXBANP0CPDB34EJPEGT05).
+} r_57AYPADG7XBVN45P200V6Y9ACT

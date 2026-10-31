@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A mobility classifier connects drag, charge, flow and voltage (@cm-mobility-sizing: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM", #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "A-charge-distribution-is-not-a-single-known-charge.lingua#r_457EQFGDYEF9KS7E8C3BTEB0B6") { r_5MDKM4K339GZY6VX57G2V6WPJV
+**Read:** [Mobility particle size spectrometers — Wiedensohler and colleagues](../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM), section 2 and appendix A5; [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), electrical sizing. Revisit the electrical-force and slip discussions in the particle-transport section.
+
+For a spherical particle in the stated slip-corrected Stokes regime, electrical mobility magnitude is Z = |z|e Cc(d)/(3πμd), where z is signed charge number, e is elementary charge and μ is gas viscosity. Polarity determines drift direction. A mobility is not a diameter until charge, gas state and drag model are specified.
+
+In an ideal cylindrical differential mobility analyzer with inner radius a, outer radius b, active length L, voltage magnitude V and balanced sheath/excess flow Qsh, the central selected mobility in the narrow-aerosol-flow limit is Z* = Qsh ln(b/a)/(2πLV). Derive this from radial drift through the electric field and axial transport. Finite aerosol flow and diffusion produce a band of transmitted mobilities around the ideal value.
+
+**Example:** With Qsh = 10 L/min, b/a = 2, L = 0.1 m and V = 1000 V, Z* ≈ 1.83863×10⁻⁷ m²/(V·s). This is a mobility calculation, not a size claim. Inverting the particle relation still requires charge and the slip correction at the actual gas state.
+
+**Work:** Track units through both equations and predict the effects of changing voltage or sheath flow. Distinguish the concentration effect of sample-flow error from the mobility effect of sheath-flow error. Compare the ideal narrow-band calculation with a measured or simulated transfer function rather than assigning every transmitted particle exactly Z*.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A charge distribution is not a single known charge](A-charge-distribution-is-not-a-single-known-charge.lingua#r_457EQFGDYEF9KS7E8C3BTEB0B6).
+
+} r_5MDKM4K339GZY6VX57G2V6WPJV

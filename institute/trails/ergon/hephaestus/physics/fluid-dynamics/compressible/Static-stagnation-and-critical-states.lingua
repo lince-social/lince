@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Static, stagnation and critical states (@fd-compressible-energy: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../../thermodynamics-and-heat-transfer/properties/Fundamental-property-models-derivatives-and-verification.lingua#r_764YPYD3A83WPVMG0N594Y9W71", #fluid-dynamics "Area-Mach-relations-choking-and-nozzle-regimes.lingua#r_3K6DQDVFKBHGSE3XNF57J8C04N") { r_13W8RXAZ6EQG83R7AKRJF965S9
+Static, stagnation and critical states (@fd-compressible-energy: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V", #source "../../thermodynamics-and-heat-transfer/properties/Fundamental-property-models-derivatives-and-verification.lingua#r_764YPYD3A83WPVMG0N594Y9W71", #fluid-dynamics "Area-Mach-relations-choking-and-nozzle-regimes.lingua#r_3K6DQDVFKBHGSE3XNF57J8C04N", #industrial-gases-and-vacuum "Area-Mach-relations-choking-and-nozzle-regimes.lingua#r_3K6DQDVFKBHGSE3XNF57J8C04N") { r_13W8RXAZ6EQG83R7AKRJF965S9
 **Read:** [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM), perfect-gas state definitions and isentropic relations; [Fluid Mechanics — Richard Fitzpatrick](../sources/Analytical-Fluid-Mechanics-Fitzpatrick.lingua#r_075CGXNA8WHV26ZW53C7XTQ48V), one-dimensional compressible flow; [Fundamental property models, derivatives and verification](../../thermodynamics-and-heat-transfer/properties/Fundamental-property-models-derivatives-and-verification.lingua#r_764YPYD3A83WPVMG0N594Y9W71), thermodynamic derivatives and model validity.
 
 The static state belongs to the moving gas locally. Stagnation enthalpy h_0=h+U²/2 describes the enthalpy obtained by an adiabatic no-work deceleration when changes in potential energy are negligible. Stagnation pressure is defined through a specified isentropic deceleration; a real irreversible deceleration can conserve h_0 while reducing total pressure.
@@ -12,4 +12,7 @@ Reconstruct a local state from independent specified quantities and check energy
 **Continue:** [Area–Mach relations, choking and nozzle regimes](Area-Mach-relations-choking-and-nozzle-regimes.lingua#r_3K6DQDVFKBHGSE3XNF57J8C04N).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in gas and vacuum systems:** [Area–Mach relations, choking and nozzle regimes](Area-Mach-relations-choking-and-nozzle-regimes.lingua#r_3K6DQDVFKBHGSE3XNF57J8C04N).
+
 } r_13W8RXAZ6EQG83R7AKRJF965S9

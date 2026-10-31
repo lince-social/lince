@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Generalized coordinates and virtual work (@mech-generalized-coordinates: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "Derive-motion-with-Lagrange-equations.lingua#r_2SG7GPCP79HJH6MGKNJ6SBQ8BC") { r_1EP507NTPSWGQ64SHWC5Z0YFHC
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 7, 15–17 and recitation 9; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), sections 2.2–2.3. Use [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), partial derivatives and the multivariable chain rule.
+
+A generalized coordinate is an independent quantity that specifies a configuration. It may be a distance or angle. Write each part's position as a function of these coordinates and time, then obtain velocities by differentiation. A geometric constraint reduces the independent coordinates only where it is valid and independent.
+
+A virtual displacement is an infinitesimal configuration change at fixed time consistent with the constraints. For physical forces F_j, generalized force Q_i = Σ F_j·∂r_j/∂q_i, with appropriate torque contributions. It is the coefficient of δq_i in virtual work. For a lever with displacement x = aθ, a force F along x gives Q_θ = Fa; a generalized force for an angle has torque units.
+
+Ideal constraint reactions do no virtual work on allowed virtual displacements. This can eliminate unknown reactions from the reduced motion equations, but it does not prove zero real work for every moving constraint or dissipative contact. Rolling constraints can be nonholonomic: a velocity restriction need not integrate to a constraint involving positions alone.
+
+**Work:** Choose independent coordinates for a cart with a pendulum and derive the positions and velocities of each mass. Find generalized forces from an applied cart force and joint torque. Repeat using a different coordinate scale and verify the same physical virtual work. Identify conditions at which a linkage's chosen coordinates become singular.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Derive motion with Lagrange equations](Derive-motion-with-Lagrange-equations.lingua#r_2SG7GPCP79HJH6MGKNJ6SBQ8BC).
+
+} r_1EP507NTPSWGQ64SHWC5Z0YFHC

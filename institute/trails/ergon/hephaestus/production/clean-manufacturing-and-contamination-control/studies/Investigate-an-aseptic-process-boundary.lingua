@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Investigate an aseptic process boundary (@cm-study-biological: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW", #source "../sources/Aseptic-Processing-FDA.lingua#r_7RSDD8X6WP4CBREQY9BY53HYA2", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "Explain-the-foundations-before-designing-the-facility.lingua#r_4Q8V901XVQ8PTKRGG5Y26MVY5N") { r_6BCPQ02Z3P99YCK2MSCM3KVB8H
+**Read:** [Microbiology — Parker and colleagues, OpenStax](../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW), chapters 1–3, 9 and 13; [Aseptic processing — FDA guidance, 2004](../sources/Aseptic-Processing-FDA.lingua#r_7RSDD8X6WP4CBREQY9BY53HYA2) in full; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), principles, personnel, production and monitoring. Finish the WHO annex as the later facility and process work develops.
+
+Use a documented generic process to compare terminal treatment with aseptic assembly. Trace components, exposure, interventions and preservation of the intended state. Distinguish a particle observation, a recovered microbial result and a finished-product sample.
+
+**Work:** Build an evidence table connecting each claim to a method and its limits. Explain why a negative sample result is conditional on its sampled fraction, method and process history. Identify which information comes from process design and continuing control rather than a final test. Compare the two guidance documents by exact passages and publication context.
+
+This is a reading and evidence-analysis investigation. It does not call for preparing a sterile medicine, culturing an unknown organism or deciding that a product is suitable for clinical use.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Explain the foundations before designing the facility](Explain-the-foundations-before-designing-the-facility.lingua#r_4Q8V901XVQ8PTKRGG5Y26MVY5N).
+
+} r_6BCPQ02Z3P99YCK2MSCM3KVB8H

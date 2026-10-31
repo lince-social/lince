@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A flow simulation needs conservation and discriminating evidence (@cm-cfd-evidence: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #source "../sources/Door-Motion-Human-Movement-and-Aerosol-Exchange-Zheng.lingua#r_7CWNYE36WG4XSVT18MFMZRV1DH", #source "../../../physics/fluid-dynamics/sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV", #clean-manufacturing "../../../physics/thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M") { r_4RFF3WBT6KEPAQ2G4YCZPTKNG6
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), multizone/CFD distinctions; [Door motion, human movement and aerosol exchange — Zheng and colleagues](../sources/Door-Motion-Human-Movement-and-Aerosol-Exchange-Zheng.lingua#r_7CWNYE36WG4XSVT18MFMZRV1DH), numerical and validation methods; [CFD verification and validation — NPARC Alliance](../../../physics/fluid-dynamics/sources/CFD-Verification-and-Validation-NPARC.lingua#r_7P72ZWZEJ0SVMWFDGK52N9AZPV) and the earlier turbulence and computational verification Records.
+
+A multizone model averages within zones. A spatial model resolves selected gradients with a mesh, closure, boundary conditions and numerical scheme. Greater geometric detail does not automatically establish a better model of sources, leakage or motion.
+
+Check conservation, mesh/time convergence, coordinate and velocity conventions, sensitivity to inputs and comparison against observations that could disagree with the mechanism. Agreement after fitting is not the same as an independent prediction.
+
+**Work:** Compare a mixed-room calculation, a two-zone model and a spatial study for one question. Identify the added information each requires and the consequence of its missing physics. Reconstruct one published validation comparison, retaining the mismatch and its proposed explanation rather than using an attractive contour plot as the conclusion.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Control-volume mass and energy balances](../../../physics/thermodynamics-and-heat-transfer/balances/Control-volume-mass-and-energy-balances.lingua#r_3GJ7MNPFS8HECS4WPV8WZCEY2M).
+
+} r_4RFF3WBT6KEPAQ2G4YCZPTKNG6

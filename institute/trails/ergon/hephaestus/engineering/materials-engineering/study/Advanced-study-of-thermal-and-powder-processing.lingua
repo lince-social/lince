@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of thermal and powder processing (@mat-thermal-process-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Defend-the-processing-and-material-state-account.lingua#r_64R9D1KEEENG63D9E88T0VBBFV") { r_34DDK3DP382V7AZ39E3RMJJC7S
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), all heat/consolidation problems; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), diffusion, sintering and coarsening; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), the whole manufacturing chapter. Use complete primary methods for one dense ceramic or powder-metal process.
+
+Reconstruct powder and green-state evidence, drying/debinding, atmosphere, temperature history and final density/grain observations. Derive coupled or deliberately separated thermal/transport/kinetic models and justify the separation. Compare two geometries or schedules, including a condition not used for fitting.
+
+**Deliver:** A mass/energy account, independently checked limiting solutions, spatial/time refinement where needed, density/dimension and microstructure comparisons, and a competing explanation of a discrepancy. Examine uncertainty in boundary heat transfer and feedstock state. Explain whether the evidence supports a robust window or only one successful run, and revise the proposed process after criticism.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the processing and material-state account](Defend-the-processing-and-material-state-account.lingua#r_64R9D1KEEENG63D9E88T0VBBFV).
+
+} r_34DDK3DP382V7AZ39E3RMJJC7S

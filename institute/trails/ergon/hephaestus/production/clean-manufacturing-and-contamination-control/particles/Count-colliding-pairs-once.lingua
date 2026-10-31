@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Count colliding pairs once (@cm-collision-counting: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9", #clean-manufacturing "A-size-population-balance-preserves-the-right-moment.lingua#r_1HEA25FGABJ32G8RPRBPHT9028") { r_35P15A7KVVEMRKWV5H91H5CFMR
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), coagulation equation 11; compare [Aerosols and coagulation — Chiang C. Mei, MIT](../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9), equations 2.7.28–2.7.32.
+
+With N particles in a well-mixed volume V, there are N(N−1)/2 distinct unordered pairs. If each pair has encounter rate β/V and every encounter merges two into one, total count decreases at event rate βN(N−1)/(2V). For a large population with number density n, the mean-field equation is dn/dt=−βn²/2.
+
+For constant β, n(t)=n₀/[1+βn₀t/2], and the half-time is 2/(βn₀). Some sources call K=β/2 the coagulation constant, in which case the loss is −Kn². Always identify which constant is defined. Using the pair encounter kernel directly in −βn² double-counts the events.
+
+**Work:** Enumerate the unordered pairs for four labelled particles and derive the finite-volume event count before taking a large-N approximation. Resolve the inconsistent constants in Mei's notes against both this enumeration and Ahmadi's equation. Explain why a constant-kernel law is a model rather than an automatic description of a changing size distribution.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A size-population balance preserves the right moment](A-size-population-balance-preserves-the-right-moment.lingua#r_1HEA25FGABJ32G8RPRBPHT9028).
+
+} r_35P15A7KVVEMRKWV5H91H5CFMR

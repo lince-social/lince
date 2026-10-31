@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Loss of insulating vacuum changes the heat path (@gas-insulation-failure: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #source "../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7", #source "../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH", #industrial-gases-and-vacuum "Control-alarm-and-protective-functions-have-dependencies.lingua#r_7KYWJD4BA6MHWEF865V1XR0DQW") { r_5SZBV7XC3D8VQXDMT1RA211QET
+**Read:** [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), inspection and abnormal conditions; [Thermal performance of cryogenic storage tanks — Aasen and colleagues](../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7), thermal model; [Cryogenic vaporisation systems — EIGA 133/22](../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH), cold breakthrough.
+
+An insulating vacuum is part of a thermal resistance network. Its degradation changes gas conduction and can change condensation or deposition on cold surfaces. Heat entering a cryogenic inventory can change phase, pressure and discharge; the inventory's initial state and the connected flow paths determine the transient.
+
+Distinguish an internal process leak, an external air leak and failure of a thermal barrier. Each can change both heat and mass transfer. A steady boil-off estimate does not by itself establish a transient relief load. Frost or pressure history can be evidence, but a single appearance does not uniquely identify the cause.
+
+**Work:** Modify the earlier vessel energy balance to include a time-dependent heat input and phase inventory. Identify which heat-transfer and discharge data a defensible transient calculation would require. Explain why a steady-state insulation rating cannot settle every loss-of-vacuum scenario.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Control, alarm and protective functions have dependencies](Control-alarm-and-protective-functions-have-dependencies.lingua#r_7KYWJD4BA6MHWEF865V1XR0DQW).
+
+} r_5SZBV7XC3D8VQXDMT1RA211QET

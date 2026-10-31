@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Contact and recontamination after cleaning (@cm-contact: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "Cleaning-transfers-material-to-another-stream.lingua#r_27BRTXWV8GMZHWVWE6H5VAG6P5") { r_6GB54D3SVWGQ9ENHECKPQYWJ90
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), cleaning, storage and transport; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), personnel and interventions.
+
+Tools, gloves, wipes, fixtures and packaging are contact surfaces with their own history. An item can be clean at inspection and acquire material during the next transfer. A fresh-looking consumable is not automatically compatible with the chemical, particulate or biological requirement.
+
+Follow contact order, exposed area, pressure, motion and duration as appropriate. A simple transferred fraction may be useful in a bounded model, but repeated contacts can deplete a source or change the receiving surface. Preserve material identity and transfer assumptions.
+
+**Work:** Build a contact diagram from final cleaning to use. Mark which interfaces are observed, which are inferred and which remain uncharacterized. Compare protecting the object during transfer with repeating a downstream inspection; explain what each action can and cannot establish.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Cleaning transfers material to another stream](Cleaning-transfers-material-to-another-stream.lingua#r_27BRTXWV8GMZHWVWE6H5VAG6P5).
+
+} r_6GB54D3SVWGQ9ENHECKPQYWJ90

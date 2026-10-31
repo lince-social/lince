@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+From the water to the measurement used in a decision (@wu-instrument-chain: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #source "../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS", #water-and-sanitation "Choose-the-control-question-before-choosing-the-controller.lingua#r_748M4TQC4D05BTVN9F0ADRXK43") { r_10B7MFX2X46JCS1C2WAKW0JECR
+**Read:** Revisit the sampling and measurement foundations, then [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), chapter 7, and [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS). Use the instrument methods and reference materials appropriate to the quantity being claimed.
+
+An instrument value has a physical history: location, sampling line, transport time, conditioning, sensor response, calibration, conversion, timestamp and storage. A correct number can describe the wrong place or an earlier condition. A missing value, a value below a reporting limit and a real zero carry different information.
+
+For an original transport example, a 12-metre sample line with 4-millimetre internal diameter contains about 0.151 litres. At 0.1 litre/minute its nominal displacement time is about 1.51 minutes, before sensor response or additional volumes. Real residence-time spreading, wall interactions and stopped flow can invalidate a simple delay estimate. An apparently rapid control action cannot make that measurement current.
+
+**Work:** Trace one flow and one quality measurement from the physical process to a plotted value. State range, resolution, uncertainty, response, unit and time basis. Compare an independent observation with the online signal. Introduce a blocked line, drift and a clock mismatch in synthetic data; explain how each affects a balance and a decision. For advanced work, estimate a response model from a designed experiment and test it on a separate transient.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Choose the control question before choosing the controller](Choose-the-control-question-before-choosing-the-controller.lingua#r_748M4TQC4D05BTVN9F0ADRXK43).
+
+} r_10B7MFX2X46JCS1C2WAKW0JECR

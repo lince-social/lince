@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Screw drives, lead, efficiency and position under load (@mech-screw-drives: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #mechanical-engineering "Bolted-joints-preload-load-sharing-and-separation.lingua#r_0WE9J7C67D53R2DNFH1TEGFNRA") { r_2Q7VDQ95V5NTHAMPN46N8PRMBH
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 6, power screws; [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lecture 11. The latter is a short activity-oriented set, so use the fuller book for the derivations.
+
+Lead is axial travel per revolution; pitch is spacing between adjacent threads. A multi-start screw has lead equal to pitch times the number of starts. Ideal kinematics give v=lω/(2π), with l the lead. For motoring efficiency η, input torque for a steady axial load F is T=Fl/(2πη) within that operating model.
+
+For F=1000 N and lead 5 mm/rev, ideal torque is approximately 0.795775 N·m. At η=0.30 it is approximately 2.65258 N·m; at η=0.90 it is 0.884194 N·m. These values do not specify static holding or backdriving. A square-thread friction derivation compares lead angle and friction angle; ball screws and different contact geometries need their own account.
+
+**Work:** Derive raising and lowering torque from an unwrapped thread and identify when the assumed sliding model is self-locking. Check buckling, critical speed, axial stiffness, support arrangement, heat and wear. Compare rotary-encoder inference with direct carriage measurement under reversal, load and thermal growth.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Bolted joints, preload, load sharing and separation](Bolted-joints-preload-load-sharing-and-separation.lingua#r_0WE9J7C67D53R2DNFH1TEGFNRA).
+
+} r_2Q7VDQ95V5NTHAMPN46N8PRMBH

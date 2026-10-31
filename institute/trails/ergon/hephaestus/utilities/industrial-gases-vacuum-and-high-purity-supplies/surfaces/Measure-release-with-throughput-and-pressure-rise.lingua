@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Measure release with throughput and pressure rise (@gas-release-measurement: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #industrial-gases-and-vacuum "Read-a-controlled-comparison-of-chamber-materials.lingua#r_3AXZB985X3A539FJFE4JW6Z62Y") { r_2AGM56WN3249B926HE8ECBX3SA
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), the complete measurement-method section; [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D), section II.B and the water/hydrogen methods. Inspect the apparatus, conductance and background definitions with the equations.
+
+A throughput method infers gas transfer from a known conductance and pressure difference. A pressure-rise method infers net accumulation from V dp/dt at constant temperature and volume. Both require the actual instrument response, gas composition and background account. Surface readsorption or gauge pumping can make net accumulation smaller than gross release.
+
+A blank must follow the relevant preparation, temperature, elapsed time and instrument state. Dividing by specimen area does not remove a fixture contribution or uncertainty in that area. Comparison of two methods is informative only after reconciling their different boundaries and gas histories.
+
+**Example:** A hypothetical 0.01 m³ volume rising at 2×10⁻⁶ Pa/s accumulates 2×10⁻⁸ Pa·m³/s. Subtracting a matched fixture contribution of 5×10⁻⁹ Pa·m³/s leaves 1.5×10⁻⁸ Pa·m³/s, or 3×10⁻⁸ Pa·m/s for 0.5 m² of exposed sample.
+
+**Work:** Derive both methods and their principal uncertainty terms. Add an unmodeled small pumping speed and quantify the bias in a linear pressure-rise estimate. Explain which comparison could reveal that bias before attributing it to a better material.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Read a controlled comparison of chamber materials](Read-a-controlled-comparison-of-chamber-materials.lingua#r_3AXZB985X3A539FJFE4JW6Z62Y).
+
+} r_2AGM56WN3249B926HE8ECBX3SA

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Melt shaping, solidification and final material state (@mat-melt-shaping: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #materials-engineering "../../../materials/metals-and-metallurgical-production/solidification/Casting-molds-feeding-inclusions-gases-and-defects.lingua#r_1Q2NKXMA98SM3CYSAV1YZ5M82E") { r_49AT41H8AJ4YE9C8FHV2AN3R64
+**Read:** [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), all casting sections; [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), casting and heat flow. Continue through the shared metallurgy casting Record for feeding, molds, inclusions and defect evidence.
+
+A melt must fill the intended shape, shed heat and form an acceptable solid. Liquid flow, wetting, gas evolution, nucleation and solute redistribution interact. A measured cooling curve can constrain a thermal account without uniquely determining porosity, segregation or hot cracking. The final material state includes later homogenization, finishing and heat treatment.
+
+**Work:** Compare a thin and thick section made from the same alloy. Derive a stated solidification-time estimate, test its boundary assumptions and use microstructure and defect evidence to evaluate it. Explain the material consequences of changing mold conductivity, superheat or feeding geometry. Keep generic lessons connected to the detailed continuous-casting and segregation studies instead of duplicating their full derivations.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect casting design with heat, flow, material quality, and independent defect evidence](../../../materials/metals-and-metallurgical-production/solidification/Casting-molds-feeding-inclusions-gases-and-defects.lingua#r_1Q2NKXMA98SM3CYSAV1YZ5M82E).
+
+} r_49AT41H8AJ4YE9C8FHV2AN3R64

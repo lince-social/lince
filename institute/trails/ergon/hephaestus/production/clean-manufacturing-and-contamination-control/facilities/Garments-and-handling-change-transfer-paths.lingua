@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Garments and handling change transfer paths (@cm-garments: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "Walls-joints-and-service-penetrations-belong-to-the-process.lingua#r_0AV04KWMMWSA7M60EQXJZQ6H2Z") { r_62FB747EWEP7AJEH02XYA39W34
+**Read:** [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), personnel, gowning and cleanroom garments; [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), handling and preservation.
+
+Garments can retain or redirect emitted material while introducing fibers, contact surfaces and handling steps of their own. Fit, movement, laundering, storage, damage and the way an item is donned affect the result. Clean appearance is not a complete material-performance observation.
+
+The useful unit of analysis is a person doing a task in a defined environment. Reach and visibility affect how reliably the task can be performed. An awkward layout can require contact with a critical surface even when the clothing is suitable.
+
+**Work:** Follow a glove and one garment through use, removal, cleaning or disposal, and storage. Identify contamination transfers at each stage. Compare two task arrangements using particle, surface and relevant biological observations without treating one measurement as proof of every protective function.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Walls, joints and service penetrations belong to the process](Walls-joints-and-service-penetrations-belong-to-the-process.lingua#r_0AV04KWMMWSA7M60EQXJZQ6H2Z).
+
+} r_62FB747EWEP7AJEH02XYA39W34

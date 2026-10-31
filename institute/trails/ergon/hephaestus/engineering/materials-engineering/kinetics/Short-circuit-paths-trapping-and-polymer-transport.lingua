@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Short-circuit paths, trapping and polymer transport (@mat-transport-paths: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #materials-engineering "Growth-moving-interfaces-and-mass-balance.lingua#r_2HDMEC7ZE4AWV1QK9YWSKEJMWG") { r_1AFJP99AEZQ53XGW1C588X9AJ1
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lectures 5–6 and 3.21 lectures 15–16; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), glass transition and chain dynamics; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), Diffusion, microstructure and applications.
+
+Grain boundaries, dislocations, surfaces and interfaces can provide transport paths unlike the bulk crystal. Their connectivity and volume fraction matter; a fast local path need not create a fast macroscopic network. Binding to traps can delay release and change the apparent diffusivity inferred over a limited time.
+
+Transport through polymers involves penetrant solubility, segmental motion, free volume, crystallinity and swelling. In a simple solution-diffusion model, permeability is related to diffusivity and solubility using compatible concentration/pressure conventions. Relaxation coupled to uptake can violate Fickian assumptions.
+
+**Work:** Compare thickness and grain-size dependence for two competing transport mechanisms. Design an uptake/release comparison that exposes trapping or structural relaxation. State which measurement distinguishes a solubility change from a mobility change, and how processing history enters that interpretation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Growth, moving interfaces and mass balance](Growth-moving-interfaces-and-mass-balance.lingua#r_2HDMEC7ZE4AWV1QK9YWSKEJMWG).
+
+} r_1AFJP99AEZQ53XGW1C588X9AJ1

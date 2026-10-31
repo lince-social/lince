@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Atomic layer deposition — surface chemistry and evidence (@mat-ald: 0, is #reference, #part-of @mat-sources) { r_43RJYA2HWF0DWTRB766G062RHV
+Riikka L. Puurunen, *Surface chemistry of atomic layer deposition: a case study for the trimethylaluminum/water process*, Journal of Applied Physics 97, 121301 (2005). [VTT manuscript](https://publications.vtt.fi/julkaisut/muut/2010/Puurunen.pdf), [DOI](https://doi.org/10.1063/1.1940727). Read the full review, then compare [Strempel and colleagues, in situ gravimetric monitoring on mesoporous silica, 2018](https://pmc.ncbi.nlm.nih.gov/articles/PMC6027410/).
+
+The 56-page VTT copy's title, scope and rights notice and the later primary article's methods were inspected on 30 October 2026. Follow the review from surface groups and reaction steps to growth per cycle; use the experimental study to distinguish inferred mechanisms from directly observed mass changes and substrate characterization.
+
+The VTT copy carries AIP copyright and restricted personal/research/educational-use terms, not a blanket open adaptation licence. The 2018 article states CC BY. Preserve individual attribution and credits; papers, figures and measurements remain external references.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_43RJYA2HWF0DWTRB766G062RHV

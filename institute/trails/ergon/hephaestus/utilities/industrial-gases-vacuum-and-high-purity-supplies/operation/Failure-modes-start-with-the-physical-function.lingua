@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Failure modes start with the physical function (@gas-failure-modes: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #source "../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA", #industrial-gases-and-vacuum "A-room-average-oxygen-balance-and-its-limits.lingua#r_2K1GHAKTP6N7ZK74WKQYMK80TP") { r_75BMGP7MFAJY0BZE1AVGHNSQER
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), chapter 4; revisit [Fatal liquid nitrogen release — CSB Foundation Food Group investigation](../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA), the level-control investigation.
+
+Describe the intended function before listing failures. A valve can fail to open, fail to close, leak through its seat or leak externally. These failures have different effects in a feed line, a relief path and a sampling line. “Valve failure” is too coarse to support an analysis.
+
+For each mode, follow a local effect into system service and human/environmental consequences. Include a way to detect it, the dependencies of that observation and the state in which it matters. An undetected failure of a protective function can remain hidden during normal production.
+
+**Work:** Analyze a receiver, vaporizer, regulator, pump and composition analyzer at their interfaces. Add one failure caused by a maintenance action and one caused by a common utility. Rank the consequences with an explained scale; an ordinal score multiplied by another score is not automatically a physical probability or expected loss.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A room-average oxygen balance and its limits](A-room-average-oxygen-balance-and-its-limits.lingua#r_2K1GHAKTP6N7ZK74WKQYMK80TP).
+
+} r_75BMGP7MFAJY0BZE1AVGHNSQER

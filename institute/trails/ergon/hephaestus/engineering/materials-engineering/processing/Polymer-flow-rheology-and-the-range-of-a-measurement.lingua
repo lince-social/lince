@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Polymer flow, rheology and the range of a measurement (@mat-processing-rheology: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614", #materials-engineering "../../../physics/fluid-dynamics/complex-fluids/Shear-dependent-viscosity-power-laws-and-yield-models.lingua#r_05PD745REMMP6X02K2S3A78KYK") { r_4YZT4D7QGF0497PWZZT3BETAEG
+**Read:** [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), chain dynamics and rheology; [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), polymer processing; [Simultaneous rheology and cure kinetics — Romberg and Kotula, 2023](../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614), measurement methods. Follow the shared shear-dependent, objective-constitutive and rheometry Records.
+
+A melt or reactive resin can respond differently to shear, extension and rest. Temperature, molecular architecture, filler structure and reaction state influence its behavior. A shear-thinning fit across one rate range does not predict die swell, extensional rupture or a transient injection front. Compare process times with relaxation times before neglecting memory.
+
+**Work:** Map a screw, die and free extrudate onto deformation histories and usable rheological measurements. Keep instrument corrections, wall slip, degradation during measurement and shear heating explicit. Fit a restricted model, then predict a different flow before inspecting the result. A discrepancy can expose a constitutive limitation or an incorrect boundary condition; design evidence to distinguish them.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Shear-dependent viscosity, power laws and yield models](../../../physics/fluid-dynamics/complex-fluids/Shear-dependent-viscosity-power-laws-and-yield-models.lingua#r_05PD745REMMP6X02K2S3A78KYK).
+
+} r_4YZT4D7QGF0497PWZZT3BETAEG

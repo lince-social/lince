@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A cleanliness class and a product result (@cm-class: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "Time-place-and-operating-state-belong-with-the-result.lingua#r_5DS9CBQ5QH29YYFY9M4P13H9E1") { r_0P5SA7T7W35B8MSEHGEYQQ87WY
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), requirements; [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), historical classifications; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), premises and monitoring.
+
+A class summarizes specified observations under a defined convention. It does not replace the product's requirement, establish every contaminant's identity or describe every operating state. State the standard edition, particle-size convention, sampling conditions and whether the process is operating before comparing labels.
+
+Historical reports may use superseded standards. Their measurements and physical reasoning can still be studied, while an application needs the relevant current specification. Avoid silently translating a label into a different system without checking definitions.
+
+**Work:** Read one historical class description and one applicable modern source obtained through an authorized channel. Compare what each actually measures. Explain how a room could meet the stated observation while a local handling operation still contaminates a sensitive surface.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Time, place and operating state belong with the result](Time-place-and-operating-state-belong-with-the-result.lingua#r_5DS9CBQ5QH29YYFY9M4P13H9E1).
+
+} r_0P5SA7T7W35B8MSEHGEYQQ87WY

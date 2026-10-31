@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Choose pumps for a changing service (@gas-pump-choice: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "../surfaces/The-chamber-material-is-part-of-the-gas-system.lingua#r_72F06KBVTA7W551PG3G2A19AGJ") { r_2SAZZQR47E1G1WJAHCSZCEGZKH
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), sections 2.2–2.3 and the relevant maintenance sections; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), the complete instrumentation and operating context.
+
+A defensible selection follows composition, pressure range, peak/average amount flow, contamination limits, response time, stored gas, heat and required availability. An equipment curve becomes useful only after connecting it through real conductances and supporting utilities to the point where performance matters.
+
+Separate initial evacuation, steady processing, load changes, cleaning, venting and restoration. Compare required service over this sequence. Include replacement parts, inspection, working fluids, filters, purge, cooling and the evidence needed after maintenance. A small base pressure reached under an empty clean test condition cannot answer all these questions.
+
+**Work:** Compare two complete arrangements for a declared process history. Quantify a conductance bottleneck, a backing or capacity limit and a continuing utility demand. Identify one observation that would change the selection. Explain the uncertainties left by unavailable proprietary internals without filling those gaps with invented performance.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [The chamber material is part of the gas system](../surfaces/The-chamber-material-is-part-of-the-gas-system.lingua#r_72F06KBVTA7W551PG3G2A19AGJ).
+
+} r_2SAZZQR47E1G1WJAHCSZCEGZKH

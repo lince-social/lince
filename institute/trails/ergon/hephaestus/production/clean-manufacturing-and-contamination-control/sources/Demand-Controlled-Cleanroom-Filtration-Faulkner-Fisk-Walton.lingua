@@ -1,0 +1,10 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Demand-controlled cleanroom filtration — Faulkner, Fisk and Walton (@cm-demand-source: 0, is #reference, #part-of @cm-sources) { r_2W1ADE030W9RFA8ATDKSYVT6XP
+David Faulkner, William J. Fisk and John T. Walton. *Energy Savings in Cleanrooms from Demand-Controlled Filtration*, Journal of the Institute of Environmental Sciences 39(6), 21–27 (1996), report LBNL-38869. [Institutional record](https://eta-publications.lbl.gov/publications/energy-savings-cleanrooms-demand) · [Thirteen-page institutional manuscript](https://eta-publications.lbl.gov/sites/default/files/lbnl-38869.pdf).
+
+Read the complete experiment, including room layout, fan operation, two particle counters, control strategies, energy baselines and concentration excursions. Interpret the historical cleanliness classes and prices within that study. Its observed energy savings do not establish an acceptable control strategy for every product or facility.
+
+Methods, instrumentation, control, energy and concentration-result passages were inspected; manuscript page 6's baseline table was viewed visually. Read the reported accidentally disabled fan and localized contamination alongside the averages. Counter sampling, recorded one-minute averages and unrecorded instantaneous extremes matter to the interpretation. Raw time series and the full experiment were not independently reproduced. Free institutional reading was verified; blanket adaptation rights were not established. Keep the manuscript and credited figures external.
+
+} r_2W1ADE030W9RFA8ATDKSYVT6XP

@@ -1,0 +1,12 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4 (@cm-contam-source: 0, is #reference, #part-of @cm-sources) { r_5HECDC480RSYAJ3SQ2QNFHCN46
+William Stuart Dols and Brian Polidoro. *CONTAM User Guide and Program Documentation, Version 3.4*, NIST Technical Note 1887 Revision 1, August 2020. [Official catalogue](https://www.nist.gov/publications/contam-user-guide-and-program-documentation-version-34) · [340-page manual](https://nvlpubs.nist.gov/nistpubs/TechnicalNotes/NIST.TN.1887r1.pdf) · [Documentation and further studies](https://www.nist.gov/el/beed/nist-multizone-modeling/software/contam/contam-documentation).
+
+Read the introduction and tutorial, the zone/path/contaminant and control sections of chapter 3, and chapter 8's complete theoretical background. Continue through relevant application, numerical and file-format material for a reproducible independent study. Distinguish a multizone approximation from resolved flow inside a room.
+
+Selected path, contaminant, numerical and theoretical passages were inspected for this section. PDF pages 263 and 286, printed pages 251 and 274, were viewed to recover equations missing from text extraction. Model balances are independently derived in the learning Records. The application, tutorial projects and full manual were not independently executed or reproduced here.
+
+The NIST-developed software is described as public domain with attribution/modification notices requested; the manual separately identifies dependencies such as SUNDIALS with their own terms. Use the actual distributed notices. The documentation edition is fixed here; a download page may supply a later software revision. All software, documentation and examples remain external.
+
+} r_5HECDC480RSYAJ3SQ2QNFHCN46

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Additive processing, local history and postprocessing (@mat-additive-processing: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614", #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #materials-engineering "../../../materials/metals-and-metallurgical-production/manufacturing/Metal-additive-processing-thermal-cycles-feed-and-defects.lingua#r_3JT2FNTBJ8P4PSX979PW0CZM73") { r_52BVQQ01AT7T0CDAEJ9VVSPJBP
+**Read:** [Simultaneous rheology and cure kinetics — Romberg and Kotula, 2023](../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614), extrusion and thermal post-curing; [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), process transport. Follow the shared metal-additive Record and compare the existing machine-design additive account.
+
+Layerwise construction creates position-dependent thermal, flow, reaction and contact histories. Metal fusion, polymer extrusion, photopolymerization and binder-based powder shaping therefore require different models. Feed quality, orientation, supports, interlayer bonding and postprocessing affect what the final geometry means mechanically and functionally.
+
+**Work:** Compare two routes for one object using accepted-state evidence rather than a machine's nominal resolution. Trace an internal flaw or anisotropy back to a plausible history. Include removal of supports or binder, cure or heat treatment, finishing and inspection. Explain what a witness coupon can represent and what local differences make it insufficient.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect metal additive processing with repeated thermal histories and qualified evidence](../../../materials/metals-and-metallurgical-production/manufacturing/Metal-additive-processing-thermal-cycles-feed-and-defects.lingua#r_3JT2FNTBJ8P4PSX979PW0CZM73).
+
+} r_52BVQQ01AT7T0CDAEJ9VVSPJBP

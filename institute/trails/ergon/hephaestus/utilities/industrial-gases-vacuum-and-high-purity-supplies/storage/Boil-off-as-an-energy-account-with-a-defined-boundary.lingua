@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Boil-off as an energy account with a defined boundary (@gas-boiloff: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7", #industrial-gases-and-vacuum "Pressure-rise-holding-time-and-closure-of-the-model.lingua#r_5WF68YB7VMMVDFHNH1TH888QZQ") { r_3J6KW5HX5SC9RJ8WTKQT12SKT5
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), storage heat leaks; [Thermal performance of cryogenic storage tanks — Aasen and colleagues](../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7), the boil-off definition and case assumptions.
+
+At maintained saturation conditions, with negligible sensible-energy storage and a defined vapor discharge, a useful leading estimate is ṁevap≈Q̇/hfg. It converts heat input into an equivalent vaporised mass rate. In a closed vessel, added heat can instead change internal energy, pressure and phase distribution, so this expression alone does not predict vented loss.
+
+Take a hypothetical Q̇=10 W and constant hfg=200 kJ/kg. The equivalent rate is 5×10⁻⁵ kg/s, or 4.32 kg/day. Relative to an explicitly chosen 500 kg reference inventory, it is 0.864% per day. These assumed properties are not a rated performance for a particular gas or vessel. Specify whether a reported percentage uses initial, current, liquid-only or full-capacity mass.
+
+If vapor is delivered as useful product, evaporation is not automatically a loss. Include recovered vapor, vented product, changes in stored mass and any recondensation separately. Warming the discharged gas also consumes heat; decide whether it occurs inside or outside the boundary used for the estimate.
+
+**Work:** Reconcile heat and mass for storage at rest, gas withdrawal and liquid withdrawal. Explain why two vessels with the same measured mass loss may have different heat leaks and useful-output accounts.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Pressure rise, holding time and closure of the model](Pressure-rise-holding-time-and-closure-of-the-model.lingua#r_5WF68YB7VMMVDFHNH1TH888QZQ).
+
+} r_3J6KW5HX5SC9RJ8WTKQT12SKT5

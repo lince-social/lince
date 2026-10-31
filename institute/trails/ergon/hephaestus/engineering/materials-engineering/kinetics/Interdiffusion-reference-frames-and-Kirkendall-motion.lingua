@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Interdiffusion, reference frames and Kirkendall motion (@mat-interdiffusion: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #materials-engineering "Short-circuit-paths-trapping-and-polymer-transport.lingua#r_1AFJP99AEZQ53XGW1C588X9AJ1") { r_1EWRVAS34983V2QPFKAR2FSYP4
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lecture 2 and 3.21 lectures 3–4 and 12–15; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), interdiffusion. Track each source's assumptions and coefficient definitions.
+
+Intrinsic flux relative to the lattice differs from flux relative to a laboratory or volume-fixed frame. Unequal intrinsic mobilities can move inert markers relative to the specimen. Vacancy sources/sinks, stress relaxation and porosity influence what an experiment records.
+
+For multicomponent systems, several coupled driving forces and fluxes require a constrained matrix description. The thermodynamic factor can make chemical diffusion differ greatly from tracer spreading. A weighted mean of two scalar diffusivities is only valid under its particular constitutive and frame assumptions.
+
+**Work:** Draw separate component, vacancy and marker accounts for a diffusion couple. Convert a flux between two explicitly defined frames and verify total conservation. Identify data needed to distinguish a mobility change from a thermodynamic-factor change. Explain how pores or moving boundaries alter a simple fixed-volume interpretation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Short-circuit paths, trapping and polymer transport](Short-circuit-paths-trapping-and-polymer-transport.lingua#r_1AFJP99AEZQ53XGW1C588X9AJ1).
+
+} r_1EWRVAS34983V2QPFKAR2FSYP4

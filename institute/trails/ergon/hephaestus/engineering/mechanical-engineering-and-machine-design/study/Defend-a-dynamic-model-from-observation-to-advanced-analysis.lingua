@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Defend a dynamic model from observation to advanced analysis (@mech-dynamics-review: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #mechanical-engineering "../materials/From-a-load-history-to-a-material-response.lingua#r_4WFJ7XEN9RDM02YGY3S5A0YW9A") { r_7ZWJSTVPC38XBNB7M8S6PSKN34
+**Study:** Complete the available [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3) sequence, its eleven problem sets, two quizzes and final exam, including explanation and correction of mistakes. Work the written methods as well as the demonstrations. Complete the deeper [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA) reading and studies in this section at a pace that permits independent derivation.
+
+Explain a chosen machine from observed motion and reference frames through constraints, mass distribution, forces, momentum, energy and equations of motion. Solve and test a simple limit first. Derive a linear model around a justified operating condition, identify its modes and forcing, and compare it with the more complete nonlinear or coupled account.
+
+**Demonstrate:** Produce a sustained cart–pendulum study, a rotating-machine/support study and a mathematical-structure study. They address different questions about the same mechanics; link the shared equations, data and explanations instead of copying them. Show numerical refinement against an independent solution, retained physical units and an explicit work–energy account. Explain both successful predictions and a model that evidence required you to change.
+
+Perform an appropriately bounded mechanical observation, or clearly distinguish an externally documented experiment from your own work when access to apparatus is limited. Preserve calibration, uncertainty, raw observations, alternative explanations and the conditions supporting any inference. A proposed laboratory exercise is preparation for experimental competence, not evidence that it has been acquired.
+
+Retain the calculated force and displacement histories. Continue into material response, strength, damage and structural assessment, then carry these accounts into machine elements, manufacture, service and integrated mechanical design.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [From a load history to a material response](../materials/From-a-load-history-to-a-material-response.lingua#r_4WFJ7XEN9RDM02YGY3S5A0YW9A).
+
+} r_7ZWJSTVPC38XBNB7M8S6PSKN34

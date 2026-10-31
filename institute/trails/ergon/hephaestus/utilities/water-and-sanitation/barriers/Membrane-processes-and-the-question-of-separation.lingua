@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Membrane processes and the question of separation (@wu-membrane-processes: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Recovery-rejection-and-the-concentrate-balance.lingua#r_0C3GWHBNT8QX7GF6K95REFHDHR") { r_2Q10348P8FEN40SJ6SRG12Q8YT
+**Read:** [EPA membrane manual](../sources/Membrane-Filtration-Guidance-EPA.lingua#r_5AA7DKNZPGKZ8KZKCFJ2Q8A8ZY), technology overview; [WHO drinking-water guidelines](../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F), Annex 5's membrane material. Identify feed, permeate (permeado), concentrate (concentrado) and membrane area on a drawing before using a performance number.
+
+Different membrane processes answer different separation questions. Microfiltration and ultrafiltration principally separate particles and larger constituents; nanofiltration and reverse osmosis extend into dissolved-solute separation with different selectivity and pressure requirements. A family name or nominal cutoff is not evidence of a specified removal under the actual conditions.
+
+Create a requirement table for suspended particles, a dissolved salt and a stated microbial target. For each, name the evidence needed from the membrane, module and complete train. Include seals, connections and bypasses: water does not acquire the membrane's advertised performance merely by entering a building containing one.
+
+**Work:** Compare a particulate barrier and a desalination train for two labelled synthetic waters. Trace where retained material goes, what pretreatment is assumed, and how the product changes when integrity or selectivity fails. Distinguish performance of a coupon, a module and an operating plant. Introduce membrane chemistry, pore/transport descriptions and charge effects only when required to explain the chosen separation. Keep the full membrane-engineering subject available as later depth rather than assuming this introductory selection exhausts it.
+
+**Continue:** [Recovery, rejection and the concentrate balance](Recovery-rejection-and-the-concentrate-balance.lingua#r_0C3GWHBNT8QX7GF6K95REFHDHR).
+} r_2Q10348P8FEN40SJ6SRG12Q8YT

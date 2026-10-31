@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Common tangents and conservation across coexisting phases (@mat-common-tangent: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "../computation/An-inspectable-symmetric-phase-separation-account.lingua#r_1ZQTEHAPQAXJECBG9EBDQDJZGZ") { r_05MARTRXT25F6PKERYYB70H0Z5
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapter 8, common tangents, phase rule and lever rule; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), free-energy curves and lever rule; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), thermodynamics lectures 17–19.
+
+At fixed T,p, bulk phase coexistence requires equal chemical potentials for each exchangeable component. For two composition-dependent phases, their common tangent encodes both equalities. A lower tangent involving another phase can invalidate an apparently satisfactory two-phase construction.
+
+Conservation fixes proportions after the phase compositions are established: f_α=(x_β−x_0)/(x_β−x_α), f_β=1−f_α on an amount basis. For x_α=0.2, x_β=0.8 and x_0=0.35, f_α=0.75 and f_β=0.25. Mass and volume proportions need conversion using the corresponding molar masses and densities.
+
+**Work:** Derive the lever rule from two balances rather than memorizing which segment is opposite a phase. Construct a three-candidate comparison and test whether a proposed tangent is globally supporting. Account for a composition outside the coexistence interval without reporting a negative physical phase fraction.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [An inspectable symmetric phase-separation account](../computation/An-inspectable-symmetric-phase-separation-account.lingua#r_1ZQTEHAPQAXJECBG9EBDQDJZGZ).
+
+} r_05MARTRXT25F6PKERYYB70H0Z5

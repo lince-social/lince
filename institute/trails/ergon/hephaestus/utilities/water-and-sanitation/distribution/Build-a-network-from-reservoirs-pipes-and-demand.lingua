@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Build a network from reservoirs, pipes and demand (@wu-network-model: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Pressure-demand-and-the-difference-between-requested-and-delivered.lingua#r_5E8P3ZR2YD6QW821V4BMN29SXM") { r_0TXAT9EFG5484Y1VN0D9RM8PKQ
+**Read:** [EPANET 2.2 manual](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW), [chapter 2](https://usepa.github.io/EPANET2.2/2_quickstart.html) and [chapter 3](https://usepa.github.io/EPANET2.2/3_network_model.html); [Manual de Saneamento](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), distribution and storage material. Complete the tutorial before modelling a real network.
+
+Represent junction elevations, pipe connectivity, storage, pumps and valves, with units and a common elevation datum. Demands describe withdrawals, not pipe capacities. A fixed-head reservoir is a model boundary; an actual finite source may need a different representation. Inspect the physical meaning of each object rather than choosing it for a convenient icon.
+
+An original two-branch example supplies a total demand of 9 L/s through parallel resistances h = rQ², using Q in L/s and head in metres. Let r₁ = 1 and r₂ = 4. Equal head losses require Q₁ = 2Q₂; continuity gives Q₁ = 6 and Q₂ = 3 L/s, with 36 m loss in either branch. Coefficients have units m/(L/s)². They are invented model parameters, not properties of unnamed pipes.
+
+**Work:** Reconstruct the result without a solver, then use it as a check of a simple implementation. Test a closed branch, reversed boundary head and changed demand. Identify which model inputs require a field inventory or measurement. Distinguish physical isolation boundaries from drawing layout, and preserve assumptions about valve status and pump control with each scenario.
+
+**Continue:** [Pressure, demand and the difference between requested and delivered](Pressure-demand-and-the-difference-between-requested-and-delivered.lingua#r_5E8P3ZR2YD6QW821V4BMN29SXM).
+} r_0TXAT9EFG5484Y1VN0D9RM8PKQ

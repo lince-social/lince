@@ -1,0 +1,11 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Water for pharmaceutical use — WHO TRS 1033, Annex 3 (@wu-pharma-water: 0, is #reference, #part-of @wu-sources) { r_2MQQ5SM683CVV31MHADK5MAPTA
+World Health Organization. Good manufacturing practices: water for pharmaceutical use, Annex 3 of Technical Report Series 1033, 2021. [Official publication](https://www.who.int/publications/m/item/annex-3-trs-1033) · [Complete 24-page annex](https://cdn.who.int/media/docs/default-source/medicines/norms-and-standards/guidelines/inspections/trs1033-annex3-gmp-water-for-pharmaceuticals-use.pdf).
+
+Read the complete annex as a concrete high-purity service case: defined water quality, production, storage, distribution, qualification, maintenance and monitoring. Connect the endpoint's intended use to evidence across the whole system, rather than judging a treatment skid in isolation.
+
+The official PDF and its system/qualification sections were inspected on 30 October 2026. Preserve the report's actual rights and component notices. This is a dated pharmaceutical guidance example; current pharmacopoeial and jurisdictional requirements need their own sources. It does not define semiconductor process-water specifications, and a satisfactory conductivity measurement does not establish every chemical or microbiological attribute.
+
+**Return:** [Water and sanitation sources](../Sources.lingua#r_7AMRJFFR11FF35KJM7Y7M05B3M).
+} r_2MQQ5SM683CVV31MHADK5MAPTA

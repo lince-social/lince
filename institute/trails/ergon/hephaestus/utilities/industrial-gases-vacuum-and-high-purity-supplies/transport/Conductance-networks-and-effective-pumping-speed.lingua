@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Conductance networks and effective pumping speed (@gas-network: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Pumpdown-from-a-conserved-inventory.lingua#r_5XBD9Y0BVH0W7ZZ0QK0604C1VR") { r_6DCMXSZKNMJADBJG5CBEDSSHFH
+**Read:** [Fundamentals of Vacuum Physics and Technology — Eshraq Al-Dmour](../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9), effective pumping; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), connecting-line calculations; the shared circuit and material-balance reasoning where useful.
+
+For linear isothermal molecular conductances, a node balance has terms Cij(pj−pi), source throughput Qi and pump removal Si pi. At steady state the sum is zero. Series conductances combine reciprocally and parallel conductances add under the assumptions that define those intermediate reservoir states.
+
+A single pump of speed S connected through conductance C has effective speed Seff=SC/(S+C) at the chamber in the simple zero-backpressure model. The result cannot exceed either S or C. Increasing the pump specification yields little benefit when the connection dominates.
+
+**Example:** With S = 0.1 m³/s and C = 0.02 m³/s, the chamber sees Seff = 1/60 m³/s, about 0.0166667 m³/s. A constant load of 10⁻⁴ Pa·m³/s then gives chamber pressure 0.006 Pa and pump-inlet pressure 0.001 Pa. The connecting passage accounts for the 0.005 Pa difference in this idealized model.
+
+**Work:** Derive the two-node balance and effective speed. Solve a small branched network with separately stated gas loads. Check every node and the whole-system inventory. Explain when a long passage cannot be replaced by a well-mixed reservoir and when a gas-dependent pump or conductance requires a separate constituent calculation.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Pumpdown from a conserved inventory](Pumpdown-from-a-conserved-inventory.lingua#r_5XBD9Y0BVH0W7ZZ0QK0604C1VR).
+
+} r_6DCMXSZKNMJADBJG5CBEDSSHFH

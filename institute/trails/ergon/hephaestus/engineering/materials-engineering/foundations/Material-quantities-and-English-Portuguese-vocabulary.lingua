@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Material quantities and English–Portuguese vocabulary (@mat-language: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #source "../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #materials-engineering "Material-families-are-useful-descriptions.lingua#r_1K8VGS2DNW9375NHARSN3XZNGT") { r_1H7GMXQV3JPQ24696Q3QAVPDDB
+**Read:** [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309), sections 1.7 and 2.4 and the family introductions; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), measurement and physical/chemical properties. Follow the shared quantitative reading for unfamiliar units.
+
+Distinguish mass/massa, volume/volume, density/massa específica, composition/composição, phase/fase, grain/grão and porosity/porosidade. Force and stress are different quantities: stress has force-per-area units. Stiffness/rigidez of a component depends on shape and material; elastic modulus/módulo de elasticidade describes a specified constitutive response.
+
+Strength/resistência mecânica, hardness/dureza, ductility/ductilidade and toughness/tenacidade refer to different observations and tests. Electrical resistance/resistência elétrica is not resistivity/resistividade. A material's conductivity, expansion or strength needs conditions and a defined method, not just a number and an adjective.
+
+**Work:** Translate a short property table while retaining units, conditions and uncertainty. Convert 2.7 g cm⁻³ to 2700 kg m⁻³ and 200 GPa to 200,000 N mm⁻². Explain why comparing an object's spring constant with a material's modulus is not a direct comparison of equal quantities.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Material families are useful descriptions](Material-families-are-useful-descriptions.lingua#r_1K8VGS2DNW9375NHARSN3XZNGT).
+
+} r_1H7GMXQV3JPQ24696Q3QAVPDDB

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Ionic transport, defects and electrochemical potential (@mat-ionic: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #materials-engineering "Contacts-junctions-and-functional-interfaces.lingua#r_7WFR81237S894512N8R4BR81PW") { r_1EVDJ0GHG53VWBE05RZXKJ4BXA
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chemical/electrochemical potentials and diffusion; [Nano-to-Macro Transport Processes — MIT 2.57](../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), transport foundations; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), defect-mediated diffusion. Revisit the earlier defect charge-balance account.
+
+An ion's driving potential includes chemistry and electrostatics: μ̃_i=μ_i+z_iFφ for molar chemical potential. In a dilute isothermal ideal solution, combining its gradient with mobility gives diffusion and electric-field contributions. Under independent-carrier assumptions σ_i=n_i(z_i e)²D_i/(kBT); correlations and blocking boundaries can invalidate that simple Nernst–Einstein relation.
+
+Vacancy concentration, migration barrier, connectivity and grain-boundary chemistry all influence ionic conduction. A solid can carry ionic and electronic current simultaneously. A high total conductivity does not establish that a separator blocks electrons or that an electrode admits the intended species.
+
+**Work:** Derive flux from electrochemical potential, checking signs for positive and negative ions. Compare tracer diffusion, impedance and DC polarization interpretations for a documented solid electrolyte. Identify the carrier species, transference assumptions and interfacial reactions before explaining a fitted semicircle as a bulk material property.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Contacts, junctions and functional interfaces](Contacts-junctions-and-functional-interfaces.lingua#r_7WFR81237S894512N8R4BR81PW).
+
+} r_1EVDJ0GHG53VWBE05RZXKJ4BXA

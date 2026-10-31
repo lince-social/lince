@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Compare metal and alloy states with evidence (@mat-alloy-families: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #source "../../../materials/metals-and-metallurgical-production/sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #materials-engineering "../../../materials/metals-and-metallurgical-production/structure/Alloy-states-history-and-structure-property-evidence.lingua#r_6DWZGNBM98KP22AK1XC1H55Q7C") { r_1MRASEY87AB97C5WP159FCTDTA
+**Read:** [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309), the metal and alloy sections; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../../../materials/metals-and-metallurgical-production/sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the complete Metals and Alloys teaching notes. Use the existing metallurgy sources for steels, nonferrous alloys and aluminium applications, then follow the shared alloy-state Record.
+
+Steel, cast iron, aluminium, copper, titanium, nickel and magnesium alloys describe broad compositional families. A useful engineering description also needs grade, product form, phase constitution, texture, heat treatment, cold work, defects and service exposure. Two specimens with the same nominal chemistry can have different yield, ductility and fracture behavior.
+
+Compare an annealed and cold-worked state, a solution-treated and precipitation-aged state, and a transformed steel. Connect each proposed change in response with an actual mechanism and observation. Do not infer stiffness changes of the same scale as strength changes merely because a heat treatment increases hardness.
+
+**Work:** Trace three documented alloy states from composition and processing to structure and a measured response. Normalize units and test conditions before comparing them. Keep a general account here while using the complete metallurgical production sequence when the extraction, refining or mill process itself is the question.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Describe an alloy state through phases, defects, spatial structure, and processing history](../../../materials/metals-and-metallurgical-production/structure/Alloy-states-history-and-structure-property-evidence.lingua#r_6DWZGNBM98KP22AK1XC1H55Q7C).
+
+} r_1MRASEY87AB97C5WP159FCTDTA

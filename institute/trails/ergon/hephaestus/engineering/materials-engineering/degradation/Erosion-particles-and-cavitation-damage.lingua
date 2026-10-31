@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Erosion, particles and cavitation damage (@mat-erosion: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #materials-engineering "../../../physics/fluid-dynamics/interfaces/Cavitation-nucleation-bubble-dynamics-and-pressure-history.lingua#r_3N65MAD5CF80Q2W5Q82GJG167S") { r_2FPNK55NS2ESJTVRBY3DY43MRT
+**Read:** [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), flow-related mechanisms; the shared cavitation-dynamics Record and its complete Brennen reference.
+
+Particle impact, liquid impact and bubble collapse impose different histories at a surface. Flow also changes chemical transport and protective-film removal. A high bulk flow speed alone does not specify the local impact or cavitation exposure. Geometry, nuclei, pressure history, particles and material state belong in the comparison.
+
+**Work:** Reconstruct an erosion or cavitation study with geometry, flow/pressure evidence and surface characterization. Distinguish incubation, measurable mass loss and later geometry-dependent behavior. Compare evidence for mechanical removal with chemically accelerated loss. Explain why a device-level operating parameter may fail to reproduce the same local exposure in a different test apparatus.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Cavitation, nucleation, bubble dynamics and pressure history](../../../physics/fluid-dynamics/interfaces/Cavitation-nucleation-bubble-dynamics-and-pressure-history.lingua#r_3N65MAD5CF80Q2W5Q82GJG167S).
+
+} r_2FPNK55NS2ESJTVRBY3DY43MRT

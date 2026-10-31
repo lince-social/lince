@@ -1,0 +1,17 @@
+Import "../Materials-engineering.lingua"
+
+Join structure and observation in a material investigation (@mat-structure-evidence: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #materials-engineering "Advanced-study-of-a-crystal-model-and-its-evidence.lingua#r_3QBJJQJJ1N36D408YT7ZSXXNQ3", #materials-engineering "Advanced-study-of-polymer-and-noncrystalline-structure.lingua#r_4NKA14QV8FJ9T692RJDJ9RM7M6", #materials-engineering "Advanced-study-of-anisotropy-and-microstructural-sampling.lingua#r_7ESGFS0F98WKVCDJB7QS7HJPJQ") { r_6WH0TF4A0EQ7PWJ5AXG8PGKK30
+**Read:** Complete [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309)'s introductory book, the assigned [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF) packages and [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z)'s structure/bonding sequence with substantial exercises. Read the relevant complete [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP) and [Crystallographic teaching pamphlets — IUCr](../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX) treatments when a slide or drawing omits a needed derivation.
+
+The three studies linked next ask complementary questions about an actual material: whether a crystal model explains its evidence, how molecular/disordered structure supports a response, and how orientation and heterogeneity affect an aggregate. The same specimen or shared Records may contribute to several studies.
+
+**Work:** Develop each question through a stated structural model, independent calculation, available observations, a competing explanation and revision. Distinguish an original measurement from a reconstruction of published evidence. If equipment or raw data is unavailable, identify precisely which claim cannot yet be checked rather than treating a planned experiment as a result.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Advanced study of a crystal model and its evidence](Advanced-study-of-a-crystal-model-and-its-evidence.lingua#r_3QBJJQJJ1N36D408YT7ZSXXNQ3).
+
+**Continue in materials engineering:** [Advanced study of polymer and noncrystalline structure](Advanced-study-of-polymer-and-noncrystalline-structure.lingua#r_4NKA14QV8FJ9T692RJDJ9RM7M6).
+
+**Continue in materials engineering:** [Advanced study of anisotropy and microstructural sampling](Advanced-study-of-anisotropy-and-microstructural-sampling.lingua#r_7ESGFS0F98WKVCDJB7QS7HJPJQ).
+
+} r_6WH0TF4A0EQ7PWJ5AXG8PGKK30

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Two exchanging volumes explain a long purge tail (@gas-purge-tails: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Surface-memory-and-recovery-after-an-exposure.lingua#r_27W7RWBFC2N67XS3AMHQ09C8VX") { r_2Z48RVKPARRH78PGKGRATN8VGE
+**Read:** [Dead volumes and the difference between flow and exchange](Dead-volumes-and-the-difference-between-flow-and-exchange.lingua#r_57M980HQAJ60W320Y9DJRPCPTY), [A well-mixed purge and its limit](A-well-mixed-purge-and-its-limit.lingua#r_7JAHNQ9HH44P8D09NY23BK1ZVC) and [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT).
+
+At constant pressure/temperature, pure purge flow F through a mixed main volume Vm and exchange q with side volume Vd gives Vm ċm=−Fcm+q(cd−cm), Vd ċd=q(cm−cd). Here c is a dimensionless impurity fraction and F,q are actual volume rates at the common state. Summing yields d(Vmcm+Vdcd)/dt=−Fcm: exchange moves impurity but does not create or remove it. Multiplication by the common constant molar density converts this volume-equivalent inventory into moles.
+
+With a=F/Vm, b=q/Vm and d=q/Vd, the two decay rates are λ±=[a+b+d ± √((a+b+d)²−4ad)]/2. A slow λ− can dominate the late-time tail even when the main-flow residence time is short. All three rate parameters have units s⁻¹; they are distinct from the dimensionless impurity fractions.
+
+As q→0 the side volume retains its impurity. As q becomes very large, the volumes approach common composition and purge with time scale (Vm+Vd)/F. These independent limiting checks are as important as fitting one observed curve.
+
+**Work:** Solve the two-volume initial-value problem analytically or numerically, integrate impurity removal and check conservation. Compare increasing F with increasing q. Design an observation of the side inventory or a rebound after flow interruption that distinguishes a slowly exchanging volume from a single well-mixed volume.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Surface memory and recovery after an exposure](Surface-memory-and-recovery-after-an-exposure.lingua#r_27W7RWBFC2N67XS3AMHQ09C8VX).
+
+} r_2Z48RVKPARRH78PGKGRATN8VGE

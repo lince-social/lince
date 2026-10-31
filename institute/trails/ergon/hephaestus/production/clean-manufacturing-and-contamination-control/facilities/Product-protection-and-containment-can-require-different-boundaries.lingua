@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Product protection and containment can require different boundaries (@cm-protection-containment: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "A-local-barrier-needs-an-interface-and-an-access-state.lingua#r_0AWNHCH9SYH20GNB3NAD5KGZ51") { r_099FT5EV3YBZATTMY21NFEE1BR
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), section 3.5 and confinement zones; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), premises and barrier technologies.
+
+Protecting a product from room air and preventing process material from reaching a worker or another room are different physical aims. A pressure direction favorable at one boundary can be unfavorable at another. Specify what is being kept where before assigning positive or negative pressure.
+
+Nested boundaries can serve different functions: an enclosing room, a local barrier and a separately exhausted process. Their airflows, leakage paths and access states interact. A static pressure indication does not prove directional protection during every transfer.
+
+**Work:** Draw a process needing both inward containment at one interface and protected clean supply at another. Identify the flow directions, source terms and exhausted destination. Explain what happens when a fan stops or an access opening changes, using conservation rather than assigning every room the same pressure rule.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A local barrier needs an interface and an access state](A-local-barrier-needs-an-interface-and-an-access-state.lingua#r_0AWNHCH9SYH20GNB3NAD5KGZ51).
+
+} r_099FT5EV3YBZATTMY21NFEE1BR

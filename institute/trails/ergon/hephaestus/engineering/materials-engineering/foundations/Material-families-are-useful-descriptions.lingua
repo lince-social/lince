@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Material families are useful descriptions (@mat-families: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "Composition-state-and-processing-history.lingua#r_6CTKRDPFS788YKREASEADB6Q58") { r_1K8VGS2DNW9375NHARSN3XZNGT
+**Read:** [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309), units 1–5; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), the atomic-scale and polymer introductions. Read the whole short Portuguese book during this first survey, returning to its numerical claims with the later models.
+
+Metals, ceramics/glasses and polymers organize recurring combinations of bonding, structure and processing. Composites combine constituents and interfaces; semiconductors describe electronic behavior that can occur in different chemical families. These categories overlap and do not replace an actual composition and state description.
+
+Compare a metal conductor, an insulating ceramic, a polymer cable jacket and a reinforced structural material through their functions and interactions. Natural materials such as wood also have structured, directional and condition-dependent properties. Their origin does not remove them from physical analysis.
+
+**Work:** Classify ten accessible objects, then identify where a single label becomes misleading: coatings, fillers, laminates, porous bodies or multi-material joints. Explain which part of the object supplies each function. Replace a claim such as “ceramics are brittle” with a statement that names the response, conditions and relevant evidence.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Composition, state and processing history](Composition-state-and-processing-history.lingua#r_6CTKRDPFS788YKREASEADB6Q58).
+
+} r_1K8VGS2DNW9375NHARSN3XZNGT

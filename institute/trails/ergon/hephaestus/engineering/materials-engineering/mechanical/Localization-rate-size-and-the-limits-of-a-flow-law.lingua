@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Localization, rate, size and the limits of a flow law (@mat-localization: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #materials-engineering "Fracture-from-bonds-to-crack-driving-force.lingua#r_7A1T3W6N86NZ4X2CC8089NC9VE") { r_5J64PKM1N08DWXHZF3ASJ1R6FB
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 3.7–3.9 and 3.12; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Stress–Strain Curves and Yield and Plastic Flow; [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), physical-size and plasticity topics.
+
+For homogeneous uniaxial tension of a rate-independent plastically incompressible specimen, force F=σ_true A₀ exp(−ε_true). Differentiating gives the Considère condition dσ_true/dε_true=σ_true at maximum force. It describes that ideal instability; it is not a universal criterion for every polymer, strain-rate-sensitive metal or multiaxial test.
+
+Grain size, specimen dimensions, defect populations and gradients can become comparable. A Hall–Petch fit over one range does not prove indefinite strengthening as grains shrink. High-rate self-heating and localization can change a nominally isothermal flow response.
+
+**Work:** Derive the necking condition and test a power-law hardening model. Compare its prediction with a documented tensile curve and identify the usable pre-necking range. Explain how rate sensitivity, temperature rise and specimen scale change the interpretation. Distinguish instability of a test configuration from an intrinsic material fracture criterion.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Fracture from bonds to crack driving force](Fracture-from-bonds-to-crack-driving-force.lingua#r_7A1T3W6N86NZ4X2CC8089NC9VE).
+
+} r_5J64PKM1N08DWXHZF3ASJ1R6FB

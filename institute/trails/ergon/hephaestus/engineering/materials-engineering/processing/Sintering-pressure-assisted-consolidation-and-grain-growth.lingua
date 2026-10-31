@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Sintering, pressure-assisted consolidation and grain growth (@mat-process-sintering: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Glass-melting-fining-shaping-and-annealing.lingua#r_0PER8031SPHZTNYMHXY0WW3RYJ") { r_6WNJVXXCXCATS1ZPKSG406FX8Y
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), consolidation; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), sintering and coarsening; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), firing and dimensional behavior. Revisit the earlier distinction between neck growth and densification.
+
+Mass transport can enlarge contacts without removing pore volume. Densification, grain growth, phase reaction and trapped gas evolve together. Hot pressing and hot isostatic pressing introduce stress and constraints but do not erase chemistry, closed-pore gas or grain-growth limits.
+
+For conserved solid mass and isotropic shrinkage, Lfinal/Lgreen=(ρgreen/ρfinal)^(1/3). Relative densities 0.60 and 0.96 give a linear ratio about 0.85499, or 14.50% shrinkage. This estimate excludes mass change, anisotropic gradients and reaction-dependent solid density.
+
+**Work:** Derive the scaling, compare measured dimensions in three directions and reconstruct a time/temperature/atmosphere history. Use density, pore and grain observations to test whether a faster schedule actually improves the required state. Distinguish densification data from a curve that only records surface-area reduction.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Glass melting, fining, shaping and annealing](Glass-melting-fining-shaping-and-annealing.lingua#r_0PER8031SPHZTNYMHXY0WW3RYJ).
+
+} r_6WNJVXXCXCATS1ZPKSG406FX8Y

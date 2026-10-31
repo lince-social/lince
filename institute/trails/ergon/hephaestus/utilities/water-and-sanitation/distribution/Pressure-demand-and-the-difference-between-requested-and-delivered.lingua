@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Pressure, demand and the difference between requested and delivered (@wu-pressure-demand: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Storage-turnover-mixing-and-the-age-distribution.lingua#r_2E1K7H97BZM1TE6CZ5BXGHGM5C") { r_5E8P3ZR2YD6QW821V4BMN29SXM
+**Read:** [EPANET 2.2 manual](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW), chapters 3 and 12, including demand modelling. Revisit the shared fluid-dynamics treatment of pressure head and losses when interpreting the equations.
+
+A fixed-demand model can mathematically withdraw water even when the calculated pressure is physically inadequate. A pressure-dependent demand model relates delivered flow to local pressure and an assumed service relation. It is an explicit approximation to demand behaviour, not a substitute for observations or service criteria.
+
+An original one-node model has supply head H = 20 m, zero node elevation, resistance r = 0.5 m/(L/s)² and requested flow d = 10 L/s. With delivered demand q = d√(p/20) for 0<p<20 and p = H−rq², solve q² = 100(20−0.5q²)/20. The result is q ≈ 5.345 L/s and p ≈ 5.714 m. Forcing 10 L/s instead predicts −30 m pressure head, which flags the inadequacy of that assumed service state.
+
+**Work:** Identify the invented minimum/full-service pressure assumptions and change them. Compare delivered volume with requested volume over a demand cycle. Investigate how calibration could confuse pipe resistance, valve status and demand when only one pressure is observed. Test another location or independent flow measurement. Do not interpret an acceptable numerical residual as evidence that the assumed network can meet real service obligations.
+
+**Continue:** [Storage turnover, mixing and the age distribution](Storage-turnover-mixing-and-the-age-distribution.lingua#r_2E1K7H97BZM1TE6CZ5BXGHGM5C).
+} r_5E8P3ZR2YD6QW821V4BMN29SXM

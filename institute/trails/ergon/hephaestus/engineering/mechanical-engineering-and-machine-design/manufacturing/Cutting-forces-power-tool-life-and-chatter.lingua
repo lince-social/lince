@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Cutting forces, power, tool life and chatter (@mech-cutting-physics: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #mechanical-engineering "Grinding-finishing-and-surface-integrity.lingua#r_12K4CHMHGKAMEDRWYQGS5P7FEB") { r_7TSJ2BAC8N00177EEJVXCZ93MQ
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), cutting lectures; [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), machining specification study and appendix E. Revisit material flow, heat and vibration for the underlying assumptions.
+
+A cutting model accounts for material deformation and tool–chip contact. The orthogonal idealization has a declared rake angle, chip geometry and force system; real three-dimensional engagement, strain-rate effects and wear can change the result. Measured cutting force times relative cutting speed gives power in that direction.
+
+A tangential force of 300 N at 1.5 m/s requires 450 W at that interface, before drive losses and other motion. Tool and workpiece deflection alter the produced geometry. Chatter can couple the current cut to the waviness left by a previous engagement, so a static stiffness check alone does not establish stability.
+
+**Work:** Reconstruct a force/power example and compare it with an actual documented cutting measurement. Distinguish flank wear, edge fracture, thermal damage and built-up edge. Investigate how speed, feed, engagement and structural response change surface quality and tool life. Treat a chosen process window as an evidence-based domain, not a universal table entry.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Grinding, finishing and surface integrity](Grinding-finishing-and-surface-integrity.lingua#r_12K4CHMHGKAMEDRWYQGS5P7FEB).
+
+} r_7TSJ2BAC8N00177EEJVXCZ93MQ

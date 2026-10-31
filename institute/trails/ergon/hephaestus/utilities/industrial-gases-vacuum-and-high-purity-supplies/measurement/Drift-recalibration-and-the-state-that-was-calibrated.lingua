@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Drift, recalibration and the state that was calibrated (@gas-gauge-drift: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7", #industrial-gases-and-vacuum "A-quadrupole-analyzer-is-a-chain-of-transformations.lingua#r_1VX2K1R3SKHF0CJPG0T7ZWA55V") { r_35EW803ZTWXQPK115DVFCPZHBX
+**Read:** [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), stability and reporting; [Leak calibration — Ehrlich and Tison, NIST SP 250-38](../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7), quality-control chapters.
+
+A calibration estimates response under specified conditions at a particular stage of an instrument's life. Subsequent contamination, thermal history, electrical changes and transport can alter that response. Repeated agreement during one session is evidence of short-term behavior, not proof of long-term stability.
+
+Use check measurements to distinguish drift, abrupt change and ordinary scatter. Preserve the actual sequence, gas, environment and reference history. A slowly changing check value may come from the gauge, the check standard or their shared apparatus; independent comparisons are needed to separate them.
+
+Choose a recalibration or verification interval from the required use and observed behavior. A calendar date alone cannot establish that a changed instrument is suitable. Conversely, a documented unchanged condition and stable checks can support continued use within a stated uncertainty model.
+
+**Work:** Examine a hypothetical sequence with both gradual drift and one intervention. Compare a linear drift fit with a change-point interpretation, then specify the observations needed to choose between them. Carry the resulting uncertainty into a practical pressure claim rather than stopping at a control chart.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A quadrupole analyzer is a chain of transformations](A-quadrupole-analyzer-is-a-chain-of-transformations.lingua#r_1VX2K1R3SKHF0CJPG0T7ZWA55V).
+
+} r_35EW803ZTWXQPK115DVFCPZHBX

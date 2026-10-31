@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Thin-aperture conductance and two-way transfer (@gas-aperture: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Tubes-transmission-probability-and-geometric-limits.lingua#r_1JVAVTY13650M654P3PZDXZX9T") { r_4JKVFE59JBAXFV1AW2E9EXH73G
+**Read:** [Fundamentals of Vacuum Physics and Technology — Eshraq Al-Dmour](../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9), conductance; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), molecular-flow relations. Examine the geometry behind each printed formula.
+
+For a transparent thin aperture of area A joining equilibrium reservoirs of the same gas at the same temperature, net molecular flow is A v̄(n₁−n₂)/4. In throughput form Q=C(p₁−p₂), with C=A v̄/4. This derivation assumes collisionless passage and negligible aperture thickness.
+
+A finite wall thickness or channel introduces a transmission probability τ, giving C=τA v̄/4 under the same reservoir assumptions. Calling the object an orifice does not establish τ=1. Equal opposing fluxes can give zero net transfer while molecules continue crossing in both directions.
+
+**Work:** Derive the throughput expression from the two incident fluxes and check its dimensions. Calculate an ideal aperture's conductance for two gases. Compare it with a measured finite-thickness opening and infer a bounded τ only after checking pressure, temperature and flow regime. Explain why a conductance is not the physical opening area.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Tubes, transmission probability and geometric limits](Tubes-transmission-probability-and-geometric-limits.lingua#r_1JVAVTY13650M654P3PZDXZX9T).
+
+} r_4JKVFE59JBAXFV1AW2E9EXH73G

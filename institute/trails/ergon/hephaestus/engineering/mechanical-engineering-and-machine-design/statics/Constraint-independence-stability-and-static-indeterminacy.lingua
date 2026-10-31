@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Constraint independence, stability and static indeterminacy (@mech-constraints: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #source "../sources/Precision-Machine-Design-MIT-2-75.lingua#r_1NC9D5QBNMR4S8THM7KFNG32KB", #mechanical-engineering "Trusses-frames-and-interacting-machine-members.lingua#r_75BWC5200SN37PSBH35JF73XMR") { r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), sections 5.1 and 5.6; compare the selected constraint-design material in [Precision Machine Design — MIT 2.75, Fall 2001](../sources/Precision-Machine-Design-MIT-2-75.lingua#r_1NC9D5QBNMR4S8THM7KFNG32KB) after understanding the rigid-body case.
+
+Counting support reactions is only a first check. Their directions and locations must constrain the relevant rigid-body motions independently. Three planar reactions can still leave motion unconstrained if their geometry makes the equilibrium equations dependent. Conversely, additional constraints can require deformation and compatibility to determine how load is shared.
+
+**Work:** Compare a beam on a pin and roller, a body on parallel rollers and a body fixed redundantly at several locations. Identify allowed translations and rotations. Write the equilibrium matrix, inspect independence and interpret any unresolved motion physically rather than asking a solver for an arbitrary answer.
+
+For a statically indeterminate example, explain which stiffness, temperature and assembly information would determine the reaction distribution. A rigid model with too few equations is an invitation to add justified physics, not evidence that real load sharing is unknowable. Later material and precision-design studies return to elastic constraints and preload.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Trusses, frames and interacting machine members](Trusses-frames-and-interacting-machine-members.lingua#r_75BWC5200SN37PSBH35JF73XMR).
+
+} r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX

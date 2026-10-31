@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A small bypass can dominate an efficient filter (@cm-filter-bypass: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "Filter-stages-and-common-bypasses-need-separate-accounts.lingua#r_768C79VP9BVM9W927RDQY75GAH") { r_132QT5CATGWCHVFF00RHAY8587
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), sections 4.1.5.3 and 4.1.9 on installed systems; revisit [Recirculation, filtration and bypass](../transport/Recirculation-filtration-and-bypass.lingua#r_2PYGBXM8TFGPQ1WGHP4CSRDFAA).
+
+Suppose fraction b of total flow bypasses the medium and has the same upstream concentration, while the remaining fraction crosses medium with penetration Pm. Perfect downstream mixing gives Psystem=b+(1−b)Pm. The fractions describe airflow, not the fraction of visible housing area occupied by a gap.
+
+With hypothetical b=0.001 and Pm=0.0001, Psystem=0.0010999. The installed penetration is nearly eleven times the medium penetration. Inverting gives b=(Psystem−Pm)/(1−Pm), but only under the model's equal upstream concentration, representative sampling and mixing assumptions.
+
+For linear parallel paths with conductances Gb and Gm, b=Gb/(Gb+Gm). Different flow exponents or changing media resistance make b depend on the operating state. A fixed visible gap does not imply a fixed bypass fraction.
+
+**Work:** Derive the forward and inverse balances, then propagate measurement uncertainty into inferred b. Compare a peripheral leak, a damaged region and a downstream source: one concentration ratio cannot identify all three. Explain what a spatial scan, flow change and upstream mixing check can distinguish, and why installed integrity, medium efficiency and room performance need separate evidence.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Filter stages and common bypasses need separate accounts](Filter-stages-and-common-bypasses-need-separate-accounts.lingua#r_768C79VP9BVM9W927RDQY75GAH).
+
+} r_132QT5CATGWCHVFF00RHAY8587

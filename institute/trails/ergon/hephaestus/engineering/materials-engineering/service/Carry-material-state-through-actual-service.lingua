@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Carry material state through actual service (@mat-service-state: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Inspection-observes-some-material-changes-and-misses-others.lingua#r_42GZTKNWWWY6BNT6PBTHAKDSSA") { r_3XQWGBTXTPXJ4B7CX4HB1SSNMQ
+**Read:** Revisit the full degradation/service-evidence studies; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), service chapters; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), application and chemical behavior.
+
+The delivered state is the initial condition for service. Loads, temperature, humidity, radiation, chemical exposure, contamination and maintenance change it. A service envelope is a stated set of conditions with evidence supporting performance; it is not simply a temperature maximum or lifetime printed on a sheet.
+
+Follow consequences for function, not just a visible damage indicator. A small crack may matter strongly in one stress field, while a measurable surface change may leave another required property unaffected. Inspection access and the ability to replace or restore a part belong in the material/system decision.
+
+**Work:** Trace a component from accepted manufacture through a documented or hypothetical service history. Connect each state-changing mechanism to an observable and a functional consequence. Compare a constant-condition approximation with a changing history. Identify where the earlier selection assumptions cease to hold and which decision then needs revision.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Inspection observes some material changes and misses others](Inspection-observes-some-material-changes-and-misses-others.lingua#r_42GZTKNWWWY6BNT6PBTHAKDSSA).
+
+} r_3XQWGBTXTPXJ4B7CX4HB1SSNMQ

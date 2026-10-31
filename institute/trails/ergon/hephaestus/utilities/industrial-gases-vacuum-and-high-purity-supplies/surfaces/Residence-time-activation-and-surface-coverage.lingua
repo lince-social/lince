@@ -1,0 +1,18 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Residence time, activation and surface coverage (@gas-residence: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "A-distribution-of-binding-states-and-long-time-tails.lingua#r_463DEHMVSDM53EVYH65H28FR78", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/surfaces/Surface-coverage-connects-arrival-residence-and-release.lingua#r_131HQSRZ2NY9Y968EB53ZN2F0Z") { r_48MYBH8H4756WWNK4ABCM2K1RT
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), section 4.1; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.4.1; [Explain temperature dependence and interpret an activation model](../../../chemistry/general-chemistry/kinetics/Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ), the full activation discussion.
+
+For one idealized population with a first-order escape rate kdes=ν exp[−E/(kBT)], the mean residence time is τ=1/kdes. E here is energy per molecule; use R and energy per mole in the equivalent molar form. The prefactor and barrier describe a model and need not be universal surface constants.
+
+If θ is occupied-site fraction, Ns site density and Γ incident molecular flux, a simple balance is dθ/dt=sΓ(1−θ)/Ns−kdesθ. It assumes one molecule per equivalent site, a stated sticking factor s and no other reactions or lateral interactions. It joins arrival and release rather than treating adsorption as permanent disappearance.
+
+**Work:** Derive equilibrium coverage and the relaxation time for constant conditions. Compare warming with a change in incident flux. Explain which observations can distinguish a larger barrier from a different prefactor, and why a single-temperature decay cannot generally determine both.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A distribution of binding states and long-time tails](A-distribution-of-binding-states-and-long-time-tails.lingua#r_463DEHMVSDM53EVYH65H28FR78).
+
+
+**Continue in clean manufacturing:** [Surface coverage connects arrival, residence and release](../../../production/clean-manufacturing-and-contamination-control/surfaces/Surface-coverage-connects-arrival-residence-and-release.lingua#r_131HQSRZ2NY9Y968EB53ZN2F0Z).
+
+} r_48MYBH8H4756WWNK4ABCM2K1RT

@@ -1,0 +1,13 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend facility energy, control and recovery together (@cm-study-facility-energy: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Demand-Controlled-Cleanroom-Filtration-Faulkner-Fisk-Walton.lingua#r_2W1ADE030W9RFA8ATDKSYVT6XP", #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Review-the-facility-before-qualifying-its-performance.lingua#r_0BZHWZQZAKQ0NY2JHYWRF4WG6P") { r_3AD6J8HW6RTRP29Q3KB0X2XDCZ
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X) and [Demand-controlled cleanroom filtration — Faulkner, Fisk and Walton](../sources/Demand-Controlled-Cleanroom-Filtration-Faulkner-Fisk-Walton.lingua#r_2W1ADE030W9RFA8ATDKSYVT6XP) in full; [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), control and transient theory.
+
+Build a time-dependent account of process load, fans, thermal/moisture conditioning, utilities and operating states. Couple the physical state to the sensor's location, dynamics and recorded data. Evaluate required process conditions alongside energy and resource use.
+
+**Work:** Reconstruct both reported energy baselines and independently check the hypothetical fan, heat and water balances. Compare two schedules with an explicit recovery condition. Investigate a delayed signal and a shared utility failure. Present a conclusion that survives changed occupancy, source strength and equipment loading, or state exactly where new evidence is needed.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review the facility before qualifying its performance](Review-the-facility-before-qualifying-its-performance.lingua#r_0BZHWZQZAKQ0NY2JHYWRF4WG6P).
+
+} r_3AD6J8HW6RTRP29Q3KB0X2XDCZ

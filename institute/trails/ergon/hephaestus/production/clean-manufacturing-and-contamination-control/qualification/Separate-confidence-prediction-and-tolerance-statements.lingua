@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Separate confidence, prediction and tolerance statements (@cm-qualification-intervals: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY", #clean-manufacturing "../../../inquiry/metrology/calibration/Control-and-recalibration.lingua#r_6AHX4PAFTWTDPKEZVQ3KSNP9AC") { r_6HJNY9RBX4EQQFWSQYV7SRVJT9
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), process characterization and statistical intervals; [Measurement uncertainty in conformity assessment — JCGM 106](../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY), interpretation of probability statements.
+
+A confidence interval for a population mean, an interval predicting a future observation and a statistical tolerance interval covering a population fraction are different objects. A narrow mean interval can coexist with wide variation among individual products.
+
+With independent normal observations, known σ = 2 and n = 25, a mean interval using 1.96 has half-width 0.784. A prediction interval for one new observation, centered at the sample mean, has half-width 1.96σ√(1+1/n), about 3.997631. Estimated σ requires the appropriate additional uncertainty and distribution.
+
+A distribution-free one-sided tolerance bound illustrates a third question. For n independent observations from a continuous distribution, the probability that the sample maximum covers at least fraction p of the population is 1−pⁿ. At p = 0.95 and n = 59 this confidence is about 0.951505. This does not establish a bound on every future observation.
+
+**Work:** Derive the three interpretations and choose one for a mean-loading, a future-item and a population-coverage claim. Explain how censoring, clustered samples or a changing population challenge each calculation.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Keep a measurement process under observation between calibrations](../../../inquiry/metrology/calibration/Control-and-recalibration.lingua#r_6AHX4PAFTWTDPKEZVQ3KSNP9AC).
+
+} r_6HJNY9RBX4EQQFWSQYV7SRVJT9

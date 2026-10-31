@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of Hamiltonian mechanics and model structure (@mech-hamiltonian-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "Defend-a-dynamic-model-from-observation-to-advanced-analysis.lingua#r_7ZWJSTVPC38XBNB7M8S6PSKN34") { r_7F5BNHT2V3P681GYWYPCZXR2CQ
+**Study:** Read all of [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), chapters 1–4 and the four problem sheets. Use [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65)'s multivariable calculus and differential systems to make every derivative and coordinate transformation explicit. The earlier engineering course supplies concrete systems to revisit.
+
+For a regular Lagrangian, canonical momentum is p_i = ∂L/∂q_dot_i and the Hamiltonian is H = Σ p_i q_dot_i − L after solving for velocities in terms of coordinates and momenta. Derive Hamilton's equations from that transform. Canonical momentum need not equal a mass times a chosen coordinate velocity, and H is not automatically the total mechanical energy in every time-dependent coordinate system.
+
+**Derive:** Reformulate the pendulum and the cart–pendulum model, recover their motion equations and compare energy, symmetries and conserved quantities. Develop Poisson brackets, canonical transformations and phase-volume preservation from the stated hypotheses. Explain why dissipative machine dynamics require additional terms and why applying the conservative invariants to a damped model fails.
+
+**Investigate:** Use action–angle variables for a tractable oscillator, then study a slowly varying parameter and state the limits of an adiabatic approximation. Compare a structure-preserving discretization with a general method on long-time phase and energy errors. Reproduce a nontrivial derivation from the notes, identify its assumptions, and extend it to a changed mechanical model with an independent check.
+
+The point of this depth is to understand why the equations and approximations work and when they cease to work. Give a precise link back to a physical machine or measurement; a collection of formal symbols without a recoverable mechanical interpretation does not complete this study.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend a dynamic model from observation to advanced analysis](Defend-a-dynamic-model-from-observation-to-advanced-analysis.lingua#r_7ZWJSTVPC38XBNB7M8S6PSKN34).
+
+} r_7F5BNHT2V3P681GYWYPCZXR2CQ

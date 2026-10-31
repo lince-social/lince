@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Polymer-composite weathering protocols — NIST SP 1200-15 (@mat-weather-protocol: 0, is #reference, #part-of @mat-sources) { r_2WPNZEDVAHNBVD1GS5W878PZCG
+Lipiin Sung and Tinh Nguyen, *Protocols for Accelerating Laboratory Weathering and Measurements of Degradation of Polymer-Multiwalled Carbon Nanotube Composites*, July 2015. [NIST publication, DOI 10.6028/NIST.SP.1200-15](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.1200-15.pdf).
+
+Read the full 20-page PDF for formulation, specimen preparation, irradiation/environment control and chemical/morphological measurements. Selected methods, ATR versus transmission FTIR and formulation passages were inspected on 30 October 2026. The document explicitly identifies a proprietary predispersed nanotube feed whose purity, residual catalyst and surface/dispersion details are not all available. Preserve this limit when attempting reproduction.
+
+This is a publicly available NIST technical publication. Keep attribution and distinguish credited third-party material; the PDF and experimental media remain external. Its apparatus-specific protocol and examples are evidence to examine, not proof of a universal outdoor-life acceleration factor.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_2WPNZEDVAHNBVD1GS5W878PZCG

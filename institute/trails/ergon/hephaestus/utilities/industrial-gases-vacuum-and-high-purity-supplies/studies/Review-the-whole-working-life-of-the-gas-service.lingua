@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Review the whole working life of the gas service (@gas-operation-review: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #industrial-gases-and-vacuum "../research/Define-an-integrated-gas-and-vacuum-system-study.lingua#r_688Z4AZXX4VM5E2000V86HCXMS") { r_55CK1MK38N2YECDKRB2M4PEXND
+**Review:** The three operation/recovery investigations and the thirteen earlier production, transport, surface, delivery and measurement studies.
+
+Trace one useful service from the source of its molecules through production, delivery, use and recovery. Explain how materials, surfaces, measurements, skilled work and suppliers keep that service available. Connect the ordinary operating case to startup, changed demand, intervention and failure.
+
+Resolve incompatible boundaries and reference states between the separate studies. A local optimization can increase another part's work, impurity load or vulnerability. Preserve results that remain valid, and identify the measurements or model changes required where they do not.
+
+**Work:** Present one integrated account with explicit limits. Use it to choose a sustained specialist investigation in the following section. The route continues into research because a technically plausible account still needs comparison with independent evidence and revision under criticism.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Define an integrated gas and vacuum system study](../research/Define-an-integrated-gas-and-vacuum-system-study.lingua#r_688Z4AZXX4VM5E2000V86HCXMS).
+
+} r_55CK1MK38N2YECDKRB2M4PEXND

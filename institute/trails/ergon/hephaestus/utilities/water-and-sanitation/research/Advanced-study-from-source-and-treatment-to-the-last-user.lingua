@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Advanced study — from source and treatment to the last user (@wu-drinking-study: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW", #source "../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD", #water-and-sanitation "Uncertainty-sensitivity-and-optimization-of-the-whole-service.lingua#r_1NHGPKNEXKPQE1C5YT5AS86BH6") { r_4PWS9Q6XMR6YYWGRTPKRS50EF7
+**Read:** Complete the relevant water-treatment textbook and MIT course sequence, [EPANET 2.2 — network models and reproducible analysis](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW)'s modelling manual, [Water safety plan manual — WHO and IWA, second edition](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD) and the WHO drinking-water guidance. Follow primary treatment and distribution evidence for the specific claim.
+
+Choose a service question such as the consequences of changed source quality, variable demand, storage operation or loss of a treatment unit. Reproduce the hydraulic and quality calculation for a versioned published or openly constructed network. State which source/treatment processes the network model receives as boundary data and which it actually represents.
+
+**Work:** Verify continuity, units, limiting cases and numerical settings independently. Compare pressure, storage and travel history with the observations available; keep calibration separate from withheld validation. Evaluate a changed condition, including an uncertainty in demand, reaction or mixing that can alter the conclusion. Link treatment performance to the delivered-water claim without multiplying removal factors whose conditions are unsupported.
+
+For deeper research, compare at least two explanations of a discrepancy, design observations that could distinguish them and evaluate the cost and feasibility of obtaining those observations. Preserve an exact computational environment and primary references so another person can reproduce the bounded claim. State what is learned about this service and what remains untested elsewhere.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Uncertainty, sensitivity and optimization of the whole service](Uncertainty-sensitivity-and-optimization-of-the-whole-service.lingua#r_1NHGPKNEXKPQE1C5YT5AS86BH6).
+
+} r_4PWS9Q6XMR6YYWGRTPKRS50EF7

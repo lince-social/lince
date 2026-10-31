@@ -1,0 +1,12 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+An oxygen-separation plant model — Dhamanekar and colleagues (@gas-psa-dhamanekar: 0, is #reference, #part-of @gas-sources) { r_7YN4807VG5QJTE1TAD37NZ7E3H
+Abhijit Dhamanekar, Ritwik Das, Santosh Ansumali, Raviraju Vysyaraju, Arvind Rajendran and Diwakar S. V. *A simplified digital twin of a pressure swing adsorption plant for air separation*, author manuscript, 4 February 2025. [Versioned record](https://arxiv.org/abs/2502.02268v1), [complete 43-page paper](https://arxiv.org/pdf/2502.02268).
+
+Read the whole paper, following the experimental apparatus, gas/solid inventories, kinetics, valves, buffer volumes, numerical choices and comparisons with observation. Identify which quantities were fitted and which observations test the resulting model. Distinguish a useful apparatus-specific comparison from universal validation of the approach.
+
+Metadata and selected model, adsorption and numerical passages were inspected on 30 October 2026. The implementation described uses Ansys Fluent and user-defined functions. The open paper does not by itself provide free access to that commercial solver, all implementation files or raw experimental data. Complete reproduction has not been performed.
+
+The arXiv version is CC BY 4.0. Preserve credits and indicate adaptations; inspect supplementary and third-party components separately. All source media remain external. The learning task can reconstruct a limited model independently, with its differences from this study documented.
+
+} r_7YN4807VG5QJTE1TAD37NZ7E3H

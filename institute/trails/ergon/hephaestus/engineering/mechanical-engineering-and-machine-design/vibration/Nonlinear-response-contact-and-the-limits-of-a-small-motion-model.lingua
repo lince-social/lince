@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Nonlinear response, contact and the limits of a small-motion model (@mech-nonlinear-dynamics: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #mechanical-engineering "../dynamics/Observe-motion-and-identify-a-model-that-can-be-tested.lingua#r_767FAPF401T72FHQ90MFZJ4J6W") { r_27Q7VJFER0RJ3RH2ENVPBPMY3B
+**Study:** [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), sections 2.3, 2.5 and 2.6; revisit [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3)'s derivation and linearization before changing its assumptions.
+
+The exact pendulum equation contains sinθ. Its finite-amplitude period differs from the small-angle result because the restoring torque is not proportional to displacement throughout the swing. For a pendulum released from rest at amplitude A < π, energy gives the period as 4√(l/g) ∫₀^(π/2) (1 − sin²(A/2) sin²φ)^(-1/2) dφ. Derive the substitution and check the small-amplitude limit.
+
+A spring with force kx + βx³ can harden or soften over a declared range. An opening contact changes the active force law; dry friction depends on sliding direction and may include sticking. These models need conditions and state transitions, not just a fitted constant damping coefficient.
+
+For the pendulum, the period ratio has leading correction 1 + A²/16 when A is expressed in radians. At A = 0.5 rad this first correction is 0.015625; assess its error against numerical quadrature rather than treating the expansion as exact. Near the unstable upright position the period grows strongly and a small-angle oscillator is qualitatively misleading.
+
+**Work:** Derive the energy integral and compute its convergence with quadrature refinement. Compare a linear and nonlinear oscillator at increasing amplitude under the same initial condition. For a contact model, verify opening/closing conditions, restitution or dissipation and energy balance. Distinguish a changing periodic response, an unstable equilibrium and evidence of chaotic dynamics; an irregular plot alone does not establish chaos.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Observe motion and identify a model that can be tested](../dynamics/Observe-motion-and-identify-a-model-that-can-be-tested.lingua#r_767FAPF401T72FHQ90MFZJ4J6W).
+
+} r_27Q7VJFER0RJ3RH2ENVPBPMY3B

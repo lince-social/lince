@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Transients, backflow and the contamination pathway (@wu-transient-backflow: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Water-losses-metering-and-repair-priorities.lingua#r_0HRENQX7K8HR31DY5KF12BFH7G") { r_2T466ADSGSQN4SEE4YDVJR56T9
+**Read:** [WHO distribution-system reference](../sources/Water-Safety-in-Distribution-WHO.lingua#r_4Z856ZAJVQZR5T72ZP9ZZ92YZF) and [Manual de Saneamento](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), distribution protection; revisit the fluid-dynamics pipe-transient Record. A network's extended-period equilibrium model does not resolve every rapid pressure wave.
+
+A pump trip or rapid valve movement can produce pressures unlike the routine operating range. Contamination requires a pathway as well as an adverse pressure condition: leaking infrastructure, a cross-connection, an unprotected submerged outlet or another connection to contaminated material. Map the physical path before claiming a pressure record explains an event.
+
+**Work:** Build a synthetic event timeline linking pump status, pressure, valve position and source of possible contamination. Specify sensor locations, sampling rate and clock synchronization; a slow logger can miss a rapid excursion. Distinguish negative gauge pressure from the absence of absolute pressure, and separate pressure transients from ordinary demand-cycle variation.
+
+Compare isolation, correctly selected backflow protection and eliminating a hazardous connection as different interventions requiring inspection and maintenance. State the applicable local requirements and product evidence before selecting real devices. For advanced study, connect a transient hydraulic model with an independently supported pathway model, vary uncertain boundary conditions and identify what observation could disprove the proposed intrusion explanation.
+
+**Continue:** [Water losses, metering and repair priorities](Water-losses-metering-and-repair-priorities.lingua#r_0HRENQX7K8HR31DY5KF12BFH7G).
+} r_2T466ADSGSQN4SEE4YDVJR56T9

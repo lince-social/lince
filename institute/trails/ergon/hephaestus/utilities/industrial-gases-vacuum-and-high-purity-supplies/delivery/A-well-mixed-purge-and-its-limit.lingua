@@ -1,0 +1,19 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A well-mixed purge and its limit (@gas-purge-mixing: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Pressure-cycles-and-the-ideal-dilution-factor.lingua#r_2CBSN5JAMS83H7FC6CMQJW8PXD") { r_7JAHNQ9HH44P8D09NY23BK1ZVC
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), matter balances; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), surface release and measurement context. Derive the following ideal model independently.
+
+For constant gas inventory n in a perfectly mixed volume with no internal source, inlet and outlet molar rates F are equal. With impurity mole fraction y and inlet fraction yin, n dy/dt=F(yin−y). A dilute-trace model can add an impurity source s in mol/s while neglecting its effect on total flow: n dy/dt≈F(yin−y)+s. For constant terms in that approximation, y∞=yin+s/F and y(t)=y∞+(y₀−y∞)exp(−Ft/n).
+
+If s adds appreciable gas and n is maintained constant, total conservation instead requires outlet rate F+s. The exact component balance is n dy/dt=Fyin+s−(F+s)y, giving y∞=(Fyin+s)/(F+s) and time constant n/(F+s). A source that replaces an equal amount of carrier has a different total-matter account. State which case is intended before adding a source term.
+
+With pure purge, no source and y₀=0.01, reaching 10⁻⁶ takes Ft/n=ln(10⁴)≈9.21034 inventory replacements. One replacement does not replace every original molecule in a well-mixed vessel. The outlet has the same concentration as the interior in this model, unlike plug displacement.
+
+The same equation applies to constant-state volume flow if n/F is replaced by V/Q with both volumes referred to the actual common state. Standard flow divided directly by actual volume mixes incompatible bases. A finite impurity source or nonzero inlet impurity creates a floor; waiting longer cannot beat that floor in the assumed model.
+
+**Work:** Derive the transient, integrate the impurity removed and close the inventory. Compare a pure inlet with a finite source. Explain why a target below y∞ cannot be reached by extending the same purge and why the model omits surface memory and dead spaces.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Pressure cycles and the ideal dilution factor](Pressure-cycles-and-the-ideal-dilution-factor.lingua#r_2CBSN5JAMS83H7FC6CMQJW8PXD).
+
+} r_7JAHNQ9HH44P8D09NY23BK1ZVC

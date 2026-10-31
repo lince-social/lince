@@ -1,0 +1,18 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Readsorption couples the surface and the gas (@gas-readsorption: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "../../../engineering/materials-engineering/kinetics/Conservation-Fick-laws-and-diffusion-boundaries.lingua#r_7X1A26DJF0PSVET1EXJK0V09R2", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/surfaces/A-clean-gas-reading-can-coexist-with-a-surface-reservoir.lingua#r_3KCTA0EGB3CSSVN2FZSBMB837Z") { r_57PQVHCDK36WXXH22EVJ4AGQSW
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), coupled gas/surface balances and accumulation-method limits; [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), measurement effects.
+
+A molecule released from a wall can be captured again before reaching the pump. In a low-coverage, well-mixed model, let ng and ns be gas and surface amounts. Write dng/dt=ṅfeed−(S/V)ng−ka ng+kd ns and dns/dt=ka ng−kd ns. The total changes only by external feed and pump removal.
+
+This model uses constant linear exchange coefficients and no site saturation. With no pump or feed, equilibrium gives ns/ng=ka/kd while conserving total amount. With pumping, observed pressure can have two relaxation scales. A slow trace therefore need not be the intrinsic desorption time of an isolated molecule.
+
+**Work:** Derive the combined inventory and the two decay rates. Examine fast-adsorption and fast-pumping limits. Compare pressure traces with and without a surface population and identify which additional measurement could distinguish hidden storage from a changed pumping speed. State where finite site capacity requires a nonlinear extension.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Conservation, Fick laws and diffusion boundaries](../../../engineering/materials-engineering/kinetics/Conservation-Fick-laws-and-diffusion-boundaries.lingua#r_7X1A26DJF0PSVET1EXJK0V09R2).
+
+
+**Continue in clean manufacturing:** [A clean gas reading can coexist with a surface reservoir](../../../production/clean-manufacturing-and-contamination-control/surfaces/A-clean-gas-reading-can-coexist-with-a-surface-reservoir.lingua#r_3KCTA0EGB3CSSVN2FZSBMB837Z).
+
+} r_57PQVHCDK36WXXH22EVJ4AGQSW

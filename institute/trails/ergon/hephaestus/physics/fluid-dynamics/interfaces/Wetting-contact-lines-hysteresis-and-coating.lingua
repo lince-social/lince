@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Wetting, contact lines, hysteresis and coating (@fd-wetting: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "Capillary-gravitational-and-shear-driven-instabilities.lingua#r_7TRXVRKVKPRGWSQ6XHPCTY0CMG") { r_0QBZZTX53DYHBPJTHRAH7YTK1D
+Wetting, contact lines, hysteresis and coating (@fd-wetting: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "Capillary-gravitational-and-shear-driven-instabilities.lingua#r_7TRXVRKVKPRGWSQ6XHPCTY0CMG", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/surfaces/Wetting-is-a-state-of-the-solid-liquid-and-surroundings.lingua#r_7F17GRPXF1NNKW4TA802EBF5R3") { r_0QBZZTX53DYHBPJTHRAH7YTK1D
 **Read:** [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), wetting, hysteresis, forced wetting, coating and spreading notes; [Lectures on Non-Newtonian Fluid Dynamics — John Hinch](../sources/Non-Newtonian-Fluid-Dynamics-Hinch.lingua#r_06KY7WE9WYAF856YQKQXHY1DS3), strong-flow and free-surface effects when the liquid is complex; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), interfacial scales.
 
 An equilibrium contact-angle relation balances interfacial energies for a specified smooth ideal substrate and phases. An observed advancing or receding contact angle on a real surface can differ because of roughness, chemical variation, pinning and motion. Contact-angle hysteresis therefore carries information about a physical surface and its history.
@@ -12,4 +12,7 @@ Compare spreading and withdrawal/coating as distinct dynamic problems. Read the 
 **Continue:** [Capillary, gravitational and shear-driven instabilities](Capillary-gravitational-and-shear-driven-instabilities.lingua#r_7TRXVRKVKPRGWSQ6XHPCTY0CMG).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in clean manufacturing:** [Wetting is a state of the solid, liquid and surroundings](../../../production/clean-manufacturing-and-contamination-control/surfaces/Wetting-is-a-state-of-the-solid-liquid-and-surroundings.lingua#r_7F17GRPXF1NNKW4TA802EBF5R3).
+
 } r_0QBZZTX53DYHBPJTHRAH7YTK1D

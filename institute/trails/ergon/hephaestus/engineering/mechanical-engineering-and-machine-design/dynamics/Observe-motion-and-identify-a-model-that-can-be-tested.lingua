@@ -1,0 +1,21 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Observe motion and identify a model that can be tested (@mech-dynamics-evidence: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #mechanical-engineering "../study/Advanced-study-of-a-coupled-cart-and-pendulum.lingua#r_49E3RX6SDTHP2T2NNWV07MFA7W", #mechanical-engineering "../study/Advanced-study-of-a-rotating-machine-and-its-supports.lingua#r_7HA4E51ZKV0RJP9WAV7CTAPSNM", #mechanical-engineering "../study/Advanced-study-of-Hamiltonian-mechanics-and-model-structure.lingua#r_7F5BNHT2V3P681GYWYPCZXR2CQ") { r_767FAPF401T72FHQ90MFZJ4J6W
+**Study:** Revisit [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3)'s demonstrations, recitation 10 and oscillator identification examples. Use the earlier metrology principles when choosing sensors, calibration and uncertainty accounts.
+
+Define the observable before selecting an instrument: displacement of which point relative to which frame, angular position, velocity, acceleration or force. A sensor's range, bandwidth, sampling, mounting and calibration affect what is actually observed. Numerically differentiating a noisy position twice can magnify measurement error; an accelerometer's output also depends on orientation and gravity.
+
+A sampled sinusoid can be confused with a different frequency when sampling aliases the motion. A frequency above twice the signal bandwidth is a necessary ideal sampling condition, not proof of adequate amplitude/phase measurement in a real filtered and noisy acquisition chain. Give the analog filtering, clock and record duration their own roles.
+
+A natural frequency alone identifies a stiffness-to-mass ratio in a one-mode model, not both parameters separately. Add independent mass or static-deflection evidence. Estimate damping using several observations and test the model at a different amplitude or forcing condition from the one used to fit it.
+
+**Work:** For a low-energy educational oscillator, specify and perform a measurement where suitable equipment is available, retaining raw data and calibration information. Compare frequency, amplitude and phase predictions with uncertainty; inspect residuals and a second plausible model. Distinguish performed observations from proposed work. The following studies develop complementary mathematical and machine-focused questions, then return to a common dynamics review.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Advanced study of a coupled cart and pendulum](../study/Advanced-study-of-a-coupled-cart-and-pendulum.lingua#r_49E3RX6SDTHP2T2NNWV07MFA7W).
+
+**Continue:** [Advanced study of a rotating machine and its supports](../study/Advanced-study-of-a-rotating-machine-and-its-supports.lingua#r_7HA4E51ZKV0RJP9WAV7CTAPSNM).
+
+**Continue:** [Advanced study of Hamiltonian mechanics and model structure](../study/Advanced-study-of-Hamiltonian-mechanics-and-model-structure.lingua#r_7F5BNHT2V3P681GYWYPCZXR2CQ).
+
+} r_767FAPF401T72FHQ90MFZJ4J6W

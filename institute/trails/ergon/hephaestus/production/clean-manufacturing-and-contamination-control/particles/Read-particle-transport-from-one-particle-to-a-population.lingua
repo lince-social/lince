@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Read particle transport from one particle to a population (@cm-particle-reading: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B", #source "../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49", #clean-manufacturing "../../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J") { r_0XFQY53MK47KMCAWNES4DWDR8N
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), hydrodynamic forces and particle motion, followed by Brownian motion and mass diffusion. Continue with the full coagulation and collector notes. [Fundamentals of single-particle transport — Kulkarni, Baron and Willeke](../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B) provides another complete account; [Slip-correction measurements — Kim, Mulholland, Kukuck and Pui](../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49) connects a commonly used correction with experimental evidence.
+
+The opening used a measured or assumed deposition coefficient. Now ask what determines it. A particle can move differently from the surrounding fluid, respond slowly to a changing flow, wander through molecular collisions, acquire charge or combine with another particle. A population's concentration also changes when particles enter, leave, grow or change size category.
+
+Move from a defined particle and force balance to distributions and conservation. Keep geometry, boundary conditions and the observed quantity explicit. The computational example is deliberately bounded so its equations and numerical errors can be understood before studying a real facility.
+
+**Work:** Choose a particle class and sensitive surface from your first investigation. List the mechanisms that could bring them together. Rank the questions you can answer from existing observations and those requiring a model or new measurement.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Vectors, coordinate systems, and spatial meaning](../../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J).
+
+} r_0XFQY53MK47KMCAWNES4DWDR8N

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Work of adhesion is energy per created interface area (@cm-interface-work: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #source "../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #clean-manufacturing "An-interaction-potential-needs-a-separation-and-a-regime.lingua#r_5PXS14Z9FZ6B7WV94FNQWE41N8") { r_1HRZRWV42GK0F7E28RS0SAYH6S
+**Read:** [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), part 1's energy and contact-mechanics discussion; [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), surface energies and wetting.
+
+For ideal reversible separation of phases 1 and 2 in a specified surrounding phase 3, define W=γ₁₃+γ₂₃−γ₁₂. Each γ is interfacial free energy per area under the declared thermodynamic conditions. W has units J/m², also N/m. Forming contact area A lowers the interfacial contribution by W A relative to those separated interfaces when W is positive.
+
+This energy account does not yet give a force. Force requires how energy changes with displacement, including elastic storage and loading constraints. Dissipation, plastic deformation, viscoelasticity, chemical reaction and changing composition can make measured separation work differ from reversible W.
+
+**Work:** For a hypothetical W=0.05 J/m² and circular contact radius 20 nm, calculate the interfacial energy magnitude and express it in joules. Then explain why dividing this number by an arbitrary particle diameter does not establish a pull-off law. Identify the missing displacement-dependent model.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [An interaction potential needs a separation and a regime](An-interaction-potential-needs-a-separation-and-a-regime.lingua#r_5PXS14Z9FZ6B7WV94FNQWE41N8).
+
+} r_1HRZRWV42GK0F7E28RS0SAYH6S

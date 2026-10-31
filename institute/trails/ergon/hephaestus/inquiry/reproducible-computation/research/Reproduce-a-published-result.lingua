@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Reconstruct and critique a published computational result (@rc-paper: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Independent-investigation-and-revision.lingua#r_0R6HJY4ASPRC83B80MVSXH310Z") { r_262594EJP43XMD8STYD24PSHJY
+Reconstruct and critique a published computational result (@rc-paper: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY", #source "../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B", #source "../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ", #reproducible-computation "Independent-investigation-and-revision.lingua#r_0R6HJY4ASPRC83B80MVSXH310Z", #materials-engineering "../../../engineering/materials-engineering/research/Carry-out-an-independent-materials-investigation.lingua#r_7BKDK1WBZA1J0EVZV75PMTASJQ", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/research/Reproduce-a-primary-result-with-explicit-evidence-levels.lingua#r_1X534F0YXWAD1X97F38JKVAFHY") { r_262594EJP43XMD8STYD24PSHJY
 **Read:** [Research Software Engineering with Python — Irving and colleagues](../sources/Research-Software-Engineering.lingua#r_07D4PDD4HGKNK3PW4M90YSV2QY), the whole research project and publishing exercises; [Good enough practices in scientific computing — Wilson and colleagues](../sources/Scientific-Computing-Practices.lingua#r_5J8HXCQDNJH59EZC1PRJTQK38B), the complete paper compared with the selected study; [The Turing Way — reproducible research, collaboration, and preservation](../sources/The-Turing-Way.lingua#r_5K6W3KETGFH4N3SDYCB5V0Q3MZ), research-compendium and review guidance.
 
 Select an openly accessible paper, textbook study, or university research example whose full computational method and authorized inputs can be inspected. Choose a result substantial enough to require more than running one supplied command, and small enough to validate a meaningful part independently. The research-software book's complete Zipf project is one accessible starting point; a domain study from a later specialist trail can deepen the investigation.
@@ -16,4 +16,9 @@ Write a reproduction report with citations, available artifacts, commands, indep
 **Continue:** [Scholarly study — investigate and improve a computational method](Independent-investigation-and-revision.lingua#r_0R6HJY4ASPRC83B80MVSXH310Z).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+**Continue in materials engineering:** [Carry out an independent materials investigation](../../../engineering/materials-engineering/research/Carry-out-an-independent-materials-investigation.lingua#r_7BKDK1WBZA1J0EVZV75PMTASJQ).
+
+
+**Continue in gas and vacuum systems:** [Reproduce a primary result with explicit evidence levels](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/research/Reproduce-a-primary-result-with-explicit-evidence-levels.lingua#r_1X534F0YXWAD1X97F38JKVAFHY).
+
 } r_262594EJP43XMD8STYD24PSHJY

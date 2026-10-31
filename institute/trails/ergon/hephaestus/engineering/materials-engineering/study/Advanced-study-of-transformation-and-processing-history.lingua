@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of transformation and processing history (@mat-process-kinetics-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #materials-engineering "Defend-the-equilibrium-and-kinetic-account-of-a-material.lingua#r_4PD31PS0HVJH7GH02JXQ2BMHPC") { r_270VGJK7XZA8D64M0NDZMDDDR2
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), phase transformation and microstructural evolution sequences; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapters 8–12; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), complete solidification and phase-diagram packages.
+
+Follow one documented process from initial state through a specified thermal/chemical history to final structure. Combine phase equilibrium, transport, nucleation/growth and interfacial effects only where justified. Compare an alternative history that gives similar nominal chemistry but different useful structure.
+
+**Derive and investigate:** Close mass and energy accounts, estimate competing timescales and verify one numerical prediction independently. Compare multiple structural or thermal observations. Distinguish a predicted phase fraction from particle size, texture, porosity and residual stress. Identify a model failure and revise the explanation.
+
+Extend the comparison across material families: metallic precipitation/segregation, ceramic densification or glass formation, and polymer crystallization/relaxation. Each mechanism needs its own evidence. Explain which equipment, atmosphere, measurements and transfer of processing history are necessary to reproduce the useful state.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the equilibrium and kinetic account of a material](Defend-the-equilibrium-and-kinetic-account-of-a-material.lingua#r_4PD31PS0HVJH7GH02JXQ2BMHPC).
+
+} r_270VGJK7XZA8D64M0NDZMDDDR2

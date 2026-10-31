@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Sampling delay and the condition at the point of use (@gas-delivery-sampling: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Buffers-linepack-and-time-varying-demand.lingua#r_25S6WGRKKBMQEA7WNDFS4ZK8N8") { r_4BRA287PZMBRYP29VRS8ACY8E4
+**Read:** [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), reference-mixture handling and stability context; [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), flow definitions and measurement principles.
+
+A sample travels through its own supply system. Pressure reduction, line residence, filters, valves and surfaces can change the state or delay the observation. Define the measurand at a location and time before deciding whether a remote analyzer represents the delivered product.
+
+For ideal plug transport through a line of actual volume V at constant actual flow Q, the transit delay is V/Q. A perfectly mixed volume instead has an exponential response with time constant V/Q. Real transport can combine dispersion, dead volumes and surface exchange; the two simple models have different early and late responses despite the same mean residence time.
+
+An impurity expressed as water mole fraction is different from a dew-point temperature. Converting requires water partial pressure, total pressure and an appropriate vapor-pressure relation, including the relevant condensed phase. Cooling or pressure change in the sampling system can remove or add a phase and alter representativeness.
+
+**Work:** Align a demand change, product travel, sampling travel and instrument response on one time axis. Explain what a passing measurement establishes about an earlier stream interval, and what it cannot establish about unobserved branches. The later metrology sequence develops calibration and uncertainty in full.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Buffers, linepack and time-varying demand](Buffers-linepack-and-time-varying-demand.lingua#r_25S6WGRKKBMQEA7WNDFS4ZK8N8).
+
+} r_4BRA287PZMBRYP29VRS8ACY8E4

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Static expansion from a known inventory (@gas-static-standard: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Dynamic-expansion-from-flow-and-conductance.lingua#r_78VG1K2RDH38RRAJ7YXR2AKVX9") { r_2F9FVG5EC7Z37AF1HP0RTDKB5F
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), fundamental standards; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), calibration; connect the shared traceability account to the earlier inventory Records.
+
+An expansion standard generates a lower gas density from a characterized initial state and a known volume ratio. For ideal gas initially in V₁ at p₁,T₁, expanding into an evacuated added volume V₂ and finally equilibrating at T₂, p₂=p₁[V₁/(V₁+V₂)]T₂/T₁. Include residual gas in V₂, connecting volumes and real-gas corrections when consequential.
+
+An expansion changes pressure through conservation of amount; a gauge reading is then compared with the realized state. The reference is not simply a smaller indicated number. Volume calibration, temperature, adsorption/desorption and imperfect equilibration can limit the result.
+
+Successive expansions can cover a wide range, but their uncertainties can be correlated through the same calibrated volumes, initial pressure and thermal model. Multiplying nominal ratios does not make those common contributions independent.
+
+**Work:** Derive the equation from amount conservation. For V₁=1 L, V₂=9 L, p₁=1000 Pa and unchanged temperature, obtain 100 Pa. Add a nonzero residual pressure and show why neglecting it becomes more important at the lower generated pressures.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Dynamic expansion from flow and conductance](Dynamic-expansion-from-flow-and-conductance.lingua#r_78VG1K2RDH38RRAJ7YXR2AKVX9).
+
+} r_2F9FVG5EC7Z37AF1HP0RTDKB5F

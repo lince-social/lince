@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend continuing service under failure and repair (@gas-study-operation: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #source "../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H", #industrial-gases-and-vacuum "Review-the-whole-working-life-of-the-gas-service.lingua#r_55CK1MK38N2YECDKRB2M4PEXND") { r_1BNDRYAYRAWR7B6NF6SCH6C39M
+**Read in full:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), chapters 1–9 and relevant appendices; [The safe isolation of plant and equipment — HSE HSG253](../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H); the equipment-specific source used for the chosen gas service.
+
+Choose a published compressor, cryogenic supply or vacuum installation with an explicit useful-output requirement. Develop its operating states, failure mechanisms, observations and restoration account. Include one hidden failure, one common dependency and one intervention that can change cleanliness or calibration.
+
+Use a probability model only where its events and evidence are specified. Compare predicted availability with reliability over a required uninterrupted interval. Include diagnosis, logistics, work and requalification in restoration. Investigate how a seemingly beneficial maintenance action can introduce another failure.
+
+**Work:** Present a coherent service analysis and an evidence map. Defend the chosen maintenance tasks and the limits of any quantitative claims. Have another reader change a demand or challenge an assumed independence, then revise the analysis. Separate paper/simulation evidence from demonstrations that require an actual qualified installation.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review the whole working life of the gas service](Review-the-whole-working-life-of-the-gas-service.lingua#r_55CK1MK38N2YECDKRB2M4PEXND).
+
+} r_1BNDRYAYRAWR7B6NF6SCH6C39M

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Ceramics, refractories and the conditions of a grade (@mat-ceramic-families: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #materials-engineering "Glasses-glass-ceramics-and-frozen-processing-history.lingua#r_4SAFR2P6MVB7Y9JRPYNCYMWVC9") { r_3G1M5HV0GD84YH8RTDWXQE77CH
+**Read:** [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), chapter 3 in full and sections 5.1–5.3; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), the whole Ceramics package. Return to sintering, defects and ionic/network structures when explaining the examples.
+
+Compare silicate ceramics, alumina, zirconia, silicon carbide and silicon nitride through bonding, phases, grains, porosity and grain-boundary phases. Composition labels alone do not state density, thermal-expansion mismatch, oxidation behavior or flaw population. A refractory must sustain its actual temperature, atmosphere, chemical contact, restraint and cycling; a high melting point alone is insufficient.
+
+A hard ceramic can resist indentation yet fracture from a small tensile flaw. A porous refractory can deliberately trade stiffness and strength for insulation or thermal accommodation. Dense engineering ceramics and traditional multiphase fired bodies need different accounts of processing variability and service.
+
+**Work:** Compare three documented grades for an insulator, a wear contact and a hot lining. Give a structure-based explanation of a useful property and a likely limitation for each. Identify the information lost when a table reports only a single strength, and retain processing and surface-finish conditions for later fracture analysis.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Glasses, glass ceramics and frozen processing history](Glasses-glass-ceramics-and-frozen-processing-history.lingua#r_4SAFR2P6MVB7Y9JRPYNCYMWVC9).
+
+} r_3G1M5HV0GD84YH8RTDWXQE77CH

@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Length, area, volume, density, and scaling a shape (@ql-geometry: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-2, #source @ql-source-trades-3, #source @ql-source-prealgebra, #quantitative-literacy "Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ") { r_6DCACA5A4YM1PC08DT5WEW3BHW
+Length, area, volume, density, and scaling a shape (@ql-geometry: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-2, #source @ql-source-trades-3, #source @ql-source-prealgebra, #quantitative-literacy "Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ", #mechanical-engineering "../../../engineering/mechanical-engineering-and-machine-design/foundations/Dimensions-datums-and-the-meaning-of-a-fit.lingua#r_4PZNBTXHP4330SZCC6JBBSSB7R", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/foundations/Number-mass-and-area-weight-different-populations.lingua#r_09ZNRJAEVQ4VTRSJ32F8YGE6XH") { r_6DCACA5A4YM1PC08DT5WEW3BHW
 **Read:** Math for Trades, Volume 2, Perimeter and Area and Volume in full; Volume 3, Capacities. Use Prealgebra 2e chapter 9 for additional geometric problems and derivations. Draw each figure and state which length is a radius, diameter, height, or slant length.
 
 For geometrically similar objects enlarged by a factor λ, length scales as λ, area as λ², and volume as λ³. Material mass follows volume only when density and composition remain appropriate. Heat loss, strength, price, and usable capacity do not automatically share the volume scaling.
@@ -14,4 +14,9 @@ For irregular shapes, decompose into simpler parts or bound the volume between e
 **Continue:** [Angles, grade, triangles, and periodic relationships](Angles-and-trigonometry.lingua#r_0FPTH1YN87PZ97SHWGX19ZJZDZ).
 
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+**Mechanical engineering continuation:** [Dimensions, datums and the meaning of a fit](../../../engineering/mechanical-engineering-and-machine-design/foundations/Dimensions-datums-and-the-meaning-of-a-fit.lingua#r_4PZNBTXHP4330SZCC6JBBSSB7R).
+
+
+**Continue in clean manufacturing:** [Number, mass and area weight different particle populations](../../../production/clean-manufacturing-and-contamination-control/foundations/Number-mass-and-area-weight-different-populations.lingua#r_09ZNRJAEVQ4VTRSJ32F8YGE6XH).
+
 } r_6DCACA5A4YM1PC08DT5WEW3BHW

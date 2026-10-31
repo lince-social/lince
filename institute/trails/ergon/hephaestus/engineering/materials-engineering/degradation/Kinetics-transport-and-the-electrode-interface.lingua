@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Kinetics, transport and the electrode interface (@mat-degradation-kinetics: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5", #source "../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5", #materials-engineering "../../../materials/metals-and-metallurgical-production/electrometallurgy/Electrode-kinetics-overpotential-and-mass-transfer.lingua#r_3SJ6Y5KK3T5J69KMTGSNE2P9VR") { r_72VJX43BQG9V75NWH08RG6WA9F
+**Read:** [Corrosion current — Derek H. Lister](../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5) in full and [Aqueous corrosion — Cambridge DoITPoMS](../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5), activation, polarization and diffusion limitation. Continue through the shared electrode-kinetics Record.
+
+An observed current reflects coupled interfacial reactions and transport. Separate reaction Gibbs energy from activation Gibbs energy, and distinguish a reference-electrode potential from an entire cell voltage. A Tafel fit belongs to a range in which its neglected reaction branch and other effects are acceptably small; near equilibrium both forward and reverse contributions matter.
+
+**Work:** Derive charge flux from molar flux, and a film-model limiting current from a specified concentration and transport coefficient. Predict the qualitative effect of changing stirring, area and surface preparation. Explain how uncompensated resistance or evolving surface state can distort the apparent kinetic slope. State whether a slope is in volts per decade or volts per natural logarithm before using it numerically.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Separate equilibrium potential, electrode kinetics, and mass-transfer limits](../../../materials/metals-and-metallurgical-production/electrometallurgy/Electrode-kinetics-overpotential-and-mass-transfer.lingua#r_3SJ6Y5KK3T5J69KMTGSNE2P9VR).
+
+} r_72VJX43BQG9V75NWH08RG6WA9F

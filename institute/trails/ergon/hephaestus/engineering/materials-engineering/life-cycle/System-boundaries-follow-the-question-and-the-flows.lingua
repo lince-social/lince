@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+System boundaries follow the question and the flows (@mat-life-boundary: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX", #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #materials-engineering "Inventories-impact-models-and-units.lingua#r_3VKW7C4Y0CGZ5MN3NA8C85Y4R3") { r_1X6JNGHPPY38HA4T4BA8H3XX3A
+**Read:** [Life-cycle assessment, detailed guidance — ILCD Handbook](../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX), goal, scope and inventory modeling; [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), life-cycle lectures and LC1.
+
+Draw the system from feed extraction and processing through manufacture, distribution, use, maintenance and end-of-use routes as relevant to the question. Mark boundaries, geography, time, technology and exclusions. Foreground detail does not compensate for a background dataset that represents a different process or energy system.
+
+Distinguish describing an existing supply system from estimating consequences of a change. Average and marginal supply assumptions answer different questions. A hypothetical future process requires explicit scenarios rather than borrowing present performance without qualification. Cutoffs can matter when a small mass carries a large effect or a critical function.
+
+**Work:** Build two defensible boundaries for distinct questions about the same product and explain their differences. Follow one omitted flow far enough to estimate whether it could change the conclusion. Identify shared processes, transport legs and infrastructure assumptions. Keep all exclusions and unavailable data visible in the interpretation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Inventories, impact models and units](Inventories-impact-models-and-units.lingua#r_3VKW7C4Y0CGZ5MN3NA8C85Y4R3).
+
+} r_1X6JNGHPPY38HA4T4BA8H3XX3A

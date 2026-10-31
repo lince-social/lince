@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Integrated study of distributed compressed air (@gas-study-air-system: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1", #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "Compare-integrated-studies-and-transfer-only-justified-results.lingua#r_0DC4WK9Q9HNNKWC509DZTN11KK") { r_4VDCF340FHRSVXMTG758MY3SGE
+**Read in full:** [Improving compressed air system performance — DOE sourcebook](../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1) and [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), chapters 1–9; complete relevant regulator, flow-metrology and humidity reports from the earlier section.
+
+Define several point-of-use demands with explicit flow reference states, pressure and quality requirements. Develop supply, treatment, storage, distribution and control as one system. Compare a mean-demand design with actual time-dependent demand, pressure loss, unloading and receiver behavior.
+
+Include leaks, condensate and drying, maintenance downtime, reserve dependencies and measurement uncertainty. Distinguish a use that truly needs compressed air from an alternative way to provide the useful function. Evaluate the alternative under equivalent output and boundary conditions.
+
+**Work:** Defend a measured or explicitly synthetic demand profile, an energy baseline and a proposed improvement. Verify its transient service and restoration consequences. Show a counterexample to an overly simple claim that reduced demand always produces proportional electrical savings.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Compare integrated studies and transfer only justified results](Compare-integrated-studies-and-transfer-only-justified-results.lingua#r_0DC4WK9Q9HNNKWC509DZTN11KK).
+
+} r_4VDCF340FHRSVXMTG758MY3SGE

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Air samples and surface samples have different denominators (@cm-air-surface: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "Projected-area-coverage-and-overlapping-particles.lingua#r_0GVZSD2JQQAKPQN64XG4BR21WR") { r_54C0X26G9K41P87TQDZ279SXKN
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), monitoring in chapter 4; [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), sample flow and concentration.
+
+An air concentration can be a particle count divided by sampled gas volume, such as m⁻³. Surface contamination can be reported per area, such as m⁻² or kg/m². Neither denominator can be silently replaced with the other. Exposure time, transport, orientation and capture determine how an airborne population changes a surface.
+
+A surface sample also has a recovery method: a wipe, rinse, witness surface or direct image does not necessarily collect or observe the same population. Record the area actually sampled and how it relates to the object. The method can remove some material while leaving a fraction behind.
+
+**Work:** Rewrite an air count, a wipe result and a surface image result with complete denominators and sampling conditions. State what each supports about the product and what additional transport or recovery evidence would be needed to compare them.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Projected area coverage and overlapping particles](Projected-area-coverage-and-overlapping-particles.lingua#r_0GVZSD2JQQAKPQN64XG4BR21WR).
+
+} r_54C0X26G9K41P87TQDZ279SXKN

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Competitive adsorption and mixture evidence (@gas-competitive: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #source "../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM", #industrial-gases-and-vacuum "Adsorption-heat-temperature-and-working-capacity.lingua#r_0EAYN81RDSK7ZCAZHYNSYJC6W7") { r_412P46MM8SV2B4BJCJ3JQE7Q88
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), multicomponent adsorption; [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H), mixture model and fitted parameters; [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM), equilibrium assumptions.
+
+For a shared population of identical sites, a simple competitive model gives θᵢ=bᵢpᵢ/(1+Σbⱼpⱼ). Occupied fractions sum to at most one. Different species compete, so increasing a second constituent can reduce the first constituent's loading even when its partial pressure is fixed.
+
+This derivation assumes a consistent site capacity and ideal adsorbed behavior. Substituting separately fitted species capacities into an extended formula requires further justification; it does not automatically preserve the original site model or thermodynamic consistency. Pure-gas agreement alone cannot establish mixture behavior.
+
+**Work:** Calculate two-component loadings under a declared common capacity, then change feed composition at fixed total pressure. Distinguish equilibrium selectivity from a product-stream purity. Design a mixture observation that would discriminate competitive uptake from two independent pure-gas models, including the measurement and volume bases.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Adsorption heat, temperature and working capacity](Adsorption-heat-temperature-and-working-capacity.lingua#r_0EAYN81RDSK7ZCAZHYNSYJC6W7).
+
+} r_412P46MM8SV2B4BJCJ3JQE7Q88

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Machine learning and materials informatics — Ramprasad and colleagues (@mat-informatics: 0, is #reference, #part-of @mat-sources) { r_6CKWYT91KQJRX7EWD6TK53VFRM
+Rampi Ramprasad, Rohit Batra, Ghanshyam Pilania, Arun Mannodi-Kanakkithodi and Chiho Kim. *Machine Learning and Materials Informatics: Recent Applications and Prospects*, author preprint, 23 July 2017. [Versioned record](https://arxiv.org/abs/1707.07294v1), [full paper](https://arxiv.org/pdf/1707.07294).
+
+Read the full review, then follow the methods and data of one cited primary study. Descriptors, predictive maps, uncertainty and adaptive sampling connect to physical measurements and models; they do not replace their interpretation. Reconstruct a simple baseline before adding complexity.
+
+Metadata, descriptor discussion, testing discussion, uncertainty and adaptive-design passages were inspected on 30 October 2026. Examples and the state of software belong to this dated review. Its arXiv licence permits arXiv distribution and does not establish general adaptation rights. Keep the paper and its separately credited figures external.
+
+The exercises here extend the review with explicit specimen-, batch- and history-held-out comparisons. Report these as the learning investigation's design choices. A small uncertainty reported by a fitted model is not proof that it recognizes every missing mechanism or an unfamiliar class of materials.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_6CKWYT91KQJRX7EWD6TK53VFRM

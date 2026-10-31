@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of joints, retained load and maintenance (@mech-joints-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Fastener-Design-Manual-NASA.lingua#r_78PXGW34SMJ44D965DX01WGZH5", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #mechanical-engineering "Defend-machine-elements-as-an-interacting-assembly.lingua#r_6R4CPQRB4ACH3KPZZZH5N3TFTN") { r_3BFV1HYS3SGQ3NFS6XDM87XY92
+**Read:** [Fastener Design Manual — NASA-RP-1228](../sources/Fastener-Design-Manual-NASA.lingua#r_78PXGW34SMJ44D965DX01WGZH5); [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), bolted joints and alignment interfaces; [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), mounting, seals, alignment, lubrication, inspection, dismounting and damage. Inspect the applicable current component instructions alongside these historical mechanics sources.
+
+Choose an assembly containing at least one loaded joint and one moving contact. Compare alternative connection and access arrangements. State how manufacture, preparation, assembly and service establish the material/contact condition on which the calculations depend.
+
+**Derive:** Quantify load sharing, contact or preload, local stiffness, thermal mismatch and one plausible degradation mechanism. Propagate assembly uncertainty into a functional result. Compare the model before and after a declared contact change, such as separation, slip or lost clearance; do not continue the original equations through an invalid regime.
+
+**Investigate:** Use measured or documented evidence to distinguish assembly error, overload, wear, contamination and material damage. Preserve the condition and chronology of the evidence before dismantling changes it. Propose a repair or maintenance intervention and a test that can establish restored function. Explain how accessible measurement and replacement affect the original design, including what is still unknown.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend machine elements as an interacting assembly](Defend-machine-elements-as-an-interacting-assembly.lingua#r_6R4CPQRB4ACH3KPZZZH5N3TFTN).
+
+} r_3BFV1HYS3SGQ3NFS6XDM87XY92

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Ideal mixing and the statistical origin of entropy (@mat-mixing-entropy: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #materials-engineering "Regular-solutions-and-local-versus-global-stability.lingua#r_1T9CWJMKN5W5P6KED07XB3GY0J") { r_7D6PPV1WNXY44R21H9MN2Z42BQ
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapters 6–7; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), thermodynamics lectures 21–24; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), solution thermodynamics.
+
+For N equivalent independently occupied sites containing N_A and N_B indistinguishable constituents, the configurational count is N!/(N_A!N_B!). Applying S=k_B ln W and Stirling's approximation gives the molar ideal mixing entropy −R[(1−x)ln(1−x)+x ln x]. This count assumes random occupation and neglects correlations and additional internal states.
+
+For an equimolar ideal binary mixture, Δs_mix=R ln 2 and Δg_mix=−RT ln 2. At 1000 K the latter is approximately −5.763 kJ mol⁻¹. Polymer connectivity reduces the number of independently placed units; treating every segment as an independent small molecule overcounts the mixing entropy.
+
+**Work:** Count a small finite lattice exactly before using the large-number approximation. Derive the ideal chemical potentials and compare an equal-size small-molecule mixture with a chain/solvent model. Identify ordering, unequal sites or interactions that break the simple assumptions.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Regular solutions and local versus global stability](Regular-solutions-and-local-versus-global-stability.lingua#r_1T9CWJMKN5W5P6KED07XB3GY0J).
+
+} r_7D6PPV1WNXY44R21H9MN2Z42BQ

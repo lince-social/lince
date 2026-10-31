@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Calibration chooses a population and a range of conditions (@cm-aerosol-calibration-design: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #source "../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE", #clean-manufacturing "An-aerosol-electrometer-counts-charge-before-it-counts-particles.lingua#r_1BTK4C3JQ8MAC3YF6ZB2DZMG79") { r_2TDQQJ4Y8ZJ2WTQBZPZKG826R3
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), sections 21.3–21.5; [CPC proportionality calibration — Owen, Mulholland and Guthrie](../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE), apparatus and test sequence. Apply [Design a calibration that can reveal its own weaknesses](../../../inquiry/metrology/calibration/Design-and-sequence.lingua#r_1DM0C485A4H25DSVDR611QZPXC) and revisit [A documented calibration chain for a particular result](../../../inquiry/metrology/foundations/Traceability-chain.lingua#r_7XW6NVMPW7PMPJPBESW5G1757N).
+
+A calibration experiment must distinguish response versus size, concentration, material and operating state. Repeated readings at one diameter and concentration can estimate local repeatability while leaving every other dependence unresolved. Reference particle size, charge, composition and stability need evidence of their own.
+
+Separate generation from characterization. A nominal preparation or classifier setting does not establish the entire delivered population. Residual solute, aggregates, multiply charged particles and line losses can change what reaches the instruments. Observe the population at the comparison boundary when that is the relevant input.
+
+Use a sequence that can expose drift as well as concentration dependence. Interleave repeated levels and independent checks where appropriate; preserve the order and elapsed time. A fit's residuals should be compared with uncertainties and plausible mechanisms, not merely with a desired straight line.
+
+**Work:** Design a paper calibration spanning diameter and concentration with a defined reference chain, blank observations and at least one altered condition. Identify which factors can be isolated and which remain confounded. Write the valid-use statement that the proposed observations could support. Keep a test of proportionality distinct from an absolute scale calibration and from a test of suitability for a production decision.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [An aerosol electrometer counts charge before it counts particles](An-aerosol-electrometer-counts-charge-before-it-counts-particles.lingua#r_1BTK4C3JQ8MAC3YF6ZB2DZMG79).
+
+} r_2TDQQJ4Y8ZJ2WTQBZPZKG826R3

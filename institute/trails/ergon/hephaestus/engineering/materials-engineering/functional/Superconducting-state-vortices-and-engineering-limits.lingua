@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Superconducting state, vortices and engineering limits (@mat-superconductivity: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1", #source "../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB", #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #materials-engineering "Coupled-properties-and-the-complete-functional-stack.lingua#r_49NEDKG28NPYHMGK4E7S3RG84F") { r_4NP3YHC409FR5TDKDE7P12AJKQ
+**Read:** [Electron interactions, magnetism and superconductivity — Daniel C. Ralph](../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1), sections V–VII completely, with homework; [Solid State Physics — David Tong](../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB), magnetic-field quantum motion, and [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), degenerate carriers.
+
+Superconductivity combines a collective electronic state with electromagnetic response; merely extrapolating an ordinary conductor to zero resistance misses the Meissner effect. Pairing and phase coherence require their microscopic and thermodynamic assumptions. A conventional BCS account does not establish a universal mechanism for every superconductor.
+
+Penetration depth and coherence length describe different variations. Type-II behavior permits vortices; vortex motion can dissipate energy, while pinning supports a useful current within limits. Temperature, field, current, strain, defects and thermal stability all belong in an engineering account. Cryogenic and protection systems remain part of the complete device.
+
+**Work:** Derive a simple screening profile and distinguish it from the behavior of an ideal perfect conductor with a different field history. Reconstruct one critical-current dataset with its criterion, orientation and specimen form. Explain why a transition temperature alone cannot select a practical superconducting wire.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Coupled properties and the complete functional stack](Coupled-properties-and-the-complete-functional-stack.lingua#r_49NEDKG28NPYHMGK4E7S3RG84F).
+
+} r_4NP3YHC409FR5TDKDE7P12AJKQ

@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Removal, inactivation and the claim made by a barrier (@wu-microbial-claims: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Exposure-integrals-contact-time-and-decaying-residual.lingua#r_138VGFV5C77G55DVMWPVJQMVBH") { r_0DR2H8H9H6272F8KKRG1NAR649
+**Read:** [WHO drinking-water guidelines](../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F), chapter 7 and relevant microbial fact sheets; [water safety plan manual](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD), validation, operational monitoring and verification. Keep the target organism and analytical endpoint explicit.
+
+Physical removal and loss of infectivity are different transformations. An indicator measurement may support a particular question without demonstrating every pathogen's behaviour. A log reduction is log₁₀(Nin/Nout) for comparable quantities and stated conditions. Serial fractions multiply only when the barriers apply to the same traversing population without unaccounted bypass, growth or recontamination.
+
+In an original arithmetic example, two stages leave fractions 0.01 and 0.001; their ideal combined fraction is 10⁻⁵. Averaging their percentage reductions is wrong. If 1% of flow bypasses the whole train, the delivered fraction becomes 0.01 + 0.99×10⁻⁵, close to two logs rather than five. Correlated failures can defeat a claim based on independent nominal stage performance.
+
+**Work:** Draw the exact boundary for a reported barrier claim and state whether the result concerns particles, viability, infectivity or an indicator. Identify when the samples were taken relative to residence time and flow variation. Compare evidence from validation, continuing process measurements and finished-water checks. Explain which observations require investigation and what remains unknown. Do not translate this exercise into a declaration that a real supply is potable.
+
+**Continue:** [Exposure integrals, contact time and decaying residual](Exposure-integrals-contact-time-and-decaying-residual.lingua#r_138VGFV5C77G55DVMWPVJQMVBH).
+} r_0DR2H8H9H6272F8KKRG1NAR649

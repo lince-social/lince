@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Stocks, delays, demand and the availability of recovered feed (@mat-material-stocks: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Science-behind-Sustainable-Metals-Raabe.lingua#r_6MXWN12M466MS374XY585GBHBN", #source "../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #source "../sources/Plastics-Recycling-Economy-NIST.lingua#r_4FMXC9V02YNV4DFSCCV0CVR8JN", #materials-engineering "Connect-material-choices-to-the-work-that-keeps-them-useful.lingua#r_0JRG7CM5616BS9TMYG9D5Q529G") { r_0AQSQAQ51ER1JFB2MJ35VJE5XZ
+**Read:** [The Materials Science behind Sustainable Metals and Alloys — Dierk Raabe](../sources/Materials-Science-behind-Sustainable-Metals-Raabe.lingua#r_6MXWN12M466MS374XY585GBHBN), the complete feed/recovery and production discussion; [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1); [The U.S. Plastics Recycling Economy — Thomas, Kneifel and Butry](../sources/Plastics-Recycling-Economy-NIST.lingua#r_4FMXC9V02YNV4DFSCCV0CVR8JN), infrastructure and economic context.
+
+Material enters products that can remain in service for years. Returns depend on past inflows, lifetime distributions, collection and processing, not just present demand. With fixed lifetime τ and recovery fraction r, a simplified return is rI(t−τ); a lifetime distribution requires a convolution over previous cohorts. Growth can therefore make current recoverable feed much smaller than current material demand even at high collection efficiency.
+
+Composition, location and available processing capacity further restrict useful supply. A recovered stock is not a throughput, and a technically recoverable constituent is not necessarily an available qualified feed. Infrastructure itself requires construction, maintenance, energy and skilled work.
+
+**Work:** Build a cohort balance for a growing and a steady-demand system. Compare fixed and distributed lifetimes and account for losses without creating material. Add a quality constraint and a processing-capacity limit. Explain why a high end-of-use recovery percentage does not alone establish that primary feed demand has vanished.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect material choices to the work that keeps them useful](Connect-material-choices-to-the-work-that-keeps-them-useful.lingua#r_0JRG7CM5616BS9TMYG9D5Q529G).
+
+} r_0AQSQAQ51ER1JFB2MJ35VJE5XZ

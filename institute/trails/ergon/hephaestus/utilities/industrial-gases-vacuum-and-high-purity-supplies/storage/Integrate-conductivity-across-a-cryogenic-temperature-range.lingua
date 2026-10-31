@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Integrate conductivity across a cryogenic temperature range (@gas-heat-integral: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7", #industrial-gases-and-vacuum "Boil-off-as-an-energy-account-with-a-defined-boundary.lingua#r_3J6KW5HX5SC9RJ8WTKQT12SKT5") { r_72AYDKG2W2SZRGWPCDQ9N0PJ4V
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../../../physics/thermodynamics-and-heat-transfer/sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), variable-conductivity conduction; [Thermal performance of cryogenic storage tanks — Aasen and colleagues](../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7), §§2.1–2.3 and figure 1.
+
+For steady one-dimensional conduction through a uniform plane member without internal generation, Q̇=(A/L)∫Tc^Th k(T)dT. A single room-temperature conductivity may misrepresent a large temperature range. The units of the integral are W/m and the geometric factor A/L has units m.
+
+As an independent mathematical example, let k(T)=aT with a=0.001 W/(m·K²), A/L=0.002 m, Tc=80 K and Th=300 K. Then Q̇=(A/L)a(Th²−Tc²)/2=0.0836 W. The arithmetic-mean temperature happens to give the exact mean k for this linear law; that property does not extend to arbitrary k(T).
+
+If k is positive and nondecreasing between Tc and Th, measurements over Tm≤T≤Th bound the missing low-temperature contribution: the full integral lies between Kknown and Kknown(Th−Tc)/(Th−Tm). This depends on monotonicity and fixed material/gas conditions. For Tc=20 K, Tm=77 K and Th=293 K the upper ratio is 273/216≈1.26389. It is not a universal bound on a complete tank with changed geometry or boundary conditions.
+
+**Work:** Prove the bound using averages over the two temperature intervals. Give a positive nonmonotone conductivity for which it fails. Then compare a simple thermal network with a spatial model, accounting for the boundary temperatures actually imposed on each.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Boil-off as an energy account with a defined boundary](Boil-off-as-an-energy-account-with-a-defined-boundary.lingua#r_3J6KW5HX5SC9RJ8WTKQT12SKT5).
+
+} r_72AYDKG2W2SZRGWPCDQ9N0PJ4V

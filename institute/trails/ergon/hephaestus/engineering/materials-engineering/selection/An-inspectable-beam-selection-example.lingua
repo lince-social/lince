@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+An inspectable beam-selection example (@mat-selection-example: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #materials-engineering "Shape-process-and-property-choices-are-coupled.lingua#r_0VF6FRVSNJNC6984YZ9W4KSH1H") { r_3Z71XZGNKB3DR2J1M9JN7EQVJV
+**Read:** The preceding beam derivation and [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY); use [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ) to compare the role of competing constraints, not to obtain the hypothetical values below.
+
+Take P=1,000 N, L=1 m, b=0.05 m, permitted deflection δ=0.005 m and maximum depth 0.04 m. Consider three hypothetical linear-elastic material states: A has E=70 GPa, σₐ=200 MPa, ρ=2,700 kg/m³; B has E=200 GPa, σₐ=250 MPa, ρ=7,850 kg/m³; C has E=10 GPa, σₐ=50 MPa, ρ=600 kg/m³. These numbers describe a mathematical comparison, not qualified grades.
+
+For A, the strength bound is about 0.01225 m and the deflection bound about 0.02426 m. Stiffness governs, giving approximately 3.28 kg. Derive B and C independently. C's favorable density does not rescue its required depth from the envelope constraint. Then restrict available depths to 0.02, 0.025, 0.03, 0.035 and 0.04 m and recalculate feasibility and mass.
+
+**Work:** Check candidates directly using bending stress and deflection, including a slightly thinner rejected section. Derive deflection independently from strain energy. Examine load and span scaling, and add one explicitly hypothetical uniform thickness-loss allowance without pretending it represents pitting. Identify omitted shear, stability, connections, variability and service mechanisms before interpreting a result beyond this model.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Shape, process and property choices are coupled](Shape-process-and-property-choices-are-coupled.lingua#r_0VF6FRVSNJNC6984YZ9W4KSH1H).
+
+} r_3Z71XZGNKB3DR2J1M9JN7EQVJV

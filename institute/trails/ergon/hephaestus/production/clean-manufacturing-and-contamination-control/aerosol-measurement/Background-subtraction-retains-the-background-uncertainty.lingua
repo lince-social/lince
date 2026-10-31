@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Background subtraction retains the background uncertainty (@cm-count-background: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "../../../inquiry/metrology/calibration/Design-and-sequence.lingua#r_1DM0C485A4H25DSVDR611QZPXC") { r_6R9HWRJVDEZ9SGEKZK8N5WARZD
+**Read:** [Sampling contributions, thresholds, and results near zero](../../../inquiry/metrology/uncertainty/Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG), near-zero observations; [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), calibration design and uncertainty.
+
+Suppose sample count Ns includes a constant background rate b over duration ts, while an independent blank count Nb observes the same background process over tb. With effective sample exposure EV, use Ĉ = [Ns − (ts/tb)Nb]/(EV). Under independent Poisson observations and known durations/exposure, an estimated variance is [Ns + (ts/tb)²Nb]/(EV)². Subtracting the background estimate does not subtract its variance.
+
+**Example:** Ns = 30 over ts = 2 min, Nb = 8 over tb = 4 min and EV = 5 L give net estimated count 26, Ĉ = 5.2 L⁻¹ and counting standard uncertainty √32/5 ≈ 1.13137 L⁻¹. The numerator 26 is a difference of random counts, not a new Poisson observation with variance 26.
+
+A filter on the inlet checks some instrument and downstream contributions. It may not reproduce emissions from an exposed sampling line, handling contamination or the process background. Define what each blank actually tests. A negative corrected indication can occur from sampling variability; it does not imply negative particles and should not disappear silently from the evidence.
+
+**Work:** Derive the variance and explore allocating observation time between sample and blank when background matters. Add a drifting background and explain why a long earlier blank may be precise yet inappropriate. Separate a known correction, an estimated correction and an uncharacterized contribution in the report.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Design a calibration that can reveal its own weaknesses](../../../inquiry/metrology/calibration/Design-and-sequence.lingua#r_1DM0C485A4H25DSVDR611QZPXC).
+
+} r_6R9HWRJVDEZ9SGEKZK8N5WARZD

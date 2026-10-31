@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Integrated study of cure history and retained function (@mat-integrated-polymer: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614", #source "../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0", #materials-engineering "Defend-the-integrated-materials-investigations.lingua#r_4SGGJ7V1GYFGDYZNKVPAB5DAXM") { r_32ZJ0240BETP97ER2ADQGYQH57
+**Read:** [Simultaneous rheology and cure kinetics — Romberg and Kotula, 2023](../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614) and [Epoxy conversion from rheology — Romberg and colleagues, 2024](../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0) in full, including available methods and data; earlier network formation, rheology, heat transfer, cure computation, viscoelasticity and degradation.
+
+Reconstruct material preparation, thermal history and the observables used to infer conversion and evolving mechanical response. Compare a calorimetric measure, a rheological measure and the model connecting them. Identify how gelation, vitrification, thermal gradients and changing relaxation times limit a single conversion-to-property curve.
+
+Reproduce a documented result or a clearly delimited subset with accessible inputs. Independently check the heat/kinetics calculation, dimensions and limiting cases before fitting. Compare at least two inference choices on a history kept out of calibration. The original teaching model supplies a transparent starting point; it does not supply unreported experimental parameters.
+
+**Deliver:** A process-to-state-to-response account with uncertainty, an independently implemented tractable calculation and a changed-thickness or changed-temperature prediction. Examine service temperature, moisture or cyclic loading and propose evidence needed for retained function. Discuss repair, reuse and recovery for the actual network chemistry, separating physical plausibility from a demonstrated industrial route. Defend and revise the account against a competing interpretation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the integrated materials investigations](Defend-the-integrated-materials-investigations.lingua#r_4SGGJ7V1GYFGDYZNKVPAB5DAXM).
+
+} r_32ZJ0240BETP97ER2ADQGYQH57

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Machining, finishing and the altered surface layer (@mat-process-surface: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #materials-engineering "../../mechanical-engineering-and-machine-design/manufacturing/Grinding-finishing-and-surface-integrity.lingua#r_12K4CHMHGKAMEDRWYQGS5P7FEB") { r_6509Q6WA6W909JZGHG4ESZ069B
+**Read:** [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), cutting and surface engineering; the shared mechanical surface-finishing Record. Return to fracture, fatigue and thermal gradients.
+
+Machining and grinding remove material while imposing heat, plastic strain and contact. The final surface can differ from the bulk through roughness, residual stress, transformation, microcracks, smeared phases or contamination. A dimensional inspection alone does not establish surface integrity; a low roughness number does not establish a beneficial residual-stress state.
+
+**Work:** Compare two finishing histories for one alloy or ceramic, documenting tool, fluid, force and thermal evidence. Identify which layer a hardness, diffraction or microscopy measurement samples. Relate that state to the relevant service loading rather than assuming every harder surface is better. Follow the shared grinding account for machine/process details and retain the material-state evidence in the production history.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Grinding, finishing and surface integrity](../../mechanical-engineering-and-machine-design/manufacturing/Grinding-finishing-and-surface-integrity.lingua#r_12K4CHMHGKAMEDRWYQGS5P7FEB).
+
+} r_6509Q6WA6W909JZGHG4ESZ069B

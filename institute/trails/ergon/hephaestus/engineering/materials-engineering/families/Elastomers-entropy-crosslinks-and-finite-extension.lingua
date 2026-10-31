@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Elastomers, entropy, crosslinks and finite extension (@mat-elastomers: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #materials-engineering "Composites-interfaces-and-material-architecture.lingua#r_22X34XJD9VJMAGF56HT04PBMB2") { r_5AJNNNNG2S71K8675BFRVKZ88A
+**Read:** [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), lectures 8–9; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), the whole Stiffness of Rubber package; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), section 3.5; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), molecular mechanisms in Engineering Viscoelasticity.
+
+A sufficiently mobile connected chain network can recover large changes in shape. In an ideal incompressible Gaussian-network model, shear modulus μ=νRT for ν moles of elastically active strands per unit volume. Under free lateral contraction in uniaxial stretch λ, nominal stress is μ(λ−λ⁻²), while true axial stress is μ(λ²−λ⁻¹). Specify the area convention before comparing either with a test.
+
+At ν=100 mol m⁻³ and T=300 K, μ≈0.2494 MPa. At λ=2, the model predicts nominal stress ≈0.4365 MPa. This is a teaching network, not a measured rubber formulation. Finite chain extension, fillers, crystallization, hysteresis, damage and compressibility can invalidate the ideal description.
+
+**Work:** Derive the two stresses from an incompressible neo-Hookean energy and confirm the small-strain E=3μ limit. Compare loading, unloading and reloading evidence. Separate reversible entropy elasticity from viscoelastic loss and irreversible network damage; discuss why raising temperature does not universally strengthen every real rubber.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Composites, interfaces and material architecture](Composites-interfaces-and-material-architecture.lingua#r_22X34XJD9VJMAGF56HT04PBMB2).
+
+} r_5AJNNNNG2S71K8675BFRVKZ88A

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Plain bearings, fluid films and starting conditions (@mech-fluid-film-bearings: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Tribology-lubrication-contamination-and-wear-evidence.lingua#r_38N674EAKQ2ZE14VR5CE6S1N6W") { r_24HBFMC4DSQRYB8Q3W704J2G32
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 10, sliding-contact, hydrodynamic and hydrostatic bearings. Use the fluid-dynamics and thermal Records by reference for the full continuum derivation.
+
+A sliding bearing may carry load through solid contact, a lubricant film or both. A hydrodynamic wedge creates pressure through relative motion and viscosity. A hydrostatic bearing obtains pressure from an external supply and restrictor arrangement; it can carry load without the same entraining speed, provided that supply operates.
+
+For steady incompressible Newtonian thin-film flow between a stationary and a moving plane wall, the flow per width is q=Uh/2−h³(dp/dx)/(12μ). This combines Couette entrainment and pressure-driven flow. With no side leakage, differentiation gives d(h³ dp/dx)/dx=6μU dh/dx. State the film geometry, boundary pressures and cavitation treatment before solving; extending negative absolute pressures is not a physical closure.
+
+**Work:** Derive the flux from the viscous velocity profile. Solve a simple wedge and compare load, flow and viscous heating as clearance changes. Examine starting, stopping, loss of supply and contaminant particles. Then consider compressibility, side leakage, temperature-dependent viscosity, elastic deformation and dynamic instability before generalizing to a high-speed journal.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Tribology, lubrication, contamination and wear evidence](Tribology-lubrication-contamination-and-wear-evidence.lingua#r_38N674EAKQ2ZE14VR5CE6S1N6W).
+
+} r_24HBFMC4DSQRYB8Q3W704J2G32

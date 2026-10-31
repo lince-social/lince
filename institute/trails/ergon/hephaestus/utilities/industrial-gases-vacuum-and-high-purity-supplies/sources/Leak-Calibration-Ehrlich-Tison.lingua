@@ -1,0 +1,10 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Leak calibration — Ehrlich and Tison, NIST SP 250-38 (@gas-leak-reference-source: 0, is #reference, #part-of @gas-sources) { r_622GG9PXEYJ8FGEPWD4P1DMTT7
+Charles D. Ehrlich and Stuart A. Tison. *NIST Leak Calibration Service*, NIST SP 250-38, January 1992. [Complete official scan](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication250-38.pdf), 96 PDF pages; the publication identifies 89 pages.
+
+Read the whole methodological account: primary flow realization, leak comparison, temperature dependence, uncertainty, quality control and appendices on flow units. Separate durable physical reasoning from the equipment, service and reporting conventions of 1992.
+
+The browser provided the full scan on 30 October 2026; direct local download returned HTTP 403. Cover, contents and selected temperature/coefficient, uncertainty and units passages were inspected. This is an official US-government publication containing credited article reprints; retain their component notices rather than assuming blanket adaptation rights. All source material remains external.
+
+} r_622GG9PXEYJ8FGEPWD4P1DMTT7

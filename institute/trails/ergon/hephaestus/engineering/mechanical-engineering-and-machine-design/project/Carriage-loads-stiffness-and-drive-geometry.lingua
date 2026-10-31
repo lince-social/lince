@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Carriage loads, stiffness and drive geometry (@mech-project-mechanics: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #mechanical-engineering "Reject-an-inadequate-positioning-error-account.lingua#r_0JTE7T3E0GR5T7XEBX72YDQBQR") { r_1NKB8YSYEAVBZA1SXAQD95DM8R
+**Read:** Revisit the machine-element, axial-bar and bearing-arrangement studies; [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), structural loops and precision mechanisms.
+
+Write r=p/(2π), the travel per radian for screw lead p. Then v=rω and the equivalent translating inertia is m+J/r². With the project inputs this is about 17.7914 kg, much larger than the carriage mass alone. This reflected inertia changes acceleration torque without changing the actual gravitational weight supported by the guides.
+
+For a 0.3 m long steel screw with 8 mm core diameter and E=200 GPa, a 5 N axial load produces approximately 0.1492 μm extension under the simple uniform-bar model. A 2 MN/m support and 5 MN/m nut add 2.5 and 1 μm in series. The combined estimate is 3.6492 μm before other compliances. The maximum force during acceleration differs from 5 N.
+
+**Work:** Derive those results, then include carriage pitch, bearing spacing, probe offset and drive misalignment. Compare load directions and support arrangements. Check buckling, rotational speed, bearing/contact suitability and flexible modes using the actual geometry; the axial calculation alone does not settle them.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Reject an inadequate positioning-error account](Reject-an-inadequate-positioning-error-account.lingua#r_0JTE7T3E0GR5T7XEBX72YDQBQR).
+
+} r_1NKB8YSYEAVBZA1SXAQD95DM8R

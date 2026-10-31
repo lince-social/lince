@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of phase stability and assessed data (@mat-equilibrium-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../../../materials/metals-and-metallurgical-production/sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "Defend-the-equilibrium-and-kinetic-account-of-a-material.lingua#r_4PD31PS0HVJH7GH02JXQ2BMHPC") { r_1H5JPTVYQ59V2FHEEBJH77GVR0
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapters 7–12 in depth; [Open thermodynamic modelling — pycalphad](../../../materials/metals-and-metallurgical-production/sources/Pycalphad-Methods-and-Documentation.lingua#r_24VWE1JCTVHMZ88907VK19ZWZR), the actual chosen assessment and documentation; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), thermodynamics lectures 15–24 and exercises.
+
+Choose a system with identified phase data and a useful processing question. Derive a simple limiting model before consulting an assessment. Establish reference states, component/site balances and candidate phases. Reproduce a binary section and one more demanding section or constrained calculation.
+
+**Investigate:** Independently verify chemical-potential equality, supporting-energy conditions and conservation at selected states. Compare uncertainty in input evidence with numerical tolerance. Identify a disputed or weakly constrained region and test a plausible alternative model against withheld observations.
+
+**Explain:** Separate bulk equilibrium, coherent constraints, surface effects and kinetic persistence. Show how one equilibrium conclusion changes the proposed process or service decision. Preserve access and reuse conditions for each database rather than treating all downloadable files as interchangeable open data.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the equilibrium and kinetic account of a material](Defend-the-equilibrium-and-kinetic-account-of-a-material.lingua#r_4PD31PS0HVJH7GH02JXQ2BMHPC).
+
+} r_1H5JPTVYQ59V2FHEEBJH77GVR0

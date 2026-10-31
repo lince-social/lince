@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Shape, process and property choices are coupled (@mat-shape-selection: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "Select-for-charge-heat-light-and-magnetic-response.lingua#r_5KWWMHA5TV3SJJNT08MTH6TGQ0") { r_0VF6FRVSNJNC6984YZ9W4KSH1H
+**Read:** [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), complete shape and process selection lectures; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), manufacturing/design; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), products and fastenings. Return to the fabrication studies.
+
+A shape that is attractive in an elastic calculation may require a process that changes texture, porosity, surface condition or residual stress. Thin walls, sharp corners, section transitions and enclosed channels impose different limits on forming, casting, molding, sintering, machining and additive processing. A shape factor is not independent of attainable material state.
+
+Compare finished, inspected components rather than equal volumes of ideal bulk material. Include stock allowances, minimum sections, joining access, dimensional change, defect populations and process capability. A small coupon and a large part need a justified relation.
+
+**Work:** Take one promising section from the index comparison through two plausible fabrication routes. Derive the geometry and property changes caused by each route, using actual documented process evidence. Recalculate useful mass and identify the additional characterization or trial needed to resolve a consequential uncertainty. Explain why a favorable theoretical section may lose its advantage in accepted production.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Select for charge, heat, light and magnetic response](Select-for-charge-heat-light-and-magnetic-response.lingua#r_5KWWMHA5TV3SJJNT08MTH6TGQ0).
+
+} r_0VF6FRVSNJNC6984YZ9W4KSH1H

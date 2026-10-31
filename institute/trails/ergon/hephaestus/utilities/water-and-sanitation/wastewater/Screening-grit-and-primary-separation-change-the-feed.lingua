@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Screening, grit and primary separation change the feed (@wu-primary-treatment: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Activated-sludge-is-a-reactor-and-a-separation-system.lingua#r_57AYPADG7XBVN45P200V6Y9ACT") { r_3PNGVSTEC6CGQWFGGKH8FHSXDK
+**Read:** [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lecture 13, with [Wastewater Characteristics, Treatment and Disposal — von Sperling](../sources/Wastewater-Characteristics-Treatment-and-Disposal.lingua#r_59N8AH8ZNEKJK3HC4J32RV50XC) and [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV); use [Manual de Saneamento — Funasa, fifth edition](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE) for Portuguese process terminology. Follow removed material to its handling and receiving route.
+
+Screens protect downstream equipment by separating selected objects. Grit separation and primary settling target different physical behaviour. Primary treatment changes the organic and solids fractions presented to biology; it does not remove a universal fixed percentage under all flows. A reduction in liquid COD may correspond to more primary sludge requiring stabilization.
+
+In an original mass-account example, 1,000 m³/day at 250 mg suspended solids/L carries 250 kg/day. A hypothetical 60% captured mass gives 150 kg/day of captured solids and 100 kg/day remaining. With a declared underflow volume of 10 m³/day, its solids concentration is 15 kg/m³, and the remaining 990 m³/day carries about 101.01 mg/L. Using the original inlet flow for both outlets would lose water consistency.
+
+**Work:** Compare dry-weather and storm conditions using actual loads, separation evidence and hydraulic limits. Examine bypass and equipment unavailability. Develop a combined headworks/primary balance that includes screenings, grit, sludge water, wash water and returns. Explain how primary capture changes available carbon for downstream denitrification and anaerobic gas production.
+
+**Continue:** [Activated sludge is a reactor and a separation system](Activated-sludge-is-a-reactor-and-a-separation-system.lingua#r_57AYPADG7XBVN45P200V6Y9ACT).
+} r_3PNGVSTEC6CGQWFGGKH8FHSXDK

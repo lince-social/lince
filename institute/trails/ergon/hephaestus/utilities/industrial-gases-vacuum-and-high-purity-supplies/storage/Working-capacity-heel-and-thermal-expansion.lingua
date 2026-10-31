@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Working capacity, heel and thermal expansion (@gas-working-capacity: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "Cryogenic-storage-couples-two-pressure-systems.lingua#r_3FGYQQPEPDYTRT6BXHG2JVK822") { r_74W6MW46ZE8N9P0QSWHST46M40
+**Read:** [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), vessel and installation scope; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), the selected product's supply form.
+
+Separate geometric capacity, allowable operating inventory, minimum useful inventory and reserve. A liquid heel may remain when delivery stops; gas above a liquid also contains product. A package's nominal capacity is not the amount available under every temperature, pressure or orientation.
+
+Thermal expansion changes occupied volume. For a liquid with volumetric expansion coefficient α, a small unconstrained temperature change gives ΔV/V≈αΔT. In a nearly rigid, completely liquid-filled trapped space, thermal expansion instead raises pressure; the liquid compressibility and the compliance of the containment both matter. This mechanism differs from boiling into a vapor space.
+
+Track space needed for receiving, transient states and equipment connections separately from usable supply. Do not derive a permissible fill fraction from a generic coefficient or an ideal-gas calculation: the applicable vessel design and gas-specific operating basis establish that domain.
+
+**Work:** Write an inventory table with total, working, unavailable and reserve quantities without counting any portion twice. Show how a temperature change alters the physical state and how a delivery-pressure limit alters availability even when total mass is unchanged.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Cryogenic storage couples two pressure systems](Cryogenic-storage-couples-two-pressure-systems.lingua#r_3FGYQQPEPDYTRT6BXHG2JVK822).
+
+} r_74W6MW46ZE8N9P0QSWHST46M40

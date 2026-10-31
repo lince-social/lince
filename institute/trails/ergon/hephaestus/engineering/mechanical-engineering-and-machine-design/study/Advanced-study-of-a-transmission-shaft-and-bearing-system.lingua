@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of a transmission, shaft and bearing system (@mech-transmission-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY", #mechanical-engineering "Defend-machine-elements-as-an-interacting-assembly.lingua#r_6R4CPQRB4ACH3KPZZZH5N3TFTN") { r_73T6XM2GFFB5SCE4ECK5J1EBAD
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topics 5–10; [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), shafts, fatigue, bearings, gears, drives and actuators; [Rolling bearings — SKF, 2018](../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY), full selection chapters and the selected bearing family.
+
+Choose a modest reducer, belt transmission or driven spindle with a declared duty history. Develop its geometry and speed relations from first principles, then follow torque and transverse/axial forces through shafts, supports and housing. Compare at least two architectures, including one different transmission principle.
+
+**Derive:** Couple shaft deformation and fatigue with bearing arrangement, rating, fits and thermal growth. Check mesh/contact or belt forces, dynamic excitation, backlash, lubrication and heat rejection. Derive startup and reversal states rather than appending an unexplained factor to the steady load.
+
+**Investigate:** Characterize or reconstruct documented speed, torque, deflection, temperature and vibration evidence. Separate sensor response, installation effects and model error. Vary at least one load and one speed condition outside the initial calibration, then revise the design or its claim. Report which operating conditions have actually been tested and what remains inferred. The result must account for the assembly, not just present individually passing part calculations.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend machine elements as an interacting assembly](Defend-machine-elements-as-an-interacting-assembly.lingua#r_6R4CPQRB4ACH3KPZZZH5N3TFTN).
+
+} r_73T6XM2GFFB5SCE4ECK5J1EBAD

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Roots stages, backing capacity and thermal load (@gas-roots: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Liquid-ring-pumping-and-the-service-liquid.lingua#r_7P2XZQN8RG2DTRRTDNA29SA1QW") { r_18GNK54GXRKDQ4VEYE96WX7J80
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), section 2.1.3.1, including pump combinations and pressure-dependent behavior.
+
+A Roots stage transfers gas between inlet and outlet with rotating lobes and small clearances. Its useful performance depends on the pressure difference, gas state, internal return flow and backing system. A high swept volume does not imply that the stage can discharge against an arbitrary pressure.
+
+Power and heat rise as the stage works against a larger difference. Several stages, bypass arrangements or controlled speed can change the operating range. The backing pump receives the amount leaving the stage at its own inlet pressure and temperature; equal volume-flow numbers at the two ports do not mean equal amounts.
+
+**Work:** Balance a two-stage arrangement using molar flow rather than equating intake volumes. Examine startup and a sudden gas-load increase. Explain how insufficient backing capacity changes foreline pressure, stage temperature and chamber performance, and identify the observations needed to separate those causes.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Liquid-ring pumping and the service liquid](Liquid-ring-pumping-and-the-service-liquid.lingua#r_7P2XZQN8RG2DTRRTDNA29SA1QW).
+
+} r_18GNK54GXRKDQ4VEYE96WX7J80

@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Compare monitoring methods on a known changing process (@cm-study-monitoring: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Review-what-qualification-and-monitoring-have-established.lingua#r_45F6FDPJHZ5MG7Y0K55BMA3H0X") { r_70ZSBQ0M6FFWFG4BX15X2NJR57
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), sections 6.3–6.4 and the chapter 6 case studies; [Changing signals — response correction, sampling, and dependent noise](../../../inquiry/metrology/applications/Dynamic-measurements-and-time-series.lingua#r_7VY283E2ZMNS2JTQ9Y7DNBW6KX) and [Keep a measurement process under observation between calibrations](../../../inquiry/metrology/calibration/Control-and-recalibration.lingua#r_6AHX4PAFTWTDPKEZVQ3KSNP9AC).
+
+Reproduce the NIST twenty-observation EWMA example and the count-chart example from their actual data. Retain exact source sections, definitions and rounding. Then build labelled histories with a stable state, step, drift, temporary excursion, variance change and a measurement fault.
+
+Compare single-point, EWMA and CUSUM rules at declared sampling intervals. Evaluate false signals and detection delay using enough independent simulated histories to report Monte Carlo uncertainty. Estimate baselines from separate data when studying the effect of estimated parameters.
+
+Repeat with correlated observations, changing exposure and a shared sensor disturbance. Test residual diagnostics, multivariate evidence and missed temporal events. Do not assign the independent-normal run-length result to a different procedure merely because it uses a three-sigma label.
+
+**Result to explain:** A reproducible comparison linking detection performance to a physical consequence and response. Show which changes each rule misses, how results depend on the baseline, and what evidence would justify a different model.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review what qualification and monitoring have established](Review-what-qualification-and-monitoring-have-established.lingua#r_45F6FDPJHZ5MG7Y0K55BMA3H0X).
+
+} r_70ZSBQ0M6FFWFG4BX15X2NJR57

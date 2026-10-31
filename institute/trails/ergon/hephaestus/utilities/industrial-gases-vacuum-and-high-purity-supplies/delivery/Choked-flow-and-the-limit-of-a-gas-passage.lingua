@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Choked flow and the limit of a gas passage (@gas-delivery-choking: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/fluid-dynamics/sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9", #industrial-gases-and-vacuum "Distribution-pressure-loss-and-the-state-along-a-line.lingua#r_78CSBMS7KEPJTS603JFXSTDFD8") { r_05ZWECXGQS2G29510F5S3FGJ8C
+**Read:** [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../../../physics/fluid-dynamics/sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM), isentropic flow and mass-flow relations; connect the preceding shared compressible-flow Records to [Pressure regulator flow curves — Swagelok technical bulletin](../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9).
+
+For a calorically perfect gas entering an ideal converging passage from a reservoir at stagnation p₀,T₀, the sonic mass flux is G*=p₀√[γ/(RsT₀)] [2/(γ+1)]^[(γ+1)/(2(γ−1))]. Rs is the mass-specific gas constant. The ideal critical pressure ratio is r*=[2/(γ+1)]^[γ/(γ−1)]. Both pressures are absolute.
+
+For an unchoked ideal converging passage with exit ratio r=pb/p₀ between r* and 1, G=p₀√{[2γ/(RsT₀(γ−1))][r^(2/γ)−r^((γ+1)/γ)]}. Below r*, the sonic mass flow is unchanged by further reduction of back pressure under these assumptions. Real valve geometry, losses, gas properties and heat exchange require an applicable characterization; a discharge coefficient does not erase those dependencies.
+
+Use γ=1.4, Rs=287 J/(kg·K), T₀=300 K and p₀=500 kPa as a hypothetical ideal gas. Derive r*≈0.528282. Flow through an ideal 1 mm² throat is approximately 1.16678 g/s in the choked limit; at unchoked r=0.8 it is approximately 0.955364 g/s. This is a model check, not an actual regulator rating.
+
+**Work:** Differentiate the mass-flux expression to locate its maximum, check its units and compare it with a source table. Explain why gauge pressure in the ratio or standard volume flow substituted for actual flow gives a wrong result.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Distribution pressure loss and the state along a line](Distribution-pressure-loss-and-the-state-along-a-line.lingua#r_78CSBMS7KEPJTS603JFXSTDFD8).
+
+} r_05ZWECXGQS2G29510F5S3FGJ8C

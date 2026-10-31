@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Solidification, partitioning, segregation and morphological stability (@mat-solidification: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "Spinodal-decomposition-gradient-energy-and-conserved-fields.lingua#r_4HB6D1YCX2GC5GYD33G1140PY4") { r_5CHRBTJKPKKJQ5V4WDW12GGV78
+**Read:** [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), the entire Solidification of Alloys package; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lectures 8–9; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), binary and ternary solidification examples.
+
+Local partitioning and transport shape the final solid. Under complete liquid mixing, negligible solid diffusion, local interfacial equilibrium and constant partition coefficient k, the Scheil model gives c_L=c_0(1−f_s)^(k−1), with newly formed solid c_S=kc_L. It does not give the mean composition of all solid as kc_L.
+
+For illustrative c_0=0.05, k=0.5 and f_s=0.75, c_L=0.10, the new solid has c_S=0.05, and the accumulated solid's mean is (0.05−0.25×0.10)/0.75=1/30. Real terminal reactions or changing partition behavior prevent extending a divergent formula indefinitely.
+
+**Work:** Derive the liquid balance and distinguish equilibrium cooling from the Scheil limit. Relate thermal and solute gradients to planar-interface stability and dendrites. Compare a microsegregation prediction with spatial chemical measurements and explain what later homogenization could change.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Spinodal decomposition, gradient energy and conserved fields](Spinodal-decomposition-gradient-energy-and-conserved-fields.lingua#r_4HB6D1YCX2GC5GYD33G1140PY4).
+
+} r_5CHRBTJKPKKJQ5V4WDW12GGV78

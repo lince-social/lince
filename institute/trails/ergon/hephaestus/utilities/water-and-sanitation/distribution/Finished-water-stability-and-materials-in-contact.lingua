@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Finished-water stability and materials in contact (@wu-distribution-stability: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Build-a-network-from-reservoirs-pipes-and-demand.lingua#r_0TXAT9EFG5484Y1VN0D9RM8PKQ") { r_15RSX6EK77PKJZWCT3KRRBJZB2
+**Read:** [corrosion-control evaluation](../sources/Corrosion-Control-Evaluation-EPA.lingua#r_20PP3YE8JNTFXHZ3TT9J2VV0T1), chapters 2–3, 5–6 and the investigative-sampling appendices; [WHO drinking-water guidelines](../sources/Drinking-Water-Quality-WHO-2026.lingua#r_71BB45J2CZ76C0WZ6H1C7SWZ5F), relevant chemical fact sheets. Reuse the earlier pH, alkalinity and equilibrium explanations.
+
+Water interacts with pipe walls, scales, fittings and premise plumbing. A calcium-carbonate saturation calculation is not a universal predictor of metal release. Material history, electrochemical conditions, deposits, physical disturbance and stagnation can change the delivered sample. Treat a source or treatment change as a change to that interacting system, not only to the plant outlet analysis.
+
+**Work:** Build a materials-and-history inventory for a synthetic distribution path, including replacements and mixed materials. Propose sampling that distinguishes water leaving the plant, water in mains and water influenced by a building's plumbing. State whether samples target a worst-case condition, ordinary use or a specific diagnostic hypothesis.
+
+Compare a stable nominal pH with actual evidence of release; ask what the chosen measurement misses. For deeper study, critique a pipe-loop or field investigation for scale-up, representativeness, elapsed conditioning and independent monitoring. Keep current regulatory values in the jurisdictional references rather than using this historical manual's legal descriptions as today's requirements.
+
+**Continue:** [Build a network from reservoirs, pipes and demand](Build-a-network-from-reservoirs-pipes-and-demand.lingua#r_0TXAT9EFG5484Y1VN0D9RM8PKQ).
+} r_15RSX6EK77PKJZWCT3KRRBJZB2

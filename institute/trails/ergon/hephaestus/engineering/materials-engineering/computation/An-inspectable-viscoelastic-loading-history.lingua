@@ -1,0 +1,75 @@
+Import "../Materials-engineering.lingua"
+
+An inspectable viscoelastic loading history (@mat-history-example: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #materials-engineering "../mechanical/Dynamic-mechanical-response-storage-and-loss.lingua#r_06PB96QSNZJP5MJRDRMW3720DY") { r_7TGPDCZG9MJ9G8PSW3W070EMW4
+**Read:** The preceding hereditary and energy derivations; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Engineering Viscoelasticity. This original standard-library program integrates the declared small-strain generalized Maxwell model under continuous piecewise-linear imposed strain. It does not solve a stress-controlled experiment, finite deformation, aging, temperature change or failure.
+
+For a segment of duration h and strain change Δε, put x=h/τ, φ=(1−exp(−x))/x and β=(1−φ)/x. Then q_new=q_old exp(−x)+E_iΔεφ, and branch work is Δε(q_oldφ+E_iΔεβ). These follow by integrating the branch differential equation and stress over the segment. Small-x series avoid subtractive loss. The continuum segment solution is exact; floating-point arithmetic and the truncated small-x series introduce numerical error.
+
+```python
+from math import exp, expm1, fsum, isfinite
+
+def material_history(equilibrium, branches, history):
+    branches = tuple(tuple(pair) for pair in branches)
+    history = tuple(tuple(pair) for pair in history)
+    if not isfinite(equilibrium) or not 0 <= equilibrium <= 1e13:
+        raise ValueError("equilibrium modulus must lie in [0, 1e13] Pa")
+    if not 1 <= len(branches) <= 16 or not 2 <= len(history) <= 10001:
+        raise ValueError("use 1-16 branches and 2-10001 history points")
+    for modulus, time in branches:
+        if not (isfinite(modulus) and isfinite(time)
+                and 0 < modulus <= 1e13 and 1e-9 <= time <= 1e12):
+            raise ValueError("positive bounded branch modulus and relaxation time required")
+    for time, strain in history:
+        if not (isfinite(time) and isfinite(strain)
+                and 0 <= time <= 1e12 and abs(strain) <= .005):
+            raise ValueError("bounded time and small strain required")
+    if history[0] != (0, 0) or any(
+        right[0] <= left[0] for left, right in zip(history, history[1:])
+    ):
+        raise ValueError("start relaxed at (0,0), then use strictly increasing times")
+    stresses = [0.0] * len(branches)
+    work = 0.0
+    result = [dict(time=0.0, strain=0.0, stress=0.0,
+                   stored=0.0, work=0.0, dissipated=0.0)]
+    for (start, old_strain), (end, strain) in zip(history, history[1:]):
+        duration, change = end-start, strain-old_strain
+        contributions = [equilibrium * change * (strain+old_strain) / 2]
+        updated = []
+        for old, (modulus, time) in zip(stresses, branches):
+            x = duration / time
+            if x <= 0 or not isfinite(x):
+                raise ValueError("time increment divided by relaxation time must be positive")
+            if x < .01:
+                phi = 1+x*(-.5+x*(1/6+x*(-1/24+x*(1/120-x/720))))
+                beta = .5+x*(-1/6+x*(1/24+x*(-1/120+x*(1/720-x/5040))))
+            else:
+                phi = -expm1(-x)/x
+                beta = (1-phi)/x
+            updated.append(old*exp(-x)+modulus*change*phi)
+            contributions.append(change*(old*phi+modulus*change*beta))
+        work = fsum([work, *contributions])
+        stresses = updated
+        stored = fsum([equilibrium*strain*strain/2, *(
+            stress*stress/(2*modulus)
+            for stress, (modulus, _) in zip(stresses, branches)
+        )])
+        result.append(dict(time=end, strain=strain,
+                           stress=fsum([equilibrium*strain, *stresses]),
+                           stored=stored, work=work, dissipated=work-stored))
+    return result
+
+for point in material_history(1e9, [(2e9, 2), (1e9, 10)],
+                              [(0, 0), (1, .002), (6, .002), (7, 0), (20, 0)]):
+    print(point)
+```
+
+Use seconds, pascals and dimensionless strain. Returned work, stored energy and cumulative dissipation are J m⁻³. The history starts relaxed; input limits keep this a bounded teaching calculation. The ±0.005 strain limit is not proof that a real polymer is linear. Cumulative dissipation is computed as work minus stored energy and can contain roundoff near zero; it is not silently clipped.
+
+In the example, stress is approximately 7.0510 MPa after the ramp and 3.4128 MPa after the hold. Returning to zero total strain leaves a compressive stress of about −3.8498 MPa, because internal branches have not relaxed. At 20 s, work is about 8084.16 J m⁻³ and stored energy 27.3900 J m⁻³. These are synthetic predictions, not experimental material data.
+
+**Work:** Independently integrate the dissipative rate Σq_i²/(E_iτ_i) and compare with work minus stored energy. Subdivide a linear segment without changing its physical path and verify endpoint invariance. Test sign reversal, amplitude scaling, branch reordering and a long hold. Explain why unloading to zero strain is different from releasing the specimen to zero stress.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Dynamic mechanical response, storage and loss](../mechanical/Dynamic-mechanical-response-storage-and-loss.lingua#r_06PB96QSNZJP5MJRDRMW3720DY).
+
+} r_7TGPDCZG9MJ9G8PSW3W070EMW4

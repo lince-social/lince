@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Optical constants, interfaces and energy balance (@mat-optical: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN", #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #materials-engineering "Transitions-absorption-and-selection-rules.lingua#r_17F57QCANAXA059DRDHDC063AQ") { r_75PXXNPMNVMM48T0BZ03K5BTMT
+**Read:** [Electrical, Optical, and Magnetic Properties of Materials — MIT 3.23](../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN), all available optical lectures; [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), frequency-dependent dielectrics; the shared electromagnetic wave and response sources.
+
+For a homogeneous isotropic nonmagnetic medium at a specified frequency, complex refractive index n+iκ satisfies (n+iκ)²=ε_r under the exp(−iωt) convention. Static permittivity is not generally the optical value. An intensity decays as exp(−αz), with α=2ωκ/c; the field amplitude decays at half that rate.
+
+At normal incidence from vacuum into a semi-infinite medium, R=|(1−n−iκ)/(1+n+iκ)|². For a lossless index of 1.5 this gives R=0.04. A finite film adds another interface and possibly interference. Scattering out of a detector's collection cone is not automatically absorption.
+
+**Work:** Derive the amplitude boundary conditions and power balance, including the impedance factor in transmission. Reconstruct a transmission/reflection experiment with thickness and surface state, then show which combinations of optical constants are identifiable. Check causal frequency behavior before extrapolating a fitted spectrum.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Transitions, absorption and selection rules](Transitions-absorption-and-selection-rules.lingua#r_17F57QCANAXA059DRDHDC063AQ).
+
+} r_75PXXNPMNVMM48T0BZ03K5BTMT

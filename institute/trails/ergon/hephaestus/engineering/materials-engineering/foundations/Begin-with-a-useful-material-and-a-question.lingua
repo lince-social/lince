@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Begin with a useful material and a question (@mat-question: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_7XZ1YHGZGB7129GMSJ9GPW1ERN
+**Read:** [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309), presentation and the opening of each material-family unit; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Atomic Scale Structure of Materials, introduction and aims.
+
+Describe the function before choosing a material name. A container may need to retain liquid, tolerate heat, resist chemical attack, remain inspectable and be repairable. Different uses assign different priorities. A material that succeeds in one condition can fail in another without contradicting its measured properties.
+
+Separate observations from proposed explanations. A transparent piece need not be a glass; a hard surface need not imply a tough interior; a magnetic response does not uniquely identify an alloy. Geometry, interfaces, processing history and environment belong in the question.
+
+**Work:** Compare three objects performing a similar task with different materials. State what you can directly observe, what you infer and what you would need to measure. Choose a change of temperature, load, environment or production method that might reverse your initial preference. Continue into units before comparing numerical properties.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Units, dimensions, and equations that can make sense](../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
+} r_7XZ1YHGZGB7129GMSJ9GPW1ERN

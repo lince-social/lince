@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Bending indices change with geometry freedoms (@mat-bending-index: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../sources/Performance-Indices-Reference-Booklet.lingua#r_4ANTT1YWPSEVTS9J36CHQ1WEGE", #materials-engineering "Stability-constraints-and-the-limits-of-strength-ranking.lingua#r_27VXMDTZFC532J4Z4MW2RWKYR6") { r_7M7ECRGQ52AJ3TKQY2T6SQDCSQ
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY) and [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), beam equilibrium/elasticity; [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), shape selection; [Performance Indices Reference Booklet — Kaitlin Tyler and Harriet Parnell](../sources/Performance-Indices-Reference-Booklet.lingua#r_4ANTT1YWPSEVTS9J36CHQ1WEGE), beam and panel indices.
+
+For a simply supported rectangular beam with central force P, span L, fixed width b and free depth h, I=bh³/12, maximum moment PL/4, surface stress 3PL/(2bh²), and elastic central deflection PL³/(4Ebh³). Thus the strength bound is h≥[3PL/(2bσₐ)]¹ᐟ² and the stiffness bound is h≥[PL³/(4Ebδ)]¹ᐟ³. With mass ρbLh, the separate indices are σₐ¹ᐟ²/ρ and E¹ᐟ³/ρ.
+
+If both cross-section dimensions scale together at fixed aspect ratio, I scales with A² and section modulus with A³ᐟ². The corresponding indices become E¹ᐟ²/ρ and σₐ²ᐟ³/ρ. These are different design freedoms, not inconsistent versions of the same calculation.
+
+**Work:** Derive the beam deflection by integrating curvature, including support and symmetry conditions. Recover all four indices and their dimensions. Test the slender-beam, small-deflection and constitutive assumptions. Explain why sandwich panels, laminates, shear-sensitive members or local instability need additional models.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Stability constraints and the limits of strength ranking](Stability-constraints-and-the-limits-of-strength-ranking.lingua#r_27VXMDTZFC532J4Z4MW2RWKYR6).
+
+} r_7M7ECRGQ52AJ3TKQY2T6SQDCSQ

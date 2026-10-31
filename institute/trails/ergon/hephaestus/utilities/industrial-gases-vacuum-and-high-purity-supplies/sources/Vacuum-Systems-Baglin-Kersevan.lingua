@@ -1,0 +1,12 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Vacuum systems — Vincent Baglin and Roberto Kersevan (@gas-vacuum-systems: 0, is #reference, #part-of @gas-sources) { r_1K9ATEHFM7ET2H8TRHC3QNCRFN
+Vincent Baglin and Roberto Kersevan. *Vacuum systems*, chapter II.8 in *Proceedings of the Joint Universities Accelerator School: Courses and exercises*, CERN-2024-003, published 19 November 2024, 80 PDF pages. [Official publication](https://e-publishing.cern.ch/index.php/CYRSP/article/view/1624), [complete chapter](https://e-publishing.cern.ch/index.php/CYRSP/article/download/1624/1336/7999), DOI 10.23730/CYRSP-2024-003.1259.
+
+Read the entire chapter and solve its exercises before consulting section II.8.8. Basic quantities and instrumentation lead into outgassing, cryogenic vacuum, interactions with particle beams, pressure profiles and a large operating system. Use the accelerator cases to examine general gas/surface mechanisms, preserving their application-specific assumptions.
+
+Metadata, section structure and selected pump, outgassing and getter passages were inspected on 30 October 2026. The complete file was downloaded outside the repository. Check definitions and units independently: in particular, state which way a compression ratio is formed before comparing equations or values. The entire exercise programme and cited primary literature have not been independently reproduced.
+
+CC BY 4.0; retain authorship and separate component credits. All source documents, figures and external data remain references.
+
+} r_1K9ATEHFM7ET2H8TRHC3QNCRFN

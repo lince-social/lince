@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Ask what material property is being measured (@mat-measurement-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "../../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6") { r_2Y701B36KES5VQ2PPFPQQ3KC5V
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Optical Microscopy and Introduction to Microstructural Examination. Continue into the shared metrology Record for the full measurand treatment.
+
+Define the material, state, quantity and conditions before selecting an instrument. Density may refer to bulk volume including pores, an accessible skeletal volume or a crystallographic model. Strength can refer to a particular loading mode, strain rate, temperature and specimen preparation. Different definitions can give different legitimate results.
+
+The observation may alter the material. Polishing can remove a surface layer or introduce deformation; drying can change a porous specimen; electron or light exposure can change a sensitive structure. Follow the measurement's interactions with the object.
+
+**Work:** Write two distinct measurement questions for the same object and explain why their procedures differ. Specify the intended decision, specimen history, operating conditions and required uncertainty. Continue through the shared metrology account before interpreting an experimental value.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Begin with a question and specify the measurand](../../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6).
+
+} r_2Y701B36KES5VQ2PPFPQQ3KC5V

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Size, form, orientation, position and surface texture (@mech-geometric-tolerances: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #mechanical-engineering "Tolerance-stacks-correlation-and-assembly-yield.lingua#r_3EFDXEEGHFYPJNVJNJEFH2Y6CN") { r_6S5EQG5YSJN5GM2S0K5SXA4W2M
+**Read:** [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), drawings and geometric characteristics, including its examples. Use current applicable specifications when applying the notation; this reading explains the physical distinctions.
+
+Size, straightness, flatness, orientation, location, runout and surface texture answer different questions. A shaft can have an acceptable two-point diameter and still fail to fit a functional envelope because of form error. A measured surface-height statistic depends on filtering, sampling and the direction of the trace.
+
+Relate a tolerance to contact, clearance, alignment, leakage or motion. A location tolerance with a datum reference describes an allowed zone under stated rules; it is not interchangeable with unrelated plus/minus dimensions. Material-condition modifiers can change the permissible geometric variation and the corresponding inspection interpretation.
+
+**Work:** Describe a bearing seat, locating hole and sealing face using the smallest sufficient set of requirements. Draw the tolerance zones and explain how a part could satisfy one requirement while failing another. Compare a functional gauge with sampled coordinate measurements and identify what each can miss. Justify tighter requirements through the assembly's behavior.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Tolerance stacks, correlation and assembly yield](Tolerance-stacks-correlation-and-assembly-yield.lingua#r_3EFDXEEGHFYPJNVJNJEFH2Y6CN).
+
+} r_6S5EQG5YSJN5GM2S0K5SXA4W2M

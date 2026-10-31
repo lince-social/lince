@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Plan the process chain from required function (@mech-process-plan: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "Stock-blanks-material-condition-and-recoverable-yield.lingua#r_10JN4N3M6T40VXEHKARYSF4M3V", #materials-engineering "../../materials-engineering/processing/Yield-resources-and-the-boundary-of-an-accepted-part.lingua#r_0126HER9NCX9M2P9ZC8RXEYF47") { r_35THW33JT9E3Z5G0H2RCGJT9NC
+**Read:** Follow the complete [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E) lectures, available homework and examinations as a sustained manufacturing foundation. Use the project as a worked example of iteration between geometry, tools, production and measured parts.
+
+A process chain turns feedstock into a useful part through changes of shape, structure and surface. Choose it with material, size, tolerance, quantity, equipment, skills, inspection and service in view. A near-net blank may reduce cutting while requiring tooling and control of shrinkage or defects.
+
+Write the state of the part before and after each operation. Include setup references, stock allowance, handling, heat treatment, cleaning, inspection and possible rework. A final precision operation cannot recover a hidden crack or an inaccessible feature merely by meeting its outer dimensions.
+
+**Work:** Create two process chains for the same support or shaft: one for a single item and another for a recurring batch. Explain each transformation and the evidence that it achieved the intended state. Identify irreversible operations and inspections that must occur before later work hides the feature.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Stock, blanks, material condition and recoverable yield](Stock-blanks-material-condition-and-recoverable-yield.lingua#r_10JN4N3M6T40VXEHKARYSF4M3V).
+
+**Continue in materials engineering:** [Yield, resources and the boundary of an accepted part](../../materials-engineering/processing/Yield-resources-and-the-boundary-of-an-accepted-part.lingua#r_0126HER9NCX9M2P9ZC8RXEYF47).
+
+} r_35THW33JT9E3Z5G0H2RCGJT9NC

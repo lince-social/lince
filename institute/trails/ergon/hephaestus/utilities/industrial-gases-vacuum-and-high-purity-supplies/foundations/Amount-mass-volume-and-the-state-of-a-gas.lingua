@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Amount, mass, volume and the state of a gas (@gas-amount: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "Composition-bases-and-partial-pressure.lingua#r_3DPV8S0BTRB75D53VCZQ2MNAYT") { r_6DK7NWFRS2V47TZ9FTQW83H3JE
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), gas quantities and equations of state; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), physical-property definitions. Revisit moles, molar mass and units where needed.
+
+A mole counts a fixed number of entities. If n is amount and M is molar mass, mass is nM. Volume also depends on pressure, temperature and composition. For an ideal gas, pV=nRT with absolute temperature T; temperature differences and absolute temperatures are not interchangeable in this relation.
+
+Write a more general form pV=ZnRT, where Z is a state- and composition-dependent compressibility factor. It summarizes deviation from ideal behavior; it is not an arbitrary correction chosen to match a desired answer. Near condensation, an equation for a single gas phase may no longer describe the entire inventory.
+
+**Example:** At 100 kPa and 300 K, an ideal gas occupying 10 L contains n = (100,000 Pa × 0.010 m³)/(8.31446261815324 J/(mol·K) × 300 K) ≈ 0.400908 mol. The gas identity enters the mass through molar mass; the ideal amount calculation alone does not determine that mass.
+
+**Work:** Derive density ρ=pM/(ZRT). Calculate the amount in a 10 L vessel at 100 kPa and 300 K under the ideal model, then state which evidence would justify that model for a selected gas. Explain why a pressure reading alone cannot determine the mass of a partly liquid-filled vessel.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Composition bases and partial pressure](Composition-bases-and-partial-pressure.lingua#r_3DPV8S0BTRB75D53VCZQ2MNAYT).
+
+} r_6DK7NWFRS2V47TZ9FTQW83H3JE

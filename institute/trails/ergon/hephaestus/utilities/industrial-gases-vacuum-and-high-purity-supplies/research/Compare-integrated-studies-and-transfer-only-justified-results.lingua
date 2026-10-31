@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Compare integrated studies and transfer only justified results (@gas-integrated-review: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #industrial-gases-and-vacuum "Frame-a-research-question-with-a-testable-contribution.lingua#r_1948KS99V8C25NG0WYBJHGC5AR") { r_0DC4WK9Q9HNNKWC509DZTN11KK
+**Review:** The clean-process, cryogenic-helium and compressed-air investigations.
+
+Compare what remains common: amount and energy conservation, component balances, transport, surface state, measurement and continuing work. Then identify why an assumption valid in one system can fail in another: continuum versus molecular flow, warm versus cryogenic surfaces, steady versus cyclic demand, or ordinary versus trace composition.
+
+Explain the limit of every imported model and dataset. A good agreement in one regime does not establish transfer to a new material, geometry or gas. Preserve the original source, conditions and uncertainty so another reader can judge that transfer.
+
+**Work:** Defend one cross-system transfer and reject another with a quantitative reason. Use the comparison to formulate a research question that could change a real inference, design choice or service claim. The following Records deepen that question through reproducibility, evidence and criticism.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Frame a research question with a testable contribution](Frame-a-research-question-with-a-testable-contribution.lingua#r_1948KS99V8C25NG0WYBJHGC5AR).
+
+} r_0DC4WK9Q9HNNKWC509DZTN11KK

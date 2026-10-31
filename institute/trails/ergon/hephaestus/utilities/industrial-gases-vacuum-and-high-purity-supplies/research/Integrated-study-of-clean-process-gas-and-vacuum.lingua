@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Integrated study of clean process gas and vacuum (@gas-study-clean-system: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Compare-integrated-studies-and-transfer-only-justified-results.lingua#r_0DC4WK9Q9HNNKWC509DZTN11KK") { r_4JVXDSP8CMTXWJSAJZSDJE3T62
+**Read in full:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D) and [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5). Add the complete surface/coating and mixture-reference sources where they enter the chosen claim.
+
+Define an illustrative clean process chamber and its gas delivery boundary without inventing a proprietary manufacturing recipe. Specify the useful pressure, flow, composition and time response. Connect supply purity to contact materials, conditioning, dead volumes, chamber release, conductance, effective pumping and exhaust handling.
+
+Use the original network calculation only within its stated transport and temperature assumptions. Derive or obtain an appropriate extension when pressure regime, heat, reaction or surface behavior changes. Compare predicted pressure with what each actual gauge or sample location would observe.
+
+**Work:** Defend transient and steady service, one impurity event and one maintenance/restoration cycle. Include an independently verified numerical result, a measurement uncertainty account and a realistic evidence gap. Explain which results can transfer to another chamber and which depend on unavailable fabrication or surface data.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Compare integrated studies and transfer only justified results](Compare-integrated-studies-and-transfer-only-justified-results.lingua#r_0DC4WK9Q9HNNKWC509DZTN11KK).
+
+} r_4JVXDSP8CMTXWJSAJZSDJE3T62

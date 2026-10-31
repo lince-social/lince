@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Slider–crank position, speed and force transmission (@mech-slider-crank: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Cam-motion-laws-contact-and-jerk.lingua#r_2STDE1FSJGESYEMJARPXKJS5KY") { r_0HMYSBA2FQQ6875308FSR0GT9D
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 4, using the linkage methods to derive this special case. Revisit the dynamics account before adding inertia.
+
+For an in-line slider–crank with crank radius r, rod length l > r and the slider on the positive assembly branch, x(θ) = r cos θ + √(l²−r² sin²θ). The position is measured from the crank centre along the guide. The stroke is 2r. An offset guide or another assembly branch changes the expression.
+
+Differentiate x: x′ = −r sin θ − r² sin θ cos θ/√(l²−r² sin²θ). Velocity is x′ω; acceleration is x″ω² + x′α. For r = 0.05 m and l = 0.20 m, the end positions are 0.25 and 0.15 m. At θ = π/2, x ≈ 0.193649 m and x′ = −0.05 m/rad; at ω = 10 rad/s the slider velocity is −0.5 m/s.
+
+**Work:** Derive acceleration and verify it against refined differences of position. Check the rod-length constraint at every sampled angle. Use virtual work for a declared slider force, then add rod and slider inertia through the earlier dynamics. Explain why a dead-centre position is not evidence of unlimited useful force in a real mechanism.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Cam motion laws, contact and jerk](Cam-motion-laws-contact-and-jerk.lingua#r_2STDE1FSJGESYEMJARPXKJS5KY).
+
+} r_0HMYSBA2FQQ6875308FSR0GT9D

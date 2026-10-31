@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Repair creates another material state (@mat-material-repair: 0, is #chapter, #part-of @materials-engineering, #materials-engineering "../../mechanical-engineering-and-machine-design/service/Repair-restoration-and-return-to-service.lingua#r_1RF5PD4EHJKFZ57X6RSFKXJK1X") { r_7ZXVYZHCAXBQG85W3HK11CZBC8
+**Read:** The shared mechanical restoration Record; the complete joining, coating, heat-treatment and interface references relevant to the chosen material.
+
+Welding, bonding, deposition, machining and local heat can restore geometry while changing composition, residual stress, texture, flaw populations or nearby interfaces. A repaired state is neither automatically new nor automatically unusable. Its remaining function depends on the actual transformation and evidence.
+
+Retain the history of removed material, added feed, heat input, surface preparation and inspection. Distinguish restoring dimensions from restoring load transfer, sealing, conductivity or optical function. A treatment that improves one mechanism can worsen another or make future inspection harder.
+
+**Work:** Compare repair and replacement for one documented component. Derive the local thermal/mechanical or chemical effects of the repair and identify the region requiring characterization. Define what evidence supports a return to the stated function and what uncertainty remains. Compare subsequent service and recovery implications rather than judging only the immediate material saved.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Repair, restoration and return to service](../../mechanical-engineering-and-machine-design/service/Repair-restoration-and-return-to-service.lingua#r_1RF5PD4EHJKFZ57X6RSFKXJK1X).
+
+} r_7ZXVYZHCAXBQG85W3HK11CZBC8

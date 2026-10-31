@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Metal removal couples complexation, precipitation and total amount (@cm-metal-speciation: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "Surfactants-change-interfaces-and-can-form-aggregates.lingua#r_7R2RBDMWH8BWXNH1KVWDHAEMSM") { r_18Q8XJ6QR5NAME24J5SBWR2YHX
+**Read:** The complete coupled-equilibrium readings in [Predict precipitation with free species activities and phase constraints](../../../chemistry/general-chemistry/aqueous/Solubility-precipitation-and-common-ions.lingua#r_0XQ9C6TADMA2K20WJH8NZC9CVV) and [Track free species and complexes without losing the component total](../../../chemistry/general-chemistry/aqueous/Complexation-and-conditional-equilibria.lingua#r_2GGA9G5GPPJ46R3D8ZMR8FHNMK); [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2), complexing-agent studies on printed pages 362–370 and 386–392.
+
+A ligand can reduce free-ion activity while total dissolved metal remains high. That can alter dissolution, redeposition and an electrochemical observation. Ligand protonation, oxidation, competing metals and degradation can change the useful capacity of a bath during service.
+
+For the hypothetical single complex ML with concentration-form β=100 L/mol, total metal 0.010 mol/L and total ligand 0.020 mol/L, solve x=β(0.010−x)(0.020−x), where x is complex concentration. The physically admissible root is about 0.005858 mol/L. Replacing free ligand by its total would give a different answer.
+
+**Work:** Derive both component balances and reject nonphysical roots. Add a specified precipitation constraint and explain which measurements distinguish free metal, total dissolved metal and suspended material. In the proceedings study, trace the actual agent, degradation observation and process consequence rather than assuming all complexing agents behave alike.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Surfactants change interfaces and can form aggregates](Surfactants-change-interfaces-and-can-form-aggregates.lingua#r_7R2RBDMWH8BWXNH1KVWDHAEMSM).
+
+} r_18Q8XJ6QR5NAME24J5SBWR2YHX

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A finite-slab release model and its limits (@gas-slab-release: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Permeation-solubility-diffusion-and-time-lag.lingua#r_2S353Q6480P1366RP7MKP3HKAT") { r_5WGVS0W17W2QSK239XSF7FKPKR
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), diffusion-limited models; the shared finite-body derivations and conservative diffusion example.
+
+For a slab of full thickness L, initially uniform concentration c₀, constant D and two surfaces held at zero concentration, the mean retained fraction is c̄/c₀=(8/π²)Σodd n exp(−n²π²Dt/L²)/n². The outward flux per face is J=(4Dc₀/L)Σodd n exp(−n²π²Dt/L²). Here the sums run over positive odd integers and c counts the chosen diffusing species.
+
+At short times each surface approaches the semi-infinite result J≈c₀√[D/(πt)]. At late times the first mode dominates. The ideal initial boundary step gives a singular initial flux but a finite integrated released amount. Surface recombination or finite external pressure changes the boundary problem.
+
+**Work:** Derive the sine expansion and verify that two face fluxes equal the loss of slab inventory. Compare a numerical implementation against both time limits and the integrated amount. The shared program has sealed boundaries: change and verify those boundaries before using it for release. If c counts hydrogen atoms, convert to molecular flux explicitly.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Permeation, solubility, diffusion and time lag](Permeation-solubility-diffusion-and-time-lag.lingua#r_2S353Q6480P1366RP7MKP3HKAT).
+
+} r_5WGVS0W17W2QSK239XSF7FKPKR

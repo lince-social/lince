@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+State the claim before choosing a test (@cm-qualification-claim: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #source "../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY", #clean-manufacturing "../../../engineering/mechanical-engineering-and-machine-design/assembly/Commissioning-acceptance-and-validation-of-use.lingua#r_4K9PKAGC72FHH0SBDCEDTWGHF8") { r_7WE13D9TDTC14ESWCKQ4N0SN5J
+**Read:** [Systems Engineering Handbook — NASA](../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), verification and validation; [Measurement uncertainty in conformity assessment — JCGM 106](../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY), requirements and decisions. Revisit [A surface measurement has spatial and depth weighting](../surface-measurement/A-surface-measurement-has-spatial-and-depth-weighting.lingua#r_0R6W16HGTMM3XQ60ZB9K6NMBHJ).
+
+A statement that a room met a particle-count criterion at named locations and times is narrower than a statement that every product made there performs as required. A filter test, an image of a surface and a functional test each observe a different part of the production account.
+
+Write a claim with its object, quantity, conditions and boundary. Identify the requirement's origin and what evidence could contradict the claim. Include the measurement uncertainty and any inferential step between what was observed and what is being asserted.
+
+A qualification argument concerns demonstrated capability over a stated domain. Acceptance concerns a particular item, lot or installation under an agreed rule. Monitoring looks for changes relative to a defined expectation. A familiar word such as clean or qualified should not replace those definitions.
+
+**Work:** Rewrite three vague statements about a clean facility as testable claims. For each, identify a plausible failure that its proposed test would miss. Connect room conditions to product exposure and then to useful function, marking where independent evidence is still missing.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Commissioning, acceptance and validation of use](../../../engineering/mechanical-engineering-and-machine-design/assembly/Commissioning-acceptance-and-validation-of-use.lingua#r_4K9PKAGC72FHH0SBDCEDTWGHF8).
+
+} r_7WE13D9TDTC14ESWCKQ4N0SN5J

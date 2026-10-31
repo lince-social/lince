@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Derive species balances during pump and refill (@gas-purge-species: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR", #industrial-gases-and-vacuum "A-lower-pressure-and-a-purer-refill-are-different-objectives.lingua#r_6B6GW8109DG260H66Q3QPP6G50") { r_7JX3NXD41E2T9AN2D8722RQ7YV
+**Read:** [Conservation of helium while maintaining high system purity — White and colleagues](../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR), the complete model and comparison. This is a separate ideal molar model that makes the component assumptions explicit.
+
+Assume fixed V and T, well-mixed ideal gas, species-independent effective pumping speed S and constant ingress a mol/s consisting entirely of the impurity. Set k=S/V. If initial total amount is n0 and impurity amount is i0, then dn/dt=a−kn and di/dt=a−ki. Their solutions are n(t)=a/k+(n0−a/k)e⁻ᵏᵗ and i(t)=a/k+(i0−a/k)e⁻ᵏᵗ. Helium h=n−i=(n0−i0)e⁻ᵏᵗ.
+
+Pure-helium refilling to n0, treated as instantaneous without ingress or wall exchange, gives final impurity fraction yf=i(t)/n0. With b=a/(kn0) and y0=i0/n0, yf=b+(y0−b)e⁻ᵏᵗ. This is different from the fraction i(t)/n(t) in the partly evacuated vessel. Require n(t)≤n0 for the assumed refill to be possible.
+
+**Work:** Verify both species balances and the no-leak limit. Repeat a cycle and derive the limiting contamination b. Explain how pressure-dependent pumping, selective pumping, wall release, changing leak flow or noninstantaneous refill would alter the equations. Do not identify the model's parameters with an installation without measurements.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A lower pressure and a purer refill are different objectives](A-lower-pressure-and-a-purer-refill-are-different-objectives.lingua#r_6B6GW8109DG260H66Q3QPP6G50).
+
+} r_7JX3NXD41E2T9AN2D8722RQ7YV

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Fracture from bonds to crack driving force (@mat-fracture-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "../../mechanical-engineering-and-machine-design/failure/Cracks-stress-intensity-and-energy-release.lingua#r_60ER9GS96VCBQZ4W33NH72MKP9") { r_7A1T3W6N86NZ4X2CC8089NC9VE
+**Read:** [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), the complete Brittle Fracture package; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Introduction to Fracture Mechanics; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 9.1–9.6. Follow the shared linear-fracture, fracture-test and elastic–plastic Records.
+
+A theoretical bond strength does not predict the strength of a real flawed specimen. Cracks concentrate deformation and can release stored energy as they advance. Distinguish initiation, stable extension and instability, and distinguish nominal strength, fracture toughness and work absorbed in an impact test.
+
+The crack-driving force depends on geometry, loading, constraints and residual stress; resistance depends on the material state and relevant mechanism. For an appropriate mode-I linear-elastic case, K_I=Yσ√(πa) and G=K_I²/E′, with E′=E in plane stress and E/(1−ν²) in plane strain. State the crack-length convention and geometry factor.
+
+**Work:** Draw a crack configuration and derive the units of K and G. Compare two flaw sizes at equal nominal stress, then compare load and displacement control. Use the shared test-validity treatment before transferring a measured resistance to a different geometry.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Cracks, stress intensity and energy release](../../mechanical-engineering-and-machine-design/failure/Cracks-stress-intensity-and-energy-release.lingua#r_60ER9GS96VCBQZ4W33NH72MKP9).
+
+} r_7A1T3W6N86NZ4X2CC8089NC9VE

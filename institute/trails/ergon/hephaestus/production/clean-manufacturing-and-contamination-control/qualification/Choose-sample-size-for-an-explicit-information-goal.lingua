@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Choose sample size for an explicit information goal (@cm-qualification-sample-size: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Read-a-lot-acceptance-plan-through-its-OC-curve.lingua#r_6373FJ8A59PDWJGD2P2QW3NJ5F") { r_4XNPXHN56AKKYN1Z3T3419JWEZ
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), statistical models and sampling plans; revisit uncertainty in repeated observations.
+
+Sample size follows the question, variability, dependence and consequences of uncertainty. For independent normal observations with known standard deviation σ, a two-sided mean interval using critical value z has half-width e = zσ/√n. Planning with σ = 2, z = 1.96 and e = 0.5 requires n at least 62. Estimated variance and dependence change that calculation.
+
+For independent pass/fail trials with failure probability p, observing zero failures has probability (1−p)ⁿ. With 59 observations and p = 0.05 this is about 0.048495. Zero observed failures does not prove zero population failures. Inverting the zero-failure probability gives the one-sided 95% upper confidence bound 1−0.05^(1/59) ≈ 0.049508 under the binomial model.
+
+**Work:** Derive both calculations and compare their questions. Add clustered observations or imperfect detection and explain why the original sample count no longer supplies the same evidence. Report the model, not just a required number of samples.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Read a lot acceptance plan through its OC curve](Read-a-lot-acceptance-plan-through-its-OC-curve.lingua#r_6373FJ8A59PDWJGD2P2QW3NJ5F).
+
+} r_4XNPXHN56AKKYN1Z3T3419JWEZ

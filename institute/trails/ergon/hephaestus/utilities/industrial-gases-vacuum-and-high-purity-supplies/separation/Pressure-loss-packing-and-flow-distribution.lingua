@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pressure loss, packing and flow distribution (@gas-bed-pressure: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #industrial-gases-and-vacuum "Regeneration-restores-a-useful-state.lingua#r_0RK5ZEFDST1C43EPF2CH2924D7") { r_7KQQMYVY2WSSK6RB5S27Y4V5WQ
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), bed transport; [Porous flow, Darcy flux and the scale of a permeability](../../../physics/fluid-dynamics/viscous/Porous-flow-Darcy-flux-and-the-scale-of-a-permeability.lingua#r_6F57YVHJSPPTDA0FGV79KTX1QY); [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H), porosity and momentum models.
+
+A packed bed consumes pressure through viscous and inertial resistance. For the conventional Ergun relation with superficial velocity uₛ, a common idealized form is −dp/dz=150μ(1−ε)²uₛ/(ε³dp²)+1.75ρ(1−ε)uₛ|uₛ|/(ε³dp). Particle geometry, packing and regime delimit its applicability.
+
+Smaller particles shorten internal diffusion distances while increasing flow resistance. Nonuniform packing and wall regions can create different residence times. A one-dimensional average model may match outlet concentration while concealing a bypassed or poorly regenerated region.
+
+**Work:** Convert the relation to interstitial velocity without losing porosity factors. Compare the two pressure-loss terms and derive their ratio. Examine the limits as packing becomes sparse or particle size changes; identify where the correlation itself ceases to describe a packed bed. Explain which observation would distinguish uniform resistance from channeling.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Regeneration restores a useful state](Regeneration-restores-a-useful-state.lingua#r_0RK5ZEFDST1C43EPF2CH2924D7).
+
+} r_7KQQMYVY2WSSK6RB5S27Y4V5WQ

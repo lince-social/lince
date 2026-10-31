@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Contact materials connect pressure, function and purity (@gas-delivery-materials: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../materials/chemical-feedstocks-and-supply-systems/sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV", #source "../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "Dead-volumes-and-the-difference-between-flow-and-exchange.lingua#r_57M980HQAJ60W320Y9DJRPCPTY") { r_0D9Y0T3EAT3MQHH4NDQ5HYDP3K
+**Read:** [Oxygen Pipeline and Piping Systems — EIGA Doc 13/20](../../../materials/chemical-feedstocks-and-supply-systems/sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV), material selection and fabrication sections for oxygen; [Cleaning equipment for oxygen service — EIGA 33/18](../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0), the full cleaning guide; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), the chosen gas's material/service information.
+
+A delivery component must preserve mechanical function and the required gas condition. Consider the body, welds, seals, lubricants, coatings, particle-generating surfaces and trapped recesses. Compatibility is a relation between a material state and a service history, not a yes/no property of an alloy name.
+
+Connect pressure and thermal cycling to fatigue, differential contraction, seal loading and leakage. Connect surface area and condition to moisture, adsorption, particles and reactive contamination. A material may satisfy one function while failing another. Oxygen-specific ignition behavior, hydrogen interaction with metals, corrosive gases and trace analytical service call for different evidence.
+
+Reuse [Seals, leakage, friction and the condition of surfaces](../../../engineering/mechanical-engineering-and-machine-design/elements/Seals-leakage-friction-and-the-condition-of-surfaces.lingua#r_5TC8MG4GQKQ1YEVSNG6G1EV2Y5) and the earlier vacuum surface lessons. The same concepts of permeation, outgassing and hidden volumes recur, but the pressure gradient, gas chemistry and acceptable impurity level have changed. Do not transplant a vacuum cleanliness criterion as proof of oxygen compatibility or analytical purity.
+
+**Work:** Trace one component from material specification through fabrication, cleaning, joining, inspection and service. Identify which evidence would be invalidated by a material substitution, repair or changed gas, and which shared observations still remain useful.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Dead volumes and the difference between flow and exchange](Dead-volumes-and-the-difference-between-flow-and-exchange.lingua#r_57M980HQAJ60W320Y9DJRPCPTY).
+
+} r_0D9Y0T3EAT3MQHH4NDQ5HYDP3K

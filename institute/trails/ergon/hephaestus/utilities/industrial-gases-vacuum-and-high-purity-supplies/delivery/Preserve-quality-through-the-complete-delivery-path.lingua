@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Preserve quality through the complete delivery path (@gas-delivery-quality: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C", #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "Recovery-return-and-a-newly-qualified-product.lingua#r_1ABKY37TYJH4M78JK8DKA1CKN8") { r_5S3J0KW8TCT3A138G0TXJ8K3ZJ
+**Read:** [Good practices guide for loading and unloading of cryogenic liquid tankers — AIGA](../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C), quality and traceability sections; [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), assigned values and stability; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), explicit grade and impurity definitions.
+
+Start with the required impurity panel and physical state at the user's boundary. Work backward through local equipment, distribution, storage and production. A certificate describes a particular material under stated conditions; it does not automatically certify everything that later touches that material.
+
+Track lots or stream intervals through mixing, splitting, transfers and returns. Tie a measurement to the stream and time it represents. Include method detection capability, sampling history, reference condition and the decision rule used for acceptance. A purity percentage without named components and limits can conceal the impurity that matters most to the use.
+
+Component replacement, exposure to air, changed source, cleaning or a different demand pattern can invalidate parts of the prior evidence. Determine what changed physically and repeat the relevant observations, rather than treating all changes as either harmless or requiring an unexplained total restart.
+
+**Work:** Follow one accepted supply into two different uses with different impurity sensitivities. Identify the shared evidence and the extra evidence each use needs. Include a return stream whose identity is known but whose contamination history makes direct reuse unproven.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Recovery, return and a newly qualified product](Recovery-return-and-a-newly-qualified-product.lingua#r_1ABKY37TYJH4M78JK8DKA1CKN8).
+
+} r_5S3J0KW8TCT3A138G0TXJ8K3ZJ

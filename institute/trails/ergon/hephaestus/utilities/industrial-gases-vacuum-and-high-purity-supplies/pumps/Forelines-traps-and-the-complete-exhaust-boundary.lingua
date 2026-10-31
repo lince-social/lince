@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Forelines, traps and the complete exhaust boundary (@gas-foreline: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9", #industrial-gases-and-vacuum "Choose-pumps-for-a-changing-service.lingua#r_2SAZZQR47E1G1WJAHCSZCEGZKH") { r_1ATY1553GS5Z6V1JHZGJMTD22J
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), pump accessories, condensers, combinations and wet processes; [Vacuum technology for superconducting devices — Paolo Chiggiato](../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9), supporting systems.
+
+The foreline connects the high-vacuum pump's outlet to equipment that continues the transfer. Its conductance, volume, temperature, stored condensate and pressure history affect the upstream pump. A trap can protect equipment or capture a constituent while adding resistance and another finite inventory.
+
+Follow the exhaust beyond the machine. Pumped process gas, ballast, purge, oil mist, condensate and rejected contaminants can require separate handling. A pump arrangement is incomplete if it achieves inlet conditions by creating an unaccounted discharge or by accumulating material without a restoration path.
+
+**Work:** Close constituent and energy balances around a complete two-pump system with a condenser or trap. Compare steady operation with a sudden gas load and a backing-pump interruption. Identify where stored matter can move backward, and which measurements reveal deterioration before useful chamber conditions are lost.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Choose pumps for a changing service](Choose-pumps-for-a-changing-service.lingua#r_2SAZZQR47E1G1WJAHCSZCEGZKH).
+
+} r_1ATY1553GS5Z6V1JHZGJMTD22J

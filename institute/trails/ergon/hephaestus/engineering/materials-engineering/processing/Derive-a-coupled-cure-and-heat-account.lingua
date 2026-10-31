@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Derive a coupled cure and heat account (@mat-cure-balance: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614", #materials-engineering "../computation/An-inspectable-cure-and-thermal-history.lingua#r_591T0QHNX8Y619RXNQGF3CNPHF") { r_4S1BDTCH10000YGV8FAG1RPYGT
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), energy balances; [Simultaneous rheology and cure kinetics — Romberg and Kotula, 2023](../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614), the distinction between thermal history and chemical/rheological state. Use the shared lumped-capacity and earlier Arrhenius derivations.
+
+For a homogeneous teaching specimen, let dα/dt=k(T)(1−α), k(T)=kr exp[(Ea/R)(1/Tr−1/T)]. Let cp dT/dt=Q dα/dt+h(Toven−T), with cp in J kg⁻¹ K⁻¹, Q in J kg⁻¹ of specimen per unit conversion and h=UA/m in W kg⁻¹ K⁻¹. All temperatures in the exponential are kelvin. Heat capacity and coefficients are constant here.
+
+Set z=∫k(T)dt and H=∫h(Toven−T)dt. Then α=α0+(1−α0)(1−exp(−z)) and T=T0+[Q(α−α0)+H]/cp. Integrating z and H preserves the energy relation while avoiding conversion overshoot from directly stepping α. It does not eliminate integration error.
+
+**Work:** Derive the isothermal, nonreactive and adiabatic limits. Explain why the model omits spatial gradients, autocatalysis, vitrification, shrinkage and degradation. For similar bodies, relate h to area/volume and show why a larger part may dissipate reaction heat differently. This hypothetical model supplies no manufacturing schedule for a named resin.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [An inspectable cure and thermal history](../computation/An-inspectable-cure-and-thermal-history.lingua#r_591T0QHNX8Y619RXNQGF3CNPHF).
+
+} r_4S1BDTCH10000YGV8FAG1RPYGT

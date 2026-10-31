@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend a pressure realization and gauge comparison (@gas-study-measure-pressure: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV", #source "../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F", #industrial-gases-and-vacuum "Review-what-the-measurements-establish-about-the-service.lingua#r_00STQ667X1Y8PNYK73F7YC4AXE") { r_41TVN1ZCM8XK3YZ74X0EN36K3G
+**Read in full:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), [Cold-atom vacuum comparison — Barker and colleagues](../sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV) and [Glancing collisions in vacuum metrology — Eckel and colleagues](../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F).
+
+Choose a pressure range, gas and use condition. Reconstruct one realization and one comparison, including the measurement equation, base conditions, gas-state distribution, gauge perturbation and traceability. Explain what makes the two methods independent and what inputs or assumptions they share.
+
+Build an uncertainty account with covariance and a changed-condition test. Compare a force, thermal, ionization or atom-loss principle as appropriate to the range, without assigning every gauge the same gas response. Use actual reported apparatus conditions when analyzing source results.
+
+Reconstruct one tractable part of the cold-atom comparison or later correction from specified inputs. If complete raw data are available only by author request, label the resulting limitation and reproduce the mathematical or published-input part without inventing observations. Compare a physical alternative model, not just a different curve fit.
+
+**Demonstrate:** Reproducible calculations, independent limits, identified parameter/model uncertainties and a defensible statement about what the comparison establishes. Explain which observation would overturn your preferred interpretation and revise the account after criticism.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review what the measurements establish about the service](Review-what-the-measurements-establish-about-the-service.lingua#r_00STQ667X1Y8PNYK73F7YC4AXE).
+
+} r_41TVN1ZCM8XK3YZ74X0EN36K3G

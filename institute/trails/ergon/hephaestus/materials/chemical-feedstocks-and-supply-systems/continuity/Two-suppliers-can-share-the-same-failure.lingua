@@ -1,6 +1,6 @@
 Import "../Chemical-feedstocks-and-supply-systems.lingua"
 
-Calculate diversification with the actual joint dependence (@cs-common-cause: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #source "../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C", #chemical-supply-systems "Usable-reserve-time-restoration-time-and-service-loss.lingua#r_5XFMY0T36NG3KX9SZGGB44A1A9") { r_3YJ0DPY2TX68GEYCK057JWJFJX
+Calculate diversification with the actual joint dependence (@cs-common-cause: 0, is #chapter, #part-of @chemical-supply-systems, #source "../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C", #source "../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P", #source "../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C", #chemical-supply-systems "Usable-reserve-time-restoration-time-and-service-loss.lingua#r_5XFMY0T36NG3KX9SZGGB44A1A9", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Redundancy-can-retain-a-common-point-of-failure.lingua#r_784PY21TPWV53PCJJQ502BS7SY", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/facilities/Facility-dependencies-can-retain-a-common-failure.lingua#r_1GT529SK3181324S7HAY9SYV61") { r_3YJ0DPY2TX68GEYCK057JWJFJX
 **Read:** [Inventory Analytics — Roberto Rossi](../sources/Inventory-Analytics-Rossi.lingua#r_61Y17EAC05XZSS1B28NX17SV7C), the complete stochastic and multi-echelon reasoning; [Graduate Supply Chain Planning — MIT 15.762J](../sources/Graduate-Supply-Chain-Planning-MIT.lingua#r_16MZ0PJM4KC10A3D9AYYESBT6P), the whole risk-pooling, placement and coordination programme; [Understanding Water Treatment Chemical Supply Chains and the Risk of Disruptions — EPA](../sources/Chemical-Supply-Chains-and-Disruption-Risk-EPA.lingua#r_6Y999Z6S9P5T6FY75NA2HGVW6C), the complete precursor and infrastructure dependency analyses.
 
 Suppose supplier A is available with probability 0.85 and B with 0.90. If availability were independent and either could meet the full need, joint outage would be 0.15×0.10=0.015. But a joint table with probabilities 0.80 for both available, 0.05 for only A, 0.10 for only B and 0.05 for neither has those same marginals and a 0.05 joint outage. The identity and capacity of the common cause matter.
@@ -12,4 +12,10 @@ Build three tables with the same marginals but different joint behavior and comp
 **Continue:** [Compare the reserve that can bridge an outage with the work needed to restore supply](Usable-reserve-time-restoration-time-and-service-loss.lingua#r_5XFMY0T36NG3KX9SZGGB44A1A9).
 
 **Return:** [Chemical feedstocks and supply systems — specified materials from origin to accepted use](../Chemical-feedstocks-and-supply-systems.lingua#r_05V6FYWMN0VND552CQE94HHA2Q).
+
+**Continue in gas and vacuum systems:** [Redundancy can retain a common point of failure](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Redundancy-can-retain-a-common-point-of-failure.lingua#r_784PY21TPWV53PCJJQ502BS7SY).
+
+
+**Continue in clean manufacturing:** [Facility dependencies can retain a common failure](../../../production/clean-manufacturing-and-contamination-control/facilities/Facility-dependencies-can-retain-a-common-failure.lingua#r_1GT529SK3181324S7HAY9SYV61).
+
 } r_3YJ0DPY2TX68GEYCK057JWJFJX

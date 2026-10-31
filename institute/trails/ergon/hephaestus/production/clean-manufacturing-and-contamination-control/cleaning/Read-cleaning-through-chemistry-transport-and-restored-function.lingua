@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Read cleaning through chemistry, transport and restored function (@cm-cleaning-reading: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #source "../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD", #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "Name-the-residue-and-the-component-being-followed.lingua#r_1SP39RY5H31719T4HJ9JTYYXX8") { r_5A3XBM9923FKVXG10QYDMF4EH5
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E) in full; [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), the main report; [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD), the substantial interfacial, surfactant and colloid chapters. Use the selected complete articles in [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2) for deeper process comparisons.
+
+The surface formation explains why material can remain attached. Now follow how a process dissolves, reacts, disperses, detaches or transfers that material, and what happens during rinsing, drying and storage. A clean-looking object and a functioning object are different observations.
+
+Begin with chemical identity and measurement basis. Reuse solution and equilibrium foundations before treating detergents, metal ions or screening. Quantitative models then expose finite bath capacity, rinse carryover, stagnant regions and drying residue. Three investigations connect residue analysis, a rinse system and fragile manufactured structures.
+
+**Work:** Choose a part, its intended function and two plausible contaminants. Draw the original object, cleaning stream, rinse stream, waste and stored object. State which chemical species or conserved component you will follow and which measurement can observe it.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Name the residue and the component being followed](Name-the-residue-and-the-component-being-followed.lingua#r_1SP39RY5H31719T4HJ9JTYYXX8).
+
+} r_5A3XBM9923FKVXG10QYDMF4EH5

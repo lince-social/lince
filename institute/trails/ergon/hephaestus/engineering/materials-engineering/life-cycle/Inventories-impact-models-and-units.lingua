@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Inventories, impact models and units (@mat-life-inventory: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX", #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #materials-engineering "Multifunctionality-allocation-and-avoided-products.lingua#r_5J4MEP7Y4KY5G7G9EQ8XC6M80S") { r_3VKW7C4Y0CGZ5MN3NA8C85Y4R3
+**Read:** [Life-cycle assessment, detailed guidance — ILCD Handbook](../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX), inventory and impact-assessment chapters; [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), LCA coursework. Use the existing mass/energy and reproducible-computation foundations.
+
+An inventory records resource inputs, products, wastes and emissions within stated boundaries. Impact assessment applies models and characterization factors to those flows. Kilograms of a substance, energy use and an impact indicator are not interchangeable quantities. Emission compartment, time and location can affect the interpretation.
+
+In a linear process model, a technology matrix A maps process activities x to net required products f through Ax=f. An elementary-flow matrix B gives inventory Bx; a declared characterization matrix C gives indicators CBx. Define the signs, units and reference output of every column. Singular or ill-conditioned systems and negative activities need physical interpretation, not automatic acceptance.
+
+**Work:** Construct a small independently checkable network with a recycled input and explicit losses. Solve it by substitution and a separate numerical method. Close mass/energy where applicable and verify units. Change one process factor and one characterization assumption separately, explaining why they represent different uncertainty sources.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Multifunctionality, allocation and avoided products](Multifunctionality-allocation-and-avoided-products.lingua#r_5J4MEP7Y4KY5G7G9EQ8XC6M80S).
+
+} r_3VKW7C4Y0CGZ5MN3NA8C85Y4R3

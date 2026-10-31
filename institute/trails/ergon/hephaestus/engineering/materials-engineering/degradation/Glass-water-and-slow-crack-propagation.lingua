@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Glass, water and slow crack propagation (@mat-glass-environment: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Glass-Stress-Corrosion-Ciccotti.lingua#r_5MYPVB5E5N1GHFSQ75B046N1QS", #materials-engineering "Ceramic-grains-boundaries-and-chemical-resistance.lingua#r_767R2YHCGK2YK7EZD3S0NG6KA4") { r_3X59DY9KNS8Z41NCV7KAZ1M25C
+**Read:** [Stress-corrosion mechanisms in silicate glasses — Ciccotti](../sources/Glass-Stress-Corrosion-Ciccotti.lingua#r_5MYPVB5E5N1GHFSQ75B046N1QS) in full; the earlier glass-family and slow-crack Records.
+
+A glass surface and crack tip interact with their local chemical environment. Dissolution, ion exchange, water-assisted bond rupture and transport can compete; glass composition matters. Crack velocity as a function of stress intensity can pass through different regimes. A single fitted power law should not be extended automatically across them.
+
+**Work:** Reconstruct a crack-velocity experiment with geometry, load, humidity, temperature and resolution. Fit competing descriptions over the observed range, then compare their long-time predictions and uncertainty. Distinguish a true threshold from a detection or duration limit. Use the review's competing mechanisms to identify an observation that discriminates between chemical change at the tip and an alternative interpretation of the same surface image.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Ceramic grains, boundaries and chemical resistance](Ceramic-grains-boundaries-and-chemical-resistance.lingua#r_767R2YHCGK2YK7EZD3S0NG6KA4).
+
+} r_3X59DY9KNS8Z41NCV7KAZ1M25C

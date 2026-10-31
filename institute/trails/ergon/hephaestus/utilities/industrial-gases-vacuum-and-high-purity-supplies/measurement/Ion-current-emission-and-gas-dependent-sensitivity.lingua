@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Ion current, emission and gas-dependent sensitivity (@gas-ion-gauge: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "A-gas-equivalent-reading-is-not-a-mixture-analysis.lingua#r_2NZ4WVFZ4F5PZ63NHAKCH3C1M1") { r_21QAERTG3NRFJE6NJA9HEMTPC1
+**Read:** [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), §V and the complete operating-parameter discussion; [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), ionization principles.
+
+In a simple hot-cathode ionization-gauge model, collector current Ic=K Ie p, with electron emission current Ie and sensitivity K in Pa⁻¹. Real observations also contain electrical backgrounds and other ion/current sources. For a corrected net current I, p=I/(K Ie) only within the characterized linear range and gas/state conditions.
+
+Electron trajectories, electrode voltages, gas ionization probability and ion collection determine K. A nominal gas factor does not necessarily reproduce the sensitivity of a particular geometry. Cold-cathode instruments use a different discharge mechanism and can have a nonlinear current–pressure relation; do not force all gauge families into the hot-cathode formula.
+
+For a hypothetical I=2 nA, Ie=1 mA and K=0.20 Pa⁻¹, p=10⁻⁵ Pa. A 0.2 nA unremoved background would contribute 10⁻⁶ Pa to that inference. These are illustrative values, not a recommended instrument setting.
+
+**Work:** Derive the sensitivity of inferred pressure to current, emission and K. Explain why changing the controller's programmed K or gas selection changes the meaning of a subsequent calibration factor even if the vacuum itself has not changed.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A gas-equivalent reading is not a mixture analysis](A-gas-equivalent-reading-is-not-a-mixture-analysis.lingua#r_2NZ4WVFZ4F5PZ63NHAKCH3C1M1).
+
+} r_21QAERTG3NRFJE6NJA9HEMTPC1

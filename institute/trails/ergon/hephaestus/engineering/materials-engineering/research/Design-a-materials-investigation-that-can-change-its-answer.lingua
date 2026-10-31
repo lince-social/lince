@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Design a materials investigation that can change its answer (@mat-investigation-design: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #materials-engineering "../../../inquiry/reproducible-computation/research/Reproduce-a-published-result.lingua#r_262594EJP43XMD8STYD24PSHJY") { r_3R7YJRRRS3TQE747RQZRDDREW9
+**Read:** The complete methods of the selected primary studies; [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), data evaluation; shared metrology and reproducible-computation guidance.
+
+Design controls, sampling, calculations and comparisons around competing explanations. Separate specimen replication from repeated measurement. Randomization and blocking can help isolate nuisance variation where their use is feasible and meaningful. Plan how to handle failed runs, censored observations, missing data and changes of procedure.
+
+For computations, specify model equations, boundaries, numerical verification, input provenance and the parameter domain. For experiments, specify how preparation and observation alter the object. Define the comparison before collecting the evidence that will decide it. A useful investigation has a possible result that would require revision.
+
+**Work:** Produce an executable investigation with resource requirements, measurement/calculation sequence, uncertainty, independent checks and explicit stop/revise conditions. Run a small pilot to test feasibility, preserving what changed afterward. Explain what can be investigated with public evidence alone and what requires new observations. Continue through the shared published-result reproduction work before presenting your independent result.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Reconstruct and critique a published computational result](../../../inquiry/reproducible-computation/research/Reproduce-a-published-result.lingua#r_262594EJP43XMD8STYD24PSHJY).
+
+} r_3R7YJRRRS3TQE747RQZRDDREW9

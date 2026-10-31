@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pressure cycles and the ideal dilution factor (@gas-purge-cycles: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Two-exchanging-volumes-explain-a-long-purge-tail.lingua#r_2Z48RVKPARRH78PGKGRATN8VGE") { r_2CBSN5JAMS83H7FC6CMQJW8PXD
+**Read:** [A well-mixed purge and its limit](A-well-mixed-purge-and-its-limit.lingua#r_7JAHNQ9HH44P8D09NY23BK1ZVC) and [A storage vessel needs mass and energy balances](../storage/A-storage-vessel-needs-mass-and-energy-balances.lingua#r_08N1RNVEKDZ9XJM90S5KC5CXPT); compare the actual service and geometry with [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT).
+
+Consider an ideal analytical cycle in a rigid, uniform, well-mixed gas volume: add clean gas from a low state to a high state, then remove mixed gas back to the low state. Assume no selective adsorption, leaks or reactions. Dilution during filling gives ynew=yin+(yold−yin)(nL/nH); homogeneous removal does not change mole fraction.
+
+For a real-gas equilibrium description, nL/nH=pLZH TH/(pH ZL TL). Only with identical temperatures and Z does this become pL/pH. After k identical cycles, yk=yin+(y₀−yin)(nL/nH)^k. Cycle counting therefore needs the actual state and a justified mixing assumption.
+
+For hypothetical isothermal ideal states with pL/pH=0.2, yin=0 and y₀=0.01, six cycles give 6.4×10⁻⁷. Each addition consumes nH−nL moles, so the six additions consume 6(nH−nL). Comparison with continuous purge must use equal final inventory, target and accounting of gas consumed and time.
+
+**Work:** Derive the recursion directly from component conservation. Include nonzero inlet impurity and unequal temperatures. Treat these as calculations of ideal dilution, not an equipment procedure: actual allowable cycles and sequencing come from the complete gas-specific system, with dead volumes and surfaces checked separately.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Two exchanging volumes explain a long purge tail](Two-exchanging-volumes-explain-a-long-purge-tail.lingua#r_2Z48RVKPARRH78PGKGRATN8VGE).
+
+} r_2CBSN5JAMS83H7FC6CMQJW8PXD

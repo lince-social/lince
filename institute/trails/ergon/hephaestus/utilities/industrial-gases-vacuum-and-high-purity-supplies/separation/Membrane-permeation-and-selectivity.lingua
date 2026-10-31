@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Membrane permeation and selectivity (@gas-membrane: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "Membrane-stages-recycle-and-product-boundaries.lingua#r_3YGX2QK15YW2V7ADMKB97PTKKY") { r_3NF6NHSVH59PVDV350QKXBJPDQ
+**Read:** [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH), section 4.4; [Follow selective separations through capacity, transport, regeneration and waste](../../../chemistry/industrial-chemistry/separations/Adsorption-ion-exchange-membranes-and-regeneration.lingua#r_794F81FPAZEEDBSKVX4T3EHNFM); [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), gas properties and applications.
+
+In a simple dense-membrane solution-diffusion model, constituent flux Jᵢ=(Pᵢ/δ)(pᵢ,feed−pᵢ,permeate). Permeability Pᵢ combines solubility and diffusion effects; permeance Pᵢ/δ also includes membrane thickness. The relation assumes stated temperature, material behavior and boundary conditions.
+
+Selectivity Pᵢ/Pⱼ describes a material under specified conditions. A module's product purity additionally depends on feed/permeate pressures, composition changes along the module, stage cut, flow arrangement and defects. In nitrogen production with a suitable membrane, faster-permeating constituents leave a nitrogen-enriched retentate.
+
+**Work:** Derive units for permeability, permeance and molar flux in SI. Compare a material-selectivity ratio with the resulting binary stream balance. Explain why reducing permeate pressure can improve a driving force while adding vacuum energy demand. Identify conditions where pressure-dependent sorption or plasticization defeats a constant-permeability assumption.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Membrane stages, recycle and product boundaries](Membrane-stages-recycle-and-product-boundaries.lingua#r_3YGX2QK15YW2V7ADMKB97PTKKY).
+
+} r_3NF6NHSVH59PVDV350QKXBJPDQ

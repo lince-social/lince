@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+First investigations of cleanliness and evidence (@cm-study-entry: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "Investigate-a-sensitive-optical-or-mechanical-surface.lingua#r_4WJNJDQ10MXAPPZHEQFH9CDXQP", #clean-manufacturing "Investigate-an-air-sample-and-its-inference.lingua#r_5CM0B4092TJX07AJQJMSTT22KV", #clean-manufacturing "Investigate-an-aseptic-process-boundary.lingua#r_6BCPQ02Z3P99YCK2MSCM3KVB8H") { r_62FS07J8WV8V8F8HW5Y00G46NE
+**Read:** Finish [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X) and the introductory/monitoring sections of [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5). Continue the broader reports through the three investigations below.
+
+Study the same physical problem through function, transfer and observation. Choose actual published evidence where available; use clearly labelled hypothetical numbers when it is not. Keep the product boundary and the meaning of each quantity consistent across diagrams, calculations and conclusions.
+
+The three investigations compare a sensitive surface, sampled air and a biological production boundary. They share quantitative reasoning while asking different questions. Work through all three, then explain which ideas transfer and which require new evidence in another application.
+
+**Work:** Prepare a source list with edition, passage, access and licence. Distinguish assigned reading from data actually analyzed. Keep unresolved questions visible so later transport, facility and measurement study can answer them.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Investigate a sensitive optical or mechanical surface](Investigate-a-sensitive-optical-or-mechanical-surface.lingua#r_4WJNJDQ10MXAPPZHEQFH9CDXQP), [Investigate an air sample and its inference](Investigate-an-air-sample-and-its-inference.lingua#r_5CM0B4092TJX07AJQJMSTT22KV), [Investigate an aseptic process boundary](Investigate-an-aseptic-process-boundary.lingua#r_6BCPQ02Z3P99YCK2MSCM3KVB8H).
+
+} r_62FS07J8WV8V8F8HW5Y00G46NE

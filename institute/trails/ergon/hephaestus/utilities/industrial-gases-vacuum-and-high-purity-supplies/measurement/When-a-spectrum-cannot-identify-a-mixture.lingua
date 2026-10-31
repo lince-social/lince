@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+When a spectrum cannot identify a mixture (@gas-spectrum-inverse: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "Detector-gain-background-and-scan-time.lingua#r_0VZCE5DJF9J0W6MNPCPQ2BX015") { r_5AQF13GWSK9SYF1V68GPWS2M1T
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), quantitative analysis; connect the shared inverse-model Record to [Fragmentation patterns as a response matrix](Fragmentation-patterns-as-a-response-matrix.lingua#r_4YV5WH8AA3BQAM1PKGYBW52746).
+
+If two response columns are identical, only a combination of their partial pressures is identifiable. If they are nearly parallel, small signal or calibration errors can produce large changes in the inferred composition. Extra digits in the fitted pressures do not add information.
+
+For Aε=[[1,1],[1,1+ε]], the second pressure inferred from exact measurements is p₂=(y₂−y₁)/ε. Independent signal uncertainties u on both channels give u(p₂)=√2 u/|ε| when A is treated as known. With ε=0.01 and u=0.001 signal units, this contribution alone is approximately 0.141421 pressure units. Uncertain ε adds another potentially large contribution.
+
+Nonnegative constraints or prior composition information can make a solution look more stable, but they must be reported as assumptions. They cannot manufacture independent sensitivity. A useful additional observation changes the response geometry, for example through separation or an independently selective method.
+
+**Work:** Compare exact rank deficiency with poor conditioning. Find a changed composition that barely changes the predicted signal. Then choose a genuinely informative extra measurement and demonstrate how it changes the uncertainty rather than merely increasing the number of rows.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Detector gain, background and scan time](Detector-gain-background-and-scan-time.lingua#r_0VZCE5DJF9J0W6MNPCPQ2BX015).
+
+} r_5AQF13GWSK9SYF1V68GPWS2M1T

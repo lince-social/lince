@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Operating states, transients and recovery (@mech-operating-states: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #mechanical-engineering "Feedback-bandwidth-saturation-and-mechanical-limits.lingua#r_4F4CYDB278NVVPGHT553C9ESKM") { r_160RZCKQFWGDV7XADNVX3MX136
+**Read:** [Systems Engineering Handbook — NASA](../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), operation, transition and validation material; [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), inspection and troubleshooting. Reuse the dynamics and actuator studies.
+
+Describe a machine through states and the physical transitions between them: unpowered, initialized, ready, moving, stopping, interrupted and recovering. Position, speed, stored energy, lubrication and temperature need not reset when a command changes. An interrupted move can leave a suspended load or an ambiguous position.
+
+Draw the permitted transitions and identify the observations that justify each. A command is not evidence that the transition occurred. Follow both mechanical and information state when power or a sensor is lost. Distinguish a planned stop, controlled deceleration and removal of drive power by their actual force and energy paths.
+
+**Work:** Analyze startup, reversal, interruption and recovery for the chosen machine. Calculate one transient load and its energy destination. Define what must be re-established before useful work resumes. Test the state logic in a model, then compare it with documented behavior or a controlled physical observation.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Feedback, bandwidth, saturation and mechanical limits](Feedback-bandwidth-saturation-and-mechanical-limits.lingua#r_4F4CYDB278NVVPGHT553C9ESKM).
+
+} r_160RZCKQFWGDV7XADNVX3MX136

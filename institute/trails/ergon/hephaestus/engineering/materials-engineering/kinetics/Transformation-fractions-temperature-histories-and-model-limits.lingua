@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Transformation fractions, temperature histories and model limits (@mat-transformation-time: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "Coarsening-grain-growth-and-competing-length-scales.lingua#r_6YJ9EQHYTWKXXMQ65B07FWSKAT") { r_6TJWBE48VNV80BQGD96ZA44878
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lecture 12 and 3.21 lecture 28; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), phase transformations; the existing metallurgical heat-treatment formation for detailed alloy applications.
+
+Under stated nucleation and growth assumptions, an extended transformed volume Y can give the actual fraction X=1−exp(−Y). A fit Y=Kt^n summarizes an isothermal interval; n is not a unique fingerprint of one mechanism when nucleation, impingement, dimensionality or rates vary.
+
+A time-temperature-transformation diagram describes an identified starting state and isothermal histories. Continuous-cooling curves describe different histories. Traversing an isothermal diagram does not automatically calculate a nonisothermal result. Diffusionless transformations, incubation and prior deformation require their own mechanisms.
+
+**Work:** Derive X from a declared random-overlap model and compare constant nucleation with site saturation. Fit only a justified interval and test a second temperature/history. Explain why a transformation fraction does not by itself determine precipitate size, hardness or residual stress.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Coarsening, grain growth and competing length scales](Coarsening-grain-growth-and-competing-length-scales.lingua#r_6YJ9EQHYTWKXXMQ65B07FWSKAT).
+
+} r_6TJWBE48VNV80BQGD96ZA44878

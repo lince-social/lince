@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A tank balance explains control offset, delay and saturation (@wu-water-control: 0, is #chapter, #part-of @water-and-sanitation, #source "../../../engineering/electrical-power-engineering/sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #source "../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW", #water-and-sanitation "Operating-states-alarms-interlocks-and-recovery.lingua#r_76JBRQTMZ403412BCMHA8YXQ9A") { r_2R6H6TT78N3TG1PYZMNFJ14RYB
+**Read:** [Feedback Systems — Åström and Murray](../../../engineering/electrical-power-engineering/sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833), feedback, integral action and robustness; compare the resulting controller with the explicitly modelled rules in [EPANET 2.2 — network models and reproducible analysis](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW).
+
+For an original ideal tank, dV/dt = qin − d, where V is volume and d is withdrawal. An unsaturated proportional law is qin = qbase + Kp(Vset − V), with Kp measured in inverse time. At constant demand, Vss = Vset + (qbase − d)/Kp and V(t) = Vss + [V(0) − Vss] exp(−Kp t). An offset is necessary when the baseline flow differs from demand. Integral action can remove this steady offset in the ideal model, but adds state and changes stability and recovery after saturation.
+
+With Vset = 100 m³, qbase = 10 m³/hour, demand = 12 m³/hour and Kp = 0.5/hour, Vss is 96 m³. Starting at 100, the volume after two hours is approximately 97.4715 m³. This example assumes available inlet capacity and no overflow, emptying or delay. Its explicit time-step error multiplies by 1 − Kp Δt; numerical stability requires 0 < Kp Δt < 2 even though the continuous ideal system is stable for every positive Kp.
+
+**Work:** Reproduce the analytic solution and time-step convergence. Add measured-volume bias, command limits, a transport delay and a demand pulse separately. Explain which failure comes from the plant, controller or numerical method. Compare proportional and integral control with anti-windup and a stated restart state. These synthetic values illustrate dynamics; real control settings require the particular plant and its protection design.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Operating states, alarms, interlocks and recovery](Operating-states-alarms-interlocks-and-recovery.lingua#r_76JBRQTMZ403412BCMHA8YXQ9A).
+
+} r_2R6H6TT78N3TG1PYZMNFJ14RYB

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Workholding, location, clamping and distortion (@mech-workholding: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #mechanical-engineering "Cutting-geometry-feed-speed-and-material-removal.lingua#r_0DCYBG02XM5WFM7NEA5G5AEFYQ") { r_0A9GZWVQRY4GJDY5QR8BQRSBTW
+**Read:** [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), exact constraints and structural design; [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), machining and assembly; [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), design for holding and measurement access.
+
+A fixture must locate the part and resist process loads without unacceptable motion or damage. Locators define position; clamps maintain intended contacts. Friction can help resist forces but depends on surfaces and preload. Clamping a flexible part into a desired shape can hide the free-state error released after removal.
+
+Trace cutting and clamp forces through the part, fixture and machine. Check access for tools, chips, coolant and measurement. A support placed under a thin wall can reduce distortion; an unnecessary extra contact can make seating uncertain.
+
+**Work:** Draw the free bodies of a simple fixture under a changing cutting-force direction. Estimate slip, lift and elastic displacement. Compare a single setup with several setups, including transfer of datums. Plan a measurement before and after unclamping to distinguish permanent geometry from fixture-induced deformation.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Cutting geometry, feed, speed and material removal](Cutting-geometry-feed-speed-and-material-removal.lingua#r_0DCYBG02XM5WFM7NEA5G5AEFYQ).
+
+} r_0A9GZWVQRY4GJDY5QR8BQRSBTW

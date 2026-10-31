@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Projected area coverage and overlapping particles (@cm-area: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "Film-mass-thickness-and-composition.lingua#r_01JP23J8EAA8RR6D1KN8M1R0VN") { r_0GVZSD2JQQAKPQN64XG4BR21WR
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), section 3.2.2. Its historical empirical size conventions are distinct from the direct geometry below.
+
+For nonoverlapping circular projections on a flat surface of area A, the covered fraction is f=Σπdᵢ²/(4A). Percentage coverage is 100f. With 100 identical 10 µm projections on 1 cm², this model gives f≈7.85398×10⁻⁵, or 0.00785398 percent.
+
+If projections overlap, adding areas double-counts their overlap; actual coverage is the area of the union. Shape, orientation and viewing direction can also change the projection. Geometrical coverage alone does not establish optical scatter, electrical response or whether a moving contact encounters a damaging particle.
+
+**Work:** Reproduce the calculation, then draw two overlapping circles and distinguish summed area from covered area. Explain which parts of the calculation an image could establish and which functional conclusions need further physical evidence.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Film mass, thickness and composition](Film-mass-thickness-and-composition.lingua#r_01JP23J8EAA8RR6D1KN8M1R0VN).
+
+} r_0GVZSD2JQQAKPQN64XG4BR21WR

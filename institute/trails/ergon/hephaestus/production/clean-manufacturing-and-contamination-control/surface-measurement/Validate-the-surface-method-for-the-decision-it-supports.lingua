@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Validate the surface method for the decision it supports (@cm-surface-method: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #clean-manufacturing "Separate-sampling-preparation-and-analysis-in-a-comparison.lingua#r_45Z6TMPNGW0W9QRZ5MTMMTYACK") { r_7PSDBG99EP9AFB7KGM3W5HN8S2
+**Read:** [Validate the intended use and verify the particular implementation](../../../inquiry/metrology/calibration/Validation-and-verification.lingua#r_696ZGSGKBG8BPXN1MF2RZNK69W) and its full assigned validation guide; [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5), measurement planning and reporting.
+
+A method's useful scope includes specimen types, target quantities, range, preparation, sampling and interpretation. Instrument calibration supplies part of the evidence. It does not by itself establish representative sampling, chemical selectivity or an adequate inference about a product.
+
+Use a set of observations that can challenge the important claims: independent references, blanks, repeated specimens, varied locations, contrasting materials and controlled changes in analysis. Distinguish between variation within one prepared sample and variation caused by collecting and preparing a new sample.
+
+Detection of a difference and attribution of its cause are separate tasks. If a changed cleaning process coincides with changed sample handling, a lower reported residue can arise from either. Preserve the process and measurement conditions needed to separate them.
+
+**Work:** Design a paper validation for one benign surface measurement. State the claim, the observations that would support it and an alternative explanation each observation addresses. Include uncertainty and a decision consequence. Use simulations or published observations for the investigation, and identify what a real implementation would still need to establish under appropriate laboratory safeguards.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Separate sampling, preparation and analysis in a comparison](Separate-sampling-preparation-and-analysis-in-a-comparison.lingua#r_45Z6TMPNGW0W9QRZ5MTMMTYACK).
+
+} r_7PSDBG99EP9AFB7KGM3W5HN8S2

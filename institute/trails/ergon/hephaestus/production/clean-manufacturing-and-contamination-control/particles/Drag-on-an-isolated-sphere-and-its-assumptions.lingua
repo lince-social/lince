@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Drag on an isolated sphere and its assumptions (@cm-drag-law: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "Slip-and-the-definition-of-the-Knudsen-number.lingua#r_0W5MZKVYKNQ1STS4D83CE91Z4B") { r_7F95EPAQJN06GC3PYDD277HA5C
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Hydrodynamic Forces, pages 1–3; revisit [Creeping flow, reversibility and a translating sphere](../../../physics/fluid-dynamics/viscous/Creeping-flow-reversibility-and-a-translating-sphere.lingua#r_2NCJ64J8EHE6G7NWVKGK5DC3ZA) and its full sphere-flow reading.
+
+For an isolated rigid sphere of diameter d in a Newtonian continuum fluid, creeping flow with no slip gives drag on the particle F_d=3πμd(u−v). Here μ is dynamic viscosity. The particle Reynolds number is Re_p=ρ_f d|u−v|/μ; fluid density belongs in it, even when particle density is much larger.
+
+The linear relation depends on negligible fluid inertia and appropriate boundary conditions. A nearby wall, another particle, an internally circulating droplet or a nonspherical shape changes the problem. Replacing d with a convenient visual diameter does not establish the same resistance.
+
+**Work:** Derive the resistance coefficient's dimensions and verify that the force opposes relative motion. Balance it against a specified external force, then check the resulting Re_p. Explain which assumptions would need revisiting before using the estimate near a wall or for a droplet.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Slip and the definition of the Knudsen number](Slip-and-the-definition-of-the-Knudsen-number.lingua#r_0W5MZKVYKNQ1STS4D83CE91Z4B).
+
+} r_7F95EPAQJN06GC3PYDD277HA5C

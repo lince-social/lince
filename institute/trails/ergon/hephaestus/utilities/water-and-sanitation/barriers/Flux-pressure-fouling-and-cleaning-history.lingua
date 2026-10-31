@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Flux, pressure, fouling and cleaning history (@wu-membrane-flux: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Challenge-tests-integrity-and-the-detection-limit.lingua#r_5J0DMRS8RAJAV2RVRCH7XPVHNW") { r_6VPTBCGZF6G8V35BC8YK8YBNGW
+**Read:** [EPA membrane manual](../sources/Membrane-Filtration-Guidance-EPA.lingua#r_5AA7DKNZPGKZ8KZKCFJ2Q8A8ZY), pilot-testing and design material; [WaterTAP models](../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD), solvent/solute transport and concentration-polarization assumptions. Separate what is measured from what is normalized to a reference condition.
+
+Flux J = Qp/A has volume-per-area-per-time units. An original example produces 10 m³/hour through 200 m²: 50 L/(m²·hour). If the product rate falls to 8 m³/hour, flux is 40 in those units. That observation alone cannot identify fouling: temperature, driving pressure, osmotic pressure and instrumentation also matter.
+
+For a deliberately ideal pressure-driven solvent model, J = Lp(ΔP−Δπ). If Lp = 2 L/(m²·hour·bar), ΔP = 20 bar and Δπ = 5 bar, J = 30 L/(m²·hour). Raising Δπ to 8 bar at fixed pressure reduces it to 24. Applying this simplified expression without defining local concentrations and transport assumptions can conceal a limiting region within a module.
+
+**Work:** Plot pressure, temperature, flux, rejection and cleaning events against time. Distinguish reversible deposit removal from irreversible change and material damage. Compare net delivered water over a full operating/cleaning cycle rather than the best instantaneous flux. Design a study with an independent check of membrane condition after cleaning. For advanced work, compare resistance and transport models against held-out operating conditions and investigate parameter tradeoffs; do not infer a unique fouling mechanism from one declining-flow curve.
+
+**Continue:** [Challenge tests, integrity and the detection limit](Challenge-tests-integrity-and-the-detection-limit.lingua#r_5J0DMRS8RAJAV2RVRCH7XPVHNW).
+} r_6VPTBCGZF6G8V35BC8YK8YBNGW

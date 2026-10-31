@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Operating states, alarms, interlocks and recovery (@wu-operating-states: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD", #source "../sources/Sanitation-Safety-Planning-WHO.lingua#r_2FF0R519TGR5RNY3EVV7APPZ86", #source "../sources/Operational-Technology-Security-NIST.lingua#r_4W20M55VVPGFB1FAB00Q347KPT", #water-and-sanitation "Operational-data-control-boundaries-and-recoverable-systems.lingua#r_02ZS8WA9B122TABN9D1X1PQFM2") { r_76JBRQTMZ403412BCMHA8YXQ9A
+**Read:** [Water safety plan manual — WHO and IWA, second edition](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD), operational monitoring and management; [Sanitation safety planning — WHO, second edition](../sources/Sanitation-Safety-Planning-WHO.lingua#r_2FF0R519TGR5RNY3EVV7APPZ86), service-chain controls; [Operational technology security — NIST SP 800-82, revision 3](../sources/Operational-Technology-Security-NIST.lingua#r_4W20M55VVPGFB1FAB00Q347KPT), the physical consequences and availability requirements of control systems.
+
+A feedback loop regulates within an operating state. Starting, running, cleaning, isolating, holding, stopping and restoring service are different states with different permitted actions. An alarm asks for attention; an interlock restricts an action; a protective function needs its own evidence. Giving three labels to the same unverified sensor does not create three independent barriers.
+
+**Work:** Describe a fictional transfer system with normal, low-source, high-storage, unavailable-measurement and maintenance states. For every transition state the observation, permitted command, physical consequence and evidence required to return. Compare loss of electricity, loss of communications and a sensor stuck at a plausible value. A choice that protects a pump can interrupt essential supply; show the consequence rather than declaring every stop safe.
+
+Test the state sequence in an isolated simulation, including power restoration while an actuator is already open. Keep commands and observed positions distinct. Advanced work compares independent protective layers with shared sensors, software, power and human response. Record unresolved interactions as engineering questions that require physical and institutional evidence.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Operational data, control boundaries and recoverable systems](Operational-data-control-boundaries-and-recoverable-systems.lingua#r_02ZS8WA9B122TABN9D1X1PQFM2).
+
+} r_76JBRQTMZ403412BCMHA8YXQ9A

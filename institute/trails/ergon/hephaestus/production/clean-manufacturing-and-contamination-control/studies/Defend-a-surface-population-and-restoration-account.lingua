@@ -1,0 +1,13 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend a surface-population and restoration account (@cm-study-retention: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "Review-surfaces-before-choosing-cleaning-chemistry.lingua#r_4XZBGNRTFEMMCYYE2GGA1HSSBG") { r_5KH2W7W2HFN8D1P9YHY3J55X4N
+**Read:** The Chiggiato and Baglin/Kersevan material referenced by [Residence time, activation and surface coverage](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Residence-time-activation-and-surface-coverage.lingua#r_48MYBH8H4756WWNK4ABCM2K1RT) and [Readsorption couples the surface and the gas](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Readsorption-couples-the-surface-and-the-gas.lingua#r_57PQVHCDK36WXXH22EVJ4AGQSW); [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), the contamination-to-function connection.
+
+Build a consistent account of arrival, attachment, storage, release, removal and renewed exposure. Distinguish particles from molecular species and a recoverable sample from the total surface. Identify whether your observable constrains amount, composition, spatial distribution or function.
+
+**Work:** Derive and independently solve a bounded coverage or two-reservoir model, checking conservation and the no-exchange limits. Examine whether equilibrium plus a transient can determine the claimed parameters. Compare with a second-site or nonuniform-drive alternative that explains the same limited data. Define measurements that would establish restoration of the useful function rather than only a reduction in one sample's signal.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review surfaces before choosing cleaning chemistry](Review-surfaces-before-choosing-cleaning-chemistry.lingua#r_4XZBGNRTFEMMCYYE2GGA1HSSBG).
+
+} r_5KH2W7W2HFN8D1P9YHY3J55X4N

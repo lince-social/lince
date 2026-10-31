@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend a vacuum transport account (@gas-study-transport: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "../pumps/Follow-a-molecule-through-the-pumping-system.lingua#r_75DSZV30D0R7Q28C9ZC6BRNXRG") { r_7M3TZYFEPWVTK808QB3MDMF7CN
+**Study:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), complete physical and conductance sections; [Fundamentals of Vacuum Physics and Technology — Eshraq Al-Dmour](../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9), complete paper; [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), pressure interpretation. Use the full shared fluid and thermal derivations for the relevant limits.
+
+Choose an apparatus with a chamber, at least one restrictive connection, a pump and an observation point. Begin with gas inventory and molecular flux. Identify the pressure-dependent transport regimes and derive appropriate limiting models. Separate chamber pressure, pump inlet pressure, gauge response and arrival flux at the useful surface.
+
+Construct a steady network and a transient account. Check conservation, positivity, aperture and long-tube limits, zero-source behavior and sensitivity to uncertain gas loads. Treat surface release and pump dependence as physical additions with evidence, not tuning terms added only to fit a trace.
+
+**Deliver:** A reproducible calculation with unit conversions, independently checked limits and a proposed discriminating measurement. Compare a larger pump, a wider connection and lower surface release as interventions. Defend the model's range and explain which part of a measured pumpdown it cannot yet describe.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+
+
+**Continue in gas and vacuum systems:** [Follow a molecule through the pumping system](../pumps/Follow-a-molecule-through-the-pumping-system.lingua#r_75DSZV30D0R7Q28C9ZC6BRNXRG).
+
+} r_7M3TZYFEPWVTK808QB3MDMF7CN

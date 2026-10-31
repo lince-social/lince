@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Optical pulses are responses to particles (@cm-optical-response: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "Thresholds-and-bin-boundaries-are-part-of-a-count.lingua#r_79V98M79MZXQHY3VWA1BT2S708") { r_4X97M45Z8TP1PK690KB3ZF9CQV
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), section 21.7.1 and table 21-6. Use [Range, sensitivity, loading, bandwidth, and response time](../../../inquiry/metrology/foundations/Instrument-response.lingua#r_07SCGP3DGSTJ27T288T3G50J8H) to distinguish a static calibration from a dynamic observation.
+
+An optical counter records light interacting with a particle in a defined illumination and collection geometry. A calibration associates pulse features with reference particles. The resulting diameter is an optical equivalent under that calibration, not a direct geometric measurement of every passing object.
+
+Particle material, shape, orientation and surrounding medium influence the signal. A diameter inferred from spherical reference particles can shift when the production aerosol has different optical properties. A stable electronics check does not establish an unchanged particle-to-pulse relation.
+
+Keep the chain explicit: particle state → scattering and collection → detector/electronics → pulse selection → channel. Saturation, focus, background and rejected pulses can act at different stages. A device producing a total scattering signal is not automatically counting individual particles; converting that signal to mass requires a population-dependent relation.
+
+**Work:** Sketch two possible pulse-versus-diameter relations for different materials, and apply one material's calibration to the other. Identify where the inferred diameter is biased and where an inverse could be ambiguous. Propose an independent size or composition observation to test the interpretation. Keep the raw channel or pulse information when it is available so a revised response model can be applied later.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Thresholds and bin boundaries are part of a count](Thresholds-and-bin-boundaries-are-part-of-a-count.lingua#r_79V98M79MZXQHY3VWA1BT2S708).
+
+} r_4X97M45Z8TP1PK690KB3ZF9CQV

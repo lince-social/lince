@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Ionic and network structures beyond a one-sphere model (@mat-ionic-structures: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "Carbon-networks-and-structure-dependent-behavior.lingua#r_0X0MN8J8KHHBSX23GN95JGMG67") { r_5XDR0TAGDABSKQQTJZ547DJ61W
+**Read:** [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), lecture 16's diamond, zinc-blende, perovskite and salt examples; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), complete relevant structure-family sections; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), crystallography and atomic-scale structure.
+
+Species labels matter to symmetry. A CsCl-type model places different species at cube corners and centre; the half-body-diagonal translation exchanges species and is not a lattice translation of that decorated structure. It is not the same Bravais-lattice description as monatomic BCC. A rock-salt model can instead be described with an FCC lattice and a two-species basis.
+
+Coordination, stoichiometry and connectivity offer different comparisons. Changing a network's bond angles or replacing a site can affect properties without changing its simplest composition label. A representative structure family is a starting model, not proof that every compound with a similar formula adopts it.
+
+**Work:** Build explicit fractional-coordinate bases for two structures. Apply a proposed translation and test whether it preserves both positions and species. Check formula units, density and neighbour counts. Use an identified experimental structure when relating the model to an actual compound.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Carbon networks and structure-dependent behavior](Carbon-networks-and-structure-dependent-behavior.lingua#r_0X0MN8J8KHHBSX23GN95JGMG67).
+
+} r_5XDR0TAGDABSKQQTJZ547DJ61W

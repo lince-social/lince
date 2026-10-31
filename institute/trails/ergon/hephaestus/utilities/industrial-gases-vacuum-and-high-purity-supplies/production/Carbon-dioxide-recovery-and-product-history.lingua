@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Carbon-dioxide recovery and product history (@gas-carbon-dioxide: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "../../../chemistry/industrial-chemistry/specialty/High-purity-isolation-contact-materials-and-contamination.lingua#r_0A8DYYGK7WSS534DBYFKFT5HPT") { r_3QG37WQ2G4Y9ZJ2D4TRSX7H1RQ
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), carbon dioxide and mixtures; shared industrial chemistry and chemical-supply quality material; complete primary process documentation for the selected source.
+
+Recovered carbon dioxide carries the history of its source and conditioning. Fermentation, chemical processing and other sources can present different contaminants. Purification and phase handling must match the intended use. A high major-component fraction alone does not establish food, analytical or process suitability.
+
+Follow water, volatile impurities, noncondensable gases and any source-specific substances through removal and rejected streams. Compression, cooling and phase changes alter storage and delivery behavior. Depressurization can change phase and restrict flow; treat the actual state path rather than assuming a permanent ideal gas.
+
+**Work:** Compare two documented source routes at a common delivered specification. Trace an impurity through the process and identify its analytical evidence. Close a recovery balance that includes rejected product and handling losses. Explain how a change in the upstream source could invalidate an otherwise unchanged downstream operating description.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Explain high-purity chemicals through traceability, purification and contamination control](../../../chemistry/industrial-chemistry/specialty/High-purity-isolation-contact-materials-and-contamination.lingua#r_0A8DYYGK7WSS534DBYFKFT5HPT).
+
+} r_3QG37WQ2G4Y9ZJ2D4TRSX7H1RQ

@@ -1,0 +1,16 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Review what the aerosol measurements establish (@cm-aerosol-review: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "../surface-measurement/Read-surface-evidence-from-the-object-to-the-result.lingua#r_51G8C1ZYP11D61TWTBRD867Y4A") { r_29HS8QY95V57MXZ2W8TS62TDEZ
+Return to the process requirement in [Translate the process into observable facility requirements](../facilities/Translate-the-process-into-observable-facility-requirements.lingua#r_38A200F1H46XAJ3DRTKHZ183SV). Explain a measurement from the sampled population through inlet, path, response and inference. Relate the three investigations without treating agreement between instruments as proof of every cleanliness property.
+
+The account should let another reader reconstruct volumes and state conversions, distinguish diameter conventions, check losses and timing, reproduce a count model and its uncertainty, and understand the calibration's valid conditions. Discuss a case where the data cannot distinguish two physical explanations and how a further observation would help.
+
+These observations support a defined airborne-particle claim. Surface coverage, residue composition, microbial recovery and product function require their own measurement relations. Continue into those methods and then qualification, monitoring and manufacturing investigations, preserving the distinctions learned here.
+
+**Work:** Present one concise process conclusion with its quantitative support, source versions, limitations and next useful observation. Keep the underlying calculations and raw or explicitly simulated data available through ordinary references. Revise the conclusion when a competing model explains the observations equally well.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+
+**Continue in clean manufacturing:** [Read surface evidence from the object to the result](../surface-measurement/Read-surface-evidence-from-the-object-to-the-result.lingua#r_51G8C1ZYP11D61TWTBRD867Y4A).
+
+} r_29HS8QY95V57MXZ2W8TS62TDEZ

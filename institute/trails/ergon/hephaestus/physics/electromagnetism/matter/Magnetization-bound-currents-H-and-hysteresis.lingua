@@ -1,6 +1,6 @@
 Import "../Electromagnetism.lingua"
 
-Magnetization, bound currents, H and hysteresis (@em-magnetic-matter: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #electromagnetism "../currents/Hall-effect-conductivity-tensors-and-carrier-inference.lingua#r_4HGZYF44KNT5Y68SWNWZ8Q0WV6", #electrical-power-engineering "../../../engineering/electrical-power-engineering/machines/Magnetic-circuits-materials-loss-and-machine-geometry.lingua#r_26T1DAYPG9F1H903T8GS499Q25") { r_1H8D8KMFTHN04KYDW84T64CQ2J
+Magnetization, bound currents, H and hysteresis (@em-magnetic-matter: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ", #electromagnetism "../currents/Hall-effect-conductivity-tensors-and-carrier-inference.lingua#r_4HGZYF44KNT5Y68SWNWZ8Q0WV6", #electrical-power-engineering "../../../engineering/electrical-power-engineering/machines/Magnetic-circuits-materials-loss-and-machine-geometry.lingua#r_26T1DAYPG9F1H903T8GS499Q25", #materials-engineering "../../../engineering/materials-engineering/functional/Exchange-interactions-and-magnetic-order.lingua#r_2XDJ68PA7HDHFCM6TFSZNTCFMG") { r_1H8D8KMFTHN04KYDW84T64CQ2J
 **Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), magnetic fields in matter; [Electromagnetics Volume 2 — Steven W. Ellingson](../sources/Electromagnetics-Volume-2-Ellingson.lingua#r_5P52CZD00XV6MMPFY9RHADT5KJ), magnetic materials and force applications.
 
 Magnetization M describes magnetic moment per volume after averaging. Bound volume current is ∇×M and bound surface current M×n in the usual convention. Define H = B/μ₀ − M so that macroscopic Ampère's law separates free current from the represented magnetization. B and H are related quantities, not interchangeable names for one field.
@@ -14,4 +14,6 @@ Draw a B–H loop with its excitation history, temperature, frequency and units.
 **Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
 
 **Continue in electrical power engineering:** [Magnetic circuits, materials, loss and machine geometry](../../../engineering/electrical-power-engineering/machines/Magnetic-circuits-materials-loss-and-machine-geometry.lingua#r_26T1DAYPG9F1H903T8GS499Q25).
+**Continue in materials engineering:** [Exchange interactions and magnetic order](../../../engineering/materials-engineering/functional/Exchange-interactions-and-magnetic-order.lingua#r_2XDJ68PA7HDHFCM6TFSZNTCFMG).
+
 } r_1H8D8KMFTHN04KYDW84T64CQ2J

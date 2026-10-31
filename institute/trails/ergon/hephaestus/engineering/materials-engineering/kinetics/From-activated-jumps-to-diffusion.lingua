@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+From activated jumps to diffusion (@mat-activation-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "../../../chemistry/general-chemistry/kinetics/Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ") { r_2843PTSRYZW5BW49Q4V9J5G0KS
+**Read:** [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), Diffusion, mechanisms and temperature dependence; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lecture 4 and 3.21 lectures 10–14. Follow the shared activation-energy Record next.
+
+Migration requires an available path and a rate for attempting and completing a jump. Vacancy-mediated diffusion combines vacancy availability, migration barriers and correlations. Interstitial motion can have a different mechanism. A measured Arrhenius slope may change when the dominant mechanism changes.
+
+Separate a tracer diffusivity, intrinsic diffusivity and chemical/interdiffusion coefficient. They are not alternative names for one universal D. Record temperature, composition, microstructure, reference frame and the experiment behind a quoted coefficient.
+
+**Work:** Form an explicit chain from defect population and jump rate to an expected spreading distance. Identify which assumptions make one activation energy adequate. Continue through the shared derivation before estimating a thermal-treatment timescale.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Explain temperature dependence and interpret an activation model](../../../chemistry/general-chemistry/kinetics/Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ).
+
+} r_2843PTSRYZW5BW49Q4V9J5G0KS

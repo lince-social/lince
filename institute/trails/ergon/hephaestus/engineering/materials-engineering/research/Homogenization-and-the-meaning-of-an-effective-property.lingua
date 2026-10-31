@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Homogenization and the meaning of an effective property (@mat-homogenization: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND", #materials-engineering "Internal-variables-memory-and-model-closure.lingua#r_6QY3PH55T5J5QADNSX001S7Y1M") { r_7GGJ90AQEVPCWPRMFE3PVD0WS7
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), heterogeneous elasticity; the earlier composite, laminate, porous-transport and interface readings. Compare with [Mesoscale tensile blind predictions — AM-Bench 2022](../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND), where the specimen contains only a small microstructural population.
+
+An effective property summarizes a specified boundary-value problem at a specified scale. It need not equal an arithmetic average of constituent values. For ideal linear-elastic one-dimensional elements with equal strain, E∥=fE₁+(1−f)E₂. With equal stress in series, 1/Eseries=f/E₁+(1−f)/E₂. These constructions do not impose every three-dimensional compatibility and constraint condition of a bonded composite.
+
+With f=1/2, E₁=200 GPa and E₂=2 GPa, these ideal arrangements give 101 GPa and approximately 3.9604 GPa. Identical constituent fractions can therefore support very different responses. Derive analogous thermal/electrical series and parallel relations with their boundary conditions; do not transplant elastic tensor bounds without checking their hypotheses.
+
+**Work:** Derive both formulas from force, extension and stored energy. Examine domain size, orientation and boundary conditions in a representative-volume calculation. Explain when an interface length, grain size or localization band invalidates a scale-independent local property. Report the variation between realizations rather than naming one small sample representative by assertion.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Internal variables, memory and model closure](Internal-variables-memory-and-model-closure.lingua#r_6QY3PH55T5J5QADNSX001S7Y1M).
+
+} r_7GGJ90AQEVPCWPRMFE3PVD0WS7

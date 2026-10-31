@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend a gas-flow and leak-measurement chain (@gas-study-measure-flow: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #source "../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB", #source "../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7", #industrial-gases-and-vacuum "Review-what-the-measurements-establish-about-the-service.lingua#r_00STQ667X1Y8PNYK73F7YC4AXE") { r_4QS9AY9R1TJR1VB9MBW3BRDWDW
+**Read in full:** [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), [A constant-pressure flowmeter — Eckel and colleagues](../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB) and [Leak calibration — Ehrlich and Tison, NIST SP 250-38](../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7).
+
+Follow a known amount through a flow realization, reference leak and complete detection arrangement. State the gas, temperature basis, pressure conditions, flow direction, boundary and observation interval. Include inventory change in connecting volumes and the time response of the detector.
+
+Compare two realizations over an overlapping range. Derive each from conservation, identify different dominant corrections and preserve shared-reference correlations. Analyze pressure/temperature drift, outgassing, displacement compliance, leakage and timing where relevant to the chosen method.
+
+Reproduce a selected reported uncertainty calculation using its complete inputs and conventions. Then alter a real condition rather than merely perturbing a final number. Separate the reference artifact's calibration from coverage of the complete object being tested and from conversion to its service gas.
+
+**Demonstrate:** Amount closure, traceability, independent numerical or analytical checks, a response-time argument and a result stated at the correct boundary. Explain the strongest untested assumption and the observation that could test it.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review what the measurements establish about the service](Review-what-the-measurements-establish-about-the-service.lingua#r_00STQ667X1Y8PNYK73F7YC4AXE).
+
+} r_4QS9AY9R1TJR1VB9MBW3BRDWDW

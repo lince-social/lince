@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Specimens, sampling and representative structure (@mat-representative: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "Read-property-data-with-conditions-and-uncertainty.lingua#r_5CBAKZGHNBXRGWAAB6N2DCQ6BE") { r_7H1X6BK6KC2XK1H1Q6WRTX7NSN
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Optical Microscopy and Introduction to Microstructural Examination; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), microscopy and analytical observations.
+
+A small specimen or image samples a larger material through a particular location, orientation and preparation. Segregation, layers, pores, texture and processing gradients can make that sample unrepresentative. More pixels in the same field do not necessarily sample more independent structure.
+
+Relate the observation volume to the length scales that control function. Define how locations and sections are chosen, including regions expected to behave differently. Keep discarded or damaged specimens in the sampling account. A representative-volume assumption must be justified for the property and heterogeneity in question.
+
+**Work:** Design a sampling comparison for a coated part, a porous ceramic and a fibre composite. Distinguish variation within a field, between fields and between batches. Explain which observations establish local structure and what additional evidence is needed to generalize to the useful object.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Read property data with conditions and uncertainty](Read-property-data-with-conditions-and-uncertainty.lingua#r_5CBAKZGHNBXRGWAAB6N2DCQ6BE).
+
+} r_7H1X6BK6KC2XK1H1Q6WRTX7NSN

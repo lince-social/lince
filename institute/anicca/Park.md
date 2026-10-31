@@ -1,15 +1,6 @@
 # Park: remaining desktop validation
 
-Updated 2026-10-30. A2 contains automatic checks without leaving Niri; B1–B2 share one scheduled physical/login session. No new subjects, provider matrices or stress suites. Native Wayland only. Accessibility, XWayland and the separate workspace refactor are outside this plan. Login, bars, launchers, lockers and portals remain external programs.
-
-## A2 — Applications and external tools (automatic)
-
-- [ ] **A2.1 — Resolve file-drop completion.** Diagnose why the real drop fixture receives no completion after replacement hover. Check fixture dispatch against the production path before changing product code. Require exactly one completed intended drop and no delayed write to a cancelled or replacement owner.
-- [ ] **A2.2 — Restore ordinary toolkit input.** Diagnose Qt's empty text field despite application focus; correct the general input path or demonstrated fixture error. Then finish the existing typing, popup/submenu, owned-dialog and move/resize workflow, with correct pixel bounds and recipients.
-- [ ] **A2.3 — Resolve appearance pixel preservation.** Diagnose the flat/free client-pixel comparison failure. Preserve sharp application content and input geometry when effects are enabled; fix the renderer or an invalid measurement based on evidence, without simply relaxing the assertion.
-- [ ] **A2.4 — Complete capture rejection.** Finish one representative denied/revoked capture path using existing automation. The previous broad sweep hit a six-minute diagnostic limit and is incomplete, not evidence of a leak. Require rejected requests to leave no unauthorized pixels or retained pending work; do not expand the permission matrix.
-- [ ] **A2.5 — Verify the real browser/terminal workflow.** Reuse one private nested Park with the selected native Wayland browser and terminal for typing, extended popup pixels/input, fullscreen/restore, cross-application copy/paste and file drop. Record independent outcomes and recover the private session after a failure so remaining observations still run.
-- [ ] **A2.6 — Verify external bar/provider handoffs.** On a private bus, run the user's selected bar/provider and verify reserved-space allocation/restoration, launching and authorized capture with usable pixels. Use standard integration points; do not build replacement services. Carry only unavoidable human-consent interaction to B2.
+Updated 2026-10-30. B1–B2 share one scheduled physical/login session. No new subjects, provider matrices or stress suites. Native Wayland only. Accessibility, XWayland and the separate workspace refactor are outside this plan. Login, bars, launchers, lockers and portals remain external programs.
 
 ## B1 — Physical outputs and recovery (needs the user)
 
@@ -20,11 +11,11 @@ Updated 2026-10-30. A2 contains automatic checks without leaving Niri; B1–B2 s
 ## B2 — Installed session and ordinary use (needs the user)
 
 - [ ] **B2.1 — Verify the newly published candidate.** Update the personal flake's Lince release input after the intended main publication, then check the exact binary revision/features, packaged session and module evaluation outside the development shell. Validate the newer candidate containing the UWSM integration. Use the prebuilt package, not a local Rust rebuild.
-- [ ] **B2.2 — Validate UWSM login and session startup.** After the user authorizes host activation, select Park in the existing greeter. Require readiness after the first interactive frame, correct display-environment ownership and session-scoped external autostart. Arrange any needed bar/launcher startup through the user's chosen external mechanism; Niri's startup commands do not run in Park.
+- [ ] **B2.2 — Validate UWSM login and session startup.** After the user authorizes host activation, select Park in the existing greeter. Require readiness after the first interactive frame, correct display-environment ownership and session-scoped external autostart. Verify the configured external bar, launcher and locker work in the installed session, with one bar instance and no dependence on Niri's startup commands.
 - [ ] **B2.3 — Complete the ordinary-use sample.** In the same session as B1, spend 15 minutes on browser/terminal/Lince work, including the user's layout/dead keys or configured IME, a saved edit and outstanding launcher/portal consent UI. Require no crash, lost work, wrong-target input, private leak or stuck input. Fix demonstrated failures without adding endurance or provider matrices.
 - [ ] **B2.4 — Validate logout and saved restart.** Exercise save-aware logout, return to Niri and log into Park again. Require saved settings to return and Park services/display environment to be cleaned up on exit. Keep the previous NixOS generation available.
 
-Run the remaining A2 tasks. Group A uses private directories, sockets, profiles and provider buses; never log out, switch VT, activate NixOS or change the host graphical-session environment there. Missing tools block only their dependent observations. B1 and B2 share one scheduled session. SDR keyboard/mouse operation is the target; HDR, VRR, tablet/touch and connector/rotation matrices are not additional gates.
+B1 and B2 share one scheduled session with the user's participation. Do not log out, switch VT or activate NixOS before that session is arranged. SDR keyboard/mouse operation is the target; HDR, VRR, tablet/touch and connector/rotation matrices are not additional gates.
 
 ## Execution rules
 
@@ -36,11 +27,11 @@ The runner and ledgers are implemented. Use:
 
     nix develop .#interface --option builders ''
     cargo xtask park validate final init /absolute/settings.json
-    cargo xtask park validate final run /absolute/run --only A2
+    cargo xtask park validate final run /absolute/run --only B2
 
-Select A2 for its pending observations. The default run selects A1–A3 and never starts a physical session, so use an explicit pending selector. Initialize a fresh candidate after compiled-source changes; preserve old reports as historical evidence. B2 is explicitly selected for installed-package preparation. Confirm the final installed release with the existing A2 smoke and checks affected by final production fixes, without a sixth workflow.
+Select B2 explicitly for installed-package preparation; the default run selects A1–A3 and never starts a physical session. Initialize a fresh candidate after compiled-source changes; preserve old reports as historical evidence. Confirm the final installed release with the existing A2 smoke and checks affected by final production fixes, without a sixth workflow.
 
-Delete each completed task only after its required fixes and execution pass, retaining the receipt in the run report. Do not restore completed subjects merely because another subject failed. Do not add duplicate size/orientation/provider sweeps, twenty-cycle stress, six pacing intervals or long resource soaks. The unresolved rendering/input/persistence checks above address actual failures.
+Delete each completed task only after its required fixes and execution pass, retaining the receipt in the run report. Do not restore completed subjects merely because another subject failed. Do not add duplicate size/orientation/provider sweeps, twenty-cycle stress, six pacing intervals or long resource soaks.
 
 ## Installed session configuration
 

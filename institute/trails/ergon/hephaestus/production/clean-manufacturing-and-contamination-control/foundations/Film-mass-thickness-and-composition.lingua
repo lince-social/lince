@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Film mass, thickness and composition (@cm-film: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "Microbial-material-and-activity.lingua#r_5D6DQWG0D0DWGT7W708QP2NK8J") { r_01JP23J8EAA8RR6D1KN8M1R0VN
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), molecular films and their performance effects.
+
+For an ideal uniform film of density ρ, mass m over area A gives thickness h=m/(ρA). A hypothetical 1 mg spread over 0.1 m² at 1000 kg/m³ corresponds to 10 nm. This is an equivalent uniform thickness, not proof that the real deposit is flat or continuous.
+
+The same mass can form islands, fill a recess or spread across the surface. Composition can alter absorption, wetting, adhesion, conductivity or chemical reaction. A gravimetric residue result therefore needs more information before it becomes a performance prediction.
+
+**Work:** Verify the thickness example and compare a uniform film with the same mass confined to one percent of the area. Name a measurement sensitive to amount, one sensitive to chemical identity and one sensitive to distribution. Explain why they answer complementary questions.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Microbial material and activity](Microbial-material-and-activity.lingua#r_5D6DQWG0D0DWGT7W708QP2NK8J).
+
+} r_01JP23J8EAA8RR6D1KN8M1R0VN

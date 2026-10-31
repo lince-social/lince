@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Track small persistent changes with an EWMA (@cm-monitoring-ewma: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Accumulate-evidence-of-a-specified-shift-with-CUSUM.lingua#r_50QB7EZPNF9HN32FTHN72T6SX4") { r_3AQC92YPV91KVMSWW5P2KFAHSC
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), [section 6.3.2.4, EWMA charts](https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc324.htm), including its twenty-observation example.
+
+Define Z_t = λY_t + (1−λ)Z_(t−1), with 0 < λ ≤ 1. For independent observations of known variance σ² and a fixed initialization at the known baseline mean, var(Z_t) = σ²λ[1−(1−λ)^(2t)]/(2−λ). The long-run variance omits the bracketed startup factor. An estimated or random initialization needs its own uncertainty.
+
+The statistic retains evidence from earlier observations. Smaller λ increases memory while changing response delay. Its successive values are dependent even when the input observations are independent, so a single normal-tail probability does not directly give its run-length distribution.
+
+Reconstruct the handbook example with Z₀ = 50, λ = 0.3 and s = 2.0539. Full-precision long-run three-standard-deviation limits are about 47.4115683 and 52.5884317. Applying the recurrence to its twenty listed observations gives final Z₂₀ ≈ 51.9882433; none crosses those limits. That bounded result does not prove the physical process cannot change.
+
+**Work:** Verify every recurrence against a weighted-sum calculation. Compare startup and long-run limits, a temporary spike and a sustained shift. Estimate detection delay and false-signal behavior for the complete chosen rule using declared simulated populations.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Accumulate evidence of a specified shift with CUSUM](Accumulate-evidence-of-a-specified-shift-with-CUSUM.lingua#r_50QB7EZPNF9HN32FTHN72T6SX4).
+
+} r_3AQC92YPV91KVMSWW5P2KFAHSC

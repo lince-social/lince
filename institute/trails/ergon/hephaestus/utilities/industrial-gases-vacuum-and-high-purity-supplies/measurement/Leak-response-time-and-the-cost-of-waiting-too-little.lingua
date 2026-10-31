@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Leak response time and the cost of waiting too little (@gas-leak-transient: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7", #industrial-gases-and-vacuum "Reference-leaks-have-temperature-and-reservoir-history.lingua#r_3689Z22A1B9RRVGJ0MG1ZASDAQ") { r_00YRAJCSXC965VR9JH2M5AKRGZ
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), response-time discussion; [Leak calibration — Ehrlich and Tison, NIST SP 250-38](../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7), comparison principles; revisit the vacuum network program.
+
+For a well-mixed volume V with constant effective pumping speed S, a step in tracer throughput Q gives V dp/dt=Q−Sp. Starting from zero tracer pressure, p(t)=(Q/S)[1−exp(−t/τ)], τ=V/S. A real instrument and connecting line can add further response times and delays.
+
+At one time constant the signal is only about 63.2% of its final value. After the tracer source stops, stored tracer decays and can contaminate the interpretation of the next observation. A large pumping speed lowers steady tracer pressure while shortening response; signal magnitude and speed must be considered together.
+
+For a first-order detector with its own time constant τd, the combined response is generally not the same exponential. When chamber and detector time constants are equal, the normalized step response is 1−(1+t/τ)exp(−t/τ). At t=τ this is only about 26.4%.
+
+**Work:** Derive both responses from coupled balances and verify initial/final limits. Choose an observation interval from a stated allowable response error, then identify how dead volumes, surface storage or a weakly connected location would invalidate the simple model.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Reference leaks have temperature and reservoir history](Reference-leaks-have-temperature-and-reservoir-history.lingua#r_3689Z22A1B9RRVGJ0MG1ZASDAQ).
+
+} r_00YRAJCSXC965VR9JH2M5AKRGZ

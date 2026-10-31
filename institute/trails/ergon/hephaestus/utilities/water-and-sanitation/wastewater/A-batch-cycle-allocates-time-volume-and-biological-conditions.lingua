@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A batch cycle allocates time, volume and biological conditions (@wu-sbr: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "An-original-batch-growth-model-with-a-conservation-check.lingua#r_3Q9K175TBV61PNSAECSK25T3WT") { r_6Q2ERG99K92NC45ZH9MPF1JZ54
+**Read:** [Activated Sludge and Aerobic Biofilm Reactors — von Sperling](../sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua#r_0WMGVEM60J63M01SJJDQ9357GE), process configurations; [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G), sequencing-batch configurations in chapter 6; [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), process and control modelling. Translate the same balances into changing phases rather than assuming a batch reactor has a constant inlet and volume.
+
+An SBR can allocate time to filling, reacting, settling and decanting, with configurations varying across systems. Flow cannot be continuously accepted by a single closed settling volume without a corresponding arrangement. Oxygen and substrate conditions change during a cycle, and decanted volume is not the total tank inventory.
+
+An original capacity account uses two tanks, each decanting 200 m³ per six-hour cycle. If each completes four such cycles per day, nominal daily decant is 1,600 m³. This arithmetic does not establish a feasible overlap schedule, biological performance, settling time or storm acceptance. A failed decant cycle changes both capacity and subsequent inventory.
+
+**Work:** Draw a full-day schedule showing where incoming water goes during every phase. Close liquid, substrate and solids balances across filling, reaction, wasting and decant. Compare one missed cycle with a gradual increase in load. For advanced work, model phase transitions as explicit events and verify conservation across them rather than smoothing the event into an arbitrary continuous discharge.
+
+**Continue:** [An original batch-growth model with a conservation check](An-original-batch-growth-model-with-a-conservation-check.lingua#r_3Q9K175TBV61PNSAECSK25T3WT).
+} r_6Q2ERG99K92NC45ZH9MPF1JZ54

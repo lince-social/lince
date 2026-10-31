@@ -1,0 +1,16 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Review transport before changing the surface or facility (@cm-transport-review: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "../surfaces/Read-surfaces-from-contact-history-to-measured-removal.lingua#r_17J6HNWM403V06B2KQXWMXAAXG") { r_7RP133RW9C9HH2M0G9ZFW0012D
+**Read:** Revisit the complete transport readings and the evidence used in the three investigations.
+
+Explain how a particle's properties, fluid state, forces, boundary conditions and interactions determine the modeled transfer. Connect that account to what is sampled and observed. Distinguish a conserved material inventory from a changing particle count and a verified numerical scheme from a physically tested model.
+
+**Work:** Defend the mobility, collector and population studies together. Recompute a central result independently, revise one assumption after criticism and show how the revision changes the required evidence. Explain which mechanisms the simple column omits and which measurements would justify a more elaborate calculation.
+
+Continue toward surface chemistry and adhesion, cleaning, facility design, measurement methods and continuing operation. Those choices depend on transport, but transport alone does not establish attachment, material compatibility, sterility or an accepted manufacturing result.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+
+**Continue in clean manufacturing:** [Read surfaces from contact history to measured removal](../surfaces/Read-surfaces-from-contact-history-to-measured-removal.lingua#r_17J6HNWM403V06B2KQXWMXAAXG).
+
+} r_7RP133RW9C9HH2M0G9ZFW0012D

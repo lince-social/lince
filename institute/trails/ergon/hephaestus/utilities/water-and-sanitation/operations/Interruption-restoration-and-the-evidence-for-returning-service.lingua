@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Interruption, restoration and the evidence for returning service (@wu-restoration: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD", #source "../sources/Sanitation-Safety-Planning-WHO.lingua#r_2FF0R519TGR5RNY3EVV7APPZ86", #source "../sources/Operational-Technology-Security-NIST.lingua#r_4W20M55VVPGFB1FAB00Q347KPT", #water-and-sanitation "The-people-materials-and-finance-that-keep-water-working.lingua#r_2ZW9VV6JHPB69ZRZ9FC0AKHNXX") { r_3XQQ1GBTMB02T47TT6PEG457CD
+**Read:** [Water safety plan manual — WHO and IWA, second edition](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD), management and incident response; [Sanitation safety planning — WHO, second edition](../sources/Sanitation-Safety-Planning-WHO.lingua#r_2FF0R519TGR5RNY3EVV7APPZ86), affected sanitation pathways; [Operational technology security — NIST SP 800-82, revision 3](../sources/Operational-Technology-Security-NIST.lingua#r_4W20M55VVPGFB1FAB00Q347KPT), recovery; revisit the distribution repair and restart material.
+
+Restoration is a sequence of physical and informational changes. Power may return before a source, treatment barrier, measurement or receiving route becomes available. Restart can mobilize deposits, change flows, expose stale water and resume a process whose stored state no longer describes reality.
+
+**Work:** Conduct a tabletop reconstruction of a fictional outage: what is known at each time, who can act, what is isolated, which users lose service, what substitute is actually available and which observations support each return. Include a failed instrument and a delayed repair delivery. Explain residuals and diverted water as well as the supply endpoint.
+
+Compare two restoration sequences against continuity and quality evidence, not merely the shortest equipment restart time. For deeper work, reconstruct a published incident using its primary timeline and distinguish established events from hypotheses. A tabletop identifies unanswered questions; restoration of a real health-related service requires its competent operating and public-health decisions.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [The people, materials and finance that keep water working](The-people-materials-and-finance-that-keep-water-working.lingua#r_2ZW9VV6JHPB69ZRZ9FC0AKHNXX).
+
+} r_3XQQ1GBTMB02T47TT6PEG457CD

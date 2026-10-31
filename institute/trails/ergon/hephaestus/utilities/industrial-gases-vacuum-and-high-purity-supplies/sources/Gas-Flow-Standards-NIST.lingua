@@ -1,0 +1,12 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Gas flow standards and their uncertainty — Wright and colleagues (@gas-flow-metrology: 0, is #reference, #part-of @gas-sources) { r_2FJV0VJ3K710PNV7E45JGGJXG5
+John D. Wright, Shin-Ichi Nakao, Aaron N. Johnson and Michael R. Moldover. *Gas flow standards and their uncertainty*. Metrologia 60 (2023), 015002, 40 pages; published online 12 December 2022. DOI 10.1088/1681-7575/ac8c99. [Official publication](https://www.nist.gov/publications/gas-flow-standards-and-their-uncertainty), [complete public paper](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=934452).
+
+Read the complete review. Reconstruct volumetric, pressure-volume-temperature-time, rate-of-rise, gravimetric and velocity-area realizations, then compare working standards. Derive the gas-state conversion and uncertainty for the particular range and composition. Follow the primary method behind a selected high-accuracy claim.
+
+The full PDF, title, dates and introductory classification were inspected on 30 October 2026, followed by selected PVTt, inventory-volume, correlation and rate-of-rise passages. Example table values were not independently reconstructed; the trail uses separately specified calculations. Numerical budgets require reading their complete methods and conditions before reuse. The online publication year and journal-volume year differ; preserve both.
+
+Authorized institutional full text. Retain government and other component credits; no blanket adaptation permission for every incorporated figure is assumed. Keep the source external and distinguish a physical standard from a manufacturer's nominal meter accuracy.
+
+} r_2FJV0VJ3K710PNV7E45JGGJXG5

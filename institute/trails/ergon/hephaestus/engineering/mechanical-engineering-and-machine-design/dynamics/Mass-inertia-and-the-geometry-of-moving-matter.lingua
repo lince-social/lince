@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Mass inertia and the geometry of moving matter (@mech-mass-inertia: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "Angular-momentum-and-rigid-body-equations-of-motion.lingua#r_5Q07B3SQ0DPMKV6XDW9HPZXN1E") { r_677BAAY5R0MP9FED713TF4ABQC
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 10–12 and recitation 6; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), sections 3.1–3.2. Use [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), multivariable integration, to construct an inertia from a mass distribution.
+
+Mass moment of inertia about an axis is ∫ r_perpendicular² dm, in kg·m². The area moment used in beam bending is ∫ distance² dA, in m⁴. Their similar geometry does not make their units, physical meaning or uses interchangeable.
+
+For a uniform thin rod of mass m and length L, integration gives mL²/12 about a perpendicular axis through its centre and mL²/3 about a parallel axis through an end. The parallel-axis term m d² explains the difference. With m = 3 kg and L = 0.8 m, these values are 0.16 and 0.64 kg·m².
+
+In three dimensions the inertia tensor is I = ∫ ((r·r)1 − rrᵀ) dm about the chosen origin. It maps angular velocity to angular momentum about the centre of mass for a rigid body. Its principal axes diagonalize this symmetric tensor; a general angular velocity need not produce parallel angular momentum.
+
+**Work:** Derive a rod and solid-cylinder inertia by integration, then construct an assembly using the parallel-axis theorem. Check mass, reference axes, symmetry and units. Treat holes as removed mass with the same reference convention. Later compare the predicted inertia with a dynamic measurement rather than assuming a CAD density or missing fastener has no effect.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Angular momentum and rigid-body equations of motion](Angular-momentum-and-rigid-body-equations-of-motion.lingua#r_5Q07B3SQ0DPMKV6XDW9HPZXN1E).
+
+} r_677BAAY5R0MP9FED713TF4ABQC

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of polymer and noncrystalline structure (@mat-disorder-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "Defend-the-structural-description-of-an-engineered-material.lingua#r_343YS1SHWD9DDHP6QFZXWVBX9C") { r_4NKA14QV8FJ9T692RJDJ9RM7M6
+**Read:** [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), lectures 1–9 and 17–19 with exercises; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Polymer Basics and The Glass Transition; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures 21–24.
+
+Choose a polymer or glass with an identified composition and preparation history. Compare at least two structural descriptions consistent with its name. Separate chemical connectivity, molecular-size distribution, local conformation, crystalline fraction and larger-scale morphology.
+
+**Derive:** For an ideal freely jointed chain with N independent isotropically oriented segments of length b, derive ⟨R²⟩=Nb² by expanding the vector sum and its cross terms. Compare this with the contour length Nb and identify where excluded volume, stiffness or interactions invalidate the model. Relate the model's segment length to the actual molecule without treating each chemical bond as automatically independent.
+
+**Investigate:** Compare a molecular/structural measurement with thermal or mechanical evidence across a declared timescale. Determine whether a proposed explanation is identifiable from those observations. Separate reversible response from changed material history. Quantitative transport, relaxation and processing studies will deepen this investigation in the later sections.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the structural description of an engineered material](Defend-the-structural-description-of-an-engineered-material.lingua#r_343YS1SHWD9DDHP6QFZXWVBX9C).
+
+} r_4NKA14QV8FJ9T692RJDJ9RM7M6

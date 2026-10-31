@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Review what the measurements establish about the service (@gas-measurement-review: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #industrial-gases-and-vacuum "../operation/From-accepted-measurements-to-continuing-service.lingua#r_630TTG5JX7D6S369PE5YCYA8FX") { r_00STQ667X1Y8PNYK73F7YC4AXE
+**Review:** The three measurement investigations and their complete source readings.
+
+Bring pressure, flow, leakage and composition into the same physical account. Their results must refer to compatible locations, gas states and intervals before they can jointly support a claim about a supply or vacuum service. A disagreement can expose a wrong boundary, missing inventory or instrument perturbation rather than a failed conservation law.
+
+Connect each observation to the preceding production, surface and delivery models. Distinguish measured quantities, inferred quantities, assumed properties and source results not independently reproduced. Check that uncertainty describes the actual inference rather than only the instrument's electrical repeatability.
+
+**Work:** Defend one complete service claim and its limits, then change one demand, material or measurement condition. Identify which evidence survives and which needs revision. The continuing-operation sequence follows how that state is commissioned, maintained, repaired and checked over its working life.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+
+
+**Continue in gas and vacuum systems:** [From accepted measurements to continuing service](../operation/From-accepted-measurements-to-continuing-service.lingua#r_630TTG5JX7D6S369PE5YCYA8FX).
+
+} r_00STQ667X1Y8PNYK73F7YC4AXE

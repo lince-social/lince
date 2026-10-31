@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Datums, reference frames and accessible features (@mech-datums: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #mechanical-engineering "Size-form-orientation-position-and-surface-texture.lingua#r_6S5EQG5YSJN5GM2S0K5SXA4W2M") { r_1QKSZWNVRWCQ08WM46BF00MSG2
+**Read:** [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), geometric references, coordinate systems and datum measurement; [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), sections 2.2 and 2.4 and chapter 6.
+
+A datum is an ideal reference established from specified physical features under a convention. A rough surface, its sampled points and the fitted reference are distinct. Assembly function, machining setup and inspection may use different references; their transformations and uncertainties need to be understood.
+
+The familiar three-two-one locating arrangement constrains six rigid-body freedoms through independent contacts in an ideal model. Extra contacts may distort a part or create ambiguous seating. A partial circular arc may locate a fitted centre poorly even when each measured point is precise.
+
+**Work:** Establish a support's reference frame from its actual mounting faces and locating features. Compare that frame with the one available during machining and inspection. Model a small angular seating error and predict displacement at the useful point. Identify inaccessible or deformable datum features and redesign them when the measurement cannot establish the intended function.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Size, form, orientation, position and surface texture](Size-form-orientation-position-and-surface-texture.lingua#r_6S5EQG5YSJN5GM2S0K5SXA4W2M).
+
+} r_1QKSZWNVRWCQ08WM46BF00MSG2

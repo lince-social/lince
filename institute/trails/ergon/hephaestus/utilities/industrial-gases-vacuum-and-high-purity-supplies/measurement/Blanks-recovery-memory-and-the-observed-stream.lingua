@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Blanks, recovery, memory and the observed stream (@gas-measurement-blanks: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #source "../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ", #industrial-gases-and-vacuum "../../../inquiry/metrology/uncertainty/Sensitivity-and-correlation.lingua#r_0EF35BB106S2F2ATJBXBR49DFR") { r_1FT0TW15Q9X0Y6A6DNAT4Z79HX
+**Read:** [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), measurement and stability evidence; [Hybrid humidity generator — NIST SP 250-83 Revision 1](../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ), dry-gas and validation sections; revisit the delivery purge and surface-memory Records.
+
+Distinguish an electronic zero, an instrument blank, a complete sampling-path blank and a material/process blank. They include different sources of signal. Subtracting a clean electronic baseline does not remove contamination introduced by a valve or sample line.
+
+A recovery experiment introduces a known change and checks how much reaches the measured result. Failure can arise from adsorption, reaction, incomplete mixing, interference or calibration. A step-up and step-down comparison can reveal memory that one steady reference measurement misses.
+
+At low levels, blank variability and sample variability may be comparable to the desired signal. A negative background-corrected estimate can be a valid numerical consequence of noise; replacing all such values with zero biases later summaries. Reporting must distinguish an estimated quantity, detection capability and a one-sided bound with its stated model.
+
+**Work:** Design a sequence containing blanks, references, changed sample concentrations and returns to baseline. Explain what each transition tests. Connect every result to its actual stream interval after transport delay and instrument response rather than assigning it to the time the operator pressed a button.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Propagate uncertainty with sensitivities and covariance](../../../inquiry/metrology/uncertainty/Sensitivity-and-correlation.lingua#r_0EF35BB106S2F2ATJBXBR49DFR).
+
+} r_1FT0TW15Q9X0Y6A6DNAT4Z79HX

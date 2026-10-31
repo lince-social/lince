@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Qualify a benign enclosure against an explicit use (@cm-study-qualification: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #clean-manufacturing "Review-what-qualification-and-monitoring-have-established.lingua#r_45F6FDPJHZ5MG7Y0K55BMA3H0X") { r_5WSJYVT5MJYNM5HNHSX77RFT5F
+**Read:** [Systems Engineering Handbook — NASA](../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), chapter 5; the facility studies and surface-method validation; [Sampling contributions, thresholds, and results near zero](../../../inquiry/metrology/uncertainty/Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG).
+
+Design a paper qualification for a benign optical-assembly enclosure. Define the useful function, relevant airborne and surface quantities, product exposure and operating domain. Map each claim to inspection, analysis or an observation that can challenge it.
+
+Use the existing airflow, transient, sampling and surface models to generate a consistent hypothetical system. Include one interaction and one localized condition that a room-wide average misses. Define the independent sampling units, instrument response and reference uncertainties.
+
+Compare a correctly built system, an interface error and a system that meets a facility quantity while failing the product's functional requirement. Explain which observations distinguish the cases. Keep the configuration and the supported domain with every conclusion.
+
+**Result to explain:** A defensible qualification argument with independently checked calculations, uncertainty and explicit limits. State the unresolved evidence needed for a real installation and how one subsequent change would affect the argument.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review what qualification and monitoring have established](Review-what-qualification-and-monitoring-have-established.lingua#r_45F6FDPJHZ5MG7Y0K55BMA3H0X).
+
+} r_5WSJYVT5MJYNM5HNHSX77RFT5F

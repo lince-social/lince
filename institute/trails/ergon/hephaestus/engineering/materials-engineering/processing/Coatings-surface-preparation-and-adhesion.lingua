@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Coatings, surface preparation and adhesion (@mat-coatings: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #source "../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT", #materials-engineering "Physical-and-chemical-vapor-deposition.lingua#r_4V99KWWZSQVC6QQ0GG4VH6569B") { r_2SGHT8AR57NW4E9RYXVE8NYE7A
+**Read:** [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), surface-engineering sections; [Microfabrication and material integration — MIT 6.777J, 2007](../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT), film state; the earlier interfacial fracture and thermal-mismatch accounts.
+
+A coating is part of a substrate/interface/layer system. Cleaning, roughness, chemistry, wetting, deposition conditions and later temperature history influence adhesion and residual stress. A layer can be hard, conductive or corrosion-resistant in isolation yet fail by cracking, buckling or delamination in its actual stack.
+
+**Work:** Compare a sprayed, plated or solution-applied layer with a vapor-deposited alternative for one function. Define thickness uniformity, pore connectivity, adhesion and the relevant functional test. Explain which measurement distinguishes a weak interface from a damaged substrate or residual-stress-driven failure. Do not equate a scratch-test load directly with a universal interfacial fracture energy.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Physical and chemical vapor deposition](Physical-and-chemical-vapor-deposition.lingua#r_4V99KWWZSQVC6QQ0GG4VH6569B).
+
+} r_2SGHT8AR57NW4E9RYXVE8NYE7A

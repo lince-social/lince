@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Wood, cellular solids and hierarchical structure (@mat-cellular-families: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #materials-engineering "Moisture-grain-direction-and-wood-property-evidence.lingua#r_4R9G8XNCS0G4H4FD4T87S8GPG7") { r_0207W6JNBXV873G403KT3SAM8S
+**Read:** [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapters 3–5 in full; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), the complete Wood package; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), lecture 18 on microframes and millitrusses.
+
+A cellular solid combines solid material with an architecture of voids and walls or struts. Relative density ρ*/ρ_s is not enough to determine response: bending-dominated and stretching-dominated structures can scale differently. Buckling, wall fracture, crushing, fluid content and loading direction may control different stages.
+
+Wood is a hierarchical cellular composite with longitudinal, radial and tangential directions. Cell-wall chemistry, microfibril orientation, growth structure and defects contribute at different scales. A dense clear small specimen does not represent every structural board of the same species.
+
+**Work:** Derive the dimensional ingredients of a relative-density stiffness model, then compare two architectures at equal relative density. Map wood's hierarchy from polymer chains to a board. Use the handbook to distinguish elastic constants, clear-wood strength, variability and product-level grading evidence; avoid treating a bending failure load as a universal tensile strength.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Moisture, grain direction and wood property evidence](Moisture-grain-direction-and-wood-property-evidence.lingua#r_4R9G8XNCS0G4H4FD4T87S8GPG7).
+
+} r_0207W6JNBXV873G403KT3SAM8S

@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Recognize when surfaces and dispersed phases change the question (@gc-interfaces: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "../kinetics/Reaction-rates-and-rate-laws.lingua#r_2RAAQPESP3HCEDY95PCFTXVVYZ") { r_76DY10T2QGJP6FASSEXZGDMM73
+Recognize when surfaces and dispersed phases change the question (@gc-interfaces: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #general-chemistry "../kinetics/Reaction-rates-and-rate-laws.lingua#r_2RAAQPESP3HCEDY95PCFTXVVYZ", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/surfaces/The-surface-has-composition-geometry-and-history.lingua#r_7S5TPNAAEGD0QP31S1TBSPXERK") { r_76DY10T2QGJP6FASSEXZGDMM73
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 11’s colloids and preceding solution context; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), liquids, interfacial effects, and colloidal/solution discussions; [Analytical Chemistry 2.1 — David Harvey](../sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), sampling/preparation issues relevant to a dispersed specimen.
 
 Interfaces contribute chemical and physical behavior that a uniform bulk-phase model can omit. Surface area, adsorption, surface charge, wetting, aggregation, and transport can matter in a fine powder, suspension, emulsion, porous solid, or clean manufactured surface. State the scale and material structure relevant to the observation.
@@ -16,4 +16,7 @@ Read the entire colloid treatment and use the later equilibrium/kinetic ideas to
 **Continue:** [Define a reaction rate and infer a law from appropriate evidence](../kinetics/Reaction-rates-and-rate-laws.lingua#r_2RAAQPESP3HCEDY95PCFTXVVYZ).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in clean manufacturing:** [The surface has composition, geometry and history](../../../production/clean-manufacturing-and-contamination-control/surfaces/The-surface-has-composition-geometry-and-history.lingua#r_7S5TPNAAEGD0QP31S1TBSPXERK).
+
 } r_76DY10T2QGJP6FASSEXZGDMM73

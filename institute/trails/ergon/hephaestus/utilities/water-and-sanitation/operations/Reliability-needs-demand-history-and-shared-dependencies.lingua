@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Reliability needs demand history and shared dependencies (@wu-service-reliability: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Asset-Management-for-Water-Systems-EPA.lingua#r_78ZKEFSZ16WYQ5E62DWKR8FP3N", #source "../sources/Effective-Utility-Management-EPA-USDA.lingua#r_5W9CSGM4NJKGFDES86XNMQFBRD", #source "../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK", #water-and-sanitation "An-original-storage-and-service-history.lingua#r_4AYPYP03NDY4K96AYAY2JQE45W") { r_2P6NNR6TE8R6PNG8HXRYA0P663
+**Read:** [Asset management for small water systems — US EPA](../sources/Asset-Management-for-Water-Systems-EPA.lingua#r_78ZKEFSZ16WYQ5E62DWKR8FP3N), service and replacement priorities; [Effective utility management — rural and small systems guidebook](../sources/Effective-Utility-Management-EPA-USDA.lingua#r_5W9CSGM4NJKGFDES86XNMQFBRD), performance and infrastructure; the reliability and monitoring arguments in [Guidelines for Water Reuse — EPA and USAID, 2012](../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK).
+
+Two pumps are not independent if they share a flooded electrical room, blocked intake or unavailable operator. Under an explicit independence assumption, two parallel units of availability 0.95 would give 1 − (1 − 0.95)² = 0.9975 for at least one operating unit. A shared enabling supply of availability 0.98, itself assumed independent of the units, reduces that to 0.97755. These simple numbers do not establish delivery capacity or quality during a particular outage.
+
+Storage connects failure duration to demand history. A hundred cubic metres available before an interruption has a different consequence from the same volume arriving afterwards. Mean inflow and mean demand can hide an empty tank or unacceptable delivered water.
+
+**Work:** Draw the dependencies for one service and distinguish component availability, adequate capacity, quality acceptance and user demand. Test short frequent interruptions against a long rare interruption with the same total downtime. Deepen into repair-time distributions, weather-correlated failures and maintenance scheduling, comparing analytic approximations with chronological simulation. Treat rare-event estimates as uncertain evidence rather than precise promises.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [An original storage and service history](An-original-storage-and-service-history.lingua#r_4AYPYP03NDY4K96AYAY2JQE45W).
+
+} r_2P6NNR6TE8R6PNG8HXRYA0P663

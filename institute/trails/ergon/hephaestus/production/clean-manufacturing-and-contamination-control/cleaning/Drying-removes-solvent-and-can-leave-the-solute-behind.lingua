@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Drying removes solvent and can leave the solute behind (@cm-drying-balance: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD", #clean-manufacturing "Drying-patterns-and-capillary-forces-change-the-final-surface.lingua#r_0PM0ZTCGPHFS301M9N4S1J5N09") { r_2HW8Q9Z54R9BSX2FSPCMVWV6EP
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), controlled drying; [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD), section 11's evaporation and film formation.
+
+For a uniform retained liquid film of thickness h and nonvolatile solute mass concentration c, complete solvent evaporation with no solute loss leaves mass per projected area σ=c h. Drying a liquid is not the same as removing everything previously dissolved in it. Concentration, precipitation, adsorption and chemical change can alter the final distribution.
+
+A hypothetical 10 µm film containing 1 mg/L nonvolatile solute leaves 10 µg/m² if the assumptions hold. The total solvent-removal energy also includes latent heat and heat exchange. Evaporation can cool a surface; condensation depends on the surrounding vapor partial pressure and the surface's saturation condition, not simply whether it is below room temperature.
+
+**Work:** Derive the areal mass in SI and by directly counting liquid volume over 1 m². Compare measured average residue with a locally concentrated deposit. Draw a mass and energy boundary for drying and state where a temperature, gas-flow or humidity measurement belongs.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Drying patterns and capillary forces change the final surface](Drying-patterns-and-capillary-forces-change-the-final-surface.lingua#r_0PM0ZTCGPHFS301M9N4S1J5N09).
+
+} r_2HW8Q9Z54R9BSX2FSPCMVWV6EP

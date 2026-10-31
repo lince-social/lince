@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Separate gas sources, storage and removal (@gas-source-account: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #industrial-gases-and-vacuum "../../../chemistry/general-chemistry/kinetics/Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ") { r_24T136HP25WAB5Y8384K77AZWV
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), introductory sources and measurement; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), gas loads and evacuation; [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D), experimental boundaries.
+
+At fixed V and T, V dp/dt equals gas throughput entering the gas phase minus throughput leaving it. A useful decomposition includes deliberate feed, real leaks, surface desorption, bulk release, permeation, reaction, trapped-volume exchange and pump removal. The terms represent different physical boundaries and can vary with time.
+
+Keep transfers internal to the complete apparatus distinct from exchange with its environment. A desorbed molecule increases gas-phase inventory while decreasing a surface inventory. Including it both as an external source and as internal transfer would double-count matter. Measurement devices and isolation valves add their own reservoirs and exchange paths.
+
+**Work:** Write separate and combined balances for gas, one adsorbed population and one bulk reservoir. Demonstrate cancellation of internal transfers. Compare two explanations that fit the same p(t) but imply different stored amounts. Identify a temperature, composition or isolation observation that could distinguish them.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Explain temperature dependence and interpret an activation model](../../../chemistry/general-chemistry/kinetics/Temperature-activation-and-energy-distributions.lingua#r_69Y6QZ24G1QTE9TAJJM4A6WGDJ).
+
+} r_24T136HP25WAB5Y8384K77AZWV

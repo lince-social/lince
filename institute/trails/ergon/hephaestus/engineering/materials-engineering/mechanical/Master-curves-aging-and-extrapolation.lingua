@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Master curves, aging and extrapolation (@mat-master-curves: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "Yield-crazing-drawing-and-network-damage.lingua#r_3CZFFV5SG82CF993EK0QBZ0QXA") { r_7RA8RJXAW4CMZRNPGV9DY6BBTZ
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), temperature effects and time–temperature superposition; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), glass transition and chain dynamics; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), temperature dependence in section 3.6.
+
+A horizontal shift of response curves can extend an observation window when the material is thermorheologically simple over the relevant range. Define the shift-factor convention before using a master curve. For a convention with reduced time t/a_T, a smaller a_T means faster relaxation at fixed physical time. Vertical changes may also require treatment.
+
+Arrhenius and Williams–Landel–Ferry fits represent different empirical or model assumptions; their constants are not universal. Crossing transitions, changing crystallinity, continuing cure, physical aging, oxidation or moisture change can invalidate a common shift. A beautiful collapsed plot does not alone validate extrapolated service life.
+
+**Work:** Construct a master curve from a documented dataset and state the fitted window. Hold out one temperature and one time range for prediction. Compare competing shifts and their residuals, and design an observation that distinguishes reversible temperature shifting from evolving material state.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Yield, crazing, drawing and network damage](Yield-crazing-drawing-and-network-damage.lingua#r_3CZFFV5SG82CF993EK0QBZ0QXA).
+
+} r_7RA8RJXAW4CMZRNPGV9DY6BBTZ

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Transitions, absorption and selection rules (@mat-optical-transitions: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN", #source "../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0", #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #materials-engineering "Luminescence-traps-and-optical-material-state.lingua#r_6RK2H4WT78NXST1S0SEQ1BFHQR") { r_17F57QCANAXA059DRDHDC063AQ
+**Read:** [Electrical, Optical, and Magnetic Properties of Materials — MIT 3.23](../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN), interband absorption, excitons and quantum wells; [Quantum Mechanics — David Tong](../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0), atomic states and measurement; [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), optical and semiconductor sections.
+
+Absorption needs available initial and final states, the appropriate occupation difference and a nonzero transition matrix element. A gap in a plotted band structure is not a complete optical absorption spectrum. Momentum conservation, photon polarization, symmetry, phonons, excitons and disorder can all matter.
+
+Direct and indirect transitions compare extrema and allowed momentum transfers. A hydrogen-like exciton model introduces an effective reduced mass and dielectric screening; its binding energy and radius have a regime of validity. Strong confinement, anisotropy and screening changes can defeat a bulk approximation.
+
+**Work:** Derive the scaling of a screened hydrogen-like binding energy and compare its radius with the lattice spacing and device dimensions. Inspect an actual absorption edge with uncertainty and competing transition models. Explain why a single straight-line extrapolation or emission peak cannot automatically determine a unique fundamental gap.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Luminescence, traps and optical material state](Luminescence-traps-and-optical-material-state.lingua#r_6RK2H4WT78NXST1S0SEQ1BFHQR).
+
+} r_17F57QCANAXA059DRDHDC063AQ

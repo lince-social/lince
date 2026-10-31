@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Hydraulic retention and solids retention are different clocks (@wu-hrt-srt: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "A-steady-biomass-balance-and-the-washout-boundary.lingua#r_513WA85AZGY7953PPDG08KNASZ") { r_6GACCJV20WAZHC94KPQPR6PTF7
+**Read:** [Activated Sludge and Aerobic Biofilm Reactors — von Sperling](../sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua#r_0WMGVEM60J63M01SJJDQ9357GE), the full activated-sludge foundations, alongside [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lectures 17–18. Connect the earlier mixed-reactor water balance with the new biomass balance.
+
+Nominal hydraulic retention time is liquid volume divided by throughflow. Solids retention time is the selected solids inventory divided by the rate at which that selected solids mass leaves the chosen system. A return flow within the system does not itself remove solids from it. Include effluent solids and relevant clarifier inventory when the system boundary requires them.
+
+In an original example, a 1,000 m³ tank receives 4,000 m³/day: its nominal hydraulic time is 0.25 day, or six hours. An accounted solids inventory of 3,000 kg with 270 kg/day wasted and 30 kg/day in effluent has a ten-day solids retention time. Omitting effluent solids would report about 11.11 days. Biomass groups and inert particles need not have identical effective residence histories.
+
+**Work:** Draw two different system boundaries and label which recycle streams cross each. Recompute inventory and losses consistently. Explain how hydraulic overload can impair separation and shorten solids retention without changing the intended wasting setting. For advanced work, compare the simple inventory ratio with transient age distributions and a model that resolves clarifier storage.
+
+**Continue:** [A steady biomass balance and the washout boundary](A-steady-biomass-balance-and-the-washout-boundary.lingua#r_513WA85AZGY7953PPDG08KNASZ).
+} r_6GACCJV20WAZHC94KPQPR6PTF7

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Number, mass and volume fractions (@mat-fractions: 0, is #chapter, #part-of @materials-engineering, #source "../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #materials-engineering "Processing-structure-properties-and-useful-performance.lingua#r_35NBQ2E68RTBTH1HRMWD0H1KDB") { r_7JEV0JCG3QVQT7NTFWBDZCEQRE
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapters 2–3 and composition exercises; [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309), alloy and composite descriptions. Reuse quantitative fractions and chemical amount where needed.
+
+Number, amount, mass and volume fractions use different denominators. For mass fractions w_i and molar masses M_i, amount fractions are x_i=(w_i/M_i)/Σ_j(w_j/M_j). For separated phases of densities ρ_i with additive volumes, volume fractions are φ_i=(w_i/ρ_i)/Σ_j(w_j/ρ_j). Neither formula assumes that a chemically reacting solution retains the volumes of its unmixed constituents.
+
+An illustrative composite contains 60 mass% of a 2500 kg m⁻³ phase and 40 mass% of a 1000 kg m⁻³ phase. Under additive, pore-free volumes, its density is 1562.5 kg m⁻³ and the first phase occupies 37.5 volume%. These are declared model inputs, not a named product's data.
+
+**Work:** Derive the example from a one-kilogram inventory. Invert the volume-to-mass conversion and close both balances. Add a declared pore volume and distinguish apparent bulk density from solid-phase density. Explain why an elemental mass fraction, a phase fraction and an image area fraction cannot be silently interchanged.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Processing, structure, properties and useful performance](Processing-structure-properties-and-useful-performance.lingua#r_35NBQ2E68RTBTH1HRMWD0H1KDB).
+
+} r_7JEV0JCG3QVQT7NTFWBDZCEQRE

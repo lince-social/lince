@@ -1,0 +1,13 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend an adhesive-contact and removal model (@cm-study-contact: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/When-Are-Rough-Surfaces-Sticky-Pastewka-Robbins.lingua#r_3560V1VSJB6E8V78NFWGNQT7DQ", #clean-manufacturing "Review-surfaces-before-choosing-cleaning-chemistry.lingua#r_4XZBGNRTFEMMCYYE2GGA1HSSBG") { r_5B12ASFGBW4VJ7QG1BH1674XY5
+**Read:** Both parts of [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), the complete adhesion/removal notes in [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), and [When are rough surfaces sticky? — Pastewka and Robbins](../sources/When-Are-Rough-Surfaces-Sticky-Pastewka-Robbins.lingua#r_3560V1VSJB6E8V78NFWGNQT7DQ) including methods and supplement.
+
+Choose a particle and substrate. Establish radius and modulus conventions, medium, surface condition, interaction range, load history and observed quantity. Derive the smooth-contact predictions and test their limiting cases before adding roughness. Distinguish normal pull-off from a proposed rolling or sliding mechanism.
+
+**Work:** Reconstruct the contact-radius/load relation and independently locate its critical load. Propagate an explicit range of plausible W, modulus and interaction distance. Compare a smooth, independent-asperity and interacting-roughness description without fitting away their differences. Explain which measured topographic scales and loading observations would justify selecting one. Read and critique one original research result beyond the course examples, documenting what you could reproduce and what remains untested.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review surfaces before choosing cleaning chemistry](Review-surfaces-before-choosing-cleaning-chemistry.lingua#r_4XZBGNRTFEMMCYYE2GGA1HSSBG).
+
+} r_5B12ASFGBW4VJ7QG1BH1674XY5

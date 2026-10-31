@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Planetary gears, relative motion and power flow (@mech-planetary: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Belts-chains-and-the-loads-hidden-in-a-drive.lingua#r_2D43SPEMAN467ZKPHH4KSVGY0W") { r_03ECQDX2BH546F5TW11R15JFKJ
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 6, gear trains; apply the moving-frame and virtual-work reasoning already developed.
+
+For an ideal simple planetary with sun tooth count N_s, internal ring N_r and carrier speed ω_c, the relative-speed relation is (ω_s−ω_c)/(ω_r−ω_c)=−N_r/N_s when the denominator is nonzero. The equivalent linear equation N_sω_s+N_rω_r=(N_s+N_r)ω_c also covers zero relative speeds.
+
+With N_s=20, N_r=60 and a fixed ring, a sun at 1000 rpm gives a carrier at 250 rpm. Compatible equal-module geometry gives a 20-tooth planet in this case; simultaneous multiple-planet assembly imposes additional phasing and spacing conditions. The speed relation alone does not establish how many planets fit.
+
+**Work:** Derive the relation in the carrier frame and check fixed-ring, fixed-sun and rigid-rotation cases. Use torque balance and ideal power balance to find reaction torque for a declared input/output arrangement. Then account for losses and unequal planet loading. Explain why a stationary reaction member can carry torque without mechanical power, and why recirculating power makes efficiency accounting more subtle.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Belts, chains and the loads hidden in a drive](Belts-chains-and-the-loads-hidden-in-a-drive.lingua#r_2D43SPEMAN467ZKPHH4KSVGY0W).
+
+} r_03ECQDX2BH546F5TW11R15JFKJ

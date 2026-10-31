@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Sensitivity, scenarios and the strength of a conclusion (@mat-life-uncertainty: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX", #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #materials-engineering "Stocks-delays-demand-and-the-availability-of-recovered-feed.lingua#r_0AQSQAQ51ER1JFB2MJ35VJE5XZ") { r_4FBAJVCBVA860XPWMHVFM29QJB
+**Read:** [Life-cycle assessment, detailed guidance — ILCD Handbook](../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX), interpretation and annex 16; [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), data evaluation. Return to metrology for correlated numerical uncertainty.
+
+Separate uncertain measurements and parameters from choices of boundary, allocation, technology and future conditions. Sampling a continuous distribution does not settle which scenario should represent a decision. Missing data are not automatically negligible, and a visually precise chart can conceal decisive assumptions.
+
+Track common inputs shared by alternatives; treating them as independent can distort the uncertainty of their difference. Examine contributions and sensitivity without confusing a large contribution with the best intervention. A process change can affect several linked flows and the required function.
+
+**Work:** Reconstruct a comparison with parameter uncertainty and at least two methodological scenarios. Identify conclusions that remain stable, those that change and those unsupported by evidence. Explain which additional data could resolve the disagreement. Report multiple impact indicators without silently converting them into a universal environmental score.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Stocks, delays, demand and the availability of recovered feed](Stocks-delays-demand-and-the-availability-of-recovered-feed.lingua#r_0AQSQAQ51ER1JFB2MJ35VJE5XZ).
+
+} r_4FBAJVCBVA860XPWMHVFM29QJB

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Separate supply, return, recirculation, makeup and exhaust (@cm-air-circuits: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Air-change-rate-velocity-and-flow-are-different-quantities.lingua#r_4G94H2PHRT8Q2NZQ3JSB1A06TB") { r_07Y7S74B7TQX0X374HA91EZK4K
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), mechanical air systems; [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), zones, airflow paths and air-handling systems.
+
+Supply enters the room; return leaves for a system that may recirculate part of it. Makeup replaces air lost through exhaust or outward leakage. Recirculation can remove a specified contaminant through filtration without replacing the same volume with outdoor air.
+
+Draw every split and recombination. At steady density, room inflow equals outflow; recirculation appears on both sides of the room boundary. A filter rating does not establish that recirculation is suitable for every process emission.
+
+**Work:** Balance a room receiving 5 m³/s, returning 4 m³/s to a recirculation branch and exhausting 1 m³/s. Show the needed makeup and its treatment. Add a leakage path and rebalance the system. Explain how a changed exhaust demand can affect room pressure even if recirculating fan flow is unchanged.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Air-change rate, velocity and flow are different quantities](Air-change-rate-velocity-and-flow-are-different-quantities.lingua#r_4G94H2PHRT8Q2NZQ3JSB1A06TB).
+
+} r_07Y7S74B7TQX0X374HA91EZK4K

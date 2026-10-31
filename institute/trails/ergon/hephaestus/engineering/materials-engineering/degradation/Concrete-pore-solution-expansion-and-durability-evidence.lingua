@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Concrete pore solution, expansion and durability evidence (@mat-concrete-durability: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Alkali-Aggregate-Reactivity-FHWA.lingua#r_1RPCXTH7BRN45SFFG6XC76WZNK", #materials-engineering "Wood-weathering-decay-and-biological-exposure.lingua#r_16JPZZQQVC7Q87Q4418D4GEZ4F") { r_6K9T9QD672QW9RT4HXJCCM733Y
+**Read:** [Alkali-Aggregate Reactivity Facts Book — FHWA](../sources/Alkali-Aggregate-Reactivity-FHWA.lingua#r_1RPCXTH7BRN45SFFG6XC76WZNK), the complete book progressively, especially chapters 2–5 and 7–8; the earlier cementitious-processing account.
+
+Concrete combines a reactive porous binder, aggregates, interfaces and often reinforcement. Internal chemistry and transport connect composition, curing, cracks and exposure. Alkali–silica reaction is one detailed case: reactive constituents, alkalis and moisture interact, while the resulting damage depends on restraint and geometry. A visible crack pattern is evidence to investigate, not a unique diagnosis.
+
+**Work:** Trace a documented AAR case from constituents and pore-solution conditions through expansion and petrographic observations. Compare accelerated aggregate tests with field evidence and explain the limits of their ranking. Contrast the evidence needed for AAR, reinforcement corrosion, sulfate attack and freezing without assuming that this one book fully covers all four. Reconstruct a mitigation claim and identify what monitoring would establish its effect.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Wood weathering, decay and biological exposure](Wood-weathering-decay-and-biological-exposure.lingua#r_16JPZZQQVC7Q87Q4418D4GEZ4F).
+
+} r_6K9T9QD672QW9RT4HXJCCM733Y

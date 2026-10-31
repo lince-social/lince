@@ -1395,10 +1395,11 @@ impl Presentation {
         let pointer_views = self.accessibility_views(geometry);
         let world = self.app.world_mut();
         crate::native_input::projection::prepare(world, input_view);
+        let native_pointer = crate::native_input::pointer::capture(world, &pointer_views, geometry);
         let output = self.target.id();
         let window = world.query_filtered::<Entity, With<PrimaryWindow>>().iter(world).next();
         let output_id = self.output_view.as_ref().map_or(lince_interface::host::OutputId(1), |output| output.id);
-        let drop_target = window.and_then(|window| crate::native_input::transfer::capture(world, window, output, output_id, mapping));
+        let drop_target = window.and_then(|window| crate::native_input::transfer::capture(world, window, &native_pointer, output_id, mapping));
         let nodes: Vec<_> = world
             .query::<(
                 Entity,
@@ -1483,7 +1484,6 @@ impl Presentation {
             focused = world.get::<ChildOf>(entity).map(ChildOf::parent);
         }
         let (bindings, hardware_bindings) = native::shortcuts::binding_snapshot(world);
-        let native_pointer = crate::native_input::pointer::capture(world, &pointer_views, geometry);
         crate::native_input::pointer::publish_status(world, &native_pointer);
         InputSnapshot {
             accessibility: None,

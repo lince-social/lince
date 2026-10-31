@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Distinguish surface release, permeation and leaks (@gas-study-surfaces: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "Review-pumping-material-history-and-the-measured-state.lingua#r_5QS86VWMREAY4AADFCSZEB5XKQ") { r_02C2T871QG74CNM5VHW3PJR8QT
+**Study:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT) and [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D), complete texts; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), material qualification; the shared diffusion and measurement work.
+
+Choose an observed or explicitly hypothetical slow pressure response. Develop competing explanations involving finite surface inventory, bulk diffusion, permeation, a trapped pocket and an external leak. Derive the predicted dependence on time, temperature, thickness, exposure and gas identity under each model.
+
+Identify quantities that are not recoverable from one pressure trace. Design a sequence of discriminating observations that changes one consequential condition at a time. Include gauge response, background, readsorption and uncertainty. Preserve the specimen's chronology so that a conditioning step is not mistaken for a repeat of the original experiment.
+
+**Deliver:** A comparison of mechanisms with independently checked limiting calculations and a justified next observation. Reconstruct an accessible primary result or perform a documented measurement within a suitable laboratory. State any missing raw data. Revise the explanation after a result that disagrees with its prediction.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review pumping, material history and the measured state](Review-pumping-material-history-and-the-measured-state.lingua#r_5QS86VWMREAY4AADFCSZEB5XKQ).
+
+} r_02C2T871QG74CNM5VHW3PJR8QT

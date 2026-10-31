@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Gas-mixture preparation, value assignment and stability (@gas-mixture-evidence: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "../../../chemistry/industrial-chemistry/separations/Adsorption-ion-exchange-membranes-and-regeneration.lingua#r_794F81FPAZEEDBSKVX4T3EHNFM") { r_0SCKEC9ZMSTEFVJM88CVJY2D93
+**Read:** [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8) in full; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), mixtures; shared composition, mass measurement and uncertainty foundations.
+
+Preparing a nominal mixture and assigning its composition are related but distinct tasks. Gravimetric preparation uses added masses, molar masses and constituent purities; subsequent measurement examines the resulting mixture. Container interactions, reactions, losses and incomplete mixing can change the composition or its uniformity.
+
+For idealized quantitative transfer, xᵢ=(mᵢ/Mᵢ)/Σⱼ(mⱼ/Mⱼ). Real primary preparation requires the full impurity and uncertainty account. Dilution can introduce correlations inherited from a parent mixture. Stability is evidence over time under stated storage/use conditions, not merely agreement among repeated readings on one day.
+
+**Work:** Derive a hypothetical two-stage dilution with exact constituent balances and propagated input uncertainty. Then compare it with the report's analysis-function, homogeneity and stability approach. Explain why a certified value, uncertainty, validity period and specified use conditions belong together. Identify a result that would justify reanalysis rather than continued reliance on an old certificate.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Follow selective separations through capacity, transport, regeneration and waste](../../../chemistry/industrial-chemistry/separations/Adsorption-ion-exchange-membranes-and-regeneration.lingua#r_794F81FPAZEEDBSKVX4T3EHNFM).
+
+} r_0SCKEC9ZMSTEFVJM88CVJY2D93

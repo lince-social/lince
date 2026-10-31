@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Gravimetric flow and what the balance actually weighs (@gas-gravimetric-flow: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Working-flowmeters-and-their-gas-specific-response.lingua#r_39TSJCQ90J8MQDYH1PN4N8ZY7G") { r_3W31A2GW8EZH4WT25YJHGPPBFF
+**Read:** [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), static and dynamic gravimetric methods and uncertainty discussions.
+
+Mass change over time can provide a gas-flow realization, but the weighing system measures forces on its complete assembly. Buoyancy, connecting-line forces, thermal effects, evaporation or condensation outside the intended gas boundary can alter the indication.
+
+Distinguish static before/after weighing from weighing while flow continues. Dynamic operation adds flow forces and balance-response questions; disconnecting between measurements can alter the enclosed material and surface state. Define precisely which mass difference belongs to the gas transferred.
+
+Molar flow inferred from mass requires the mixture molar mass. Composition uncertainty matters even if the mass difference is precise. In a collecting system, connecting-volume storage and leakage still need accounting; choosing mass rather than volume does not eliminate the control-volume problem.
+
+**Work:** Build a hypothetical mass-change budget with a gas transfer, buoyancy change and hose force. Show which effects cancel in a carefully matched difference and which do not. Compare the resulting uncertainty with a PVTt realization over the same flow range and duration.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Working flowmeters and their gas-specific response](Working-flowmeters-and-their-gas-specific-response.lingua#r_39TSJCQ90J8MQDYH1PN4N8ZY7G).
+
+} r_3W31A2GW8EZH4WT25YJHGPPBFF

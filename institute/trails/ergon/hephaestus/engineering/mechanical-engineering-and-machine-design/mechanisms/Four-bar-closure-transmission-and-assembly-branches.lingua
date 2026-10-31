@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Four-bar closure, transmission and assembly branches (@mech-four-bar: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Slider-crank-position-speed-and-force-transmission.lingua#r_0HMYSBA2FQQ6875308FSR0GT9D") { r_089ZG17934CSTR1AYBTC4ZHNBB
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 4, especially four-bar motion, instant centres and transmission. Work both graphical and algebraic examples.
+
+With ground length d on x, crank a at θ, coupler b at φ and rocker c at ψ, closure is a cos θ + b cos φ = d + c cos ψ and a sin θ + b sin φ = c sin ψ. A chosen input angle can admit distinct open and crossed assemblies. Continue one physical branch instead of independently accepting whichever numerical root appears.
+
+Differentiate closure to find velocities and again for accelerations. The unknown-rate matrix becomes singular when coupler and rocker align; the chosen input/output map then needs special treatment. Ideal quasistatic virtual work relates actuator torque to the output load through the local displacement derivative. Large mechanical advantage can accompany poor motion sensitivity, large joint forces and a small useful range.
+
+**Work:** Sweep a declared set of lengths through its admissible motion. Plot the coupler point, velocities and transmission angle, marking unreachable positions and branch changes. Compare a graphical instantaneous-centre velocity with the differentiated equations at a regular position. Add joint clearance and elastic stiffness to test whether the ideal motion remains useful near a toggle.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Slider–crank position, speed and force transmission](Slider-crank-position-speed-and-force-transmission.lingua#r_0HMYSBA2FQQ6875308FSR0GT9D).
+
+} r_089ZG17934CSTR1AYBTC4ZHNBB

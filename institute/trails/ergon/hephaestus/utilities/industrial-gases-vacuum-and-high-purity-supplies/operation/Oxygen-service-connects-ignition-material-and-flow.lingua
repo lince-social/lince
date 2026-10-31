@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Oxygen service connects ignition, material and flow (@gas-oxygen-function: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0", #source "../../../materials/chemical-feedstocks-and-supply-systems/sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV", #industrial-gases-and-vacuum "Loss-of-insulating-vacuum-changes-the-heat-path.lingua#r_5SZBV7XC3D8VQXDMT1RA211QET") { r_7A6050YC4529EE0FFXPV5982K7
+**Read:** [Cleaning equipment for oxygen service — EIGA 33/18](../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0) and [Oxygen Pipeline and Piping Systems — EIGA Doc 13/20](../../../materials/chemical-feedstocks-and-supply-systems/sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV); revisit the high-purity surface and delivery Records.
+
+Compatibility is a property of material, oxygen conditions, geometry and possible ignition mechanisms together. A replacement part with matching dimensions may change friction, contamination, heat conduction or local flow. Cleaning establishes a documented surface state; it does not make every material or operating condition equivalent.
+
+Follow the consequences of a particle, damaged seat, pressure transient or changed lubricant through the actual function. Include oxygen enrichment outside the process boundary and distinguish it from oxygen deficiency caused by another gas.
+
+**Work:** Compare two proposed component substitutions using the published material/service evidence. State what is established, what needs supplier qualification and which operating states are outside the evidence. Treat this as a documented engineering comparison, not an experiment in ignition or a generic cleaning recipe.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Loss of insulating vacuum changes the heat path](Loss-of-insulating-vacuum-changes-the-heat-path.lingua#r_5SZBV7XC3D8VQXDMT1RA211QET).
+
+} r_7A6050YC4529EE0FFXPV5982K7

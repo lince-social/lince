@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Join residue collection, calibration and chemical identity (@cm-study-surface-residue: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #source "../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #clean-manufacturing "Review-the-evidence-about-the-surface.lingua#r_6ZT8HE7DSJ064B1VX5QCS4DWC8") { r_3R13K2NKR59R9NW72JF9JZ64B3
+**Read:** [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), analytical discussion and examples; [Analytical Chemistry 2.1 — David Harvey](../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapters 5, 7, 10 and 12; [Chemical measurements — matrix, recovery, selectivity, and reference material](../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ).
+
+Use a benign simulated two-component residue with defined loading, recovery and background. Follow it from a sampled area into an extract and aliquots, then predict a mass observation, overlapping spectral observations and a chromatographic response. State which component amounts are identifiable under each method.
+
+Compare an internal-standard model with a constant-volume standard-addition model. Place the reference addition at a defined stage and explain which earlier losses it cannot reveal. Introduce a native-versus-added recovery difference and assess the resulting inference.
+
+Reconstruct an available published numerical example while retaining its actual data limitations. Separate a confirmed identity, a quantitative amount and a tentative source attribution. The learning calculations do not require collecting unknown residues or carrying out hazardous chemical procedures.
+
+**Result to explain:** A complete quantity account and uncertainty, with complementary identity evidence and an alternative interpretation. Explain why a clean analytical blank alone cannot establish a clean original surface.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review the evidence about the surface](Review-the-evidence-about-the-surface.lingua#r_6ZT8HE7DSJ064B1VX5QCS4DWC8).
+
+} r_3R13K2NKR59R9NW72JF9JZ64B3

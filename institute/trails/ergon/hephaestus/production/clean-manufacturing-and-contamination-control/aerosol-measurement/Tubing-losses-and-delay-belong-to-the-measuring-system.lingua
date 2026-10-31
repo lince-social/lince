@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Tubing losses and delay belong to the measuring system (@cm-aerosol-lines: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM", #clean-manufacturing "Drying-diluting-and-heating-can-change-the-measurand.lingua#r_4B2HNNY2K011H9VAN6M2E2QNA3") { r_2AXFDEVMBFK3DX8ZRNKFFJE2TW
+**Read:** [Mobility particle size spectrometers — Wiedensohler and colleagues](../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM), section 3.3. Revisit the transport and surface mechanisms developed from [Read particle transport from one particle to a population](../particles/Read-particle-transport-from-one-particle-to-a-population.lingua#r_0XFQY53MK47KMCAWNES4DWDR8N) and [Read surfaces from contact history to measured removal](../surfaces/Read-surfaces-from-contact-history-to-measured-removal.lingua#r_17J6HNWM403V06B2KQXWMXAAXG).
+
+Diffusion, settling, inertia, electric forces and adhesion can remove particles from a sampling path. A tube can also release previously deposited particles. A short path can still have a damaging bend, charged wall or leak. The path's geometry, material, flow and history belong in the measurement definition.
+
+For a deliberately simplified plug-flow tube with perimeter S, length L, volume flow Q and a constant effective wall deposition velocity v_d, a slice balance gives Q dC/dz = −v_d S C. Thus P = Cout/Cin = exp(−v_d S L/Q). This is a teaching model; real deposition coefficients depend on particle size, flow and wall conditions, and fully developed laminar flow has a distribution of residence times.
+
+**Example:** For radius 2 mm, length 1 m, Q = 1 L/min and v_d = 10⁻⁴ m/s, the model gives P ≈ 0.927374. The volume/Q transit estimate is about 0.754 s. At v_d = 10⁻³ m/s, P falls to about 0.470489. Correcting a small remaining signal by a large loss factor amplifies uncertainty.
+
+**Work:** Derive the exponential and compare serial segments with different flows or deposition coefficients. Show when adding exponents is justified. Distinguish particle loss from transport delay by applying a concentration pulse. Explain why a measured whole-instrument efficiency that already includes its internal losses must not receive the same correction twice.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Drying, diluting and heating can change the measurand](Drying-diluting-and-heating-can-change-the-measurand.lingua#r_4B2HNNY2K011H9VAN6M2E2QNA3).
+
+} r_2AXFDEVMBFK3DX8ZRNKFFJE2TW

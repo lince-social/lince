@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Choose vacuum materials by state and evidence (@gas-vacuum-materials: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "Cleaning-acceptance-and-preserving-a-clean-surface.lingua#r_36QWW2ZZ2F6ETZHSBQS37YB2V2") { r_2XY064RM0AY66P0BN53Y5GNSBR
+**Read:** [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D), experimental specimen descriptions and complete results; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), metals and polymers; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), material qualification.
+
+Material choice combines mechanical, thermal, electrical, chemical, fabrication and vacuum requirements. Alloy name alone does not specify dissolved gas, oxide, roughness, pores, inclusions, coatings, machining residues or prior exposure. A component must also survive fabrication and any intended conditioning without losing its function.
+
+Compare specimens with their actual area, thickness, preparation and measurement history. Polymers, glasses, ceramics and metals store and transport gases through different mechanisms. A favorable small coupon result may not transfer to a welded assembly with large inaccessible surfaces or different thermal histories.
+
+**Work:** Build a material comparison for a declared chamber or feedthrough. Include one reason a low-outgassing candidate could still be unsuitable. Distinguish evidence for a batch or treatment from a universal ranking of materials. Identify the observation needed to qualify the assembled component rather than only its nominal constituent.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Cleaning, acceptance and preserving a clean surface](Cleaning-acceptance-and-preserving-a-clean-surface.lingua#r_36QWW2ZZ2F6ETZHSBQS37YB2V2).
+
+} r_2XY064RM0AY66P0BN53Y5GNSBR

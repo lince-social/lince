@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A colloid-interaction barrier is a model of two surfaces (@cm-dlvo: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD", #clean-manufacturing "Zeta-potential-is-inferred-at-a-hydrodynamic-boundary.lingua#r_7S9549DKQ7E4KHG44HYK0QM3XE") { r_5DXT48TR4E9RXFJPQJKG34ZJXX
+**Read:** [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD), sections 10.9–10.10, alongside the earlier dispersion and contact models.
+
+A simple DLVO description combines dispersion and electrostatic double-layer interactions. For an illustrative sphere–plane small-gap model, write U(z)=C exp(−z/λD)−A_H R/(6z), with C an explicitly chosen energy amplitude. The amplitude depends on geometry and electrical boundary conditions; it is not a universal material constant or necessarily independent of radius.
+
+The competing terms may create a barrier and secondary minimum. A lower barrier can change aggregation or deposition, but an encounter still involves transport, hydrodynamic resistance and the capture condition. Near molecular contact, the continuum expression needs additional physics.
+
+For the hypothetical dimensionless curve u=40exp(−x)−2/x, the maximum is near x=0.25387 with u=23.15366 and the secondary minimum near x=6.84185 with u=−0.24959. These energies use kBT and the zero at infinite separation. The barrier measured from that minimum differs from the barrier measured from infinity.
+
+**Work:** Set x=z/λD, α=C/(kBT) and β=A_H R/(6λD kBT). Study the hypothetical u=40exp(−x)−2/x for x>0. Locate stationary points, classify them and compare their energies with separated particles. Then vary the screening length while declaring which physical quantities remain fixed. Explain why fitting one barrier does not establish a complete rate law.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Zeta potential is inferred at a hydrodynamic boundary](Zeta-potential-is-inferred-at-a-hydrodynamic-boundary.lingua#r_7S9549DKQ7E4KHG44HYK0QM3XE).
+
+} r_5DXT48TR4E9RXFJPQJKG34ZJXX

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend a complete pumping arrangement (@gas-study-pumps: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "Review-pumping-material-history-and-the-measured-state.lingua#r_5QS86VWMREAY4AADFCSZEB5XKQ") { r_4NP4QGB4D90P3ZB66GHH43JBAR
+**Study:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), the complete pumping and relevant maintenance material; [Vacuum technology for superconducting devices — Paolo Chiggiato](../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9), complete chapter; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), instrumentation and operating context.
+
+Specify a chamber's useful gas environment and a changing load history. Compare at least two complete arrangements, including inlet restrictions, backing/exhaust, captured inventory, power, cooling, contamination control and restoration after interruption. Select mechanisms using their applicable gas and pressure ranges.
+
+Derive a transient balance and a steady limit. Use independently verified calculations to compare a larger pump, improved conductance, lower surface release and improved backing conditions. Preserve each data source's gas identity and measurement state; a vendor curve is evidence for its stated conditions, not an unrestricted law.
+
+**Deliver:** A physical arrangement, quantitative tradeoff and measurement plan that can challenge your choice. Investigate a modeled backing failure and a capacity or thermal limitation. Explain what must be inspected or replaced over continued service and what evidence would justify return to the intended operating state.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review pumping, material history and the measured state](Review-pumping-material-history-and-the-measured-state.lingua#r_5QS86VWMREAY4AADFCSZEB5XKQ).
+
+} r_4NP4QGB4D90P3ZB66GHH43JBAR

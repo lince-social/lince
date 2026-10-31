@@ -1,6 +1,6 @@
 Import "../Metrology.lingua"
 
-Range, sensitivity, loading, bandwidth, and response time (@met-response: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #source "../../quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2", #metrology "Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH") { r_07SCGP3DGSTJ27T288T3G50J8H
+Range, sensitivity, loading, bandwidth, and response time (@met-response: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #source "../../quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2", #metrology "Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/Force-based-gauges-and-the-reference-side.lingua#r_40SN2CZ53BHYP5NCHPEHTXCDSV", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/Optical-pulses-are-responses-to-particles.lingua#r_4X97M45Z8TP1PK690KB3ZF9CQV") { r_07SCGP3DGSTJ27T288T3G50J8H
 **Read:** [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 7, 9–10 and the time-dependent model discussion; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), sections 4–7 and E7 Thermistor Calibration; [Functions, tables, domains, and inverse questions](../../quantitative-literacy/foundations/Functions-and-tables.lingua#r_0F4KMKK6ET8T22RG617S1RDZS2), the whole Record and its assigned preparation.
 
 A measuring system transforms a quantity into indications. A static model I = ax + b describes sensitivity and offset over a stated range; it does not automatically describe response to changing inputs. Saturation, hysteresis, nonlinearity, drift, and loading can remain hidden when only a few points are inspected.
@@ -16,4 +16,10 @@ Connect a device specification to the intended signal: range, bandwidth, input l
 **Continue:** [A specimen, a sampling target, and a result about a population](Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH).
 
 **Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in gas and vacuum systems:** [Force-based gauges and the reference side](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/Force-based-gauges-and-the-reference-side.lingua#r_40SN2CZ53BHYP5NCHPEHTXCDSV).
+
+
+**Continue in clean manufacturing:** [Optical pulses are responses to particles](../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/Optical-pulses-are-responses-to-particles.lingua#r_4X97M45Z8TP1PK690KB3ZF9CQV).
+
 } r_07SCGP3DGSTJ27T288T3G50J8H

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Reject an inadequate positioning-error account (@mech-project-errors: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #source "../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V", #mechanical-engineering "../computation/An-inspectable-feed-axis-motion-and-energy-account.lingua#r_3H4Q0D0YXSX1GJHEZ8TB7XCJHP") { r_0JTE7T3E0GR5T7XEBX72YDQBQR
+**Read:** [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), drawing-to-measurement interpretation; [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), error budgets and thermal effects; [Thermal-error measurement — Li and colleagues, 2024](../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V) for a later research comparison.
+
+At 10,000 encoder counts per screw revolution, the nominal increment is 0.5 μm. It does not establish useful-point accuracy. A 0.3 m steel loop with α=12×10⁻⁶ K⁻¹ and a uniform 5 K change expands 18 μm. Suppose the initial nut also has 20 μm measured reversal lost motion. Either effect can exceed the ±10 μm target before lead error, Abbe error or compliance is included.
+
+Reject the unqualified accuracy claim. Compare preload, a direct linear scale, reduced offsets and a thermally better arrangement. Preload may improve reversal while increasing friction and heat; a scale helps only with the motion it observes. A revised error budget is a prediction awaiting evidence.
+
+**Work:** Create part and assembly drawings, a material/condition list, process sequence, tolerance account and inspection plan for the revised concept. Keep correlated errors and deterministic biases explicit. Allocate uncertainty at the useful point and identify the experiment that would most strongly challenge the revised claim.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [An inspectable feed-axis motion and energy account](../computation/An-inspectable-feed-axis-motion-and-energy-account.lingua#r_3H4Q0D0YXSX1GJHEZ8TB7XCJHP).
+
+} r_0JTE7T3E0GR5T7XEBX72YDQBQR

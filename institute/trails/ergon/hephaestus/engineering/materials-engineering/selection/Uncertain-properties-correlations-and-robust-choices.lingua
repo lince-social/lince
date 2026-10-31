@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Uncertain properties, correlations and robust choices (@mat-selection-uncertainty: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #materials-engineering "Substitution-requires-evidence-at-the-required-scale.lingua#r_66V0H0AFE6EWT6H4XF3BRRNMHH") { r_5KP21ZP31X7AJHE27JHHC0856K
+**Read:** [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K) in full; revisit the existing metrology propagation and reproducible-computation material. Use [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C) for context, recognizing that its uncertainty lecture has no posted notes.
+
+Distinguish specimen variation, measurement uncertainty, unknown service conditions and model inadequacy. A rectangular interval for E and strength admits combinations that may never occur in one processing state. A probability distribution requires evidence; a range of plausible scenarios is not automatically one.
+
+Propagate shared calibration and material-state correlations. Compare feasibility margins as well as objective values. A nominal optimum close to several boundaries may be less defensible than a slightly heavier option supported over a stated range. Conservative choices should identify what they bound; multiplying arbitrary safety factors does not quantify uncertainty.
+
+**Work:** Repeat a selection using intervals and then a justified joint model. Locate which uncertain inputs change feasibility or ranking. Separate statistical sampling from alternative mechanism or service scenarios. Explain which new observation has decision value and whether its result could actually change the choice.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Substitution requires evidence at the required scale](Substitution-requires-evidence-at-the-required-scale.lingua#r_66V0H0AFE6EWT6H4XF3BRRNMHH).
+
+} r_5KP21ZP31X7AJHE27JHHC0856K

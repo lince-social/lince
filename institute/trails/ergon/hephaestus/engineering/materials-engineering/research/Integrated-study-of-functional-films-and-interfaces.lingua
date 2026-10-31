@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Integrated study of functional films and interfaces (@mat-integrated-functional: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Atomic-Layer-Deposition-Chemistry-and-Evidence.lingua#r_43RJYA2HWF0DWTRB766G062RHV", #materials-engineering "Defend-the-integrated-materials-investigations.lingua#r_4SGGJ7V1GYFGDYZNKVPAB5DAXM") { r_5MTVZKQD6SKNNR4J2W80C0274Y
+**Read:** [Atomic layer deposition — surface chemistry and evidence](../sources/Atomic-Layer-Deposition-Chemistry-and-Evidence.lingua#r_43RJYA2HWF0DWTRB766G062RHV), full review and the accessible primary deposition investigation it identifies; earlier electronic/ionic transport, contacts, dielectric/optical response, surface preparation and degradation. Use the relevant whole solid-state and processing books.
+
+Follow a deposited functional film from precursor delivery and surface reactions through thickness, composition, defects and interfaces to a measured response. Distinguish an ideal cycle's saturation argument from an experimentally demonstrated process window. Surface area, transport, nucleation delay, contamination and substrate conditions can alter the result.
+
+Choose one functional quantity with sufficiently complete public evidence. Reconstruct its measurement and separate bulk-film effects from contacts, geometry and interfacial layers. Derive a simple independent limiting model, then test where it fails. Do not infer an unmeasured electrical property from an image merely because the film looks uniform.
+
+**Deliver:** A reproducible account connecting at least one process observation to state and function, with competing explanations and a discriminating measurement. Predict a changed thickness, substrate or service condition with explicit limits. Compare precursor use, equipment, energy, yield and recoverability using available evidence. If the selected sources do not support a complete device comparison, identify the exact additional measurement needed and defend the narrower conclusion.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the integrated materials investigations](Defend-the-integrated-materials-investigations.lingua#r_4SGGJ7V1GYFGDYZNKVPAB5DAXM).
+
+} r_5MTVZKQD6SKNNR4J2W80C0274Y

@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Bending stress from curvature and equilibrium (@mech-bending-stress: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "Beam-shear-thin-walls-and-section-resultants.lingua#r_5S7AGF32A1MN0G3V5P120G11FV") { r_33X1N7GV1VCKGA5Y5S0XF9DR5R
+**Read:** [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Stresses in Beams; [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 10.3–10.4. Use the previously calculated internal bending moments and area properties.
+
+In a slender, initially straight, linearly elastic beam under the Euler–Bernoulli assumptions, plane sections remain plane and normal to the deformed centreline. Small curvature gives axial strain proportional to distance from the neutral axis. Force and moment equilibrium then determine the neutral axis and σ_x = −My/I for the declared bending sign convention.
+
+For a 20 mm wide, 40 mm deep rectangular section, I = 1.0666667×10⁻⁷ m⁴ about its strong centroidal axis. A 100 N·m bending moment gives surface stress magnitude 18.75 MPa. Rotating the same section changes its bending stiffness and peak stress. The bending moment alone does not specify a material strength.
+
+The neutral axis passes through the geometric centroid for a homogeneous section with one modulus and no axial force. Composite moduli, axial load, plasticity, unsymmetric bending or thermal strain change the account. A formula derived for a slender beam is not automatically accurate in a short deep support or next to a concentrated load.
+
+**Work:** Derive the stress distribution and integrate it to recover zero resultant axial force and the prescribed moment. Superpose a declared axial force, then compare bending about both section axes. Identify where local load introduction needs a more detailed continuum model.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Beam shear, thin walls and section resultants](Beam-shear-thin-walls-and-section-resultants.lingua#r_5S7AGF32A1MN0G3V5P120G11FV).
+
+} r_33X1N7GV1VCKGA5Y5S0XF9DR5R

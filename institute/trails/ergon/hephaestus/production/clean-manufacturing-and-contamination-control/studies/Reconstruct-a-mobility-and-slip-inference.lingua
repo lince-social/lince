@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Reconstruct a mobility and slip inference (@cm-study-mobility: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49", #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B", #clean-manufacturing "Review-transport-before-changing-the-surface-or-facility.lingua#r_7RP133RW9C9HH2M0G9ZFW0012D") { r_0PD86GWHJ9NJ5TS6MZCM3SHM00
+**Read in full:** [Slip-correction measurements — Kim, Mulholland, Kukuck and Pui](../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49), [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0)'s drag, motion, Brownian and electrical readings, and the relevant chapter of [Fundamentals of single-particle transport — Kulkarni, Baron and Willeke](../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B).
+
+Reconstruct how size, charge, pressure, gas properties, field and response enter an experimental mobility inference. Follow uncertainty and reference values into the fitted slip expression. Compare the resulting diffusivity and settling predictions with the selected conventions.
+
+**Work:** Reproduce a stated numerical comparison from the paper using available data, preserving units and version. Independently derive the prediction, propagate a justified uncertainty model and test a limiting case. If raw data are unavailable, distinguish re-evaluating a printed fit from reproducing the measurement or refitting the experiment.
+
+Explain the limits of transferring the result to another material, pressure range or particle shape. Present a source discrepancy, such as a radius/diameter convention or the reversed continuum sentence in the MIT notes, and resolve it using equations and independent evidence.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review transport before changing the surface or facility](Review-transport-before-changing-the-surface-or-facility.lingua#r_7RP133RW9C9HH2M0G9ZFW0012D).
+
+} r_0PD86GWHJ9NJ5TS6MZCM3SHM00

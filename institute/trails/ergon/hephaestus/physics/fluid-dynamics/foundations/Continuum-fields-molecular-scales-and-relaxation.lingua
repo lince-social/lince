@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Continuum fields, molecular scales and relaxation (@fd-continuum: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "../../../inquiry/metrology/applications/Force-pressure-and-torque.lingua#r_20DYJT66R1TCW9M8X96TH7KGHT") { r_52W3FJ90C69MPGFW3QNYXA6Q80
+Continuum fields, molecular scales and relaxation (@fd-continuum: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "../../../inquiry/metrology/applications/Force-pressure-and-torque.lingua#r_20DYJT66R1TCW9M8X96TH7KGHT", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/particles/Describe-the-particle-fluid-and-frame-of-motion.lingua#r_5F3PY0RB5049PH41GMCBWCM5NE") { r_52W3FJ90C69MPGFW3QNYXA6Q80
 **Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapters 1 and 3, continuum and field descriptions; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), continuum, boundary and scale arguments.
 
 A continuum field represents an average over enough molecules to define a useful local density, velocity or temperature. The averaging region must also be small compared with the variation being resolved. These two requirements supply a physical scale separation, not a claim that matter is literally continuous at every length.
@@ -12,4 +12,7 @@ Identify the smallest resolved length in a proposed calculation and explain the 
 **Continue:** [Force, pressure, and torque — reference geometry and load history](../../../inquiry/metrology/applications/Force-pressure-and-torque.lingua#r_20DYJT66R1TCW9M8X96TH7KGHT).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in clean manufacturing:** [Describe the particle, fluid and frame of motion](../../../production/clean-manufacturing-and-contamination-control/particles/Describe-the-particle-fluid-and-frame-of-motion.lingua#r_5F3PY0RB5049PH41GMCBWCM5NE).
+
 } r_52W3FJ90C69MPGFW3QNYXA6Q80

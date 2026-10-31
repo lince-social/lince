@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Solve room pressures together with the flow network (@cm-network-balance: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Work-a-two-room-pressure-and-transfer-example.lingua#r_07JAMYKSV9JJ9RVBA1DRDNBGHT") { r_607YQN6PMG03XAQPK8W65S7G3V
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), chapter 8.3.1–8.3.3 and its numerical formulation.
+
+At steady state each zone conserves air mass. For a constant-density approximation, imposed supply minus exhaust equals net flow leaving through its connecting paths. Shared paths must have equal and opposite contributions at their endpoints. Fix a pressure reference before solving.
+
+Nonlinear path relations make room pressures coupled unknowns. The numerical residual is the unbalanced flow at each zone, not merely the change between two successive pressure guesses. A disconnected network without a reference can leave an undetermined pressure.
+
+**Work:** Assemble a two-room network with outdoor paths and one connecting path. Check total building balance by summing the two equations. Solve it first with linear conductances, then a declared power law. Compare an independently computed residual and perturb an exhaust demand before trusting a displayed pressure map.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Work a two-room pressure and transfer example](Work-a-two-room-pressure-and-transfer-example.lingua#r_07JAMYKSV9JJ9RVBA1DRDNBGHT).
+
+} r_607YQN6PMG03XAQPK8W65S7G3V

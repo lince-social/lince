@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Verifying precision in density-functional calculations — Bosoni and colleagues (@mat-dft-precision: 0, is #reference, #part-of @mat-sources) { r_4N8GPD0R7RGEZSFDT5SYHCNQF5
+Emanuele Bosoni and colleagues. *How to verify the precision of density-functional-theory implementations via reproducible and universal workflows*. Nature Reviews Physics 6, 45–58 (2024), DOI 10.1038/s42254-023-00655-3. [Institutional record and accepted manuscript](https://www.repository.cam.ac.uk/items/a24b2247-92a6-455c-920b-44187986d8be), [data and workflow archive](https://archive.materialscloud.org/record/2023.81), DOI 10.24435/materialscloud:s4-3h.
+
+Read the complete paper and relevant supplementary protocols. Reproduce a small, explicitly chosen comparison before extending it to new systems. Separate numerical implementation precision at a fixed theoretical model from physical accuracy against observations. Explain why an intentionally unstable reference structure can still serve a numerical verification question.
+
+The 94-page manuscript-plus-supplement was downloaded outside the repository. Selected recommendations, reference-system and data/code passages were inspected on 30 October 2026. The archive's metadata and file list were inspected; its large datasets and workflows were not executed. Repository metadata says all rights reserved, while the manuscript explicitly applies CC BY to accepted-manuscript versions; preserve that distinction and credited components.
+
+Record basis settings, pseudopotentials, smearing, reciprocal-space sampling and workflow versions. A benchmark score without those inputs is insufficient for reproduction.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_4N8GPD0R7RGEZSFDT5SYHCNQF5

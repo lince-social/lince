@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Near-wall transport and surface collection (@cm-wall-transport: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "A-collector-combines-diffusion-interception-and-inertia.lingua#r_5FKV7DDSNF79HVKFBGXYBP5TTR") { r_51RJ8T68X5ASK3MJ1TYZ87JPGH
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), wall corrections and diffusion/interception; [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), monitoring and contamination control.
+
+The concentration next to a collecting surface can differ greatly from the bulk. Transport across that region, particle motion relative to the fluid and attachment at contact can each limit collection. An effective deposition velocity summarizes their combined result only under specified geometry and conditions.
+
+Separating transport resistance from surface capture can reveal why changing airflow, surface chemistry or temperature has different effects. A measured deposition rate on a horizontal witness plate need not characterize a vertical recess or a surface hidden behind a fixture.
+
+**Work:** Compare a perfectly absorbing surface with finite-rate capture using the same bulk concentration. Draw the expected concentration profiles and identify the limiting cases. Propose a comparison that changes transport while preserving surface preparation, then one that changes surface state while preserving flow.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A collector combines diffusion, interception and inertia](A-collector-combines-diffusion-interception-and-inertia.lingua#r_5FKV7DDSNF79HVKFBGXYBP5TTR).
+
+} r_51RJ8T68X5ASK3MJ1TYZ87JPGH

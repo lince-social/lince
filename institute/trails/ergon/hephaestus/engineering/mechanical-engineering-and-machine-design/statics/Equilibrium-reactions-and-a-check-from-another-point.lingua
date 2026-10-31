@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Equilibrium, reactions and a check from another point (@mech-equilibrium: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Constraint-independence-stability-and-static-indeterminacy.lingua#r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX") { r_39SFWBJ218F97HCA4Z63PF2X5H
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapters 3 and 5, completing the planar and three-dimensional exercises. Begin with a well-defined free-body diagram.
+
+Rigid-body static equilibrium requires zero resultant force and moment. In a plane these give two force equations and one independent moment equation. Taking moments about a support often eliminates its unknown force, but it does not remove that force from the physical system.
+
+For an original simply supported beam of span 4 m, a downward 300 N point load at 1 m and a uniform 100 N/m load give upward reactions 425 N at the left and 275 N at the right. Their sum is 700 N. Moments about the left balance as 275 × 4 = 300 × 1 + 400 × 2, all in N·m.
+
+**Work:** Recompute from moments about the right and then an arbitrary third point. Change the load position, remove a load and reverse a load direction. Explain when a reaction sign is physically admissible and when a support would lose contact. Reactions alone do not establish component strength, deflection or stability.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Constraint independence, stability and static indeterminacy](Constraint-independence-stability-and-static-indeterminacy.lingua#r_0YR9N9Z9Y0AHYJEC0ZN1MJYWNX).
+
+} r_39SFWBJ218F97HCA4Z63PF2X5H

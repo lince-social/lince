@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Choose the control question before choosing the controller (@wu-control-question: 0, is #chapter, #part-of @water-and-sanitation, #source "../../../engineering/electrical-power-engineering/sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #source "../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW", #water-and-sanitation "../../../engineering/electrical-power-engineering/control/Control-loops-bandwidth-delay-saturation-and-robustness.lingua#r_0Q868KQNPXRCK6JT71Q9HRY0BX") { r_748M4TQC4D05BTVN9F0ADRXK43
+**Read:** Begin the modelling and feedback chapters of [Feedback Systems — Åström and Murray](../../../engineering/electrical-power-engineering/sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833); retain its full course of exercises for the deeper control study. Revisit [EPANET 2.2 — network models and reproducible analysis](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW) for the distinction between hydraulic rules and a complete physical control system.
+
+A controlled variable is what the system tries to maintain, an actuator is what it can change, and a disturbance is what changes without that command. In a storage tank these might be water volume, inlet flow and demand. The physical boundary and response time come before the choice of controller.
+
+**Work:** Draw the causal chain for tank level, pump pressure and a selected treatment quantity. Locate measurement, command, actuator, process and disturbance. Describe which variables are actually observed and which are inferred. Explain why maintaining pressure alone cannot establish water quality, and why a controller suitable for a fast electrical loop need not suit a transport-delayed treatment process.
+
+Continue through the shared feedback Record for stability, saturation and delay, then apply those ideas to water. A shared Record supplies its relevant foundations while keeping its electrical continuation available.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Control loops, bandwidth, delay, saturation and robustness](../../../engineering/electrical-power-engineering/control/Control-loops-bandwidth-delay-saturation-and-robustness.lingua#r_0Q868KQNPXRCK6JT71Q9HRY0BX).
+
+} r_748M4TQC4D05BTVN9F0ADRXK43

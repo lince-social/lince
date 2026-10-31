@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Trapped liquid and pressure from thermal expansion (@gas-trapped-liquid: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #source "../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH", #industrial-gases-and-vacuum "Contact-materials-connect-pressure-function-and-purity.lingua#r_0D9Y0T3EAT3MQHH4NDQ5HYDP3K") { r_4MNV9VRTPT0NMZXWR7Y627KVPV
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), liquid response properties; [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), piping and relief context; [Cryogenic vaporisation systems — EIGA 133/22](../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH), complete system boundaries.
+
+Consider a completely liquid-filled, closed volume under a small temperature change. For the liquid, dV/V=αf dT−κT dp. For the enclosure, write dV/V=αv dT+Cp dp, where αv is its effective volumetric thermal expansion and Cp its pressure compliance. Equating them gives dp/dT=(αf−αv)/(κT+Cp), within the linear single-phase elastic assumptions.
+
+For hypothetical αf−αv=0.001 K⁻¹, κT+Cp=10⁻⁹ Pa⁻¹ and ΔT=1 K, the estimate is Δp=1 MPa. The number illustrates sensitivity to small expansion when compressibility is low. Vapor space, dissolution, phase change, plasticity or opening boundaries alter the model.
+
+The boundary is selected by actual valve states and isolated segments, not only by the main vessel. A short retained-liquid segment can have a different thermal and pressure history from a large storage tank.
+
+**Work:** Identify every potentially isolated volume in a conceptual transfer drawing. For each, distinguish a gas inventory, an equilibrium two-phase inventory and a liquid-filled inventory. Explain why their pressure responses require different equations and how the installation's documented provisions address the actual state.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Contact materials connect pressure, function and purity](Contact-materials-connect-pressure-function-and-purity.lingua#r_0D9Y0T3EAT3MQHH4NDQ5HYDP3K).
+
+} r_4MNV9VRTPT0NMZXWR7Y627KVPV

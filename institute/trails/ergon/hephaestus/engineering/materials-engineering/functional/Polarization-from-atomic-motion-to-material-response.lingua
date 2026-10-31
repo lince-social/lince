@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Polarization from atomic motion to material response (@mat-polarization: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #source "../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN", #materials-engineering "../../../physics/electromagnetism/matter/Dipoles-polarization-and-bound-charge.lingua#r_0ZFQN93KF28Y07MHTSCDABZ443") { r_4VNCKVBPYY2T6RGSKM1MX6E896
+**Read:** [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), the complete Dielectrics package; [Electrical, Optical, and Magnetic Properties of Materials — MIT 3.23](../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN), dielectric media and optical response. Then follow the shared polarization, response-model and lossy-medium Records.
+
+Electronic displacement, ionic motion, molecular orientation and interfacial charge accumulation operate on different scales. A measured permittivity depends on which mechanisms can respond at the measurement frequency. Local fields, specimen geometry and boundary conditions connect microscopic dipoles with macroscopic polarization.
+
+Define whether ε denotes absolute or relative permittivity and state the harmonic time convention. For exp(−iωt), a passive scalar dielectric has positive imaginary permittivity in the usual local representation. Conductivity can be included as iσ/ω in absolute effective permittivity; adding it again as an independent loss would double count that contribution.
+
+**Work:** Compare a polymer film, a ceramic capacitor and a porous composite at matched temperature, frequency and field amplitude. Explain what a high low-frequency apparent permittivity might reveal about interfaces rather than intrinsic polarization. Derive the measurement model before interpreting its fitted constant.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Dipoles, polarization and bound charge](../../../physics/electromagnetism/matter/Dipoles-polarization-and-bound-charge.lingua#r_0ZFQN93KF28Y07MHTSCDABZ443).
+
+} r_4VNCKVBPYY2T6RGSKM1MX6E896

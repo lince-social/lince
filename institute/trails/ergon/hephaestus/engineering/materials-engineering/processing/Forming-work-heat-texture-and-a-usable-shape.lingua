@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Forming work, heat, texture and a usable shape (@mat-shape-deformation: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #materials-engineering "../../../materials/metals-and-metallurgical-production/forming/Forging-rolling-loads-work-heat-and-internal-structure.lingua#r_5A8TVVAWFVCYFBPR7Q08V2FEWX") { r_08ZSP1EMWVJ060ZVAXJ1NYXMA9
+**Read:** [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), forming; [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), viscous and solid shaping. Work the shared forging/rolling and extrusion/sheet Records with the earlier plasticity, restoration and anisotropy material.
+
+Forming changes shape through a history of deformation, temperature and contact. The useful variable is not merely final reduction: strain paths, rate, friction, tool restraint and temperature gradients affect force, texture, localization and damage. Cold work and annealing can create competing strength, ductility and dimensional requirements.
+
+**Work:** Reconstruct one bulk and one sheet-forming operation from a documented material state. Close plastic work and an explicitly approximate heat account; compare load, thickness and structure observations. Explain why a path that achieves the correct exterior dimensions can still leave an unacceptable interior or orientation distribution. Carry material history into the next operation rather than resetting its properties to a handbook value.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect forging and rolling with deformation fields, heat, and final structure](../../../materials/metals-and-metallurgical-production/forming/Forging-rolling-loads-work-heat-and-internal-structure.lingua#r_5A8TVVAWFVCYFBPR7Q08V2FEWX).
+
+} r_08ZSP1EMWVJ060ZVAXJ1NYXMA9

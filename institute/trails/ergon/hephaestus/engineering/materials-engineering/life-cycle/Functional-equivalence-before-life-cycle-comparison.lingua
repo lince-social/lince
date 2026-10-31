@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Functional equivalence before life-cycle comparison (@mat-life-function: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #source "../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX", #materials-engineering "System-boundaries-follow-the-question-and-the-flows.lingua#r_1X6JNGHPPY38HA4T4BA8H3XX3A") { r_5B56F16TK8HZ3DSYF33YQ2PQ4Y
+**Read:** [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ) in full; [Life-cycle assessment, detailed guidance — ILCD Handbook](../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX), goal and scope chapters. Revisit the derived component requirements.
+
+A comparison needs a defined service: an area insulated to a stated thermal resistance for a duration, a number of loads transported with specified protection, or a component retaining a function over a service history. The material quantity that supplies it can differ by candidate. Comparing one kilogram of each material answers a different question.
+
+Define the functional unit and derive each reference flow from geometry, properties, manufacturing yield, maintenance and lifetime assumptions. Include differences that materially affect function, such as moisture-dependent performance, repair, mass carried during transport or compatibility with existing equipment. A nominally equal service claim needs evidence.
+
+**Work:** Reproduce one DOE case from the stated function to required material quantity, independently checking its equations. Change a lifetime or geometry assumption and explain the consequence. Identify an omitted performance requirement that would need qualification before the comparison could support an actual substitution.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [System boundaries follow the question and the flows](System-boundaries-follow-the-question-and-the-flows.lingua#r_1X6JNGHPPY38HA4T4BA8H3XX3A).
+
+} r_5B56F16TK8HZ3DSYF33YQ2PQ4Y

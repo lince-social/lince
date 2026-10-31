@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Read graphs, interpolate, and question a visual claim (@ql-graphs: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-prealgebra, #source @ql-source-algebra, #quantitative-literacy "Exponential-and-logarithmic-scales.lingua#r_0NQPY7MA3SJ3TR97ZJRTW7ZQPG", #geology "../../../../gaia/earth/geology/field/Read-a-topographic-and-geological-map.lingua#r_7W0VVA0MX0Z4K810G34SAMHSZC") { r_2GDCZSQKNW5BCGN7B5D9G36HK2
+Read graphs, interpolate, and question a visual claim (@ql-graphs: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-prealgebra, #source @ql-source-algebra, #quantitative-literacy "Exponential-and-logarithmic-scales.lingua#r_0NQPY7MA3SJ3TR97ZJRTW7ZQPG", #geology "../../../../gaia/earth/geology/field/Read-a-topographic-and-geological-map.lingua#r_7W0VVA0MX0Z4K810G34SAMHSZC", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/foundations/A-distribution-is-more-than-an-average-size.lingua#r_1AXAAEZSZECHDWQ0GVPERT8S5Z") { r_2GDCZSQKNW5BCGN7B5D9G36HK2
 **Read:** Prealgebra 2e chapter 11 for coordinates and lines; Algebra and Trigonometry 2e sections on rates of change, behavior of graphs, and fitting linear models. Inspect actual axes and tabulated examples rather than reading only the captions.
 
 Name each axis, its unit, scale, origin, and population or time interval. The slope Δy/Δx has units. An area under a rate-versus-time graph has the unit of an accumulated quantity; summing unweighted heights on unequal time intervals generally does not estimate that area correctly.
@@ -16,4 +16,7 @@ For a flow of 10 L/min for 2 min and 4 L/min for 5 min, the total is 40 L and th
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
 
 **Continue in geology:** [Read a map’s scale, legend, geometry, and geological claims](../../../../gaia/earth/geology/field/Read-a-topographic-and-geological-map.lingua#r_7W0VVA0MX0Z4K810G34SAMHSZC).
+
+**Continue in clean manufacturing:** [A distribution is more than an average size](../../../production/clean-manufacturing-and-contamination-control/foundations/A-distribution-is-more-than-an-average-size.lingua#r_1AXAAEZSZECHDWQ0GVPERT8S5Z).
+
 } r_2GDCZSQKNW5BCGN7B5D9G36HK2

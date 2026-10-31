@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Filter capture is not a single pore size (@cm-filter-mechanisms: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "../../../physics/fluid-dynamics/statics/Pressure-reference-stress-and-a-pressure-measurement.lingua#r_5KKK4Q5KPBS1CCXVZ72RYBJMKK") { r_0YFX365S5CV4JF6N1V39N02KQX
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), section 4.1.1.3 and its figures, followed by particle retention.
+
+A fibrous filter changes particle trajectories and provides surfaces on which particles can be retained. Inertia, interception and Brownian motion contribute in different size and flow regimes. Small particles are not automatically the hardest to capture, and the most penetrating range depends on the medium and operating conditions.
+
+Capture and retention are distinct. A particle reaching a surface must remain there for removal to persist; loading, damage, environment and flow can alter performance. Read a measured penetration curve with its size definition, flow and test aerosol rather than replacing it with a sieve analogy.
+
+**Work:** Explain the three mechanisms with original sketches and compare their expected response to changing size or velocity. Read one measured curve and identify what it supports. Do not infer a universal cutoff diameter from the phrase “high efficiency”.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Pressure reference, stress and a pressure measurement](../../../physics/fluid-dynamics/statics/Pressure-reference-stress-and-a-pressure-measurement.lingua#r_5KKK4Q5KPBS1CCXVZ72RYBJMKK).
+
+} r_0YFX365S5CV4JF6N1V39N02KQX

@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Recover only the size information the observations support (@cm-study-size-inference: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM", #clean-manufacturing "Review-what-the-aerosol-measurements-establish.lingua#r_29HS8QY95V57MXZ2W8TS62TDEZ") { r_2R0Z7YQPNH0T7ED7H3W5SQR1NB
+**Read:** the complete [Mobility particle size spectrometers — Wiedensohler and colleagues](../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM) study, including its appendices. Use [A response matrix describes what each channel can observe](../aerosol-measurement/A-response-matrix-describes-what-each-channel-can-observe.lingua#r_4X7ZW1THRHMVFBYWCHKDHXXMYT) and [Inversion cannot create information that the response loses](../aerosol-measurement/Inversion-cannot-create-information-that-the-response-loses.lingua#r_7EQ5WTVSRCQPA7WYPQ0YVTHTYX) as small independent benchmarks.
+
+Construct a forward model including size intervals, charge fractions, a finite classifier transfer function, losses, detector efficiency and sampling time. Recover a known synthetic distribution, then deliberately perturb the model. Check both the reconstructed population and its predicted observations.
+
+Compare a well-resolved and a weakly resolved pair of populations. Test coarser bins, nonnegativity and a stated regularization or prior. Preserve the evidence separating a real feature from one introduced by the inversion. Include uncertainty in response parameters as well as counting variability.
+
+Now vary the population during a scan and compare ascending, descending and repeated observations. Explain which temporal information is missing from an interpretation as a stationary size distribution. Compare this exercise with the paper's distinct software and complete-instrument comparisons.
+
+**Result to explain:** An inspectable reconstruction, information limits and sensitivity analysis. State which size features are supported, which rely on added assumptions, and which further observation would reduce the uncertainty most effectively for the process question.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review what the aerosol measurements establish](Review-what-the-aerosol-measurements-establish.lingua#r_29HS8QY95V57MXZ2W8TS62TDEZ).
+
+} r_2R0Z7YQPNH0T7ED7H3W5SQR1NB

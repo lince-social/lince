@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Basis interference and reflection conditions (@mat-structure-factor: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #materials-engineering "../computation/An-inspectable-cubic-diffraction-and-basis-account.lingua#r_66FJKYSBM5M286T6WWS4ACZMBW") { r_2N88QXGVXZQP7087ADD1HX1ACM
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Diffraction and its image/pattern discussion; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures 17–19; [Crystallographic teaching pamphlets — IUCr](../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the relevant diffraction explanations.
+
+In a simple kinematic model, F_hkl=Σ_j f_j exp[2πi(hx_j+ky_j+lz_j)] for fractional coordinates and scattering weights f_j. The intensity factor is |F_hkl|². Actual scattering factors can depend on angle, wavelength and species; a full measured intensity also includes other geometric, thermal and instrumental terms.
+
+For equal weights on a monatomic BCC basis, F=f[1+(−1)^(h+k+l)], so odd sums vanish in this model. For FCC, mixed parity indices vanish. A chemically different species at the body centre changes the interference: odd sums give f_A−f_B rather than necessarily zero. This is one reason a CsCl-type structure is not interchangeable with monatomic BCC.
+
+**Work:** Derive those selection rules algebraically. Shift the origin and show why amplitudes acquire a phase while |F|² stays invariant. Compare a systematic absence with a weak or unmeasured reflection. Continue to the inspectable calculation and test each result independently.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [An inspectable cubic diffraction and basis account](../computation/An-inspectable-cubic-diffraction-and-basis-account.lingua#r_66FJKYSBM5M286T6WWS4ACZMBW).
+
+} r_2N88QXGVXZQP7087ADD1HX1ACM

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Purity, recovery, productivity and energy over a cycle (@gas-cycle-metrics: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #industrial-gases-and-vacuum "Membrane-permeation-and-selectivity.lingua#r_3NF6NHSVH59PVDV350QKXBJPDQ") { r_50N0YYWWTTHB5BJD4T9TC7WBGN
+**Read:** [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM), performance definitions and numerical results; [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H), experimental performance; [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH), required delivery conditions.
+
+Average product composition is amount-weighted: x̄ᵢ=∫ṅproduct xᵢdt/∫ṅproductdt over the declared accepted interval. It is generally not the simple time average of an analyzer trace. Recovery compares the useful constituent amount in accepted product with its amount in feed, accounting for any net inventory change.
+
+Define productivity per chosen adsorbent mass or equipment volume and per complete cycle time. Define energy per accepted amount at a stated delivery pressure and quality. Reject streams, purge, vacuum generation, compression, standby and restart can change a system comparison.
+
+**Work:** Construct two hypothetical outlet intervals with different flows and compositions; calculate time- and amount-weighted purity. Close feed, product, reject and storage balances. Compare two cycles at the same accepted service boundary, identifying when a higher nominal purity reduces recovery or increases total energy per useful amount.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Membrane permeation and selectivity](Membrane-permeation-and-selectivity.lingua#r_3NF6NHSVH59PVDV350QKXBJPDQ).
+
+} r_50N0YYWWTTHB5BJD4T9TC7WBGN

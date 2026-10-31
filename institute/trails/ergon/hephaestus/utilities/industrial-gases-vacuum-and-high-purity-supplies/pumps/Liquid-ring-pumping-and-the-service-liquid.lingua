@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Liquid-ring pumping and the service liquid (@gas-liquid-ring: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Vapor-jets-diffusion-pumps-and-backstreaming.lingua#r_1P0M8V7FVBSAB8ATFJWYTTW42Y") { r_7P2XZQN8RG2DTRRTDNA29SA1QW
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), section 2.1.2.1; the shared thermal and fluid accounts for the liquid circuit.
+
+A rotating liquid ring forms changing gas volumes inside a housing. The service liquid participates in sealing, heat transfer and interaction with the pumped gas. Its temperature and vapor pressure affect the attainable inlet condition. Soluble or reactive gases can enter the liquid, changing both gas removal and liquid composition.
+
+Include makeup, recirculation, separation, cooling, blowdown and entrained liquid in the service boundary. Apparent gas disappearance at an outlet can reflect dissolution rather than permanent removal from the whole installation. Cavitation, corrosion and contamination require the actual liquid and gas state.
+
+**Work:** Construct coupled gas and service-liquid balances for a hypothetical load containing a soluble constituent. Compare once-through and recirculated liquid service at the same accepted inlet performance. Identify how warmer cooling water changes the gas-side result and the measurements needed to distinguish thermal limitation from internal wear.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Vapor jets, diffusion pumps and backstreaming](Vapor-jets-diffusion-pumps-and-backstreaming.lingua#r_1P0M8V7FVBSAB8ATFJWYTTW42Y).
+
+} r_7P2XZQN8RG2DTRRTDNA29SA1QW

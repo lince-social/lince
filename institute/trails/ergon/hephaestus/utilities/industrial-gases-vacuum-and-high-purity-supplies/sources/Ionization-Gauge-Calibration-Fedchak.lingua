@@ -1,0 +1,12 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Calibration of ionization vacuum gauges — Fedchak and colleagues (@gas-gauge-calibration: 0, is #reference, #part-of @gas-sources) { r_18KG5KWT64MPYQ4D47V1T99CKW
+James A. Fedchak, Patrick J. Abbott, Jay H. Hendricks, Paul C. Arnold and Neil T. Peacock. *Recommended practice for calibrating vacuum gauges of the ionization type*. Journal of Vacuum Science and Technology A 36 (2018), DOI 10.1116/1.5025060. [Official record](https://www.nist.gov/publications/recommended-practice-calibrating-vacuum-gauges-ionization-type), [50-page public manuscript](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=925286).
+
+Read the whole manuscript through the apparatus, gauge operation, comparison, analysis, uncertainty and reporting. Reconstruct a comparison using matched gas, geometry and operating state. Explain which corrections come from the reference, the transfer apparatus and the instrument being calibrated.
+
+Official metadata and introductory method description were inspected on 30 October 2026, followed by selected ion-current theory, gas sensitivity, operating parameters and base-subtracted correction-factor passages. The full manuscript was downloaded outside the repository. Its recommendations and standards references belong to the 2018 publication. They do not establish that a historical standard remains the current edition.
+
+Authorized institutional full-text access. Retain authorship and incorporated component credits; unrestricted adaptation of the complete publication was not established. Keep the paper external. Hardware and calibration service are not supplied by the reading.
+
+} r_18KG5KWT64MPYQ4D47V1T99CKW

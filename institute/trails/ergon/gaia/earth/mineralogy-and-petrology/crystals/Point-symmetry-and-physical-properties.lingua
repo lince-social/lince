@@ -1,6 +1,6 @@
 Import "../Mineralogy-and-petrology.lingua"
 
-Connect point symmetry with shape, structure, and property constraints (@mp-symmetry: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Space-groups-settings-and-structural-models.lingua#r_104E10F1QWN2HXBB7V0XRSW3B4") { r_2KSSZ1DBRR07M3YX82HAAAZ1PM
+Connect point symmetry with shape, structure, and property constraints (@mp-symmetry: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Space-groups-settings-and-structural-models.lingua#r_104E10F1QWN2HXBB7V0XRSW3B4", #materials-engineering "../../../../hephaestus/engineering/materials-engineering/structure/Scalars-vectors-and-anisotropic-property-tensors.lingua#r_6MMGRJ4WYQA6Y3FG8E3Q855FFN") { r_2KSSZ1DBRR07M3YX82HAAAZ1PM
 **Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete morphology and point-symmetry chapters; [Crystallographic teaching pamphlets — IUCr](../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the complete matrix/symmetry pamphlet and Hartmann’s An introduction to crystal physics.
 
 A symmetry operation maps an identified object or property description onto an equivalent one. Point symmetry concerns operations leaving a point fixed. Distinguish a crystal's external morphology, its atomic structural symmetry, and the symmetry of an observed physical property; growth conditions can obscure or distort visible shape.
@@ -16,4 +16,6 @@ Read the full morphology/point-symmetry and matrix treatments. Learn to recogniz
 **Continue:** [Interpret a space-group model with translations, settings, and evidence](Space-groups-settings-and-structural-models.lingua#r_104E10F1QWN2HXBB7V0XRSW3B4).
 
 **Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+**Continue in materials engineering:** [Scalars, vectors and anisotropic property tensors](../../../../hephaestus/engineering/materials-engineering/structure/Scalars-vectors-and-anisotropic-property-tensors.lingua#r_6MMGRJ4WYQA6Y3FG8E3Q855FFN).
+
 } r_2KSSZ1DBRR07M3YX82HAAAZ1PM

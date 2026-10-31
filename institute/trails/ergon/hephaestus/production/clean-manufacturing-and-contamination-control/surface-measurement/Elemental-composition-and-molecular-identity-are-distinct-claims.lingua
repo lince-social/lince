@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Elemental composition and molecular identity are distinct claims (@cm-surface-elements: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #source "../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #clean-manufacturing "Photoelectron-energy-requires-a-reference-and-an-interpretation.lingua#r_1ACWBZJBXG0G18Y8VEGKY2R4N1") { r_61FBSE6VRARM1DXNAH5DM84WCK
+**Read:** [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5), desired information, interference and fitting; [Analytical Chemistry 2.1 — David Harvey](../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), spectroscopic interpretation. Revisit [Name the residue and the component being followed](../cleaning/Name-the-residue-and-the-component-being-followed.lingua#r_1SP39RY5H31719T4HJ9JTYYXX8).
+
+An elemental signal establishes evidence about an element under a method's sampling and response conditions. It does not by itself identify a unique molecule, phase or source. Different compounds share elements, and a surface layer can differ strongly from the bulk.
+
+Electron-induced x-ray observations and photoelectron observations have different excitation, escape and analysis volumes. A thin residue can contribute strongly to one method and weakly to another. Comparing reported percentages requires the same basis and a model of what each method samples.
+
+Quantification often uses corrected intensities, sensitivity factors and a composition model. Normalizing selected components to 100% hides whatever the method did not detect or include. The normalization is a calculation, not evidence that all material components were observed.
+
+**Work:** Propose two chemically different residues with similar elemental ratios, then identify complementary evidence that could distinguish them. Draw a thin film on a substrate and predict qualitatively how changing the sampling depth changes an apparent composition. Keep element presence, chemical state, molecular identity and source attribution as separate conclusions with their own support.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Photoelectron energy requires a reference and an interpretation](Photoelectron-energy-requires-a-reference-and-an-interpretation.lingua#r_1ACWBZJBXG0G18Y8VEGKY2R4N1).
+
+} r_61FBSE6VRARM1DXNAH5DM84WCK

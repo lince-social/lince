@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Integrate motion, loads, heat, clearance and service (@mech-component-integration: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #mechanical-engineering "../study/Evidence-for-a-component-selection-and-its-alternatives.lingua#r_0WQRGZJAWX0CXZ9EK3KKKKV747") { r_5TNE230R2W11J4RTCE1SHJ3RFN
+**Read:** Revisit [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topics 5–10, and [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7)'s component notes as one assembly. Use [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV) to follow how it is installed, inspected and taken apart.
+
+Components interact through their interfaces. Raising belt tension can reduce slip while increasing bearing load and shaft deflection. Adding bearing preload can raise stiffness while increasing frictional heat and thermal force. Tightening a fit can prevent creep while reducing internal clearance. These are model changes to trace, not isolated catalogue improvements.
+
+Build a closed account of motion, force, stiffness, heat and dimensional change for a modest transmission or positioning stage. Separate steady service, startup, reversal, temporary overload and maintenance states. A rated component is evidence for particular conditions; the system must actually supply those conditions.
+
+**Work:** Iterate at least one coupled calculation: temperature changes a clearance or preload, which changes frictional heat, which changes temperature. Identify whether the resulting operating point is stable in the stated approximation. Compare predictions with measurements or a documented experiment and retain the discrepancies. Show how assembly order and replacement access affect the proposed geometry.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Evidence for a component selection and its alternatives](../study/Evidence-for-a-component-selection-and-its-alternatives.lingua#r_0WQRGZJAWX0CXZ9EK3KKKKV747).
+
+} r_5TNE230R2W11J4RTCE1SHJ3RFN

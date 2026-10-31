@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Moments, couples and the location of a force (@mech-moments: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Replace-distributed-loading-with-a-declared-equivalent.lingua#r_0DYDHEVFXKCQ16TD73HN5CNBAJ") { r_77XC5BZ6V561GD2THKBYWK6F3F
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapter 4 in full, including three-dimensional moments and couples. Revisit vector cross products where needed.
+
+The moment about a point is r × F, with r from that point to the force's line of action. In a plane its signed scalar component is x Fy − y Fx. A perpendicular distance gives the familiar force-times-arm expression; a slanted geometric length is not automatically that arm.
+
+For an original example, r = (0.3, 0.2) m and F = (40, −10) N produce a moment −11 N·m about the origin. Moving the origin changes an individual force's moment. A couple formed by equal opposite forces has zero resultant force and a moment independent of the chosen origin.
+
+**Work:** Compute moments using both perpendicular-distance geometry and vector components. Move the reference point and explain the change. Relocate a force to a different parallel line and add the couple needed to preserve the external force/moment system. Explain why this preserves rigid-body equilibrium but need not preserve local stress.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Replace distributed loading with a declared equivalent](Replace-distributed-loading-with-a-declared-equivalent.lingua#r_0DYDHEVFXKCQ16TD73HN5CNBAJ).
+
+} r_77XC5BZ6V561GD2THKBYWK6F3F

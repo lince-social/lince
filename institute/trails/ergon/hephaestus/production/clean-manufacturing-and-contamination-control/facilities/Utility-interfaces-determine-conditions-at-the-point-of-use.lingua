@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Utility interfaces determine conditions at the point of use (@cm-utility-interface: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "../../../materials/chemical-feedstocks-and-supply-systems/continuity/Two-suppliers-can-share-the-same-failure.lingua#r_3YJ0DPY2TX68GEYCK057JWJFJX") { r_0K8HB1MA4VJ4RR6G25Q3A66Y1W
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), process utility planning; revisit [High-purity water is a distribution and measurement problem too](../../../utilities/water-and-sanitation/industrial/High-purity-water-is-a-distribution-and-measurement-problem-too.lingua#r_72TZ7SZVXT1GPW21YQABMTFQSF) and the gas/vacuum and thermal utility Records already connected to this formation.
+
+Water, gas, vacuum, electricity and cooling reach a process through distribution and connection hardware. Conditions at a central plant do not by themselves establish the state at the work point. Demand changes, dead volumes, contact materials, backflow, pressure losses and maintenance intervene.
+
+For each interface, distinguish required quality, quantity, variability, delivery state and recovery after interruption. A utility may serve contamination removal while introducing another contaminant or thermal disturbance.
+
+**Work:** Follow one utility from generation to a sensitive operation and back to a return, drain or waste route. Identify the measurement location and the largest unobserved segment. Compare normal demand, startup and a neighboring process change. Reuse the detailed utility models rather than duplicating their whole subject.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Calculate diversification with the actual joint dependence](../../../materials/chemical-feedstocks-and-supply-systems/continuity/Two-suppliers-can-share-the-same-failure.lingua#r_3YJ0DPY2TX68GEYCK057JWJFJX).
+
+} r_0K8HB1MA4VJ4RR6G25Q3A66Y1W

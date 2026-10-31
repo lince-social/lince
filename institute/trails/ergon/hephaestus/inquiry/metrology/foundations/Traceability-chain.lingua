@@ -1,6 +1,6 @@
 Import "../Metrology.lingua"
 
-A documented calibration chain for a particular result (@met-trace-chain: 0, is #chapter, #part-of @metrology, #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH", #source "../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1", #metrology "References-and-certificates.lingua#r_0BNMDMZ7WPMYWYD9P0BAE281ZB") { r_7XW6NVMPW7PMPJPBESW5G1757N
+A documented calibration chain for a particular result (@met-trace-chain: 0, is #chapter, #part-of @metrology, #source "../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD", #source "../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH", #source "../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1", #metrology "References-and-certificates.lingua#r_0BNMDMZ7WPMYWYD9P0BAE281ZB", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/Static-expansion-from-a-known-inventory.lingua#r_2F9FVG5EC7Z37AF1HP0RTDKB5F", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/evidence/A-calibration-chain-and-a-changed-aerosol.lingua#r_3N9D4T8WXS78QA8WT4Z9R268X0") { r_7XW6NVMPW7PMPJPBESW5G1757N
 **Read:** [Metrological Traceability — Possolo, Bruce, and Watters](../sources/Traceability-NIST.lingua#r_09SQS5GXTSFRF0VSS3X1EEW7WD), the complete text and checklist; [International vocabulary of metrology — JCGM and Inmetro](../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH), the traceability definition and its notes; [CIPM MRA, CMCs, and key comparisons — BIPM](../sources/International-Comparison.lingua#r_3VVRRP0PY4YGAGTB7M22VNGDJ1), the arrangement introduction and one actual CMC.
 
 Metrological traceability concerns a measurement result connected to a stated reference through documented calibrations, each contributing uncertainty. A serial number, a national-laboratory logo, an invoice, or possession of a recently calibrated device is not the complete argument. The conditions of its actual use must remain connected to the reference information.
@@ -16,4 +16,10 @@ For a schematic chain with independent standard-uncertainty contributions 0.2, 0
 **Continue:** [Read a reference certificate and turn it into usable information](References-and-certificates.lingua#r_0BNMDMZ7WPMYWYD9P0BAE281ZB).
 
 **Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in gas and vacuum systems:** [Static expansion from a known inventory](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/Static-expansion-from-a-known-inventory.lingua#r_2F9FVG5EC7Z37AF1HP0RTDKB5F).
+
+
+**Continue in clean manufacturing:** [A calibration chain and a changed aerosol](../../../production/clean-manufacturing-and-contamination-control/evidence/A-calibration-chain-and-a-changed-aerosol.lingua#r_3N9D4T8WXS78QA8WT4Z9R268X0).
+
 } r_7XW6NVMPW7PMPJPBESW5G1757N

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Compare three routes to an accepted air-gas service (@gas-study-production: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #industrial-gases-and-vacuum "../../../physics/thermodynamics-and-heat-transfer/microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5") { r_4ZE261Y4XK4JFSF4W7HRFPPWGP
+**Study:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), complete liquefaction/separation sequence; [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), complete course; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA) and [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH), full application accounts. Reuse the shared industrial chemistry and supply-system studies.
+
+Choose one declared nitrogen or oxygen service and compare cryogenic separation, adsorption and a membrane arrangement where technically applicable. Derive constituent, energy and useful-output accounts from common boundaries. Explain feed conditioning, product phase/pressure, rejection, backup and the demand profile rather than comparing isolated equipment labels.
+
+Use source-backed property and performance data with stated conditions. Separate measured values, modeled results, vendor guarantees and unsupported estimates. Include sensitivity to recovery, pressure, thermal integration, impurity rejection and interrupted operation. Report a route's failure to meet the service requirement rather than adjusting the requirement invisibly.
+
+**Deliver:** A reproducible comparative calculation, a defensible architecture and a list of observations that could change the choice. Explain what remains unknown about proprietary internals. Critique your conclusion under a changed demand or contaminant case and revise it with the same accepted-output boundary.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Microscopic states, heat capacity and statistical bridges](../../../physics/thermodynamics-and-heat-transfer/microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5).
+
+} r_4ZE261Y4XK4JFSF4W7HRFPPWGP

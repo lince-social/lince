@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Pump curves, operating points and connected fluid networks (@fd-networks: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #fluid-dynamics "Pipe-transients-wave-speed-and-rapid-flow-changes.lingua#r_64ZR22XA5Z4K5JXRRM1XHQMRVY") { r_38PV7C2PG9F67V9SENTE32AD5Y
+Pump curves, operating points and connected fluid networks (@fd-networks: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #source "../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2", #source "../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ", #fluid-dynamics "Pipe-transients-wave-speed-and-rapid-flow-changes.lingua#r_64ZR22XA5Z4K5JXRRM1XHQMRVY", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/facilities/A-fan-delivers-the-flow-at-its-installed-operating-point.lingua#r_4E2ZC8G9M14NATFDPVGY4GC8J2") { r_38PV7C2PG9F67V9SENTE32AD5Y
 **Read:** [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), pipe networks and pumping applications; [Introduction to Fluid Mechanics and Fluid Engineering — Suman Chakraborty](../sources/Fluid-Mechanics-and-Engineering-Chakraborty.lingua#r_31BBWRVBVVYRX6MZNTND5FZYF2), hydraulic system characteristics; [Advanced Fluid Mechanics — MIT 2.25, Fall 2013](../sources/Advanced-Fluid-Mechanics-MIT-2-25.lingua#r_1ZVEYBFSRC755ASSQ2X87MD8VZ), energy and momentum applications.
 
 A steady operating point balances the head delivered by a pump with the system's elevation, pressure and flow-dependent losses. A pump curve belongs to a stated speed, geometry and fluid. A throttling change modifies the system relation; a speed change modifies the machine relation. Electrical input also involves hydraulic efficiency, drive efficiency and their operating dependence.
@@ -12,4 +12,7 @@ Inspect a complete manufacturer's curve and state what data are missing before e
 **Continue:** [Pipe transients, wave speed and rapid flow changes](Pipe-transients-wave-speed-and-rapid-flow-changes.lingua#r_64ZR22XA5Z4K5JXRRM1XHQMRVY).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in clean manufacturing:** [A fan delivers the flow at its installed operating point](../../../production/clean-manufacturing-and-contamination-control/facilities/A-fan-delivers-the-flow-at-its-installed-operating-point.lingua#r_4E2ZC8G9M14NATFDPVGY4GC8J2).
+
 } r_38PV7C2PG9F67V9SENTE32AD5Y

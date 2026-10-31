@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Cutting geometry, feed, speed and material removal (@mech-cutting-kinematics: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "Cutting-forces-power-tool-life-and-chatter.lingua#r_7TSJ2BAC8N00177EEJVXCZ93MQ") { r_0DCYBG02XM5WFM7NEA5G5AEFYQ
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), lectures 5–7, deriving the stated cutting geometry and units. Its machining material connects to the prior shaft, force and thermal work.
+
+Turning, drilling and milling combine relative tool motion with feed and depth. In turning, cutting speed at diameter D is πDn, with n in revolutions per time. Feed per revolution multiplied by n gives axial feed rate. A changing diameter changes surface speed at fixed rpm.
+
+For D=40 mm, n=600 rpm and feed 0.1 mm/rev, surface speed is approximately 75.398 m/min and feed rate 60 mm/min. A 100 mm engaged traverse takes 100 s before approach, acceleration and tool changes. In a straight turning pass from 40 to 38 mm over 100 mm, removed volume is 3900π mm³, not the volume of a full 2 mm radial layer.
+
+**Work:** Derive removed volume and average removal rate from geometry, then compare the small-depth approximation. Explain feed per tooth for milling and distinguish it from table feed. Check tool engagement, travel limits and the effects of tool radius and orientation before converting a drawing to a path.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Cutting forces, power, tool life and chatter](Cutting-forces-power-tool-life-and-chatter.lingua#r_7TSJ2BAC8N00177EEJVXCZ93MQ).
+
+} r_0DCYBG02XM5WFM7NEA5G5AEFYQ

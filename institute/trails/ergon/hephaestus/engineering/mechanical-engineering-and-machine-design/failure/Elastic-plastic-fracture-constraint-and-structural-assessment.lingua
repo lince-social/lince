@@ -1,0 +1,19 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Elastic–plastic fracture, constraint and structural assessment (@mech-fracture-plastic: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #mechanical-engineering "Cycles-amplitude-mean-load-and-fatigue-evidence.lingua#r_6JRBZ364N20J94XRYNVYFQ52MY", #materials-engineering "../../materials-engineering/mechanical/Toughening-shielding-and-resistance-curves.lingua#r_2CJD5B1JF57RMRQPJNAP3RXFJ0") { r_4HT3VPV6X9BSYBXM9R2P9YM4R5
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 9.4–9.6; [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Introduction to Fracture Mechanics and the shared fracture-test sources.
+
+When the plastic region is not small relative to relevant crack and ligament dimensions, a purely elastic K account may no longer describe the structural response adequately. Elastic–plastic parameters such as J and crack-tip opening displacement describe particular test and modelling conditions. Their use requires matching definitions and validity evidence, not relabelling an invalid K result.
+
+J can be related to energy release and written as a contour integral under appropriate constitutive and loading hypotheses. Path independence is conditional; nonproportional unloading, distributed inelasticity and growing cracks require care. A material resistance curve can change with stable crack extension, while the structure's driving force changes with load or displacement control.
+
+Constraint, geometry, residual stress and mismatch can influence how a coupon result transfers to a component. A low nominal stress does not eliminate a flaw-driven failure question, and a conservative-looking isolated factor does not replace a complete load, crack and material account.
+
+**Work:** Reconstruct an elastic–plastic fracture example from the cited methods, stating specimen dimensions, loading, crack extension and evaluation domain. Compare elastic and elastic–plastic predictions and identify the evidence needed to choose between them. Derive a load-controlled versus displacement-controlled stability comparison using driving-force and resistance slopes.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Cycles, amplitude, mean load and fatigue evidence](Cycles-amplitude-mean-load-and-fatigue-evidence.lingua#r_6JRBZ364N20J94XRYNVYFQ52MY).
+
+**Continue in materials engineering:** [Toughening, shielding and resistance curves](../../materials-engineering/mechanical/Toughening-shielding-and-resistance-curves.lingua#r_2CJD5B1JF57RMRQPJNAP3RXFJ0).
+
+} r_4HT3VPV6X9BSYBXM9R2P9YM4R5

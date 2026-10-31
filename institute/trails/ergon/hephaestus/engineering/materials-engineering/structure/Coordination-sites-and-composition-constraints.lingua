@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Coordination, sites and composition constraints (@mat-coordination: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "Ionic-and-network-structures-beyond-one-sphere-model.lingua#r_5XDR0TAGDABSKQQTJZ547DJ61W") { r_3WNVDYPPJAS0YVRBEHM4GFSRPP
+**Read:** [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), lecture 16 and interstitial/ionic examples; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), coordination and structural families; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Crystallography and Solid Solutions.
+
+Coordination describes neighbours under a declared definition. A geometric site can accommodate a different species, an occupancy fraction or a vacancy, subject to chemical and structural constraints. Count sites, species and charge separately before treating a formula as a complete structure.
+
+The radius-ratio construction estimates whether ideal touching spheres can occupy an interstice. It does not replace energetic, electronic or experimental evidence. Charge neutrality may couple substitutions or defects: replacing one cation can require a second substitution, a vacancy or a changed oxidation state.
+
+**Work:** Count octahedral and tetrahedral sites in an identified close-packed cell. Construct a simple substitution account that preserves site balance and charge, then compare it with a measured or published composition. State which occupancies are measured, constrained or inferred. Explain why a satisfactory bulk formula may still permit several local arrangements.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Ionic and network structures beyond a one-sphere model](Ionic-and-network-structures-beyond-one-sphere-model.lingua#r_5XDR0TAGDABSKQQTJZ547DJ61W).
+
+} r_3WNVDYPPJAS0YVRBEHM4GFSRPP

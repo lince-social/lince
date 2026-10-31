@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Process variation, capability and corrective action (@mech-process-variation: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "Make-buy-capacity-and-the-cost-of-useful-parts.lingua#r_3JKS2MK3JP6FKB4MENRQDSP6YH", #materials-engineering "../../materials-engineering/processing/Scale-up-throughput-and-the-information-passed-downstream.lingua#r_5MRDYY2AJK43WXP0Z1YYPTS0M2") { r_0DRWSXYX0WX5P7MRJE8D46Y9M4
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), lectures 11–12 and their notes; reuse the statistical and metrology foundations for sampling and uncertainty.
+
+Specification limits describe acceptable output; control limits describe a model of process behavior. A stable process can produce unacceptable parts, and an apparently capable sample can hide a changing process. Keep time order and meaningful subgrouping when searching for causes.
+
+Under a stable normal model with standard deviation σ, C_p=(USL−LSL)/(6σ), while C_pk also includes centering. For limits 9.9–10.1 mm, mean 10.04 mm and σ=0.02 mm, C_p≈1.667 and C_pk=1.0. These are model summaries, not proof of a future rejection rate under arbitrary drift or dependence.
+
+**Work:** Analyze a chronological dimension series with measurement uncertainty and subgroup rationale. Compare common variation with a changed tool or thermal condition. Test the distributional assumptions before converting a capability index to predicted yield. Evaluate a corrective action on later data, retaining failures and production interruptions rather than selecting only convenient samples.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Make, buy, capacity and the cost of useful parts](Make-buy-capacity-and-the-cost-of-useful-parts.lingua#r_3JKS2MK3JP6FKB4MENRQDSP6YH).
+
+**Continue in materials engineering:** [Scale-up, throughput and the information passed downstream](../../materials-engineering/processing/Scale-up-throughput-and-the-information-passed-downstream.lingua#r_5MRDYY2AJK43WXP0Z1YYPTS0M2).
+
+} r_0DRWSXYX0WX5P7MRJE8D46Y9M4

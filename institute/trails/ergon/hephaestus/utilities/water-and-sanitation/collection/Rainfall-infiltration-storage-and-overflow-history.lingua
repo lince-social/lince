@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Rainfall, infiltration, storage and overflow history (@wu-storm-collection: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Sanitation-without-a-sewer-is-still-a-complete-service.lingua#r_2EFRBEDV2CAQGYY6SAQ8FAJ8YM") { r_5CB14S98HVP0SJ9KHJJGYJW5FN
+**Read:** [SWMM — drainage, collection and reproducible hydraulic models](../sources/Storm-Water-Management-Model-SWMM.lingua#r_65K5ER0T3C8RC87J6M6XXS34NE), the complete tutorial followed by hydrology and hydraulics reference material; [Manual de Saneamento — Funasa, fifth edition](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), drainage and collection. Separate rainfall on a catchment, runoff entering a pipe and groundwater entering through defects.
+
+The same rain total can produce different peak flows because intensity, antecedent moisture, connected surfaces and travel times differ. Combined and separate systems require different maps of legitimate and unintended connections. Storage delays discharge until it fills; an overflow is an outgoing flow that must remain in the account.
+
+In an original discrete example, six hourly inflows are 10, 40, 40, 10, 10 and 10 m³. Start with an empty 30 m³ store and permit 20 m³ to leave each interval. Define the numerical order explicitly: add the interval inflow, discharge up to 20, then spill any remainder above 30. The result is 110 m³ conveyed and 10 m³ overflow, with no final storage. A different event-order convention may produce another answer; reducing the time interval is part of checking a continuous-system approximation.
+
+**Work:** Plot every cumulative volume and preserve overflow quality separately from treatment effluent. Test an unavailable pump, a higher receiving level and a storm sequence with the same total but different timing. Then compare detention, infiltration and conveyance changes using measured site constraints, maintenance and downstream consequences. A nominal infiltration rate is not reliable without evidence about soil, clogging and groundwater conditions.
+
+**Continue:** [Sanitation without a sewer is still a complete service](Sanitation-without-a-sewer-is-still-a-complete-service.lingua#r_2EFRBEDV2CAQGYY6SAQ8FAJ8YM).
+} r_5CB14S98HVP0SJ9KHJJGYJW5FN

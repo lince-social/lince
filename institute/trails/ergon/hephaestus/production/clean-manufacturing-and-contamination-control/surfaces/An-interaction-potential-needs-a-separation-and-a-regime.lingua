@@ -1,0 +1,19 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+An interaction potential needs a separation and a regime (@cm-vdw-potential: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "Differentiate-the-energy-before-comparing-adhesion-forces.lingua#r_2E652J3MY1CXA7CTMZ2RN1M5TH") { r_5PXS14Z9FZ6B7WV94FNQWE41N8
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), London–van der Waals notes, pages 1 and 3–4. Use the symbols below consistently rather than mixing diameter and radius.
+
+For a rigid homogeneous sphere of radius R above a flat half-space, one ideal nonretarded pairwise-additive dispersion model has interaction energy
+
+U(z)=−A_H/6 [R/z+R/(z+2R)+ln(z/(z+2R))],
+
+where z>0 is the closest surface separation and A_H is the effective Hamaker constant for the two bodies and intervening medium. Energy is referenced to separated bodies. For z much smaller than R, U≈−A_H R/(6z).
+
+This is an ideal continuum interaction, not a law valid down to zero separation. Molecular repulsion, deformation, atomic structure, coatings and changing dielectric response become essential. At sufficiently large distances, electromagnetic retardation also changes the nonretarded approximation. A mathematical divergence cannot establish a perfectly absorbing real boundary.
+
+**Work:** Nondimensionalize U by A_H and distance by R. Expand the leading small-gap term and compare it with direct evaluation over z/R from 0.001 to 1. Identify where subtracting nearly equal numerical terms could obscure the far-field limit.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Differentiate the energy before comparing adhesion forces](Differentiate-the-energy-before-comparing-adhesion-forces.lingua#r_2E652J3MY1CXA7CTMZ2RN1M5TH).
+
+} r_5PXS14Z9FZ6B7WV94FNQWE41N8

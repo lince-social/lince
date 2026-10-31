@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A room-average oxygen balance and its limits (@gas-room-balance: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Oxygen-Deficient-Atmospheres-EIGA.lingua#r_0KCKFEBVRBMZNF4KQ9PSXB9QCA", #source "../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA", #industrial-gases-and-vacuum "Spatial-release-and-sensor-response-are-different-problems.lingua#r_39XEJM33GKJR8H6AE458MKT6S0") { r_2K1GHAKTP6N7ZK74WKQYMK80TP
+**Read:** [Hazards of oxygen-deficient atmospheres — EIGA 44/18](../sources/Oxygen-Deficient-Atmospheres-EIGA.lingua#r_0KCKFEBVRBMZNF4KQ9PSXB9QCA), the complete short guide; [Fatal liquid nitrogen release — CSB Foundation Food Group investigation](../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA), properties and atmospheric monitoring. This is an original ideal mixing model, not a ventilation design or an entry criterion.
+
+Assume a perfectly mixed room of fixed volume V at fixed pressure and temperature. Fresh air enters at volume rate F with oxygen fraction ya; oxygen-free gas enters at rate G. All rates refer to the same room state, and the well-mixed outlet is F+G. Oxygen conservation gives V dy/dt=Fya−(F+G)y. Thus y∞=Fya/(F+G), τ=V/(F+G), and y(t)=y∞+(y0−y∞)exp(−t/τ).
+
+For hypothetical V=100 m³, F=0.5 m³/s, G=0.1 m³/s and y0=ya=0.2095, y∞≈0.174583 and τ≈166.667 s. The model's room average falls even though fresh air continues entering. With F=0 the initial oxygen decays exponentially; without G, fresh air restores the initial composition.
+
+**Work:** Derive the balance, verify its limits and compute the transient independently. Then list which assumptions fail near a cold release, doorway or weakly ventilated recess. No room-average calculation establishes the atmosphere at a person's position or authorizes entry or rescue.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Spatial release and sensor response are different problems](Spatial-release-and-sensor-response-are-different-problems.lingua#r_39XEJM33GKJR8H6AE458MKT6S0).
+
+} r_2K1GHAKTP6N7ZK74WKQYMK80TP

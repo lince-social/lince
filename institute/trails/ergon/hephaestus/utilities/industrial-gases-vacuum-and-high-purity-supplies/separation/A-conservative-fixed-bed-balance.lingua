@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A conservative fixed-bed balance (@gas-bed-balance: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #industrial-gases-and-vacuum "Breakthrough-fronts-capacity-and-dispersion.lingua#r_35JZTGKJD44ZP6QDQDJHYJAN2Y") { r_6BB694H6DY3YAE55199XWY8TYY
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), fixed-bed models; [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM), phase bases and transport; [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H), governing equations. Reconstruct the control volume independently.
+
+For constant bed cross-section, void fraction ε and dry-solid bulk density ρb, with qᵢ in mol/kg, a one-dimensional balance is ∂(εcᵢ+ρbqᵢ)/∂t+∂(uₛcᵢ−εDax∂cᵢ/∂z)/∂z=0. Here uₛ is superficial velocity and Dax is the declared axial-dispersion coefficient. The equation assumes no constituent reaction or other source.
+
+Integrating over the bed must recover inlet minus outlet transfer. If an author uses interstitial velocity u=uₛ/ε or loading per solid volume, convert every term together. For q measured per solid volume, the storage factor is (1−ε), not an independent adjustable coefficient.
+
+**Work:** Derive the balance from a thin slice, checking units term by term. Test a sealed, spatially uniform cell: gas lost must equal solid uptake. Compare the printed phase-volume ratio and exchange term on page 2 of Schytt and colleagues with this closed-cell test. Resolve the apparent basis discrepancy before reproducing a result; the published implementation has not been inspected.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Breakthrough fronts, capacity and dispersion](Breakthrough-fronts-capacity-and-dispersion.lingua#r_35JZTGKJD44ZP6QDQDJHYJAN2Y).
+
+} r_6BB694H6DY3YAE55199XWY8TYY

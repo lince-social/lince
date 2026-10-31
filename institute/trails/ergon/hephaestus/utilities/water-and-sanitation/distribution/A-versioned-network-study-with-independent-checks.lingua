@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A versioned network study with independent checks (@wu-epanet-study: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Defend-treatment-to-consumer-service-and-its-limits.lingua#r_30VN17MXVWHYGX6RTV84CYYA83") { r_7PXZ2663Z51EV44A7JGPVTMBW7
+**Read:** Work the [EPANET 2.2 manual](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW) tutorial and chapters 3, 8, 9 and 12 fully, then the input-format reference. The manual supplies the modelling programme; the checks below are an original investigation.
+
+Build a small reservoir–pump–tank–looped-network case with a declared daily demand pattern. Preserve input text, program version, units, roughness model, demand model, controls and time steps. First reproduce a simple case that can be checked by hand, such as parallel resistances or a tank volume balance. Then add one complication at a time.
+
+Compare fixed and pressure-dependent demand, one unavailable pipe, a changed pump curve and a delayed control response. Track delivered volume, pressure, tank levels, energy, age and a simple reactive constituent. Check the report's diagnostics and conservation; refine hydraulic, rule and quality time settings separately. A plot that looks smooth is not a convergence test.
+
+For calibration, state the observations, parameters and bounds before fitting. Hold out a different operating period and assess its prediction. Explore alternative combinations of demand and roughness that fit one pressure similarly. Advance into uncertainty ensembles, sensor placement and operational optimization only after distinguishing fitted performance from predictive evidence. A steady or extended-period model is not automatically a water-hammer solver.
+
+**Continue:** [Defend treatment-to-consumer service and its limits](Defend-treatment-to-consumer-service-and-its-limits.lingua#r_30VN17MXVWHYGX6RTV84CYYA83).
+} r_7PXZ2663Z51EV44A7JGPVTMBW7

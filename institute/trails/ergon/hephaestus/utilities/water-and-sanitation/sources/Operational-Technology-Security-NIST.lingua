@@ -1,0 +1,11 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Operational technology security — NIST SP 800-82, revision 3 (@wu-ot-security: 0, is #reference, #part-of @wu-sources) { r_4W20M55VVPGFB1FAB00Q347KPT
+Keith Stouffer and colleagues. Guide to Operational Technology (OT) Security, NIST SP 800-82 revision 3, September 2023. [Official publication and revision status](https://csrc.nist.gov/pubs/sp/800/82/r3/final) · [Complete PDF](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-82r3.pdf).
+
+Read the system, risk-management and architecture material before using the detailed controls. Apply it to a fictional or explicitly authorized water service, preserving process availability, recovery and the consequences of commands. Revisit the whole guide during a sustained operations study.
+
+The publication page and PDF were inspected on 30 October 2026. Revision 3 is the cited final document; the page also identifies a September 2026 initial public draft of revision 4, which must not be represented as the same final edition. The report states that it is not subject to copyright in the United States and requests attribution; preserve component notices. Exercises use public information and isolated educational examples, not access to live utility systems.
+
+**Return:** [Water and sanitation sources](../Sources.lingua#r_7AMRJFFR11FF35KJM7Y7M05B3M).
+} r_4W20M55VVPGFB1FAB00Q347KPT

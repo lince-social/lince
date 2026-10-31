@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Argon and the value of coupled product recovery (@gas-argon: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #industrial-gases-and-vacuum "Rare-gas-supply-begins-with-a-dilute-source.lingua#r_7MSMS1194712PYSD75A9T225PV") { r_5XGQ4X72J3BKJBVXSKDWSRX9V9
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), multicomponent air separation; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), argon and related gases; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), the corresponding process context.
+
+Recovering argon extends the separation task beyond a binary nitrogen/oxygen picture. Its distribution through the column, required oxygen/nitrogen removal and product demand affect the useful arrangement. A co-product can be chemically valuable yet constrained by the throughput of a larger process that creates its feed opportunity.
+
+Use a complete multicomponent balance. Track where a desired trace or minor constituent is concentrated and where it is lost. Recovery is the fraction of that constituent captured in the specified product; purity is its fraction within that product. Increasing one does not automatically improve the other or total economics.
+
+**Work:** Use a documented air-separation example to account for argon in all relevant outlets. Compare recovery and purity on the same basis, then estimate how a change in the main plant's operating level affects available argon. Identify additional purification and storage needed to turn recovered material into accepted supply.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Rare-gas supply begins with a dilute source](Rare-gas-supply-begins-with-a-dilute-source.lingua#r_7MSMS1194712PYSD75A9T225PV).
+
+} r_5XGQ4X72J3BKJBVXSKDWSRX9V9

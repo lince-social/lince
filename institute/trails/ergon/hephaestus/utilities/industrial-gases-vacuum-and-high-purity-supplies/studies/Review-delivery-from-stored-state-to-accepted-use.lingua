@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Review delivery from stored state to accepted use (@gas-delivery-review: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #industrial-gases-and-vacuum "../measurement/From-an-indication-to-a-defined-gas-measurement.lingua#r_4NFJD99T219WZK4XG65H258WHR") { r_5YDSGAWT2X43S7P3JQ7HPBNCA8
+**Review:** The three delivery investigations and their complete source readings.
+
+Explain one gas service through stored amount, energy, flow, material state and composition. Reconcile the interfaces: the same delivered stream must satisfy all of these accounts at the same place and time. A passing result in one account cannot compensate for a failed requirement in another.
+
+Connect the opening production/separation studies and the vacuum/surface studies to delivery. A cleaner source can still be contaminated downstream; better vacuum insulation can change reserve behavior; a different regulator or package can alter transient response and the evidence needed for trace analysis.
+
+**Work:** Defend a complete example from production to accepted use under a changed condition. Name the observations you actually have, the calculations you independently checked and the source results still awaiting reproduction. Revise the account after criticism. The next sequence develops pressure, flow, leak and composition measurements so those observations can carry a defensible uncertainty and interpretation.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+
+
+**Continue in gas and vacuum systems:** [From an indication to a defined gas measurement](../measurement/From-an-indication-to-a-defined-gas-measurement.lingua#r_4NFJD99T219WZK4XG65H258WHR).
+
+} r_5YDSGAWT2X43S7P3JQ7HPBNCA8

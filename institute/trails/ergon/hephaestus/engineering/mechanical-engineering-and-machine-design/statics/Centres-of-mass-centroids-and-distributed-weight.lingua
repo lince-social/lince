@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Centres of mass, centroids and distributed weight (@mech-centroids: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Internal-normal-shear-torsion-and-bending-actions.lingua#r_4TG4DTYWWKX0PGN58K6DT6FD0K") { r_1FWP6BCNJ5094KPFT4SZ16Z84Q
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapter 7, including composite parts, integration and distributed loads. Distinguish a geometric centroid from a mass-weighted or gravity-weighted location.
+
+The mass centre is the mass-weighted average of position. A uniform-density shape has its mass centre at its volume centroid; holes, varying thickness or different materials change the weighting. A uniform gravitational field lets total weight act at the mass centre for the rigid-body moment account.
+
+For an original pair of compact masses, 2 kg at x = 0.1 m and 3 kg at x = 0.6 m give xcm = 0.4 m. Replacing the second mass with a visually identical lower-density part changes that result. Geometry alone is insufficient without the mass distribution.
+
+**Work:** Locate a composite part's centroid by subdivision and then integration. Treat a removed region with a negative geometric contribution while keeping actual material mass nonnegative. Compare with a suitable balance observation. Extend to a three-dimensional assembly and identify how unknown internal parts affect the predicted mass centre.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Internal normal, shear, torsion and bending actions](Internal-normal-shear-torsion-and-bending-actions.lingua#r_4TG4DTYWWKX0PGN58K6DT6FD0K).
+
+} r_1FWP6BCNJ5094KPFT4SZ16Z84Q

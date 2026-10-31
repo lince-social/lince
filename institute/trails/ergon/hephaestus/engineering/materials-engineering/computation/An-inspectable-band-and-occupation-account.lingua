@@ -1,0 +1,80 @@
+Import "../Materials-engineering.lingua"
+
+An inspectable band and occupation account (@mat-bands-example: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #materials-engineering "../functional/Semiconductor-occupation-doping-and-charge-neutrality.lingua#r_4SQDKPVMSM67790JFPCGKDSKB7") { r_1AYAC90C978F3DYTGSP2GRA1QT
+**Read:** The preceding two-orbital derivation; [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), Fermi statistics. This original standard-library example calculates a periodic independent-electron spectrum, chooses μ to fix mean filling and reports energy, entropy and upper-band population per cell.
+
+Use eV for Δ, t1, t2 and θ=kBT. The grid represents an even periodic ring with N cells; increasing N also approximates a Brillouin-zone integral. Filling lies strictly inside zero and four. The calculation assumes equilibrium spin degeneracy without magnetic splitting. At half filling symmetry fixes μ=0 exactly. At extremely low θ, exponentially insensitive occupations can leave μ poorly determined numerically for other near-integer fillings; inspect the particle-count residual and temperature/grid dependence.
+
+The code accepts |Δ|≤20, 0≤t1,t2≤20, 10⁻⁶≤θ≤10, 10⁻⁸≤filling≤4−10⁻⁸ and even 4≤N≤8192. These are computational limits, not a validated domain for any named material. Entropy is in kB per cell, energy in eV per cell. It omits ion/background energies and cannot predict conductance without a transport model.
+
+```python
+import math
+
+
+def two_band_material(delta, t1, t2, theta, filling, cells=256):
+    values = (delta, t1, t2, theta, filling)
+    if any(type(x) not in (int, float) or abs(x) > 1e6 or not math.isfinite(x) for x in values):
+        raise ValueError("finite real scalar inputs required")
+    if not (abs(delta) <= 20 and 0 <= t1 <= 20 and 0 <= t2 <= 20):
+        raise ValueError("onsite energy and nonnegative hoppings must be bounded by 20 eV")
+    if not (1e-6 <= theta <= 10 and 1e-8 <= filling <= 4 - 1e-8):
+        raise ValueError("thermal energy or filling outside the declared domain")
+    if type(cells) is not int or cells < 4 or cells > 8192 or cells % 2:
+        raise ValueError("use an even cell count from 4 to 8192")
+    bands = []
+    for j in range(cells):
+        q = -math.pi + 2 * math.pi * j / cells
+        energy = math.hypot(delta, t1 - t2, 2 * math.sqrt(t1 * t2) * math.cos(q / 2))
+        bands.append((-energy, energy))
+    energies = [energy for pair in bands for energy in pair]
+
+    def occupation(energy, mu):
+        x = (energy - mu) / theta
+        y = math.exp(-abs(x))
+        return y / (1 + y) if x >= 0 else 1 / (1 + y)
+
+    def count(mu):
+        return 2 * math.fsum(occupation(energy, mu) for energy in energies) / cells
+
+    lo = min(energies) - 64 * theta
+    hi = max(energies) + 64 * theta
+    if filling == 2:
+        mu = 0.0
+    else:
+        for _ in range(100):
+            mid = (lo + hi) / 2
+            if count(mid) < filling:
+                lo = mid
+            else:
+                hi = mid
+        mu = (lo + hi) / 2
+    populations = [occupation(energy, mu) for energy in energies]
+    entropy = []
+    for energy in energies:
+        x = abs((energy - mu) / theta)
+        y = math.exp(-x)
+        entropy.append(math.log1p(y) + x * y / (1 + y))
+    return {
+        "mu_ev": mu,
+        "electrons_per_cell": 2 * math.fsum(populations) / cells,
+        "energy_ev_per_cell": 2 * math.fsum(e * f for e, f in zip(energies, populations)) / cells,
+        "entropy_kb_per_cell": 2 * math.fsum(entropy) / cells,
+        "upper_electrons_per_cell": 2 * math.fsum(occupation(pair[1], mu) for pair in bands) / cells,
+        "gap_ev": 2 * math.hypot(delta, t1 - t2),
+        "bands_ev": bands,
+    }
+
+
+if __name__ == "__main__":
+    result = two_band_material(0.3, 1.0, 0.7, 0.1, 2.0)
+    for key, value in result.items():
+        if key != "bands_ev":
+            print(f"{key}: {value:.12g}")
+```
+
+**Work:** Independently diagonalize a finite real-space periodic Hamiltonian and compare its complete spectrum. Check the isolated-orbital analytic occupation, half filling, state count, positive entropy, hopping interchange and common energy/temperature scaling. Refine N at fixed θ and compare thermal energy changes with a separate occupation sum. For the displayed parameters the gap is approximately 0.848528137424 eV; two electrons per cell and μ=0 follow symmetry, not a fitted semiconductor database.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Semiconductor occupation, doping and charge neutrality](../functional/Semiconductor-occupation-doping-and-charge-neutrality.lingua#r_4SQDKPVMSM67790JFPCGKDSKB7).
+
+} r_1AYAC90C978F3DYTGSP2GRA1QT

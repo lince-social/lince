@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Domains, anisotropy and hysteresis (@mat-domains: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #source "../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1", #materials-engineering "Soft-hard-and-spintronic-material-applications.lingua#r_0JDDY37AHJDXBVF7PP81YMAPSD") { r_7V12JXAAGXS24YD7GW5PWBWXBP
+**Read:** [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), domains, walls, anisotropy and hysteresis; [Electron interactions, magnetism and superconductivity — Daniel C. Ralph](../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1), sections III–IV; revisit the mechanical mismatch and microstructure accounts.
+
+Exchange, magnetocrystalline anisotropy, magnetostatic fields, stress and boundaries compete in a magnetic microstructure. Domain formation can reduce stray-field energy while costing wall energy. In a simple uniaxial wall model, wall width scales as √(A/K) and energy per area as √(AK), where A is exchange stiffness and K an anisotropy energy density. Numerical factors depend on the defined width and profile.
+
+Pinning, rotation, nucleation and thermal activation shape hysteresis. A measured loop depends on field amplitude, frequency, temperature and specimen geometry. Applied field differs from internal field when demagnetization matters.
+
+**Work:** Derive the competing wall-energy scales and compare two microstructures. Correct a simple ellipsoid's field convention, then interpret a loop without confusing remanence with saturation. Compare quasistatic hysteresis loss with frequency-dependent eddy-current or other losses in a documented specimen.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Soft, hard and spintronic material applications](Soft-hard-and-spintronic-material-applications.lingua#r_0JDDY37AHJDXBVF7PP81YMAPSD).
+
+} r_7V12JXAAGXS24YD7GW5PWBWXBP

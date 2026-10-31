@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Collection, recovery and substitution are different rates (@mat-recovery-rates: 0, is #chapter, #part-of @materials-engineering, #source "../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #source "../sources/Plastics-Recycling-Economy-NIST.lingua#r_4FMXC9V02YNV4DFSCCV0CVR8JN", #source "../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX", #materials-engineering "Separation-contamination-and-the-fate-of-constituents.lingua#r_70Z0S39C3JWGWSK23PYBRQZWB4") { r_72W9AK0WQ2W5VC105JH2K8XJ83
+**Read:** [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1), definitions and system boundaries; [The U.S. Plastics Recycling Economy — Thomas, Kneifel and Butry](../sources/Plastics-Recycling-Economy-NIST.lingua#r_4FMXC9V02YNV4DFSCCV0CVR8JN), flow accounting; [Life-cycle assessment, detailed guidance — ILCD Handbook](../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX), recycling annex.
+
+For a defined cohort with available mass M, collection fraction c, sorting yield s and conversion yield r, the recovered product is Mcsr if those sequential factors use the stated denominators. If only fraction q meets a declared specification, accepted material is Mcsrq. A further substitution ratio describes how that output replaces a specified alternative function. It is not automatically one.
+
+Recycled input content describes a different point in the system. Manufacturing scrap, end-of-use returns, imports, exports and stored material can have different histories and timing. Avoid multiplying fractions whose denominators or populations do not match.
+
+**Work:** With hypothetical M=1,000 kg, c=0.8, s=0.9, r=0.85 and q=0.95, close every accepted and rejected stream. Explain why the resulting 581.4 kg is neither the collection rate nor proof of equal functional substitution. Change one fraction and show which downstream quantities change. Reconcile the same system reported using a different denominator.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Separation, contamination and the fate of constituents](Separation-contamination-and-the-fate-of-constituents.lingua#r_70Z0S39C3JWGWSK23PYBRQZWB4).
+
+} r_72W9AK0WQ2W5VC105JH2K8XJ83

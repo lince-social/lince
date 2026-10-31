@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Breakthrough fronts, capacity and dispersion (@gas-breakthrough: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #industrial-gases-and-vacuum "../../../physics/fluid-dynamics/viscous/Porous-flow-Darcy-flux-and-the-scale-of-a-permeability.lingua#r_6F57YVHJSPPTDA0FGV79KTX1QY") { r_35JZTGKJD44ZP6QDQDJHYJAN2Y
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), week 5; [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H), single-column breakthrough comparison. Use the full measured inlet and outlet histories when available.
+
+An initially available bed delays a constituent while its adsorbed inventory increases. The observed breakthrough curve combines equilibrium storage, transport resistance, axial mixing, flow distribution, thermal effects and the instrument response. The width of the curve cannot by itself identify one mechanism.
+
+For a small nonreacting concentration perturbation with local equilibrium q=q(c), constant coefficients and negligible dispersion, the front speed is uₛ/[ε+ρb dq/dc]. This is a local linear result; finite steps in nonlinear adsorption require a conservation-based shock or spreading-wave analysis.
+
+**Work:** Derive the linear front speed, then integrate inlet-minus-outlet constituent flow to estimate total retained amount. Include the change in gas hold-up. Explain how a downstream sample line broadens the measured curve without increasing adsorbent capacity. Compare two candidate mechanisms using an additional experiment rather than only another fit.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Porous flow, Darcy flux and the scale of a permeability](../../../physics/fluid-dynamics/viscous/Porous-flow-Darcy-flux-and-the-scale-of-a-permeability.lingua#r_6F57YVHJSPPTDA0FGV79KTX1QY).
+
+} r_35JZTGKJD44ZP6QDQDJHYJAN2Y

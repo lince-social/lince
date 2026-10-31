@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Isolation is a verified boundary for a defined task (@gas-isolation: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #industrial-gases-and-vacuum "../../../engineering/mechanical-engineering-and-machine-design/service/Repair-restoration-and-return-to-service.lingua#r_1RF5PD4EHJKFZ57X6RSFKXJK1X") { r_28HZMX6NV7Q8H2QQXSGCDGR6C2
+**Read in full:** [The safe isolation of plant and equipment — HSE HSG253](../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H). Compare the work-control passages of [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA).
+
+Define the work boundary, all possible connections to it and the inventory or energy that can remain inside. Electrical shutdown, a closed valve indication and zero pressure at one point establish different facts. Trapped pockets, blocked sensing paths, shared connections and automatic actions can defeat an incomplete account.
+
+The engineering question is whether the selected arrangement establishes and maintains the required physical condition throughout the particular work. Its adequacy depends on actual plant details, the intervention and verified equipment behavior. Interacting jobs and a changed scope can invalidate the original boundary.
+
+**Work:** Review a published isolation example and identify what each verification observes. Explain how a blocked instrument connection could produce misleading evidence. This exercise develops review competence; it does not supply an operating sequence for unknown pressurized or hazardous equipment.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Repair, restoration and return to service](../../../engineering/mechanical-engineering-and-machine-design/service/Repair-restoration-and-return-to-service.lingua#r_1RF5PD4EHJKFZ57X6RSFKXJK1X).
+
+} r_28HZMX6NV7Q8H2QQXSGCDGR6C2

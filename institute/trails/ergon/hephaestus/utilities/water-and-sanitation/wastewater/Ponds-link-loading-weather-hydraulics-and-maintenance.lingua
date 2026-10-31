@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Ponds link loading, weather, hydraulics and maintenance (@wu-ponds: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Wetlands-require-configuration-specific-water-and-solids-accounts.lingua#r_0CTCJMG4N3H679YGR810F1Z0PY") { r_0BXZGYDQ1AGSSJPCK3Q7PQKTRW
+**Read:** Work the whole [Waste Stabilisation Ponds — von Sperling](../sources/Waste-Stabilisation-Ponds.lingua#r_6KF1B0Z7Q1RDRX1S4DSDJA1D7J), paired with [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lecture 16. Compare the book's process distinctions and examples before using any area-loading relationship.
+
+Ponds combine biological activity with hydraulics, temperature, light, gas exchange, sedimentation and stored solids. A large water volume does not imply every parcel receives the same exposure. Oxygen and pH can vary over the day; algae can contribute measured suspended solids in the outlet. Nominal detention and a fitted empirical removal coefficient each need a stated interpretation.
+
+**Work:** Develop a seasonal account for a hypothetical pond series. Include inflow, precipitation, evaporation, seepage where supported, effluent, changing storage and sludge accumulation. Compare mixed and plug-flow reaction benchmarks with tracer evidence, and keep the uncertainty of the unobserved tail visible. Track where removed organic matter and nutrients reside.
+
+Use a published operating dataset to examine climate, hydraulic loading and performance together. Reserve a season for prediction rather than fitting all observations. Compare land, excavation, odour, vector management, access, desludging, staffing and downstream polishing with another treatment configuration. For research depth, reproduce one empirical relation and test whether its domain transfers to a different climate or wastewater composition.
+
+**Continue:** [Wetlands require configuration-specific water and solids accounts](Wetlands-require-configuration-specific-water-and-solids-accounts.lingua#r_0CTCJMG4N3H679YGR810F1Z0PY).
+} r_0BXZGYDQ1AGSSJPCK3Q7PQKTRW

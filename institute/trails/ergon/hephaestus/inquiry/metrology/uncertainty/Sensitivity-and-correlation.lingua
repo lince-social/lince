@@ -1,6 +1,6 @@
 Import "../Metrology.lingua"
 
-Propagate uncertainty with sensitivities and covariance (@met-sensitivity: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK", #metrology "Coverage-and-degrees-of-freedom.lingua#r_5Q2X2FWBE479BM2WERZQNG9PCV") { r_0EF35BB106S2F2ATJBXBR49DFR
+Propagate uncertainty with sensitivities and covariance (@met-sensitivity: 0, is #chapter, #part-of @metrology, #source "../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK", #metrology "Coverage-and-degrees-of-freedom.lingua#r_5Q2X2FWBE479BM2WERZQNG9PCV", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/A-measurement-budget-follows-the-whole-equation.lingua#r_43CV8XW3GA858G802Y97M2DWJ5", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/Uncertainty-follows-the-complete-aerosol-observation-model.lingua#r_3WHZDSDPV1RTJHK4SP6XBM6JF0") { r_0EF35BB106S2F2ATJBXBR49DFR
 **Read:** [GUM — JCGM 100:2008 and the 2026 nonlinearity amendment](../sources/GUM-and-Amendment.lingua#r_3KA76CK3QAA3M470TC3XHP19MQ), the combined-uncertainty treatment for correlated inputs; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), shared effects and statistical models; [Several output quantities — JCGM 102](../sources/GUM-Multivariate.lingua#r_1S5554FGCGA5E8GKAM6C9KMJKK), the covariance formulation.
 
 For a sufficiently smooth scalar model y = f(x₁,...,x_n), first-order propagation gives u²(y) ≈ Σ_i Σ_j c_i c_j cov(x_i,x_j), with c_i = ∂f/∂x_i evaluated at the input estimates. Each term must have output-unit squared. Under independence, covariance terms vanish, leaving the familiar sum of squared standard-uncertainty contributions.
@@ -16,4 +16,10 @@ A covariance matrix must be symmetric and positive semidefinite. For two inputs,
 **Continue:** [Standard uncertainty, expanded uncertainty, and coverage claims](Coverage-and-degrees-of-freedom.lingua#r_5Q2X2FWBE479BM2WERZQNG9PCV).
 
 **Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in gas and vacuum systems:** [A measurement budget follows the whole equation](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/A-measurement-budget-follows-the-whole-equation.lingua#r_43CV8XW3GA858G802Y97M2DWJ5).
+
+
+**Continue in clean manufacturing:** [Uncertainty follows the complete aerosol observation model](../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/Uncertainty-follows-the-complete-aerosol-observation-model.lingua#r_3WHZDSDPV1RTJHK4SP6XBM6JF0).
+
 } r_0EF35BB106S2F2ATJBXBR49DFR

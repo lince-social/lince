@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Load, extension, stiffness and recoverable deformation (@mech-load-response: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "Stress-strain-measures-and-the-tensile-test.lingua#r_61ZDKD8MXWTDZ7Q1M9SECY1Z5P") { r_48SM2DMGKVVHE2EVHKFN03NW8J
+**Read:** [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Introduction to Elasticity and Atomistics of Elasticity; [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), section 3.2.
+
+A measured force–extension relation belongs to an object and its test arrangement. A spring constant k relates force to displacement in a particular linear range; Young's modulus E relates a suitable uniaxial stress to strain for a material model. Shape and size connect the two. A long thin bar can be flexible even when its material has a large modulus.
+
+For a straight uniform bar in small uniaxial linear-elastic deformation, extension δ = PL/(EA) and axial stiffness k = EA/L. A bar with E = 200 GPa, A = 100 mm² and L = 0.5 m extends 0.25 mm under 10 kN. Convert area to square metres before evaluating the expression. Its predicted average stress is 100 MPa and strain 0.0005.
+
+Elastic recovery does not imply a linear relation over every load. A rubber component may recover with a strongly nonlinear response; viscoelastic recovery depends on time. A force–displacement curve that includes grip or support compliance differs from the specimen's own response.
+
+**Work:** Derive the bar relation from stress and strain definitions. Double length, halve area and change modulus separately; predict the changes before calculating them. Compare unloading and reloading observations and identify what evidence would support a linear, nonlinear elastic or permanently deforming model.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Stress–strain measures and the tensile test](Stress-strain-measures-and-the-tensile-test.lingua#r_61ZDKD8MXWTDZ7Q1M9SECY1Z5P).
+
+} r_48SM2DMGKVVHE2EVHKFN03NW8J

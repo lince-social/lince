@@ -1,0 +1,10 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Particle removal and MEMS damage — Hirano and colleagues (@cm-mems-source: 0, is #reference, #part-of @cm-sources) { r_0RH4K2MTZZG42NZ4MMZE1K6G9E
+Hideki Hirano, Mahmoud Rasly, Neelam Kaushik, Masayoshi Esashi and Shuji Tanaka. *Particle Removal without Causing Damage to MEMS Structure*, IEEJ Transactions on Sensors and Micromachines 133(5), 157–163 (2013), DOI 10.1541/ieejsmas.133.157. [Publisher record](https://www.jstage.jst.go.jp/article/ieejsmas/133/5/133_157/_article/-char/en) · [Seven-page PDF](https://www.jstage.jst.go.jp/article/ieejsmas/133/5/133_157/_pdf).
+
+The main text is Japanese; the abstract and figure captions include English. Pair it with the English experimental comparisons in [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2). Investigate its separate particle-removal and fragile-structure observations, including the conversion from occupied map pixels to particle counts.
+
+The title, English abstract and selected experimental/counting passages were inspected on 30 October 2026; printed page 158 was viewed visually. Equation 1's occupancy relation is independently derived in the learning path. The full experiment and all figures were not reproduced. The PDF states © 2013 IEEJ; free publisher access is not blanket adaptation permission. Keep source media external.
+
+} r_0RH4K2MTZZG42NZ4MMZE1K6G9E

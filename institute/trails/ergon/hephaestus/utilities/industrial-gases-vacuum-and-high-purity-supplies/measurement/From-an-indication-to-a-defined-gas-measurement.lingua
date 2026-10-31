@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+From an indication to a defined gas measurement (@gas-measurement-entry: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Mechanical-pressure-number-density-and-a-gas-state.lingua#r_4RCAWC3VWQFXSVW8Q1K34P22NJ") { r_4NFJD99T219WZK4XG65H258WHR
+**Read in full:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M) and [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW); then [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5) as flow methods are developed. Keep the shared metrology route available for uncertainty and inference.
+
+Begin with the decision or physical question. Define pressure, amount flow, leak flow or composition at a location, under stated conditions and over a stated time interval. A number on a display is an indication; the measurement result includes the model and evidence connecting that indication to the quantity.
+
+Follow the chain from gas to interaction, transducer, electrical signal, conversion and report. At each stage identify a possible dependence on gas species, temperature, geometry, history or time. The same indication can have different meanings under different operating states.
+
+The earlier production, vacuum and delivery accounts supply the physical system being measured. Sampling is another part of that system: it can delay, transform or perturb the material. Portuguese terms include mensurando, indicação, calibração, rastreabilidade metrológica and incerteza.
+
+**Work:** Rewrite three ambiguous claims—“the pressure is low,” “the line is leak-tight,” and “the gas is pure”—as measurable questions with quantities, conditions and a required distinction between competing outcomes. Carry one example through the calibration and research studies.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Mechanical pressure, number density and a gas state](Mechanical-pressure-number-density-and-a-gas-state.lingua#r_4RCAWC3VWQFXSVW8Q1K34P22NJ).
+
+} r_4NFJD99T219WZK4XG65H258WHR

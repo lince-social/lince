@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Dry pumps and contact materials (@gas-dry-pumps: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Gas-ballast-condensation-and-compression-history.lingua#r_5W10BTDT5A0D99R9H5BJNVQZD7") { r_0Z995BBT6R0KBMRDYXDYJ36ZG0
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), diaphragm and dry-compression sections 2.1.1.1 and 2.1.3, with the complete selected pump's public technical documentation.
+
+Dry pumping means that the intended pumping space does not rely on an oil seal. Diaphragm, scroll, screw, claw and multistage arrangements realize this in different ways. They still have contact materials, temperature fields, seals, clearances, bearings or other supporting components.
+
+Deposits, particles, corrosive constituents and condensation can change clearances or heat removal. Some arrangements use purge gas to protect internal regions, adding another flow that must be included in the exhaust and resource account. A dry designation does not establish particle-free, chemically inert or maintenance-free operation.
+
+**Work:** Compare two mechanisms for a declared gas load and inlet/exhaust conditions. Trace where compression work becomes heat. Identify surfaces exposed to the process gas and plausible wear or deposit locations. Explain which evidence would support an allowable service interval under that particular gas history.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Gas ballast, condensation and compression history](Gas-ballast-condensation-and-compression-history.lingua#r_5W10BTDT5A0D99R9H5BJNVQZD7).
+
+} r_0Z995BBT6R0KBMRDYXDYJ36ZG0

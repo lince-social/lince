@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A barrier validation and operating evidence study (@wu-barrier-review: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "../distribution/Finished-water-stability-and-materials-in-contact.lingua#r_15RSX6EK77PKJZWCT3KRRBJZB2") { r_1NY6CT7T1V054Q0RJPVHGWWFV0
+**Read:** Complete [EPA membrane manual](../sources/Membrane-Filtration-Guidance-EPA.lingua#r_5AA7DKNZPGKZ8KZKCFJ2Q8A8ZY)'s relevant testing and pilot sequence, [EPA UV manual](../sources/Ultraviolet-Disinfection-Guidance-EPA.lingua#r_1X6EKSQ3HSS90RN9N9289MQNNX)'s validation cases and [UV toolkit](../sources/Ultraviolet-Treatment-Toolkit-EPA.lingua#r_6R1F12GS8S7ZVACAQ1X2VDMJGZ)'s review material. Return to [water safety plan manual](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD) for the whole-system context.
+
+Prepare an inspectable argument for one physical barrier and one inactivation barrier using an identified data source. State the raw-water envelope, target claim, equipment configuration, test protocol, analytical limits, uncertainty and operational observations. Explain exactly which part of the argument is measured and which part is assumed.
+
+Use an unfamiliar failure case: a bypass, an uncertain test recovery, an instrument drift or a flow outside the validated range. Recompute any affected claim and volume. Show that an apparently reassuring downstream sample does not erase a gap in the process history. Compare the proposed controls with available power, sensors, spares, skilled work and response time.
+
+For advanced study, reproduce a validation calculation from published measurements, critique alternative models, and test a sensitivity or independent prediction. Distinguish physical model uncertainty, analytical uncertainty and operational variability. Explain the evidence that would invalidate the interpretation and how it would be investigated.
+
+**Section outcome:** Explain barrier claims and their limits from first principles, and connect them to continuing operation. This does not complete distribution quality, wastewater or industrial water. Follow the next Record into materials, transport and the conditions encountered between the plant and the user.
+
+**Continue:** [Finished-water stability and materials in contact](../distribution/Finished-water-stability-and-materials-in-contact.lingua#r_15RSX6EK77PKJZWCT3KRRBJZB2).
+} r_1NY6CT7T1V054Q0RJPVHGWWFV0

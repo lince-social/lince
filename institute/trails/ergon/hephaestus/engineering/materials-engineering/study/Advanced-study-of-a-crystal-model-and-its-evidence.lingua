@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of a crystal model and its evidence (@mat-crystal-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "Defend-the-structural-description-of-an-engineered-material.lingua#r_343YS1SHWD9DDHP6QFZXWVBX9C") { r_3QBJJQJJ1N36D408YT7ZSXXNQ3
+**Read:** [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), complete structure/bonding lectures 14–20 and relevant exercises; [Crystallographic teaching pamphlets — IUCr](../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), full matrix/symmetry and diffraction treatments; [Crystallography Open Database — structures, citations, and CIF records](../../../../gaia/earth/mineralogy-and-petrology/sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG), an identified deposited structure and original paper; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full corresponding chapters.
+
+Choose a crystal relevant to an engineered material. Establish composition, cell convention, symmetry and measurement conditions. Reconstruct cell contents, density, coordination and an independently calculated geometric prediction. Compare alternative cell/origin descriptions without changing the physical object.
+
+**Derive:** Calculate expected reflection conditions for a simplified basis, then identify what the actual structure requires beyond that model. Propagate a meaningful measurement uncertainty or perturbation through one derived quantity. Check a second implementation or hand derivation before interpreting agreement.
+
+**Investigate:** Compare the model with all relevant available observations, including a feature it does not explain. Examine occupancy, disorder, secondary phases or calibration as competing explanations. State what original data are absent and propose a measurement that could discriminate the alternatives. The goal is an accountable structural claim, not a successful file import.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the structural description of an engineered material](Defend-the-structural-description-of-an-engineered-material.lingua#r_343YS1SHWD9DDHP6QFZXWVBX9C).
+
+} r_3QBJJQJJ1N36D408YT7ZSXXNQ3

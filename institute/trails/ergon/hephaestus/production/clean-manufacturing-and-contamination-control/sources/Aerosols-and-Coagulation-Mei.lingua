@@ -1,0 +1,12 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Aerosols and coagulation — Chiang C. Mei, MIT (@cm-mei-source: 0, is #reference, #part-of @cm-sources) { r_433KSJ2E60YP29TNWRQV1Z7PS9
+Chiang C. Mei. *Aerosols and coagulation*, section 2.7 of the MIT graduate course *Advanced Fluid Dynamics of the Environment*, Fall 2002. [Course](https://ocw.mit.edu/courses/1-63-advanced-fluid-dynamics-of-the-environment-fall-2002/) · [Complete eight-page notes](https://ocw.mit.edu/courses/1-63-advanced-fluid-dynamics-of-the-environment-fall-2002/e545246b3cd1722fd35a1fa12bda8987_27Aerosol.pdf).
+
+Read the entire derivation and appendices, comparing the spherical diffusion problem, pair encounter rate and population balance with [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0). Derive the equations independently; small printed inconsistencies can alter a physical conclusion.
+
+The extracted derivation and appendices were inspected on 30 October 2026; page 2 was checked visually. Its statement about the continuum size limit is reversed relative to the Stokes/slip account in [Slip-correction measurements — Kim, Mulholland, Kukuck and Pui](Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49). Equations 2.7.28–2.7.30 also omit the pair-counting half factor when their encounter kernel is used for total-number loss; the later half-sized constant exposes the inconsistency. These are not conventions to silently combine. Historical units and transcription errors warrant checking original equations.
+
+MIT OCW's current terms are CC BY-NC-SA 4.0, with credited components separate. This Record links the notes; it does not reproduce their figures or Seinfeld table. All media remain external.
+
+} r_433KSJ2E60YP29TNWRQV1Z7PS9

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Define a small horizontal measuring carriage (@mech-project-entry: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #mechanical-engineering "Carriage-loads-stiffness-and-drive-geometry.lingua#r_1NKB8YSYEAVBZA1SXAQD95DM8R") { r_4HGWPM4DBAAEHVAAAPZNK93CF5
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), constraints, screws and bearings; [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), design examples and error budgets. This is an original worked conceptual design, followed by a reader's investigation.
+
+Consider a horizontal measuring carriage with 100 mm travel, 2 kg moving mass, 20 mm/s maximum speed, 0.1 m/s² acceleration and a constant 5 N opposing force during positive travel. A screw advances 5 mm per revolution; motor-plus-screw rotary inertia is assumed to be 10⁻⁵ kg m². These are declared teaching inputs, not measured hardware properties.
+
+The useful point is a probe fixed to the carriage. Initially propose ±10 μm positioning error over the travel under specified load, reversal and a 5 K temperature change. That requirement will expose an inadequate first design. Keep accuracy, repeatability, resolution and settling separate.
+
+**Work:** Draw the structural loop, measurement loop, drive and load path. Compare screw drive, belt drive and direct actuation. Define reference temperature, load direction and time after a move. Explain which assumed quantities need actual measurements before a component can be selected.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Carriage loads, stiffness and drive geometry](Carriage-loads-stiffness-and-drive-geometry.lingua#r_1NKB8YSYEAVBZA1SXAQD95DM8R).
+
+} r_4HGWPM4DBAAEHVAAAPZNK93CF5

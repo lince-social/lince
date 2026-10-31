@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Electron equivalents and where organic matter goes (@wu-electron-account: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Growth-substrate-and-the-meaning-of-a-rate-law.lingua#r_4Z4ZG63Z0BSBE7HWSAYWRFHW4N") { r_4CXRRGEKRQQRD91C9YTC1PT82A
+**Read:** [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV), biological conversion and oxygen demand; [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), metabolism and stoichiometric modelling. Return to general chemistry for reaction balancing and oxidation states where needed.
+
+Microorganisms transform substrates while obtaining energy and making cellular material. Carbon, nitrogen, phosphorus, charge and electron equivalents constrain the account. Disappearance from the liquid can mean oxidation, conversion to biomass, transfer into gas, sorption or separation. An oxygen-equivalent balance is not automatically a carbon balance.
+
+Balance CH₄ + 2 O₂ → CO₂ + 2 H₂O. Using rounded molecular masses 16 and 32 g/mol, one gram of methane corresponds to four grams of oxygen demand. Glucose C₆H₁₂O₆ requires six O₂ per molecule, giving 192/180 ≈ 1.067 g O₂/g glucose under complete oxidation. Biomass synthesis and alternative electron acceptors change the allocation of this demand.
+
+**Work:** Build a table showing which measured streams carry COD, carbon and nitrogen for an aerobic reactor and an anaerobic reactor. Include gases and wasted solids. Explain why measured COD destruction cannot be converted directly into recovered methane without accounting for dissolved methane, biomass, competing sinks and collection losses. Derive a balanced reaction before using a mass-based coefficient from a source.
+
+**Continue:** [Growth, substrate and the meaning of a rate law](Growth-substrate-and-the-meaning-of-a-rate-law.lingua#r_4Z4ZG63Z0BSBE7HWSAYWRFHW4N).
+} r_4CXRRGEKRQQRD91C9YTC1PT82A

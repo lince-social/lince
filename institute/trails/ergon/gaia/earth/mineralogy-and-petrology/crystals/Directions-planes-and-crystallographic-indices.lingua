@@ -1,6 +1,6 @@
 Import "../Mineralogy-and-petrology.lingua"
 
-Use direction and plane indices with an explicit cell and convention (@mp-indices: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Point-symmetry-and-physical-properties.lingua#r_2KSSZ1DBRR07M3YX82HAAAZ1PM") { r_79PJ4B5E4TKFRY5SG9Y45YKTGA
+Use direction and plane indices with an explicit cell and convention (@mp-indices: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #mineralogy-and-petrology "Point-symmetry-and-physical-properties.lingua#r_2KSSZ1DBRR07M3YX82HAAAZ1PM", #materials-engineering "../../../../hephaestus/engineering/materials-engineering/structure/Plane-direction-relations-and-physical-mechanisms.lingua#r_2HGR5PAH8H04E7TGAJD0HQEZH9") { r_79PJ4B5E4TKFRY5SG9Y45YKTGA
 **Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete Miller-index/direction and cell-geometry material; [Crystallographic teaching pamphlets — IUCr](../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), the complete relevant matrix/symmetry pamphlet sections.
 
 Crystallographic direction indices and plane indices describe different geometrical objects. Identify the cell, basis, notation, symmetry-family convention, and orientation before interpreting a label. A direction normal to a plane can have a simple corresponding index relationship in a cubic system that fails in a general nonorthogonal cell.
@@ -16,4 +16,6 @@ Read the full index/geometry sections and work their exercises. Later symmetry, 
 **Continue:** [Connect point symmetry with shape, structure, and property constraints](Point-symmetry-and-physical-properties.lingua#r_2KSSZ1DBRR07M3YX82HAAAZ1PM).
 
 **Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+**Continue in materials engineering:** [Plane–direction relations and physical mechanisms](../../../../hephaestus/engineering/materials-engineering/structure/Plane-direction-relations-and-physical-mechanisms.lingua#r_2HGR5PAH8H04E7TGAJD0HQEZH9).
+
 } r_79PJ4B5E4TKFRY5SG9Y45YKTGA

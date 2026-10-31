@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Aqueous corrosion — Cambridge DoITPoMS (@mat-aqueous: 0, is #reference, #part-of @mat-sources) { r_3P6KCGYFDFBG1WYEJ2EZY6G7J5
+Noel Rutter and Chris Smith, University of Cambridge. Read the complete [Aqueous Corrosion package](https://www.doitpoms.ac.uk/tlplib/aqueous_corrosion/index.php), with questions; the [printable text](https://www.doitpoms.ac.uk/tlplib/aqueous_corrosion/printall.php) collects the explanation. Electrochemical reactions, the interface, activation barriers, polarization, diffusion limitation, passivation, rate and control form an accessible first sequence.
+
+The printable text and selected Tafel, transport, passivation and Faraday-law passages were inspected on 30 October 2026. Re-derive equations rather than copying notation: activation Gibbs energy and reaction Gibbs energy have different meanings, and jM/(ρzF) is a thickness-change rate, not a thickness. A print view does not reproduce every film, interactive exercise or answer.
+
+The inspected footer states CC BY-NC-SA 4.0 with exceptions. Preserve authors and component credits. Readings and media remain external.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_3P6KCGYFDFBG1WYEJ2EZY6G7J5

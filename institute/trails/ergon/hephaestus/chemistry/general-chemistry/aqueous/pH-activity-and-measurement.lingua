@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Connect pH with activity, the water model, and a calibrated observation (@gc-ph: 0, is #chapter, #part-of @general-chemistry, #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../../../inquiry/metrology/sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0", #general-chemistry "Weak-acids-and-valid-approximations.lingua#r_1X16MN6WMFKKBA6XGFSSHZB8XP") { r_3HDBH538NRM4TYDQ5SJVM04NRE
+Connect pH with activity, the water model, and a calibrated observation (@gc-ph: 0, is #chapter, #part-of @general-chemistry, #source "../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../../../inquiry/metrology/sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0", #general-chemistry "Weak-acids-and-valid-approximations.lingua#r_1X16MN6WMFKKBA6XGFSSHZB8XP", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/cleaning/pH-changes-speciation-surface-charge-and-the-process.lingua#r_6SVNAH8BJK9ZMSHK12QNB7RZYT") { r_3HDBH538NRM4TYDQ5SJVM04NRE
 **Read:** [Quantities, Units and Symbols in Physical Chemistry — IUPAC Green Book](../sources/IUPAC-Green-Book.lingua#r_5SR8CP04E580VSV69MYQNSZ73F), hydrogen-ion activity and related quantity conventions; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), pH and the advanced aqueous acid/base treatment; [Worked measurement examples — JCGM GUM-5:2026](../../../inquiry/metrology/sources/GUM-Examples-2026.lingua#r_4FVN1GYTH9X8M1JFWFNT696GR0), the complete published pH example and its measurement assumptions.
 
 pH is defined through hydrogen-ion activity under its adopted conventions. A simple ideal concentration approximation uses pH ≈ −log₁₀([H⁺]/c°), with c° = 1 mol L⁻¹. Keep the standard quantity explicit so the logarithm's argument is dimensionless. High precision requires more than counting decimal places in a concentration calculation.
@@ -16,4 +16,7 @@ Read the Green Book definitions and the advanced Chem1 discussion, comparing the
 **Continue:** [Derive a weak-acid calculation and test its approximation](Weak-acids-and-valid-approximations.lingua#r_1X16MN6WMFKKBA6XGFSSHZB8XP).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in clean manufacturing:** [pH changes speciation, surface charge and the process](../../../production/clean-manufacturing-and-contamination-control/cleaning/pH-changes-speciation-surface-charge-and-the-process.lingua#r_6SVNAH8BJK9ZMSHK12QNB7RZYT).
+
 } r_3HDBH538NRM4TYDQ5SJVM04NRE

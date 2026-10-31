@@ -1,0 +1,11 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Principles and Techniques for Designing Precision Machines — Hale (@mech-hale-thesis: 0, is #reference, #part-of @mech-sources) { r_3V7NVTW0ER7HDK3BJ1HCNPZYN4
+Layton Carter Hale, *Principles and Techniques for Designing Precision Machines*, MIT doctoral thesis / Lawrence Livermore report UCRL-LR-133066, February 1999, 493 PDF pages. [Public institutional copy](https://www.osti.gov/servlets/purl/8431).
+
+Read progressively and eventually in full: precision principles/error budgets, design, structures, damping, exact constraints/flexures, optical mounting, an anti-backlash actuator and a horizontal machining-centre design. Use the appendices and derivations when reconstructing the studies. This is an advanced research/design text, reached after foundational mechanics and machine elements.
+
+The complete PDF was retrieved outside the repository on 30 October 2026. Front matter, contents and selected error-budget, alignment, structural-loop, actuator-test and specification passages were inspected. Author copyright is retained; the thesis grants stated reproduction/distribution permissions to MIT and LLNL. Authorized free reading is not a general CC or public-domain licence. Preserve the external reference and distinguish its reported tests from work performed by the learner.
+
+**Return:** [Mechanical-engineering sources](../Sources.lingua#r_06RZYPZEFNMZ6MZ690QB1WN1Z2).
+} r_3V7NVTW0ER7HDK3BJ1HCNPZYN4

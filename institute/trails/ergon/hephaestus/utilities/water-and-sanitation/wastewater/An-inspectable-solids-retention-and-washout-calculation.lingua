@@ -1,0 +1,41 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+An inspectable solids-retention and washout calculation (@wu-biomass-example: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Oxygen-demand-transfer-and-the-energy-used-to-supply-it.lingua#r_177E70PKCJJEYZ1205STFPTYM2") { r_7M0YXSCE3AJRB4WWJX8W3MK0GC
+**Read:** Rework the preceding balance without the program, then compare the reactor accounts in [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV) and [Activated Sludge and Aerobic Biofilm Reactors — von Sperling](../sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua#r_0WMGVEM60J63M01SJJDQ9357GE). The following is original teaching code, not a plant simulator.
+
+Use days, concentrations on declared substrate/biomass bases, and a matching yield. The function returns the nonnegative washout or positive equilibrium of the stated one-substrate model. It does not estimate missing coefficients, determine a safety margin or certify effluent quality. Preserve the inputs with the calculation.
+
+```python
+from math import isfinite
+
+
+def steady_state(feed, half_saturation, maximum_growth, decay, solids_time,
+                 hydraulic_time, yield_factor):
+    values = (feed, half_saturation, maximum_growth, decay, solids_time,
+              hydraulic_time, yield_factor)
+    if not all(isfinite(value) for value in values):
+        raise ValueError("all parameters must be finite")
+    if feed < 0 or decay < 0 or maximum_growth < 0:
+        raise ValueError("negative concentration or rate")
+    if min(half_saturation, solids_time, hydraulic_time, yield_factor) <= 0:
+        raise ValueError("positive saturation, times and yield required")
+    required = decay + 1 / solids_time
+    inlet_growth = maximum_growth * feed / (half_saturation + feed)
+    if required >= inlet_growth:
+        return feed, 0.0
+    substrate = half_saturation * required / (maximum_growth - required)
+    biomass = yield_factor * (feed - substrate) / (hydraulic_time * required)
+    if not all(isfinite(value) for value in (substrate, biomass)):
+        raise ValueError("result outside numerical range")
+    return substrate, biomass
+
+
+if __name__ == "__main__":
+    for solids_time in (0.1, 0.25, 1.0, 10.0):
+        print(solids_time, steady_state(300, 20, 4, 0.1, solids_time, 0.25, 0.5))
+```
+
+**Investigate:** Independently solve μ(S) = b + 1/θc by bracketing and compare the result. Substitute it into both material balances. Test zero feed, zero maximum growth, the critical-retention boundary and invalid values. Sweep retention and feed rather than inspecting one successful output. Then compare alternative yields and hydraulic times: explain which variables affect residual substrate in this simplified model and which affect biomass. Finally identify the measurements required to decide whether its ideal separation and kinetic assumptions describe an actual process.
+
+**Continue:** [Oxygen demand, transfer and the energy used to supply it](Oxygen-demand-transfer-and-the-energy-used-to-supply-it.lingua#r_177E70PKCJJEYZ1205STFPTYM2).
+} r_7M0YXSCE3AJRB4WWJX8W3MK0GC

@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Integrals and initial-value equations for motion (@mech-initial-value: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "Translating-and-rotating-reference-frames.lingua#r_0J66JQV19DX8MJZ371A3YE45Q6") { r_317M98B1RK8CJ50DV37M9TBH5Z
+**Study:** [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), 18.01SC unit 3 and 18.03SC first-order equations and numerical methods. Work the associated exercises; a displayed differential equation still needs a solution method.
+
+Over a short interval Δt, a nearly constant velocity contributes approximately vΔt to displacement. Sum such contributions, refine the intervals and obtain x(t) = x₀ + ∫ v(s) ds from the initial time to t. Likewise v(t) = v₀ + ∫ a(s) ds. Differentiating these accumulated histories recovers the specified rates where they are continuous.
+
+An ordinary differential equation determines rates from the current state and time. With state (x,v), a constant-mass one-dimensional model reads dx/dt = v and dv/dt = F(x,v,t)/m. The force law, parameters and initial values are all needed. The equation alone does not supply friction, damping or a contact rule that was omitted from the model.
+
+For free motion against linear drag c v with c > 0, dv/dt = −(c/m)v. Separation gives v = v₀ exp(−ct/m) and x = x₀ + (mv₀/c)(1 − exp(−ct/m)). With m = 2 kg, c = 4 N·s/m and v₀ = 3 m/s, the time scale is 0.5 s and the limiting travel is 1.5 m. Check both initial conditions and substitute the answer into the equation.
+
+**Work:** Compute a piecewise-constant acceleration history by interval sums and exact integration, including a zero crossing of velocity. Compare first-order time stepping at three step sizes with the drag solution. Distinguish mathematical solution error from uncertainty in the physical drag law.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Translating and rotating reference frames](Translating-and-rotating-reference-frames.lingua#r_0J66JQV19DX8MJZ371A3YE45Q6).
+
+} r_317M98B1RK8CJ50DV37M9TBH5Z

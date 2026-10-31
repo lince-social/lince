@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A slip correlation is connected to measurement (@cm-slip-evidence: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49", #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "Mobility-connects-force-drift-and-diffusion.lingua#r_7SPPW4ER6HVQ9EGF2EP1ZCA7QW") { r_5DWKWHF3HKGHC3DVJQGWBT6Y8D
+**Read in full:** [Slip-correction measurements — Kim, Mulholland, Kukuck and Pui](../sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49), including its uncertainty analysis; compare the textbook relation in [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0).
+
+The NIST study infers slip behavior from electrical mobility of specified polystyrene-latex particle references while changing pressure. That inference joins size, field and flow geometry, voltage, gas properties and observed response. A small-looking change in a fitted coefficient can be meaningful only relative to these uncertainties and conventions.
+
+Its reported fit uses C=1+Kn[α+βexp(−γ/Kn)] with α=1.165, β=0.483 and γ=0.997 in its convention. These are not the coefficients chosen for the preceding illustrative correlation. Preserve the stated mean-free-path model and measured range when comparing them.
+
+**Work:** Reconstruct the measurement equation and uncertainty contributions from the paper. Compare the two correlations over a common justified range and report the difference. Identify which data constrain the fit and what evidence would be required for a different particle material or pressure regime. Do not claim reproduction of the experiment from merely evaluating its fitted formula.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Mobility connects force, drift and diffusion](Mobility-connects-force-drift-and-diffusion.lingua#r_7SPPW4ER6HVQ9EGF2EP1ZCA7QW).
+
+} r_5DWKWHF3HKGHC3DVJQGWBT6Y8D

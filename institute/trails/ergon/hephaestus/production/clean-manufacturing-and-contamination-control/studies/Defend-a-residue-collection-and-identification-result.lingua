@@ -1,0 +1,13 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend a residue collection and identification result (@cm-study-residue: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "Review-cleaning-before-designing-the-facility-and-its-controls.lingua#r_1GWH14SX8FEJ49VV0SN0XDAM06") { r_3416ZR1G2ZCSREBGQ101TWP2V5
+**Read:** [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), the main method, analytical examples and relevant complete instrument appendix; [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), independent surface/extract comparisons.
+
+Choose a sampled object and intended function. Reconstruct the extraction, aliquots, blanks, mass difference, recovery and surface-area basis. Then distinguish chemical assignments from quantitative response. Identify material excluded or transformed by the preparation.
+
+**Work:** Independently recompute a reported or explicitly hypothetical result with uncertainty and units. Use complementary chemical and surface observations to challenge a proposed residue identity. Compare a witness coupon with the actual geometry and exposure. Explain which evidence would establish a functional consequence and which only establishes an analytical result. Do not copy the report's ambiguous mass expression without deriving the accounting.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review cleaning before designing the facility and its controls](Review-cleaning-before-designing-the-facility-and-its-controls.lingua#r_1GWH14SX8FEJ49VV0SN0XDAM06).
+
+} r_3416ZR1G2ZCSREBGQ101TWP2V5

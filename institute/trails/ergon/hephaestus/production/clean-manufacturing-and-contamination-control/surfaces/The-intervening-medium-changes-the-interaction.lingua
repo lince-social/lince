@@ -1,0 +1,19 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+The intervening medium changes the interaction (@cm-hamaker-medium: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #clean-manufacturing "../../../engineering/mechanical-engineering-and-machine-design/materials/Contact-pressure-compliance-and-the-loaded-interface.lingua#r_14H9DG80V3YYNWP3MP73TC1VMT") { r_21PMJ5SPT1RPSRR9SBF67QAEM2
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), London–van der Waals notes, page 4; [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), competing interactions.
+
+A Hamaker constant belongs to a material pair and an intervening medium. In one approximate combining model,
+
+A₁₃₂≈(√A₁₁−√A₃₃)(√A₂₂−√A₃₃).
+
+Here the Aᵢᵢ use the same reference-medium convention. The approximation shows why replacing air by a liquid can change the dispersion interaction; it is not a substitute for the frequency-dependent dielectric treatment of a real layered surface. Repulsion is possible in suitable dissimilar systems, so an attractive constant should not be assumed universally.
+
+For hypothetical A₁₁=4×10⁻²⁰ J, A₂₂=9×10⁻²⁰ J and A₃₃=1×10⁻²⁰ J, the estimate is 2×10⁻²⁰ J. Changing only A₃₃ to 6.25×10⁻²⁰ J gives −0.25×10⁻²⁰ J. These are arithmetic examples, not tabulated materials or a cleaning prescription.
+
+**Work:** Check the units of each square root and the final product. Compare the identical-body limit with the dissimilar case. Explain what further evidence is needed for oxide layers, adsorbed films, electrolytes and specific chemical interactions. The course PDF's extracted text loses some radicals; consult the displayed page before transcribing it.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Contact pressure, compliance and the loaded interface](../../../engineering/mechanical-engineering-and-machine-design/materials/Contact-pressure-compliance-and-the-loaded-interface.lingua#r_14H9DG80V3YYNWP3MP73TC1VMT).
+
+} r_21PMJ5SPT1RPSRR9SBF67QAEM2

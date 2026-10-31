@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Reliability, availability and repair answer different questions (@gas-availability: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "../../../materials/chemical-feedstocks-and-supply-systems/continuity/Two-suppliers-can-share-the-same-failure.lingua#r_3YJ0DPY2TX68GEYCK057JWJFJX") { r_3C3BCMPP4SW72KT3WNJAFWTBQT
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), chapters 3–5 and performance indicators. The following is an explicitly ideal two-state model.
+
+Let a working system fail with constant rate λ and a failed system return to service with rate μ. If restoration returns the modeled function, availability obeys dA/dt=μ(1−A)−λA. Its stationary value is μ/(λ+μ), and A(t)=μ/(λ+μ)+[A(0)−μ/(λ+μ)]exp[−(λ+μ)t]. Reliability without any failure during an initially working interval is instead R(t)=exp(−λt).
+
+With hypothetical mean working time 1000 h and mean repair time 10 h, stationary availability is 1000/1010≈0.990099. Reliability over 100 h is approximately 0.904837. High long-run availability can coexist with interruptions that invalidate a particular batch or experiment.
+
+**Work:** Derive both expressions from probability balances. Add diagnosis, spare-part delay and quality requalification to restoration time. Explain how aging, nonexponential repair and incomplete restoration would change the model and which data would distinguish those effects.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Calculate diversification with the actual joint dependence](../../../materials/chemical-feedstocks-and-supply-systems/continuity/Two-suppliers-can-share-the-same-failure.lingua#r_3YJ0DPY2TX68GEYCK057JWJFJX).
+
+} r_3C3BCMPP4SW72KT3WNJAFWTBQT

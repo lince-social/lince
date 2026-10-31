@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Follow a molecule through the pumping system (@gas-pump-entry: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9", #industrial-gases-and-vacuum "Displacement-pumps-and-the-meaning-of-swept-volume.lingua#r_3QZE6P8P0MT4J12RQKK39GJCQE") { r_75DSZV30D0R7Q28C9ZC6BRNXRG
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), chapter 2 in full over this section; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.3.3; [Vacuum technology for superconducting devices — Paolo Chiggiato](../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9), section 3.
+
+A pump changes the population of gas molecules at its inlet. A transfer pump moves them toward an exhaust; a capture pump stores them on or within another material. Neither makes matter disappear. Follow the removed constituent through the whole apparatus, including backing equipment, traps and regeneration.
+
+Begin with the inlet state and required service, then ask how a mechanism works in that regime. A displacement machine, a moving molecular surface and a cryogenic sorbent do not share one universal performance curve. Startup, steady operation, interruption and restoration may require different combinations.
+
+**Work:** Draw the complete path of a water molecule and a hydrogen molecule through two alternative pumping arrangements. Mark where each is transferred, condensed, adsorbed or chemically retained. Identify where its inventory can later re-enter the chamber and what continuing utilities keep the intended state stable.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Displacement pumps and the meaning of swept volume](Displacement-pumps-and-the-meaning-of-swept-volume.lingua#r_3QZE6P8P0MT4J12RQKK39GJCQE).
+
+} r_75DSZV30D0R7Q28C9ZC6BRNXRG

@@ -1,0 +1,50 @@
+Import "Industrial-gases-and-vacuum.lingua"
+
+Gas and vacuum sources — books, methods and primary evidence (@gas-sources: 0, is #chapter) { r_0KQ1MK1BQV5KMNS3DVQT2N1VXB
+Begin with the complete vacuum handbook, then read the full cryogenic and adsorption courses progressively. Baglin and Kersevan provide a complete 80-page vacuum course with exercises and solutions; Chiggiato and Taborelli deepen pump, thermal and manufactured-surface mechanisms. The source Records specify editions, inspected material, access and reuse conditions. Primary research and metrology reports deepen the methods and their limits.
+
+- [Fundamentals of Vacuum Technology — Walter Umrath and contributors](sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR)
+- [Fundamentals of Vacuum Physics and Technology — Eshraq Al-Dmour](sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9)
+- [Outgassing properties of vacuum materials — Paolo Chiggiato](sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT)
+- [Total and Partial Pressure Measurement — Karl Jousten](sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M)
+- [Cryogenic Engineering — M. D. Atrey, IIT Bombay](sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783)
+- [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5)
+- [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA)
+- [On-site nitrogen generators for food use — EIGA 194/24](sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH)
+- [Gases and Applications — Linde](sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT)
+- [Gas flow standards and their uncertainty — Wright and colleagues](sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5)
+- [Calibration of ionization vacuum gauges — Fedchak and colleagues](sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW)
+- [Certification of gas-mixture reference materials — NIST SP 260-222](sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8)
+- [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D)
+- [A ciência e a tecnologia do vácuo — Roberto A. Stempniak](sources/Ciencia-e-Tecnologia-do-Vacuo-Stempniak.lingua#r_19PQC0QPH5A34605BQBTNZXK4W)
+- [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM)
+- [An oxygen-separation plant model — Dhamanekar and colleagues](sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H)
+- [Cleaning equipment for oxygen service — EIGA 33/18](sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0)
+
+- [Vacuum systems — Vincent Baglin and Roberto Kersevan](sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN)
+- [Vacuum technology for superconducting devices — Paolo Chiggiato](sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9)
+- [Surface finishing and vacuum coatings — Mauro Taborelli](sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD)
+
+- [Static vacuum insulated cryogenic vessels — EIGA 224/20](sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ)
+- [Cryogenic vaporisation systems — EIGA 133/22](sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH)
+- [Pressure regulator flow curves — Swagelok technical bulletin](sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9)
+- [Thermal performance of cryogenic storage tanks — Aasen and colleagues](sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7)
+
+- [Leak calibration — Ehrlich and Tison, NIST SP 250-38](sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7)
+- [Hybrid humidity generator — NIST SP 250-83 Revision 1](sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ)
+- [A constant-pressure flowmeter — Eckel and colleagues](sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB)
+- [Cold-atom vacuum comparison — Barker and colleagues](sources/Cold-Atom-Vacuum-Comparison-Barker.lingua#r_63YN75QRE9J59QPJ0Y55XYR6AV)
+- [Glancing collisions in vacuum metrology — Eckel and colleagues](sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F)
+
+- [Reliability-centered maintenance — NASA, September 2008](sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R)
+- [The safe isolation of plant and equipment — HSE HSG253](sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H)
+- [Hazards of oxygen-deficient atmospheres — EIGA 44/18](sources/Oxygen-Deficient-Atmospheres-EIGA.lingua#r_0KCKFEBVRBMZNF4KQ9PSXB9QCA)
+- [Fatal liquid nitrogen release — CSB Foundation Food Group investigation](sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA)
+- [Improving compressed air system performance — DOE sourcebook](sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1)
+- [Conservation of helium while maintaining high system purity — White and colleagues](sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR)
+
+The existing chemical, thermal, fluid, quantitative and measurement readings are shared through their original Records. Books, papers, data and course media remain external links.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+
+} r_0KQ1MK1BQV5KMNS3DVQT2N1VXB

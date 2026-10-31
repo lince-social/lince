@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend a collector and surface-deposition model (@cm-study-collector: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "Review-transport-before-changing-the-surface-or-facility.lingua#r_7RP133RW9C9HH2M0G9ZFW0012D") { r_7PS657D6554B04ANX10S7AGG4W
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), diffusion/interception and impaction in full; [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), collection and retention; [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), sensitive surfaces and monitoring.
+
+Choose a collector or exposed product surface. Define upstream population, geometry, flow, surface condition and what counts as captured. Compare two mechanisms and explain their interaction and limits. Connect the modeled flux with the actual quantity a measurement would observe.
+
+**Work:** Derive one limiting solution and test the bounded column code as a separate verification exercise. Then justify the additional physics needed for the selected collector. Examine sensitivity to particle size, flow, boundary condition and recovery. Compare with published observations where available without treating fitted agreement as proof of a unique mechanism.
+
+Identify what a single-collector theory omits from an installed filter or working facility: bypass, nonuniform loading, changing surfaces, maintenance and exposure during interventions. Keep those questions for the later facility and operation studies.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review transport before changing the surface or facility](Review-transport-before-changing-the-surface-or-facility.lingua#r_7RP133RW9C9HH2M0G9ZFW0012D).
+
+} r_7PS657D6554B04ANX10S7AGG4W

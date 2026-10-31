@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Thermal strain, constraints and residual stress (@mech-thermal-strain: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #mechanical-engineering "../structures/Axial-members-compatibility-and-load-sharing.lingua#r_1VCFFVTFXWNAS0G6CJC2B8DVKN") { r_0755DVWWAGZWYN0R75V7EDBR61
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), section 3.2 and the energy methods of chapter 5; [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Constitutive Relations. Connect the temperature field to the thermal subject by reference when a uniform temperature is inadequate.
+
+A uniform isotropic thermal expansion contributes αΔT to each normal strain in the simple constant-coefficient model. Mechanical stress depends on the strain left after subtracting this free expansion. A freely expanding bar can have nonzero strain and zero stress; a restrained bar can have zero total axial strain and nonzero stress.
+
+For a uniform bar held at fixed axial length with lateral expansion unconstrained, σ = −EαΔT. E = 200 GPa, α = 12×10⁻⁶ K⁻¹ and ΔT = 50 K give −120 MPa. This assumes elastic behavior, a temperature-independent modulus/coefficient over the interval, perfect axial restraint and no buckling. With finite support stiffness, solve compatibility and force balance instead.
+
+Residual stress persists after the external loading or heating that created it has changed. Plastic deformation, thermal gradients, phase changes and assembly interference can generate self-equilibrated stresses. A zero net external force does not prove zero internal stress.
+
+**Work:** Compare free expansion, perfect restraint and a finite-stiffness support. For two bonded materials, derive force balance and compatible extension with different free strains. Check how support motion, uneven temperature or yielding changes the conclusion before applying a tabulated expansion coefficient to an assembly.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Axial members, compatibility and load sharing](../structures/Axial-members-compatibility-and-load-sharing.lingua#r_1VCFFVTFXWNAS0G6CJC2B8DVKN).
+
+} r_0755DVWWAGZWYN0R75V7EDBR61

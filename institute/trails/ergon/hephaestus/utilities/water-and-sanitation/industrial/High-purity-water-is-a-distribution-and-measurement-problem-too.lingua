@@ -1,0 +1,18 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+High-purity water is a distribution and measurement problem too (@wu-high-purity: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Water-for-Pharmaceutical-Use-WHO.lingua#r_2MQQ5SM683CVV31MHADK5MAPTA", #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #water-and-sanitation "Brine-cleaning-waste-and-the-receiving-route.lingua#r_73NW5S5NA0TJZXWFK07XBFE5DC", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/cleaning/Rinsing-starts-with-the-quality-and-location-of-the-liquid.lingua#r_0E4EGZPAWAKA6C0T5VFN3T3HSX") { r_72TZ7SZVXT1GPW21YQABMTFQSF
+**Read:** [Water for pharmaceutical use — WHO TRS 1033, Annex 3](../sources/Water-for-Pharmaceutical-Use-WHO.lingua#r_2MQQ5SM683CVV31MHADK5MAPTA) in full, alongside [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R)'s makeup-treatment discussion and the membrane, ion-exchange and analytical foundations. Use the pharmaceutical case to learn system reasoning while keeping each industry's product specifications distinct.
+
+An outlet from a purification unit can change during storage, recirculation, stagnation, contact with materials or sampling. Dissolved ions, organics, particles, microorganisms and endotoxin are different analytical questions. High resistivity alone does not answer them all. Resistivity is the reciprocal of conductivity on compatible units: 0.1 µS/cm corresponds to 10 MΩ·cm at the stated measurement conditions, not to a universal water-quality certification.
+
+**Work:** Draw production, storage, loop return and points of use. Identify temperature effects, sampling artefacts, dead legs, material compatibility, sanitization and recovery after maintenance. Compare a measurement at the skid with the same parameter at a distant use point. Develop a justified qualification/monitoring account from the WHO case rather than inventing release criteria.
+
+For advanced work, investigate transport, surface interactions, microbial persistence and measurement limits in one declared loop. Connect semiconductor or laboratory water questions to their actual process-specific sources as those trails develop. The common water account remains reusable; a pharmaceutical document does not silently supply the missing chip-manufacturing specification.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Brine, cleaning waste and the receiving route](Brine-cleaning-waste-and-the-receiving-route.lingua#r_73NW5S5NA0TJZXWFK07XBFE5DC).
+
+
+**Continue in clean manufacturing:** [Rinsing starts with the quality and location of the liquid](../../../production/clean-manufacturing-and-contamination-control/cleaning/Rinsing-starts-with-the-quality-and-location-of-the-liquid.lingua#r_0E4EGZPAWAKA6C0T5VFN3T3HSX).
+
+} r_72TZ7SZVXT1GPW21YQABMTFQSF

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Derive a room balance before choosing an airflow (@cm-room-recirculation-balance: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Recovery-time-depends-on-the-source-and-the-target.lingua#r_73DB8MF0F41B3Y31ECGRJKQT1S") { r_2AJ3N0ZEF0DB9V9QHVQJ1AN2YJ
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), chapter 8.2; revisit [A well-mixed volume with generation and removal](../transport/A-well-mixed-volume-with-generation-and-removal.lingua#r_4CMY99W2FJ2EE3KNTFAJP15FGZ) and the previous conservative particle-transport formation.
+
+For one well-mixed constant-volume room, let G be a particle source, Qa balanced makeup/exhaust, Ca the concentration in that incoming stream after its treatment, Qr recirculation, η its removal efficiency for the specified particle class, and kd a first-order deposition coefficient. With no other sources, V dC/dt=G+Qa Ca−(Qa+ηQr+kdV)C.
+
+The filtered recirculation returns (1−η)Qr C while Qr C leaves, yielding a net ηQr C removal. Outdoor concentration must not be counted before and after a filter simultaneously. Deposition leaves the air but can create unwanted surface contamination.
+
+**Work:** Derive the balance by following individual streams. Use hypothetical V=100 m³, Qa=1 m³/s, Qr=4 m³/s, η=0.99, kd=0, G=100 particles/s and Ca=10 particles/m³. Calculate the steady concentration and characteristic time. Then explain which changed process or geometry would defeat the well-mixed assumption.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Recovery time depends on the source and the target](Recovery-time-depends-on-the-source-and-the-target.lingua#r_73DB8MF0F41B3Y31ECGRJKQT1S).
+
+} r_2AJ3N0ZEF0DB9V9QHVQJ1AN2YJ

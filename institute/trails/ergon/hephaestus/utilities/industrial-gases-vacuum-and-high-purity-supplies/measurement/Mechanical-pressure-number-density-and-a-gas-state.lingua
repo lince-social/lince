@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Mechanical pressure, number density and a gas state (@gas-measured-pressure: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #industrial-gases-and-vacuum "../../../inquiry/metrology/foundations/Instrument-response.lingua#r_07SCGP3DGSTJ27T288T3G50J8H") { r_4RCAWC3VWQFXSVW8Q1K34P22NJ
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), pressure concepts and gauge principles; [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), theory of ionization gauges.
+
+Mechanical pressure is related to momentum transfer at a boundary. For a locally equilibrated ideal gas, p=nNkBT, where nN is number density in m⁻³. Molar density instead uses R. A density-sensitive instrument uses a gas-state model to report pressure; temperature is part of that conversion.
+
+Outside local equilibrium, the molecular velocity distribution matters. A directed beam and an isotropic thermal gas can have the same number density but different momentum fluxes. Pressure can require a tensor description, and a small sensor samples only particular trajectories and locations.
+
+Even in ordinary use, pressure varies along a flowing line or across a conductance restriction. A gauge port can differ from the process region through pressure gradients, temperature differences, pumping and released gas. Give the measurement location instead of silently assigning one reading to the whole apparatus.
+
+**Work:** Compare a force-based measurement and a density-sensitive one in an ideal equilibrium gas, then describe a case where the equivalence needs additional evidence. Convert a hypothetical p=10⁻⁶ Pa at 300 K into number density using exact kB=1.380649×10⁻²³ J/K. Check that the result is approximately 2.41432×10¹⁴ m⁻³.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Range, sensitivity, loading, bandwidth, and response time](../../../inquiry/metrology/foundations/Instrument-response.lingua#r_07SCGP3DGSTJ27T288T3G50J8H).
+
+} r_4RCAWC3VWQFXSVW8Q1K34P22NJ

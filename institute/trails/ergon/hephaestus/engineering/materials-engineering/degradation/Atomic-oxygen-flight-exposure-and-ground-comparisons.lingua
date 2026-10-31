@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Atomic oxygen, flight exposure and ground comparisons (@mat-space-exposure: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Atomic-Oxygen-Durability-NASA.lingua#r_1RMMZEYQQCZ08VRYTHCQBEEHJ0", #materials-engineering "Contact-surfaces-lubrication-and-wear-as-a-system.lingua#r_0K3ECTGJ602W6JEX0WX7CWWMNB") { r_3NSH7CCC1HN6ZXR2WANN7NNXDG
+**Read:** [Spacecraft polymer atomic-oxygen durability — NASA-HDBK-6024](../sources/Atomic-Oxygen-Durability-NASA.lingua#r_1RMMZEYQQCZ08VRYTHCQBEEHJ0), interaction and measurement chapters, flight/ground comparisons and uncertainty appendices.
+
+The environment must be specified even when the material and nominal mechanism are familiar. An atomic-oxygen ground facility can differ from orbital exposure in energy and arrival conditions. Witness-based effective fluence is a calibration quantity, not automatically the actual incident atom count. Moisture changes can obscure the small mass loss being attributed to erosion.
+
+**Work:** Derive erosion yield from mass loss, exposed area, density and fluence, retaining dimensions. Reconstruct the conditioning and witness measurements and propagate their uncertainties, including shared-reference correlations. Compare erosion depth with mass-based inference. Explain how a coating defect can expose an underlying polymer and alter the damage geometry. Use this case to criticize laboratory-to-service transfer; it does not supply a complete account of ionizing radiation, displacement damage or reactor materials.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Contact surfaces, lubrication and wear as a system](Contact-surfaces-lubrication-and-wear-as-a-system.lingua#r_0K3ECTGJ602W6JEX0WX7CWWMNB).
+
+} r_3NSH7CCC1HN6ZXR2WANN7NNXDG

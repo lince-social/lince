@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Oxide-scale growth and discontinuities — Ulrich, Glatzel and Galetz (@mat-oxide-source: 0, is #reference, #part-of @mat-sources) { r_5ZVWBZKX1ATCMAF2H08XD87C6K
+Anke S. Ulrich, Uwe Glatzel and Mathias C. Galetz, *Discontinuities in Oxidation Kinetics: A New Model and its Application to Cr–Si-Base Alloys*, Oxidation of Metals 95 (2021), 445–465. [Complete open article](https://link.springer.com/article/10.1007/s11085-021-10029-8).
+
+Read the whole article, starting with the kinetic balances and then the experimental methods, observations and interpretation. Selected introduction, parabolic/paralinear model and discontinuity passages were inspected on 30 October 2026. It provides a concrete primary investigation of why a mass-change trace need not reveal oxide growth uniquely; it is not a general high-temperature-corrosion textbook.
+
+The article states CC BY 4.0, with separately credited components subject to their own terms. Preserve credit and keep figures and source files external. Check dimensions directly from each equation, including the exponent convention used for its rate constant.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_5ZVWBZKX1ATCMAF2H08XD87C6K

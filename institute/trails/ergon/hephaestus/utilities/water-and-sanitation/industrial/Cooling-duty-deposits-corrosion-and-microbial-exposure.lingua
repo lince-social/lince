@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Cooling duty, deposits, corrosion and microbial exposure (@wu-cooling-service: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #source "../sources/Cooling-Tower-Water-Management-CDC.lingua#r_752CGAKVEB1JE6PMJVBAK9W0P0", #water-and-sanitation "../../../physics/thermodynamics-and-heat-transfer/heat-exchangers/Fouling-maldistribution-pressure-loss-and-service.lingua#r_1772HCRCTXFNDXMGCNSDTJBW4W") { r_2GCCAWBC12P0GNKH8VTYD6JZ0N
+**Read:** [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), chapter 5, with the complete [Cooling-tower water management and Legionella control — CDC](../sources/Cooling-Tower-Water-Management-CDC.lingua#r_752CGAKVEB1JE6PMJVBAK9W0P0). Return to heat transfer for the thermal duty and to the earlier barrier/measurement Records for the evidence behind a quality claim.
+
+Cooling must remove heat while maintaining the water circuit and controlling relevant exposure pathways. Deposits can change thermal resistance, pressure loss and microbial habitat. A clean heat-transfer surface, a stable corrosion indicator and a microbiological assessment establish different things. Identify both the process loop and any evaporative loop in a closed-circuit tower.
+
+In a separate original heat-duty example, 600 m³/hour of water with assumed density 1,000 kg/m³ and heat capacity 4.18 kJ/(kg·K) cools by 10 K. Its transferred sensible heat is about 6.967 MW. If all that duty came from evaporation with a declared latent heat of 2,400 kJ/kg, the corresponding evaporation would be about 10.45 m³/hour. Real towers include sensible air heating and other terms; this is a limiting comparison, not a performance rating.
+
+**Work:** Reconcile water, thermal and constituent measurements at one operating point and a changed ambient condition. Compare fouling, altered flow, sensor bias and a change in load as explanations for degraded service. Develop a documented monitoring/maintenance argument using the CDC source and equipment evidence. Follow the shared exchanger Record next; its thermal and mechanical distinctions remain useful across industries.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Fouling, maldistribution, pressure loss and exchanger service](../../../physics/thermodynamics-and-heat-transfer/heat-exchangers/Fouling-maldistribution-pressure-loss-and-service.lingua#r_1772HCRCTXFNDXMGCNSDTJBW4W).
+
+} r_2GCCAWBC12P0GNKH8VTYD6JZ0N

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cryogenic storage couples two pressure systems (@gas-cryovessel: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "../../../physics/thermodynamics-and-heat-transfer/conduction/Fourier-law-conductivity-and-a-local-heat-flux.lingua#r_05EQENX75RXRDXHYBA5PXC2A28") { r_3FGYQQPEPDYTRT6BXHG2JVK822
+**Read:** [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), equipment, insulation and inspection sections; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), residual gas and cryogenic sections.
+
+Follow the inner product vessel, the evacuated insulation space, outer jacket, supports and penetrations. Each has a different function and boundary condition. A gauge measuring product pressure says nothing by itself about the state of the insulation vacuum. Conversely, good insulation vacuum does not establish product composition or delivery capacity.
+
+Heat can enter by solid supports and piping, radiation, residual gas and imperfections in insulation. Product withdrawal, vapor return and pressure-building circuits redistribute mass and energy. The same physical vessel therefore participates in both a gas-delivery problem and a vacuum-maintenance problem.
+
+Use the earlier molecular heat-transfer and outgassing Records to explain why insulation performance can change over time. Keep the actual insulation architecture and operating temperatures in view; a simple empty-gap radiation calculation is not a complete multilayer-insulation model.
+
+**Work:** Draw a section through a conceptual vessel and assign every heat path to a mechanism. For each observation—outer-surface temperature, vacuum indication, product pressure or loss of inventory—list more than one possible cause before selecting a diagnostic measurement.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Fourier's law, conductivity and local heat flux](../../../physics/thermodynamics-and-heat-transfer/conduction/Fourier-law-conductivity-and-a-local-heat-flux.lingua#r_05EQENX75RXRDXHYBA5PXC2A28).
+
+} r_3FGYQQPEPDYTRT6BXHG2JVK822

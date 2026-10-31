@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Stability constraints and the limits of strength ranking (@mat-stability-index: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Performance-Indices-Reference-Booklet.lingua#r_4ANTT1YWPSEVTS9J36CHQ1WEGE", #materials-engineering "Screening-with-several-active-constraints.lingua#r_3M3JZK76NYCVMKXTAK61WZ1JRA") { r_27VXMDTZFC532J4Z4MW2RWKYR6
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), elastic stability; [Performance Indices Reference Booklet — Kaitlin Tyler and Harriet Parnell](../sources/Performance-Indices-Reference-Booklet.lingua#r_4ANTT1YWPSEVTS9J36CHQ1WEGE), columns; the earlier mechanical instability work.
+
+An ideal slender column has Euler load π²EI/(KL)² for a specified effective-length factor K and boundary conditions. At fixed cross-section shape scaled uniformly, I=cA², so the area required by a load scales as E⁻¹ᐟ² and the mass index is E¹ᐟ²/ρ. Increasing yield strength alone does not increase this elastic buckling load.
+
+Real columns have imperfections, eccentricity, residual stress and potentially inelastic or local buckling. The ideal bifurcation is not an allowable load. A very thin-walled shape can increase global second moment while creating a local instability or fabrication problem. Coupled failure modes limit an apparently favorable shape factor.
+
+**Work:** Derive the ideal column scaling and compare it with compressive yielding for a stated hypothetical geometry. Locate the crossover as length changes. Then introduce one measured or bounded imperfection through a justified model and explain how the feasible region changes. Keep an ideal analytical comparison distinct from a qualified structural design.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Screening with several active constraints](Screening-with-several-active-constraints.lingua#r_3M3JZK76NYCVMKXTAK61WZ1JRA).
+
+} r_27VXMDTZFC532J4Z4MW2RWKYR6

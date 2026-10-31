@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Slurries, dispersion, settling and forming (@mat-slurry-processing: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Compaction-green-strength-and-density-gradients.lingua#r_1BHYJT87XN43NASSSNBCJ50Z90") { r_73RW8FY7PK6ZWCZVF6SNVEFS6M
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), lecture 21 and colloid/flow foundations; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), forming routes; the shared rheology readings.
+
+A slurry couples particles, liquid, surface chemistry and flow. Dilute isolated-particle settling differs from concentrated hindered settling and a yield-supporting network. Dispersion can improve homogeneity while changing viscosity and sedimentation; an apparently stable suspension can still develop gradients during forming.
+
+**Work:** Derive a dilute Stokes settling estimate and identify where particle interactions, inertia or non-spherical shape invalidate it. Compare gravitational stress, rheological measurements and actual concentration profiles. Reconstruct slip casting or tape casting through transport, mold/substrate interaction and subsequent drying. Keep solids fraction, binder, dispersant, pH and preparation history explicit. A visually smooth surface is not evidence of a uniform interior.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Compaction, green strength and density gradients](Compaction-green-strength-and-density-gradients.lingua#r_1BHYJT87XN43NASSSNBCJ50Z90).
+
+} r_73RW8FY7PK6ZWCZVF6SNVEFS6M

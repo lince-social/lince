@@ -162,7 +162,49 @@ The earlier Blaze v0.20261027.0 trials failed in the standard library panic path
 
 Completion: retain a reproducible result for the selected version and workload. Any affected-test cache must distinguish hermetic computation from Park's real Wayland/graphics/session interactions and preserve executable, environment/tool and evidence identity. Ordinary Cargo checks and actual required executions remain authoritative.
 
-## 17. Consider larger build infrastructure only after local improvements
+## 17. Test the huacnlee Cargo fork in one checkout
+
+- [ ] Pin and inspect [huacnlee/cargo](https://github.com/huacnlee/cargo) before a compatibility trial.
+
+Record the fork's commit/release and Cargo version, the selected rustc version, and every behavior that differs from ordinary Cargo. Invoke an explicitly selected experimental binary; keep the rustup Cargo proxy and normal shell configuration intact. Check `rust-toolchain.toml`, locked dependency resolution, workspace/path dependencies, package selection, feature selection, Cargo aliases and the existing xtask entry points. Verify that nested Cargo invocations actually use the intended binary. Distinguish Cargo orchestration changes from a change of rustc, linker, debug information, optimization or backend.
+
+Upstream currently documents fixed shared build directories, ignored target-directory overrides, automatic cache pruning and changed dependency debug information. Before running against Lince, verify the pinned version's actual configuration and establish isolation from retained baseline artifacts and other active builds. Do not assume `CARGO_TARGET_DIR` provides isolation or let an installer replace the normal Cargo binary. Record a blocker if the tool cannot preserve the existing artifacts and required behavior.
+
+- [ ] Compare ordinary Cargo and the fork on this existing checkout and branch.
+
+Use step 1's recipes with the same toolchain, Wild/Clang, features, profile, job count and source edits. Measure initial preparation separately, then three unchanged repeats and three comparable test-only, leaf and shared-crate edits. Include executable preparation and startup when supported, using Nix/xtask execution, and retain medians, rebuilt units, cache evidence and failures under `target/build-iteration`. Run each tool sequentially. Do not create another worktree or include cross-worktree/project benchmarks in this trial.
+
+Compare the current usable defaults first, then control differing profile/debug/backend settings where the fork permits it. Report any setting that cannot be matched. A smaller artifact directory or reuse demonstrated across several worktrees does not establish faster editing in this checkout. No `cargo clean` or deletion of retained caches is part of the experiment.
+
+- [ ] Verify dependency reuse and invalidation inside the single checkout.
+
+Exercise repeated package selection, a workspace-only edit and controlled changes of features, profile and compiler flags. Inspect actual compiler invocations to distinguish unchanged dependencies reused from recompilation; verify relevant dependency or compiler changes invalidate incompatible artifacts. Check the existing interaction between sccache and incremental workspace compilation. Confirm warnings remain errors, the intended linker is selected, and build identity, generated outputs and required behavior remain correct.
+
+Completion: record compatible operations, concrete failures, setup costs and comparable edit-to-result timings. Recommend adoption only if the fork improves Lince's single-checkout workflow without weakening correctness or disrupting retained artifacts. Leave cross-worktree sharing as an untested upstream claim for this scope. This section records future tasks; no fork trial is authorized to start by this document edit.
+
+## 18. Test Corgi in the same single checkout
+
+- [ ] Pin [ConradIrwin/corgi](https://github.com/ConradIrwin/corgi) and verify platform eligibility.
+
+Identify the exact `corgi-build` release/commit and its supported operating systems before preparing the experiment. Upstream currently describes macOS-only support; verify whether the selected version can run on this Linux/Nix host. Record unsupported platform/toolchain requirements as a blocker rather than presenting a planned benchmark as a completed test. Keep the ordinary Cargo toolchain and the current checkout intact.
+
+- [ ] Check Cargo compatibility against Lince's actual build inputs.
+
+Verify package/features/profile selection, lockfile and path dependencies, build scripts, proc macros, native-library discovery and generated outputs. Account explicitly for Corgi's sandboxed tools/environment/input declarations: inspect `pkg-config`, Clang/libclang, native graphics/session libraries, Anicca generation, source-policy enforcement and execution/simulation source fingerprints. Keep migration guards enforced and source coverage complete. Record any required experimental configuration separately from the application defaults.
+
+Test existing xtask integration explicitly: upstream does not promise support for every inherited Cargo subcommand. Verify which commands use Corgi and which still call Cargo. Its feature unification may activate a different graph; compare native, headless and narrow helper selections and report added dependencies or changed features instead of attributing those differences to cache speed.
+
+- [ ] Benchmark Corgi against ordinary Cargo and the huacnlee fork using section 17's single-checkout protocol.
+
+Use the same representative source edits, baseline conditions, three-run medians, preparation/runtime separation and compiler/cache receipts. Establish tool-supported cache isolation before the trial and retain existing caches. Measure repeated package selections and actual dependency reuse within this checkout. Record compiler/backend/profile differences that cannot be controlled. No new worktrees, second repository, remote cache service or cross-project sharing experiment is needed.
+
+- [ ] Verify the correctness of Corgi's cached test results before relying on them.
+
+Separate deterministic checks from fixtures that use real graphics, Wayland, session buses or external tools. Verify that relevant executable, source, environment, tool and evidence changes invalidate retained results. Select a supported way to rerun or exclude unsuitable tests from result caching, and compare those executions with ordinary Cargo. A cache hit must not substitute for required physical/session acceptance or release performance measurements.
+
+Completion: retain platform and compatibility findings, matched performance measurements where execution is supported, required configuration and a recommendation. If blocked, leave the exact unsupported requirement and the condition for revisiting it. Do not adopt or globally install Corgi as part of planning these tasks.
+
+## 19. Consider larger build infrastructure only after local improvements
 
 - [ ] Reassess distributed compilation or shared remote artifact caching only if another available machine or trusted service would remove a measured remaining cost.
 
@@ -176,7 +218,7 @@ Identify the exact dependency or cache problem the replacement solves and compar
 
 These are conditional runtime optimizations, not defaults for faster editing. Include training/optimization cost, runtime measurements and repeated release preparation before adopting any of them. Keep them deferred when compile turnaround is the active objective.
 
-## 18. Make future simplification reviews actionable
+## 20. Make future simplification reviews actionable
 
 - [ ] Define a focused review recipe for recurring Fiote/codebase cleanup if the user requests recurring reviews.
 

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Rare-gas supply begins with a dilute source (@gas-rare-gases: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "../../../chemistry/industrial-chemistry/inorganic/Hydrogen-production-purity-energy-and-connected-products.lingua#r_671AHTBHPTB522FV4SGAQJYKNZ") { r_7MSMS1194712PYSD75A9T225PV
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), neon, krypton and xenon entries; the cryogenic separation readings and primary sources behind any chosen recovery process.
+
+A useful gas may occur at low concentration in a large source stream. Production then depends on concentrating an intermediate, purifying it and coordinating with the main plant's operation. A small product mass does not imply a small infrastructure requirement. Trace impurities become a different separation problem after concentration.
+
+Distinguish abundance, technically recoverable amount, actual recovered output and delivered service. Product demand, storage, analysis and recovery from users affect supply. Historical market quantities and process examples retain their dates; the physical account should expose the assumptions needed to update them.
+
+**Work:** Trace a selected rare gas from its source through concentration, purification and a defined application. Close an order-of-magnitude constituent balance using cited composition and recovery data. Compare primary production with a plausible recovery-from-use route, identifying the evidence missing before claiming equivalent purity or cost.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Compare hydrogen routes on delivered amount, purity and complete material/energy boundaries](../../../chemistry/industrial-chemistry/inorganic/Hydrogen-production-purity-energy-and-connected-products.lingua#r_671AHTBHPTB522FV4SGAQJYKNZ).
+
+} r_7MSMS1194712PYSD75A9T225PV

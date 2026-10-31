@@ -68,10 +68,17 @@ fn editor_offer(fixture: &mut Fixture, window: &ClientWindow, surface: SurfaceId
 {
     let (source, device) = begin(fixture, window, surface, home, "text/plain;charset=utf-8", text.as_bytes().to_vec());
     action(fixture, DesktopAction::SelectPlacement { workspace, item: Some(placement) });
-    let (displayed, _) = visible_point(fixture, field);
+    super::focus_entity(fixture, field, "Drop editor");
+    let (output, _) = fixture.inspect(move |canvas| canvas.native_test_points(field)).expect("The editor needs a presented projection");
+    let point = opening::point(fixture, field).expect("The editor must own its drop point");
+    let displayed = fixture.desktop.current.as_ref().unwrap().frame.input.mappings.get(output).unwrap().logical_to_displayed(point).unwrap();
     fixture.desktop.move_pointer(displayed, 20).unwrap();
-    fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| frame.frame.input.drop_target.as_ref().is_some_and(|target|
-        matches!(&target.destination, crate::native_input::transfer::Destination::Editor { context, .. } if context.owner == field.to_bits()))));
+    fixture.until(|fixture| !fixture.desktop.input_pending() && fixture.desktop.current.as_ref().is_some_and(|frame| frame.frame.input.drop_target.as_ref().is_some_and(|target|
+        target.pointer.iter().zip(fixture.desktop.pointer).all(|(target, actual)| (target - actual).abs() < 2.0)
+            && matches!(&target.destination, crate::native_input::transfer::Destination::Editor { context, .. } if context.owner == field.to_bits()))));
+    eprintln!("Editor offer ready: dragging={}, pointer={:?}, native={}, drops={:?}", fixture.desktop.server.dragging(), fixture.desktop.pointer, matches!(fixture.desktop.target(), crate::desktop::input::Target::Native),
+        (fixture.client.drop_performed, fixture.client.drop_finished, fixture.client.drop_cancelled));
+    assert!(fixture.desktop.server.dragging());
     (source, device)
 }
 

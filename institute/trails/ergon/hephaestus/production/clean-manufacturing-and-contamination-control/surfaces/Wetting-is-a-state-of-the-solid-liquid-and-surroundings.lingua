@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Wetting is a state of the solid, liquid and surroundings (@cm-wetting-state: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #clean-manufacturing "Hysteresis-and-texture-change-what-a-contact-angle-means.lingua#r_1E6A7H8H132MT9BH18D1PDP12K") { r_7F17GRPXF1NNKW4TA802EBF5R3
+**Read:** [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), lectures 3, 4 and 15, including their interface sketches.
+
+For the smooth equilibrium partial-wetting idealization, γSV−γSL=γLV cos θ, with θ measured through the liquid. Combining the reversible interface-energy account with this relation gives WSL=γLV(1+cos θ). State all three phases and the surface state. A contact angle is not by itself an assay of chemical composition or cleanliness.
+
+For a hypothetical γLV=0.072 N/m, θ=60° gives WSL=0.108 J/m², while 120° gives 0.036 J/m². This calculated contrast assumes the ideal relation applies. Advancing, receding and time-dependent angles on a real specimen require the measurement history.
+
+**Work:** Derive the relation by replacing a small area of interfaces. Specify the droplet size, temperature, liquid purity, elapsed time and image-fitting convention for an observation. Explain why a small angle could arise from desired surface chemistry, roughness or a changed residue, and choose another measurement to distinguish those explanations.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Hysteresis and texture change what a contact angle means](Hysteresis-and-texture-change-what-a-contact-angle-means.lingua#r_1E6A7H8H132MT9BH18D1PDP12K).
+
+} r_7F17GRPXF1NNKW4TA802EBF5R3

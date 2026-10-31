@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Heat recovery needs a compatible sink and time (@gas-heat-recovery: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1", #industrial-gases-and-vacuum "Helium-recovery-is-a-component-and-quality-balance.lingua#r_6PMG5WG3H89XQTJ3S8MHQ3Y5ZA") { r_2XXE3EDF5YYMNDGMTYPHMRZCFZ
+**Read:** [Improving compressed air system performance — DOE sourcebook](../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1), fact sheet 9; revisit the shared heat-transfer and energy-balance Records.
+
+Heat rejected from compression may have a use, but the amount recovered depends on temperature, heat-exchanger approach, timing and the receiving process. Adding recovered heat to electrical savings without stating the displaced service can double-count a benefit.
+
+Compare the system with and without recovery under the same useful output. Include pressure loss, auxiliary power, heat rejected when no sink is available and changes to cooling reliability. A thermal connection can also create a dependency between previously separate services.
+
+**Work:** Construct a time-resolved heat balance for a hypothetical compressor and a hot-water demand. Determine useful recovery from the overlap of available heat and acceptable demand, with stated temperature limits. Explain how a winter design would behave when the heat sink is absent.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Helium recovery is a component and quality balance](Helium-recovery-is-a-component-and-quality-balance.lingua#r_6PMG5WG3H89XQTJ3S8MHQ3Y5ZA).
+
+} r_2XXE3EDF5YYMNDGMTYPHMRZCFZ

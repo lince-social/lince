@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Prepare atoms, electrons and chemical bonds (@mat-atomic-entry: 0, is #chapter, #part-of @materials-engineering, #source "../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "Energy-force-equilibrium-and-bond-stiffness.lingua#r_3B2ZTB5HFEYVF17YBGNEMXE117") { r_0YK3J5464VDN2WDCRDEYCQ1CXN
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapters 2, 6–8, complete worked examples and substantial exercises; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures 1–11 progressively. The chemical textbook supplies the slower introduction before the mathematical slides.
+
+Begin with atoms, nuclei, electron count, ions and chemical composition. Then distinguish an electron's quantum state from a little orbit drawn around a nucleus. Energy levels, occupation and interactions support a model of bonding; a periodic-table position is a clue, not a complete prediction of a material.
+
+Read the shared general-chemistry atomic and bonding Records when these ideas are unfamiliar. Practice electron accounting, simple molecular geometry and the relation between a model and an observation before moving to extended solids.
+
+**Work:** Explain one observation that requires more than a collection of rigid neutral spheres. Compare localized-bond and delocalized-state descriptions, naming the quantities each can address. Derive a simple energy-level result from the supplied mathematical preparation and state why it does not yet describe an actual many-electron solid.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Energy, force, equilibrium and bond stiffness](Energy-force-equilibrium-and-bond-stiffness.lingua#r_3B2ZTB5HFEYVF17YBGNEMXE117).
+
+} r_0YK3J5464VDN2WDCRDEYCQ1CXN

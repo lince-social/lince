@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Heat treatment, coatings and the final material state (@mech-final-material-state: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "Process-variation-capability-and-corrective-action.lingua#r_0DRWSXYX0WX5P7MRJE8D46Y9M4") { r_5ZTEY84TQVSQ3XBGSHQJPS1GW9
+**Read:** Follow the metallurgy heat-treatment, surface and corrosion studies linked from its root; [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), process-chain and joining material. Revisit the mechanical material-state and fatigue Records.
+
+A finished shape may still require heat treatment, stress relief, surface hardening, coating or cleaning. Each can alter dimensions, residual stress, contact, corrosion behavior and the assumptions behind earlier strength values. Process sequence matters: final grinding before a distortion-producing treatment may not preserve the drawing's tolerances.
+
+Specify the required final state and evidence, not only a process name. Hardness at one location does not establish case depth, toughness or fatigue performance everywhere. A protective layer may change fit or create an interface that responds differently under contact and temperature.
+
+**Work:** Trace the selected part through its final treatments and compare two sequences. Predict what dimensional and material checks are needed after each irreversible change. Explain how repair heat, recoating or reused fasteners could invalidate an earlier property or friction assumption. Connect the delivered state to service and replacement criteria.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Process variation, capability and corrective action](Process-variation-capability-and-corrective-action.lingua#r_0DRWSXYX0WX5P7MRJE8D46Y9M4).
+
+} r_5ZTEY84TQVSQ3XBGSHQJPS1GW9

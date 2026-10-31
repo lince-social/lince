@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Maintain the claim through change and restoration (@cm-monitoring-change: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #clean-manufacturing "../studies/Investigate-qualification-monitoring-and-acceptance-together.lingua#r_20855WKEK0RXZNDWJ6NH8XMF5J") { r_7729DVQH9XYHQKGEE5QHCK8NJB
+**Read:** [Systems Engineering Handbook — NASA](../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), transition and configuration management; [Keep a measurement process under observation between calibrations](../../../inquiry/metrology/calibration/Control-and-recalibration.lingua#r_6AHX4PAFTWTDPKEZVQ3KSNP9AC), as-found evidence and recalibration.
+
+A filter replacement, moved sensor, new product geometry, software revision or changed work pattern can alter the basis of earlier evidence. Assess the causal connection between the change and the claims, then choose the observations needed to restore confidence. Neither repeating every historical test nor repeating none is a universal answer.
+
+Preserve the state before adjustment when it matters for interpreting past results. Establish a new baseline only after understanding what changed and whether the new behavior satisfies its actual requirements. A shifted baseline should not normalize a deterioration merely because it has become frequent.
+
+Separate instrument calibration, method suitability, installed-system verification and product performance. A successful calibration can support one layer without establishing the others. Continuing evidence should remain tied to the configuration and use that generated it.
+
+**Work:** Choose three changes to the simulated enclosure and trace their impact on requirements, models, measurements and monitoring. Design focused re-evaluation for each and explain why the unaffected evidence remains relevant. Carry unresolved uncertainty into the next production study.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Investigate qualification, monitoring and acceptance together](../studies/Investigate-qualification-monitoring-and-acceptance-together.lingua#r_20855WKEK0RXZNDWJ6NH8XMF5J).
+
+} r_7729DVQH9XYHQKGEE5QHCK8NJB

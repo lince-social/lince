@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Mechanical quantities and English–Portuguese vocabulary (@mech-language: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Parts-interfaces-and-the-path-of-a-load.lingua#r_0GDXXPH3HG15NE437QEDYMSTZ8") { r_4P2MRH0T3YANEA9BHGVW2VQV2R
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapters 1–2, with the relevant component names in [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ). Learn the physical meaning alongside the English and Portuguese terms.
+
+Useful pairs include force/força, moment or torque/momento ou torque, stress/tensão mecânica, strain/deformação específica, displacement/deslocamento, stiffness/rigidez, strength/resistência, shaft/eixo ou árvore, bearing/mancal ou rolamento, clearance/folga and fit/ajuste. Usage depends on context: a rolling bearing is one kind of bearing, and electrical voltage is not mechanical stress despite the Portuguese word tensão.
+
+Angles in radians are dimensionless in dimensional analysis, but their interpretation still matters. At 600 revolutions/minute, angular speed is 20π rad/s. A 10 N·m torque at that speed transfers about 628.319 W when torque and angular velocity have the same direction. Equal dimensions do not make torque and energy interchangeable physical quantities.
+
+**Work:** Translate a short equipment description both ways without dropping units or conditions. Explain stiffness versus strength with a spring and a brittle object, then identify what evidence would be needed to quantify either claim. Build vocabulary around the parts you actually study.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Parts, interfaces and the path of a load](Parts-interfaces-and-the-path-of-a-load.lingua#r_0GDXXPH3HG15NE437QEDYMSTZ8).
+
+} r_4P2MRH0T3YANEA9BHGVW2VQV2R

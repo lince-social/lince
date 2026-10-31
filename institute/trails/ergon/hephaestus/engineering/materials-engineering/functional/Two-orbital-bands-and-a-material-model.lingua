@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Two-orbital bands and a material model (@mat-two-bands: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB", #materials-engineering "../computation/An-inspectable-band-and-occupation-account.lingua#r_1AYAC90C978F3DYTGSP2GRA1QT") { r_09MK9EPBDNCPJRF71GSDB50V61
+**Read:** [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), tight binding and band filling; [Solid State Physics — David Tong](../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB), chapter 2. Derive the model before running the following calculation.
+
+Consider a periodic one-dimensional chain with two orthogonal orbitals per cell, onsite energies +Δ and −Δ, and real nonnegative hoppings t1 within a cell and t2 between cells. In one Bloch convention the off-diagonal element is t1+t2 exp(−iq), where q=ka. Hermiticity fixes its conjugate partner. The two eigenvalues are ±√[Δ²+(t1−t2)²+4t1t2 cos²(q/2)]. Each band holds two electrons per cell including spin.
+
+The bulk gap is 2√[Δ²+(t1−t2)²]. Equal hoppings do not close it when Δ is nonzero. A gap alone does not determine conductivity: filling, temperature, scattering and contacts also matter. Swapping hoppings leaves this periodic energy spectrum unchanged while boundary-sensitive questions can differ.
+
+**Work:** Derive the determinant, limiting isolated-cell case and equal-hopping limit. Explain precisely which material observations would be needed to calibrate this toy model and which phenomena it omits: interactions, disorder, actual three-dimensional orbitals, scattering and device boundaries.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [An inspectable band and occupation account](../computation/An-inspectable-band-and-occupation-account.lingua#r_1AYAC90C978F3DYTGSP2GRA1QT).
+
+} r_09MK9EPBDNCPJRF71GSDB50V61

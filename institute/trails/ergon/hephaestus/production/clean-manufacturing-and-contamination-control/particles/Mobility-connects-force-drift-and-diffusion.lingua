@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Mobility connects force, drift and diffusion (@cm-particle-mobility: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B", #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "../../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52") { r_7SPPW4ER6HVQ9EGF2EP1ZCA7QW
+**Read:** [Fundamentals of single-particle transport — Kulkarni, Baron and Willeke](../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B), mechanical mobility; [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), particle motion and Brownian motion.
+
+Mechanical mobility B is steady velocity relative to the fluid per applied force in a linear-response regime: v−u=B F. For the corrected isolated sphere, B=1/ζ=C_c/(3πμd). Its units are m/(N s). Mobility is not velocity; a force is still needed to determine drift.
+
+Gravity, a known electric field or another force can use the same mobility only if the resistance model remains applicable. Electrical mobility Z=qB includes charge q and can have a sign. A particle's charge is not established by its geometric size.
+
+**Work:** Calculate B for the hypothetical particle in the previous Record. Apply two forces of different origins and compare their predicted drifts. State the conditions under which adding those drifts follows from linearity and when a changed geometry or nonlinear drag would invalidate that shortcut.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Small changes, derivatives, and first-order approximations](../../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52).
+
+} r_7SPPW4ER6HVQ9EGF2EP1ZCA7QW

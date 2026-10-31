@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Adsorption starts with two inventories (@gas-adsorption-entry: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Adsorption-equilibrium-and-the-Langmuir-model.lingua#r_46PYRW6BRDQ4584GHBJ6D17QXM") { r_0ABBQV1EYBXR6GV1MV4KSVNV5A
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), weeks 1–2; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), surface processes. Use [Follow selective separations through capacity, transport, regeneration and waste](../../../chemistry/industrial-chemistry/separations/Adsorption-ion-exchange-membranes-and-regeneration.lingua#r_794F81FPAZEEDBSKVX4T3EHNFM) for an overview of alternative separation mechanisms.
+
+A gas molecule can spend time in the mobile gas and in an adsorbed population associated with a solid. A gas-phase concentration can fall even when the total constituent amount inside the vessel is unchanged. State whether uptake is expressed per mass of dry solid, per volume of solid or per volume of the whole bed.
+
+For a bed of volume V and void fraction ε, let cᵢ be mol per gas volume, qᵢ mol per mass of dry adsorbent and ρb dry-adsorbent mass per total bed volume. Its constituent inventory is V(εcᵢ+ρbqᵢ), before adding any separately modeled pore-gas inventory. This explicit accounting prevents density and porosity factors from migrating invisibly between formulas.
+
+**Work:** Derive the inventory for a hypothetical sealed bed before and after uptake. Convert the same loading among the three solid bases. Explain which physical volumes are included in ε and what would be double-counted by adding a pore term to a loading that already includes it.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Adsorption equilibrium and the Langmuir model](Adsorption-equilibrium-and-the-Langmuir-model.lingua#r_46PYRW6BRDQ4584GHBJ6D17QXM).
+
+} r_0ABBQV1EYBXR6GV1MV4KSVNV5A

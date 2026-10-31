@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Brine, cleaning waste and the receiving route (@wu-industrial-residuals: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK", #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #water-and-sanitation "A-versioned-water-treatment-model-and-its-property-assumptions.lingua#r_596JPTZTYKY1TC7HA0MX1NFK3A") { r_73NW5S5NA0TJZXWFK07XBFE5DC
+**Read:** [Guidelines for Water Reuse — EPA and USAID, 2012](../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK), industrial and environmental accounts; [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), cleaning and treatment residuals; connect with the earlier sludge/destination and source-protection Records.
+
+Concentrating a stream changes its transport, materials, chemical and environmental problem. A small flow can carry most of a constituent load. Cleaning solutions and regeneration wastes have their own history and may arrive intermittently. Zero liquid discharge is a boundary claim whose evaporated water, solids, gases, energy and cleaning residues still require accounting.
+
+**Work:** Close water and constituent balances for a proposed reuse system including membranes, regeneration, cleaning, off-specification water and storage. Compare discharge, further concentration, recovery and an alternative process arrangement on the same service boundary. Document the destination's actual acceptance requirements and evidence instead of treating disposal cost as a universal constant.
+
+For an advanced study, connect speciation and precipitation models with observed solids or deposition. Distinguish thermodynamic supersaturation, nucleation time and actual operating fouling. Investigate whether raising recovery changes pump duty, chemical inputs, cleaning frequency or loss of a viable receiving route. Include the suppliers and maintained equipment required to sustain the proposed solution.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [A versioned water-treatment model and its property assumptions](A-versioned-water-treatment-model-and-its-property-assumptions.lingua#r_596JPTZTYKY1TC7HA0MX1NFK3A).
+
+} r_73NW5S5NA0TJZXWFK07XBFE5DC

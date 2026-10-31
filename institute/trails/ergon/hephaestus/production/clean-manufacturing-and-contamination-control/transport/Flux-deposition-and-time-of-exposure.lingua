@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Flux, deposition and time of exposure (@cm-deposition: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "../../../inquiry/quantitative-literacy/foundations/Equations-and-constraints.lingua#r_2XGYVPEJSA3GYYV0K6PYXCHXVZ") { r_3ZWNG6Y02XA6FZ3V8AVB6BCZJP
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), particle monitoring and surface contamination. The example is an original constant-flux calculation.
+
+Deposition flux J counts arrivals per area per time. If J is uniform and constant over exposed area A for duration t, accumulated arrivals are N=JAt. A model may write J=v_d C, where C is an airborne concentration and v_d an effective deposition velocity. That coefficient includes stated geometry and conditions; it is not a universal material constant.
+
+For hypothetical C=10⁵ m⁻³, v_d=10⁻⁴ m/s, A=0.02 m² and t=600 s, the model predicts 120 arrivals. Doubling exposure time doubles that result only while the assumptions hold. Removal, shielding, changing flow and re-entrainment require additional terms.
+
+**Work:** Verify the dimensions and count. Compare reducing concentration, exposed area or duration by the same factor. Explain which observations would be needed to infer v_d for a real orientation and flow, and why a room-average concentration may be inadequate.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Equations, unknowns, systems, and constraints](../../../inquiry/quantitative-literacy/foundations/Equations-and-constraints.lingua#r_2XGYVPEJSA3GYYV0K6PYXCHXVZ).
+
+} r_3ZWNG6Y02XA6FZ3V8AVB6BCZJP

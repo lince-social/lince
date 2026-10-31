@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Make, buy, capacity and the cost of useful parts (@mech-production-resources: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "../assembly/Assembly-sequence-cleanliness-and-retained-constraints.lingua#r_3VYM9AYY6V47Z93YTQ1J13C7CX", #materials-engineering "../../materials-engineering/service/Carry-material-state-through-actual-service.lingua#r_3XQWGBTXTPXJ4B7CX4HB1SSNMQ") { r_3JKS2MK3JP6FKB4MENRQDSP6YH
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), manufacturing planning, cost and system lectures. Use the quantitative resource accounts for materials, energy and useful output.
+
+A process consumes setup work, tooling, machine time, labor, inspection and resources even when a part is rejected. Compare cost per accepted useful part under the same service requirements. Include lead time, supply continuity, repair access and knowledge needed to maintain the process.
+
+In a simple illustrative model, process A costs 1000+20N and B costs 5000+5N in the same monetary unit. They cross at N=266.667 parts; above that, B's nominal total is lower. Scrap, tooling life, capacity and financing can move the comparison. These are assumed numbers, not market quotations.
+
+**Work:** Compare local manufacture, a purchased component and a simpler design for the same machine. Build a resource and time account, then vary yield and batch size. Identify a capability that must be retained to repair or reproduce the item even if initial manufacture is outsourced. Explain who needs which drawings, measurements and process knowledge.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Assembly sequence, cleanliness and retained constraints](../assembly/Assembly-sequence-cleanliness-and-retained-constraints.lingua#r_3VYM9AYY6V47Z93YTQ1J13C7CX).
+
+**Continue in materials engineering:** [Carry material state through actual service](../../materials-engineering/service/Carry-material-state-through-actual-service.lingua#r_3XQWGBTXTPXJ4B7CX4HB1SSNMQ).
+
+} r_3JKS2MK3JP6FKB4MENRQDSP6YH

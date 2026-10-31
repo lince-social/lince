@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Depth profiling changes the specimen it measures (@cm-surface-profile: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #source "../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV", #clean-manufacturing "Complementary-methods-can-test-a-shared-surface-model.lingua#r_1GC9KZT5NSDZTVC1X0BMPMQFJR") { r_1A7T7VWASDBMTJY6Z9MK8XG9TN
+**Read:** [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5), depth resolution and sputtering; [Attenuation and information depth in XPS — Cedric Powell](../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV), information depth.
+
+A depth profile may infer position from material removed between observations. Sputter time becomes depth only through a removal-rate relation, which can depend on composition, structure and operating state. Preferential removal, mixing, roughening and chemical change can alter the observed profile.
+
+Even without specimen alteration, finite depth sensitivity broadens a sharp interface. In a teaching model where a step is blurred by a normalized Gaussian of standard deviation σ, the 10–90% transition width is about 2.56310σ. For σ = 2 nm, an atomically sharp modeled step appears about 5.12621 nm wide. This is an observation-kernel example, not a universal instrument-resolution formula.
+
+Combining independent Gaussian broadening contributions gives σ_total² = Σσ_i² in that specific model. Real asymmetric mixing and attenuation kernels need not follow this rule. A fitted broad interface can represent actual intermixing, observation blur or both.
+
+**Work:** Derive the blurred step from a convolution and verify the width numerically. Compare two specimen profiles that become difficult to distinguish after measurement. Explain what an independent thickness reference, a changed observation geometry or another method could establish. Treat a depth-profile inversion as evidence under a model rather than a direct photograph of the original layers.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Complementary methods can test a shared surface model](Complementary-methods-can-test-a-shared-surface-model.lingua#r_1GC9KZT5NSDZTVC1X0BMPMQFJR).
+
+} r_1A7T7VWASDBMTJY6Z9MK8XG9TN

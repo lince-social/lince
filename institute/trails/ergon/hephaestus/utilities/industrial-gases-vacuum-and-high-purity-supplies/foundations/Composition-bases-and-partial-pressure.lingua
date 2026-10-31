@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Composition bases and partial pressure (@gas-composition: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #industrial-gases-and-vacuum "Purity-grades-and-explicit-impurity-panels.lingua#r_2SC5CQ01SP5V9AKX3KKXW0NTFY") { r_3DPV8S0BTRB75D53VCZQ2MNAYT
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), specifications; [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), amount-fraction vocabulary; [State chemical quantities, composition, purity and throughput on a usable basis](../../../chemistry/industrial-chemistry/foundations/Amount-composition-purity-throughput-and-time.lingua#r_3VZAMY6D4469SV1678W5B3JS5T).
+
+Amount fraction xᵢ=nᵢ/Σnⱼ differs from mass fraction wᵢ=mᵢ/Σmⱼ. Their conversion requires molar masses. Under an ideal mixture model, partial pressure pᵢ=xᵢp and Σpᵢ=p. The same total pressure can therefore conceal very different gas environments.
+
+State whether fractions refer to a dry or wet basis and whether they describe a gas, liquid, or total sample. Removing water changes the normalization of all remaining fractions. Volume fractions require the state and measurement convention that relate volume to amount; do not silently equate every reported percentage with mole fraction.
+
+**Work:** Convert a hypothetical 50/50 molar mixture of nitrogen and helium into mass fractions using stated molar masses. Add a stated water fraction and compare wet- and dry-basis reports. Calculate oxygen partial pressure for two different total-pressure/composition combinations. Explain which observation is relevant to a process sensitive to oxygen molecules.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Purity grades and explicit impurity panels](Purity-grades-and-explicit-impurity-panels.lingua#r_2SC5CQ01SP5V9AKX3KKXW0NTFY).
+
+} r_3DPV8S0BTRB75D53VCZQ2MNAYT

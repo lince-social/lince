@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Composite impregnation, flow fronts and voids (@mat-impregnation: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614", #materials-engineering "../../../physics/fluid-dynamics/viscous/Porous-flow-Darcy-flux-and-the-scale-of-a-permeability.lingua#r_6F57YVHJSPPTDA0FGV79KTX1QY") { r_55QN4268KQCZ5RJH6YYEBQ39R4
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), viscous/capillary flow; the earlier fibre-composite source; [Simultaneous rheology and cure kinetics — Romberg and Kotula, 2023](../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614), evolving resin behavior. Work the shared Darcy-flow Record before applying it to a moving front.
+
+For an ideal one-dimensional sharp saturated front with constant permeability K, viscosity μ, porosity φ and pressure difference Δp, Darcy flow and volume conservation give x²=2KΔp t/(φμ). A 0.1 m fill with K=10⁻¹¹ m², Δp=10⁵ Pa, φ=0.5 and μ=0.5 Pa s takes 1250 s in this model. Evolving cure, compaction, capillary effects and connected gas pathways can invalidate it.
+
+**Work:** Derive the relation, define the pressure boundary and compare front observations at several lengths. Distinguish permeability anisotropy from viscosity changes and preform compaction. Predict where dry spots or trapped gas could remain despite a satisfactory bulk flow rate. Compare the fill time with measured working time rather than assuming nominal gel time is a guaranteed processing deadline.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Porous flow, Darcy flux and the scale of a permeability](../../../physics/fluid-dynamics/viscous/Porous-flow-Darcy-flux-and-the-scale-of-a-permeability.lingua#r_6F57YVHJSPPTDA0FGV79KTX1QY).
+
+} r_55QN4268KQCZ5RJH6YYEBQ39R4

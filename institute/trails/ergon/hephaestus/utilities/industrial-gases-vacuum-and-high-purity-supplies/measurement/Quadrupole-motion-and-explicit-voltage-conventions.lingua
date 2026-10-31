@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Quadrupole motion and explicit voltage conventions (@gas-qms-motion: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "Fragmentation-patterns-as-a-response-matrix.lingua#r_4YV5WH8AA3BQAM1PKGYBW52746") { r_59T7RTEYGVJ5PQP29AZ9YNX6FS
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), §4.2 and the field/stability diagrams. Derive the following ideal-field convention independently before comparing numerical coefficients in other conventions.
+
+Let Φ(x,y,t)=[U+V cos(Ωt)](x²−y²)/r₀² and ion charge Q>0, mass m. Newton's equation gives ẍ+[2Q/(mr₀²)](U+V cos Ωt)x=0 and the opposite sign for y. With ξ=Ωt/2, write x″+[ax−2qx cos(2ξ)]x=0, where ax=8QU/(mr₀²Ω²) and qx=−4QV/(mr₀²Ω²); ay=−ax and qy=−qx. A time-origin shift can reverse the RF sign without changing stability.
+
+The potential explicitly fixes whether U,V mean rod-to-axis amplitudes or a rod-to-rod difference. Confusing these conventions introduces factors of two; substituting frequency f for angular frequency Ω introduces factors of 2π. Both transverse motions must remain bounded long enough for ions to reach the detector.
+
+Finite rod length, nonideal fields, entrance conditions and collisions influence transmission and resolution. A stability diagram describes ideal motion; it does not alone predict an actual instrument's peak heights.
+
+**Work:** Derive the coefficients and units, then integrate trajectories with independently checked time steps. Compare both axes and distinguish finite observation time from true asymptotic stability. Explain why a numerical coefficient copied without its voltage and length conventions is not reproducible physics.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Fragmentation patterns as a response matrix](Fragmentation-patterns-as-a-response-matrix.lingua#r_4YV5WH8AA3BQAM1PKGYBW52746).
+
+} r_59T7RTEYGVJ5PQP29AZ9YNX6FS

@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Assets fail through materials, work and time (@wu-assets-maintenance: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Asset-Management-for-Water-Systems-EPA.lingua#r_78ZKEFSZ16WYQ5E62DWKR8FP3N", #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #source "../sources/Effective-Utility-Management-EPA-USDA.lingua#r_5W9CSGM4NJKGFDES86XNMQFBRD", #water-and-sanitation "Reliability-needs-demand-history-and-shared-dependencies.lingua#r_2P6NNR6TE8R6PNG8HXRYA0P663") { r_4XPVB4ZEJ2T8XRV3KVM16RFYPH
+**Read:** [Asset management for small water systems — US EPA](../sources/Asset-Management-for-Water-Systems-EPA.lingua#r_78ZKEFSZ16WYQ5E62DWKR8FP3N) in full; use [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R) for the selected equipment's inspection and maintenance context and [Effective utility management — rural and small systems guidebook](../sources/Effective-Utility-Management-EPA-USDA.lingua#r_5W9CSGM4NJKGFDES86XNMQFBRD) for the institutional account.
+
+An asset supports a service through a condition that changes with corrosion, fouling, wear, cycling, environment and human intervention. Age is one imperfect indicator. Criticality combines a defined failure mode with its consequence and the available alternatives; it is not an intrinsic ranking of expensive equipment.
+
+**Work:** Take a pump, a valve, an analytical instrument and a pipe crossing. For each, describe the physical failure, observable precursors, inspection limits, isolation, repair skills, spares, lead time and effect on users. Compare time-based replacement, condition-based work and deliberate operation to failure where the consequence permits it. Explain the choice instead of treating every category as universally preferable.
+
+Extend the account to unavailable staff, a spare that fits mechanically but changes material compatibility, and a maintenance task that disables a backup. A deeper investigation estimates deterioration from observations, includes censoring and inspection bias, and tests the effect of changing the maintenance interval on continuing service.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Reliability needs demand history and shared dependencies](Reliability-needs-demand-history-and-shared-dependencies.lingua#r_2P6NNR6TE8R6PNG8HXRYA0P663).
+
+} r_4XPVB4ZEJ2T8XRV3KVM16RFYPH

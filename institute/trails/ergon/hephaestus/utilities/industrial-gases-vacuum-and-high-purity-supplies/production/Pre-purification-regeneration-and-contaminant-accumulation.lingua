@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pre-purification, regeneration and contaminant accumulation (@gas-prepurification: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #industrial-gases-and-vacuum "Argon-and-the-value-of-coupled-product-recovery.lingua#r_5XGQ4X72J3BKJBVXSKDWSRX9V9") { r_32Z6YZ0SRCWX9CS1K2DBZWZQ2H
+**Read:** [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), chapter 9 in full; [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), equilibrium, kinetics and fixed beds; the shared gas-separation chemistry.
+
+A pre-purification system must remove contaminants across the intended feed variation and service interval. An adsorbent's equilibrium capacity alone does not determine when the outlet concentration rises: transport, heat release, competition and flow distribution matter. Regeneration changes the next cycle's initial state.
+
+Trace components can pass one treatment and accumulate elsewhere. Follow both the useful gas and each consequential impurity through purge, drains, recycles and product streams. A stationary total flow can coexist with a slowly increasing contaminant inventory. Changing a regeneration gas can transfer impurities between systems.
+
+**Work:** Write transient constituent balances for a two-bed arrangement with one bed adsorbing and the other regenerating. Identify the observations needed to estimate working capacity and residual loading. Construct a case where average feed quality is acceptable but a transient contaminant pulse changes the next cycle. Keep numerical limits tied to actual equipment and evidence.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Argon and the value of coupled product recovery](Argon-and-the-value-of-coupled-product-recovery.lingua#r_5XGQ4X72J3BKJBVXSKDWSRX9V9).
+
+} r_32Z6YZ0SRCWX9CS1K2DBZWZQ2H

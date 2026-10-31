@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Collisions, mean free path and the Knudsen number (@gas-knudsen: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Molecular-flux-onto-a-surface.lingua#r_61K5P1ZPBE6GCCB49PSSZEGWP9") { r_48A5PS2J31RH46S77M16NR5FCB
+**Read:** [Fundamentals of Vacuum Physics and Technology — Eshraq Al-Dmour](../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9), mean free path and flow regimes; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), basic transport. Keep bulk intermolecular collision length separate from the distance to a wall.
+
+For a dilute equilibrium hard-sphere gas of molecular diameter d and number density n, the bulk mean free path is λ=1/(√2πd²n)=kBT/(√2πd²p). A real gas needs an appropriate collision model; the hard-sphere diameter is a stated approximation.
+
+Kn=λ/L compares that length with a relevant geometric or gradient scale. Small Kn can justify a continuum description; large Kn indicates that wall interactions can dominate transport. Slip and transition regimes need additional treatment. A pressure label alone does not decide the regime for every chamber, narrow gap and pore in a system.
+
+**Work:** Calculate λ and Kn for the same gas in a centimetre passage and a micrometre gap over a stated pressure range. Identify the actual L used in each case. Explain why using wall collisions in the definition of λ and then comparing λ with wall spacing would obscure the intended regime test.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Molecular flux onto a surface](Molecular-flux-onto-a-surface.lingua#r_61K5P1ZPBE6GCCB49PSSZEGWP9).
+
+} r_48A5PS2J31RH46S77M16NR5FCB

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Measure response before selecting a material law (@mat-mechanical-measurement: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #materials-engineering "../../mechanical-engineering-and-machine-design/materials/Stress-strain-measures-and-the-tensile-test.lingua#r_61ZDKD8MXWTDZ7Q1M9SECY1Z5P") { r_4R1J7QDQJB51X68DBRVHDCE2F6
+**Read:** [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Introduction to Mechanical Properties in full; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Stress–Strain Curves and Experimental Solutions. Continue through the shared mechanics definitions and metallurgy test-evidence Records.
+
+A test couples specimen, grips, actuator, frame, sensors, control and environment. The curve obtained by dividing force by an area is only as meaningful as those definitions. Machine compliance, alignment, strain rate, temperature and specimen history can dominate an apparent difference between materials.
+
+Tension, compression, bending, shear and indentation interrogate different stress states and volumes. A brittle bending strength, a metal proof stress and a rubber stress at a stated extension cannot be compared as identical 'strength'.
+
+**Work:** Write a measurement account for three family-specific tests, naming controlled and observed quantities, calibration, uncertainties and rejection conditions. Distinguish raw observations from a fitted modulus, yield criterion, failure probability or constitutive model. Use the shared derivations before interpreting any more complicated material response.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Stress–strain measures and the tensile test](../../mechanical-engineering-and-machine-design/materials/Stress-strain-measures-and-the-tensile-test.lingua#r_61ZDKD8MXWTDZ7Q1M9SECY1Z5P).
+
+} r_4R1J7QDQJB51X68DBRVHDCE2F6

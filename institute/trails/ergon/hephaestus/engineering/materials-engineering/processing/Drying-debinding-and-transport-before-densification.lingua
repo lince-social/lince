@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Drying, debinding and transport before densification (@mat-debinding: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "Sintering-pressure-assisted-consolidation-and-grain-growth.lingua#r_6WNJVXXCXCATS1ZPKSG406FX8Y") { r_5PY473J687SYNK01PR5BKFJGEA
+**Read:** [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), forming-to-firing sequence; [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), transport and consolidation; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapter 13 as a contrasting porous drying material.
+
+Removing solvent or binder changes pore pressure, capillary forces, strength and transport paths. Fast surface removal can leave a wetter or binder-rich interior. A thermal schedule must allow products to escape without excessive pressure or unwanted reaction. Decomposition and densification can compete when pores close too early.
+
+**Work:** Compare diffusion and heat-transfer times across two thicknesses and propose measurements of mass loss, evolved products and internal state. Trace a crack or blister through competing drying, gas-pressure and thermal-stress mechanisms. Distinguish evidence from a thermogravimetric milligram specimen from evidence about a thick production body. Preserve total mass and distinguish loss of binder from loss or oxidation of the intended material.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Sintering, pressure-assisted consolidation and grain growth](Sintering-pressure-assisted-consolidation-and-grain-growth.lingua#r_6WNJVXXCXCATS1ZPKSG406FX8Y).
+
+} r_5PY473J687SYNK01PR5BKFJGEA

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of component fatigue and damage tolerance (@mech-damage-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "Defend-material-and-structural-behavior-in-a-machine.lingua#r_2KA62MD536H6F21EG7D20715M3") { r_2AAKGM024C5C8GZ18EB2BCVPN7
+**Read:** Complete [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY)'s yielding, fracture-statistics, fracture-mechanics and fatigue modules; [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), chapter 9. Work the shared metallurgy testing and mechanism readings and inspect the original evidence behind the chosen material data.
+
+Choose a shaft shoulder, pinned connection, plate attachment or other declared loaded feature. Recover a realistic load history from the mechanical account, including assembly, steady service, transients and environment. State the potential initiation sites and the different questions addressed by stress–life, strain–life and crack-growth models.
+
+**Derive:** Compare at least two applicable life/damage models with consistent stress and crack conventions. Include local concentration, residual stress, mean load, material scatter and the uncertainty in a starting flaw or detectable size. Check every model's physical regime, dimensional units and sensitivity. Reproduce a nontrivial source calculation independently before modifying it.
+
+**Investigate:** Use documented experimental evidence or an appropriately equipped, supervised test programme to challenge the predicted mechanism and life. Distinguish failures from runouts and specimen observations from structural service claims. Explain how inspection coverage, detection and sizing evidence enter a damage-tolerance argument. Propose a changed geometry, process or maintenance strategy and show which observations would establish whether it improves the relevant performance.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend material and structural behavior in a machine](Defend-material-and-structural-behavior-in-a-machine.lingua#r_2KA62MD536H6F21EG7D20715M3).
+
+} r_2AAKGM024C5C8GZ18EB2BCVPN7

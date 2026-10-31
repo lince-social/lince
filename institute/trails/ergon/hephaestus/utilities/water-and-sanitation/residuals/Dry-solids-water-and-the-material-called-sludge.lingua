@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Dry solids, water and the material called sludge (@wu-sludge-account: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Dewatering-capture-and-the-load-returned-in-liquor.lingua#r_2SVBKCZCX4H4DKTADBA5FZV7CY") { r_5XZB8HTCR2TX7S9VZZ932AHCYH
+**Read:** Begin the whole [Sludge Treatment and Disposal — Andreoli, von Sperling and Fernandes](../sources/Sludge-Treatment-and-Disposal.lingua#r_01W2VM1NE64Y1FDRJRM0RYKYY4); work [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lecture 21. Use [Faecal Sludge Management — Strande, Ronteltap and Brdjanovic](../sources/Faecal-Sludge-Management-Eawag.lingua#r_2CSTH41F4C2WWARQ7X0ZF5NNGY) when the feed is stored faecal sludge rather than a plant's primary or biological sludge.
+
+Wet mass, dry-solids mass, volatile-solids mass and volume are different quantities. A percentage needs a declared mass or volume basis. Thickening removes water from a solids-rich stream; stabilization changes constituents; dewatering changes the handled mixture. None of these verbs alone establishes a suitable destination.
+
+An original mass-fraction example starts with 1,000 kg/day of dry solids at 2% dry solids by wet mass: total wet mass is 50,000 kg/day. At 20%, the same dry solids would occupy 5,000 kg/day of wet material, transferring 45,000 kg/day of water elsewhere if no solids were lost. Volume requires mixture density and cannot be inferred by silently treating every stream as pure water.
+
+**Work:** Follow primary, biological and chemical solids separately before mixing them. Include storage accumulation, sampling uncertainty and chemicals added during conditioning. Prepare an inventory that distinguishes water reduction from destruction of volatile material and removal of specific contaminants. Trace every separated liquid back to its actual receiving process.
+
+**Continue:** [Dewatering capture and the load returned in liquor](Dewatering-capture-and-the-load-returned-in-liquor.lingua#r_2SVBKCZCX4H4DKTADBA5FZV7CY).
+} r_5XZB8HTCR2TX7S9VZZ932AHCYH

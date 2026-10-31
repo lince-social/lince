@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+pH changes speciation, surface charge and the process (@cm-cleaning-ph: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD", #clean-manufacturing "../../../chemistry/general-chemistry/aqueous/Solubility-precipitation-and-common-ions.lingua#r_0XQ9C6TADMA2K20WJH8NZC9CVV") { r_6SVNAH8BJK9ZMSHK12QNB7RZYT
+**Read:** The full acid/base chapters assigned by [Choose an acid/base description that answers the actual question](../../../chemistry/general-chemistry/aqueous/Acid-base-concepts-and-reactions.lingua#r_0EB1497NTKFZENB6Q1XQ3DQZGQ) and [Connect pH with activity, the water model, and a calibrated observation](../../../chemistry/general-chemistry/aqueous/pH-activity-and-measurement.lingua#r_3HDBH538NRM4TYDQ5SJVM04NRE); [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD), surface charging and ion-specific effects.
+
+A pH change can alter protonation of dissolved molecules, surface groups and ligands. Those changes affect interactions, solubility and reaction without being represented by one universal cleaning-strength scale. Temperature, ionic composition and buffering affect both the state and its measured pH.
+
+For a hypothetical ideal monoprotic group HA⇌H⁺+A⁻ with pKa=6, the fraction in A⁻ is 1/[1+10^(pKa−pH)] when the stated bulk equilibrium model applies. At pH 4, 6 and 8 it is about 0.00990, 0.5 and 0.99010. Surface equilibria may require electrostatic and site-interaction terms beyond this elementary example.
+
+**Work:** Derive the fraction from equilibrium and total amount. Compare a buffered bath with an unbuffered bath having the same initial pH after a defined chemical load. Explain why changing pH may improve removal of one residue while changing the substrate or another contaminant's behavior.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Predict precipitation with free species activities and phase constraints](../../../chemistry/general-chemistry/aqueous/Solubility-precipitation-and-common-ions.lingua#r_0XQ9C6TADMA2K20WJH8NZC9CVV).
+
+} r_6SVNAH8BJK9ZMSHK12QNB7RZYT

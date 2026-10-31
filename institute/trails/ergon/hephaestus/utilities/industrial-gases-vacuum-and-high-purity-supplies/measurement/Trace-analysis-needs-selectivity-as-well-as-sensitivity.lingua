@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Trace analysis needs selectivity as well as sensitivity (@gas-trace-analysis: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #industrial-gases-and-vacuum "Reference-mixtures-value-assignment-and-stability.lingua#r_483X32DBFKZKQ49KXTZJMEAZBD") { r_0ECGKZB8R5E57RRY73HDB4G0XB
+**Read:** [Hybrid humidity generator — NIST SP 250-83 Revision 1](../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ), hygrometer types and calibration; [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), quantitative mass analysis; [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), analytical assignment and verification.
+
+Choose a method for the impurity and matrix, not merely for the smallest advertised detection number. Chromatographic separation, optical absorption and mass analysis provide different forms of selectivity. Interfering components, reactions and sampling losses can dominate a trace result even when the detector is very sensitive.
+
+For a simple monochromatic absorption model, I/I₀=exp(−αL), with α depending on species number density, line strength and line shape. Pressure and temperature affect the spectrum as well as density. Broadband integration, overlapping lines and baseline structure require a richer model. Cavity-enhanced methods extend interaction with the sample but still need an account of other optical losses.
+
+A method's calibration range, blank, recovery and interference tests belong to its claimed measurand. “Not detected” is not the same as zero concentration; a signal may be unresolvable under the method and conditions used.
+
+**Work:** Compare two methods for water and another for a specified impurity in a stated matrix. Identify which observation could reveal an interference or sampling loss. Carry the response and calibration model through to uncertainty rather than treating a library match or detector output as the final concentration.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Reference mixtures, value assignment and stability](Reference-mixtures-value-assignment-and-stability.lingua#r_483X32DBFKZKQ49KXTZJMEAZBD).
+
+} r_0ECGKZB8R5E57RRY73HDB4G0XB

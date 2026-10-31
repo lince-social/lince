@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Spatial release and sensor response are different problems (@gas-release-observation: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Oxygen-Deficient-Atmospheres-EIGA.lingua#r_0KCKFEBVRBMZNF4KQ9PSXB9QCA", #source "../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA", #industrial-gases-and-vacuum "Study-the-Foundation-Food-Group-investigation.lingua#r_5KTA4K1WGJPDDXHVCY8NX76C70") { r_39XEJM33GKJR8H6AE458MKT6S0
+**Read:** [Hazards of oxygen-deficient atmospheres — EIGA 44/18](../sources/Oxygen-Deficient-Atmospheres-EIGA.lingua#r_0KCKFEBVRBMZNF4KQ9PSXB9QCA), monitoring and response; [Fatal liquid nitrogen release — CSB Foundation Food Group investigation](../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA), atmosphere and emergency-preparedness analysis.
+
+A cold gas cloud warms, entrains air and moves through a geometry with obstacles and openings. Its composition need not equal a room average. A detector samples a location and responds over time; a correct sensor can miss an unobserved region or report after conditions have changed there.
+
+Separate transport delay, instrument response, alarm recognition and the time required for an effective action. For an illustrative sensor τs dz/dt=y−z, even a known step in local composition takes time to appear in z. In an actual installation the gas field is itself evolving, and a sample tube can add another inventory and delay.
+
+**Work:** Compare an ideal instantaneous detector with the first-order model, then add a transport delay. Identify observations needed to validate detector placement and response. Keep spatial uncertainty distinct from calibration uncertainty; neither can be repaired by assuming the other is small.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Study the Foundation Food Group investigation](Study-the-Foundation-Food-Group-investigation.lingua#r_5KTA4K1WGJPDDXHVCY8NX76C70).
+
+} r_39XEJM33GKJR8H6AE458MKT6S0

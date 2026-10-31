@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Separation, contamination and the fate of constituents (@mat-recovery-separation: 0, is #chapter, #part-of @materials-engineering, #source "../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #source "../sources/Materials-Science-behind-Sustainable-Metals-Raabe.lingua#r_6MXWN12M466MS374XY585GBHBN", #materials-engineering "Polymer-recovery-changes-chains-formulation-and-morphology.lingua#r_3AMNV00A30K7J8C1RC1QX9AT42") { r_70Z0S39C3JWGWSK23PYBRQZWB4
+**Read:** [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1); [The Materials Science behind Sustainable Metals and Alloys — Dierk Raabe](../sources/Materials-Science-behind-Sustainable-Metals-Raabe.lingua#r_6MXWN12M466MS374XY585GBHBN), sections 6.3–6.4; the existing mineral separation and metallurgical partition work.
+
+Separability depends on liberation, size, density, magnetic/electrical response, surface chemistry and phase distribution. A desired constituent can be locked inside another phase or joined to a carrier that follows a different separation route. More comminution may improve liberation while increasing fines, energy and losses.
+
+Track impurity concentration as well as total recovery. Removing a contaminant, tolerating it in a justified composition and diluting it with cleaner feed are different strategies. None guarantees that repeated cycles retain acceptable chemistry. Equilibrium partition sets only part of the outcome; kinetics, entrainment, equipment and operating conditions matter.
+
+**Work:** Close two valuable constituents and one consequential impurity through a multi-output route. Compare a changed sorting step with a changed downstream process. Derive how a mixing/dilution choice affects composition and feed demand. Explain why an improvement in one recovery percentage can reduce another useful output.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Polymer recovery changes chains, formulation and morphology](Polymer-recovery-changes-chains-formulation-and-morphology.lingua#r_3AMNV00A30K7J8C1RC1QX9AT42).
+
+} r_70Z0S39C3JWGWSK23PYBRQZWB4

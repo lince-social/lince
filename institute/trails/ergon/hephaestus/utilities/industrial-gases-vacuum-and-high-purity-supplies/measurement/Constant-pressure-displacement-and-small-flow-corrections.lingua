@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Constant-pressure displacement and small-flow corrections (@gas-constant-pressure: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB", #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Gravimetric-flow-and-what-the-balance-actually-weighs.lingua#r_3W31A2GW8EZH4WT25YJHGPPBFF") { r_4DK13066RFJDRWVXAJ6CHC3H1K
+**Read:** [A constant-pressure flowmeter — Eckel and colleagues](../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB) in full; [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), low-flow realizations.
+
+For an ideal gas leaving a variable volume with outgassing ṅOG, ṅout=−d[pV/(RT)]/dt+ṅOG. At strictly constant pressure and temperature this becomes −pV̇/(RT)+ṅOG. The pressure difference across a restriction produces flow; feedback changes the volume to measure the lost inventory while maintaining pressure.
+
+If pressure and temperature drift, the full expression is −pV̇/(RT)−Vṗ/(RT)+pVṪ/(RT²)+ṅOG. Real-gas response adds equation-of-state derivatives. At extremely small rates, outgassing, hydraulic compliance and displacement measurement can be comparable to the flow being sought.
+
+In a hydraulic realization, piston displacement and gas-volume change are equal and opposite only in an ideal incompressible transfer. Oil compressibility, bellows mechanics and thermal expansion contribute corrections. Those are physical components of the measurement, not arbitrary fitted offsets.
+
+**Work:** Derive the sign of every term from amount conservation. For hypothetical p=100 Pa, T=300 K and V̇=−10⁻⁹ m³/s with no other terms, obtain about 4.00908×10⁻¹¹ mol/s. Then determine what additional observations are needed to resolve a much smaller outgassing contribution rather than merely assuming it away.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Gravimetric flow and what the balance actually weighs](Gravimetric-flow-and-what-the-balance-actually-weighs.lingua#r_3W31A2GW8EZH4WT25YJHGPPBFF).
+
+} r_4DK13066RFJDRWVXAJ6CHC3H1K

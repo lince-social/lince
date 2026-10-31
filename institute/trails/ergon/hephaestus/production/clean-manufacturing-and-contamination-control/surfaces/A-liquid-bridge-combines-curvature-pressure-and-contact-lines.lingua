@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A liquid bridge combines curvature, pressure and contact lines (@cm-liquid-bridge: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Origin-of-Adhesion-in-Humid-Air-Kim.lingua#r_5KY9XHR2M0AZYYGJRNTFPCPB0H", #clean-manufacturing "Rolling-sliding-and-lifting-have-different-balances.lingua#r_55QQ4PXXT1PPXMAJ78EP4SWSEE") { r_5PJNH8PWE9XKJQ0GAJNKNJX9SD
+**Read:** [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), lecture 4's capillary adhesion and the capillary-rise material; [Origin of adhesion in humid air — Kim and colleagues](../sources/Origin-of-Adhesion-in-Humid-Air-Kim.lingua#r_5KY9XHR2M0AZYYGJRNTFPCPB0H) for a research question about controlled humidity.
+
+A liquid bridge changes the force between surfaces through its pressure difference and the force around its contact lines. The pressure follows signed interface curvature; geometry and contact angle determine the appropriate components. A universal force depending only on particle diameter cannot represent arbitrary bridge volume and wetting history.
+
+As a bounded example, for a thin liquid bridge of footprint radius b between parallel plates separated by H, H much smaller than b, the leading attractive pressure magnitude is about 2γ cos θ/H. Multiplying by πb² gives the leading pressure contribution to force; the edge contribution is lower order in this limit. For hypothetical γ=0.072 N/m, θ=0, b=0.5 mm and H=10 µm, this is about 0.01131 N. It is a plate example, not a sphere pull-off rule.
+
+**Work:** Derive the pressure scale from the two curvatures and check the geometric small parameter. Explain what changes when a contact line pins, the liquid evaporates or a gap fills. Design a controlled-humidity comparison that also records temperature, waiting time and surface preparation. Do not infer an entire monotone humidity dependence from one ambient pull-off measurement.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Rolling, sliding and lifting have different balances](Rolling-sliding-and-lifting-have-different-balances.lingua#r_55QQ4PXXT1PPXMAJ78EP4SWSEE).
+
+} r_5PJNH8PWE9XKJQ0GAJNKNJX9SD

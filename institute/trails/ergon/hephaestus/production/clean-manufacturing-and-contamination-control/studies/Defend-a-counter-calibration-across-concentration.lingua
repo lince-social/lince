@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend a counter calibration across concentration (@cm-study-counter-calibration: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE", #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "Review-what-the-aerosol-measurements-establish.lingua#r_29HS8QY95V57MXZ2W8TS62TDEZ") { r_5W8P5PZA8H09QF8Y798VCYQRQK
+**Read:** the full [CPC proportionality calibration — Owen, Mulholland and Guthrie](../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE) manuscript and [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), calibration design, flow and CPC sections.
+
+Reconstruct the chain from a characterized aerosol to reference current, sampled flow, corrected count and calibrated concentration. Track charge assumptions, splitter orientation, detector response and gas-volume basis. Separate what the paper measured from what your reconstruction assumes.
+
+Reproduce a bounded published calculation when the inputs are available, preserving the source version and any transcription uncertainty. If the original observations are unavailable, create a clearly labelled teaching dataset and test the inference without claiming experimental reproduction. Compare proportional, offset and coincidence-affected response models.
+
+Calculate a swap-based splitter estimate, a dilution-ratio sequence and an uncertainty budget. Challenge the result with a changed aerosol size, a drifting diluter and an uncertain background. Demonstrate what the reference comparison fixes and what a proportionality test leaves undetermined.
+
+**Result to explain:** A defensible calibration relation over stated conditions, residual checks and uncertainty, plus a precise account of what additional evidence would be needed to transfer it to another production aerosol. A small fit residual alone is not the final argument.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review what the aerosol measurements establish](Review-what-the-aerosol-measurements-establish.lingua#r_29HS8QY95V57MXZ2W8TS62TDEZ).
+
+} r_5W8P5PZA8H09QF8Y798VCYQRQK

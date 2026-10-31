@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Film, pore and surface transport in adsorbents (@gas-particle-transport: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "A-conservative-fixed-bed-balance.lingua#r_6BB694H6DY3YAE55199XWY8TYY") { r_0GZD70WHPVB0VDQBD9PPPGSTN2
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), weeks 3–4; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), diffusion and surface kinetics. Consult the shared diffusion foundations for the conservation law and boundary conditions.
+
+A molecule may cross an external gas film, move through pores, cross constrictions and occupy a surface site. These mechanisms can have different characteristic times and composition dependence. A diffusivity inferred from one uptake experiment may combine several resistances rather than identify one intrinsic molecular coefficient.
+
+For diffusion over particle radius Rp, the scale Rp²/D is useful, but the full response depends on geometry, loading dependence and boundary conditions. A linear-driving-force approximation dq/dt=k(q*−q) replaces a distributed response with one rate. Its fitted k need not remain valid when particle size, pressure or cycle time changes.
+
+**Work:** Compare diffusion times for two particle sizes at fixed D. Derive the exact exponential response of the lumped approximation to a fixed q*. Explain what an early-time uptake curve, a particle-size series and a temperature series could each reveal that a single fitted time constant cannot.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A conservative fixed-bed balance](A-conservative-fixed-bed-balance.lingua#r_6BB694H6DY3YAE55199XWY8TYY).
+
+} r_0GZD70WHPVB0VDQBD9PPPGSTN2

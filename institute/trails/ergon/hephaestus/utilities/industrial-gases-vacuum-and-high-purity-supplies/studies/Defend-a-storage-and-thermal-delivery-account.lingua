@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend a storage and thermal delivery account (@gas-study-storage: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #source "../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH", #source "../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "Review-delivery-from-stored-state-to-accepted-use.lingua#r_5YDSGAWT2X43S7P3JQ7HPBNCA8") { r_5HJV3KXXG0B8NJ67P7SSM34YSA
+**Read in full:** [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), [Cryogenic vaporisation systems — EIGA 133/22](../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH) and [Thermal performance of cryogenic storage tanks — Aasen and colleagues](../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7), supported by the full [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783) and thermodynamics texts.
+
+Choose a defined gas service and connect stored state, useful inventory, heat input, withdrawal, vaporisation and final delivery. Derive the governing mass/energy equations and identify each property relation and boundary condition. Compare a simple limiting model with a more detailed model that can represent the most consequential omitted mechanism.
+
+Reconstruct one conductivity-integral or network argument from the research paper, including its assumptions and uncertainty. The paper's tank result is not a performance claim for your arrangement. If a full code/data package is unavailable, reproduce only the independently specified part and label the unresolved evidence rather than inventing author inputs.
+
+Check dimensional consistency, conservation, phase bounds, convergence and independent limits. Then change ambient conditions, demand and one thermal path. Explain the prediction's domain and propose measurements that distinguish competing models.
+
+**Demonstrate:** A coherent state/energy account, reproducible calculations, justified source interpretation and a changed-condition defense. Include the operating resources and maintenance needed to sustain the assumed thermal state; a numerical match at one operating point is insufficient.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review delivery from stored state to accepted use](Review-delivery-from-stored-state-to-accepted-use.lingua#r_5YDSGAWT2X43S7P3JQ7HPBNCA8).
+
+} r_5HJV3KXXG0B8NJ67P7SSM34YSA

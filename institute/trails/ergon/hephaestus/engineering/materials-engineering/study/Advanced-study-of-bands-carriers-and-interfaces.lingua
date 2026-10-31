@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of bands, carriers and interfaces (@mat-electronic-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB", #source "../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN", #source "../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS", #materials-engineering "Defend-the-functional-material-account.lingua#r_4R7JDE29DY1T4CNRV4Y6PDYHM9") { r_37S61DEFAVKZVJG2AJSA0VCNMP
+**Read:** [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), complete band/semiconductor chapters and corresponding homeworks; [Solid State Physics — David Tong](../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB), bands and transport; [Electrical, Optical, and Magnetic Properties of Materials — MIT 3.23](../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN), actual electronic/optical materials; [Introdução à Física do Estado Sólido — Lucy V. C. Assali](../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS), semiconductor lecture.
+
+Independently reproduce the two-orbital spectrum using a real-space Hamiltonian and a separate diagonalization. Study filling, temperature, onsite asymmetry, hopping contrast and finite-size convergence. Compare the ideal spectrum with a documented material's band and transport evidence, identifying what the model cannot infer.
+
+Reconstruct a doping/contact or optical-interface investigation from its full methods. Retain sample preparation, structural evidence, temperature, geometry and measurement limits. Compare at least two interpretations and calculate a changed-condition prediction before using the corresponding data.
+
+**Deliver:** A derivation, runnable calculation with numerical error checks, source-linked evidence, a defended interface/carrier account and a revision after criticism. A successful toy-model reproduction is a mathematical result; a claim about a physical material additionally requires evidence that its approximations apply.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the functional material account](Defend-the-functional-material-account.lingua#r_4R7JDE29DY1T4CNRV4Y6PDYHM9).
+
+} r_37S61DEFAVKZVJG2AJSA0VCNMP

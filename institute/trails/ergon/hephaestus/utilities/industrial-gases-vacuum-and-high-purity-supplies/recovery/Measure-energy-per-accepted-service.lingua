@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Measure energy per accepted service (@gas-service-energy: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1", #industrial-gases-and-vacuum "Reduced-air-demand-does-not-guarantee-proportional-power-savings.lingua#r_378MG5SXNE9HESQC4648730FST") { r_59E7HQX6P3BZ5TG7MZBZE7Y85N
+**Read in full:** [Improving compressed air system performance — DOE sourcebook](../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1). Connect it to the earlier separation, compression, refrigeration and delivery balances.
+
+Define the useful output before reporting efficiency. Gas volume needs a reference state; delivered composition, pressure and time matter. Rejected product, purge, standby power, cooling and regeneration belong in the chosen boundary. A lower compressor power can accompany a larger loss of useful output.
+
+For a stated interval, specific energy is total energy inside the boundary divided by accepted output on a defined amount or reference-volume basis. Keep electrical energy, heat, fuel and recovered heat distinguishable before selecting an accounting convention. Co-products from air separation also require an explicit allocation or a comparison that retains all outputs.
+
+**Work:** Reconcile input power, accepted flow and stored inventory over a demand cycle. Compare two systems with equal annual accepted output, then change the purity or delivery pressure. Explain why their earlier specific-energy figures may no longer be comparable.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Reduced air demand does not guarantee proportional power savings](Reduced-air-demand-does-not-guarantee-proportional-power-savings.lingua#r_378MG5SXNE9HESQC4648730FST).
+
+} r_59E7HQX6P3BZ5TG7MZBZE7Y85N

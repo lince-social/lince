@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of glass, ceramic or cement durability (@mat-mineral-durability-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Glass-Stress-Corrosion-Ciccotti.lingua#r_5MYPVB5E5N1GHFSQ75B046N1QS", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #source "../sources/Alkali-Aggregate-Reactivity-FHWA.lingua#r_1RPCXTH7BRN45SFFG6XC76WZNK", #source "../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K", #materials-engineering "Defend-the-degradation-and-service-evidence-account.lingua#r_3FBQS7VXVJBP1D8TGNGYGWR8DJ") { r_1BPHNSVDZ6E72DGA4SKYEBFE47
+**Read:** [Stress-corrosion mechanisms in silicate glasses — Ciccotti](../sources/Glass-Stress-Corrosion-Ciccotti.lingua#r_5MYPVB5E5N1GHFSQ75B046N1QS), [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4) section 5.6 and [Alkali-Aggregate Reactivity Facts Book — FHWA](../sources/Alkali-Aggregate-Reactivity-FHWA.lingua#r_1RPCXTH7BRN45SFFG6XC76WZNK); complete the full primary methods for one selected case. Use [Oxide-scale growth and discontinuities — Ulrich, Glatzel and Galetz](../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K) when high-temperature films or thermal cycling enter the case.
+
+Choose a glass crack-growth, ceramic chemical-attack or cementitious-expansion investigation and reconstruct material state, environment and restraint. Derive transport/reaction and mechanical consequences at compatible scales. Compare measured mass, geometry, local structure and retained function; do not infer them all from one signal.
+
+**Deliver:** Independently checked limiting solutions, a complete measurement account, a changed-condition prediction and uncertainty in the inferred service consequence. Compare at least two explanations of the observed damage and critique extrapolation beyond the tested range. Explain which lessons transfer to the other two families and which depend on their distinct structure, reaction chemistry and boundary conditions.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the degradation and service-evidence account](Defend-the-degradation-and-service-evidence-account.lingua#r_3FBQS7VXVJBP1D8TGNGYGWR8DJ).
+
+} r_1BPHNSVDZ6E72DGA4SKYEBFE47

@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Cooling-tower makeup, evaporation, drift and blowdown (@wu-cooling-balance: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #source "../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK", #water-and-sanitation "Cooling-duty-deposits-corrosion-and-microbial-exposure.lingua#r_2GCCAWBC12P0GNKH8VTYD6JZ0N") { r_0VGZJCFJJ4ZH6BKV65HH31XQ35
+**Read:** [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), chapter 5's complete system account, and [Guidelines for Water Reuse — EPA and USAID, 2012](../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK), section 3.5.1. Identify whether a source groups drift and leakage with blowdown before comparing its equations with yours.
+
+For an original steady, constant-density account define evaporation E, intentional blowdown B, drift D, leakage L and makeup M. Water balance gives M = E + B + D + L. If a conserved, nonvolatile constituent is absent from evaporated water and leaves the liquid outlets at tower concentration C, solute balance gives M Cm = (B + D + L)C. With concentration ratio N = C/Cm > 1, liquid loss is E/(N − 1), B = E/(N − 1) − D − L, and M = EN/(N − 1).
+
+For E = 20, D = 0.2 and L = 0.3 m³/hour with N = 5, B = 4.5 and M = 25 m³/hour. At Cm = 0.2 kg/m³, tower concentration is 1 kg/m³ and the solute input/output is 5 kg/hour. A requested N = 50 would require negative intentional blowdown for these losses and is infeasible under the assumptions.
+
+**Work:** Add a measured leakage uncertainty and test whether the proposed operating point remains feasible. Distinguish a concentration ratio from a count of physical trips through equipment. Conductivity ratios only represent a suitable tracer under justified composition and temperature assumptions. Precipitation, chemical additions and selective removal require additional constituent terms.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Cooling duty, deposits, corrosion and microbial exposure](Cooling-duty-deposits-corrosion-and-microbial-exposure.lingua#r_2GCCAWBC12P0GNKH8VTYD6JZ0N).
+
+} r_0VGZJCFJJ4ZH6BKV65HH31XQ35

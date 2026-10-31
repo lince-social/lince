@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Liquefaction cycles and refrigeration duty (@gas-liquefaction: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Cold-heat-exchangers-and-the-temperature-profile.lingua#r_314EQG632RCSAREFG9VJ8KX7M8") { r_4Z6EFX7NR3QHV6YR6XJP5Y0FW3
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), the full gas-liquefaction and refrigeration sequence; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), cryogenic pumping context; shared thermal cycles.
+
+Liquefaction combines compression, heat exchange, expansion and phase separation. A regenerative exchanger uses returning cold gas to cool incoming feed. An expander can provide refrigeration; a throttle changes state without shaft-work recovery. Distinguish cooling an initial inventory from continuously replacing heat leaks and producing liquid.
+
+Choose a complete flow boundary, including returned vapor, product liquid, compressor cooling and auxiliary loads. Specify whether the objective is liquid production, cold duty at a stated temperature or gas supply after vaporization. These objectives have different useful-output measures. Real heat exchange has finite temperature differences and pressure losses.
+
+**Work:** Reconstruct a simple Linde-type cycle and a cycle using an expander from the course. Derive liquid yield and work per useful output under declared property assumptions. Compare with a reversible bound, then identify the irreversibility dominating a plausible change of operating point. Check every recycle and energy balance independently.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Cold heat exchangers and the temperature profile](Cold-heat-exchangers-and-the-temperature-profile.lingua#r_314EQG632RCSAREFG9VJ8KX7M8).
+
+} r_4Z6EFX7NR3QHV6YR6XJP5Y0FW3

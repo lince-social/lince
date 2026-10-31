@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Vacuum joints, seals, welds and hidden volumes (@gas-vacuum-joints: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD", #industrial-gases-and-vacuum "Choose-vacuum-materials-by-state-and-evidence.lingua#r_2XY064RM0AY66P0BN53Y5GNSBR") { r_47DGR9QYT0TP1XK2TVJDDE53AH
+**Read:** [Seals, leakage, friction and the condition of surfaces](../../../engineering/mechanical-engineering-and-machine-design/elements/Seals-leakage-friction-and-the-condition-of-surfaces.lingua#r_5TC8MG4GQKQ1YEVSNG6G1EV2Y5); [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), section 2.3.6–2.3.8; [Surface finishing and vacuum coatings — Mauro Taborelli](../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD), component preparation and manufactured surfaces.
+
+A vacuum boundary joins materials while resisting load, temperature change and gas transport. Elastomeric seals, deformable metal gaskets, welds, brazes and feedthroughs solve different interface problems. Contact shape, finish, preload, thermal expansion and assembly damage affect whether the intended boundary is realized.
+
+The same joint can introduce permeation, trapped spaces, poorly cleaned crevices or materials with high release rates. A nominally leak-tight assembly is therefore not automatically suitable for every contamination or outgassing requirement. Repeated disassembly changes surfaces and can change the appropriate inspection evidence.
+
+**Work:** Draw a joint section showing pressure, contact, load paths and possible gas reservoirs. Distinguish an external through-path from a sealed but outgassing crevice. Compare how two joint designs could be cleaned, assembled, measured and restored, including the consequences of a thermal cycle.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Choose vacuum materials by state and evidence](Choose-vacuum-materials-by-state-and-evidence.lingua#r_2XY064RM0AY66P0BN53Y5GNSBR).
+
+} r_47DGR9QYT0TP1XK2TVJDDE53AH

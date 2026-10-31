@@ -1,0 +1,20 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Failure investigation preserves chronology and alternatives (@mech-failure-investigation: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY", #mechanical-engineering "Repair-restoration-and-return-to-service.lingua#r_1RF5PD4EHJKFZ57X6RSFKXJK1X", #materials-engineering "../../materials-engineering/service/Repair-creates-another-material-state.lingua#r_7ZXVYZHCAXBQG85W3HK11CZBC8", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Failure-investigation-preserves-uncertainty-and-chronology.lingua#r_7R2QYC6EQ6NSC32ZZY63DGHJPM") { r_2YM12BJW2NZH0A7FAC0K9DZC68
+**Read:** [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), damage and troubleshooting; revisit fracture, fatigue, contact and the shared metallurgy evidence. Use [Diagnostic and prognostic capabilities — Vogl, Weiss and Helu](../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY) to examine diagnostic claims.
+
+Preserve the as-found condition before dismantling changes it. Record the event sequence, loads, environment, maintenance, controls and observations. A visible fracture or overheated bearing is an outcome that may have several upstream causes. Distinguish the initiating mechanism, subsequent damage and the reason the system did not tolerate or reveal it.
+
+Build competing causal explanations and identify evidence that could contradict each. A fracture surface, dimensional measurement and service log answer different questions; combine them without treating a familiar appearance as sufficient proof. Compare failed and surviving locations while accounting for different exposure.
+
+**Work:** Investigate a documented failure or a suitably controlled specimen. Reconstruct loads and material state, calculate a plausible failure boundary, and test an alternative explanation. State what evidence was lost or unavailable. Recommend an intervention tied to the supported mechanism and a later observation that could show the recommendation was wrong.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Repair, restoration and return to service](Repair-restoration-and-return-to-service.lingua#r_1RF5PD4EHJKFZ57X6RSFKXJK1X).
+
+**Continue in materials engineering:** [Repair creates another material state](../../materials-engineering/service/Repair-creates-another-material-state.lingua#r_7ZXVYZHCAXBQG85W3HK11CZBC8).
+
+
+**Continue in gas and vacuum systems:** [Failure investigation preserves uncertainty and chronology](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Failure-investigation-preserves-uncertainty-and-chronology.lingua#r_7R2QYC6EQ6NSC32ZZY63DGHJPM).
+
+} r_2YM12BJW2NZH0A7FAC0K9DZC68

@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Define the independent unit in a sampling plan (@cm-qualification-sampling: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Choose-sample-size-for-an-explicit-information-goal.lingua#r_4XNPXHN56AKKYN1Z3T3419JWEZ") { r_58QWH01E5CR6GR9MA297KC0YH4
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), acceptance sampling and process characterization. Revisit [Sampling contributions, thresholds, and results near zero](../../../inquiry/metrology/uncertainty/Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG) and [Separate sampling, preparation and analysis in a comparison](../surface-measurement/Separate-sampling-preparation-and-analysis-in-a-comparison.lingua#r_45Z6TMPNGW0W9QRZ5MTMMTYACK).
+
+The unit sampled may be a product, a location, a production run or a time interval. Ten readings from one collected sample are not ten independent samples of the manufacturing process. Preserve nesting within locations, instruments, shifts and lots.
+
+Random selection supports an inference to a declared population. Stratification can ensure coverage of distinct operating states. Deliberate observations at likely problem locations answer targeted questions; they should not be presented as a random estimate without a model for the selection.
+
+Samples from different days may reveal variation absent within one shift. Conversely, averaging all conditions can hide a persistent problem in one state. Decide whether the target is a mean, a high percentile, a local maximum, a rate or a fraction of unacceptable items before choosing where and when to observe.
+
+**Work:** Design a simulated sampling plan with three locations, two operating states and repeated readings. Identify the independent units for each claim. Compare an area-weighted mean with a claim about the most vulnerable product location, retaining their different sampling requirements.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Choose sample size for an explicit information goal](Choose-sample-size-for-an-explicit-information-goal.lingua#r_4XNPXHN56AKKYN1Z3T3419JWEZ).
+
+} r_58QWH01E5CR6GR9MA297KC0YH4

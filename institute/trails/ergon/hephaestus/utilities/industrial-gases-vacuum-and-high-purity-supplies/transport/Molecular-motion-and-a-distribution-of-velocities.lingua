@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Molecular motion and a distribution of velocities (@gas-kinetics: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Collisions-mean-free-path-and-the-Knudsen-number.lingua#r_48A5PS2J31RH46S77M16NR5FCB") { r_2Q9ATHF14JZY93TK5NFKA1BYBH
+**Read:** [Fundamentals of Vacuum Physics and Technology — Eshraq Al-Dmour](../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9), kinetic gas theory; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), physical foundations. Revisit [Microscopic states, heat capacity and statistical bridges](../../../physics/thermodynamics-and-heat-transfer/microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5) and the mathematical integral where needed.
+
+A gas at equilibrium has a distribution of molecular velocities. In an ideal classical gas, each Cartesian component has a Gaussian distribution with zero mean in the gas rest frame and variance kBT/m. Random thermal motion persists even when the mean flow velocity is zero.
+
+The most probable speed, mean speed and root-mean-square speed are respectively √(2kBT/m), √(8kBT/πm) and √(3kBT/m). Speed is nonnegative; the mean velocity vector is a different quantity. A directed flow shifts the distribution and can be much slower than the molecular thermal speeds.
+
+**Work:** Derive the three speed measures by integrating the normalized distribution. Calculate them for nitrogen and helium at a declared temperature using consistent molecular or molar masses. Explain why a continuum flow does not mean that all molecules travel in one direction, and why the ratio of thermal speeds is not a universal ratio of pump performance.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Collisions, mean free path and the Knudsen number](Collisions-mean-free-path-and-the-Knudsen-number.lingua#r_48A5PS2J31RH46S77M16NR5FCB).
+
+} r_2Q9ATHF14JZY93TK5NFKA1BYBH

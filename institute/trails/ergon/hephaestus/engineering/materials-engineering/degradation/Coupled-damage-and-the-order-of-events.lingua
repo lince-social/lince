@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Coupled damage and the order of events (@mat-coupled-damage: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #source "../sources/Glass-Stress-Corrosion-Ciccotti.lingua#r_5MYPVB5E5N1GHFSQ75B046N1QS", #source "../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K", #materials-engineering "Protection-through-design-material-state-and-environment.lingua#r_57R2PY4NX1NAX8J91ZWGQSK706") { r_316YMRNP30DJAKZWTSMXSWGXQ5
+**Read:** [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), combined service mechanisms; [Stress-corrosion mechanisms in silicate glasses — Ciccotti](../sources/Glass-Stress-Corrosion-Ciccotti.lingua#r_5MYPVB5E5N1GHFSQ75B046N1QS), environment and stress; [Oxide-scale growth and discontinuities — Ulrich, Glatzel and Galetz](../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K), scale failure. Revisit fatigue, creep and interface fracture.
+
+Corrosion can create a stress concentration; wear can remove a passive film; a crack can provide an ingress path; swelling can load an interface. Summing independently measured damage rates assumes away such interactions. Even a fitted interaction term does not establish a mechanism unless observations constrain it.
+
+**Work:** Design an analysis comparing separate and combined exposures, defining one consistent outcome and duration. State what a difference between combined loss and the sum of separate losses actually measures. Reverse the exposure order and explain plausible noncommutativity. Track local state rather than resetting the material between calculations. Use independent observations to decide whether interaction or changed test conditions explain the discrepancy.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Protection through design, material state and environment](Protection-through-design-material-state-and-environment.lingua#r_57R2PY4NX1NAX8J91ZWGQSK706).
+
+} r_316YMRNP30DJAKZWTSMXSWGXQ5

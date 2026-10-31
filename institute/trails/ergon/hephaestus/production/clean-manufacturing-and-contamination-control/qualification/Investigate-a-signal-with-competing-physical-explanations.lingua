@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Investigate a signal with competing physical explanations (@cm-monitoring-cause: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Connect-a-monitoring-signal-to-a-proportionate-response.lingua#r_14SFA69Q0ZBZ89SWK9K08X0QR0") { r_1DBCZNKZTTP4TG3YP0A1CS17A8
+**Read:** [Systems Engineering Handbook — NASA](../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), analysis of verification results; [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), process modelling and experimental design. Revisit the three surface investigations.
+
+A chart detects incompatibility with a reference model; it does not establish why. A particle-rate increase could reflect a changed source, changed transport, a changed measurement response or altered sampling. An apparent correlation with a maintenance event is evidence to investigate, not an automatic causal identification.
+
+Map candidate causes through the source–transport–observation chain. Predict what each explanation would change in other quantities and choose an observation that distinguishes them. Include shared causes: a utility disturbance might affect both production and the instrument used to inspect it.
+
+A before/after comparison can be confounded by product mix, season, operator, sampling or calibration. Where appropriate, a comparison state, repeated intervention or randomized benign model study can separate effects. Preserve observations that disagree with the preferred explanation.
+
+**Work:** Create three explanations for one simulated signal and specify a different predicted observation for each. Use the existing physical balances to test plausibility. Explain which conclusion is supported, which remains tentative and what evidence would change the account.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Connect a monitoring signal to a proportionate response](Connect-a-monitoring-signal-to-a-proportionate-response.lingua#r_14SFA69Q0ZBZ89SWK9K08X0QR0).
+
+} r_1DBCZNKZTTP4TG3YP0A1CS17A8

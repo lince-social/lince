@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Internal normal, shear, torsion and bending actions (@mech-internal-actions: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #mechanical-engineering "Friction-limits-sliding-tipping-and-model-evidence.lingua#r_5ECR1WXHQQZPEQZF5BK535CTRA") { r_4TG4DTYWWKX0PGN58K6DT6FD0K
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapter 8 in full. Use [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY)'s shear/torsion and beam modules later to connect resultant actions to deformation and stress.
+
+Cut a member and replace the removed portion by the internal force and moment resultants required by equilibrium. Normal force, shear force, torsion and bending refer to directions relative to the section and member, not to four independent physical substances. State signs and axes before drawing diagrams.
+
+For the preceding 4 m beam, at x = 2 m the left-section account gives shear 425 − 100 × 2 − 300 = −75 N and bending moment 425 × 2 − 100 × 2²/2 − 300 × (2 − 1) = 350 N·m. The right-section account must give the same physical cut interaction with the opposite outward-face convention.
+
+**Work:** Draw shear and moment over the full beam, including load and reaction jumps. Check differential relations away from concentrated actions and endpoint conditions. Explain why a moment diagram does not yet give stress without section geometry and a constitutive/kinematic model. The original computation below makes these checks reproducible.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Friction limits, sliding, tipping and model evidence](Friction-limits-sliding-tipping-and-model-evidence.lingua#r_5ECR1WXHQQZPEQZF5BK535CTRA).
+
+} r_4TG4DTYWWKX0PGN58K6DT6FD0K

@@ -1,0 +1,77 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+An inspectable feed-axis motion and energy account (@mech-axis-example: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "../project/Verify-the-axis-model-and-design-discriminating-measurements.lingua#r_2JQWMJQC4W6D8Q0C6KJ47MP30S") { r_3H4Q0D0YXSX1GJHEZ8TB7XCJHP
+**Read:** Reuse work/energy, screw-drive and actuator derivations; [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topics 6–7. The following original Python program exposes a bounded model, using only the standard library.
+
+A one-direction rest-to-rest move has triangular or trapezoidal speed. Torque is τ=(m+J/r²)ar+Fr, current is I=τ/k_t, copper heating is I²R, and ideal motor voltage is RI+k_tω in consistent SI units. Constant resistance opposes positive travel. Signed shaft work can be negative during deceleration; returning it to a supply depends on hardware outside this model.
+
+```python
+from math import isfinite, pi, sqrt
+
+def axis_move(distance, speed_limit, acceleration_limit, mass,
+              resistance, lead, rotary_inertia, torque_constant, resistance_ohm):
+    values = (distance, speed_limit, acceleration_limit, mass, resistance,
+              lead, rotary_inertia, torque_constant, resistance_ohm)
+    if not all(isfinite(v) for v in values):
+        raise ValueError("finite inputs required")
+    if min(distance, speed_limit, acceleration_limit, lead, torque_constant) <= 0:
+        raise ValueError("positive motion and conversion inputs required")
+    if min(mass, resistance, rotary_inertia, resistance_ohm) < 0:
+        raise ValueError("negative physical parameter")
+    ratio = lead / (2 * pi)
+    peak = min(speed_limit, sqrt(distance) * sqrt(acceleration_limit))
+    acceleration_time = peak / acceleration_limit
+    if not all(isfinite(v) and v > 0 for v in (ratio, peak, acceleration_time)):
+        raise ValueError("unrepresentable motion")
+    cruise_distance = max(0.0, distance - peak * acceleration_time)
+    cruise_time = cruise_distance / peak
+    equivalent_mass = mass + rotary_inertia / ratio / ratio
+    phases = []
+    x = t = v = 0.0
+    for duration, acceleration in ((acceleration_time, acceleration_limit),
+                                   (cruise_time, 0.0),
+                                   (acceleration_time, -acceleration_limit)):
+        if duration == 0:
+            continue
+        end_v = v + acceleration * duration
+        travel = (v + end_v) * duration / 2
+        torque = (equivalent_mass * acceleration + resistance) * ratio
+        current = torque / torque_constant
+        work = torque * travel / ratio
+        copper = resistance_ohm * current * current * duration
+        voltages = (resistance_ohm * current + torque_constant * v / ratio,
+                    resistance_ohm * current + torque_constant * end_v / ratio)
+        phases.append(dict(t=t, duration=duration, x=x, v=v,
+                           acceleration=acceleration, travel=travel,
+                           torque=torque, current=current, work=work,
+                           copper=copper, voltages=voltages))
+        t += duration
+        x += travel
+        v = end_v
+    derived = (t, x, v, equivalent_mass, cruise_time)
+    derived += tuple(z for p in phases for z in
+                     (p["torque"], p["current"], p["work"], p["copper"],
+                      *p["voltages"]))
+    if not all(isfinite(z) for z in derived):
+        raise ValueError("unrepresentable result")
+    return dict(phases=phases, time=t, distance=x, final_speed=v,
+                peak_speed=peak, equivalent_mass=equivalent_mass,
+                mechanical_work=sum(p["work"] for p in phases),
+                motoring_work=sum(max(0.0, p["work"]) for p in phases),
+                returned_work=-sum(min(0.0, p["work"]) for p in phases),
+                copper_loss=sum(p["copper"] for p in phases))
+
+example = axis_move(0.1, 0.02, 0.1, 2.0, 5.0, 0.005, 1e-5, 0.1, 1.0)
+print({k: v for k, v in example.items() if k != "phases"})
+```
+
+The declared example has 0.2 s acceleration, 4.8 s cruise and 0.2 s deceleration: 5.2 s total, with a 240 rpm peak screw speed. Net shaft work is 0.5 J, the resistance work; start/end kinetic energies agree. Torque remains positive during this example's deceleration because the opposing force exceeds the required net deceleration force. Set resistance to zero to expose negative braking work.
+
+The model omits jerk limits, inductance, elastic modes, friction variation, screw efficiency, drive losses and motor heating dynamics. Its instantaneous acceleration changes imply instantaneous current changes; calculated voltage is not a realizable switching or current-control design.
+
+**Work:** Derive each phase independently and check force, power and energy signs. Compare a short triangular move with a long cruising move. Add one justified physical effect and show which earlier result no longer applies. Do not interpret a nominal encoder increment or this energy calculation as measured machine performance.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Verify the axis model and design discriminating measurements](../project/Verify-the-axis-model-and-design-discriminating-measurements.lingua#r_2JQWMJQC4W6D8Q0C6KJ47MP30S).
+
+} r_3H4Q0D0YXSX1GJHEZ8TB7XCJHP

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+No observed failures does not prove zero failure rate (@gas-failure-statistics: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "../../../engineering/mechanical-engineering-and-machine-design/assembly/Commissioning-acceptance-and-validation-of-use.lingua#r_4K9PKAGC72FHH0SBDCEDTWGHF8") { r_3EH9EZR3GSART17QMYHK3FNN5N
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), maintenance data and feedback; revisit the shared measurement uncertainty Records.
+
+Under a homogeneous Poisson model with failure rate λ and total comparable exposure E, observing no failures has probability exp(−λE). The one-sided 95% upper bound obtained from this observation is λu=−ln(0.05)/E, approximately 2.995732/E. With 10,000 equipment-hours and no failures, this gives about 0.000299573 h⁻¹ under those assumptions, not a demonstrated zero rate.
+
+Pooling hours is meaningful only when failure definitions, conditions and observation are comparable. An idle protective function may not reveal its failure until tested; time since the last successful test is not automatically known successful exposure. Retired, repaired and unobserved units can produce censoring and selection effects.
+
+**Work:** Derive the bound from the likelihood. Construct two datasets with the same equipment-hours but different evidence quality. Explain why demand failures, aging and hidden failures may require different statistical models and why a confidence statement is conditional on that choice.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Commissioning, acceptance and validation of use](../../../engineering/mechanical-engineering-and-machine-design/assembly/Commissioning-acceptance-and-validation-of-use.lingua#r_4K9PKAGC72FHH0SBDCEDTWGHF8).
+
+} r_3EH9EZR3GSART17QMYHK3FNN5N

@@ -7,5 +7,7 @@ Read the complete paper and the exact model, database, equilibrium, example, and
 
 Official documentation, paper identity, and MIT software licence were verified on 29 October 2026. The paper is CC BY 4.0; the publisher redirect later failed through the browsing tool, so access limits are preserved. Do not treat the 2017 paper's installation/dependency list as current instructions. The software is referenced, not installed or executed as part of authoring this content; no program/database is bundled.
 
+On 30 October 2026 the full publisher article was accessible at [the journal page](https://openresearchsoftware.metajnl.com/articles/10.5334/jors.140), and its model/database/solver sections were inspected. The current [binary example](https://pycalphad.org/docs/latest/examples/BinaryExamples.html) and software licence were checked. Cached documentation pages displayed different development version strings; record the actual version used in a reproduction. Check the documented plotting limitations against equilibrium outputs before interpreting an absent drawn boundary. This later access resolves the earlier retrieval failure without claiming the software or datasets were executed during authoring.
+
 **Return:** [Metals and metallurgical production sources — books, courses, methods, and cases](../Sources.lingua#r_03Z21BSG78ZRQSAVCCD6FJVNRY).
 } r_24VWE1JCTVHMZ88907VK19ZWZR

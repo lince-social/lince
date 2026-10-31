@@ -1,0 +1,9 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+EPANET 2.2 — network models and reproducible analysis (@wu-epanet: 0, is #reference, #part-of @wu-sources) { r_4D17YBA2R37W31ZCW7W54EDMWW
+US EPA, EPANET 2.2, released July 2020. [Official software, source and manuals](https://www.epa.gov/water-research/epanet) · [Online manual](https://usepa.github.io/EPANET2.2/).
+
+Work the complete quick-start tutorial, then read chapters 3, 8, 9 and 12 for model components, analysis settings, result interpretation and algorithms. Continue through the manual and file-format reference when constructing a reproducible network. Pin the executable/source revision and save inputs, units, controls, time settings and reports. The current cited manual is 2.2; extensions and community releases have their own versions.
+
+Official pages and those chapters were inspected on 30 October 2026. EPA distributes source and executable downloads publicly. Inspect the selected release's licence and dependency notices before redistribution; this Record references the project and does not bundle it. A numerical network result is conditional on its topology, parameters, demands and controls; calibration and independent observations remain necessary.
+} r_4D17YBA2R37W31ZCW7W54EDMWW

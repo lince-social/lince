@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Investigate surface coverage, residue and film inference (@cm-surface-measure-studies: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "Investigate-spatial-contamination-with-an-image-model.lingua#r_40E0NH081H4YB5EHK7ANPHD1CS", #clean-manufacturing "Join-residue-collection-calibration-and-chemical-identity.lingua#r_3R13K2NKR59R9NW72JF9JZ64B3", #clean-manufacturing "Distinguish-a-uniform-film-from-a-heterogeneous-surface.lingua#r_0ERWDRZST63TEJWACK3AP963H6") { r_5EDX4N2E7PXKTBRNA7DBJ1R7PG
+**Read:** the assigned microscopy, chemical-analysis and XPS material. Use the original teaching models as independent benchmarks before studying more complex observations.
+
+The following three investigations examine spatial coverage, residue identity and quantity, and film depth/heterogeneity. They share the problem of inferring an unobserved state through a method with finite information.
+
+Use benign hypothetical specimens, simulated data or appropriately documented published observations. Preserve source versions, units, sample boundaries and analysis choices. A numerical reconstruction should say exactly which published result or teaching model it reproduces.
+
+**Work:** Carry each investigation through an uncertainty account and at least one competing explanation. Choose a discriminating observation and explain its value for the object's useful function. The three paths rejoin in a review before continuing into qualification and monitoring.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Investigate spatial contamination with an image model](Investigate-spatial-contamination-with-an-image-model.lingua#r_40E0NH081H4YB5EHK7ANPHD1CS), [Join residue collection, calibration and chemical identity](Join-residue-collection-calibration-and-chemical-identity.lingua#r_3R13K2NKR59R9NW72JF9JZ64B3), [Distinguish a uniform film from a heterogeneous surface](Distinguish-a-uniform-film-from-a-heterogeneous-surface.lingua#r_0ERWDRZST63TEJWACK3AP963H6).
+
+} r_5EDX4N2E7PXKTBRNA7DBJ1R7PG

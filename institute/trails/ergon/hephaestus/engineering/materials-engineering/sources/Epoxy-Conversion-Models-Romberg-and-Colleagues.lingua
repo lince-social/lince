@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Epoxy conversion from rheology — Romberg and colleagues, 2024 (@mat-cure-inference: 0, is #reference, #part-of @mat-sources) { r_2P4B2NBQT7APB3CQ2KDQ6MGMX0
+Stian K. Romberg, Paul Roberts, Chad R. Snyder and Anthony P. Kotula. *Evaluating Models That Predict Epoxy Conversion Using Rheological Properties*. [NIST publication](https://www.nist.gov/publications/evaluating-models-predict-epoxy-conversion-using-rheological-properties), [42-page manuscript](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=957272).
+
+Read the whole paper and supporting methods when comparing mixing-rule, percolation and generalized effective-medium descriptions. Selected model-comparison and Raman/rheological processing passages were inspected during the 30 October 2026 research pass; later retrieval attempts timed out. Compare independently measured conversion with an inferred conversion, retaining filler content, temperature, normalization, smoothing and the fitted range. Do not generalize a successful relation into a universal conversion meter.
+
+The manuscript identifies an official NIST contribution not subject to copyright in the United States. Keep attribution and credited component rights; no manuscript or dataset is bundled here.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_2P4B2NBQT7APB3CQ2KDQ6MGMX0

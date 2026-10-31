@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Accumulate evidence of a specified shift with CUSUM (@cm-monitoring-cusum: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "../../../inquiry/metrology/applications/Dynamic-measurements-and-time-series.lingua#r_7VY283E2ZMNS2JTQ9Y7DNBW6KX") { r_50QB7EZPNF9HN32FTHN72T6SX4
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), section 6.3.2.3 and its average-run-length discussion.
+
+For standardized observations z_t, a one-sided tabular CUSUM can use C_t = max(0, C_(t−1) + z_t − k), starting at zero and signaling when C_t exceeds h. The reference k and threshold h describe a detection design, not a product tolerance.
+
+For independent unit-variance normal observations, the log likelihood ratio for mean δ versus mean zero is δz_t−δ²/2. Dividing by δ relates a positive-shift detector to k = δ/2. Real parameter uncertainty, dependence and alternative changes require further evaluation; this derivation does not choose a universal h.
+
+With k = 0.5 and observations 0.1, 0.8, 1.3, 1.7, 1.6, 1.8, the positive CUSUM is 0, 0.3, 1.1, 2.3, 3.4, 4.7. A rule using h = 4 first signals on observation six. Keep reset rules and any negative-shift detector explicit when evaluating the whole procedure.
+
+**Work:** Derive the likelihood connection, check the sequence and compare CUSUM with EWMA and a single-point chart on the same simulated histories. Include gradual drift, an isolated spike and a variance change. Report performance for each scenario rather than declaring one detector universally best.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Changing signals — response correction, sampling, and dependent noise](../../../inquiry/metrology/applications/Dynamic-measurements-and-time-series.lingua#r_7VY283E2ZMNS2JTQ9Y7DNBW6KX).
+
+} r_50QB7EZPNF9HN32FTHN72T6SX4

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Defend the structural description of an engineered material (@mat-structure-review: 0, is #chapter, #part-of @materials-engineering, #materials-engineering "../thermodynamics/From-a-structural-description-to-material-change.lingua#r_50FYES7NV1GRPVC314RWNMND4Y") { r_343YS1SHWD9DDHP6QFZXWVBX9C
+**Read:** Finish the assigned whole introductory readings and complete relevant structure/measurement treatments. Return to the shared chemistry and crystallography derivations whenever an assumption cannot be explained.
+
+Explain the recurring material through composition, state, processing history, bonding, order, defects, interfaces and observation. Complete the three structural studies, connecting their findings where the material permits. Derive the key numerical results and preserve the difference between a structural model and the physical evidence supporting it.
+
+**Demonstrate:** Compare competing structural descriptions; account for cell contents and fractions; interpret a directional response; inspect an actual source model; explain a diffraction or microscopy observation; and revise one claim after contrary evidence. Identify a question that structure alone cannot answer.
+
+Continue into thermodynamic equilibrium, phase stability, chemical potentials, diffusion and transformation kinetics. Those ideas explain which states are favored and how the material changes on an available timescale. Deeper family, property, processing, selection and service studies build on both structure and change.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [From a structural description to material change](../thermodynamics/From-a-structural-description-to-material-change.lingua#r_50FYES7NV1GRPVC314RWNMND4Y).
+
+} r_343YS1SHWD9DDHP6QFZXWVBX9C

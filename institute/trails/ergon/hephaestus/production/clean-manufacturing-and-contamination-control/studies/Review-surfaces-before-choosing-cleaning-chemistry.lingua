@@ -1,0 +1,16 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Review surfaces before choosing cleaning chemistry (@cm-adhesion-review: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "../cleaning/Read-cleaning-through-chemistry-transport-and-restored-function.lingua#r_5A3XBM9923FKVXG10QYDMF4EH5") { r_4XZBGNRTFEMMCYYE2GGA1HSSBG
+**Read:** Revisit the complete source readings and the evidence in the contact, wetting and surface-population investigations.
+
+Explain how the state of a surface changes attachment and release, and why a force model, an interfacial energy, a contact-angle observation and a cleanliness measurement cannot substitute for one another. Connect microscopic interactions to the actual removal geometry and to the final destination of unwanted material.
+
+**Work:** Defend all three investigations together. Reproduce one central calculation independently, revise a material or geometric assumption after criticism and describe the changed evidence requirements. Distinguish a checked mathematical model from a demonstrated cleaning process. Return to any shared foundation whose quantities or assumptions remain unclear.
+
+Continue into molecular residues, contamination chemistry, cleaning, rinsing, drying and renewed exposure, then facilities, qualification and specialist production. The present surface models supply part of that formation; they do not yet define a complete cleaning process or accepted operating system.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+
+**Continue in clean manufacturing:** [Read cleaning through chemistry, transport and restored function](../cleaning/Read-cleaning-through-chemistry-transport-and-restored-function.lingua#r_5A3XBM9923FKVXG10QYDMF4EH5).
+
+} r_4XZBGNRTFEMMCYYE2GGA1HSSBG

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Thermal properties under real measurement conditions (@mat-thermal-measure: 0, is #chapter, #part-of @materials-engineering, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #materials-engineering "Periodic-states-bands-and-effective-mass.lingua#r_2JRGCTVGF0AKJ0R6EAD1AQ57BX") { r_2WSJYKHKE9GBAGQ9796B855YJQ
+**Read:** [Nano-to-Macro Transport Processes — MIT 2.57](../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), measurement and interface discussions; the shared heat-transfer sources for conductivity, diffusivity and thermoreflectance. Return to the material measurement and uncertainty foundations.
+
+A transient temperature curve can depend on conductivity, volumetric capacity, thickness, contact resistance, heat loss and instrument response. The diffusivity α=κ/(ρc) does not separately identify all three quantities. A specimen's surface coating may help optical measurement while introducing its own capacity and interface conductance.
+
+**Work:** Reconstruct one published film/substrate or bulk measurement, including calibration and fitted parameters. Change a boundary condition or measurement frequency and predict the new response before fitting it. Compare two plausible parameter sets that fit the original trace. Explain what independent thickness, density or capacity evidence would discriminate them.
+
+Connect thermal expansion and mechanical restraint to the earlier mismatch and fracture accounts. A good heat spreader can still fail through an interface or differential expansion; qualify the complete material stack and its temperature history.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Periodic states, bands and effective mass](Periodic-states-bands-and-effective-mass.lingua#r_2JRGCTVGF0AKJ0R6EAD1AQ57BX).
+
+} r_2WSJYKHKE9GBAGQ9796B855YJQ

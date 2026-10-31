@@ -1,0 +1,19 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Differentiate the energy before comparing adhesion forces (@cm-vdw-force: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "The-intervening-medium-changes-the-interaction.lingua#r_21PMJ5SPT1RPSRR9SBF67QAEM2") { r_2E652J3MY1CXA7CTMZ2RN1M5TH
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), the same dispersion model and its sphere–plane force; revisit [Small changes, derivatives, and first-order approximations](../../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52) when differentiating.
+
+Take positive force toward increasing separation. The preceding model gives
+
+F_z=−dU/dz=−2A_H R³/[3z²(z+2R)²].
+
+At small z/R, F_z≈−A_H R/(6z²). For positive A_H the force is attractive. The ratio of exact force magnitude to the small-gap approximation is (1+z/(2R))⁻². This provides a direct error check before invoking the approximation.
+
+For a hypothetical A_H=10⁻²⁰ J, R=0.5 µm and z=1 nm, the small-gap estimate is about 0.833 nN. Doubling the separation reduces that approximation fourfold. This is a noncontact model value, not a measured pull-off force for a deformed particle.
+
+**Work:** Verify the derivative by finite differences and by integrating the force over a finite separation interval. Compare the radius dependence with the weight of a constant-density sphere. State which quantities were held fixed before concluding that smaller particles are relatively harder to remove. Do not carry a fixed-gap idealization into a rough-contact experiment without evidence.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [The intervening medium changes the interaction](The-intervening-medium-changes-the-interaction.lingua#r_21PMJ5SPT1RPSRR9SBF67QAEM2).
+
+} r_2E652J3MY1CXA7CTMZ2RN1M5TH

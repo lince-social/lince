@@ -1,6 +1,6 @@
 Import "../Mineralogy-and-petrology.lingua"
 
-Calculate diffraction spacing and test an indexing account (@mp-bragg: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6", #source "../sources/GSAS-II-Refinement-Tutorials.lingua#r_14B5VSDN6YR5MQJVNTKYJXF3XB", #mineralogy-and-petrology "Whole-pattern-refinement-and-quantitative-phase-analysis.lingua#r_75FAFYT5JQC9ZPHSE8RDMPMF9V") { r_06VC3CMZT1TY5BZ00AWV8TD3ZQ
+Calculate diffraction spacing and test an indexing account (@mp-bragg: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6", #source "../sources/GSAS-II-Refinement-Tutorials.lingua#r_14B5VSDN6YR5MQJVNTKYJXF3XB", #mineralogy-and-petrology "Whole-pattern-refinement-and-quantitative-phase-analysis.lingua#r_75FAFYT5JQC9ZPHSE8RDMPMF9V", #materials-engineering "../../../../hephaestus/engineering/materials-engineering/measurement/Basis-interference-and-reflection-conditions.lingua#r_2N88QXGVXZQP7087ADD1HX1ACM") { r_06VC3CMZT1TY5BZ00AWV8TD3ZQ
 **Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the complete reciprocal-space, diffraction, and indexing treatment; [A laboratory manual for X-ray powder diffraction — Poppe and colleagues](../sources/USGS-X-ray-Powder-Diffraction-Manual.lingua#r_3S2AET1HS289HRQBDJ87A30DX6), the full relevant measurement/identification material; [GSAS-II — diffraction analysis and refinement tutorials](../sources/GSAS-II-Refinement-Tutorials.lingua#r_14B5VSDN6YR5MQJVNTKYJXF3XB), the complete instrument/model preparation used.
 
 Under the stated elastic-scattering geometry, Bragg's relation nλ = 2d sin(θ) connects spacing, wavelength, and angle. Many powder plots report 2θ, so confusing it with θ changes the answer. State radiation/wavelength, angular convention, reflection order or equivalent indexing, and units.
@@ -16,4 +16,6 @@ Read the full reciprocal/diffraction treatment. Use a documented instrument stan
 **Continue:** [Evaluate a refined pattern through model, residuals, correlations, and evidence](Whole-pattern-refinement-and-quantitative-phase-analysis.lingua#r_75FAFYT5JQC9ZPHSE8RDMPMF9V).
 
 **Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+**Continue in materials engineering:** [Basis interference and reflection conditions](../../../../hephaestus/engineering/materials-engineering/measurement/Basis-interference-and-reflection-conditions.lingua#r_2N88QXGVXZQP7087ADD1HX1ACM).
+
 } r_06VC3CMZT1TY5BZ00AWV8TD3ZQ

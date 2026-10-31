@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Requirements describe use and evidence (@mech-realization-entry: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #mechanical-engineering "Compare-architectures-with-physical-and-resource-accounts.lingua#r_4SQTE5K276EA679VKPTN22XYJX") { r_1509Y6D06KQ6MS7EVFXC8ZQ4YV
+**Read:** [Systems Engineering Handbook — NASA](../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), chapters 2 and 4–5; [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), chapters 3 and 9.1. Read the complete relevant chapters progressively, relating their methods to a small machine rather than copying an institution's paperwork.
+
+Translate a useful purpose into observable behavior. A positioning machine needs a stated travel, load, speed, error, environment and duty; saying that it is precise or robust leaves its claim undefined. Distinguish a user's need, a measurable requirement and a proposed solution. Requiring a screw drive too early can exclude a better mechanism.
+
+Define how performance will be judged before choosing dimensions. State the useful point, reference frame, operating states, expected disturbances and allowed maintenance. Include installation, startup, reversal, shutdown and recovery, not only steady operation. A requirement that cannot be tested directly may need a justified chain of evidence.
+
+**Work:** Write a compact description of the machine's purpose and five measurable requirements with their conditions. Identify conflicting demands and missing information. Propose two architectures and describe what observation would distinguish them. Revise any requirement whose measurement is ambiguous or whose purpose cannot be explained.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Compare architectures with physical and resource accounts](Compare-architectures-with-physical-and-resource-accounts.lingua#r_4SQTE5K276EA679VKPTN22XYJX).
+
+} r_1509Y6D06KQ6MS7EVFXC8ZQ4YV

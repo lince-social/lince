@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Chain scission, crosslinking and oxidative change (@mat-chain-degradation: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../../../materials/metals-and-metallurgical-production/sources/Environmental-Degradation-of-Materials-NPTEL.lingua#r_06WSRAYJJKWNTT146BKY5BN4QQ", #materials-engineering "Light-spectrum-absorbed-dose-and-photodegradation.lingua#r_00QX76X9EHD69BBP9X50MZF5WW") { r_7SXAGGS87SK6N8KEKRDNS01MW1
+**Read:** [Polymer-composite weathering protocols — NIST SP 1200-15](../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG), chemical and morphological measurements; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), molecular architecture; [Environmental Degradation of Materials — Kallol Mondal, NPTEL](../../../materials/metals-and-metallurgical-production/sources/Environmental-Degradation-of-Materials-NPTEL.lingua#r_06WSRAYJJKWNTT146BKY5BN4QQ), polymer degradation where available.
+
+Chain scission can change molecular-weight distribution and load transfer; additional crosslinking can restrict motion and alter swelling. Oxidative chemistry can produce several changes at once, depending on formulation, oxygen supply and temperature. A higher modulus or a new spectral band does not alone establish whether useful durability improved.
+
+**Work:** Build a reaction-and-transport hypothesis for an exposed polymer, identifying which measured signals constrain which quantities. Compare molecular-weight, gel/swelling, thermal and mechanical evidence where applicable. Distinguish a surface-sensitive observation from the bulk state and quantify the sampled depth. Explain how additives or fillers alter both the chemistry and the interpretation of a signal. Treat the protocol's incomplete proprietary feed information as a real limit on reconstruction.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Light spectrum, absorbed dose and photodegradation](Light-spectrum-absorbed-dose-and-photodegradation.lingua#r_00QX76X9EHD69BBP9X50MZF5WW).
+
+} r_7SXAGGS87SK6N8KEKRDNS01MW1

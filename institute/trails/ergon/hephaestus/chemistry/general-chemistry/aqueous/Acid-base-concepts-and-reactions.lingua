@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Choose an acid/base description that answers the actual question (@gc-acidbase: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "pH-activity-and-measurement.lingua#r_3HDBH538NRM4TYDQ5SJVM04NRE") { r_0EB1497NTKFZENB6Q1XQ3DQZGQ
+Choose an acid/base description that answers the actual question (@gc-acidbase: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #general-chemistry "pH-activity-and-measurement.lingua#r_3HDBH538NRM4TYDQ5SJVM04NRE", #clean-manufacturing "pH-activity-and-measurement.lingua#r_3HDBH538NRM4TYDQ5SJVM04NRE") { r_0EB1497NTKFZENB6Q1XQ3DQZGQ
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 14 in full; [Química Geral I — Feitosa, Barbosa, and Forte](../sources/Quimica-Geral-I-UECE.lingua#r_7N9JXVMC5DWB8P3MX79YYPHNPA), the complete acid/base and nomenclature chapter; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), Understanding acids and bases and the first advanced acid/base lessons; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), lectures 19–20.
 
 Brønsted–Lowry acid/base descriptions track proton transfer and conjugate pairs. Lewis descriptions track electron-pair acceptance/donation and support a broader class of interactions. State the solvent, species, and reaction when identifying an acid or base. A substance's behavior can depend on the partner and conditions rather than one permanent label.
@@ -16,4 +16,7 @@ Read the complete acid/base chapter and Portuguese theory/naming treatment. Then
 **Continue:** [Connect pH with activity, the water model, and a calibrated observation](pH-activity-and-measurement.lingua#r_3HDBH538NRM4TYDQ5SJVM04NRE).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+
+**Continue in clean manufacturing:** [Connect pH with activity, the water model, and a calibrated observation](pH-activity-and-measurement.lingua#r_3HDBH538NRM4TYDQ5SJVM04NRE).
+
 } r_0EB1497NTKFZENB6Q1XQ3DQZGQ

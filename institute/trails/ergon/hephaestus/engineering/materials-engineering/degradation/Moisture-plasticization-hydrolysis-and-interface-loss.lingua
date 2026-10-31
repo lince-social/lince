@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Moisture, plasticization, hydrolysis and interface loss (@mat-moisture-damage: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Reaction-diffusion-and-the-depth-of-aging.lingua#r_2YFQ8EZBR47YX18JTA9MFH9XGK") { r_4AQHR2H9AFW05XA8J7DXNXENRS
+**Read:** [Polymer-composite weathering protocols — NIST SP 1200-15](../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG), controlled exposure and measurements; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapters 4, 10 and 14; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), liquid-phase corrosion.
+
+Water can diffuse, swell a phase, change relaxation, participate in chemical reactions and weaken an interface. These are distinct hypotheses. Humidity, liquid immersion and cyclic wetting impose different boundary conditions; temperature and stress can alter the response. Composite swelling mismatch can create local stresses even when bulk uptake looks modest.
+
+**Work:** Derive an uptake balance for a stated geometry and identify what the early-time data can determine. Compare mass, dimensions, molecular evidence and interface/mechanical response after drying as well as during exposure. Explain why a single fitted diffusion coefficient may fail across changing temperature, moisture and reaction. Use the full bonding chapter to connect preparation and exposure with later adhesive-joint evidence.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Reaction–diffusion and the depth of aging](Reaction-diffusion-and-the-depth-of-aging.lingua#r_2YFQ8EZBR47YX18JTA9MFH9XGK).
+
+} r_4AQHR2H9AFW05XA8J7DXNXENRS

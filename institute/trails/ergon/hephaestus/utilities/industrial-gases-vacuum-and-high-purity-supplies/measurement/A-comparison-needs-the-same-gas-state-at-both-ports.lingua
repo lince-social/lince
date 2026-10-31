@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A comparison needs the same gas state at both ports (@gas-gauge-comparison: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "../../../inquiry/metrology/calibration/Response-and-regression.lingua#r_182XY9TP839DMYS0DM3ZEGQ3BH") { r_5T0JCXM3DS5RCAXM9YRTX261ZY
+**Read:** [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), complete apparatus and comparison sections; [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), §3.2.
+
+Two instruments in one chamber do not automatically sample the same gas state. Port geometry, inlet/outlet placement, temperature, local sources and pumping can create gradients or directional molecular populations. The comparison must establish sufficiently equivalent conditions at the actual measurement interfaces.
+
+Distinguish static and flowing comparisons. A closed chamber can drift through wall release or gauge pumping; a flowing chamber can have spatial gradients. Stability at one reference instrument does not prove uniformity everywhere. Swapping locations or adding observations can reveal a systematic difference that repeated readings at one configuration miss.
+
+Record the gauge head, controller, cables, mounting and programmed parameters as the measured system. A calibration of one configuration cannot silently be assigned to a changed one. The historical standards cited by a paper explain its procedure; a present standards claim requires the actual applicable edition.
+
+**Work:** Draw a comparison arrangement and identify three ways it could produce agreement for the wrong reason. Propose a change of geometry, gas or operating condition that tests the most consequential assumption. Separate a reference's calibration uncertainty from the transfer arrangement's additional uncertainty.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Fit a response relation and inspect what the residuals say](../../../inquiry/metrology/calibration/Response-and-regression.lingua#r_182XY9TP839DMYS0DM3ZEGQ3BH).
+
+} r_5T0JCXM3DS5RCAXM9YRTX261ZY

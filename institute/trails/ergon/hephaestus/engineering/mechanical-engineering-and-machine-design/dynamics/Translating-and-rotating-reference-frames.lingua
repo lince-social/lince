@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Translating and rotating reference frames (@mech-moving-frames: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #mechanical-engineering "Momentum-balance-for-particles-and-the-whole-machine.lingua#r_0DD8ZD9Q7R1CTXC6D8JVTBSZKE") { r_0J66JQV19DX8MJZ371A3YE45Q6
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 1–4, 7–8 and recitations 2–3; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), section 2.2.1 and section 3.1 when the matrix description becomes useful.
+
+For a vector u expressed in a frame rotating with angular velocity Ω, its inertial derivative equals its derivative relative to that frame plus Ω × u. Apply the product rule to its changing components and changing basis vectors to derive this identity. Label which frame defines every derivative.
+
+With r measured from the moving origin to a point, the inertial acceleration is a_origin + a_relative + 2Ω × v_relative + α × r + Ω × (Ω × r), with α the inertial angular acceleration of the frame. All terms must be expressed in a common basis. The formula distinguishes translation, relative acceleration, Coriolis, tangential and centripetal terms.
+
+For a point fixed 0.25 m from a steadily rotating axis at Ω = 4 rad/s, speed is 1 m/s and inward acceleration 4 m/s². If it also slides radially outward at 0.1 m/s, the Coriolis acceleration has magnitude 0.8 m/s². A force account in the rotating frame can move frame-acceleration terms to the other side of Newton's equation; these terms are not additional physical contacts.
+
+**Work:** Obtain a marked point's position in fixed coordinates, differentiate it directly and compare with the frame formula. Include both a moving origin and a changing rotation rate. Explain which terms vanish in each simpler case before using the full formula.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Momentum balance for particles and the whole machine](Momentum-balance-for-particles-and-the-whole-machine.lingua#r_0DD8ZD9Q7R1CTXC6D8JVTBSZKE).
+
+} r_0J66JQV19DX8MJZ371A3YE45Q6

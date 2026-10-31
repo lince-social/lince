@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Keep measurement risk and lot risk distinct (@cm-qualification-risk: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY", #clean-manufacturing "Separate-confidence-prediction-and-tolerance-statements.lingua#r_6HJNY9RBX4EQQFWSQYV7SRVJT9") { r_4BE7Z2WC7CV02N4KGCZJG7VAQ6
+**Read:** [Conformity decisions, guard bands, and the risk being controlled](../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ) and [Measurement uncertainty in conformity assessment — JCGM 106](../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY), specific and global risks. Revisit the sample-to-result uncertainty accounts.
+
+An item's measurement uncertainty and a lot's sampling uncertainty answer different questions. A precise measurement of an unrepresentative item does not establish lot conformity. A representative sample measured with systematic bias does not establish it either.
+
+For an explicitly assumed normal state-of-knowledge distribution for a quantity, with mean y, standard uncertainty u and upper tolerance T, the conditional probability above T is 1−Φ((T−y)/u). With T = 10, y = 9.8 and u = 0.2, it is about 0.158655. This conditional statement does not by itself give a production-wide false-acceptance probability.
+
+Under that same model, requiring this conditional probability to be at most 0.05 gives y ≤ T−1.644853627u; at u = 0.2 the acceptance boundary is about 9.671029. The risk choice is declared, not supplied by the uncertainty calculation.
+
+**Work:** Compare guarded and unguarded decisions for a labelled benign population. Include uncertain sampling and a shared calibration effect. State which risk each calculation addresses and which population or prior information it needs.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Separate confidence, prediction and tolerance statements](Separate-confidence-prediction-and-tolerance-statements.lingua#r_6HJNY9RBX4EQQFWSQYV7SRVJT9).
+
+} r_4BE7Z2WC7CV02N4KGCZJG7VAQ6

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Filling, heating and the state after rest (@gas-filling: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C", #industrial-gases-and-vacuum "Working-capacity-heel-and-thermal-expansion.lingua#r_74W6MW46ZE8N9P0QSWHST46M40") { r_40BQVRJYCA7X9K0CHB5C4NVTGY
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), unsteady filling examples; [Good practices guide for loading and unloading of cryogenic liquid tankers — AIGA](../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C), the loading and receiving context.
+
+For an initially evacuated, rigid, insulated ideal vessel receiving a calorically perfect gas from a large reservoir with fixed inlet stagnation enthalpy cpTin, the final storage balance gives mcvT=mcpTin and T=γTin. This assumes negligible initial gas, negligible wall energy uptake, no exit and negligible final bulk kinetic energy. It is a useful energy limit, not a filling instruction or a prediction for every package.
+
+With initial mass mi at Ti and added mass Δm, the same simplified balance gives (mi+Δm)cvTf=micvTi+Δm cpTin. Adding a wall energy term or heat loss changes the result. At fixed final amount and volume, subsequent cooling changes pressure; a filling pressure and a settled pressure describe different states.
+
+Liquid transfer needs an enthalpy and phase account too. Warm piping can consume cold liquid through vapor formation, while cold liquid entering a vapor space can condense vapor. The sign of pressure change cannot be inferred from mass transfer alone.
+
+**Work:** Compare an ideal empty-vessel filling calculation with a finite-wall-heat-capacity model. Show where the additional energy goes. State the measurements needed to distinguish incomplete thermal equilibration from a real loss of product.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Working capacity, heel and thermal expansion](Working-capacity-heel-and-thermal-expansion.lingua#r_74W6MW46ZE8N9P0QSWHST46M40).
+
+} r_40BQVRJYCA7X9K0CHB5C4NVTGY

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A gas service is a maintained physical condition (@gas-function: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "A-shared-vocabulary-for-gases-and-vacuum.lingua#r_6S1VHW9H1BE3PBBWZPKFWGTCEP") { r_5SNSV452N0N3TNP5XA9HG7FRVR
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), application overview; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), introduction and physical quantities.
+
+A gas system supplies or removes matter to maintain useful conditions. Nitrogen at a cylinder outlet, nitrogen after a long distribution line and nitrogen at a sensitive process surface may have different contamination histories. A pump's inlet pressure, a chamber's pressure and the local molecular flux onto a specimen are also different observations.
+
+Draw a boundary around the useful operation. Identify incoming gas, outgoing gas, stored inventory, heat and work. Include the measurements and actions that maintain the condition when demand changes. A container or machine is one part of this account; continuing service also requires replenishment, energy, cooling, replacement parts and people who understand the system.
+
+**Work:** Draw the supply/removal paths for a protective atmosphere and an evacuated chamber. Mark the point where performance matters. Explain how each could fail while an upstream gauge still looks normal. List the observations needed to distinguish loss of supply, contamination and a misleading measurement.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A shared vocabulary for gases and vacuum](A-shared-vocabulary-for-gases-and-vacuum.lingua#r_6S1VHW9H1BE3PBBWZPKFWGTCEP).
+
+} r_5SNSV452N0N3TNP5XA9HG7FRVR

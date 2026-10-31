@@ -1,0 +1,20 @@
+Import "../Materials-engineering.lingua"
+
+Conservation, Fick laws and diffusion boundaries (@mat-diffusion-law: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "Similarity-solutions-finite-bodies-and-what-a-length-scale-means.lingua#r_1Q16MVYWQQ6T259JDGMK0BD04Y", #industrial-gases-and-vacuum "Similarity-solutions-finite-bodies-and-what-a-length-scale-means.lingua#r_1Q16MVYWQQ6T259JDGMK0BD04Y") { r_7X1A26DJF0PSVET1EXJK0V09R2
+**Read:** [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), both Fick-law lessons; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lectures 1–3 and 3.21 lectures 1–9.
+
+**Mathematical preparation:** [Rates, accumulation, and the boundary of an account](../../../inquiry/quantitative-literacy/practice/Rates-and-accumulation.lingua#r_0NTXN5E5ZJ1A8C149BQF4G2YCZ) develops inventories and rates; [Small changes, derivatives, and first-order approximations](../../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52) develops local derivatives. In one dimension, a gradient is a spatial derivative and divergence measures net outflow per unit length/volume in the corresponding balance. In Cartesian coordinates, ∇²c sums the second spatial derivatives. Derive the one-dimensional slice balance before using the compact multidimensional notation.
+
+For concentration c and flux J, local conservation is ∂c/∂t=−∇·J in the absence of sources. With J=−D∇c, constant isotropic D gives ∂c/∂t=D∇²c. If D depends on position or composition, keep the divergence form and its derivative terms. State the concentration basis and deformation assumptions.
+
+Initial conditions and boundary exchange are part of the model. A prescribed surface concentration, imposed flux, impermeable wall and finite surface-exchange law represent different experiments. For a length L, the diffusion scale is L²/D; reducing L by ten reduces this scale by one hundred when the same D applies.
+
+**Work:** Derive the one-dimensional equation by balancing a thin slice. Integrate it over the entire specimen to recover boundary mass exchange. Compare a sealed slab and a slab in contact with a maintained reservoir; they cannot share the same long-time composition without additional conditions.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Similarity solutions, finite bodies and what a length scale means](Similarity-solutions-finite-bodies-and-what-a-length-scale-means.lingua#r_1Q16MVYWQQ6T259JDGMK0BD04Y).
+
+
+**Continue in gas and vacuum systems:** [Similarity solutions, finite bodies and what a length scale means](Similarity-solutions-finite-bodies-and-what-a-length-scale-means.lingua#r_1Q16MVYWQQ6T259JDGMK0BD04Y).
+
+} r_7X1A26DJF0PSVET1EXJK0V09R2

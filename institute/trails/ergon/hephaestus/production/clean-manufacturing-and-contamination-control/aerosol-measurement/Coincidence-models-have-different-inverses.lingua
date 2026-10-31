@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Coincidence models have different inverses (@cm-counting-deadtime: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE", #clean-manufacturing "Aerodynamic-diameter-matches-a-response-under-stated-conditions.lingua#r_2SBHD3T51J3HNC0HJGBRYC4GSJ") { r_2MAE4G406EHQN1WZRJTBHQVGH0
+**Read:** [CPC proportionality calibration — Owen, Mulholland and Guthrie](../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE), coincidence correction and dilution results. Compare its stated instrument equation with these independently derived ideal detector models.
+
+Let Poisson arrival rate be r and a detector's recovery time be τ. In a nonparalyzable model, accepted events each occupy τ and arrivals during that time do not extend it. The mean observed rate is m = r/(1 + rτ); inversion gives r = m/(1 − mτ) for mτ < 1. Sensitivity dr/dm = (1 − mτ)⁻² grows near the model's saturation limit.
+
+In a paralyzable model every arrival restarts the unavailable interval. For Poisson arrivals, an event is recorded only when the preceding τ contains no arrival, giving m = r exp(−rτ). This response reaches a maximum at rτ = 1. Below its maximum, a measured rate can correspond to two true rates; choosing the low-rate branch requires independent regime information.
+
+**Example:** For r = 100000 s⁻¹ and τ = 1 µs, the two models give about 90909.1 and 90483.7 s⁻¹. Their closeness at low occupancy does not make them interchangeable. The manuscript's fixed-point correction has the latter exponential form; its demonstrated operating range does not authorize extrapolation to the maximum.
+
+**Work:** Derive both formulas and their low-rate expansions. Invert the paralyzable model by a bracketed root solve on a specified branch and compare with iteration. Explain why loss-corrected event estimates are not themselves raw Poisson counts. Inspect whether a real device uses pulse overlap, rejection, live-time correction or another mechanism before adopting either idealization.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Aerodynamic diameter matches a response under stated conditions](Aerodynamic-diameter-matches-a-response-under-stated-conditions.lingua#r_2SBHD3T51J3HNC0HJGBRYC4GSJ).
+
+} r_2MAE4G406EHQN1WZRJTBHQVGH0

@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Derive motion with Lagrange equations (@mech-lagrange: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #mechanical-engineering "Equilibrium-linearization-and-stability.lingua#r_5X7T8VYXEM67P96DXJM598Y3BD") { r_2SG7GPCP79HJH6MGKNJ6SBQ8BC
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 15–17 and recitations 8–9; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), sections 2.1–2.5. Begin with a single coordinate before the cart–pendulum or a mechanism.
+
+For independent generalized coordinates with ideal holonomic constraints, L = T − V and d/dt(∂L/∂q_dot_i) − ∂L/∂q_i = Q_i for the nonconservative generalized forces. The total time derivative includes every dependence on coordinates, velocities and time. Differentiate first; imposing a small-angle approximation too early can hide the terms being neglected.
+
+For a pendulum with point mass m, massless length l and angle θ from vertically down, T = ml² θ_dot²/2 and V = mgl(1 − cosθ). Adding a joint torque τ and viscous joint coefficient c gives ml² θ_double_dot + c θ_dot + mgl sinθ = τ. Gravity's restoring sign can be checked by displacing the pendulum slightly in either direction.
+
+Derive this equation again by moment balance. State how a massive rod changes both the inertia and gravitational moment. A Rayleigh dissipation function c θ_dot²/2 reproduces the viscous term through its velocity derivative; it is a model for this force law, not a universal description of dissipation.
+
+**Work:** Derive a coupled cart–point-pendulum model and independently reconstruct its horizontal momentum and energy accounts. Compare its assumptions with the MIT recitation's uniform-rod pendulum, which has a different mass distribution. Keep constraint reactions recoverable when the later bearing and structural design needs them.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Equilibrium, linearization and stability](Equilibrium-linearization-and-stability.lingua#r_5X7T8VYXEM67P96DXJM598Y3BD).
+
+} r_2SG7GPCP79HJH6MGKNJ6SBQ8BC

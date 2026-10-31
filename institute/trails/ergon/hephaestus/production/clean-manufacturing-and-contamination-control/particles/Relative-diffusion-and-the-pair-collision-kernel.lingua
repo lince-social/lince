@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Relative diffusion and the pair collision kernel (@cm-collision-kernel: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9", #clean-manufacturing "Count-colliding-pairs-once.lingua#r_35P15A7KVVEMRKWV5H91H5CFMR") { r_0PDZMSKB17M8BSS7ANETGX5M0F
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), coagulation pages 1–4; [Aerosols and coagulation — Chiang C. Mei, MIT](../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9), the radial diffusion problem. Work through the spherical boundary-value derivation independently.
+
+For two independently diffusing spheres, relative-coordinate diffusivity is D_i+D_j and contact occurs when their centre separation reaches a_i+a_j. In the dilute continuum, steady diffusion-limited model with perfect capture, the encounter kernel is β_ij=4π(D_i+D_j)(a_i+a_j). Its unit is volume per time.
+
+Derive this from a spherical concentration field c(r)=c∞[1−R/r], R=a_i+a_j, outside an absorbing sphere. The integrated inward flux is 4πR(D_i+D_j)c∞. For equal spheres of radius a and diffusivity D, β=16πDa. With continuum Stokes–Einstein diffusion it becomes 8k_B T/(3μ), but slip, interactions and noncontinuum pair transport can alter that simplified expression.
+
+**Work:** Verify the boundary conditions, integrated flux and dimensions. Explain why fixing one particle and using only its partner's D misses the relative diffusion. Separate this issue from counting unordered pairs in the population equation, which introduces a different factor.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Count colliding pairs once](Count-colliding-pairs-once.lingua#r_35P15A7KVVEMRKWV5H91H5CFMR).
+
+} r_0PDZMSKB17M8BSS7ANETGX5M0F

@@ -132,7 +132,7 @@ fn locate(
             if rectangle.size().min_element() > 0.0 {
                 scroll = Some((
                     [(rectangle.max.x - 3.0) as f64, rectangle.center().y as f64],
-                    (point.y - center.y).clamp(-512.0, 512.0) as f64,
+                    (point.y - rectangle.center().y).clamp(-512.0, 512.0) as f64,
                 ));
                 break;
             }
@@ -167,8 +167,10 @@ impl Toolkit {
 
     fn widget(&mut self, widget: Widget) -> [f64; 2] {
         let size = self.fixture.size;
+        let mut trace = Vec::new();
         for _ in 0..24 {
             if let Some(position) = self.inspect(move |canvas| locate(canvas, widget, size)) {
+                trace.push((position.point, position.visible, position.scroll));
                 if position.visible {
                     return position.point;
                 }
@@ -201,7 +203,13 @@ impl Toolkit {
                 self.tick("toolbar-reveal");
             }
         }
-        panic!("The native toolkit control is unavailable or unreachable: {widget:?}");
+        let state = self.inspect(|canvas| {
+            let world = canvas.world_mut();
+            let modes = world.query::<&native::edit_mode::EditMode>().iter(world).map(|mode| mode.enabled).collect::<Vec<_>>();
+            let summaries = world.query::<&Name>().iter(world).filter(|name| name.as_str().starts_with("shortcut.summary.")).count();
+            (modes, summaries)
+        });
+        panic!("The native toolkit control is unavailable or unreachable: {widget:?}, state={state:?}, scroll={trace:?}");
     }
 
     fn native_click(&mut self, widget: Widget) {
@@ -421,7 +429,11 @@ impl Toolkit {
         self.wait("dialog-close-armed", |app| {
             app.events("dialog-close-armed") == armed + 1
         });
-        self.native_click(Widget::EditToggle);
+        self.chord(&[(125, true), (18, true), (18, false), (125, false)]);
+        self.wait("dialog-edit-open", |app| app.inspect(|canvas| {
+            let world = canvas.world_mut();
+            world.query::<&native::edit_mode::EditMode>().iter(world).any(|mode| mode.enabled)
+        }));
         self.native_click(target);
         self.wait("dialog-capture-owner", |app| {
             app.fixture

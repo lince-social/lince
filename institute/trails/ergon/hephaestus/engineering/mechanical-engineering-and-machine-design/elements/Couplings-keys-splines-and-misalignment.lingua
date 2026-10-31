@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Couplings, keys, splines and misalignment (@mech-couplings: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #mechanical-engineering "Bearing-arrangements-location-floating-motion-and-preload.lingua#r_3B2TR4ZY9PNF0WB1BDDZ5YC2AN") { r_6Q2XKTRV0KDQWBQT8A964VQX9J
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 5, shafts and couplings; [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), chapter 6, for installation alignment. Use the actual chosen coupling's current drawings and operating data for its permissible motion and loads.
+
+A coupling transmits torque while permitting or resisting selected relative motions. Rigid, elastomeric, disc, bellows and articulated arrangements have different torsional stiffness, damping, backlash, fatigue and misalignment behavior. A flexible coupling does not make support alignment irrelevant: accommodating motion can generate restoring forces and heat.
+
+For a simple rectangular key carrying all torque T at shaft diameter d, nominal tangential force is 2T/d. A basic shear estimate is 2T/(d b L); a bearing estimate using half the key height is 4T/(d h L). With T=100 N·m, d=40 mm, b=h=10 mm and L=30 mm, these are 16.67 and 33.33 MPa. Actual contact, edge loading, fillets and the weakened shaft need separate checks.
+
+**Work:** Compare key, spline, friction hub and integral connection for the same torque history. Trace axial location and assembly/removal as well as torque. Model angular and parallel misalignment separately, then explain which measurements distinguish installation error from movement under temperature and load.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Bearing arrangements, location, floating motion and preload](Bearing-arrangements-location-floating-motion-and-preload.lingua#r_3B2TR4ZY9PNF0WB1BDDZ5YC2AN).
+
+} r_6Q2XKTRV0KDQWBQT8A964VQX9J

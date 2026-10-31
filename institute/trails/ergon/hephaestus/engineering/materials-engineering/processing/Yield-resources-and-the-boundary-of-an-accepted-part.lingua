@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Yield, resources and the boundary of an accepted part (@mat-processing-balance: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #materials-engineering "Process-windows-scale-and-controlling-times.lingua#r_1JTQA5ZYJ6P159T05W1G05WZ7B") { r_0126HER9NCX9M2P9ZC8RXEYF47
+**Read:** [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), manufacturing economics and process comparisons; the existing mechanical stock and production-resource accounts. Revisit material and energy balances from the foundations.
+
+Distinguish feed mass, gross shaped output, accepted product, internal return, external recovery, emissions and changing inventory. For consecutive one-pass mass yields 0.90, 0.80 and 0.95, the combined yield is 0.684, so 1 kg accepted output requires about 1.462 kg initial feed under that boundary. Recycled scrap changes the balance and its chemistry; it does not make every rejected part costless.
+
+**Work:** Close a complete batch and continuous-operation account, including warm-up, idle heating, carrier solvents, cooling and consumable tooling. Compare energy per accepted functional unit, not just furnace efficiency. Identify where an upstream composition certificate, moisture result or powder distribution determines a downstream process setting. Keep quantity uncertainty and lot variability separate from losses that were actually measured.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Process windows, scale and controlling times](Process-windows-scale-and-controlling-times.lingua#r_1JTQA5ZYJ6P159T05W1G05WZ7B).
+
+} r_0126HER9NCX9M2P9ZC8RXEYF47

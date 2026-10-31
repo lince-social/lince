@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend a number and material population balance (@cm-study-population: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9", #clean-manufacturing "Review-transport-before-changing-the-surface-or-facility.lingua#r_7RP133RW9C9HH2M0G9ZFW0012D") { r_4TB8G06YD28ET8585ANAECEPBY
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), complete coagulation notes; [Aerosols and coagulation — Chiang C. Mei, MIT](../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9), derivation and appendices; the primary references for any added kernel or growth process.
+
+Start from explicit pair events and derive a continuous population equation with a declared kernel convention. Track at least total number and material mass. Explain how the measured size convention relates to the modeled classes and how products beyond a finite class range are handled.
+
+**Work:** Compare an exact finite event account, the constant-kernel total-number law and a size-resolved approximation. Test symmetry, nonnegativity, moment conservation, limiting cases and class-range refinement. Introduce either breakup, incomplete sticking or removal and derive the changed balances before calculating.
+
+Use the source disagreement over the factor of two as a scholarly exercise: identify each symbol's definition, count an event once and state the corrected conclusion. Distinguish an algebraic correction from evidence that the simplified kernel models a particular real aerosol.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review transport before changing the surface or facility](Review-transport-before-changing-the-surface-or-facility.lingua#r_7RP133RW9C9HH2M0G9ZFW0012D).
+
+} r_4TB8G06YD28ET8585ANAECEPBY

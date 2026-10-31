@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Phase-field discretization, conservation and convergence (@mat-phase-verification: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Phase-Field-Verification-PFHub.lingua#r_7KGRCP4TAWMTKVM4VZ5GVYT34K", #materials-engineering "Coupled-transformation-elasticity-and-transport.lingua#r_66ESP9270QECCHMVK1MRRPHKC2") { r_5FVW69MNTC86W4VF2RDTSB8P7X
+**Read:** [Phase-field verification — PFHub and Jokisaari and colleagues](../sources/Phase-Field-Verification-PFHub.lingua#r_7KGRCP4TAWMTKVM4VZ5GVYT34K), conserved and manufactured-solution specifications; revisit the earlier spinodal and diffusion derivations.
+
+Separate the continuum field model from its discretization. A conserved evolution must preserve the intended integral under its stated boundaries; a dissipative gradient-flow model should satisfy its energy law. Discretization can violate either property, and preserving both does not alone prove accurate interface motion.
+
+Use a manufactured solution by selecting a smooth field, deriving the forcing that makes it exact, and testing convergence to it. This checks the implemented equations with that forcing, not the physical realism of the field. Refine spatial and temporal resolution independently and compare errors in quantities that matter. Interface width, mobility and mesh size have different meanings.
+
+**Work:** Work PFHub's conserved and manufactured-solution problems with a documented solver. Derive the forcing independently, report mass and energy residuals, and measure observed convergence order. Deliberately use an insufficient time step or interface resolution and explain the failure. Distinguish verification of the numerical solution from identifying physical parameters and validating a transformation experiment.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Coupled transformation, elasticity and transport](Coupled-transformation-elasticity-and-transport.lingua#r_66ESP9270QECCHMVK1MRRPHKC2).
+
+} r_5FVW69MNTC86W4VF2RDTSB8P7X

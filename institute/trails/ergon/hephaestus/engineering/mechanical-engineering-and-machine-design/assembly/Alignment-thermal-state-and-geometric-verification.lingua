@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Alignment, thermal state and geometric verification (@mech-alignment: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #mechanical-engineering "Commissioning-acceptance-and-validation-of-use.lingua#r_4K9PKAGC72FHH0SBDCEDTWGHF8") { r_4S1JS0TG093GXKSQ2AJSCQB4HH
+**Read:** [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), chapter 6; [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), alignment and error separation; the shared dimensional-metrology guidance.
+
+Alignment concerns the relative positions and directions that matter to function. A dial indicator or laser gives readings through its own geometry, reference and mounting. Separate instrument setup error, shaft/housing geometry and the actual relative axis. Soft-foot or foundation movement can change alignment when bolts are tightened.
+
+Cold alignment may differ from operating alignment because of load and temperature. Measure or model the paths that move the relevant interfaces. A flexible coupling can tolerate some motion while still transmitting unwanted restoring forces.
+
+**Work:** Derive the readings expected from a known offset and angular misalignment. Use reversal or an independent setup to separate an artifact from the machine. Repeat under a declared load/thermal state and after a controlled disassembly. State what alignment claim the data support and what motion remains unmeasured.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Commissioning, acceptance and validation of use](Commissioning-acceptance-and-validation-of-use.lingua#r_4K9PKAGC72FHH0SBDCEDTWGHF8).
+
+} r_4S1JS0TG093GXKSQ2AJSCQB4HH

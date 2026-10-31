@@ -1,0 +1,11 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Cooling-tower water management and Legionella control — CDC (@wu-cooling-cdc: 0, is #reference, #part-of @wu-sources) { r_752CGAKVEB1JE6PMJVBAK9W0P0
+US Centers for Disease Control and Prevention. Controlling Legionella in Cooling Towers, module dated 3 January 2025. [Official module](https://www.cdc.gov/control-legionella/php/toolkit/cooling-towers-module.html) · [Water-management toolkit](https://www.cdc.gov/control-legionella/php/toolkit/wmp-toolkit.html).
+
+Read the complete module with the linked management toolkit. Use it to distinguish the heat-removal circuit from exposure pathways, operational monitoring and the evidence supporting a management programme. Follow its links to testing and investigation material when judging a particular claim.
+
+The current official page and its design/operation account were inspected on 30 October 2026. Retain dated versions and component notices for personal copies. A closed process loop can still exchange heat through a separate evaporative circuit; identify the actual equipment before concluding it produces no aerosol. The trail's numerical balances do not replace the facility's competent assessment and operating requirements.
+
+**Return:** [Water and sanitation sources](../Sources.lingua#r_7AMRJFFR11FF35KJM7Y7M05B3M).
+} r_752CGAKVEB1JE6PMJVBAK9W0P0

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Turn a function into a mechanism and its interfaces (@mech-element-entry: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #mechanical-engineering "../mechanisms/Mobility-constraints-and-singular-configurations.lingua#r_5QN68BWP4X15CN4TD82Q4CVGYF") { r_0MTNCTSEK8Z1B3HQYEAE17YW8T
+**Read:** Continue the complete [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topics 4–10, with its examples and exercises. Follow the available [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7) notes progressively alongside them. The course's named commercial readings are optional additional sources; its public notes do not contain every illustration or explanation from those books.
+
+A machine element is a useful recurring arrangement: a shaft carries torque, a bearing permits selected motion, a joint joins load paths, a seal restricts exchange. Each works through geometry, material response, contact and energy transfer already studied. Its name alone does not establish its capacity or fit to a task.
+
+Describe the required motion, force, speed, displacement accuracy, environment, service duration and maintenance access before choosing a catalogue part. Distinguish a required function from one proposed mechanism. A positioning task might use a screw, belt, linkage or direct actuator, each with different compromises.
+
+**Work:** Draw three architectures for one familiar task. For each, trace motion constraints, forces, power, heat and information across interfaces. Identify what is standard, what must be made and what would need testing. Keep one architecture as a continuing example, revising it when the following component studies expose a weak assumption.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Mobility, constraints and singular configurations](../mechanisms/Mobility-constraints-and-singular-configurations.lingua#r_5QN68BWP4X15CN4TD82Q4CVGYF).
+
+} r_0MTNCTSEK8Z1B3HQYEAE17YW8T

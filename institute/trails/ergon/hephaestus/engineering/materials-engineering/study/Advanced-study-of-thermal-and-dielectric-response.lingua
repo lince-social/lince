@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of thermal and dielectric response (@mat-thermal-study: 0, is #chapter, #part-of @materials-engineering, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #materials-engineering "Defend-the-functional-material-account.lingua#r_4R7JDE29DY1T4CNRV4Y6PDYHM9") { r_6V9F5JX88304B2ZHT4ZAMFKHGF
+**Read:** [Nano-to-Macro Transport Processes — MIT 2.57](../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), the complete relevant graduate transport and measurement sequence; [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), dielectric/ferroelectric and coupled-response packages; the original thermal and electromagnetic method sources.
+
+Choose a heterogeneous material or film stack with heat transport and electrical insulation requirements. Derive its boundary-value and measurement models. Infer parameters from one set of observations, then compare predictions at changed thickness, frequency, temperature or boundary conditions.
+
+Investigate whether an apparent dielectric enhancement or thermal resistance belongs to the bulk, an interface or the measurement. Include a microstructural alternative and an experiment that could distinguish it. Close the energy account and keep field-amplitude, temperature and timescale conventions explicit.
+
+**Deliver:** A complete source-method reconstruction, independently checked limiting solutions, sensitivity/identifiability analysis and a defended material comparison. Separate simulation, published observations and any new measurements actually performed. Revise a claim that remains underdetermined.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the functional material account](Defend-the-functional-material-account.lingua#r_4R7JDE29DY1T4CNRV4Y6PDYHM9).
+
+} r_6V9F5JX88304B2ZHT4ZAMFKHGF

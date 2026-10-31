@@ -1,0 +1,56 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+An inspectable reuse-loop and concentrate account (@wu-reuse-example: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD", #water-and-sanitation "Cooling-tower-makeup-evaporation-drift-and-blowdown.lingua#r_0VGZJCFJJ4ZH6BKV65HH31XQ35") { r_1T617HHC1XV1R97DQ0EB21QSH5
+**Read:** Derive the preceding balances, then compare the process definitions with [WaterTAP — inspectable water-treatment models](../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD). This original program isolates accounting before adding a detailed membrane or chemistry model.
+
+Use a consistent volume/time unit, constituent mass/volume and constituent mass/time. The function returns the steady account of the specified loop, with recovery strictly between zero and one so there is a reject-water outlet. Zero returned flow is allowed; no concentrate concentration is reported for an absent stream. A physically acceptable computed concentration still needs evidence that the assumed treatment can achieve it.
+
+```python
+from math import isfinite
+
+
+def reuse_balance(demand, returned, recovery, passage, makeup_concentration, added_mass):
+    values = (demand, returned, recovery, passage, makeup_concentration, added_mass)
+    if not all(isfinite(value) for value in values):
+        raise ValueError("all inputs must be finite")
+    if demand <= 0 or not 0 <= returned <= 1 or not 0 < recovery < 1:
+        raise ValueError("invalid flow, return fraction or recovery")
+    if not 0 <= passage <= 1 or min(makeup_concentration, added_mass) < 0:
+        raise ValueError("invalid passage or constituent input")
+    treatment_feed = returned * demand
+    recycle = recovery * treatment_feed
+    makeup = demand - recycle
+    inlet = (makeup * makeup_concentration + recycle * passage * added_mass / demand)
+    inlet /= demand - recycle * passage
+    outlet = inlet + added_mass / demand
+    permeate = passage * outlet
+    reject_flow = treatment_feed - recycle
+    reject_mass = treatment_feed * outlet - recycle * permeate
+    discharge_flow = demand - treatment_feed
+    result = {
+        "makeup_flow": makeup,
+        "recycle_flow": recycle,
+        "inlet_concentration": inlet,
+        "outlet_concentration": outlet,
+        "permeate_concentration": permeate,
+        "reject_flow": reject_flow,
+        "reject_mass": reject_mass,
+        "discharge_flow": discharge_flow,
+        "discharge_mass": discharge_flow * outlet,
+    }
+    if not all(isfinite(value) and value >= 0 for value in result.values()):
+        raise ValueError("result outside numerical range")
+    return result
+
+
+if __name__ == "__main__":
+    for name, value in reuse_balance(100, 0.8, 0.75, 0.1, 0.1, 5).items():
+        print(name, value)
+```
+
+**Investigate:** Check the equations independently with exact arithmetic or a linear-system solution. Close the outside water and constituent balances, then each internal unit. Compare no return, perfect rejection and no rejection. Obtain the same inlet concentration by repeatedly applying the mixing relation and examine how its convergence slows as the recycle gain approaches one. Sweep recovery and passage independently before associating them with real equipment. A smaller freshwater flow can increase energy, chemical demand or reject concentration; the program does not optimize those omitted quantities.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Cooling-tower makeup, evaporation, drift and blowdown](Cooling-tower-makeup-evaporation-drift-and-blowdown.lingua#r_0VGZJCFJJ4ZH6BKV65HH31XQ35).
+
+} r_1T617HHC1XV1R97DQ0EB21QSH5

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Real-gas inventory and the meaning of usable amount (@gas-real-inventory: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "../../../physics/thermodynamics-and-heat-transfer/equilibrium/Phase-coexistence-Clapeyron-and-phase-rules.lingua#r_4RC5M920WZB08JG03SSHM0DQTQ") { r_112DFGFG2FMB4PBCH12KGCKH1N
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), gas properties and open-system balances; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), the chosen gas's physical-property and packaging entries.
+
+For a uniform single gas phase, pV=nZRT. Here p is absolute pressure, T is absolute temperature, n is amount and Z depends on pressure, temperature and composition. A pressure gauge alone does not determine inventory: volume, thermal state, composition and a suitable property relation are also needed. A measured wall temperature need not equal the gas temperature during rapid withdrawal.
+
+For fixed V, usable amount between two specified single-phase states is V/R times [p₁/(Z₁T₁)−p₂/(Z₂T₂)]. This is an amount difference, not a claim that the downstream system can use every molecule above p₂. Regulator behavior and peak demand may impose a higher endpoint.
+
+As an explicitly hypothetical property example, take V=0.050 m³, p₁=20 MPa, T₁=300 K, Z₁=1.10 and p₂=2 MPa, T₂=300 K, Z₂=1.02. With R=8.31446261815324 J/(mol·K), the inventories are approximately 364.462 mol and 39.3047 mol; their difference is 325.157 mol. The Z values are assumptions, not certified data for a named gas. Repeat with Z=1, which gives a difference of approximately 360.817 mol, and explain the discrepancy.
+
+**Work:** Propagate uncertainty in volume, pressure, temperature and the property model. Identify correlations when the same instrument measures both states. For mixtures, also ask whether withdrawal or adsorption changes composition.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Phase coexistence, Clapeyron slopes and phase rules](../../../physics/thermodynamics-and-heat-transfer/equilibrium/Phase-coexistence-Clapeyron-and-phase-rules.lingua#r_4RC5M920WZB08JG03SSHM0DQTQ).
+
+} r_112DFGFG2FMB4PBCH12KGCKH1N

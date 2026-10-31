@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Bearing arrangements, location, floating motion and preload (@mech-bearing-arrangements: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY", #mechanical-engineering "Rolling-contact-bearings-load-zones-and-operating-conditions.lingua#r_5PV6RESCDMJD7QJD9MTJAK3CK7") { r_3B2TR4ZY9PNF0WB1BDDZ5YC2AN
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 10; [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lectures 6–8; [Rolling bearings — SKF, 2018](../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY), bearing arrangements and design considerations, sections B.2 and B.7.
+
+A bearing arrangement constrains a shaft relative to its housing while allowing intended motion. Draw the complete support system, including axial location, radial support, stiffness and the path for differential thermal growth. Two individually suitable bearings can form a poor arrangement when both force incompatible axial positions.
+
+In a locating/non-locating arrangement, one support establishes the axial reference while another accommodates the required displacement through its internal design or an intended sliding fit. Paired angular-contact or tapered-roller arrangements introduce contact-angle, preload and overturning-stiffness choices. Clearance before assembly differs from clearance after fits and temperature changes.
+
+For a 0.5 m steel shaft with α=12×10⁻⁶ K⁻¹ warming 40 K relative to an unchanged reference, free axial growth is 0.24 mm. Decide where it can go. Restraining it through both supports transfers force into a coupled stiffness problem.
+
+**Work:** Draw free bodies and allowed motions for three arrangements. Predict the response to reversed axial force, housing misalignment and uneven temperature. State how assembly and measurement establish clearance/preload, and what access is required to adjust or replace a support.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Rolling-contact bearings, load zones and operating conditions](Rolling-contact-bearings-load-zones-and-operating-conditions.lingua#r_5PV6RESCDMJD7QJD9MTJAK3CK7).
+
+} r_3B2TR4ZY9PNF0WB1BDDZ5YC2AN

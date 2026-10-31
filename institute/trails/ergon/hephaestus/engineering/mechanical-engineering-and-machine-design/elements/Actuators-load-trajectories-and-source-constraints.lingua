@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Actuators, load trajectories and source constraints (@mech-actuators: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Integrate-motion-loads-heat-clearance-and-service.lingua#r_5TNE230R2W11J4RTCE1SHJ3RFN") { r_6D9END4TKW798F1MDM9GXTEVR9
+**Read:** [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lecture 14; [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 7. Follow electrical-power, fluid and thermal Records when the energy-conversion model becomes the main question.
+
+Actuator choice follows a force–speed or torque–speed trajectory, travel, duration, stiffness, controllability and environment. Peak torque, continuous torque, no-load speed and efficiency describe different operating conditions. The actuator, drive, transmission and energy source form one coupled system.
+
+A simple permanent-magnet DC model uses τ=k_t I and V=RI+L dI/dt+k_eω. For an idealized k_t=0.1 N·m/A, producing 0.5 N·m needs 5 A; with R=1 Ω the winding loss alone is 25 W. That does not establish the permissible continuous temperature. A hydraulic cylinder instead relates force to pressure on both piston faces and to friction, while flow determines speed through the appropriate areas.
+
+**Work:** Derive acceleration and holding demands from the complete load motion. Compare geared electric, screw-driven, hydraulic, pneumatic and piezoelectric options, including returned energy and loss of supply. Distinguish blocked force from free displacement for a piezoelectric actuator. Identify what feedback can correct and what mechanical uncertainty remains unobserved.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Integrate motion, loads, heat, clearance and service](Integrate-motion-loads-heat-clearance-and-service.lingua#r_5TNE230R2W11J4RTCE1SHJ3RFN).
+
+} r_6D9END4TKW798F1MDM9GXTEVR9

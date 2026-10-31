@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Three studies of processing and material state (@mat-processing-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #materials-engineering "Advanced-study-of-thermal-and-powder-processing.lingua#r_34DDK3DP382V7AZ39E3RMJJC7S", #materials-engineering "Advanced-study-of-reactive-flow-and-composite-shaping.lingua#r_0AAHWAPNY87MNKFA40SGTAWZ6Y", #materials-engineering "Advanced-study-of-interfaces-and-layered-material-fabrication.lingua#r_7M9KBRVSYMHTGN8K2RW5PESD8W") { r_6D1YTNVD0H9D66A9HA8TETF9KP
+**Read:** Finish [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR)'s available coursework and [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0)'s introductory sequence. Use complete family-specific readings and primary methods for the three studies below.
+
+Study thermal/powder consolidation, reactive-polymer/composite shaping, and interfaces/layered-material fabrication. Each study must connect input material, process, predicted state, measured state and a useful response. Derive the central model, independently verify a limiting case and reserve a changed condition for prediction.
+
+**Deliver:** Three substantial investigations with traceable observations, reproducible calculations, uncertainty and model criticism. Explain equipment, atmosphere, utilities, sampling and usable output in the scope actually investigated. Distinguish your calculations, published measurements and any experiments you performed. If a key source or measurement is missing, state the gap and narrow the conclusion. Finish by comparing what these process families share and what cannot transfer unchanged between them.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Advanced study of thermal and powder processing](Advanced-study-of-thermal-and-powder-processing.lingua#r_34DDK3DP382V7AZ39E3RMJJC7S), [Advanced study of reactive flow and composite shaping](Advanced-study-of-reactive-flow-and-composite-shaping.lingua#r_0AAHWAPNY87MNKFA40SGTAWZ6Y), [Advanced study of interfaces and layered-material fabrication](Advanced-study-of-interfaces-and-layered-material-fabrication.lingua#r_7M9KBRVSYMHTGN8K2RW5PESD8W).
+
+} r_6D1YTNVD0H9D66A9HA8TETF9KP

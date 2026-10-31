@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Density-functional theory, model and convergence (@mat-research-dft: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH", #source "../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0", #source "../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5", #materials-engineering "Verification-is-not-physical-validation.lingua#r_7CBWQHG94MNC93Z0F30TAW0BVH") { r_5P52J4BW4K2W04R8VCR47357CZ
+**Read:** [Atomistic computer modeling of materials — MIT 3.320](../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH), first-principles and DFT lectures/labs; [Quantum Mechanics — David Tong](../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0), electrons in external and periodic potentials; [Verifying precision in density-functional calculations — Bosoni and colleagues](../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5), protocol and recommendations.
+
+A DFT result combines a physical approximation with a numerical calculation. Specify the exchange-correlation treatment, ionic/core description, spin, occupations, boundary conditions and geometry. Then examine basis resolution, reciprocal-space sampling, self-consistency and structural relaxation. A tighter solver tolerance cannot correct an inappropriate model of magnetic order or missing physical interactions.
+
+Convergence is observable dependent. Total energies, energy differences, forces, stresses and response derivatives can converge at different rates. Compare related states with compatible settings and quantify cancellation rather than assuming it. Smearing helps numerical integration but also changes what thermodynamic quantity is reported; follow the code's definitions.
+
+**Work:** Perform the course's small DFT investigations with a documented current implementation. Converge an energy difference and a force separately, examine a coupled change of numerical settings, and recover a curvature-derived quantity independently. State an error tolerance in relation to the scientific question. Preserve full inputs and unsuccessful convergence trials as evidence of the chosen protocol.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Verification is not physical validation](Verification-is-not-physical-validation.lingua#r_7CBWQHG94MNC93Z0F30TAW0BVH).
+
+} r_5P52J4BW4K2W04R8VCR47357CZ

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Bake history and the state after cooling (@gas-bake-history: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #industrial-gases-and-vacuum "Measure-release-with-throughput-and-pressure-rise.lingua#r_2AGM56WN3249B926HE8ECBX3SA") { r_038B620544Y77RGBGHASG5KTEH
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), water/hydrogen treatment sections; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), baked systems and hydrogen reduction; [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D), specimen conditioning.
+
+Heating can accelerate desorption and diffusion, change oxides, alter microstructure and activate or damage a coating. The useful outcome is the state after the complete heating, evacuation, cooling and exposure history. A peak temperature alone does not specify the process.
+
+For spatially uniform time-dependent D and unchanged diffusion physics, the accumulated diffusion time is ∫D[T(t)]dt; dividing by L² gives the corresponding Fourier measure. A desorbing population instead depends on ∫kdes[T(t)]dt. Spatial temperature differences and state changes can invalidate these simple reductions.
+
+**Work:** Compare two hypothetical thermal histories with the same peak temperature but different integrals and gradients. Explain how continued evacuation changes the boundary condition during treatment. Identify evidence needed after cooling and after a later venting event. Distinguish a lower measured gas load from proof that the component retained its mechanical and surface function.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Measure release with throughput and pressure rise](Measure-release-with-throughput-and-pressure-rise.lingua#r_2AGM56WN3249B926HE8ECBX3SA).
+
+} r_038B620544Y77RGBGHASG5KTEH

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Growth changes a contamination inventory (@cm-growth: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW", #clean-manufacturing "Cleaning-disinfection-sterilization-and-preservation.lingua#r_0CKR7RH81CKM2Y33N9X5FAXYB7") { r_3C2YBFMP7PGR2VF917VSAEXJXN
+**Read:** [Microbiology — Parker and colleagues, OpenStax](../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW), chapter 9. Revisit the shared exponential and logarithmic quantities.
+
+An original ideal population model assumes every member doubles at the same fixed interval g, without death, resource limitation or loss. It gives N(t)=N₀2^(t/g). Starting with 100 and using a hypothetical g=20 minutes gives 6400 after two hours. The arithmetic illustrates time dependence; it does not predict a real organism in an unspecified environment.
+
+Transport can introduce or remove organisms while biological processes change the count. Surface attachment and community structure can further change observation and response. A result at receipt may not characterize the same material after storage.
+
+**Work:** Derive the ideal result by repeated doubling and by an exponential expression. Add a finite resource bound conceptually and identify where the unlimited model fails. For a published process, list the environmental and sampling evidence needed to interpret a change over time; no culturing experiment is required for this exercise.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Cleaning, disinfection, sterilization and preservation](Cleaning-disinfection-sterilization-and-preservation.lingua#r_0CKR7RH81CKM2Y33N9X5FAXYB7).
+
+} r_3C2YBFMP7PGR2VF917VSAEXJXN

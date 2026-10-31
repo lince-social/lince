@@ -1,0 +1,13 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Investigate air cleaning, transfer and facility resource use (@cm-facility-studies: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "Defend-an-installed-air-cleaning-system.lingua#r_2H90YHAHWJX9DMFD5KJC3X4FBK", #clean-manufacturing "Defend-a-pressure-network-and-material-transfer-boundary.lingua#r_1FEVBHDVKEDYA9HFMTVJQ6JWAF", #clean-manufacturing "Defend-facility-energy-control-and-recovery-together.lingua#r_3AD6J8HW6RTRP29Q3KB0X2XDCZ") { r_5SCEDM2YYTJ153K9ZPYYR2N8JK
+**Read:** Complete the LBNL guide, relevant DOE chapters, CONTAM theory and full demand-control experiment. Use the door-motion paper for the transfer comparison.
+
+Three investigations combine the same physical foundations in different ways: an air-cleaning system, a pressure and transfer boundary, and a facility's energy/control behavior. Keep the protected function, people and downstream material fate visible in all three.
+
+**Work:** Complete each investigation with an explicit system boundary, reproducible calculations, primary evidence and a criticism that changes the analysis. Distinguish a hypothetical design study, a reconstruction of a published result and an actual measured facility. Where experiments are unavailable, preserve the analytical work and identify what remains untested.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Defend an installed air-cleaning system](Defend-an-installed-air-cleaning-system.lingua#r_2H90YHAHWJX9DMFD5KJC3X4FBK), [Defend a pressure network and material transfer boundary](Defend-a-pressure-network-and-material-transfer-boundary.lingua#r_1FEVBHDVKEDYA9HFMTVJQ6JWAF), [Defend facility energy, control and recovery together](Defend-facility-energy-control-and-recovery-together.lingua#r_3AD6J8HW6RTRP29Q3KB0X2XDCZ).
+
+} r_5SCEDM2YYTJ153K9ZPYYR2N8JK

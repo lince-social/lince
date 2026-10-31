@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Periodic states, bands and effective mass (@mat-band-states: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB", #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN", #source "../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS", #materials-engineering "Two-orbital-bands-and-a-material-model.lingua#r_09MK9EPBDNCPJRF71GSDB50V61") { r_2JRGCTVGF0AKJ0R6EAD1AQ57BX
+**Read:** [Solid State Physics — David Tong](../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB), chapter 2 and the opening of chapter 3; [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), chapters 10 and 12–16; [Electrical, Optical, and Magnetic Properties of Materials — MIT 3.23](../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN), the actual Bloch, nearly-free and tight-binding readings; [Introdução à Física do Estado Sólido — Lucy V. C. Assali](../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS), band and effective-mass slides.
+
+A periodic Hamiltonian admits Bloch states exp(ik·r)u_k(r), with u periodic on the lattice. Crystal momentum is not generally the same as mechanical momentum. Reciprocal cells label equivalent states; band index and wavevector together identify a state within this model.
+
+Nearly-free and tight-binding descriptions start from different useful limits. Bands depend on basis, couplings and symmetry. For a smooth isolated band, group velocity is (1/ℏ)∇_k E and the inverse effective-mass tensor is (1/ℏ²)∂²E/∂k_i∂k_j. Negative electron curvature near a filled-band maximum motivates a hole description.
+
+**Work:** Derive a one-orbital chain dispersion, count its states and compare it with the free-electron result folded into a reciprocal cell. Explain why a fully occupied band does not produce the ordinary net current predicted by treating each electron as an unconstrained classical charge.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Two-orbital bands and a material model](Two-orbital-bands-and-a-material-model.lingua#r_09MK9EPBDNCPJRF71GSDB50V61).
+
+} r_2JRGCTVGF0AKJ0R6EAD1AQ57BX

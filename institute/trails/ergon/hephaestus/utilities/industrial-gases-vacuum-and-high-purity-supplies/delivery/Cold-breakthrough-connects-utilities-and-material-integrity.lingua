@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cold breakthrough connects utilities and material integrity (@gas-cold-breakthrough: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH", #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #industrial-gases-and-vacuum "Pressure-regulation-as-a-force-and-flow-balance.lingua#r_5S7TFR7QYK2Z6RDZEQCTMFQ1RV") { r_02AX796VYG9KT49M0CX7SPZ788
+**Read:** [Cryogenic vaporisation systems — EIGA 133/22](../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH), the full causal and protection discussion; [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), downstream equipment and maintenance context.
+
+The delivery system includes the consequences of a temperature departure. A material that carries the required pressure at one temperature may not retain the required toughness at a much lower one. Follow temperature from vaporiser outlet to the first vulnerable component, including sensor location and transport delay.
+
+A useful analytical chain is disturbance → heat deficit → changing stored thermal energy → outlet state → downstream exposure → response. Include loss of heating utility, demand beyond the investigated range and altered exchanger surfaces as distinct disturbances. A redundant gas source can still share the same failed heater, electrical supply or downstream line.
+
+Treat a protection claim as a timed physical argument. The measurement must detect the relevant condition, the decision and actuator must respond, and the remaining thermal/flow inventory must behave as assumed. A list of installed devices does not establish this sequence.
+
+**Work:** Construct a temperature/demand timeline for one documented arrangement. Compare continuous-service requirements with the consequence of interrupting supply. Use the complete gas-specific design basis to establish settings; the learning calculation should expose dependencies rather than invent operating limits.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Pressure regulation as a force and flow balance](Pressure-regulation-as-a-force-and-flow-balance.lingua#r_5S7TFR7QYK2Z6RDZEQCTMFQ1RV).
+
+} r_02AX796VYG9KT49M0CX7SPZ788

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Frame a research question with a testable contribution (@gas-research-question: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #source "../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM", #source "../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7", #source "../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB", #source "../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F", #industrial-gases-and-vacuum "../../../inquiry/reproducible-computation/research/Reproduce-a-published-result.lingua#r_262594EJP43XMD8STYD24PSHJY") { r_1948KS99V8C25NG0WYBJHGC5AR
+**Read in full:** Select at least two relevant primary studies already linked here, such as [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D), [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM), [Thermal performance of cryogenic storage tanks — Aasen and colleagues](../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7), [A constant-pressure flowmeter — Eckel and colleagues](../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB) or [Glancing collisions in vacuum metrology — Eckel and colleagues](../sources/Glancing-Collisions-Eckel.lingua#r_6PJDEW50NP5XM4WPHKTQ8PRS5F). Read the cited methods needed to understand their assumptions.
+
+State what is known, what remains uncertain and why resolving it matters for a gas service. Possible directions include distinguishing wall release from leakage, improving a mixture inference, validating a transient storage model or comparing recovery strategies under measured conditions.
+
+Survey competing approaches and retain contrary evidence. Define an observable result that would change your conclusion, not merely a way to generate another curve. Match the contribution to available methods and access; a rigorous theoretical or computational contribution should identify its experimental limits.
+
+**Work:** Write a question, literature comparison, proposed contribution and discriminating test. Identify the strongest alternative explanation. Explain the quantity, boundary and uncertainty needed to judge success, and revise the scope if the necessary evidence is unavailable.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Reconstruct and critique a published computational result](../../../inquiry/reproducible-computation/research/Reproduce-a-published-result.lingua#r_262594EJP43XMD8STYD24PSHJY).
+
+} r_1948KS99V8C25NG0WYBJHGC5AR

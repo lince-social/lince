@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Water quality begins with the service it must deliver (@wu-industrial-entry: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #source "../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK", #source "../sources/Usos-Consuntivos-da-Agua-ANA.lingua#r_74SR4SEK71SX7RTST2NB6Z5YJG", #water-and-sanitation "Separate-streams-before-combining-their-treatment-problems.lingua#r_20YW03N9TF3TSN1PE5F6NQ0V8N") { r_1EHYC601AFFNZ9FBF8J1Z9EPC8
+**Read:** Work [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R) as a whole manual during this section. Begin [Guidelines for Water Reuse — EPA and USAID, 2012](../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK), chapters 1–3, then follow the treatment and case material needed by a selected application. Read [Manual de Usos Consuntivos da Água no Brasil — ANA, segunda edição](../sources/Usos-Consuntivos-da-Agua-ANA.lingua#r_74SR4SEK71SX7RTST2NB6Z5YJG) for the Portuguese distinction between retirada, consumo and returns to the water system.
+
+A factory may need drinking water, cooling water, boiler feed, washing water, product-contact water and high-purity process water. Their requirements concern different equipment, products and exposures. A single label such as treated or recycled does not specify suitability. Follow flow, temperature, pressure, composition, variability and interruption tolerance to the actual point of use.
+
+**Work:** Draw a hypothetical facility with at least three water uses and their returns. Build a quality-and-service table: required property, reason, measurement, responsible decision and consequence of failure. Separate an equipment requirement, a product requirement and a health/environmental requirement. Identify which requirements are known from an authoritative source and which still need investigation.
+
+Explain the same facility to a beginner using the earlier tap/drain and mass-balance ideas. Then add upstream treatment, power, chemicals, instrumentation and the receiving environment. A proposed reuse connection must survive this whole account, including shutdown and restart, rather than merely matching an average concentration.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Separate streams before combining their treatment problems](Separate-streams-before-combining-their-treatment-problems.lingua#r_20YW03N9TF3TSN1PE5F6NQ0V8N).
+
+} r_1EHYC601AFFNZ9FBF8J1Z9EPC8

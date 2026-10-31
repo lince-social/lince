@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A leak rate needs a gas, boundary and state (@gas-leak-basis: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Leak-detection-geometry-and-captured-flow.lingua#r_4KW5EBXKM1ZKWZN91KYBYTCWKC") { r_7D768JCSZ5R20YAYF2ZR1YKT46
+**Read:** [Leak calibration — Ehrlich and Tison, NIST SP 250-38](../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7), theory and unit appendices; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), complete leak-detection chapter.
+
+A leak claim concerns transfer through a defined boundary under stated conditions. Specify gas, pressure difference, temperature, direction and time. Molar flow, mass flow and pressure–volume throughput are related but distinct quantities; throughput Q=ṅRT needs the temperature at which it is expressed.
+
+A helium tracer observation cannot be converted into an arbitrary service-gas leak by one universal multiplier. Molecular, viscous, transitional and permeation mechanisms have different species and pressure dependencies. The state under test must be related physically to the state of intended use.
+
+Distinguish a real opening from permeation through material, trapped gas release and outgassing. Each can contribute to gas entering a vacuum system, but their time histories and responses to a tracer differ. Earlier surface Records supply the competing mechanisms.
+
+**Work:** Rewrite an ambiguous “leak below 10⁻⁹” statement with a complete quantity and test boundary. Convert a hypothetical 10⁻⁹ Pa·m³/s at 300 K to approximately 4.00908×10⁻¹³ mol/s. Identify which gas/state information is still needed to interpret the physical defect.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Leak-detection geometry and captured flow](Leak-detection-geometry-and-captured-flow.lingua#r_4KW5EBXKM1ZKWZN91KYBYTCWKC).
+
+} r_7D768JCSZ5R20YAYF2ZR1YKT46

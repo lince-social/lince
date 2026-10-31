@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pressure-swing separation as a sequence of states (@gas-psa-cycle: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #source "../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #industrial-gases-and-vacuum "Cyclic-steady-state-is-a-periodic-inventory.lingua#r_56ZNENYBHE460AWFTBGBK12JW9") { r_0P7X3W2R2KVB8MZYJNXC2F8ARA
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), week 6; [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH), section 4.3; [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM) and [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H), cycle definitions.
+
+A pressure-swing process coordinates adsorption, depressurization, purge, pressure equalization and repressurization. Several beds and buffers can maintain useful output while individual beds change state. A cycle is defined by connections, flow directions, controls and termination conditions, not just two pressure numbers.
+
+A carbon molecular sieve can exploit different uptake rates to enrich nitrogen. A suitable zeolite can preferentially retain nitrogen and yield an oxygen-enriched gas. These examples use different material behavior; saying only that one molecule is smaller does not explain every industrial adsorbent.
+
+**Work:** Draw a hypothetical two-bed cycle with each constituent stream and buffer inventory. Explain the purpose of each connection. Compare kinetic and equilibrium selectivity under short and long contact times. Track where impurities go during regeneration and how a valve or timing deviation can change both product composition and recovery.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Cyclic steady state is a periodic inventory](Cyclic-steady-state-is-a-periodic-inventory.lingua#r_56ZNENYBHE460AWFTBGBK12JW9).
+
+} r_0P7X3W2R2KVB8MZYJNXC2F8ARA

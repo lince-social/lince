@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of corrosion and environment-assisted damage (@mat-corrosion-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5", #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #source "../sources/Hydrogen-Embrittlement-Bhadeshia.lingua#r_1VT41JGPGJ3NGXT47VKG1DFCT4", #materials-engineering "Defend-the-degradation-and-service-evidence-account.lingua#r_3FBQS7VXVJBP1D8TGNGYGWR8DJ") { r_3Q6JGQDMQP0ZN4MMMK49DJBM9D
+**Read:** [Corrosion current — Derek H. Lister](../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5), [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6) and [Prevention of hydrogen embrittlement in steels — Bhadeshia](../sources/Hydrogen-Embrittlement-Bhadeshia.lingua#r_1VT41JGPGJ3NGXT47VKG1DFCT4) in full; use complete primary methods for the chosen actual material and exposure.
+
+Reconstruct polarization/transport and independent loss or cracking evidence for a specified microstructure and loading history. Independently reproduce the mixed-potential calculation, then derive any additional model needed for your case rather than extending its two branches by analogy. Compare kinetic, transport, passivation or hydrogen explanations using discriminating observations.
+
+**Deliver:** Balanced reactions, current/material balances, justified parameter inference, uncertainty and a prediction for a changed area ratio, environment, surface state or loading condition. Analyze a test-to-service mismatch using Turnbull's critique. Defend how an intervention changes the mechanism and what further evidence is needed before claiming a useful service improvement. Revise the investigation after a substantive alternative interpretation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the degradation and service-evidence account](Defend-the-degradation-and-service-evidence-account.lingua#r_3FBQS7VXVJBP1D8TGNGYGWR8DJ).
+
+} r_3Q6JGQDMQP0ZN4MMMK49DJBM9D

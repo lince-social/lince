@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Creeping flow, reversibility and a translating sphere (@fd-stokes: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "Thin-gaps-lubrication-and-the-pressure-that-carries-load.lingua#r_5ZAVCSV2QTPX1DATNVCF9EHJ9V") { r_2NCJ64J8EHE6G7NWVKGK5DC3ZA
+Creeping flow, reversibility and a translating sphere (@fd-stokes: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP", #fluid-dynamics "Thin-gaps-lubrication-and-the-pressure-that-carries-load.lingua#r_5ZAVCSV2QTPX1DATNVCF9EHJ9V", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/particles/Drag-on-an-isolated-sphere-and-its-assumptions.lingua#r_7F95EPAQJN06GC3PYDD277HA5C") { r_2NCJ64J8EHE6G7NWVKGK5DC3ZA
 **Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 2 sphere flow and Oseen correction; [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 3 Stokes flow and swimming; [Fluid mechanics films and illustrated notes — NCFMF](../sources/NCFMF-Fluid-Mechanics-Films.lingua#r_0RT6J26HJJ83MX74030JPEHQVP), low-Reynolds-number flow and accompanying notes.
 
 When inertia is negligible on the relevant length and time scales, the incompressible equations reduce to −∇p+μ∇²u=0 and ∇·u=0. Their linearity permits superposition for fixed geometry and linear boundary conditions. Reversing the imposed motion reverses velocity and hydrodynamic force in this ideal limit; diffusion, boundaries that change their configuration and non-Newtonian memory can change the wider problem.
@@ -12,4 +12,7 @@ Follow the complete sphere solution and reciprocal-theorem argument in the readi
 **Continue:** [Thin gaps, lubrication and the pressure that carries load](Thin-gaps-lubrication-and-the-pressure-that-carries-load.lingua#r_5ZAVCSV2QTPX1DATNVCF9EHJ9V).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in clean manufacturing:** [Drag on an isolated sphere and its assumptions](../../../production/clean-manufacturing-and-contamination-control/particles/Drag-on-an-isolated-sphere-and-its-assumptions.lingua#r_7F95EPAQJN06GC3PYDD277HA5C).
+
 } r_2NCJ64J8EHE6G7NWVKGK5DC3ZA

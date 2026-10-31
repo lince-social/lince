@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Challenge tests, integrity and the detection limit (@wu-membrane-integrity: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Removal-inactivation-and-the-claim-made-by-a-barrier.lingua#r_0DR2H8H9H6272F8KKRG1NAR649") { r_5J0DMRS8RAJAV2RVRCH7XPVHNW
+**Read:** [EPA membrane manual](../sources/Membrane-Filtration-Guidance-EPA.lingua#r_5AA7DKNZPGKZ8KZKCFJ2Q8A8ZY), chapters 3–5. Contrast demonstrating removal by a product with detecting an integrity defect in a working unit. The manual's specific regulatory credits belong to its named rule and edition.
+
+An original measurement example illustrates the limitation: a challenge concentration is 100,000 counts/L and the reporting limit at the outlet is 10 counts/L. A result reported below that limit supports a reduction greater than four logs under the sampling/test assumptions; it does not measure six logs or establish zero passage. If the sampled volume, recovery or analytical method changes, the claim changes too.
+
+For a second original example, mix 0.01% untreated bypass with a treated stream whose measured fraction remaining is 10⁻⁵. The combined fraction is 0.0001 + 0.9999×0.00001 = 0.000109999, about 3.959 logs of reduction. Tiny bypass can dominate an otherwise strong barrier. This arithmetic is not a validated integrity-test sensitivity.
+
+**Work:** Critique a published or hypothetical test report: identify challenge conditions, sample recovery, blanks, replicates, detection limits, pressure conditions and the relationship between a detected defect and passage. Explain what an indirect continuous signal can and cannot establish between direct tests. Produce a response sequence for an invalid or failed test that includes product disposition and evidence for return to service; do not replace missing evidence with a normal-looking trend.
+
+**Continue:** [Removal, inactivation and the claim made by a barrier](Removal-inactivation-and-the-claim-made-by-a-barrier.lingua#r_0DR2H8H9H6272F8KKRG1NAR649).
+} r_5J0DMRS8RAJAV2RVRCH7XPVHNW

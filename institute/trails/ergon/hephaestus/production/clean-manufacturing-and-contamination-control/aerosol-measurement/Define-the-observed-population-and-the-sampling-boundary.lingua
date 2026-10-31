@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Define the observed population and the sampling boundary (@cm-aerosol-target: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "Sample-volume-has-a-location-and-a-gas-state.lingua#r_036ZGZ7EMDA0G4XR0BB2J28917") { r_1YX75Q8RYV60TB8ZPFD0TK10VC
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), sections 21.2–21.4. Revisit [Begin with a question and specify the measurand](../../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6), [A specimen, a sampling target, and a result about a population](../../../inquiry/metrology/foundations/Sampling-and-representativeness.lingua#r_0F0VEC42GPQPRZM0S7MXF7GAEH) and [Air samples and surface samples have different denominators](../foundations/Air-samples-and-surface-samples-have-different-denominators.lingua#r_54C0X26G9K41P87TQDZ279SXKN).
+
+Specify the particle population, size convention, location, time interval and gas conditions. A local airborne count, a surface deposition rate and the number of defects on completed parts are different measurands. Connecting them requires transport and process evidence.
+
+Represent the source population by number concentration per logarithmic diameter interval, n(x,t), with x = ln(d/d₀) and a stated reference diameter d₀. A schematic expected count is λ = ∫ Q(t)∫ n(x,t)A(x,t)P(x,t)η(x,t) dx dt + λ_b. Here Q is inlet volume flow, A is aspiration concentration ratio, P is downstream penetration, η is detection probability, and λ_b is expected background. This factorization assumes those stages can be represented conditionally without unmodelled particle transformation or duplication.
+
+Aspiration can enrich a sampled population, so A is not always bounded by one. Penetration and detection probabilities are bounded by one under the stated single-particle interpretation. Size migration or fragmentation requires a response kernel rather than one scalar multiplier.
+
+**Work:** Reduce the model to a stationary single-size sample and identify which factors a calibration actually includes. Then draw two different source populations producing the same λ. Explain what additional observation would distinguish them. Define a measured operating state before describing an entire room or production period as characterized.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Sample volume has a location and a gas state](Sample-volume-has-a-location-and-a-gas-state.lingua#r_036ZGZ7EMDA0G4XR0BB2J28917).
+
+} r_1YX75Q8RYV60TB8ZPFD0TK10VC

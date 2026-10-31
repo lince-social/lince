@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Pressure differences act across specific flow paths (@cm-pressure-paths: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Solve-room-pressures-together-with-the-flow-network.lingua#r_607YQN6PMG03XAQPK8W65S7G3V") { r_5CDW9ZSGQF78AAPE12679GEDR2
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), airflow paths and chapter 8.3; revisit the earlier pressure-reference Record.
+
+A room pressure is meaningful relative to a specified point and elevation. A flow path responds to the pressure difference along it, which may include fan, hydrostatic and wind terms. A sensor connected to an unsuitable reference can report a stable number while another boundary reverses.
+
+For an isothermal constant-density teaching model, Q=Cq sign(Δp)|Δp|ⁿ, where Cq has units m³ s⁻¹ Pa⁻ⁿ. A mass-flow coefficient has different units and may need density corrections. Empirical behavior near zero pressure and changing flow regimes needs explicit treatment.
+
+**Work:** Use hypothetical Cq=0.01 m³ s⁻¹ Pa⁻½ to compare Δp=4, 0 and −4 Pa. Draw the reference sides of a pressure measurement. Explain how fitting a coefficient at one state differs from establishing its validity over temperature, opening and flow changes.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Solve room pressures together with the flow network](Solve-room-pressures-together-with-the-flow-network.lingua#r_607YQN6PMG03XAQPK8W65S7G3V).
+
+} r_5CDW9ZSGQF78AAPE12679GEDR2

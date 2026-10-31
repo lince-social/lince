@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Crystal plasticity, slip and microstructural resistance (@mat-plastic-mechanisms: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #materials-engineering "../../../materials/metals-and-metallurgical-production/structure/Dislocations-slip-twinning-and-crystal-response.lingua#r_20235H2JPMBC98V0BGH00ZTMHM") { r_04W521JDJQHFVN8PRV301MXBQH
+**Read:** [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Mechanisms of Plasticity in full; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 3.7 and 3.12; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Yield and Plastic Flow and Dislocation Basis of Yield and Creep. Continue through the shared dislocation and strengthening Records.
+
+Macroscopic plastic strain records many local rearrangements. In a crystal, resolved shear depends on slip-system orientation and the applied stress tensor. A critical resolved shear stress can depend on obstacles, temperature and rate; changing the specimen axis can change the active systems without changing composition.
+
+Distinguish a dislocation's motion, creation, interaction and recovery from a continuum flow rule. A measured hardening slope can reflect several evolving populations. Twinning, transformation and grain-boundary mechanisms require their own kinematics and evidence.
+
+**Work:** Derive the Schmid projection for a uniaxial example and compare two crystal orientations. Connect a defect observation with a measured plastic response. Explain why one single-crystal slip rule is not automatically a complete polycrystal constitutive law.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect crystal deformation mechanisms with measured material response](../../../materials/metals-and-metallurgical-production/structure/Dislocations-slip-twinning-and-crystal-response.lingua#r_20235H2JPMBC98V0BGH00ZTMHM).
+
+} r_04W521JDJQHFVN8PRV301MXBQH

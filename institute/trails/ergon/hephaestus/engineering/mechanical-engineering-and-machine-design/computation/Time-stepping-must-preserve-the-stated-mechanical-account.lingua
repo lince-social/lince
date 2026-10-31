@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Time stepping must preserve the stated mechanical account (@mech-time-stepping: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #mechanical-engineering "An-inspectable-oscillator-response-and-energy-account.lingua#r_0S7WXXT95F193YPM09Z39GMKPJ") { r_6353VA4JT9P63EM1CV7PHS3FG0
+**Study:** [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), numerical initial-value methods, and the preceding energy and vibration derivations. Use [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3)'s oscillator as a model whose independent solution is available.
+
+A time discretization approximates a declared differential model; it does not supply missing physics. For position x and velocity v, explicit Euler advances x using the old velocity and v using the old force. In an undamped oscillator it increases energy every nonzero step, even though the exact model conserves energy. Smaller steps reduce finite-time error but do not turn that method into an exact conservation law.
+
+The implicit midpoint method uses the average of old and new x and v in the force balance. For a linear oscillator, solve its two simultaneous equations rather than iterating without a stopping criterion. Multiplying the discrete force equation by the midpoint velocity gives an exact discrete work–energy identity: E_new − E_old = h F_mid v_mid − h c v_mid², apart from arithmetic rounding.
+
+This identity is valuable but insufficient alone. For c = 0 the method preserves the quadratic energy while shifting the oscillation frequency: its step angle is 2 atan(ω_n h/2). A very large step can conserve energy and misrepresent the observed timing. Step refinement must examine phase and state error as well as energy.
+
+**Work:** Derive both updates and compare them with an exact undamped trajectory. Halve the step at fixed final time at least twice; inspect error order and phase. For a time-varying force, use the same declared force sample in the update and discrete work account. A discontinuous contact event needs event handling or a resolved force model, not an unexplained large average step.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [An inspectable oscillator response and energy account](An-inspectable-oscillator-response-and-energy-account.lingua#r_0S7WXXT95F193YPM09Z39GMKPJ).
+
+} r_6353VA4JT9P63EM1CV7PHS3FG0

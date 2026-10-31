@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Real leaks, trapped pockets and virtual leaks (@gas-virtual-leak: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD", #industrial-gases-and-vacuum "../../../engineering/mechanical-engineering-and-machine-design/elements/Seals-leakage-friction-and-the-condition-of-surfaces.lingua#r_5TC8MG4GQKQ1YEVSNG6G1EV2Y5") { r_123A56FMSS9PT28W9VYPDG7GT1
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), leak definitions and vacuum components; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), sources and accumulation; [Surface finishing and vacuum coatings — Mauro Taborelli](../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD), cleaning and design access.
+
+A real leak transfers matter across the intended enclosing boundary. A trapped pocket inside that boundary can release its finite inventory slowly through a narrow connection, producing a virtual leak. Blind holes, overlapping interfaces and incompletely vented cavities can create this behavior.
+
+If a pocket of volume Vp is connected by constant molecular conductance C to a much lower-pressure chamber, its pressure decays as pp(t)=pp(0)exp(−Ct/Vp) in the fixed-temperature ideal model. The chamber sees a declining load. If the chamber pressure is not negligible, solve the coupled volumes instead.
+
+**Work:** Derive the finite-pocket release and integrated amount. Compare its pressure trace with a constant external leak and with surface desorption. Explain why one fitted decay curve cannot always distinguish them. Identify a geometry or tracer observation that changes the evidence, including the response time of the measurement path.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Seals, leakage, friction and the condition of surfaces](../../../engineering/mechanical-engineering-and-machine-design/elements/Seals-leakage-friction-and-the-condition-of-surfaces.lingua#r_5TC8MG4GQKQ1YEVSNG6G1EV2Y5).
+
+} r_123A56FMSS9PT28W9VYPDG7GT1

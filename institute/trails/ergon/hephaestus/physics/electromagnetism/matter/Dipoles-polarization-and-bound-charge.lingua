@@ -1,6 +1,6 @@
 Import "../Electromagnetism.lingua"
 
-Dipoles, polarization and bound charge (@em-polarization: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #electromagnetism "Dielectric-interfaces-normal-flux-and-tangential-field.lingua#r_23Y84ERRGYDWK5R8R25SKX93P5") { r_0ZFQN93KF28Y07MHTSCDABZ443
+Dipoles, polarization and bound charge (@em-polarization: 0, is #chapter, #part-of @electromagnetism, #source "../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1", #source "../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA", #electromagnetism "Dielectric-interfaces-normal-flux-and-tangential-field.lingua#r_23Y84ERRGYDWK5R8R25SKX93P5", #materials-engineering "Drude-Lorentz-relaxation-and-macroscopic-response.lingua#r_084K320NPDJ1J0AX7D3K207X50") { r_0ZFQN93KF28Y07MHTSCDABZ443
 **Read:** [Electromagnetism — David Tong](../sources/Electromagnetism-Tong.lingua#r_278NEA0Z85RJZSPXQ8G55E3SR1), electric fields in matter; [Electromagnetics Volume 1 — Steven W. Ellingson](../sources/Electromagnetics-Volume-1-Ellingson.lingua#r_30KS80JAJY91W0FGZMASQW9DJA), dielectric polarization and flux density.
 
 Polarization P is dipole moment per volume after a chosen averaging procedure. Its divergence represents bound volume charge, ρ_bound = −∇·P, and its jump at a surface contributes P·n to bound surface charge in the usual outward-normal convention. Bound charge is real charge within matter; the label separates its modelled response from the free-charge bookkeeping.
@@ -12,4 +12,6 @@ Work a uniformly polarized sphere or slab, including both volume and surface con
 **Continue:** [Dielectric interfaces and field components](Dielectric-interfaces-normal-flux-and-tangential-field.lingua#r_23Y84ERRGYDWK5R8R25SKX93P5).
 
 **Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+**Continue in materials engineering:** [Drude, Lorentz and relaxation models](Drude-Lorentz-relaxation-and-macroscopic-response.lingua#r_084K320NPDJ1J0AX7D3K207X50).
+
 } r_0ZFQN93KF28Y07MHTSCDABZ443

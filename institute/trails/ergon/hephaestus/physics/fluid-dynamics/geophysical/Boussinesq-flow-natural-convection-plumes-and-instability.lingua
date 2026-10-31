@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Boussinesq flow, natural convection, plumes and instability (@fd-buoyant: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Rotating-flow-Rossby-number-and-geostrophic-balance.lingua#r_6X74505055WATA2XZ7CD18HQYZ") { r_3D346A9GVA8D8T39K4KHG0X3W0
+Boussinesq flow, natural convection, plumes and instability (@fd-buoyant: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #fluid-dynamics "Rotating-flow-Rossby-number-and-geostrophic-balance.lingua#r_6X74505055WATA2XZ7CD18HQYZ", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/facilities/Buoyancy-and-wind-can-compete-with-mechanical-pressure.lingua#r_44PV55ESMT6BHNTS2DT5XSA4JS") { r_3D346A9GVA8D8T39K4KHG0X3W0
 **Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 5 Rayleigh–Bénard convection and Boussinesq approximation; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 4 buoyant plume and thermal approximations; [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), coupled differential energy and momentum equations.
 
 The Boussinesq approximation retains small density departures in buoyancy while treating density as constant in selected inertial and continuity terms. Derive the approximation from a small relative density change and declared scales. A low Mach number by itself does not justify it, and a large temperature or composition range can defeat it.
@@ -12,4 +12,7 @@ Compare a heated horizontal layer, an isolated buoyant plume and a stably strati
 **Continue:** [Rotating flow, Rossby number and geostrophic balance](Rotating-flow-Rossby-number-and-geostrophic-balance.lingua#r_6X74505055WATA2XZ7CD18HQYZ).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in clean manufacturing:** [Buoyancy and wind can compete with mechanical pressure](../../../production/clean-manufacturing-and-contamination-control/facilities/Buoyancy-and-wind-can-compete-with-mechanical-pressure.lingua#r_44PV55ESMT6BHNTS2DT5XSA4JS).
+
 } r_3D346A9GVA8D8T39K4KHG0X3W0

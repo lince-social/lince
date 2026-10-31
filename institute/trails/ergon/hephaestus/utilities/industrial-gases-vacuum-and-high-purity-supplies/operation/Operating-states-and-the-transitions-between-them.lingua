@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Operating states and the transitions between them (@gas-operating-states: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "../../../engineering/mechanical-engineering-and-machine-design/service/Human-access-stored-energy-and-isolation.lingua#r_0FD90Y234EJ4QAT78JTCYQNTEE") { r_2SE568V5AA9BCFHGRFB0VCTB5R
+**Read:** [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), operation/training chapters; [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), operation and inspection; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), the chapters appropriate to the selected pumps.
+
+Idle, warm standby, cooldown, production, regeneration, maintenance and recovery are physically different states. A boundary that contains pure gas during steady use may contain air after access. A warm line, cold receiver and stopped pump may coexist; naming the whole installation “off” hides those differences.
+
+For every state, describe allowed material connections, energy sources, inventories and the observations that establish the state. A transition has a duration, intermediate states and possible interruptions. The stable endpoint does not establish that the route to it is acceptable.
+
+**Work:** Draw a state diagram for a published system and attach mass/energy accounts to two transitions. Interrupt a transition halfway in the model. Identify the retained inventory and evidence needed to determine the resulting state without assuming that the previous command completed.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Human access, stored energy and isolation](../../../engineering/mechanical-engineering-and-machine-design/service/Human-access-stored-energy-and-isolation.lingua#r_0FD90Y234EJ4QAT78JTCYQNTEE).
+
+} r_2SE568V5AA9BCFHGRFB0VCTB5R

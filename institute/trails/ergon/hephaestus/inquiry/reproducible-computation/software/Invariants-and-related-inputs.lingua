@@ -1,6 +1,6 @@
 Import "../Reproducible-computation.lingua"
 
-Use conservation, symmetries, and related inputs as additional oracles (@rc-invariants: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Failures-and-debugging.lingua#r_70541T2GJ91TBBSC8B6NFM2Z9R") { r_04TRFA8ARZ7JK0ANVQZYDKMKB3
+Use conservation, symmetries, and related inputs as additional oracles (@rc-invariants: 0, is #chapter, #part-of @reproducible-computation, #source "../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66", #source "../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ", #reproducible-computation "Failures-and-debugging.lingua#r_70541T2GJ91TBBSC8B6NFM2Z9R", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/computation/Verify-the-column-with-independent-solutions.lingua#r_6PRTB02JPZSP5QAXTAMTDMHYK6") { r_04TRFA8ARZ7JK0ANVQZYDKMKB3
 **Read:** [The Good Research Code Handbook — Mineault and community](../sources/Good-Research-Code.lingua#r_771ZMSHAY1TCSTFCHPT9KZRA66), testing and numerical checks; [Python tutorial and standard-library references — Python documentation](../sources/Python-Reference.lingua#r_53J5SVX9CRECPQJFX3EAD8NRCZ), unittest and exact-number types.
 
 Some useful expectations concern relationships rather than a single known answer. For the ideal dry balance, dry feed equals product plus tails, and input component equals recovered component plus tail component. Fractions lie in their defined ranges when denominators are positive. These relationships constrain a broad set of examples but do not uniquely determine every output.
@@ -16,4 +16,7 @@ In later domains, identify invariants from the governing model: dimensional cons
 **Continue:** [Reduce a failure until its cause can be explained](Failures-and-debugging.lingua#r_70541T2GJ91TBBSC8B6NFM2Z9R).
 
 **Return:** [Reproducible computational work](../Reproducible-computation.lingua#r_78FWWJDCV0ZGG7VYSPRCWN56DQ).
+
+**Continue in clean manufacturing:** [Verify the column with independent solutions](../../../production/clean-manufacturing-and-contamination-control/computation/Verify-the-column-with-independent-solutions.lingua#r_6PRTB02JPZSP5QAXTAMTDMHYK6).
+
 } r_04TRFA8ARZ7JK0ANVQZYDKMKB3

@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Commissioning, acceptance and the evidence of an operating service (@wu-commissioning: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD", #source "../sources/Water-for-Pharmaceutical-Use-WHO.lingua#r_2MQQ5SM683CVV31MHADK5MAPTA", #water-and-sanitation "Assets-fail-through-materials-work-and-time.lingua#r_4XPVB4ZEJ2T8XRV3KVM16RFYPH") { r_6W0HRDKRCPBEVDR597P30KC9NB
+**Read:** [Water safety plan manual — WHO and IWA, second edition](../sources/Water-Safety-Plan-Manual-WHO.lingua#r_3JMZKS3FG80FKX9YRQPEJMA4VD) and [Water for pharmaceutical use — WHO TRS 1033, Annex 3](../sources/Water-for-Pharmaceutical-Use-WHO.lingua#r_2MQQ5SM683CVV31MHADK5MAPTA) for contrasting service and qualification accounts; use the applicable treatment manuals for the specific performance claim.
+
+A calculation describes a model. Commissioning examines the installed arrangement, connections, instrument behavior, operating sequences and demonstrated performance. Acceptance asks whether declared requirements have evidence under the relevant conditions. Calibration, verification, validation and acceptance are related activities with different questions; passing one does not silently answer the others.
+
+**Work:** Choose three claims from your service: a flow capacity, a quality outcome and recovery after an interruption. For each, state the boundary, test conditions, observations, uncertainty, acceptance rationale and remaining untested range. Trace the installed arrangement to its drawing, identify actual flow direction and show how a failed test changes the next decision.
+
+Use a safe educational apparatus or clearly labelled simulation for work you can perform. Keep proposed field trials separate from observed results. Deeper study includes sampling representativeness, simultaneous unit loading, seasonal limitations, qualification of changed equipment and the evidence required before returning a real service to use. A completed educational calculation is not a facility acceptance decision.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Assets fail through materials, work and time](Assets-fail-through-materials-work-and-time.lingua#r_4XPVB4ZEJ2T8XRV3KVM16RFYPH).
+
+} r_6W0HRDKRCPBEVDR597P30KC9NB

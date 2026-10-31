@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Match monitoring to the timescale of an excursion (@cm-monitoring-dynamics: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "Evaluate-the-whole-family-of-monitoring-rules.lingua#r_2E2DWW16VM0B273NQFHEFSMD3X") { r_67CGMMRJ4X995AESQYE70CTQZJ
+**Read:** [Changing signals — response correction, sampling, and dependent noise](../../../inquiry/metrology/applications/Dynamic-measurements-and-time-series.lingua#r_7VY283E2ZMNS2JTQ9Y7DNBW6KX); revisit the aerosol sampling-chain and facility sensor studies.
+
+A monitor observes through transport delay, instrument response, averaging and scheduling. A brief local excursion can be attenuated, delayed or missed. A stored interval mean and an instantaneous peak are different measurands.
+
+For an ideal first-order sensor of time constant τ initially at zero, a unit step gives output 1−exp(−t/τ). If the true signal returns to zero after duration d, the peak response at that instant is 1−exp(−d/τ). At d = 0.2τ it is about 0.181269. A correct steady calibration does not remove that temporal limitation.
+
+With ideal instantaneous samples spaced Δ apart and an event of duration d ≤ Δ starting uniformly relative to the schedule, its chance of intersecting a sample is d/Δ. Continuous collection, finite integration windows and event-triggered sampling have different models.
+
+**Work:** Combine a hypothetical event, sampling-line delay, sensor response and averaging window. Compare what the monitor reports with the product's exposure. Choose timing and locations for their ability to observe the stated failure, and identify the excursions that remain outside the evidence.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Evaluate the whole family of monitoring rules](Evaluate-the-whole-family-of-monitoring-rules.lingua#r_2E2DWW16VM0B273NQFHEFSMD3X).
+
+} r_67CGMMRJ4X995AESQYE70CTQZJ

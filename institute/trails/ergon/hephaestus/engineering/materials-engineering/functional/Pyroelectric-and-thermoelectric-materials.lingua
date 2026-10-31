@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Pyroelectric and thermoelectric materials (@mat-thermal-coupling: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #source "../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #materials-engineering "Optical-constants-interfaces-and-energy-balance.lingua#r_75PXXNPMNVMM48T0BZ03K5BTMT") { r_0GEX1Y9047ZM1RRK5NZMQW4HG9
+**Read:** [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), Pyroelectricity in full; [Nano-to-Macro Transport Processes — MIT 2.57](../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), thermoelectric transport and applications. Follow the shared coupled-flux Record later in this section for the thermodynamic account.
+
+A pyroelectric current arises from changing polarization with temperature under specified electrical and mechanical conditions. For a uniform area A, I=A p dT/dt is a simple idealization with p=dP/dT. Thermal expansion coupled through piezoelectricity can add a secondary contribution. Leakage and thermal gradients can complicate a measurement.
+
+Thermoelectric response instead couples charge and heat transport. Define the Seebeck voltage sign and open-circuit condition before using S, and keep Peltier heat distinct from Joule heating. The figure ZT=S²σT/κ uses compatible conditions; a large value is not by itself the efficiency of a complete device with contacts and heat exchangers.
+
+**Work:** Predict the sign and temporal response of a heating/cooling experiment for each mechanism. Derive the ideal relations with the chosen conventions and explain how a controlled experiment could separate polarization, contact voltage and thermoelectric effects.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Optical constants, interfaces and energy balance](Optical-constants-interfaces-and-energy-balance.lingua#r_75PXXNPMNVMM48T0BZ03K5BTMT).
+
+} r_0GEX1Y9047ZM1RRK5NZMQW4HG9

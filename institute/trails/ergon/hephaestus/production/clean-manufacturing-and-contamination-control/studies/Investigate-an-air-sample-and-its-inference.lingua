@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Investigate an air sample and its inference (@cm-study-air: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "Explain-the-foundations-before-designing-the-facility.lingua#r_4Q8V901XVQ8PTKRGG5Y26MVY5N") { r_5CM0B4092TJX07AJQJMSTT22KV
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP) in full, especially flow, size and count calibration; [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), collection and retention. Keep the author-proof status of the calibration chapter explicit.
+
+Start with an instrument response and reconstruct the reported concentration. Include size convention, sample volume, sampling path, blank, recovery, counting variability and the operating state. Compare two methods that observe different properties of the same hypothetical aerosol.
+
+**Work:** Build a small synthetic dataset with a stated generating model. Recover its concentration, examine zero-count outcomes and independently check your uncertainty calculation. Then alter one assumption—bursts, losses, background or a changed particle response—and show how the inference changes. Do not claim validation against a real process from synthetic agreement alone.
+
+Explain which additional measurements would connect the air sample to a particular exposed product surface. Keep air quality and surface state as separate conclusions until that link is supported.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Explain the foundations before designing the facility](Explain-the-foundations-before-designing-the-facility.lingua#r_4Q8V901XVQ8PTKRGG5Y26MVY5N).
+
+} r_5CM0B4092TJX07AJQJMSTT22KV

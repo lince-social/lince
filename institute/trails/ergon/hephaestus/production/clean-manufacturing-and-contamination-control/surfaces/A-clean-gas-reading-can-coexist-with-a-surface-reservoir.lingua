@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A clean gas reading can coexist with a surface reservoir (@cm-surface-reservoir: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "Compare-surface-amount-state-and-useful-function.lingua#r_2AXS2TGNMGTY2T6D13B9YHA0SC") { r_3KCTA0EGB3CSSVN2FZSBMB837Z
+**Read:** The full coupled-balance discussion in [Readsorption couples the surface and the gas](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Readsorption-couples-the-surface-and-the-gas.lingua#r_57PQVHCDK36WXXH22EVJ4AGQSW) and its Chiggiato source.
+
+In a closed low-coverage two-reservoir model with no feed or removal, total amount N=ng+ns is constant. For positive exchange rates ka and kd, the gas equilibrium is ng,∞=N kd/(ka+kd), with relaxation rate ka+kd. Much of the material can reside on the surface while gas concentration is low. Changing temperature or opening the system can expose that stored inventory.
+
+For hypothetical N=100 units, ka=0.09 s⁻¹ and kd=0.01 s⁻¹, equilibrium holds 10 units in gas and 90 on the surface. This is a linear teaching model with no site saturation, not a universal partition coefficient. A pressure or concentration trace alone may not distinguish the size of a reservoir from its exchange kinetics.
+
+**Work:** Derive the transient from conservation and compare it with the two coupled equations. Add a specified gas-removal term and account for the collected amount. Explain why a purge result immediately after cleaning may differ from a later sealed-storage result. Identify where bulk absorption, chemical conversion or a distribution of binding energies needs additional state variables.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Compare surface amount, state and useful function](Compare-surface-amount-state-and-useful-function.lingua#r_2AXS2TGNMGTY2T6D13B9YHA0SC).
+
+} r_3KCTA0EGB3CSSVN2FZSBMB837Z

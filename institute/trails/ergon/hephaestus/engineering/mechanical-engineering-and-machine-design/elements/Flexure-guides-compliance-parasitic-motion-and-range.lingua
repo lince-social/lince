@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Flexure guides, compliance, parasitic motion and range (@mech-flexures: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "Gear-geometry-ratio-and-conjugate-motion.lingua#r_2AAYHDQVB8KREPCYQGNFJSC6CP") { r_7V0ZKS4RD134373JWW91K3AS05
+**Read:** [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lecture 8; [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 10's flexural bearings; [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), simplified rod theory for the relevant deformation assumptions.
+
+A flexure creates motion by elastic deformation instead of sliding or rolling at a joint. It can remove a particular frictional interface and backlash source, while introducing finite stiffness, limited range, parasitic motions and stress. The constrained directions also have finite compliance; none are perfectly rigid.
+
+For a small-deflection cantilever of length L and bending stiffness EI, a tip transverse force gives δ=FL³/(3EI) and tip rotation FL²/(2EI). A clamped-guided beam with zero end rotation has transverse stiffness 12EI/L³ under its different boundary conditions. Interchanging those formulas changes a prediction by a factor of four.
+
+**Work:** Derive both cases, then compose a parallel-leaf guide and examine its unwanted motion. Compare linear beam theory with a geometrically nonlinear model as displacement grows. Account for manufacturing thickness variation, residual stress, fatigue, buckling and actuator force. State how resolution, repeatability and accuracy would each be measured; a small sensor increment does not establish a small positioning error.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Gear geometry, ratio and conjugate motion](Gear-geometry-ratio-and-conjugate-motion.lingua#r_2AAYHDQVB8KREPCYQGNFJSC6CP).
+
+} r_7V0ZKS4RD134373JWW91K3AS05

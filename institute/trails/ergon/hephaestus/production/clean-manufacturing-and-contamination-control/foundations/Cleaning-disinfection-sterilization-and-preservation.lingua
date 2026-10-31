@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Cleaning, disinfection, sterilization and preservation (@cm-control-words: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW", #source "../sources/Aseptic-Processing-FDA.lingua#r_7RSDD8X6WP4CBREQY9BY53HYA2", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "../../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6") { r_0CKR7RH81CKM2Y33N9X5FAXYB7
+**Read:** [Microbiology — Parker and colleagues, OpenStax](../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW), chapter 13; [Aseptic processing — FDA guidance, 2004](../sources/Aseptic-Processing-FDA.lingua#r_7RSDD8X6WP4CBREQY9BY53HYA2), introduction; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), principles and production headings.
+
+An operation can remove matter, change biological activity or protect a state already achieved. These are separate objectives. Removing a film does not establish sterility; inactivating organisms does not necessarily remove their material or all chemical residues. A successful treatment can be followed by renewed exposure during transfer.
+
+Terminal sterilization treats the product in its final container under a qualified process. Aseptic assembly brings previously treated components together while controlling subsequent contamination. The distinction changes which interfaces and interventions need evidence.
+
+**Work:** Draw both process arrangements using generic components. Identify the point at which the desired state is established and every later opportunity to change it. Describe the required evidence without inventing a universal temperature, chemical concentration or treatment duration.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Begin with a question and specify the measurand](../../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6).
+
+} r_0CKR7RH81CKM2Y33N9X5FAXYB7

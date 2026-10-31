@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of interfaces and layered-material fabrication (@mat-layer-process-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT", #source "../sources/Atomic-Layer-Deposition-Chemistry-and-Evidence.lingua#r_43RJYA2HWF0DWTRB766G062RHV", #materials-engineering "Defend-the-processing-and-material-state-account.lingua#r_64R9D1KEEENG63D9E88T0VBBFV") { r_7M9KBRVSYMHTGN8K2RW5PESD8W
+**Read:** [Microfabrication and material integration — MIT 6.777J, 2007](../sources/Microfabrication-and-Material-Integration-MIT.lingua#r_1F4QYJ2V4BZ2T9YXX6Q35J6KFT), lectures 1–5, relevant mechanics/thermal material and packaging; [Atomic layer deposition — surface chemistry and evidence](../sources/Atomic-Layer-Deposition-Chemistry-and-Evidence.lingua#r_43RJYA2HWF0DWTRB766G062RHV), the full review and primary study. Use an additional complete primary investigation of the chosen layer/interface system.
+
+Derive a deposition or surface-reaction account, a transport condition and the mechanical/functional consequence of the resulting stack. Reconstruct process order, substrate state, chemistry, thickness, residual stress and measured response. Compare at least two explanations for a nonuniform or failing film, using an observation that distinguishes them.
+
+**Deliver:** Checked balances and limiting models, a complete source-method account, uncertainty/identifiability analysis and a prediction under changed geometry or process conditions. Include the evidence needed to distinguish surface saturation from incomplete transport, or weak adhesion from stress-driven failure. Connect the material result with its useful function while keeping untested device-level claims separate.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the processing and material-state account](Defend-the-processing-and-material-state-account.lingua#r_64R9D1KEEENG63D9E88T0VBBFV).
+
+} r_7M9KBRVSYMHTGN8K2RW5PESD8W

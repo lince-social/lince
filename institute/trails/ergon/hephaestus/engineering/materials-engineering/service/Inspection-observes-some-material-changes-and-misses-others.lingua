@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Inspection observes some material changes and misses others (@mat-service-inspection: 0, is #chapter, #part-of @materials-engineering, #materials-engineering "../../mechanical-engineering-and-machine-design/service/Condition-observations-diagnosis-and-prediction.lingua#r_4PJF2YX9VDRZMDF31M6C290BEP") { r_42GZTKNWWWY6BNT6PBTHAKDSSA
+**Read:** The shared mechanical condition-evidence and maintenance Records, with their full references; revisit material characterization, flaw sensitivity and life inference.
+
+An inspection samples a response through geometry, access, calibration and interpretation. No detected flaw is not proof of no flaw. Detection capability depends on the defect type, orientation, size, location and instrument/procedure. The distribution of undetected states can matter more to a decision than the average measurement error.
+
+Relate the observable to function through a justified model. Choose timing against growth, uncertainty, consequences and opportunities to act. Repeated readings can improve inference, but correlated bias or a changing instrument can produce misleading trends.
+
+**Work:** Compare two ways to observe the same material deterioration. Reconstruct detection limitations and the consequences of false positives and missed damage. Explain how access or a surface treatment changes the observation. Use the shared service work to connect the evidence to a decision, without claiming that a reading alone authorizes continued use.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Condition observations, diagnosis and prediction](../../mechanical-engineering-and-machine-design/service/Condition-observations-diagnosis-and-prediction.lingua#r_4PJF2YX9VDRZMDF31M6C290BEP).
+
+} r_42GZTKNWWWY6BNT6PBTHAKDSSA

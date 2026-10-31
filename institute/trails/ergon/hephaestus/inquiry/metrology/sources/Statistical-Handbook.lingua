@@ -10,4 +10,6 @@ This is a substantial open technical handbook, not a single summary webpage. Rec
 NIST-produced federal material is generally public domain in the United States; preserve attribution and separately identified contributions, data, and software terms. Official contents checked on 28 October 2026. The reading remains external.
 
 **Return:** [Measurement and metrology sources — books, guides, and research](../Sources.lingua#r_6H584EJ2Z9D11PG89Y21Y8T1A3).
+For clean-manufacturing qualification and monitoring, read [chapter 6](https://www.itl.nist.gov/div898/handbook/pmc/pmc_d.htm) through acceptance sampling, charts, time-series methods and the case studies. Selected OC, counts, EWMA, CUSUM, covariance and capability passages were inspected on 30 October 2026. Independent calculations reconstruct the 52-item/3-acceptance OC example, the twenty-observation EWMA sequence and the twenty-five-wafer count summary. The OC table entries at p = 0.04 and 0.05 disagree with ordinary rounding of its formula; the learning Record preserves the checked values. The remaining case studies and experiments were not reproduced. Historical standard citations and rules of thumb are not adopted as universal current requirements.
+
 } r_6S3221KSX1KKGPJNXKC3N022NN

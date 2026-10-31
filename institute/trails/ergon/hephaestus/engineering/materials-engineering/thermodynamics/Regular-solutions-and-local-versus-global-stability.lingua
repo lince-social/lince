@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Regular solutions and local versus global stability (@mat-regular-solution: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #materials-engineering "Common-tangents-and-conservation-across-coexisting-phases.lingua#r_05MARTRXT25F6PKERYYB70H0Z5") { r_1T9CWJMKN5W5P6KED07XB3GY0J
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), sections 7.11 and 8.4–8.5; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), thermodynamics lectures 17–20; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), free-energy curves.
+
+Use the symmetric regular-solution model Δg_mix=RT[(1−x)ln(1−x)+x ln x]+Ωx(1−x), with composition-independent Ω. Its curvature is g″=RT/[x(1−x)]−2Ω. Negative curvature permits infinitesimal composition fluctuations to lower bulk free energy; positive curvature alone does not prove global stability against a finite separation.
+
+For Ω>0, the critical point is x=1/2 and T_c=Ω/(2R). Below it, a common tangent determines coexistence compositions, while g″=0 determines spinodal limits. Metastable compositions lie between coexistence and spinodal boundaries. Interface and elastic energies can modify finite-scale transformation behavior.
+
+**Work:** Derive the first three composition derivatives and the critical conditions. Plot g and its convex envelope at three temperatures. Test a composition that is locally stable but globally unstable to phase separation. Explain why an observed transformation time cannot be read from this equilibrium model.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Common tangents and conservation across coexisting phases](Common-tangents-and-conservation-across-coexisting-phases.lingua#r_05MARTRXT25F6PKERYYB70H0Z5).
+
+} r_1T9CWJMKN5W5P6KED07XB3GY0J

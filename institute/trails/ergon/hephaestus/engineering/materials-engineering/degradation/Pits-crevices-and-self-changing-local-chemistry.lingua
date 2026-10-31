@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Pits, crevices and self-changing local chemistry (@mat-local-corrosion: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #source "../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5", #materials-engineering "Microstructure-stress-and-environment-assisted-damage.lingua#r_68SJE8K4FXHJF0CZ2FXCZW2M38") { r_37C7HJK43WB2BBQQGCXHHNP325
+**Read:** [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), localized corrosion and flow; [Aqueous corrosion — Cambridge DoITPoMS](../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5), transport and passivity.
+
+Localized attack couples geometry, ionic transport, charge balance and reaction. A restricted region may develop a chemistry different from the bulk, while a large external surface supplies cathodic current. Deposits and joints can create these conditions even when a nominal alloy is unchanged. Initiation and continued propagation need not have identical conditions.
+
+**Work:** Draw species and current balances for a crevice with a specified opening and wetted area. Explain the effect of restricted exchange without assuming a universal local pH. Compare average loss, maximum depth and the distribution of attacked sites, preserving sampling and inspection resolution. Critique a test that ranks specimens by mass loss alone. Trace a plausible feedback between geometry change and further local attack.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Microstructure, stress and environment-assisted damage](Microstructure-stress-and-environment-assisted-damage.lingua#r_68SJE8K4FXHJF0CZ2FXCZW2M38).
+
+} r_37C7HJK43WB2BBQQGCXHHNP325

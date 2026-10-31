@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Follow gas from production to accepted use (@gas-supply-boundary: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #industrial-gases-and-vacuum "../../../chemistry/industrial-chemistry/inorganic/Air-separation-oxygen-nitrogen-and-gas-specification.lingua#r_2WT6DXK7CD9M2VQ1Q8JSC49PS4") { r_7VHSYJMZ2MV3DGACKQZWKTCA2J
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), packages and applications; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), product handling; [Compare ways to supply a specified gas to its user](../../../materials/chemical-feedstocks-and-supply-systems/families/Air-gases-as-pipeline-bulk-liquid-and-cylinder-supplies.lingua#r_5SM8V9DE71V106BQ9NYPKXPG52) and chemical-supply material.
+
+A gas can reach its user through an on-site generator, a pipeline, bulk liquid followed by vaporization, or packaged compressed gas. Each arrangement places production, storage, transport, quality control and reserve at different points. Compare them at the same accepted service boundary.
+
+Track both useful gas and the supporting flows: feed air or chemical feed, electricity, cooling, purge/regeneration gas, rejected product, return packaging and waste. Include the equipment that makes a reserve usable. Inventory without a working vaporizer, regulator or qualified connection is not automatically available service.
+
+**Work:** Compare two supply arrangements for a stated demand profile. Draw the physical and information handoffs, including composition evidence and quantity reconciliation. Trace a delivery delay and a power interruption through each arrangement. Explain which failures are independent and which suppliers or backups share a common dependency.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Follow oxygen, nitrogen and other air-derived products through separation and use](../../../chemistry/industrial-chemistry/inorganic/Air-separation-oxygen-nitrogen-and-gas-specification.lingua#r_2WT6DXK7CD9M2VQ1Q8JSC49PS4).
+
+} r_7VHSYJMZ2MV3DGACKQZWKTCA2J

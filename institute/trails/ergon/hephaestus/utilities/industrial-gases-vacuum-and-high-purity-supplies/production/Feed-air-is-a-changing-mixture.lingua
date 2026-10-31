@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Feed air is a changing mixture (@gas-feed-air: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "../../../physics/thermodynamics-and-heat-transfer/balances/Turbines-compressors-valves-mixers-and-nozzles.lingua#r_5FNNDS9HS3F0FDBD0MX1H5D8YJ") { r_74TZSTYT1JYPFT357JQ7ATP965
+**Read:** [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), intake-air quality and contaminant removal; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), air and constituent entries; [Follow oxygen, nitrogen and other air-derived products through separation and use](../../../chemistry/industrial-chemistry/inorganic/Air-separation-oxygen-nitrogen-and-gas-specification.lingua#r_2WT6DXK7CD9M2VQ1Q8JSC49PS4).
+
+Air supplied to a separation plant contains major constituents and variable water, particles and trace contaminants. Intake location, weather and nearby activities can alter that feed. A process designed around a nominal major-component composition still needs evidence for trace substances that freeze, accumulate, react or reach the product.
+
+Define the wet/dry basis, intake state, sampling location and time variation. Compression and cooling can change whether water remains vapor or forms a liquid phase. A filter that removes particles does not remove every gas-phase contaminant, and a drying bed has a finite working capacity and regeneration history.
+
+**Work:** Construct a hypothetical air-feed balance with explicitly declared water and trace-component inputs. Follow compression, cooling and condensate removal without losing constituents. Identify which contaminant needs a separate removal mechanism and what observation could reveal breakthrough before product quality is affected.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Turbines, compressors, valves, mixers and nozzles](../../../physics/thermodynamics-and-heat-transfer/balances/Turbines-compressors-valves-mixers-and-nozzles.lingua#r_5FNNDS9HS3F0FDBD0MX1H5D8YJ).
+
+} r_74TZSTYT1JYPFT357JQ7ATP965

@@ -1,6 +1,6 @@
 Import "../Electrical-power-engineering.lingua"
 
-Control loops, bandwidth, delay, saturation and robustness (@pe-feedback-control: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #electrical-power-engineering "../conversion/Drives-torque-speed-control-and-load-service.lingua#r_668AGMR7EG7TY2818PDFR2E0PN") { r_0Q868KQNPXRCK6JT71Q9HRY0BX
+Control loops, bandwidth, delay, saturation and robustness (@pe-feedback-control: 0, is #chapter, #part-of @electrical-power-engineering, #source "../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833", #source "../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526", #electrical-power-engineering "../conversion/Drives-torque-speed-control-and-load-service.lingua#r_668AGMR7EG7TY2818PDFR2E0PN", #water-and-sanitation "../../../utilities/water-and-sanitation/operations/A-tank-balance-explains-control-offset-delay-and-saturation.lingua#r_2R6H6TT78N3TG1PYZMNFJ14RYB") { r_0Q868KQNPXRCK6JT71Q9HRY0BX
 **Read:** [Feedback Systems — Åström and Murray](../sources/Feedback-Systems-Astrom-Murray.lingua#r_7N4SZEXCRGZZFW2EV9X86G7833), complete applicable modelling, stability and robustness chapters; [Power Electronics — MIT 6.334, Spring 2007](../sources/Power-Electronics-MIT-6-334.lingua#r_071M46GNC27PPJVTZEQTMEF526), whole converter-control sequence.
 
 Define the controlled observable, actuator, measurement chain, disturbance and plant before drawing a feedback loop. Derive its local input/output or state-space model and identify uncertainties. A gain chosen for one ideal circuit can fail when source impedance, delays, sensors, saturation or a filter resonance are included.
@@ -12,4 +12,6 @@ Compare an analytical limiting case, independent numerical model and suitable ex
 **Continue:** [Drives, torque/speed control and load service](../conversion/Drives-torque-speed-control-and-load-service.lingua#r_668AGMR7EG7TY2818PDFR2E0PN).
 
 **Return:** [Electrical power engineering — sources, networks, machines and continuing service](../Electrical-power-engineering.lingua#r_300EPNGATK7PHWNZCQFBXGZFCQ).
+**Water and sanitation continuation:** [A tank balance explains control offset, delay and saturation](../../../utilities/water-and-sanitation/operations/A-tank-balance-explains-control-offset-delay-and-saturation.lingua#r_2R6H6TT78N3TG1PYZMNFJ14RYB).
+
 } r_0Q868KQNPXRCK6JT71Q9HRY0BX

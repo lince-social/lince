@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Tubes, transmission probability and geometric limits (@gas-tube: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9", #industrial-gases-and-vacuum "Viscous-gas-flow-and-pressure-dependent-conductance.lingua#r_7MT7K55E3BZFY7JE54FZVV32Y9") { r_1JVAVTY13650M654P3PZDXZX9T
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), molecular conductance; [Fundamentals of Vacuum Physics and Technology — Eshraq Al-Dmour](../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9), tubes and effective pumping. Preserve the diameter, radius and length conventions explicitly.
+
+For a long circular tube with diffuse wall reflection in molecular flow, a useful asymptotic result is C≈πd³v̄/(12L). It is a long-tube limit, not a formula for every aspect ratio. The exact short-passage result must approach the aperture limit as thickness tends to zero rather than diverge.
+
+The molecular transmission probability depends on geometry and scattering. Elbows, baffles, valves and inserts can alter it substantially. A large nominal port connected through a restrictive internal passage may deliver much less effective pumping than the port diameter suggests.
+
+**Work:** Derive the long-tube scaling with diameter, length, temperature and molar mass. Compare doubling diameter with doubling pumping speed for a conductance-limited chamber. Test the formula against the aperture upper bound and identify where the asymptotic expression becomes inadmissible. Separate uncertain geometry from uncertain wall-scattering behavior.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Viscous gas flow and pressure-dependent conductance](Viscous-gas-flow-and-pressure-dependent-conductance.lingua#r_7MT7K55E3BZFY7JE54FZVV32Y9).
+
+} r_1JVAVTY13650M654P3PZDXZX9T

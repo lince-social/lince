@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Testing data models without specimen leakage (@mat-data-validation: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Informatics-Ramprasad.lingua#r_6CKWYT91KQJRX7EWD6TK53VFRM", #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #materials-engineering "Choose-the-next-discriminating-observation.lingua#r_5Q11TMSRHBWKFYP64DKM7RC5XY") { r_1MR20SPDZBKPQ37214QD88XGJ2
+**Read:** [Machine learning and materials informatics — Ramprasad and colleagues](../sources/Materials-Informatics-Ramprasad.lingua#r_6CKWYT91KQJRX7EWD6TK53VFRM), testing and uncertainty discussion; [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), comparable evidence; shared reproducible-computation material on data transformation and validation.
+
+Split evidence according to the intended prediction. Randomly separating images or curve points from the same specimen can make a model appear to generalize while it recognizes specimen-specific information. Prediction of a new batch, composition family, processing route or time period needs a corresponding test arrangement.
+
+Fit scaling, imputation, descriptor selection and tuning using only the permitted development data. Preserve one genuinely untouched evaluation when claiming that role. Compare with simple physical and statistical baselines. Report the distribution of errors across relevant groups, not only an overall mean dominated by common cases.
+
+**Work:** Reanalyze a small authorized dataset with a random-row split and a specimen- or batch-held-out split. Trace every preprocessing step to the data used to fit it. Explain any difference in performance without assuming the harder split must always score worse. Check the behavior outside the training range and state when the model should decline to make a supported material-selection claim.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Choose the next discriminating observation](Choose-the-next-discriminating-observation.lingua#r_5Q11TMSRHBWKFYP64DKM7RC5XY).
+
+} r_1MR20SPDZBKPQ37214QD88XGJ2

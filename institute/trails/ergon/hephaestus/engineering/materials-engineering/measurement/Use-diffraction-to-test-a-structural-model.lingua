@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Use diffraction to test a structural model (@mat-diffraction-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "../../../../gaia/earth/mineralogy-and-petrology/analysis/Bragg-spacing-indexing-and-instrument-conventions.lingua#r_06VC3CMZT1TY5BZ00AWV8TD3ZQ") { r_726YWJVGXJX6S1H7MK7BRRF17D
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Diffraction and X-ray Diffraction; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures 17–19; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), diffraction. Continue through the shared Bragg/indexing Record next.
+
+Diffraction connects spatial organization with interference of waves. Peak positions, intensities, widths and diffuse scattering provide different constraints. A spacing calculation establishes geometry under a model; composition, atomic basis, disorder and measurement conditions affect the observed pattern.
+
+State radiation, wavelength, geometry, angle convention and specimen orientation. A powder average differs from a single-crystal measurement, and preferred orientation can alter relative intensities. Instrument response, specimen displacement and calibration must be separated from the structural inference.
+
+**Work:** Draw the path difference for a simple Bragg construction and relate it to reciprocal-space geometry. Interpret a documented pattern's axes and conditions. Use the shared indexing study before calculating the basis interference of an explicit teaching model.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Calculate diffraction spacing and test an indexing account](../../../../gaia/earth/mineralogy-and-petrology/analysis/Bragg-spacing-indexing-and-instrument-conventions.lingua#r_06VC3CMZT1TY5BZ00AWV8TD3ZQ).
+
+} r_726YWJVGXJX6S1H7MK7BRRF17D

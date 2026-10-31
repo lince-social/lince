@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+From a drain to a receiving environment (@wu-wastewater-entry: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Flow-load-and-the-day-that-an-average-hides.lingua#r_0GEZ18WHNCN8PCV72027QSFEY1") { r_63NHMW0Q4G8VY4ENPKEEQQGWQN
+**Read:** Begin the whole [Wastewater Characteristics, Treatment and Disposal — von Sperling](../sources/Wastewater-Characteristics-Treatment-and-Disposal.lingua#r_59N8AH8ZNEKJK3HC4J32RV50XC), with the esgotamento sanitário material in [Manual de Saneamento — Funasa, fifth edition](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE). Read the introductory system account before choosing a treatment technology. The later Records gradually work through the biological-treatment books, rather than expecting microbiology at entry.
+
+Wastewater is water whose history matters. A kitchen, toilet, hospital, workshop and rainfall inlet can deliver different constituents at different times. In Portuguese, distinguish esgoto sanitário, efluente industrial, águas pluviais, rede coletora, estação elevatória, estação de tratamento and corpo receptor. A pipe may transport the mixture without removing its load; a treatment process may move material into air or sludge instead of destroying it.
+
+Draw a hypothetical household-to-receiving-water path. Add industrial contributors and a property that uses local containment rather than a sewer. Mark who owns each connection, what flows through it, the measurements available and where people or ecosystems could encounter the material. Include failures of collection and transport, not just treatment performance.
+
+**Work:** Explain the drawing aloud to a beginner, then label the mass and energy boundaries that a quantitative investigation would require. Distinguish a connected property, a reliably conveyed flow, a treated flow and a safely managed service. Build on the earlier water-supply work without assuming drinking-water treatment solves the different problem posed by wastewater.
+
+**Continue:** [Flow, load and the day that an average hides](Flow-load-and-the-day-that-an-average-hides.lingua#r_0GEZ18WHNCN8PCV72027QSFEY1).
+} r_63NHMW0Q4G8VY4ENPKEEQQGWQN

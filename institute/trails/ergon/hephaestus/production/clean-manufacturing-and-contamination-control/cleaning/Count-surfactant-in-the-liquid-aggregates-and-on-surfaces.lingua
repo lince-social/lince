@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Count surfactant in the liquid, aggregates and on surfaces (@cm-surfactant-balance: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD", #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "Ionic-strength-sets-a-screening-scale-under-declared-assumptions.lingua#r_75M6D9MTPDEJQAMNP4DT5HM9T0") { r_619R2K0Y50ZX50VS2H56ZT74XH
+**Read:** [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD), adsorption and self-organization; [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), bath monitoring and rinsing.
+
+An idealized inventory is ctot=c1+nagg cmic+As Γ/V, where c1 is monomer amount concentration, cmic is the concentration of micelles as aggregates, nagg is molecules per micelle, and Γ is adsorbed surfactant amount per area. Use a consistent amount basis. Adsorption and aggregate-size distributions can require a more detailed model.
+
+For hypothetical c1=1 mmol/L, cmic=0.05 mmol/L of micelles and nagg=60, the liquid contains 4 mmol/L of surfactant molecules before adding the surface term. Counting micelles as single molecules would lose most of the inventory in this example.
+
+**Work:** Translate every term into moles in a finite bath. Explain how a large new surface area can change the available monomer/aggregate population. Design a rinse account that includes retained surfactant as well as the original soil. Distinguish total-agent measurement, active formulation and process performance.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Ionic strength sets a screening scale under declared assumptions](Ionic-strength-sets-a-screening-scale-under-declared-assumptions.lingua#r_75M6D9MTPDEJQAMNP4DT5HM9T0).
+
+} r_619R2K0Y50ZX50VS2H56ZT74XH

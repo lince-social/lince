@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+From accepted measurements to continuing service (@gas-operation-entry: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #source "../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H", #source "../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #industrial-gases-and-vacuum "../../../chemistry/industrial-chemistry/operation/Process-states-sensors-control-and-observed-production.lingua#r_6MEKD6GFRHQ8VXM92NC56D0Q3A") { r_630TTG5JX7D6S369PE5YCYA8FX
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), chapters 1–5; then continue through chapters 6–9. Read [The safe isolation of plant and equipment — HSE HSG253](../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H) and [Fatal liquid nitrogen release — CSB Foundation Food Group investigation](../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA) in full over this section. Revisit the operation and training chapters of [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA).
+
+A gas or vacuum system has to keep meeting a useful requirement while its feed, demand, components and people change. Define that requirement at the point of use: a flow, composition, pressure interval, response time and duration. Being switched on does not establish service; producing rejected material can consume energy without fulfilling the requirement.
+
+Trace one ordinary working day, one planned intervention and one unexpected interruption. For each, identify inventories, heat paths, equipment states, measurements and responsible people. The following Records explain failure and restoration through these physical relationships. The exercises can be done with published evidence, calculations and simulations; physical plant work requires the actual equipment's procedures and qualified supervision.
+
+**Work:** Write a service definition that can fail in three distinct ways. Explain how you would observe each failure and what useful service could continue while it is investigated.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Connect measured process states and control actions with actual chemical behavior](../../../chemistry/industrial-chemistry/operation/Process-states-sensors-control-and-observed-production.lingua#r_6MEKD6GFRHQ8VXM92NC56D0Q3A).
+
+} r_630TTG5JX7D6S369PE5YCYA8FX

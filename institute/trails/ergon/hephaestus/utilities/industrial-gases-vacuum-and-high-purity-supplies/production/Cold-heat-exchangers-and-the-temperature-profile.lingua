@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cold heat exchangers and the temperature profile (@gas-cold-exchange: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #industrial-gases-and-vacuum "Cryogenic-air-distillation-and-coupled-columns.lingua#r_5V9CX56GBFP2V39YK08DMJ8ECW") { r_314EQG632RCSAREFG9VJ8KX7M8
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), recuperation and cryogenic insulation; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), cold-box and heat-exchanger discussion; shared heat-exchanger analysis.
+
+Matching total hot- and cold-stream duties is necessary but insufficient. Temperatures must permit heat transfer throughout the exchanger. Changing heat capacities, phase changes and multistream arrangements can produce an internal limiting temperature difference. Pressure loss also changes downstream phase behavior and available driving forces.
+
+Water, carbon dioxide or other condensable impurities can change resistance or block a passage. Maldistribution and transients can make local conditions differ from averaged design values. Thermal contraction, materials and joining connect the thermal calculation to fabrication and service.
+
+**Work:** Construct temperature-versus-transferred-duty curves for a hypothetical two-stream case and identify the limiting approach. Repeat with a phase-changing stream. Explain how a small impurity or flow-distribution change could alter the local result despite nearly unchanged total heat duty. Specify observations needed to distinguish fouling, flow imbalance and a property-model error.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Cryogenic air distillation and coupled columns](Cryogenic-air-distillation-and-coupled-columns.lingua#r_5V9CX56GBFP2V39YK08DMJ8ECW).
+
+} r_314EQG632RCSAREFG9VJ8KX7M8

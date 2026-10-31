@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Recovered mineral materials need new state evidence (@mat-mineral-recovery: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Recycled-Concrete-Aggregates-McNeil-Kang.lingua#r_7RV5XYMDWNA5KPVRYC7052WV8E", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Wood-and-composite-recovery-preserve-some-structure.lingua#r_1JZJQF6J1ZD4P2ED10REPZ2J92") { r_1RQ7Q7Q4M896ZPAWMSNVJJS4KR
+**Read:** [Recycled Concrete Aggregates: A Review — McNeil and Kang](../sources/Recycled-Concrete-Aggregates-McNeil-Kang.lingua#r_7RV5XYMDWNA5KPVRYC7052WV8E) in full and a complete underlying study; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), chemistry/manufacturing; the earlier glass, ceramic and cementitious-material readings.
+
+Crushing a cementitious composite changes particle size and liberation but does not undo hydration. Adhered mortar and microcracking can change absorption, stiffness and mixing-water demand. Recovered glass may carry incompatible ceramics, colors or surface contamination; a refractory can retain reaction products from service. A recovered mass is not automatically equivalent to virgin feed.
+
+Compare quantities on the basis relevant to function. Equal mass substitution can change volume, grading or water balance. A material test and a whole-member test answer different questions. Source, conditioning, mix proportions and curing must remain visible when comparing results.
+
+**Work:** Reconstruct a recovered-aggregate comparison, including absorbed versus effective mixing water and the basis of replacement. Reconcile specimen response with a component observation. Then contrast it with a glass or ceramic recovery route whose transformations differ. Explain what must be characterized before claiming suitability for the next use.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Wood and composite recovery preserve some structure](Wood-and-composite-recovery-preserve-some-structure.lingua#r_1JZJQF6J1ZD4P2ED10REPZ2J92).
+
+} r_1RQ7Q7Q4M896ZPAWMSNVJJS4KR

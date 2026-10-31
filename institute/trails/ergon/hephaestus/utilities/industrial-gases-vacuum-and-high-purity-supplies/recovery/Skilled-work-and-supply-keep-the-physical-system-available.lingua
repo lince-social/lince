@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Skilled work and supply keep the physical system available (@gas-service-knowledge: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #industrial-gases-and-vacuum "../studies/Defend-continuing-service-under-failure-and-repair.lingua#r_1BNDRYAYRAWR7B6NF6SCH6C39M", #industrial-gases-and-vacuum "../studies/Defend-the-causal-account-of-a-gas-system-failure.lingua#r_65383ESZYZ1N5PEYMZ2NA1W6RA", #industrial-gases-and-vacuum "../studies/Defend-energy-and-recovery-on-an-accepted-output-basis.lingua#r_605PX9XK6GRP0NC4821DSG78VQ") { r_7QWVJP5M8N0YSNXVJ04D809HN3
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), acquisition, maintenance feedback and data; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), operations and training. Revisit the chemical-supply continuity Records.
+
+An installation depends on people who can interpret its measurements, qualify replacements, preserve cleanliness, diagnose faults and communicate its state. It also depends on instrument calibration, spare parts, drawings, software and suppliers. These are concrete dependencies in the restoration time and quality account.
+
+Describe how a person learns a task: the physical model, the observable result, suitable supervised practice and evidence of competence. Preserve explanations for unusual decisions so a future worker can revise them. Proprietary details that are unavailable should be identified as missing evidence rather than filled with invented specifications.
+
+**Work:** Map the skills and supplies needed to restore one interrupted service. Remove one supplier or experienced person from the hypothetical scenario. Identify which knowledge can be retained openly and which further evidence is needed to support a substitute.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Defend continuing service under failure and repair](../studies/Defend-continuing-service-under-failure-and-repair.lingua#r_1BNDRYAYRAWR7B6NF6SCH6C39M), [Defend the causal account of a gas-system failure](../studies/Defend-the-causal-account-of-a-gas-system-failure.lingua#r_65383ESZYZ1N5PEYMZ2NA1W6RA), [Defend energy and recovery on an accepted-output basis](../studies/Defend-energy-and-recovery-on-an-accepted-output-basis.lingua#r_605PX9XK6GRP0NC4821DSG78VQ).
+
+} r_7QWVJP5M8N0YSNXVJ04D809HN3

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Compaction, green strength and density gradients (@mat-green-compact: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #materials-engineering "Drying-debinding-and-transport-before-densification.lingua#r_5PY473J687SYNK01PR5BKFJGEA") { r_1BHYJT87XN43NASSSNBCJ50Z90
+**Read:** [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), pressing and casting; [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), powder-processing introduction; the shared metallurgy powder studies.
+
+A green body has shape and handling strength before its final thermal consolidation. Die friction, pressure transmission, particle rearrangement and deformation can create density gradients. Springback and ejection add another stress history. A uniform applied pressure does not guarantee a uniform compact.
+
+**Work:** Relate measured green mass and dimensions to average density, then explain what that average cannot reveal. Compare a die-pressed and isostatically formed body through spatial density, handling damage and later shrinkage. Account for tooling, lubricant, binder and ejection. Critique the introductory simplification that all powder routes require die compression: slurry casting, tape forming and additive binder routes create different initial structures.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Drying, debinding and transport before densification](Drying-debinding-and-transport-before-densification.lingua#r_5PY473J687SYNK01PR5BKFJGEA).
+
+} r_1BHYJT87XN43NASSSNBCJ50Z90

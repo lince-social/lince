@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Clutches, brakes, friction work and heat (@mech-clutches-brakes: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Actuators-load-trajectories-and-source-constraints.lingua#r_6D9END4TKW798F1MDM9GXTEVR9") { r_7CBQ3W4S1ABVDRA8JRQSD80HFE
+**Read:** [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lecture 18; [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 5. Use the torque/contact derivations; the historical lecture's obsolete friction-material examples are not material recommendations.
+
+A clutch joins relative motion while a brake transfers resisting torque to a reference. Frictional power is torque times relative angular speed. Stopping or synchronizing a moving system requires an energy account, not only a peak-torque capacity.
+
+For one annular friction surface under uniform pressure and constant μ, effective radius is (2/3)(r_o³−r_i³)/(r_o²−r_i²). Under the ideal uniform-wear assumption pr=constant, it is (r_o+r_i)/2. At r_i=0.05 m and r_o=0.10 m these are approximately 0.077778 and 0.075 m. With μ=0.3 and 1000 N normal load, one interface transmits approximately 23.333 or 22.5 N·m in the respective model.
+
+A rotor with J=0.2 kg·m² at 100 rad/s contains 1000 J rotational energy. Repeated stops need a cooling and temperature history; one successful stop does not demonstrate continuous duty.
+
+**Work:** Derive the annular integrals. Compare a steady brake, an intermittent stop and clutch synchronization between two inertias. Include fade, wear, actuation, release behavior and the mechanism for retaining or dissipating stored energy.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Actuators, load trajectories and source constraints](Actuators-load-trajectories-and-source-constraints.lingua#r_6D9END4TKW798F1MDM9GXTEVR9).
+
+} r_7CBQ3W4S1ABVDRA8JRQSD80HFE

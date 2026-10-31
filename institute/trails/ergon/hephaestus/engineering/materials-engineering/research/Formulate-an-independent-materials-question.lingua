@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Formulate an independent materials question (@mat-independent-question: 0, is #chapter, #part-of @materials-engineering, #materials-engineering "Design-a-materials-investigation-that-can-change-its-answer.lingua#r_3R7YJRRRS3TQE747RQZRDDREW9") { r_0FJ6V11808915X9F70D2MHXFZP
+**Read:** The primary literature assembled in the preceding synthesis and the full foundational books needed by the selected mechanism.
+
+Choose a question small enough to investigate rigorously and substantial enough to require an original synthesis, independent reproduction or discriminating extension. It may concern a process window, a transformation mechanism, a measurement interpretation, a response under changed conditions or the preservation of useful material quality. Novel composition alone is not a scientific question.
+
+Specify the object, state, observable, competing explanations and consequence of the answer. Identify the theory and computation required, the accessible inputs and facilities, and the observations that are missing. A theoretical or computational investigation can be substantial without owning a laboratory, provided its relationship to empirical evidence is explicit.
+
+**Work:** Write a concise research question with its present evidence and a bounded set of testable predictions. Derive a baseline estimate that establishes relevant scales. Explain how both a positive and a negative result would advance the account. Link the earlier studies that supply preparation without making unrelated fields a prerequisite.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Design a materials investigation that can change its answer](Design-a-materials-investigation-that-can-change-its-answer.lingua#r_3R7YJRRRS3TQE747RQZRDDREW9).
+
+} r_0FJ6V11808915X9F70D2MHXFZP

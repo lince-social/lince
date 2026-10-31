@@ -1,6 +1,6 @@
 Import "../Mineralogy-and-petrology.lingua"
 
-Calculate geometry with the cell metric and reciprocal basis (@mp-metric: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #source "../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #mineralogy-and-petrology "Directions-planes-and-crystallographic-indices.lingua#r_79PJ4B5E4TKFRY5SG9Y45YKTGA") { r_6CB07MYV3Z3DK5KBGKFET4K8SM
+Calculate geometry with the cell metric and reciprocal basis (@mp-metric: 0, is #chapter, #part-of @mineralogy-and-petrology, #source "../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #source "../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #mineralogy-and-petrology "Directions-planes-and-crystallographic-indices.lingua#r_79PJ4B5E4TKFRY5SG9Y45YKTGA", #materials-engineering "Directions-planes-and-crystallographic-indices.lingua#r_79PJ4B5E4TKFRY5SG9Y45YKTGA") { r_6CB07MYV3Z3DK5KBGKFET4K8SM
 **Read:** [Mineralogy — Dexter Perkins, open editions](../sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), the full crystallographic geometry/reciprocal-space material; [Crystallographic teaching pamphlets — IUCr](../sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), Wondratschek’s Matrices, mappings, and crystallographic symmetry in full; [Crystallography Open Database — structures, citations, and CIF records](../sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG), the selected structure’s cell/condition metadata and original reference.
 
 Three cell lengths and three interaxial angles define the metric of a general unit cell. Fractional-coordinate distance is not generally the square root of the sum of squared fractional differences. Form the direct metric G from basis-vector dot products, so a displacement vector u has squared length uᵀGu.
@@ -16,4 +16,6 @@ Read the full crystallographic geometry and matrix pamphlet. Follow shared linea
 **Continue:** [Use direction and plane indices with an explicit cell and convention](Directions-planes-and-crystallographic-indices.lingua#r_79PJ4B5E4TKFRY5SG9Y45YKTGA).
 
 **Return:** [Mineralogy and petrology — minerals, crystals, rock processes, and investigation](../Mineralogy-and-petrology.lingua#r_44F7X6GPMW6ZSCCN6D71QSVKBN).
+**Continue in materials engineering:** [Use direction and plane indices with an explicit cell and convention](Directions-planes-and-crystallographic-indices.lingua#r_79PJ4B5E4TKFRY5SG9Y45YKTGA).
+
 } r_6CB07MYV3Z3DK5KBGKFET4K8SM

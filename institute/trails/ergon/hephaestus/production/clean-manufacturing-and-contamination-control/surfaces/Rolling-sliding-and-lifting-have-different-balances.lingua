@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Rolling, sliding and lifting have different balances (@cm-removal-modes: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #clean-manufacturing "An-adhesion-measurement-includes-the-instrument-and-protocol.lingua#r_56D4EV6D1TYS3NSS5NR4WTRNXJ") { r_55QQ4PXXT1PPXMAJ78EP4SWSEE
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), rough- and bumpy-particle removal; [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), removal and measurement methods.
+
+A normal pull-off threshold does not directly determine tangential removal. Rolling requires a moment balance about a changing contact; sliding involves tangential resistance; lifting involves the normal load and contact stability. Hydrodynamic force and torque depend on the near-wall flow and particle geometry. The same event may change contact mode before final release.
+
+A deliberately simplified lever comparison sets tangential drive Ft R against an adhesive resisting moment Fa a. With Fa=100 nN, R=500 nm and a=20 nm, the balance gives Ft=4 nN. This demonstrates the effect of lever arms, not a validated rolling threshold. Real contacts need a resistance law, actual pivot and deformation history.
+
+**Work:** Draw separate free-body and moment diagrams for three proposed removal modes. Include buoyancy or weight where relevant and make force directions explicit. State where an isolated-sphere drag estimate fails near a wall. For a measured release fraction, explain why equating mean fluid force to normal pull-off can give the right-looking answer for the wrong mechanism.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [An adhesion measurement includes the instrument and protocol](An-adhesion-measurement-includes-the-instrument-and-protocol.lingua#r_56D4EV6D1TYS3NSS5NR4WTRNXJ).
+
+} r_55QQ4PXXT1PPXMAJ78EP4SWSEE

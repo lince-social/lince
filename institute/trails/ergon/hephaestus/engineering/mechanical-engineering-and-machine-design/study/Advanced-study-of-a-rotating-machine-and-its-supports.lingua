@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of a rotating machine and its supports (@mech-rotor-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #mechanical-engineering "Defend-a-dynamic-model-from-observation-to-advanced-analysis.lingua#r_7ZWJSTVPC38XBNB7M8S6PSKN34") { r_7HA4E51ZKV0RJP9WAV7CTAPSNM
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 9–14 and 19–27; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), chapter 3 and its two rigid-body problem sheets. Carry forward the statics load-path account and the isolation and imbalance derivations.
+
+Choose a declared rotor, support and service history. Construct successive models: rigid rotor on rigid supports; a rotor with lateral support compliance; and a model with the additional rotation or flexible shape demanded by the question. Explain why each added coordinate is observable or physically consequential.
+
+**Derive:** Build the mass, stiffness, damping and, where relevant, gyroscopic terms. Predict natural modes, force response and bearing reactions while stating the spin-rate dependence. Separate an imposed imbalance force from self-excited instability. Check the limiting stationary, symmetric and undamped cases independently.
+
+**Investigate:** Compare at least two mounting choices over startup, working speeds and shutdown. Account for available clearance, static sag, transmitted loads, alignment and uncertainty. Design an appropriate measurement or use an openly accessible experiment with provenance; do not invent a performed rotor test. Compare prediction and observation at more than one speed and explain whether a changed damping law, support condition or extra mode is justified.
+
+A useful conclusion states what can be predicted, which competing explanations remain and what observation would decide between them. Carry the resulting load histories into the forthcoming shaft, bearing, joint and fatigue work. Completing the dynamics model does not establish those components' strength or service life.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend a dynamic model from observation to advanced analysis](Defend-a-dynamic-model-from-observation-to-advanced-analysis.lingua#r_7ZWJSTVPC38XBNB7M8S6PSKN34).
+
+} r_7HA4E51ZKV0RJP9WAV7CTAPSNM

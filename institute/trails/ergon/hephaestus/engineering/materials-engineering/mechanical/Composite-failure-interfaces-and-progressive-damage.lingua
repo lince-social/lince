@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Composite failure, interfaces and progressive damage (@mat-composite-damage: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "Cyclic-loading-across-material-families.lingua#r_4PT1EVZSKNMHXRRMXH9D814MW9") { r_1CYDEPDR6YTXBKQCX79C991A1T
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 9.2 and 9.6; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Fibre Composites' failure and toughness sections; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapters 10–12 for bonded wood products.
+
+Fibre tension, fibre kinking, matrix cracking, debonding and delamination are different mechanisms. A scalar interaction criterion may indicate a fitted onset envelope without identifying which mechanism occurs or how stiffness changes afterward. First-ply failure does not necessarily equal total laminate failure.
+
+Interface fracture depends on mode mix, geometry, residual stress and the chosen resistance definition. Manufacturing defects and moisture can change both constituent and interface behavior. For a sandwich, face damage, core crushing and face/core debonding need separate load paths.
+
+**Work:** Compare a maximum-stress and interaction-criterion prediction for a declared lamina dataset, then check mechanism-specific evidence. Trace a plausible progression from matrix crack to delamination without inventing a universal stiffness-knockdown rule. Explain how inspection sensitivity and specimen preparation affect the evidence for an initially undamaged state.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Cyclic loading across material families](Cyclic-loading-across-material-families.lingua#r_4PT1EVZSKNMHXRRMXH9D814MW9).
+
+} r_1CYDEPDR6YTXBKQCX79C991A1T

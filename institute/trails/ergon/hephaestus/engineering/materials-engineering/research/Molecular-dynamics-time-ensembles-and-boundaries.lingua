@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Molecular dynamics, time, ensembles and boundaries (@mat-research-md: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH", #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #materials-engineering "Monte-Carlo-correlations-and-rare-events.lingua#r_37D19PZA16N8P06FCP751R721Q") { r_5J9AQ5A6Q1SEXCT2W8MJN8MH57
+**Read:** [Atomistic computer modeling of materials — MIT 3.320](../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH), molecular-dynamics lectures and lab 4; [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), ensembles and fluctuations; the current documentation for the implementation actually used.
+
+Molecular dynamics integrates a chosen force law under specified boundary and ensemble controls. Check the integration interval against the fastest resolved motion and inspect energy drift in a suitable isolated test. A thermostat can conceal integration error while changing correlations; a barostat adds its own dynamical assumptions. Temperature and pressure estimates require their definitions and degrees of freedom.
+
+Finite size, periodic images, equilibration and observation duration affect the inferred property. A trajectory with many frames may contain few independent samples. Atomic velocities and imposed deformation rates often operate far from engineering time scales. A rapidly heated perfect crystal can remain metastable beyond a coexistence temperature.
+
+**Work:** Complete the course's integration and melting comparisons. Test time-step and cell-size refinement separately, discard only an explicitly justified equilibration segment, and estimate statistical error using correlation-aware blocks. Compare a heating protocol with a two-phase coexistence approach. Explain the role of nucleation and why neither a convenient thermostat setpoint nor a single abrupt trajectory change is a universal phase boundary.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Monte Carlo, correlations and rare events](Monte-Carlo-correlations-and-rare-events.lingua#r_37D19PZA16N8P06FCP751R721Q).
+
+} r_5J9AQ5A6Q1SEXCT2W8MJN8MH57

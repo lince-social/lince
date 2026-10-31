@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Porous flow, Darcy flux and the scale of a permeability (@fd-porous: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #fluid-dynamics "../vortical/Vorticity-transport-stretching-diffusion-and-baroclinicity.lingua#r_0T941GM8MCPAABF9AFXBV21TJZ") { r_6F57YVHJSPPTDA0FGV79KTX1QY
+Porous flow, Darcy flux and the scale of a permeability (@fd-porous: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18", #fluid-dynamics "../vortical/Vorticity-transport-stretching-diffusion-and-baroclinicity.lingua#r_0T941GM8MCPAABF9AFXBV21TJZ", #materials-engineering "../../../engineering/materials-engineering/processing/Composite-consolidation-orientation-and-residual-stress.lingua#r_31F2EW01TT9ZWXZ7W2F0Z208TN", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/separation/Pressure-loss-packing-and-flow-distribution.lingua#r_7KQQMYVY2WSSK6RB5S27Y4V5WQ") { r_6F57YVHJSPPTDA0FGV79KTX1QY
 **Read:** [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 6 Darcy basis, homogenization and instability; [Fundamentals of Multiphase Flow — Christopher E. Brennen](../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM), porous and dispersed-flow modelling where applicable; [Lectures in Elementary Fluid Dynamics — James M. McDonough](../sources/Elementary-Fluid-Dynamics-McDonough.lingua#r_7F9FTDV2VV4P28PG16J5PJSK18), scaling and viscous-force balances.
 
 Averaging flow through many connected pores can produce Darcy's law q=−(K/μ)(∇p−ρg). Here q is discharge per total sample area, not generally the mean velocity inside the pore space; K is permeability, potentially a tensor. Its dimensions are length squared. A representative averaging volume must be large enough to sample pore structure yet small relative to resolved field variation.
@@ -12,4 +12,9 @@ Measure or inspect pressure-flow evidence at several imposed gradients and in bo
 **Continue:** [Vorticity transport, stretching, diffusion and baroclinicity](../vortical/Vorticity-transport-stretching-diffusion-and-baroclinicity.lingua#r_0T941GM8MCPAABF9AFXBV21TJZ).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+**Continue in materials engineering:** [Composite consolidation, orientation and residual stress](../../../engineering/materials-engineering/processing/Composite-consolidation-orientation-and-residual-stress.lingua#r_31F2EW01TT9ZWXZ7W2F0Z208TN).
+
+
+**Continue in gas and vacuum systems:** [Pressure loss, packing and flow distribution](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/separation/Pressure-loss-packing-and-flow-distribution.lingua#r_7KQQMYVY2WSSK6RB5S27Y4V5WQ).
+
 } r_6F57YVHJSPPTDA0FGV79KTX1QY

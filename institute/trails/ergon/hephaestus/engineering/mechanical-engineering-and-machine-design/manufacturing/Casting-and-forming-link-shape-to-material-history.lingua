@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Casting and forming link shape to material history (@mech-shaping-processes: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "Polymer-and-composite-parts-cure-cooling-and-direction.lingua#r_1BQ62T9VFMC1D7PMNECM4WKKVZ") { r_19YHXYKPTRQRZ54W0Q1ERJBW0S
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), lectures 20–21 and notes; follow the shared metallurgy casting, solidification and forming Records for their full mechanism and process studies.
+
+Casting fills and solidifies a shape; forming changes shape through material deformation. Both involve flow, heat, forces and a changing material state. Parting lines, draft, feeders, die access, minimum radii and machining allowances express physical manufacturing needs, not arbitrary drawing decoration.
+
+A thin wall, abrupt section change or inaccessible cavity can create a very different process difficulty from its CAD appearance. Flow and cooling histories affect defects and structure. Forming changes orientation, hardening and residual stress; a nominal material label does not erase that history.
+
+**Work:** Redesign one machined support as a casting and as a formed assembly. Identify new tooling, features and inspections, including the finish operations needed at interfaces. Compare production scale and material evidence. Use one full metallurgical case to explain why meeting external dimensions would not alone establish internal quality.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Polymer and composite parts, cure, cooling and direction](Polymer-and-composite-parts-cure-cooling-and-direction.lingua#r_1BQ62T9VFMC1D7PMNECM4WKKVZ).
+
+} r_19YHXYKPTRQRZ54W0Q1ERJBW0S

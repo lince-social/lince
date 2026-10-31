@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+An inlet can select particles before the instrument does (@cm-aerosol-aspiration: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "Tubing-losses-and-delay-belong-to-the-measuring-system.lingua#r_2AXFDEVMBFK3DX8ZRNKFFJE2TW") { r_7DTCQ6BXBRZWPRR7FM71V52YJP
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), environmental conditions, apparatus and flow calibration. Revisit [Relaxation time and the distance before stopping](../particles/Relaxation-time-and-the-distance-before-stopping.lingua#r_69TCZNTFWEQS1C3QEFDW0R5RJ1) for the relation between inertia and a changing gas velocity.
+
+The gas streamlines entering a probe need not carry a representative fraction of every particle size. Inertia, gravity, probe orientation, nearby surfaces and local airflow affect entry. The aspiration ratio compares concentration entering the inlet with the defined surrounding concentration; it is distinct from losses after entry.
+
+For an aligned thin-wall inlet in a uniform stream, matching inlet velocity Q/Ain to surrounding velocity is the isokinetic condition. It reduces a particular velocity mismatch; it does not establish representative sampling in a disturbed or spatially variable region. Large inertial particles and small flow-following particles respond differently to mismatched sampling.
+
+**Example:** An inlet area of 10 mm² in a 0.5 m/s stream requires Q = 5×10⁻⁶ m³/s, or 0.3 L/min, to match mean velocities. A counter drawing 1 L/min through that opening has an inlet speed of about 1.667 m/s. These values identify the mismatch; they do not alone determine its particle bias.
+
+**Work:** Draw the streamtube and limiting trajectories for particles following the gas and particles maintaining their incoming velocity. Explain why sampling one convenient point near a supply outlet can differ from observing a work surface. Propose a comparison that changes inlet position or orientation while holding instrument response fixed. Preserve the geometry and operating state with the resulting data.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Tubing losses and delay belong to the measuring system](Tubing-losses-and-delay-belong-to-the-measuring-system.lingua#r_2AXFDEVMBFK3DX8ZRNKFFJE2TW).
+
+} r_7DTCQ6BXBRZWPRR7FM71V52YJP

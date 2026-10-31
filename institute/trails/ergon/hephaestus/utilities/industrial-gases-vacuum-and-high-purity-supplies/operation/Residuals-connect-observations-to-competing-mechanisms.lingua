@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Residuals connect observations to competing mechanisms (@gas-residuals: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR", #industrial-gases-and-vacuum "../../../engineering/mechanical-engineering-and-machine-design/service/Maintenance-intervals-access-and-functional-evidence.lingua#r_0GJDWMZFSFC6Y6DYH6G07BP5F1") { r_1TKMSWEJ2CABH6EBZN8RP6YQDA
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), troubleshooting and leak detection; [Conservation of helium while maintaining high system purity — White and colleagues](../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR), interpretation of pumpdown curvature.
+
+For the earlier fixed-temperature chamber model, V dp/dt=Q−Sp. A residual r=V dp/dt−Q+Sp measures disagreement with the specified model and inputs. It is not automatically a measured leak: pressure-dependent S, surface release, temperature change or sensor response can also create it.
+
+Numerical differentiation amplifies noise. Compare an integrated inventory residual over an interval before attributing pointwise spikes to physics. If temperature changes, derive the amount balance from pV/(RT) rather than silently applying the isothermal equation.
+
+**Work:** Generate a hypothetical trace with changing gas load and another with changing pumping speed. Show when one pressure trace cannot identify both. Propose an additional measurement or controlled, suitable comparison that separates them. Retain the distinction between model verification and validation against an installation.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Maintenance intervals, access and functional evidence](../../../engineering/mechanical-engineering-and-machine-design/service/Maintenance-intervals-access-and-functional-evidence.lingua#r_0GJDWMZFSFC6Y6DYH6G07BP5F1).
+
+} r_1TKMSWEJ2CABH6EBZN8RP6YQDA

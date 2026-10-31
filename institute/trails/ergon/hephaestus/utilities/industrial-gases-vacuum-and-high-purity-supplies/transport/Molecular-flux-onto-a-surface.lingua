@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Molecular flux onto a surface (@gas-impingement: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "Wall-scattering-accommodation-and-molecular-memory.lingua#r_2RRHVCRVY3A76AQECF8306F12J") { r_61K5P1ZPBE6GCCB49PSSZEGWP9
+**Read:** [Fundamentals of Vacuum Physics and Technology — Eshraq Al-Dmour](../sources/Fundamentals-of-Vacuum-Physics-Al-Dmour.lingua#r_175RE9FCKASP84H5VPDDPDX0C9), impingement; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), surface exposure; [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), the conditions behind pressure interpretation.
+
+Integrating the positive normal component of an isotropic equilibrium distribution gives incident number flux Γ=n v̄/4=p/√(2πmkBT). This counts collisions with a surface per area and time. The factor one quarter follows from the velocity and angle distributions, not from dividing a directed stream arbitrarily.
+
+A flux of one species depends on its partial pressure and molecular mass. Sticking probability and site density are additional information needed to estimate surface coverage. A rough monolayer time Ns/(sΓ) assumes constant flux, a constant sticking probability s and available sites; desorption, reaction and changing coverage can invalidate it.
+
+**Work:** Derive Γ directly from the one-dimensional normal-velocity Gaussian. Compare the surface arrival rate of two constituents at equal partial pressure. Explain how a low total pressure can coexist with unacceptable contamination of a sensitive surface, and which extra evidence is needed to connect arrival to retained material.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Wall scattering, accommodation and molecular memory](Wall-scattering-accommodation-and-molecular-memory.lingua#r_2RRHVCRVY3A76AQECF8306F12J).
+
+} r_61K5P1ZPBE6GCCB49PSSZEGWP9

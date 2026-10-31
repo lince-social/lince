@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Air-change rate, velocity and flow are different quantities (@cm-air-quantities: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "Derive-a-room-balance-before-choosing-an-airflow.lingua#r_2AJ3N0ZEF0DB9V9QHVQJ1AN2YJ") { r_4G94H2PHRT8Q2NZQ3JSB1A06TB
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), air systems; revisit the shared quantity and fluid-balance Records.
+
+Volumetric flow Q has units m³/s; average normal velocity over a section is Q/A only when A is the actual flowing area. Air-change rate is Q/V, often expressed per hour. It needs a declared flow: total supply, outdoor air or a particular effective removal flow.
+
+For hypothetical V=100 m³ and total supply Q=5 m³/s, Q/V=0.05 s⁻¹=180 h⁻¹. Over 20 m² this corresponds to an area-average 0.25 m/s, not a measured velocity at every work surface. A high exchange rate can coexist with bypass or stagnant regions.
+
+**Work:** Convert between all three quantities for two geometries with the same room volume. State the area and flow basis each time. Explain why an exchange-rate target alone cannot determine local particle trajectories, outdoor-air provision or protection during movement.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Derive a room balance before choosing an airflow](Derive-a-room-balance-before-choosing-an-airflow.lingua#r_2AJ3N0ZEF0DB9V9QHVQJ1AN2YJ).
+
+} r_4G94H2PHRT8Q2NZQ3JSB1A06TB

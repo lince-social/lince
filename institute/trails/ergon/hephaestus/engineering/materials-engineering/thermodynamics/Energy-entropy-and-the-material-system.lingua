@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Energy, entropy and the material system (@mat-material-energy: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "../../../chemistry/general-chemistry/energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB") { r_4JGM7SVWRYNFAF1YVWAA73CACN
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapters 1–2; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), thermodynamics lectures 1–8. Use the shared chemical system/energy treatment immediately before this step and entropy immediately after it.
+
+Specify a material system and its boundaries. With heat Q into a closed system and work W done by it, ΔU=Q−W. For pressure-volume work alone, constant-pressure heating relates heat to enthalpy when the applicable conditions hold. Electrical, magnetic, surface and mechanical constraints can add other work terms.
+
+For an illustrative 2 kg specimen with constant heat capacity 500 J kg⁻¹ K⁻¹, heating from 300 to 400 K changes its sensible enthalpy by 100 kJ. A phase change, reaction or temperature-dependent capacity changes that account. The apparatus, atmosphere and losses require their own balances.
+
+**Work:** Derive the energy balance for a heating experiment and identify measured versus assumed terms. Explain why heat is a transfer and not a substance stored in the material. Continue through the shared entropy Record before deciding which changes are possible.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Use entropy changes with a defined system and a valid thermodynamic argument](../../../chemistry/general-chemistry/energy/Entropy-and-the-second-law.lingua#r_7HFVYJCY204C7WMHBKWEPEZFQB).
+
+} r_4JGM7SVWRYNFAF1YVWAA73CACN

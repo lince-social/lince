@@ -1,0 +1,17 @@
+Import "../Materials-engineering.lingua"
+
+Breviary Technical Ceramics — Verband der Keramischen Industrie (@mat-ceramic-breviary: 0, is #reference, #part-of @mat-sources) { r_7998JE61RKQF7VXXYK197KRBH4
+Verband der Keramischen Industrie e.V. [Breviary Technical Ceramics, English contents](https://www.keramverband.de/brevier_engl/inhaltsverzeichnis.htm), [imprint](https://www.keramverband.de/brevier_engl/impressum.htm).
+
+Read the entire materials chapter 3 and mechanical-properties section 5.3 alongside the Cambridge ceramics/fracture lessons. Silicate, oxide and non-oxide families lead into powder-to-part manufacturing, thermal/electrical/chemical behavior, applications, design, joining and quality. Later processing and selection studies use those sections as a practical technical reference.
+
+Contents, imprint and [Weibull discussion](https://www.keramverband.de/brevier_engl/5/3/3/5_3_3_4.htm) were inspected on 30 October 2026. The latter explicitly assumes a failure population and discusses size dependence. Its quoted typical modulus range and historical standards references are not universal acceptance criteria or a verified current standards register. Check an actual grade, surface state, geometry and method before using tabulated values.
+
+The later processing pass also inspected [forming](https://www.keramverband.de/brevier_engl/4/1/4_1_3.htm), [forming to firing](https://www.keramverband.de/brevier_engl/4/1/4_1_4.htm) and [shrinkage](https://www.keramverband.de/brevier_engl/4/1/4_1_5.htm). Read these as linked process/state explanations; stated moisture ranges and dimensional examples are conditional, and historical standard references are not a current acceptance specification.
+
+Freely readable publisher-hosted material; no general open adaptation licence was established. Preserve attribution and keep text, figures and source files external. The industry guide complements deeper mechanics and primary investigations; it does not establish the performance of an unspecified ceramic part.
+
+The degradation section assigns all of sections 5.6–5.7. Their contents and the chemical-corrosion mechanism/test page structure were checked on 30 October 2026; detailed grade-by-grade resistance tables were not independently verified.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_7998JE61RKQF7VXXYK197KRBH4

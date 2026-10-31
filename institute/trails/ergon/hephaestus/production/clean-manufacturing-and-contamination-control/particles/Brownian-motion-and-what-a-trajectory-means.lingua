@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Brownian motion and what a trajectory means (@cm-brownian: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9", #clean-manufacturing "The-Einstein-relation-and-a-consistent-diffusivity.lingua#r_21PWR4DVEG0AZYDZWXR47R78GH") { r_5RB04M16JHAGSNHXKKP5CD0JSY
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Brownian Motion and Mass Diffusion; [Aerosols and coagulation — Chiang C. Mei, MIT](../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9), diffusion introduction.
+
+Molecular impacts fluctuate even when the mean fluid is still. A single particle's trajectory wanders; a population can have a reproducible probability distribution without individual paths becoming predictable. Distinguish a mean displacement from a mean squared displacement.
+
+In an isotropic long-time diffusion model with coefficient D, one coordinate has variance 2Dt and three coordinates have mean squared displacement 6Dt. A displacement scale √(2Dt) is not a traveled path length or a deterministic speed. A nonzero drift changes the mean; evaluate variance around that mean.
+
+**Work:** Derive the variance of a sum of independent zero-mean increments and identify the assumption needed to add variances. Compare a histogram of final positions with one traced path. Explain what observations could reveal correlated increments or a regime too short for a diffusion approximation.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [The Einstein relation and a consistent diffusivity](The-Einstein-relation-and-a-consistent-diffusivity.lingua#r_21PWR4DVEG0AZYDZWXR47R78GH).
+
+} r_5RB04M16JHAGSNHXKKP5CD0JSY

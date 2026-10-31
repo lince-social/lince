@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Read clean manufacturing from familiar objects to controlled processes (@cm-reading: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW", #clean-manufacturing "The-useful-function-defines-the-cleanliness-question.lingua#r_4PKZ4GW7D011A155KHJSC0ZX1M") { r_31VJJ9S9CV7GZP136B19YCZW5N
+**Begin:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), introduction and programming requirements, and [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), chapter 1. Keep the whole reports for sustained reading. Add [Microbiology — Parker and colleagues, OpenStax](../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW), chapters 1–3, when the biological vocabulary first appears.
+
+Think of a camera lens, a bearing, a silicon device and a container intended to hold a sterile product. Unwanted material can scatter light, change contact, alter an electrical surface or introduce biological activity. The word “clean” becomes useful only after saying what the object must do and how unwanted material can change that function.
+
+Start with ordinary observations and shared arithmetic. Build quantities, chemical and biological distinctions, sampling evidence and simple balances before facility design. The books supply extended explanations; the Records connect their different purposes. Later work should test mechanisms and competing interpretations rather than memorize one cleanliness label.
+
+**Work:** Choose two familiar objects. Describe their useful function, one possible contaminant and one observation that could reveal a change. Keep an explicit list of what you do not yet know how to measure.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [The useful function defines the cleanliness question](The-useful-function-defines-the-cleanliness-question.lingua#r_4PKZ4GW7D011A155KHJSC0ZX1M).
+
+} r_31VJJ9S9CV7GZP136B19YCZW5N

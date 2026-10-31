@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Phase equilibrium before a separation flowsheet (@gas-phase-separation: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "Throttling-expansion-and-why-cooling-is-conditional.lingua#r_0NAHQM6Q4W7WMAA10BN1RE8WC4") { r_6XH1JAN3Y6QGR8C66WP4VFHN95
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), mixtures and gas separation; [Connect mixture phase equilibria with stable states and actual separation duties](../../../chemistry/industrial-chemistry/thermodynamics/Mixtures-phases-and-stability-in-industrial-separations.lingua#r_77RX7N6YCX25E5PTTMHQ7X9ZRQ). Use real-fluid property evidence for a chosen gas mixture.
+
+A vapor and liquid in equilibrium have compatible temperature, pressure and component chemical potentials. Their compositions usually differ. A boiling-point list at one pressure does not determine a multicomponent column or a mixture near a critical region. Phase stability must be checked before using an equilibrium ratio.
+
+Keep amount fractions, enthalpies and the chosen equation or data model consistent. Relative volatility can vary with state and composition. Trace impurities can freeze or accumulate in ways not captured by a simplified model containing only major constituents. Property-model uncertainty propagates into separation and energy predictions.
+
+**Work:** Reconstruct an equilibrium tie line and a flash balance for an explicitly documented mixture/model. Independently check component closure and phase fractions. Change pressure and examine the change in both composition and enthalpy. Identify one impurity whose phase behavior requires extending the model.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Throttling, expansion and why cooling is conditional](Throttling-expansion-and-why-cooling-is-conditional.lingua#r_0NAHQM6Q4W7WMAA10BN1RE8WC4).
+
+} r_6XH1JAN3Y6QGR8C66WP4VFHN95

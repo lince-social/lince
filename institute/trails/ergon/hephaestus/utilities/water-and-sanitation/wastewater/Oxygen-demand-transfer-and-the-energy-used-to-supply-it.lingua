@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Oxygen demand, transfer and the energy used to supply it (@wu-aeration: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Screening-grit-and-primary-separation-change-the-feed.lingua#r_3PNGVSTEC6CGQWFGGKH8FHSXDK") { r_177E70PKCJJEYZ1205STFPTYM2
+**Read:** [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV), oxygen transfer; [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), aeration; [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G), nutrient-related oxygen demands. Revisit the earlier gas-transfer Record before combining transfer with biological uptake.
+
+The rate needed by microorganisms and the rate supplied by equipment are separate accounts. A mixed-liquid oxygen model contains transfer kLa(C* − C), biological uptake and transport. Clean-water test performance, wastewater conditions, temperature, pressure, diffuser condition and spatial distribution all matter when interpreting an equipment claim.
+
+For an original conditional calculation, take a 1,000 m³ volume, kLa = 2/hour, effective C* = 8 mg/L and bulk C = 2 mg/L. The transfer term is 12 kg O₂/hour, or 288 kg/day if maintained. Holding C constant while uptake exceeds this value violates the balance. Electrical consumption cannot be inferred from this oxygen mass alone; the equipment's actual efficiency and operating point are additional evidence.
+
+**Work:** Balance carbonaceous oxidation, retained biomass and nitrogen transformation on a common basis before summing demand. Compare a step in load with the delay in an oxygen sensor and blower response. For advanced work, estimate transfer and uptake separately from a declared experiment or dataset, test identifiability, and compare a uniform tank with spatially resolved measurements. Include mixing needs, maintenance and power interruption in the process argument.
+
+**Continue:** [Screening, grit and primary separation change the feed](Screening-grit-and-primary-separation-change-the-feed.lingua#r_3PNGVSTEC6CGQWFGGKH8FHSXDK).
+} r_177E70PKCJJEYZ1205STFPTYM2

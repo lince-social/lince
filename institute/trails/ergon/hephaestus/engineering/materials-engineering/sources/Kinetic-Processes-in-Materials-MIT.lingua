@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Materials kinetics — MIT 3.205 and 3.21 (@mat-mit-kinetics: 0, is #reference, #part-of @mat-sources) { r_2BZVQ9NG9Y2XTF4QG0H3JYYS16
+Samuel Allen and Thomas Eagar, [MIT 3.205, Fall 2006 notes](https://ocw.mit.edu/courses/3-205-thermodynamics-and-kinetics-of-materials-fall-2006/pages/lecture-notes/), [assignments](https://ocw.mit.edu/courses/3-205-thermodynamics-and-kinetics-of-materials-fall-2006/pages/assignments/) and [exams](https://ocw.mit.edu/courses/3-205-thermodynamics-and-kinetics-of-materials-fall-2006/pages/exams/). The public twelve-lecture segment covers kinetics; its thermodynamics half is explicitly absent.
+
+Kenneth Russell and Samuel Allen, [MIT 3.21, Spring 2006 notes](https://ocw.mit.edu/courses/3-21-kinetic-processes-in-materials-spring-2006/pages/lecture-notes/), [syllabus](https://ocw.mit.edu/courses/3-21-kinetic-processes-in-materials-spring-2006/pages/syllabus/) and [exams](https://ocw.mit.edu/courses/3-21-kinetic-processes-in-materials-spring-2006/pages/exams/). Its 28 lecture entries supply concise summaries; suggested textbook exercises refer to the separately published *Kinetics of Materials*.
+
+Work 3.205 assignments 7–10 and the linked 2003/2005 exams; solutions are supplied for assignments 7–9 and the 2003 exam. The 3.21 page supplies three exams with solutions. Work the 3.205 slides, then use 3.21 to deepen diffusion, interfaces and transformations. Pair abbreviated derivations with Cota and Cambridge's full lessons. Selected PDFs inspected on 30 October 2026: 3.205 lectures 3 and 10 (18 and 12 pages); 3.21 lectures 6, 22 and 24 (1, 2 and 1 pages). Removed figures and proprietary Mathematica notebooks need separate treatment; their availability does not establish a complete executable course. OCW uses CC BY-NC-SA with component-specific exceptions. Keep all media/software external.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+} r_2BZVQ9NG9Y2XTF4QG0H3JYYS16

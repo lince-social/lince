@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Coupled coordinates, normal modes and physical matrices (@mech-modes: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "../dynamics/Three-dimensional-rotation-and-gyroscopic-coupling.lingua#r_39NF2TCKJBK3NP999ZKXZ6FHJR") { r_0KCCW9DJNDZAXQJNTCV6EPXB4Q
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 22–26, recitations 11–12 and problem sets 10–11; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), section 2.6; [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), matrix systems and eigenvalues in 18.03SC.
+
+For small motions about a fixed equilibrium, write M q_double_dot + C q_dot + Kq = f. Derive the matrices from inertia, forces or energy. M and K are symmetric for the ordinary conservative models considered here; their units depend on the coordinate pair. An angular and a translational coordinate need not give entries with identical units.
+
+In undamped free vibration, substitution q = φ cos(ωt) gives Kφ = ω²Mφ. This is a generalized eigenproblem. For positive definite M and symmetric K, distinct-frequency modes are orthogonal in the M-weighted inner product; their Euclidean vectors need not be orthogonal. Normalize the modes explicitly. A free rigid-body motion gives a zero-frequency mode rather than a lost spring.
+
+For two 1 kg masses, 100 N/m springs to the two walls and a 100 N/m connecting spring, M is the identity in kg and K has diagonal 200 and off-diagonal −100 N/m. The modes (1,1) and (1,−1) have frequencies 10 and √300 ≈ 17.3205 rad/s. The in-phase mode does not stretch the connecting spring.
+
+**Work:** Derive these matrices by both free bodies and energy, then reconstruct a response from its initial state using both modes. Apply force at one mass and predict both outputs. Show that arbitrary damping does not generally diagonalize in the undamped modal basis. Compare direct coupled integration with modal reconstruction and explain the assumptions permitting decoupling.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Three-dimensional rotation and gyroscopic coupling](../dynamics/Three-dimensional-rotation-and-gyroscopic-coupling.lingua#r_39NF2TCKJBK3NP999ZKXZ6FHJR).
+
+} r_0KCCW9DJNDZAXQJNTCV6EPXB4Q

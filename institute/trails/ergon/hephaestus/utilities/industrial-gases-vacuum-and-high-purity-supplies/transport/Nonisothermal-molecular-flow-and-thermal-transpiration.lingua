@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Nonisothermal molecular flow and thermal transpiration (@gas-thermal-transpiration: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Differential-pumping-and-gas-specific-boundaries.lingua#r_5EJKA3QXDNNHFF5R8YF0JV296Q") { r_1JARQ781E49AMGWPAJG8WK6BXW
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), measurement conditions and thermal effects; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), kinetic foundations. Revisit flux balance before applying the ideal-gas law alone.
+
+Two reservoirs at different temperatures connected through a small collisionless aperture exchange molecules according to their incident fluxes. At zero net flow for the same gas, p₁/√T₁=p₂/√T₂ under the equilibrium-reservoir model. Equal density, equal pressure and zero net transfer are no longer equivalent conditions.
+
+A gauge at a different temperature from the chamber can therefore require a thermal-transpiration correction. The transition toward continuum flow depends on geometry, gas and surface interaction. A limiting formula should not be applied unchanged across all pressures.
+
+**Work:** Derive the zero-flow relation from molecular fluxes, then compare it with ordinary equal-pressure equilibrium in a macroscopic continuum connection. Evaluate a hypothetical room-temperature gauge connected to a colder region. Identify the temperature and regime evidence needed before treating the reading as the pressure at the specimen.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Differential pumping and gas-specific boundaries](Differential-pumping-and-gas-specific-boundaries.lingua#r_5EJKA3QXDNNHFF5R8YF0JV296Q).
+
+} r_1JARQ781E49AMGWPAJG8WK6BXW

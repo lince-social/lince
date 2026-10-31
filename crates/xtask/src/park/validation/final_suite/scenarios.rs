@@ -1,5 +1,8 @@
 use super::*;
 
+const ORDINARY_CLIENT_TEST: &str = "server::tests::transfers_tests::dispatch::ordinary::real_browser_and_terminal_keep_native_typing_popups_fullscreen_clipboard_and_file_drop";
+const PROVIDER_CLIENT_TEST: &str = "server::tests::transfers_tests::dispatch::providers::real_external_provider_reserves_restores_launches_and_captures_through_standard_wayland_interfaces";
+
 fn complete(suite: &mut Suite, id: u8, waiting: Option<String>) -> Result<Option<String>> {
     suite.scenarios[(id - 1) as usize].automatic = true;
     Ok(waiting)
@@ -137,9 +140,26 @@ pub(super) fn fixtures(suite: &mut Suite, directory: &Path, selectors: &[&str], 
             Ok::<_, String>(json!({"program":path,"sha256":digest(&path)?,"arguments":runner.arguments}))
         }).transpose()?
     } else { None };
+    let ordinary = if selectors.contains(&ORDINARY_CLIENT_TEST) {
+        Some([
+            ("LINCE_PARK_TEST_PYTHON", executable(Path::new("python3"))?),
+            ("LINCE_PARK_TEST_GECKODRIVER", executable(&suite.settings.geckodriver)?),
+            ("LINCE_PARK_TEST_FIREFOX", executable(&suite.settings.firefox)?),
+            ("LINCE_PARK_TEST_TERMINAL", executable(&suite.settings.fixtures.terminal.program)?),
+        ].into_iter().map(|(name, path)| Ok((name, json!({"sha256":digest(&path)?,"path":path})))).collect::<Result<BTreeMap<_, _>>>()?)
+    } else { None };
+    let provider = if selectors.contains(&PROVIDER_CLIENT_TEST) {
+        let configuration = evidence_report(suite.settings.provider.as_ref().ok_or("Select the provider fixture")?)?;
+        Some([
+            ("LINCE_PARK_TEST_PROVIDER", executable(Path::new(configuration["target"]["program"].as_str().ok_or("Set target.program to the selected Noctalia executable")?))?),
+            ("LINCE_PARK_TEST_TERMINAL", executable(&suite.settings.fixtures.terminal.program)?),
+            ("LINCE_PARK_TEST_GRIM", executable(Path::new(configuration["grim"].as_str().unwrap_or("grim")))?),
+            ("LINCE_PARK_TEST_SLURP", executable(Path::new(configuration["slurp"].as_str().unwrap_or("slurp")))?),
+        ].into_iter().map(|(name, path)| Ok((name, json!({"sha256":digest(&path)?,"path":path})))).collect::<Result<BTreeMap<_, _>>>()?)
+    } else { None };
     let environment: BTreeMap<_, _> = ["WGPU_BACKEND", "VK_DRIVER_FILES", "VK_ICD_FILENAMES", "LD_LIBRARY_PATH", "WAYLAND_DISPLAY", "DISPLAY"]
         .into_iter().map(|name| (name, env::var(name).ok())).collect();
-    let input = serde_json::to_string(&json!({"toolkit":toolkit,"environment":environment,"content":"","boot":fs::read_to_string("/proc/sys/kernel/random/boot_id").ok()})).map_err(error)?;
+    let input = serde_json::to_string(&json!({"toolkit":toolkit,"ordinary":ordinary,"provider":provider,"environment":environment,"content":"","boot":fs::read_to_string("/proc/sys/kernel/random/boot_id").ok()})).map_err(error)?;
     let ledger_path = suite.directory.join("fixtures.json");
     let mut ledger: BTreeMap<String, FixtureResult> = if ledger_path.exists() { load(&ledger_path)? } else { BTreeMap::new() };
     let captures = directory.join("captures"); private(&captures)?;
@@ -155,11 +175,33 @@ pub(super) fn fixtures(suite: &mut Suite, directory: &Path, selectors: &[&str], 
         let started = Instant::now();
         println!("Running fixture: {selector}; log={}", log.display());
         let result = (|| {
-            let mut process = Command::new(binary);
+            let mut process = if [ORDINARY_CLIENT_TEST, PROVIDER_CLIENT_TEST].contains(selector) {
+                let mut process = Command::new("dbus-run-session");
+                process.arg("--").arg(binary);
+                let runtime = env::current_dir().map_err(error)?.join("target/pvr")
+                    .join(format!("ordinary-{}", SystemTime::now().duration_since(UNIX_EPOCH).map_err(error)?.as_nanos()));
+                private(&runtime)?;
+                process.env("XDG_RUNTIME_DIR", runtime).env_remove("WAYLAND_DISPLAY").env_remove("DISPLAY").env_remove("WAYLAND_SOCKET");
+                for (name, folder) in [("XDG_CONFIG_HOME", "config"), ("XDG_CACHE_HOME", "cache"), ("XDG_DATA_HOME", "data"), ("XDG_STATE_HOME", "state")] {
+                    let path = captures.join(folder); private(&path)?; process.env(name, path);
+                }
+                process
+            } else { Command::new(binary) };
             process.args([*selector, "--exact", "--include-ignored", "--test-threads=1", "--nocapture"])
                 .env("RUST_BACKTRACE", "1")
                 .env("LINCE_CONTENT", "")
                 .env("LINCE_PARK_TEST_ARTIFACTS", &captures);
+            if *selector == ORDINARY_CLIENT_TEST {
+                for (name, tool) in ordinary.as_ref().ok_or("Missing ordinary application tools")? {
+                    process.env(name, tool["path"].as_str().ok_or("Missing ordinary tool path")?);
+                }
+                process.env("LINCE_PARK_TEST_TERMINAL_ARGUMENTS", serde_json::to_string(&suite.settings.fixtures.terminal.arguments).map_err(error)?);
+            }
+            if *selector == PROVIDER_CLIENT_TEST {
+                for (name, tool) in provider.as_ref().ok_or("Missing provider application tools")? {
+                    process.env(name, tool["path"].as_str().ok_or("Missing provider tool path")?);
+                }
+            }
             if qml {
                 let runner = suite.settings.fixtures.toolkit_qml.as_ref().ok_or("Set fixtures.toolkit_qml to the chosen Qt Wayland runner")?;
                 process.env("LINCE_PARK_TEST_QML", executable(&runner.program)?)
@@ -333,12 +375,18 @@ fn sharing(suite: &mut Suite, directory: &Path) -> Result<Option<String>> {
 }
 
 fn ordinary_browser(suite: &mut Suite, directory: &Path) -> Result<Option<String>> {
+    fixtures(suite, directory, &[ORDINARY_CLIENT_TEST], false)?;
     browser_run(suite, directory, true, false, 1, 15)?;
     Ok(None)
 }
 
 fn providers(suite: &mut Suite, directory: &Path) -> Result<Option<String>> {
     if suite.settings.provider.is_none() { return Ok(Some("Select the user's provider fixture before verifying external-tool compatibility".into())); }
+    let configuration = evidence_report(suite.settings.provider.as_ref().ok_or("Select the provider fixture")?)?;
+    if configuration["workflow"] == "noctalia-grim-slurp" {
+        fixtures(suite, directory, &[PROVIDER_CLIENT_TEST], false)?;
+        return Ok(None);
+    }
     let run = browser_run(suite, directory, true, true, 1, 15)?;
     let result = evidence_report(&run.join("results.json"))?;
     require(result["bar_placement"] == "passed", "The selected provider did not prove reservation/restoration")?;

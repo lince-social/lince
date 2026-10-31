@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+DMT contact and the limits of interchanging models (@cm-dmt: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #clean-manufacturing "Interaction-range-and-deformation-determine-the-contact-regime.lingua#r_4TZ81HQ273F2TFVM4P6R88581R") { r_3VSZWJ3765FXCK58A6B5TTTEX6
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), adhesion-model page 3; [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), the JKR/DMT comparison.
+
+In the elementary DMT sphere–plane description, the Hertz contact is loaded by P+2πWR, giving a³=3R(P+2πWR)/(4E*) while contact exists. The pull-off magnitude is 2πWR and the contact radius tends to zero at that limit. At zero load, a₀³=3πWR²/(2E*).
+
+For identical W and R, this pull-off value is four thirds of JKR's; the zero-load JKR contact area is larger. Choosing whichever answer fits one measurement is not a model-selection method. The interaction range, deformation and measured geometry must support the approximation.
+
+**Work:** Compare both contact-radius curves with load scaled by πWR. Show the nonadhesive Hertz limit at positive compression. For a hypothetical measured pull-off force, infer W separately with each model and report the resulting difference as model dependence. Explain which additional observation of contact area, separation or stiffness could discriminate them.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Interaction range and deformation determine the contact regime](Interaction-range-and-deformation-determine-the-contact-regime.lingua#r_4TZ81HQ273F2TFVM4P6R88581R).
+
+} r_3VSZWJ3765FXCK58A6B5TTTEX6

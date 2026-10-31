@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Composites, interfaces and material architecture (@mat-composite-families: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Wood-cellular-solids-and-hierarchical-structure.lingua#r_0207W6JNBXV873G403KT3SAM8S") { r_22X34XJD9VJMAGF56HT04PBMB2
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), the whole Fibre Composites package; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Introduction to Composites; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), special materials and joining.
+
+A composite description needs constituents, phase proportions, spatial arrangement, orientation, interfaces and defects. Distinguish particles, short fibres, continuous plies, woven reinforcement, sandwich structures and interpenetrating phases. The matrix transfers load and influences temperature, moisture and damage behavior; reinforcement alone does not set performance.
+
+A strong interface can transfer load efficiently, while controlled debonding or sliding can dissipate energy. The useful balance depends on the intended mechanism. Polymer-, metal- and ceramic-matrix composites cannot be reduced to the same failure law by changing one modulus.
+
+**Work:** Draw the load path through a short fibre, a long aligned ply and a sandwich panel. Identify where a simple volume average is justified and where it misses shear transfer, bending, buckling, flaws or delamination. Retain the architecture for the later lamina/laminate calculations.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Wood, cellular solids and hierarchical structure](Wood-cellular-solids-and-hierarchical-structure.lingua#r_0207W6JNBXV873G403KT3SAM8S).
+
+} r_22X34XJD9VJMAGF56HT04PBMB2

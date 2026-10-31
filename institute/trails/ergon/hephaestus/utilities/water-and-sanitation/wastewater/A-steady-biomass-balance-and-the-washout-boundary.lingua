@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A steady biomass balance and the washout boundary (@wu-biomass-steady: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "An-inspectable-solids-retention-and-washout-calculation.lingua#r_7M0YXSCE3AJRB4WWJX8W3MK0GC") { r_513WA85AZGY7953PPDG08KNASZ
+**Read:** [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV) and [Activated Sludge and Aerobic Biofilm Reactors — von Sperling](../sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua#r_0WMGVEM60J63M01SJJDQ9357GE), substrate and biomass balances; [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lectures 14–18. Derive each equation from the declared system before applying a design coefficient.
+
+Consider a constant-volume, completely mixed teaching system with a single growth-limiting soluble substrate, no biomass in the feed, constant conditions, biomass retention represented by θc, and all soluble outflow at tank concentration. At a positive steady biomass inventory, μ = b + 1/θc = a. Combining the Monod relation gives S* = Ks a/(μmax − a). The substrate balance then gives X* = Y(Sin − S*)/(θh a), where θh is hydraulic retention time. These expressions require a < μ(Sin); otherwise the washout equilibrium is S = Sin, X = 0.
+
+For an original example use Sin = 300 mg COD/L, Ks = 20 mg COD/L, μmax = 4/day, b = 0.1/day, θc = 10 days, θh = 0.25 day and Y = 0.5 mg biomass/mg COD. Obtain S* ≈ 1.05263 mg COD/L and X* ≈ 2,989.47 mg biomass/L. The units assigned to X and Y must match; neither is automatically total suspended solids.
+
+**Work:** Verify both steady residuals, calculate the critical solids retention time from the feed-dependent growth rate and examine the approach to washout. Compare a colder or inhibited kinetic case without treating a handbook coefficient as a measurement. This reduced model omits oxygen limitation, inert solids, multiple groups and detailed separation; its result is a mathematical benchmark, not an operating prescription.
+
+**Continue:** [An inspectable solids-retention and washout calculation](An-inspectable-solids-retention-and-washout-calculation.lingua#r_7M0YXSCE3AJRB4WWJX8W3MK0GC).
+} r_513WA85AZGY7953PPDG08KNASZ

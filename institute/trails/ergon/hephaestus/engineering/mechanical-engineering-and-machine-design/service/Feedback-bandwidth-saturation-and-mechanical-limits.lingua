@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Feedback, bandwidth, saturation and mechanical limits (@mech-feedback-limits: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Human-access-stored-energy-and-isolation.lingua#r_0FD90Y234EJ4QAT78JTCYQNTEE") { r_4F4CYDB278NVVPGHT553C9ESKM
+**Read:** [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), dynamics, damping and machine design; [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), actuation and precision mechanisms. Continue into electrical-power and control studies when developing the drive itself.
+
+Feedback compares a measured quantity with a reference, acts on the difference and changes the measured system. The measured coordinate may differ from the useful point because of backlash, compliance or thermal motion. Increasing gain cannot remove an unobserved geometric error.
+
+For an ideal mass with proportional/derivative force control, m ẍ + K_d ẋ + K_p x = K_p r. Its natural frequency is √(K_p/m), with damping ratio K_d/(2√(mK_p)). Sampling, delay, flexible modes and force saturation change this simple account. Saturation also invalidates a linear prediction that demands unavailable force.
+
+**Work:** Derive a position loop for the selected axis and compare it with a model containing one flexible mode and actuator limits. Examine tracking and disturbance rejection separately. Identify the first physical limit encountered when increasing speed or gain. Explain what the sensor actually observes during reversal and how that affects the claimed positioning accuracy.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Human access, stored energy and isolation](Human-access-stored-energy-and-isolation.lingua#r_0FD90Y234EJ4QAT78JTCYQNTEE).
+
+} r_4F4CYDB278NVVPGHT553C9ESKM

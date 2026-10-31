@@ -1,6 +1,6 @@
 Import "../Thermodynamics-and-heat-transfer.lingua"
 
-Control-volume mass and energy balances (@th-control: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Turbines-compressors-valves-mixers-and-nozzles.lingua#r_5FNNDS9HS3F0FDBD0MX1H5D8YJ", #fluid-dynamics "../../fluid-dynamics/balances/Pressure-work-kinetic-energy-head-and-dissipation.lingua#r_7HQS960HZ708YJQVV7BA16JVMA") { r_3GJ7MNPFS8HECS4WPV8WZCEY2M
+Control-volume mass and energy balances (@th-control: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW", #source "../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #thermodynamics-and-heat-transfer "Turbines-compressors-valves-mixers-and-nozzles.lingua#r_5FNNDS9HS3F0FDBD0MX1H5D8YJ", #fluid-dynamics "../../fluid-dynamics/balances/Pressure-work-kinetic-energy-head-and-dissipation.lingua#r_7HQS960HZ708YJQVV7BA16JVMA", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/storage/A-storage-vessel-needs-mass-and-energy-balances.lingua#r_08N1RNVEKDZ9XJM90S5KC5CXPT", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/facilities/Heat-loads-connect-the-process-to-air-and-water-systems.lingua#r_28P8T7X4TJ8G7TVHT56SE7FWG7") { r_3GJ7MNPFS8HECS4WPV8WZCEY2M
 **Read:** [Introduction to Engineering Thermodynamics — Claire Yu Yan](../sources/Introduction-to-Engineering-Thermodynamics-Yan.lingua#r_6AX93SRMGE0XXJTQ1NW6X9QXTW), chapter 5 in full; [Engineering Thermodynamics — Olivier Cleynen](../sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), chapter 3 in full; [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), open-system energy and matter.
 
 The shared balance reasoning extends to flowing energy. For a fixed control volume, accumulation equals heat input minus work output plus incoming minus outgoing mass-flow contributions of h + v²/2 + gz. Use a distinct symbol for velocity so it is not confused with specific volume. The formula assumes a consistent description of ports and work terms.
@@ -14,4 +14,10 @@ Compare startup filling with steady flow. A tank receiving hot fluid can change 
 **Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
 
 **Continue in fluid dynamics:** [Pressure work, kinetic energy, head and dissipation](../../fluid-dynamics/balances/Pressure-work-kinetic-energy-head-and-dissipation.lingua#r_7HQS960HZ708YJQVV7BA16JVMA).
+
+**Continue in gas and vacuum systems:** [A storage vessel needs mass and energy balances](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/storage/A-storage-vessel-needs-mass-and-energy-balances.lingua#r_08N1RNVEKDZ9XJM90S5KC5CXPT).
+
+
+**Continue in clean manufacturing:** [Heat loads connect the process to air and water systems](../../../production/clean-manufacturing-and-contamination-control/facilities/Heat-loads-connect-the-process-to-air-and-water-systems.lingua#r_28P8T7X4TJ8G7TVHT56SE7FWG7).
+
 } r_3GJ7MNPFS8HECS4WPV8WZCEY2M

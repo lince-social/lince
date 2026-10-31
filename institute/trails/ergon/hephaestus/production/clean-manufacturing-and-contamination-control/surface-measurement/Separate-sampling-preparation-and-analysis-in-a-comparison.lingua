@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Separate sampling, preparation and analysis in a comparison (@cm-surface-variance: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "../studies/Investigate-surface-coverage-residue-and-film-inference.lingua#r_5EDX4N2E7PXKTBRNA7DBJ1R7PG") { r_45Z6TMPNGW0W9QRZ5MTMMTYACK
+**Read:** [Sampling contributions, thresholds, and results near zero](../../../inquiry/metrology/uncertainty/Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG), sampling and nested variation; [Chemical measurements — matrix, recovery, selectivity, and reference material](../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ), specimen-to-result accounting.
+
+Repeated readings of one prepared specimen do not provide independent evidence about the whole target. A simple hierarchical model is y_ijk = μ + a_i + b_ij + ε_ijk, where a_i represents sampled-region variation, b_ij preparation variation within region and ε_ijk analytical variation. Specify independence and variance assumptions before using this decomposition.
+
+For a balanced design with n independent regions, p preparations per region and r readings per preparation, var(mean) = σ_a²/n + σ_b²/(np) + σ_ε²/(npr). If the respective variances are 9, 4 and 1 in squared result units and n = 3, p = 2, r = 4, the mean variance is 3.708333. Increasing only repeated readings eventually does little to reduce the dominant region contribution.
+
+These terms describe a declared population and design. Targeted regions, correlated specimens or destructive preparation can require another model. Spatial heterogeneity is sometimes the property of interest rather than noise to average away.
+
+**Work:** Derive the mean variance by counting shared terms and compare allocating effort to more regions, more preparations or more readings. Build a small simulated hierarchy and show how flattening all observations into independent replicates understates uncertainty. Preserve the hierarchy when reporting the result.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Investigate surface coverage, residue and film inference](../studies/Investigate-surface-coverage-residue-and-film-inference.lingua#r_5EDX4N2E7PXKTBRNA7DBJ1R7PG).
+
+} r_45Z6TMPNGW0W9QRZ5MTMMTYACK

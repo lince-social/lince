@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Surface recombination and competing rate limits (@gas-recombination: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #industrial-gases-and-vacuum "Real-leaks-trapped-pockets-and-virtual-leaks.lingua#r_123A56FMSS9PT28W9VYPDG7GT1") { r_22XY0HDTJPDV2SC4SQ2K1V3NFR
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), section 5.2.6 and the assumptions preceding the diffusion model; [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D), material/treatment comparison.
+
+Fast diffusion does not guarantee fast molecular release. If atomic hydrogen must meet and recombine at a surface, the boundary can become rate-limiting. A simple boundary law may involve a recombination term proportional to squared surface atomic concentration, together with an incoming dissociation term.
+
+The rate-limiting process can change as bulk inventory decreases, temperature changes or a surface layer develops. A fitted exponential or diffusion coefficient may then summarize mixed mechanisms. A thin, depleted specimen can behave differently from a thick specimen of the same nominal alloy.
+
+**Work:** Couple a declared surface-reaction law to a diffusion balance and identify dimensionless comparisons of surface and bulk time scales. Recover fast-surface and slow-surface limits. Propose a thickness, preparation or temperature comparison that would discriminate them without changing all experimental conditions at once.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Real leaks, trapped pockets and virtual leaks](Real-leaks-trapped-pockets-and-virtual-leaks.lingua#r_123A56FMSS9PT28W9VYPDG7GT1).
+
+} r_22XY0HDTJPDV2SC4SQ2K1V3NFR

@@ -1,0 +1,11 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+SWMM — drainage, collection and reproducible hydraulic models (@wu-swmm: 0, is #reference, #part-of @wu-sources) { r_65K5ER0T3C8RC87J6M6XXS34NE
+Lewis A. Rossman and Michelle Simon. Storm Water Management Model User's Manual Version 5.2, EPA/600/R-22/030, February 2022. [Official project and releases](https://www.epa.gov/water-research/storm-water-management-model-swmm) · [Manual text](https://nepis.epa.gov/Exe/ZyPURL.cgi?Dockey=P10145M6.TXT).
+
+Work the complete tutorial and the manual's modelling, simulation and reporting material. Continue into the separate reference manuals for hydrology, hydraulics and water quality, including their errata and addenda. Preserve the engine revision, input file, routing method, units, boundary conditions and time settings when comparing results.
+
+The official project page and manual were inspected on 30 October 2026. EPA describes the software as open source and freely available. The cited manual is 5.2; the agency page also lists particular engine releases, which must be recorded separately. Retain the chosen release's licence, dependencies and document credits. This reference supplies external downloads only; a successful simulation does not establish the condition or capacity of a real sewer.
+
+**Return:** [Water and sanitation sources](../Sources.lingua#r_7AMRJFFR11FF35KJM7Y7M05B3M).
+} r_65K5ER0T3C8RC87J6M6XXS34NE

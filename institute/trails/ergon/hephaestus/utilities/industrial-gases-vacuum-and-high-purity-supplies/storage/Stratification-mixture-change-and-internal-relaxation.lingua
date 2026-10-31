@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Stratification, mixture change and internal relaxation (@gas-stratification: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7", #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "../../../materials/chemical-feedstocks-and-supply-systems/transfers/Loading-and-unloading-as-a-shared-technical-operation.lingua#r_308YPHWHSV82M1F4BYZRBBV559") { r_4Y9PJ7DH99MCJC8NPD8506M4RQ
+**Read:** [Thermal performance of cryogenic storage tanks — Aasen and colleagues](../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7), introduction and limitations of thermal models; [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), phase and energy descriptions; [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), cryogenic fluids. For hydrogen-specific context, see Wesley Johnson's 2023 NASA [liquefaction presentation](https://ntrs.nasa.gov/citations/20230014839), especially PDF page 3 on molecular-state conversion. Its metadata and that passage were inspected; the complete numerical study was not reproduced.
+
+A tank can contain liquid, vapor, walls and interfacial regions at different temperatures. Representing all of them by one temperature removes the finite rates that control their approach to equilibrium. Separate inventories and interfacial heat/mass transfer may be necessary to explain a pressure history.
+
+For mixtures, evaporation and condensation redistribute species. A composition measured at one outlet need not equal the total inventory composition. For hydrogen, the populations of ortho and para molecular states add an internal conversion and energy-release question; a property table or initial-state description must specify the applicable state rather than treating every sample as already equilibrated.
+
+Model complexity should follow observable consequences. Add distinct liquid/vapor temperatures when measurements or characteristic times require them, then test whether the additional parameters can be identified. More adjustable coefficients can improve a fit without improving a changed-condition prediction.
+
+**Work:** Compare a homogeneous equilibrium model with a two-region model using the same total heat input. Explain what observations distinguish them. Identify an internal process that could change pressure while total mass remains fixed, and connect it to a measurable energy or composition account.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Understand a transfer at the interface between two organisations](../../../materials/chemical-feedstocks-and-supply-systems/transfers/Loading-and-unloading-as-a-shared-technical-operation.lingua#r_308YPHWHSV82M1F4BYZRBBV559).
+
+} r_4Y9PJ7DH99MCJC8NPD8506M4RQ

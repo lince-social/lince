@@ -1,0 +1,10 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pressure regulator flow curves — Swagelok technical bulletin (@gas-regulator-source: 0, is #reference, #part-of @gas-sources) { r_4RBBVMRQSACN4TR38CDAMQ17K9
+Swagelok. *Pressure Regulator Flow Curves Technical Bulletin*, MS-06-114, Rev G, January 2024; copyright 2013–2024. [Manufacturer's complete 216-page PDF](https://www.swagelok.com/downloads/webcatalogs/en/ms-06-114.pdf).
+
+Read the introductory explanations and then the complete curve family for a chosen regulator. Record gas, flow-reference state, inlet pressure, spring range and configuration before interpreting a curve. This is primary manufacturer evidence for those products, not an independent comparison of all regulators.
+
+Identity, introductory droop, lockup, hysteresis and supply-pressure discussions were inspected on 30 October 2026. PDF page 2, figures 2 and 3, was also inspected visually. Curves were not digitized or experimentally reproduced. Free publisher access was verified; an open adaptation licence was not established. Refer to the external PDF rather than copying its diagrams.
+
+} r_4RBBVMRQSACN4TR38CDAMQ17K9

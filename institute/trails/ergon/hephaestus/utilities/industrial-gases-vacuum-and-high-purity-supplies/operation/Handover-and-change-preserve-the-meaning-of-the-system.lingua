@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Handover and change preserve the meaning of the system (@gas-handover: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "../recovery/Measure-energy-per-accepted-service.lingua#r_59E7HQX6P3BZ5TG7MZBZE7Y85N") { r_50S4H3D04PB1P1DKAYTWYNWYS1
+**Read:** [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), operations, training and change management; [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), feedback and facility data.
+
+A shift handover should preserve the current physical state, temporary arrangements, unresolved faults and the evidence behind decisions. A nominal equipment name is insufficient if another person inherits a bypassed sample path or a changed reserve connection.
+
+Treat changed feed, demand, material, software, procedure and responsibility as possible changes to the service model. Revisit affected assumptions and connections. Keep the reasoning close to the changed Record or linked evidence so the next person can understand what was established.
+
+**Work:** Write a concise handover for an installation with one degraded measurement and one ongoing repair. Then change the gas demand and identify which calculations, observations, interfaces and training need revision. Preserve useful evidence rather than creating paperwork without a physical question.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Measure energy per accepted service](../recovery/Measure-energy-per-accepted-service.lingua#r_59E7HQX6P3BZ5TG7MZBZE7Y85N).
+
+} r_50S4H3D04PB1P1DKAYTWYNWYS1

@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Flow, load and the day that an average hides (@wu-wastewater-load: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Gravity-conveyance-depth-and-the-downstream-boundary.lingua#r_3W9M54407B0RQZAVCHCF1J3Q88") { r_0GEZ18WHNCN8PCV72027QSFEY1
+**Read:** [Wastewater Characteristics, Treatment and Disposal — von Sperling](../sources/Wastewater-Characteristics-Treatment-and-Disposal.lingua#r_59N8AH8ZNEKJK3HC4J32RV50XC), wastewater quantities and characteristics; [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), sampling, descriptive analysis and load estimation. Read the whole introductory characteristics account, then select the sections needed for the observed variable.
+
+Load is the amount crossing a boundary per time. For concentration in mg/L and flow in m³/day, multiplying them gives grams/day; divide by 1,000 for kilograms/day. Record whether the flow and concentration represent the same interval. Equalization stores and redistributes a history; it does not remove a conserved constituent by averaging it.
+
+An original two-period example has twelve hours at 100 m³/h and 200 mg/L, followed by twelve hours at 50 m³/h and 500 mg/L. The daily volume is 1,800 m³ and load is 540 kg. The flow-weighted concentration is 300 mg/L; the arithmetic concentration mean is 350 mg/L. A constant discharge of 75 m³/h needs a 300 m³ working storage swing in this ideal cycle. A real mixed tank's outlet concentration still depends on its initial inventory and mixing history.
+
+**Work:** Reconstruct both period balances, then change the order and duration without losing units. Design a composite-sampling account that estimates the intended load, including missing observations and uncertainty. Explain why the same daily volume can produce different peak hydraulic demand, oxygen demand and inhibition. Never substitute a dilution-driven concentration decrease for mass removal.
+
+**Continue:** [Gravity conveyance, depth and the downstream boundary](Gravity-conveyance-depth-and-the-downstream-boundary.lingua#r_3W9M54407B0RQZAVCHCF1J3Q88).
+} r_0GEZ18WHNCN8PCV72027QSFEY1

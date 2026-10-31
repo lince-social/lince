@@ -1,0 +1,101 @@
+Import "../Materials-engineering.lingua"
+
+An inspectable mixed-potential and material-loss account (@mat-corrosion-example: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5", #materials-engineering "../degradation/Polarization-measurements-and-independent-loss-evidence.lingua#r_4M06SRBKACNKX2ZBEVR2T3KG2B") { r_52QDVA9TVTEX94JA9YF8DBQ9E7
+**Read first:** The preceding balance and [Corrosion current — Derek H. Lister](../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5). This original standard-library example exposes two fitted Tafel branches with an optional cathodic transport limit; it is not a parameter set for an actual alloy/environment.
+
+Inputs use m², A/m², volts, kg/mol and kg/m³. Supply a potential window in which the assumed laws have independent justification. The calculation rejects an unbracketed balance rather than silently extrapolating beyond that window. Logarithmic arithmetic avoids overflow during root finding; returned values are checked against supported floating-point limits. Numeric input bounds are computational limits, not evidence that the model applies throughout them.
+
+```python
+from math import exp, isfinite, log, log1p
+
+
+def mixed_potential(*, area_a=0.001, area_c=0.01, j_a=0.0001,
+                    j_c=0.000001, e_a=-0.6, e_c=0.0, b_a=0.05,
+                    b_c=0.05, j_limit=0.001, low=-0.5, high=-0.1,
+                    molar_mass=0.055845, density=7870.0, valence=2):
+    def bounded(value, lower, upper, name):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(name)
+        try:
+            value = float(value)
+        except OverflowError:
+            raise ValueError(name) from None
+        if not isfinite(value) or not lower <= value <= upper:
+            raise ValueError(name)
+        return value
+
+    area_a = bounded(area_a, 1e-12, 1e6, "area_a")
+    area_c = bounded(area_c, 1e-12, 1e6, "area_c")
+    j_a = bounded(j_a, 1e-12, 1e8, "j_a")
+    j_c = bounded(j_c, 1e-12, 1e8, "j_c")
+    e_a = bounded(e_a, -5.0, 5.0, "e_a")
+    e_c = bounded(e_c, -5.0, 5.0, "e_c")
+    b_a = bounded(b_a, 0.005, 1.0, "b_a")
+    b_c = bounded(b_c, 0.005, 1.0, "b_c")
+    low = bounded(low, -5.0, 5.0, "low")
+    high = bounded(high, -5.0, 5.0, "high")
+    molar_mass = bounded(molar_mass, 0.001, 1.0, "molar_mass")
+    density = bounded(density, 100.0, 30000.0, "density")
+    valence = bounded(valence, 1.0, 8.0, "valence")
+    if valence != int(valence) or low >= high:
+        raise ValueError("valence or potential window")
+    if j_limit is not None:
+        j_limit = bounded(j_limit, 1e-12, 1e8, "j_limit")
+
+    def log_currents(potential):
+        la = log(area_a) + log(j_a) + (potential - e_a) / b_a
+        lc = log(j_c) + (e_c - potential) / b_c
+        if j_limit is not None:
+            ll = log(j_limit)
+            lc = min(lc, ll) - log1p(exp(-abs(lc - ll)))
+        return la, log(area_c) + lc
+
+    def residual(potential):
+        la, lc = log_currents(potential)
+        return la - lc
+
+    if residual(low) > 0.0 or residual(high) < 0.0:
+        raise ValueError("no balance within the supplied model window")
+    for _ in range(100):
+        middle = low + (high - low) / 2.0
+        if middle == low or middle == high:
+            break
+        if residual(middle) < 0.0:
+            low = middle
+        else:
+            high = middle
+    potential = low + (high - low) / 2.0
+    la, lc = log_currents(potential)
+    if abs(la - lc) > 1e-10:
+        raise ValueError("unresolved current balance")
+    lj = la - log(area_a)
+    lm = la + log(molar_mass) - log(valence * 96485.33212)
+    lp = lm - log(area_a) - log(density)
+    logs = (la, lj, lc - log(area_c), lm, lp)
+    if any(not -700.0 <= value <= 700.0 for value in logs):
+        raise ValueError("result outside the supported floating-point range")
+    current, anode_density, cathode_density, mass_rate, penetration = map(exp, logs)
+    return {
+        "potential_V": potential,
+        "current_A": current,
+        "anode_A_m2": anode_density,
+        "cathode_A_m2": cathode_density,
+        "mass_kg_s": mass_rate,
+        "uniform_penetration_m_s": penetration,
+        "log_current_ratio": la - lc,
+        "potential_bracket_V": (low, high),
+    }
+
+
+if __name__ == "__main__":
+    print(mixed_potential())
+```
+
+The hypothetical default gives E≈−0.3876162108 V, I≈6.994266137 µA and average penetration≈2.571937583×10⁻¹³ m/s. The anodic and cathodic densities differ by the inverse area ratio. Set j_limit=None for purely kinetic control.
+
+**Work:** Independently reproduce the no-limit analytic solution, an equal-slope finite-limit quadratic and constructed roots with unequal slopes. Scale both areas together, change their ratio, tighten the bracket and approach transport-limited behavior. Check current conservation and Faraday units. Add resistance or passivation only after deriving a different model and obtaining the measurements it needs.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Polarization measurements and independent loss evidence](../degradation/Polarization-measurements-and-independent-loss-evidence.lingua#r_4M06SRBKACNKX2ZBEVR2T3KG2B).
+
+} r_52QDVA9TVTEX94JA9YF8DBQ9E7

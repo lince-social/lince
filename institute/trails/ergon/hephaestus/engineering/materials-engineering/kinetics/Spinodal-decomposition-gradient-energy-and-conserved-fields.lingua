@@ -1,0 +1,17 @@
+Import "../Materials-engineering.lingua"
+
+Spinodal decomposition, gradient energy and conserved fields (@mat-spinodal-kinetics: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "Transformation-fractions-temperature-histories-and-model-limits.lingua#r_6TJWBE48VNV80BQGD96ZA44878") { r_4HB6D1YCX2GC5GYD33G1140PY4
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lecture 10 and 3.21 lectures 22–23; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), section 8.5. Return to the original regular-solution model.
+
+For a scalar conserved composition c, write a simplified free-energy functional F=∫[f(c)+(κ/2)|∇c|²]dV. Its variational chemical potential is μ=f′(c)−κ∇²c. With constant positive mobility M, conservation gives ∂c/∂t=M∇²μ. This gradient term regularizes the short-wavelength behavior that a negative constant Fick diffusivity would make ill-posed.
+
+To obtain that chemical potential, perturb c by εη. The first-order energy change is ∫[f′(c)η+κ∇c·∇η]dV. Integration by parts transfers the derivative from η to c; periodic boundaries or the appropriate vanishing boundary term leave ∫[f′(c)−κ∇²c]ηdV. This identifies μ as the energy response to a local change, rather than introducing the variational symbol without a derivation.
+
+Linearizing about c_0, a mode with wavenumber q has growth rate −Mq²[f″(c_0)+κq²]. When f″<0, sufficiently long modes grow, and the fastest has q²=−f″/(2κ). Coherency elasticity, anisotropy and nonlinear evolution change the full prediction.
+
+**Work:** Derive the variational derivative and linear growth rate, checking the chosen κ convention. Prove total composition conservation and free-energy dissipation under periodic or appropriate no-flux boundaries. Compare this conserved evolution with a nonconserved order parameter, explaining why the equations differ.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Transformation fractions, temperature histories and model limits](Transformation-fractions-temperature-histories-and-model-limits.lingua#r_6TJWBE48VNV80BQGD96ZA44878).
+
+} r_4HB6D1YCX2GC5GYD33G1140PY4

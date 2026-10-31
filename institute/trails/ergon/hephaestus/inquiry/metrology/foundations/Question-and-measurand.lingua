@@ -1,6 +1,6 @@
 Import "../Metrology.lingua"
 
-Begin with a question and specify the measurand (@met-measurand: 0, is #chapter, #part-of @metrology, #source "../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1", #source "../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #metrology "Principle-procedure-result.lingua#r_2PT30AZGBV9V63Z3T0G7W8FSP6") { r_7ZNCJFEGXNJSGJJJKGYH6MGFE6
+Begin with a question and specify the measurand (@met-measurand: 0, is #chapter, #part-of @metrology, #source "../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1", #source "../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #metrology "Principle-procedure-result.lingua#r_2PT30AZGBV9V63Z3T0G7W8FSP6", #materials-engineering "../../../engineering/materials-engineering/measurement/Specimens-sampling-and-representative-structure.lingua#r_7H1X6BK6KC2XK1H1Q6WRTX7NSN", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/foundations/Trace-contamination-and-a-meaningful-detection-limit.lingua#r_53D7327JMNK7SAJ7957AHYEFPC", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/evidence/Define-the-quantity-before-selecting-the-instrument.lingua#r_7X3XWKDBEHABCPSN199QAXFZR8") { r_7ZNCJFEGXNJSGJJJKGYH6MGFE6
 **Read:** [A Beginner’s Guide to Uncertainty of Measurement — Bell](../sources/Beginner-Uncertainty.lingua#r_20P5M8FEB51HDG788TB4YZ90T1), the whole guide on a first pass; [International vocabulary of metrology — JCGM and Inmetro](../../quantitative-literacy/sources/Measurement-Vocabulary.lingua#r_6QKHXBP7KYF6ABT0GXBGYK9BZH), chapter 2 and the measurand definition; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 5–6.
 
 Measurement begins with a question precise enough for another person to investigate. “The diameter of this part” may mean a local two-point distance, the diameter of an associated fitted cylinder, a maximum envelope, or a value at a reference temperature. “Copper concentration” needs a defined material, component, sampling target, chemical form where relevant, and mass or volume basis. Different definitions can produce different legitimate results.
@@ -16,4 +16,12 @@ Start a measurement description with purpose, object or population, quantity, re
 **Continue:** [Principle, method, procedure, indication, and result](Principle-procedure-result.lingua#r_2PT30AZGBV9V63Z3T0G7W8FSP6).
 
 **Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+**Continue in materials engineering:** [Specimens, sampling and representative structure](../../../engineering/materials-engineering/measurement/Specimens-sampling-and-representative-structure.lingua#r_7H1X6BK6KC2XK1H1Q6WRTX7NSN).
+
+
+**Continue in gas and vacuum systems:** [Trace contamination and a meaningful detection limit](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/foundations/Trace-contamination-and-a-meaningful-detection-limit.lingua#r_53D7327JMNK7SAJ7957AHYEFPC).
+
+
+**Continue in clean manufacturing:** [Define the quantity before selecting the instrument](../../../production/clean-manufacturing-and-contamination-control/evidence/Define-the-quantity-before-selecting-the-instrument.lingua#r_7X3XWKDBEHABCPSN199QAXFZR8).
+
 } r_7ZNCJFEGXNJSGJJJKGYH6MGFE6

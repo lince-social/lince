@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Read surfaces from contact history to measured removal (@cm-surface-reading: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #source "../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/When-Are-Rough-Surfaces-Sticky-Pastewka-Robbins.lingua#r_3560V1VSJB6E8V78NFWGNQT7DQ", #clean-manufacturing "../../../chemistry/general-chemistry/states/Surfaces-colloids-and-dispersions.lingua#r_76DY10T2QGJP6FASSEXZGDMM73") { r_17J6HNWM403V06B2KQXWMXAAXG
+**Read:** The adhesion and removal notes in [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), both parts of [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), and the wetting sections of [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN). Read these as connected substantial treatments, not isolated formula sheets. [When are rough surfaces sticky? — Pastewka and Robbins](../sources/When-Are-Rough-Surfaces-Sticky-Pastewka-Robbins.lingua#r_3560V1VSJB6E8V78NFWGNQT7DQ) supplies a later research comparison.
+
+A transport calculation ends when material reaches a boundary. The next questions are whether it remains, changes state, reacts, spreads or returns to the surroundings. Surface roughness, chemistry, deformation, humidity, charge and time make those outcomes different even for objects with the same bulk material name.
+
+Begin by describing a real surface and its contacts. Then connect interaction energy to force, elastic contact to pull-off, liquid interfaces to wetting, and measured removal to a population. Existing chemical, mechanical and vacuum Records supply shared foundations along this path.
+
+**Work:** Take the sensitive surface from your earlier investigation. Draw an arrival, residence, attempted removal and renewed exposure sequence. For each stage list an observation and a competing explanation. Keep a separate record of what would count as restored function.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Recognize when surfaces and dispersed phases change the question](../../../chemistry/general-chemistry/states/Surfaces-colloids-and-dispersions.lingua#r_76DY10T2QGJP6FASSEXZGDMM73).
+
+} r_17J6HNWM403V06B2KQXWMXAAXG

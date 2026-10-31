@@ -170,8 +170,11 @@ fn queued_effect_capture_revalidates_privacy_source_revocation_lock_and_deadline
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
     let mut samples = Vec::new();
-    for change in [Change::Privacy, Change::Source, Change::Revoke, Change::Lock, Change::Deadline,
-        Change::ColorThenLock, Change::ColorThenVt, Change::ColorThenOutput] {
+    let changes = [Change::Privacy, Change::Source, Change::Revoke, Change::Lock, Change::Deadline,
+        Change::ColorThenLock, Change::ColorThenVt, Change::ColorThenOutput];
+    let selected = std::env::var("LINCE_PARK_TEST_CAPTURE_CHANGE").ok();
+    assert!(selected.as_ref().is_none_or(|selected| changes.iter().any(|change| format!("{change:?}") == *selected)), "Unknown capture retirement case: {selected:?}");
+    for change in changes.into_iter().filter(|change| selected.as_ref().is_none_or(|selected| format!("{change:?}") == *selected)) {
         eprintln!("Queued capture retirement: {change:?}");
         let profile = directory.path().join(format!("{change:?}"));
         std::fs::create_dir_all(&profile).unwrap();

@@ -253,7 +253,7 @@ impl Desktop {
                     .is_some_and(|drag| drag.button == button)
                 {
                     let drag = self.manipulation.active.take().unwrap();
-                    self.send(Input::Manipulation(
+                    let serial = self.send_tracked(Input::Manipulation(
                         Event::End {
                             token: drag.active.token,
                             position: self.native_position().map(|value| value as f32),
@@ -261,6 +261,7 @@ impl Desktop {
                         },
                         self.pointer_stamp,
                     ))?;
+                    self.pending_focus = Some((serial, None));
                 }
                 self.manipulation.swallowed.remove(&button);
                 self.buttons.remove(&button);

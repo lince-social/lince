@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Read property data with conditions and uncertainty (@mat-property-data: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "../bonding/Prepare-atoms-electrons-and-chemical-bonds.lingua#r_0YK3J5464VDN2WDCRDEYCQ1CXN") { r_5CBAKZGHNBXRGWAAB6N2DCQ6BE
+**Read:** [Materiais de Construção Mecânica — Zolin](../sources/Materiais-de-Construcao-Mecanica-Zolin.lingua#r_1KS5EGZJ8PBFDART80K21J1309), property tables alongside the shared metrology sources; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), microstructural examination and mechanical testing introductions.
+
+A property table is evidence only with an identifiable material state, method and domain. Separate a typical value, a measured result with uncertainty, a guaranteed specification and a model estimate. Temperature, direction, strain rate, frequency, moisture or previous cycling can change the relevant response.
+
+Different laboratories may report different quantities under similar names. A hardness number from one method is not automatically a direct measure of tensile strength. Extrapolation across temperature or processing state needs a model and evidence, not an unlabelled spreadsheet formula.
+
+**Work:** Compare two authorized data sources for the same nominal material. Resolve units and conditions, identify unresolved differences and decide which comparison is justified. Construct an uncertainty account for one derived quantity. Keep missing data visible and specify an informative measurement instead of substituting a precise-looking typical value.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Prepare atoms, electrons and chemical bonds](../bonding/Prepare-atoms-electrons-and-chemical-bonds.lingua#r_0YK3J5464VDN2WDCRDEYCQ1CXN).
+
+} r_5CBAKZGHNBXRGWAAB6N2DCQ6BE

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Leak-detection geometry and captured flow (@gas-leak-geometry: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7", #industrial-gases-and-vacuum "Leak-response-time-and-the-cost-of-waiting-too-little.lingua#r_00YRAJCSXC965VR9JH2M5AKRGZ") { r_4KW5EBXKM1ZKWZN91KYBYTCWKC
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), leak-detection arrangements; [Leak calibration — Ehrlich and Tison, NIST SP 250-38](../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7), comparison-system boundaries.
+
+Follow the tracer from where it is applied through the suspected path to the detector. In a vacuum arrangement the tracer can enter a pumped system; in a sniffing arrangement the detector samples part of gas leaving a pressurized boundary. The measured fraction depends on geometry, transport and competing flows.
+
+A detector sensitivity specification is not automatically the sensitivity of the complete test. Gas can bypass the detector, be diluted, remain trapped or arrive after the observation interval. Background tracer from previous tests can obscure a weak source or produce a false location.
+
+Define whether the aim is locating an opening, estimating total leakage or verifying a specified boundary. These require different coverage and sampling arguments. A passing observation at a few locations does not establish the total behavior of every unobserved joint.
+
+**Work:** Draw the full gas path and give a mass balance for captured and uncaptured tracer. Explain how a known reference flow introduced at different locations tests the complete setup. Separate instrument calibration, test coverage and the conversion to the intended service condition.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Leak response time and the cost of waiting too little](Leak-response-time-and-the-cost-of-waiting-too-little.lingua#r_00YRAJCSXC965VR9JH2M5AKRGZ).
+
+} r_4KW5EBXKM1ZKWZN91KYBYTCWKC

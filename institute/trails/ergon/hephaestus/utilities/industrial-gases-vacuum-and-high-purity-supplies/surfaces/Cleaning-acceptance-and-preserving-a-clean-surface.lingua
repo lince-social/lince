@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cleaning, acceptance and preserving a clean surface (@gas-vacuum-cleaning: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD", #source "../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Bake-history-and-the-state-after-cooling.lingua#r_038B620544Y77RGBGHASG5KTEH") { r_36QWW2ZZ2F6ETZHSBQS37YB2V2
+**Read:** [Surface finishing and vacuum coatings — Mauro Taborelli](../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD), section 2 and preparation discussions; [Cleaning equipment for oxygen service — EIGA 33/18](../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0), complete cleaning/inspection/preservation account; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), exposure history.
+
+Cleaning removes specified contamination through a compatible process. The method must reach the relevant surfaces and leave acceptable residues. A visually bright surface can retain a molecular film; aggressive preparation can alter roughness, chemistry, dimensions or later coating adhesion.
+
+Inspection must answer a defined cleanliness question. Particle inspection, nonvolatile residue, a chemical analysis and gas-release measurement provide different evidence. Rinsing, drying, packaging, handling and storage are part of preserving the accepted state. Oxygen-service cleanliness and vacuum performance overlap but are not interchangeable specifications.
+
+**Work:** Define two contaminants and their relevant acceptance observations for one component. Follow a hypothetical cleaning sequence through residue removal and recontamination opportunities. Explain how a measurement blank and an inaccessible surface affect the conclusion. Compare preparation options using their material consequences as well as their removal effectiveness.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Bake history and the state after cooling](Bake-history-and-the-state-after-cooling.lingua#r_038B620544Y77RGBGHASG5KTEH).
+
+} r_36QWW2ZZ2F6ETZHSBQS37YB2V2

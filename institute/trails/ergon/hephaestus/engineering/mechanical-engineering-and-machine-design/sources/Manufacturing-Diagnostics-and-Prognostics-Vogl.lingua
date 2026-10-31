@@ -1,0 +1,11 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Diagnostic and prognostic capabilities — Vogl, Weiss and Helu (@mech-phm-review: 0, is #reference, #part-of @mech-sources) { r_11J2W3H9ZM5J2Q1VYVMF1D41HY
+Gregory W. Vogl, Brian A. Weiss and Moneer Helu, *A review of diagnostic and prognostic capabilities and best practices for manufacturing*, DOI 10.1007/s10845-016-1228-8. [Public NIST-hosted article](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=917304), 17 PDF pages. The inspected version records acceptance on 21 May 2016 and a 2016 copyright notice.
+
+Read the complete review to distinguish detection, diagnosis, prognosis, data handling and maintenance decisions. Follow selected primary references for the chosen mechanism and compare them with later evidence; statements about the field's maturity describe the paper's time.
+
+Publication information and selected evaluation/best-practice passages were inspected on 30 October 2026. The PDF states Springer copyright outside the USA. NIST hosting does not imply a general Creative Commons adaptation licence for the entire article. Preserve the external copy and describe missing raw data, implementation or service evidence when attempting to reproduce a cited result.
+
+**Return:** [Mechanical-engineering sources](../Sources.lingua#r_06RZYPZEFNMZ6MZ690QB1WN1Z2).
+} r_11J2W3H9ZM5J2Q1VYVMF1D41HY

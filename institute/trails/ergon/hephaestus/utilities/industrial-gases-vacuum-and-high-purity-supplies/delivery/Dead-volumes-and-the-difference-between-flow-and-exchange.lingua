@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Dead volumes and the difference between flow and exchange (@gas-delivery-dead: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #industrial-gases-and-vacuum "A-well-mixed-purge-and-its-limit.lingua#r_7JAHNQ9HH44P8D09NY23BK1ZVC") { r_57M980HQAJ60W320Y9DJRPCPTY
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), residence and surface inventories; [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), gas handling and measurement geometry; use the earlier [Real leaks, trapped pockets and virtual leaks](../surfaces/Real-leaks-trapped-pockets-and-virtual-leaks.lingua#r_123A56FMSS9PT28W9VYPDG7GT1) explanation.
+
+A main line can carry substantial flow while a side cavity exchanges gas slowly. Distinguish volume swept by the dominant flow, stagnant or recirculating regions, and material stored on surfaces. Increasing flow in the main path does not necessarily increase exchange with every recess in proportion.
+
+Let a well-mixed main volume Vm and side volume Vd have impurity fractions cm and cd at the same constant pressure and temperature. A simple exchange model uses a volumetric exchange rate q, giving Vd dcd/dt=q(cm−cd). The time scale Vd/q differs from the main-path residence time Vm/F. This is a model of mixing exchange, not necessarily a pressure-driven flow through a tube.
+
+Diffusion, geometry, recirculation and periodic pressure changes can alter q. Adsorption adds another inventory and can create a longer tail. A specimen or instrument located in the main stream can report a low concentration while a poorly exchanging region remains contaminated.
+
+**Work:** Mark all connected volumes and surfaces on a small delivery schematic. For each, identify the physical mechanism of impurity removal. Predict which observation would reveal a slowly exchanging region after the main stream has already cleared.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A well-mixed purge and its limit](A-well-mixed-purge-and-its-limit.lingua#r_7JAHNQ9HH44P8D09NY23BK1ZVC).
+
+} r_57M980HQAJ60W320Y9DJRPCPTY

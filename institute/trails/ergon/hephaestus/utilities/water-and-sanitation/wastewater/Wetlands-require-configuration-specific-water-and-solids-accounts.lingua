@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Wetlands require configuration-specific water and solids accounts (@wu-wetlands: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Nitrification-connects-biomass-oxygen-and-alkalinity.lingua#r_3AE060ECT4XBBC5HKNJ9K4TG1X") { r_0CTCJMG4N3H679YGR810F1Z0PY
+**Read:** Work the complete [Treatment Wetlands — Dotro and colleagues](../sources/Treatment-Wetlands-Dotro-and-Colleagues.lingua#r_2PS18EZMVASRD626G9JXRV2M7G). Compare horizontal, vertical, intensified and surface-flow arrangements using the book's own distinctions; a planted bed is not one universal process.
+
+Water distribution, media, oxygen supply, intermittent loading, retention, clogging and harvesting affect different configurations differently. Plants can influence a treatment environment without accounting for all mass removed. Sorption stores material until its capacity or chemistry changes; retained particles can progressively change flow paths.
+
+In an original geometric example, a 100 m² bed with 0.6 m depth and assumed connected porosity 0.35 contains 21 m³ of pore water. At 10 m³/day, the nominal volume/flow time is 2.1 days. Actual residence requires hydraulic evidence; dead zones, unsaturated operation and preferential flow can invalidate that simple interpretation.
+
+**Work:** Close water and constituent balances for one specific configuration, including evapotranspiration and stored solids where relevant. Specify pretreatment, loading/rest cycles, distribution inspection and a response to clogging. Compare measured performance before and after maintenance while accounting for changed influent and weather. For advanced work, test a transport–reaction model against independent tracer and quality observations, with uncertainty in active volume and reaction coefficients.
+
+**Continue:** [Nitrification connects biomass, oxygen and alkalinity](Nitrification-connects-biomass-oxygen-and-alkalinity.lingua#r_3AE060ECT4XBBC5HKNJ9K4TG1X).
+} r_0CTCJMG4N3H679YGR810F1Z0PY

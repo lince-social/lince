@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Replace distributed loading with a declared equivalent (@mech-equivalent-load: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Equilibrium-reactions-and-a-check-from-another-point.lingua#r_39SFWBJ218F97HCA4Z63PF2X5H") { r_0DYDHEVFXKCQ16TD73HN5CNBAJ
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), sections 4.6–4.7 and 7.8. Derive the resultant from force and moment integrals before using a memorized centroid.
+
+A line load w(x), in force per length, contributes resultant F = ∫w(x)dx and moment about the origin ∫x w(x)dx. When F is nonzero, the resultant location is their ratio. A signed distribution can have zero resultant and nonzero moment, in which case one force cannot represent it.
+
+For an original triangular downward load rising from zero to 600 N/m over 3 m, the resultant is 900 N at 2 m from the zero end. A uniform 600 N/m over that same length gives 1,800 N at 1.5 m. The two drawings must not be treated as the same load because they share a peak value.
+
+**Work:** Reconstruct both results by integration and by geometric area/centroid reasoning. Compare discrete point approximations with the continuous distribution. Use the equivalent for external reactions, then return to the actual distribution when determining an internal shear or bending moment.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Equilibrium, reactions and a check from another point](Equilibrium-reactions-and-a-check-from-another-point.lingua#r_39SFWBJ218F97HCA4Z63PF2X5H).
+
+} r_0DYDHEVFXKCQ16TD73HN5CNBAJ

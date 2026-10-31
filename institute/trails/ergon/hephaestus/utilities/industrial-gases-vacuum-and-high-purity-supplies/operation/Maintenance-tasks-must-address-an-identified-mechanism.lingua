@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Maintenance tasks must address an identified mechanism (@gas-maintenance: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #source "../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1", #industrial-gases-and-vacuum "Isolation-is-a-verified-boundary-for-a-defined-task.lingua#r_28HZMX6NV7Q8H2QQXSGCDGR6C2") { r_6XK2YC9A7KJD7V60X4801TZJ37
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), maintenance selection and condition methods; [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), inspection; [Improving compressed air system performance — DOE sourcebook](../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1), fact sheet 8.
+
+An interval has a purpose: detect a developing condition, restore an aging part, verify a hidden function or preserve an established surface/material state. Different mechanisms need different evidence. Calendar replacement can be ineffective for a random failure and can introduce assembly or contamination faults.
+
+Describe the task's observable result and the skill, access, spare parts and instruments it requires. Track what the intervention itself changes: joints, lubricant, cleanliness, calibration and control settings. Separate a generic recommendation from an equipment-specific requirement and the demonstrated history of this installation.
+
+**Work:** Compare condition-based inspection, scheduled replacement and a functional test for three different failure modes. Include the consequences and uncertainty of deferring each task. Explain how new observations would change the selected interval without treating a handbook table as universal.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Isolation is a verified boundary for a defined task](Isolation-is-a-verified-boundary-for-a-defined-task.lingua#r_28HZMX6NV7Q8H2QQXSGCDGR6C2).
+
+} r_6XK2YC9A7KJD7V60X4801TZJ37

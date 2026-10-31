@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Adsorption equilibrium and the Langmuir model (@gas-isotherm: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #industrial-gases-and-vacuum "Competitive-adsorption-and-mixture-evidence.lingua#r_412P46MM8SV2B4BJCJ3JQE7Q88") { r_46PYRW6BRDQ4584GHBJ6D17QXM
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), equilibrium and Langmuir sections; [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H), adsorption-model discussion. Derive the relation before fitting it.
+
+For identical independent sites occupied by one molecule each, a simple adsorption/desorption balance gives θ=bp/(1+bp) at equilibrium. Loading q=qmaxθ approaches a linear low-pressure limit and a finite saturation value. Here b has inverse-pressure units; its numerical value changes when the pressure unit changes.
+
+An isotherm is a relation at a specified temperature. A fitted curve is not automatically a molecular explanation. Heterogeneous sites, pore filling, interactions, chemical reaction and hysteresis may invalidate the ideal-site assumptions. Absolute and excess adsorption also have different definitions, especially when gas density is substantial.
+
+**Work:** Derive the low- and high-pressure limits and identify what data can constrain b and qmax. Show why measurements restricted to bp≪1 chiefly identify their product. Fit hypothetical observations in their original measurement space and compare the inference with a linearized plot that changes the error weights.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Competitive adsorption and mixture evidence](Competitive-adsorption-and-mixture-evidence.lingua#r_412P46MM8SV2B4BJCJ3JQE7Q88).
+
+} r_46PYRW6BRDQ4584GHBJ6D17QXM

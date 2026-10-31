@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A well-mixed volume with generation and removal (@cm-room-balance: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "Recirculation-filtration-and-bypass.lingua#r_2PYGBXM8TFGPQ1WGHP4CSRDFAA") { r_4CMY99W2FJ2EE3KNTFAJP15FGZ
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), process requirements and air systems; [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), system boundaries. This balance is an original ideal model.
+
+Take a fixed volume V with uniform particle concentration C. Air enters and leaves at volume rate Q, inlet concentration is C_in, generation is G particles per time and first-order internal removal is kVC. The derivative dC/dt is the instantaneous change in concentration per time, approached by ΔC/Δt over shorter intervals. With constant coefficients and no change of particle category, V dC/dt=Q C_in+G−(Q+kV)C. Thus C∞=(Q C_in+G)/(Q+kV), τ=V/(Q+kV) and C(t)=C∞+(C₀−C∞)exp(−t/τ), provided Q+kV>0. With no outflow or removal, concentration instead increases linearly at G/V for constant generation.
+
+For V=100 m³, Q=0.5 m³/s, C_in=20 m⁻³, G=10 s⁻¹ and k=0.001 s⁻¹, C∞≈33.3333 m⁻³ and τ≈166.667 s. Removal by deposition lowers airborne concentration while increasing a surface inventory unless that deposited material is subsequently removed.
+
+**Work:** Derive the equation by counting transfers over a short interval. Check the no-source and no-removal limits, then calculate the transient from C₀=1000 m⁻³. Identify where perfect mixing fails near a source or an exposed product. A room-average model is not qualification of a facility.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Recirculation, filtration and bypass](Recirculation-filtration-and-bypass.lingua#r_2PYGBXM8TFGPQ1WGHP4CSRDFAA).
+
+} r_4CMY99W2FJ2EE3KNTFAJP15FGZ

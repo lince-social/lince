@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Recovery, recrystallization and the state left by processing (@mat-recovery: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "../../../materials/metals-and-metallurgical-production/forming/Recovery-recrystallization-grain-growth-and-texture-evolution.lingua#r_7988JVB7B2ER75AQKC9QVED6WQ") { r_6YGACSTQV93YY1J2NBGQVVHA4T
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), stored-energy and grain-growth discussions; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), defects and interfaces; [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../../../materials/metals-and-metallurgical-production/sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), the named year-2 recovery/recrystallization/grain-growth notes and question sheets, followed by the shared metallurgical investigation.
+
+Deformation can leave dislocations, texture and stored elastic energy. Heating can permit rearrangement and annihilation, formation/growth of new low-defect grains, and later grain growth. These changes overlap and depend on the prior state, impurity content, temperature and time.
+
+A changed hardness or conductivity is indirect evidence, not a unique count of defects or recrystallized volume. In polymers and glasses, relaxation and thermal history have different structural mechanisms; a metal's terminology should not be transferred without defining what changes.
+
+**Work:** Follow one deformation/heat history using at least two independent observations. Separate a recovery claim from a recrystallization claim and identify evidence that could distinguish them. Explain how a final manufacturing step can undo a property expected from an earlier treatment.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Test restoration and grain evolution through thermal, deformation, and structural histories](../../../materials/metals-and-metallurgical-production/forming/Recovery-recrystallization-grain-growth-and-texture-evolution.lingua#r_7988JVB7B2ER75AQKC9QVED6WQ).
+
+} r_6YGACSTQV93YY1J2NBGQVVHA4T

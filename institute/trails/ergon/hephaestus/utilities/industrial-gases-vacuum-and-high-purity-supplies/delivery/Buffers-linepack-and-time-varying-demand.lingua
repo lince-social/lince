@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Buffers, linepack and time-varying demand (@gas-demand-buffer: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9", #industrial-gases-and-vacuum "Reserve-supply-and-shared-dependencies.lingua#r_7G4SN4K1C0R690D8BZA1S250GE") { r_25S6WGRKKBMQEA7WNDFS4ZK8N8
+**Read:** [A storage vessel needs mass and energy balances](../storage/A-storage-vessel-needs-mass-and-energy-balances.lingua#r_08N1RNVEKDZ9XJM90S5KC5CXPT), [Real-gas inventory and the meaning of usable amount](../storage/Real-gas-inventory-and-the-meaning-of-usable-amount.lingua#r_112DFGFG2FMB4PBCH12KGCKH1N) and [Pressure regulator flow curves — Swagelok technical bulletin](../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9).
+
+An inventory buffer temporarily separates supply from demand. For an ideal isothermal gas in a fixed volume, dp/dt=(RT/V)(ṅsupply−ṅdemand). The available pressure interval represents an amount VΔp/(RT), provided the entire interval remains usable by the downstream system. Pressure alone does not guarantee quality or sufficient outlet conductance.
+
+As a hypothetical calculation, a 0.10 m³ volume at 300 K with 100 kPa usable pressure difference contains about 4.00908 mol of usable ideal-gas inventory. A constant deficit of 0.010 mol/s consumes it in about 400.908 s. Rapid discharge, finite regulator response or a line pressure gradient changes that prediction.
+
+For a distributed pipeline, linepack is ∫p(x)A(x)/[Z(x)RT(x)] dx in mol. A steady endpoint pressure estimate is insufficient for a rapid disturbance if wave propagation and local storage matter. Compare acoustic travel time, regulator response and demand time scale before adopting a single lumped volume.
+
+**Work:** Integrate a pulsed demand schedule, checking both peak deficit and recovery between pulses. Then impose a supply interruption and show when pressure, flow or purity first leaves its allowed interval. State which criterion actually ends useful service.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Reserve supply and shared dependencies](Reserve-supply-and-shared-dependencies.lingua#r_7G4SN4K1C0R690D8BZA1S250GE).
+
+} r_25S6WGRKKBMQEA7WNDFS4ZK8N8

@@ -1,0 +1,12 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+On-site nitrogen generators for food use — EIGA 194/24 (@gas-nitrogen-food: 0, is #reference, #part-of @gas-sources) { r_2VHG044YCF1X5GZRJVJJFN7NFH
+European Industrial Gases Association, Working Group 8. *Design and Operation of On-site Nitrogen Generators for Food Use*, Doc 194/24, June 2024, revision of 194/15. [Complete official 27-page guide](https://www.eiga.eu/uploads/documents/DOC194.pdf).
+
+Read the entire document as a worked supply-system application. Follow feed-air conditioning, pressure-swing and membrane generation, output quality, backup, batch definition and verification. Compare its intended food use with electronic or research service before transferring a specification or component choice.
+
+The cover, issue date, contents, scope and sections 4.3–4.4 were inspected on 30 October 2026. The source is application-specific; its legal and food-quality references describe the cited edition and jurisdiction. The document does not make every nominal nitrogen stream interchangeable.
+
+EIGA grants reproduction with source acknowledgment in this publication. Preserve separate credits and use the external reference. Further technical passages and the evidence for any selected numerical specification must be inspected during the corresponding investigation.
+
+} r_2VHG044YCF1X5GZRJVJJFN7NFH

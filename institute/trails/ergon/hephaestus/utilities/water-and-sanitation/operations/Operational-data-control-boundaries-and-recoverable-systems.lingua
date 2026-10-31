@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Operational data, control boundaries and recoverable systems (@wu-water-ot: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Operational-Technology-Security-NIST.lingua#r_4W20M55VVPGFB1FAB00Q347KPT", #water-and-sanitation "Commissioning-acceptance-and-the-evidence-of-an-operating-service.lingua#r_6W0HRDKRCPBEVDR597P30KC9NB") { r_02ZS8WA9B122TABN9D1X1PQFM2
+**Read:** [Operational technology security — NIST SP 800-82, revision 3](../sources/Operational-Technology-Security-NIST.lingua#r_4W20M55VVPGFB1FAB00Q347KPT) as the sustained security reference. Relate its methods to the fictional service developed here and the actual published process descriptions.
+
+Map where measurements originate, where decisions run, who can issue commands, which network paths connect them and how the process continues when a connection disappears. Inventory includes configuration, calibration, clocks, credentials, firmware and tested restoration material as well as devices. A backup whose contents or restoration procedure are unknown does not demonstrate recoverability.
+
+**Work:** Using a local diagram and synthetic data, distinguish read-only reporting from control authority. Describe least-necessary access, controlled changes, segmentation, logging and a verified restore sequence. Consider a stale historian value, duplicated command and unavailable remote service. Evaluate them through their effect on water, equipment and staff decisions.
+
+Keep this investigation within public material or an explicitly authorized isolated system. For advanced study, restore a simulated service from a clean starting state and account for missing observations, controller state and manual work. Compare the cited final NIST edition with a later revision only after identifying actual changes; a draft's existence is not evidence that an operating requirement has changed.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Commissioning, acceptance and the evidence of an operating service](Commissioning-acceptance-and-the-evidence-of-an-operating-service.lingua#r_6W0HRDKRCPBEVDR597P30KC9NB).
+
+} r_02ZS8WA9B122TABN9D1X1PQFM2

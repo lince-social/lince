@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Virtual Cement and Concrete Testing Laboratory — NIST SP 1173 (@mat-vcctl: 0, is #reference, #part-of @mat-sources) { r_4NPHRVT86304FBP77DTHKMZ0VA
+Jeffrey W. Bullard. *Virtual Cement and Concrete Testing Laboratory: Version 9.5 User Guide*, May 2014. [NIST guide](https://www.nist.gov/system/files/documents/el/building_materials/VCCTLUserGuide.pdf), [preserved GovInfo copy](https://www.govinfo.gov/content/pkg/GOVPUB-C13-559b0c08c4d7e773f7648b909ddc7724/pdf/GOVPUB-C13-559b0c08c4d7e773f7648b909ddc7724.pdf), [DOI](https://doi.org/10.6028/NIST.SP.1173).
+
+The 61-page PDF's publication details and selected mix/hydration and thermal-condition passages were inspected on 30 October 2026. Read the full guide and its cited model papers for a reconstruction of powder characterization, digital microstructures, hydration and property estimates. Compare isothermal, semi-adiabatic and adiabatic accounts, preserving aggregate and paste distinctions.
+
+This is a documented historical model and institutional reference. Installation, present server availability and numerical reproduction of version 9.5 were not verified. Reading a model guide does not establish that it predicts a new cement formulation. Government-hosted access does not waive separately credited component or software rights. Keep software, model data and PDFs external.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_4NPHRVT86304FBP77DTHKMZ0VA

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A storage vessel needs mass and energy balances (@gas-storage-balance: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "Withdrawal-cooling-and-the-remaining-inventory.lingua#r_5MS3TXRF6DFX1F4JJTBBXT9C2S") { r_08N1RNVEKDZ9XJM90S5KC5CXPT
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), open-system storage examples; [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), storage and transfer.
+
+Choose a fixed vessel boundary. Neglecting kinetic/potential energy of stored material and stating work terms separately, dm/dt=Σṁin−Σṁout and dU/dt=Q̇−Ẇ+Σṁin hin−Σṁout hout. The flowing material carries enthalpy; the stored material has internal energy. Replacing both with the same heat capacity silently changes the problem.
+
+Include vessel walls explicitly or add a wall balance, for example Cw dTw/dt=Q̇ambient−Q̇wall-to-fluid under a lumped approximation. Thermal contact and fluid mixing determine whether one temperature is adequate. An equation of state closes a single-phase model; phase equilibrium or additional transfer laws are needed for multiphase storage.
+
+Define the model's outputs before solving it: delivered amount, pressure history, wall temperature, liquid fraction or time until service fails. A pressure match alone can conceal a wrong energy balance. Independently integrate every inlet/outlet amount and energy over the interval and reconcile them with the final storage.
+
+**Work:** Draw boundaries around the product alone, product plus vessel, and product plus vaporiser. Show which heat and enthalpy terms move between the balances. Derive the same total-system energy result from all three choices.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Withdrawal cooling and the remaining inventory](Withdrawal-cooling-and-the-remaining-inventory.lingua#r_5MS3TXRF6DFX1F4JJTBBXT9C2S).
+
+} r_08N1RNVEKDZ9XJM90S5KC5CXPT

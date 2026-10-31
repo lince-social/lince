@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Recovery purity and separation capacity constrain each other (@gas-recovery-quality: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR", #industrial-gases-and-vacuum "Retirement-and-reuse-preserve-material-history.lingua#r_0NDX7NHS00QRN06YGAYZ17NBYY") { r_2V2GRP8FKRQABFKMKJ78PQ60QE
+**Read:** [Conservation of helium while maintaining high system purity — White and colleagues](../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR) and the complete adsorption/purification readings already used in this trail.
+
+A recovery network collects streams with different pressures, compositions and histories. Mixing them can reduce the ability to return high-purity material even when total captured mass increases. Segregating streams may preserve value but requires more identified connections, buffers and observations.
+
+Follow impurity loading through a purifier's working capacity, regeneration and breakthrough. Include the gas lost during regeneration and the uncertainty in a quality-release measurement. A storage vessel can hold recovered material while the purification system is unavailable; that inventory has a finite capacity and a history.
+
+**Work:** Compare mixed and segregated collection for two hypothetical return streams using component balances. Specify the observations needed to establish accepted return, and test a purifier outage or unexpected contaminant. Explain when a higher capture fraction could reduce useful recovery.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Retirement and reuse preserve material history](Retirement-and-reuse-preserve-material-history.lingua#r_0NDX7NHS00QRN06YGAYZ17NBYY).
+
+} r_2V2GRP8FKRQABFKMKJ78PQ60QE

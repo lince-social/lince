@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Biofilms couple growth to diffusion and detachment (@wu-biofilms: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Ponds-link-loading-weather-hydraulics-and-maintenance.lingua#r_0BXZGYDQ1AGSSJPCK3Q7PQKTRW") { r_6J9SZZDSV5ZBRG0QCSWZYWMWY6
+**Read:** Complete the aerobic-biofilm portion of [Activated Sludge and Aerobic Biofilm Reactors — von Sperling](../sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua#r_0WMGVEM60J63M01SJJDQ9357GE); work [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lecture 19; then study biofilm models in [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37). Distinguish a trickling filter, rotating contactor and moving carrier by their actual contact and solids-separation arrangements.
+
+Attached biomass experiences concentrations that vary through a film. Bulk oxygen or substrate does not identify every internal condition. Diffusion, reaction, thickness, external transport and detachment act together. Nominal carrier area and biologically active area require an explicit definition.
+
+A characteristic diffusion time scales as L²/D. In an original scale comparison, D = 10⁻⁹ m²/s and L = 0.1 mm give ten seconds; L = 1 mm gives 1,000 seconds. Growth and reaction rates determine whether that transport time matters. This comparison alone does not locate an anoxic layer or predict removal.
+
+**Work:** Derive a one-dimensional diffusion–reaction balance with stated liquid-side and support boundaries. Compare zero-order and first-order reaction assumptions before introducing multiple substrates. Vary thickness and external resistance, check flux against integrated reaction, and identify measurements that distinguish transport limitation from inactive biomass. Connect detached solids with downstream separation and maintenance rather than ending the account at the carrier surface.
+
+**Continue:** [Ponds link loading, weather, hydraulics and maintenance](Ponds-link-loading-weather-hydraulics-and-maintenance.lingua#r_0BXZGYDQ1AGSSJPCK3Q7PQKTRW).
+} r_6J9SZZDSV5ZBRG0QCSWZYWMWY6

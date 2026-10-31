@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+The Stokes number compares response with flow change (@cm-impaction-scale: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "Shape-walls-and-neighboring-particles-change-resistance.lingua#r_6MMD368PM9CMRH72VXQBC8D0T9") { r_4BWFD9P7DB9JTW5ZN4MD9T22KF
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), particle motion and Inertia Impactions; revisit [Choose physical scales and read the dimensionless equations](../../../physics/fluid-dynamics/similarity/Choose-physical-scales-and-read-the-dimensionless-equations.lingua#r_7W3D4FHAFRQJVC08KK9Q0V4BKP).
+
+For a flow changing over length L at speed U, its characteristic time is L/U. The ratio St=τU/L compares particle relaxation with that change. State whether L is a radius, diameter, gap or another length; coefficients and quoted thresholds depend on that convention and the geometry.
+
+A small St suggests rapid response to that particular flow change, while a large St allows appreciable velocity lag. Neither statement alone establishes collection: streamline geometry, starting position, particle size, diffusion and the surface boundary still matter. An inviscid stagnation-flow threshold is not a universal impactor specification.
+
+**Work:** Derive the dimensionless particle equation for a chosen flow. Compare two geometrically similar collectors at different speeds and identify what remains similar. Then change only particle size and explain why changing St can also change other ratios and collection mechanisms.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Shape, walls and neighboring particles change resistance](Shape-walls-and-neighboring-particles-change-resistance.lingua#r_6MMD368PM9CMRH72VXQBC8D0T9).
+
+} r_4BWFD9P7DB9JTW5ZN4MD9T22KF

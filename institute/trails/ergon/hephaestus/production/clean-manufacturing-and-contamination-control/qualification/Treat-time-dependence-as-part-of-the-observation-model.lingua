@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Treat time dependence as part of the observation model (@cm-monitoring-dependence: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Match-monitoring-to-the-timescale-of-an-excursion.lingua#r_67CGMMRJ4X995AESQYE70CTQZJ") { r_6K1328W5ST54XN4D49MM7J67FY
+**Read:** [Changing signals — response correction, sampling, and dependent noise](../../../inquiry/metrology/applications/Dynamic-measurements-and-time-series.lingua#r_7VY283E2ZMNS2JTQ9Y7DNBW6KX) and [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 6.4, stationarity, time-series models and residual diagnostics.
+
+For a stationary sequence with marginal variance σ² and lag correlations ρ_k, var(mean of n) = σ²[n + 2Σ from k=1 to n−1 of (n−k)ρ_k]/n². Closely spaced observations can contribute much less independent information than their count suggests.
+
+For an AR(1) correlation pattern ρ_k = 0.8^k and n = 25, the mean variance is about 0.2962418σ², compared with 0.04σ² under independence. Defining effective sample size through this particular mean variance gives about 3.375621. This is not a universal replacement sample size for every statistic.
+
+A model X_t−μ = φ(X_(t−1)−μ) + ε_t distinguishes marginal variability from innovation variance. Monitoring residuals can help when the model and baseline are supported, but a fitted model may absorb a change of interest. Assess original signals, residuals and model parameters together.
+
+**Work:** Derive the mean variance from pairwise covariance. Compare finite-n results with the large-n approximation and simulated histories. Fit only to a declared baseline, check residual dependence, and investigate what happens when the process correlation changes after fitting.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Match monitoring to the timescale of an excursion](Match-monitoring-to-the-timescale-of-an-excursion.lingua#r_67CGMMRJ4X995AESQYE70CTQZJ).
+
+} r_6K1328W5ST54XN4D49MM7J67FY

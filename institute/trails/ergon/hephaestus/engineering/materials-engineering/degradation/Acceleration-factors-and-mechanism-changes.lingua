@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Acceleration factors and mechanism changes (@mat-acceleration: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT", #source "../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG", #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #materials-engineering "Service-history-functional-thresholds-and-censored-observations.lingua#r_4BSZAEH9KEQN98Z647VA0Z4WS9") { r_5YXB9GW3RQ1FN1E4QHMKQSV2PS
+**Read:** [Outdoor polymer service-life inference — Duan and colleagues](../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT) in full; [Polymer-composite weathering protocols — NIST SP 1200-15](../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG); [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), accelerated cracking tests.
+
+For one Arrhenius-controlled process with unchanged mechanism, k(T₂)/k(T₁)=exp[(Eₐ/R)(1/T₁−1/T₂)]. The equation is not a universal conversion between laboratory hours and field years. Diffusion limitation, phase transitions, changing humidity, spectrum or competing reactions can invalidate a constant acceleration factor. Uncertain activation energy produces increasingly important uncertainty far from the fitted temperatures.
+
+**Work:** Derive the ratio and its sensitivity to Eₐ, then fit and criticize a published dataset across multiple conditions. Hold out an intermediate or service-like condition. Compare a constant-factor prediction with a model that retains changing covariates and material state. Test whether observed chemistry and damage morphology remain consistent before accepting the extrapolation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Service history, functional thresholds and censored observations](Service-history-functional-thresholds-and-censored-observations.lingua#r_4BSZAEH9KEQN98Z647VA0Z4WS9).
+
+} r_5YXB9GW3RQ1FN1E4QHMKQSV2PS

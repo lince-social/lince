@@ -1,6 +1,6 @@
 Import "../General-chemistry.lingua"
 
-Connect molecular orbitals with magnetism and extended electronic states (@gc-mo: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../states/Intermolecular-forces-and-collective-behavior.lingua#r_2QKWV1YDBB61H0GZN5A4GWRAYH") { r_726ETM9745704A826Y42QSVD0T
+Connect molecular orbitals with magnetism and extended electronic states (@gc-mo: 0, is #chapter, #part-of @general-chemistry, #source "../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG", #source "../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ", #general-chemistry "../states/Intermolecular-forces-and-collective-behavior.lingua#r_2QKWV1YDBB61H0GZN5A4GWRAYH", #materials-engineering "../../../engineering/materials-engineering/structure/Periodic-disordered-and-hierarchical-structure.lingua#r_3PVWG9ZVZ4CP2A7NMEZJ4QATG0") { r_726ETM9745704A826Y42QSVD0T
 **Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapter 8’s molecular-orbital treatment and exercises; [Principles of Chemical Science — MIT 5.112, Fall 2005](../sources/MIT-5-112.lingua#r_05VDAXGTY0M9E5K9TMJTWTFNAG), lectures 26–28 and 34; [Chem1 General Chemistry Virtual Textbook — Stephen Lower](../sources/Chem1-Lower.lingua#r_0NFQA43WZVMECZY6SKZJMRXWBZ), the bonding tutorial including molecular orbitals and band ideas.
 
 Molecular-orbital descriptions combine suitable basis functions into states spread across a molecular system. Symmetry, relative energies, overlap, electron count, and occupation determine the model. Bonding and antibonding character depend on how a state changes electron distribution and energy for the specified system.
@@ -16,4 +16,6 @@ Read the full molecular-orbital sections and later polyatomic/solid-state lectur
 **Continue:** [Explain bulk properties through interactions and collective states](../states/Intermolecular-forces-and-collective-behavior.lingua#r_2QKWV1YDBB61H0GZN5A4GWRAYH).
 
 **Return:** [General chemistry](../General-chemistry.lingua#r_206GS6CVXD8WSY1VX7PRF7136V).
+**Continue in materials engineering:** [Periodic, disordered and hierarchical structure](../../../engineering/materials-engineering/structure/Periodic-disordered-and-hierarchical-structure.lingua#r_3PVWG9ZVZ4CP2A7NMEZJ4QATG0).
+
 } r_726ETM9745704A826Y42QSVD0T

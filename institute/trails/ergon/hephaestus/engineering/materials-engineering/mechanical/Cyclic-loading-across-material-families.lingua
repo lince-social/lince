@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Cyclic loading across material families (@mat-cyclic-entry: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "../../../materials/metals-and-metallurgical-production/testing/Fatigue-cycles-crack-growth-and-variable-service.lingua#r_0TTB12YZSCY7ZNPB8G5CKS73Q5") { r_4PT1EVZSKNMHXRRMXH9D814MW9
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Fatigue, critically retaining its historical assumptions; [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), fatigue problems and examinations; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), failure mechanisms. Continue through the shared metallurgical fatigue account, then compare families.
+
+Alternating and mean load, frequency, dwell, environment, geometry and prior state can all affect cyclic response. Initiation and crack propagation are different portions of a lifetime. A stress-life relation does not replace a crack-growth calculation, and a single cycle count cannot represent every variable-amplitude history.
+
+For ductile metals, cyclic plasticity and evolving microstructure can dominate one regime; for polymers, self-heating, viscoelasticity and crack-tip dissipation can interact; for composites, several damage modes redistribute load. There is no universal endurance limit valid for all of these families and environments.
+
+**Work:** Specify two loading histories with equal peak stress but different mean load or dwell and explain why equal life is not implied. Compare published observations with their stress ratio, temperature, frequency, specimen geometry and runout convention. Keep statistical uncertainty distinct from model discrepancy.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Interpret fatigue through load history, crack mechanisms, and statistically supported evidence](../../../materials/metals-and-metallurgical-production/testing/Fatigue-cycles-crack-growth-and-variable-service.lingua#r_0TTB12YZSCY7ZNPB8G5CKS73Q5).
+
+} r_4PT1EVZSKNMHXRRMXH9D814MW9

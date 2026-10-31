@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+What the column cannot identify from one observation (@cm-column-inference: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "../../../inquiry/reproducible-computation/numerics/Convergence-and-tolerances.lingua#r_1D7K129GJSMBAB3WR7Z1KJFXXK") { r_0T2Q3WGSTSNYVVBAWVZ05C8MMK
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), observation and uncertainty; revisit the original sampling and operating-state Records.
+
+The model predicts concentration by location and time as well as cumulative collection. Observing only one final total can leave different diffusivities, settling speeds or initial profiles consistent with the data. A fitted coefficient can compensate for a wrong boundary, an unmodeled source or sample loss.
+
+Numerical refinement addresses discretization, not those physical ambiguities. A room-average counter, a witness plate and a time-resolved sample observe different aspects of the process. Select observations that distinguish competing mechanisms instead of collecting many copies of an insensitive quantity.
+
+**Work:** Construct two hypothetical parameter or initial-profile choices with similar final totals but different intermediate profiles. Propose a measurement that separates them. Include uncertainty and the disturbance caused by sampling, and state which explanations remain unresolved after the proposed comparison.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Refine an approximation and justify its numerical accuracy](../../../inquiry/reproducible-computation/numerics/Convergence-and-tolerances.lingua#r_1D7K129GJSMBAB3WR7Z1KJFXXK).
+
+} r_0T2Q3WGSTSNYVVBAWVZ05C8MMK

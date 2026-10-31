@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Read qualification and monitoring as continuing evidence (@cm-qualification-reading: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY", #clean-manufacturing "State-the-claim-before-choosing-a-test.lingua#r_7WE13D9TDTC14ESWCKQ4N0SN5J") { r_20YVNVS9BP8X46CQRJK6KQ5ZVX
+**Read:** [Systems Engineering Handbook — NASA](../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), chapter 5, especially verification, validation and transition; [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 6, Process or Product Monitoring and Control, progressively through acceptance sampling, charts, time series and the lithography case. Read [Measurement uncertainty in conformity assessment — JCGM 106](../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY) in full when developing acceptance decisions.
+
+The preceding sections explain how contaminants move, interact and become observations. Now ask what evidence supports a claim about a built system and how that claim is maintained as conditions change. Installation, operating performance, product acceptance and monitoring have related but distinct questions.
+
+Begin with the claim and operating domain. Study sample design and decision risks before interpreting a passing result. Then establish a baseline, examine changes over time and investigate competing explanations. Three studies join qualification, monitoring and acceptance to a useful manufactured object.
+
+Use paper designs, simulations and published observations. Keep the source's industrial scope and any historical standard references explicit. A mathematical sampling plan does not establish a regulated process requirement. Specialist microbial laboratory methods remain deferred in [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+
+**Work:** Choose a benign manufactured item, such as a precision optical mount. State what contamination could prevent it doing, what facility evidence would help, and what separate evidence is needed about the item itself.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [State the claim before choosing a test](State-the-claim-before-choosing-a-test.lingua#r_7WE13D9TDTC14ESWCKQ4N0SN5J).
+
+} r_20YVNVS9BP8X46CQRJK6KQ5ZVX

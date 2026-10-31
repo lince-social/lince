@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A calibration chain and a changed aerosol (@cm-calibration: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "A-cleanliness-class-and-a-product-result.lingua#r_0P5SA7T7W35B8MSEHGEYQQ87WY") { r_3N9D4T8WXS78QA8WT4Z9R268X0
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), the complete chapter; revisit [A documented calibration chain for a particular result](../../../inquiry/metrology/foundations/Traceability-chain.lingua#r_7XW6NVMPW7PMPJPBESW5G1757N).
+
+A calibration relates a response to reference values under stated conditions. Traceability concerns a documented result and its chain of comparisons, not an unlimited property of an instrument. Particle size, composition, refractive properties, shape and concentration can change how a counter responds.
+
+Preserve the calibration material, conditions, interval, uncertainty and applicable range. Then compare them with the process aerosol. A factory certificate can be valuable without settling sample-line losses, coincidence at high count rates or response to a very different material.
+
+**Work:** Examine a published calibration and identify its reference quantities and limitations. Propose a comparison that would reveal a material-dependent response. Separate the evidence needed for flow, size and count calibration rather than calling the whole instrument “calibrated” without qualification.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A cleanliness class and a product result](A-cleanliness-class-and-a-product-result.lingua#r_0P5SA7T7W35B8MSEHGEYQQ87WY).
+
+} r_3N9D4T8WXS78QA8WT4Z9R268X0

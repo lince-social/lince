@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Purity grades and explicit impurity panels (@gas-purity: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #industrial-gases-and-vacuum "../../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6") { r_2SC5CQ01SP5V9AKX3KKXW0NTFY
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), specification-table explanations; [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), certification; the shared chemical quantity and quality material.
+
+A purity percentage names a major constituent but may leave important contaminants unspecified. An application can be sensitive to water, oxygen, hydrocarbons, particles or a particular reactive impurity at levels too small to change the rounded major-component percentage. Compare the actual impurity panel and method, not only the largest printed number.
+
+Amount fractions of 10⁻⁶ and 10⁻⁹ are often written as molar ppm and ppb. Keep the basis explicit. A grade code is a supplier convention whose definition belongs with the specification. A reported upper bound or detection limit is not a measured zero, and subtracting several rounded maxima from one does not produce an independently measured purity.
+
+**Work:** Read two actual specification sheets and rewrite them as explicit constituents, bounds, units, phase and evidence. Construct a hypothetical pair with the same nominal purity but different suitability for a water-sensitive process. Identify any contaminant that neither sheet measures.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Begin with a question and specify the measurand](../../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6).
+
+} r_2SC5CQ01SP5V9AKX3KKXW0NTFY

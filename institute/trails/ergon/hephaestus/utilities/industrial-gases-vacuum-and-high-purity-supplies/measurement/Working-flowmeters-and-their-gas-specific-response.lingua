@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Working flowmeters and their gas-specific response (@gas-working-flow: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Water-amount-fraction-dew-point-and-relative-humidity.lingua#r_7TFNVNBF898TTQ2RQ8A18ZTF79") { r_39TSJCQ90J8MQDYH1PN4N8ZY7G
+**Read:** [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), the complete working-standard section; revisit [Choked flow and the limit of a gas passage](../delivery/Choked-flow-and-the-limit-of-a-gas-passage.lingua#r_05ZWECXGQS2G29510F5S3FGJ8C).
+
+Compare the measured interaction in a laminar-flow element, thermal meter, critical-flow nozzle, Coriolis meter and ultrasonic arrangement. Pressure loss, heat transport, inertial response and sound propagation carry different dependencies on gas state and composition. The label “mass flow” does not make every method gas independent.
+
+A working meter transfers an established flow scale to routine use. Its calibration belongs to a range, gas, pressure, temperature and installation. Upstream disturbances, contamination, changing thermal conditions and controller behavior can shift the response. A mass-flow controller includes a valve and control loop as well as a measuring element; its setpoint is not independent evidence of delivered flow.
+
+Check the full operating trajectory, including low flow, zero, changes of direction where applicable and response to demand. A steady calibration does not establish bandwidth, overshoot or integrated amount during a short pulse.
+
+**Work:** Select two different principles for a defined gas service and trace their dominant physical sensitivities. Design a comparison that can reveal a shared reference error rather than simply reproducing it. State the conditions under which a gas substitution requires new evidence.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Water amount fraction, dew point and relative humidity](Water-amount-fraction-dew-point-and-relative-humidity.lingua#r_7TFNVNBF898TTQ2RQ8A18ZTF79).
+
+} r_39TSJCQ90J8MQDYH1PN4N8ZY7G

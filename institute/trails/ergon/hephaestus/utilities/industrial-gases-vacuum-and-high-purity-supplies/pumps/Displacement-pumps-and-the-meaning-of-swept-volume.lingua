@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Displacement pumps and the meaning of swept volume (@gas-displacement: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "Dry-pumps-and-contact-materials.lingua#r_0Z995BBT6R0KBMRDYXDYJ36ZG0") { r_3QZE6P8P0MT4J12RQKK39GJCQE
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), sections 2.1.1–2.1.2; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), primary pumps. Relate the moving volume to the shared flow-device balance.
+
+A displacement pump admits gas into a volume, changes its boundary and expels the gas at another pressure. Swept volume times cycle rate is a geometric capacity. Valve losses, clearance, internal leakage, re-expansion and heating can make the effective inlet pumping speed different.
+
+Oil in an oil-sealed machine can lubricate, seal gaps, carry heat and store dissolved or dispersed contaminants. It is part of the process history. The exhaust carries pumped gas and may carry droplets or vapor. A pump described only by its ultimate inlet pressure has not yet been characterized for throughput or service.
+
+**Work:** Construct an idealized compression cycle with a nonzero clearance volume. Explain why re-expansion reduces fresh intake as pressure ratio increases. Account for inlet gas, ballast, leakage and exhaust separately. Identify how an oil or valve change could alter both performance and the measured residual-gas composition.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Dry pumps and contact materials](Dry-pumps-and-contact-materials.lingua#r_0Z995BBT6R0KBMRDYXDYJ36ZG0).
+
+} r_3QZE6P8P0MT4J12RQKK39GJCQE

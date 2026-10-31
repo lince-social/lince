@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Rinsing starts with the quality and location of the liquid (@cm-rinse-displacement: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "Repeated-batch-rinses-follow-a-retained-volume-balance.lingua#r_0VPNW769S6J7QGENMMDYRARF5X") { r_0E4EGZPAWAKA6C0T5VFN3T3HSX
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), rinsing and complex shapes; [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2), Chang and colleagues on printed pages 27–33.
+
+Rinsing replaces or removes process liquid and what it carries. Incoming water quality, contact materials, retained films, pockets, adsorption and temperature define the starting problem. A nominal volume passed through equipment is not the volume that exchanged with every surface.
+
+The semiconductor rinsing study compares remaining defects with material-loss and surface observations. Use those distinct outcomes to examine a transition from cleaning agent to rinse liquid. A change that improves one count can also change the substrate.
+
+**Work:** Draw liquid locations on the chosen part: exposed film, blind hole, joint, porous region and flow path. Identify the incoming and outgoing compositions and the point-of-use measurement. Develop an ideal balance first, then mark each place where incomplete mixing, reaction or retained material invalidates it.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Repeated batch rinses follow a retained-volume balance](Repeated-batch-rinses-follow-a-retained-volume-balance.lingua#r_0VPNW769S6J7QGENMMDYRARF5X).
+
+} r_0E4EGZPAWAKA6C0T5VFN3T3HSX

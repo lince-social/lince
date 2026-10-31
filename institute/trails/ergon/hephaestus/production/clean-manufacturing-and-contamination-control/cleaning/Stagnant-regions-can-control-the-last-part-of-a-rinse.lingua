@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Stagnant regions can control the last part of a rinse (@cm-rinse-deadspace: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "Drying-removes-solvent-and-can-leave-the-solute-behind.lingua#r_2HW8Q9Z54R9BSX2FSPCMVWV6EP") { r_009PWTQVRDNMHY9CH7ST2W1FA3
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), complex geometries and residues; revisit the coupled-reservoir formation.
+
+Let a flushed region Vf at concentration cf exchange with a slowly accessed region Vs at cs through an effective conductance K in volume/time. A linear teaching model is Vf dcf/dt=Q(cin−cf)+K(cs−cf) and Vs dcs/dt=−K(cs−cf). Adding equations gives d(Vf cf+Vs cs)/dt=Q(cin−cf); internal exchange cancels.
+
+A low outlet concentration can coexist with material in the slow region. If Q greatly exceeds K, increasing flow further may barely accelerate the limiting exchange. With Q=0, total amount is conserved and both regions approach its volume-weighted mean when K>0.
+
+For the hypothetical volumes and rates below, the two decay rates are approximately 0.009890 and 0.101110 min⁻¹. Starting both regions at c0 with a clean inlet, after 100 minutes cf≈0.004565c0 while cs≈0.41226c0. A low outlet reading alone would miss much of the remaining material. These are results of the declared two-volume model, not measurements of an actual part.
+
+**Work:** Derive the two relaxation rates for a clean constant inlet. Compare hypothetical Vf=1 L, Vs=0.1 L, Q=0.1 L/min and K=0.001 L/min with the single-volume model. Check zero-exchange and zero-flow limits. Explain how a pause-and-restart observation could reveal a hidden reservoir, and distinguish this lumped model from a resolved diffusion calculation in an actual crevice.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Drying removes solvent and can leave the solute behind](Drying-removes-solvent-and-can-leave-the-solute-behind.lingua#r_2HW8Q9Z54R9BSX2FSPCMVWV6EP).
+
+} r_009PWTQVRDNMHY9CH7ST2W1FA3

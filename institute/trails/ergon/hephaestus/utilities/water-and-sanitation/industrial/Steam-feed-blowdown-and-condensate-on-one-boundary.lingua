@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Steam, feed, blowdown and condensate on one boundary (@wu-steam-balance: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #source "../../../physics/thermodynamics-and-heat-transfer/sources/IAPWS-IF97-Industrial-Water-and-Steam.lingua#r_7THV30AN6Q693AJKH3W6ZSG13Y", #water-and-sanitation "Condensate-recovery-and-the-evidence-behind-steam-quality.lingua#r_2VCZC2RWF611KWSQA39K4F5XKT") { r_2VD0HVV4M8JY7JBSQ81JXKCAVC
+**Read:** [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), chapter 4 in full, and the complete [DOE steam-system sourcebook](https://www.energy.gov/sites/prod/files/2014/05/f15/steamsourcebook.pdf). Use [IAPWS-IF97 — industrial water and steam](../../../physics/thermodynamics-and-heat-transfer/sources/IAPWS-IF97-Industrial-Water-and-Steam.lingua#r_7THV30AN6Q693AJKH3W6ZSG13Y) when assigning water/steam enthalpies and phase properties.
+
+Distinguish boiler feed F, produced steam S, blowdown B, returned condensate R and fresh makeup M. At steady mass inventory F = S + B and F = M + R. A feed-based concentration ratio can differ greatly from a makeup-based ratio because condensate changes feed composition.
+
+An original example has S = 10,000 kg/hour, B = 500 and R = 7,000, giving F = 10,500 and M = 3,500 kg/hour. With makeup at 100 mg/kg of a nonvolatile conserved constituent and ideal contaminant-free condensate/steam, boiler concentration is 700 mg/kg. Feed concentration is 33.333 mg/kg: the boiler/feed ratio is 21, while boiler/makeup is 7. Neither number can be substituted for the other without changing the account.
+
+For declared enthalpies hs = 2,800, hf = 400 and hb = 800 kJ/kg, the boiler fluid-energy duty is (S hs + B hb − F hf)/3,600 ≈ 6,722.22 kW. Fuel input requires efficiency, losses and the chosen boundary. **Work:** Add steam loss, contaminated condensate, flash recovery and changing inventory one at a time. These are educational balances; pressure-equipment operation and treatment chemistry require their own qualified design and procedures.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Condensate recovery and the evidence behind steam quality](Condensate-recovery-and-the-evidence-behind-steam-quality.lingua#r_2VCZC2RWF611KWSQA39K4F5XKT).
+
+} r_2VD0HVV4M8JY7JBSQ81JXKCAVC

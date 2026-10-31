@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Depth filtration can be modelled as conditional survival (@cm-filter-depth: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "A-small-bypass-can-dominate-an-efficient-filter.lingua#r_132QT5CATGWCHVFF00RHAY8587") { r_5B8HE1ACJ8E593NVN4HFDS28A3
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), collection and retention; the earlier single-particle collector models.
+
+Let a small added medium thickness dz remove fraction a(z)dz of particles that have survived to that depth. Then dP/dz=−a(z)P and P(L)=exp[−∫a(z)dz]. Here a is an effective capture coefficient per length for a stated particle and flow condition; it is not a universal material property.
+
+For constant a, aL=ln(1000) gives P=0.001. Independent sequential survival can multiply, but summing the efficiencies of overlapping capture mechanisms can count the same particle twice. Geometry, loading and changed flow can invalidate a constant coefficient.
+
+**Work:** Derive the exponential from thin layers and compare nonuniform layers with the same integrated capture. Connect a proposed a to a single-fiber model or measured penetration rather than fitting it without explanation. Distinguish reaching a fiber from remaining attached after contact.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A small bypass can dominate an efficient filter](A-small-bypass-can-dominate-an-efficient-filter.lingua#r_132QT5CATGWCHVFF00RHAY8587).
+
+} r_5B8HE1ACJ8E593NVN4HFDS28A3

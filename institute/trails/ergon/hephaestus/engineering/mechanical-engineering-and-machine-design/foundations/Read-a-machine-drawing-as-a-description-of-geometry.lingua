@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Read a machine drawing as a description of geometry (@mech-drawing: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "../../../inquiry/quantitative-literacy/foundations/Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW") { r_5DMS4ESA6V4JP2CQR8B7S1YWBN
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), the drawings used in the design principles, structures and connection topics. Revisit the relevant shape examples in [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), then follow the shared geometry Record.
+
+A drawing describes shape and relationships through views, sections, dimensions and symbols. A perspective image can explain an arrangement while hiding a dimension. An assembly drawing and a part drawing answer different questions. A schematic may deliberately ignore scale to make a connection visible.
+
+**Work:** Sketch front, side and sectional views of a simple stationary part. Identify visible edges, hidden features, axes, holes and contact surfaces. Compare the sketch with measurements, noting what cannot be established without disassembly or a different instrument.
+
+Separate an observed shape from the ideal shape used in analysis. A nominal cylinder can have taper, roughness and out-of-roundness. A later CAD model supplies geometry, but does not by itself establish material, boundary conditions, fit or actual manufactured dimensions.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Length, area, volume, density, and scaling a shape](../../../inquiry/quantitative-literacy/foundations/Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW).
+
+} r_5DMS4ESA6V4JP2CQR8B7S1YWBN

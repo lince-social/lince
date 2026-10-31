@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Complex amplitudes, eigenvectors and observables (@mat-complex: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0", #materials-engineering "Wavefunctions-probability-and-the-Schrodinger-equation.lingua#r_6NVG77KZEJVXBZWTCKE5FC54JN") { r_1BHW684E94SHWX6QFM759HBP2T
+**Read:** [Quantum Mechanics — David Tong](../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0), sections 1.1 and 3.1–3.2, returning through the full chapters as the next steps develop.
+
+Write z=a+ib, its conjugate a−ib and |z|²=a²+b². For a finite vector, the inner product conjugates the first factor. Normalize (1,i) by √2 and distinguish its components from their squared magnitudes. A global phase leaves probabilities unchanged; a relative phase can change an interference measurement.
+
+An eigenvector satisfies Hv=Ev. Begin with the real symmetric matrix [[Δ,t],[t,−Δ]] and derive E=±√(Δ²+t²). Verify orthogonality and normalization, including the separate degenerate case Δ=t=0. This small example prepares band calculations without presuming an entire completed algebra curriculum.
+
+**Work:** Calculate an expectation and variance in a superposition, then change the basis and recover the same observable. Explain why reading an amplitude directly as a probability can give an impossible result. For each new differential or matrix operator, name its domain and boundary conditions.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Wavefunctions, probability and the Schrödinger equation](Wavefunctions-probability-and-the-Schrodinger-equation.lingua#r_6NVG77KZEJVXBZWTCKE5FC54JN).
+
+} r_1BHW684E94SHWX6QFM759HBP2T

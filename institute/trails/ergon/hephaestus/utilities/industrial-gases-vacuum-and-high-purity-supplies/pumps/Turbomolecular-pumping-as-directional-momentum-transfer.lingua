@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Turbomolecular pumping as directional momentum transfer (@gas-turbo: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "Compression-ratio-backpressure-and-a-pressure-floor.lingua#r_52KTJJVMK7XB6TH0HZHK70PC9T") { r_2P492EGT6DKWTQY2D1CJSABCBA
+**Read:** [Vacuum technology for superconducting devices — Paolo Chiggiato](../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9), section 3.1; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), section 2.1.7; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.3.3.
+
+Moving blades alter molecular trajectories so that forward transmission differs from reverse transmission. Alternating moving and stationary stages build a useful pressure ratio. The effect depends on blade geometry and speed relative to molecular thermal motion, while the gas must remain sufficiently rarefied for the intended molecular mechanism.
+
+A device's pumping speed, zero-flow compression ratio and maximum usable throughput answer different questions. Light species can have much smaller compression ratios even where their inlet speeds appear comparable. Bearings, rotor dynamics, drive control, cooling and foreline conditions connect molecular physics with mechanical service.
+
+**Work:** Sketch forward and reverse transmission through a conceptual stage. Explain why a model based only on swept volume misses the mechanism. Compare two hypothetical gas species at equal inlet partial pressure and different compression ratios. Identify which supporting-system failure can change performance without changing the chamber's local gas source.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Compression ratio, backpressure and a pressure floor](Compression-ratio-backpressure-and-a-pressure-floor.lingua#r_52KTJJVMK7XB6TH0HZHK70PC9T).
+
+} r_2P492EGT6DKWTQY2D1CJSABCBA

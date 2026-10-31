@@ -378,9 +378,41 @@ impl Toolkit {
             .size
     }
 
+    fn world_position(&mut self, main: SurfaceId) -> bevy::math::DVec3 {
+        self.inspect(move |canvas| {
+            let world = canvas.world_mut();
+            let (entity, _, item) = world.query::<(bevy::prelude::Entity, &lince_interface::native::layout::desktop::ApplicationWindow, &lince_interface::native::canvas::CanvasItem)>()
+                .iter(world).find(|(_, window, _)| window.surface == main).unwrap();
+            lince_interface::native::topology::spatial(world, entity).position(item.position)
+        })
+    }
+
     fn drag(&mut self, main: SurfaceId, resize: bool, modifier: bool, commit: bool) {
+        self.fixture.desktop.activate(main, false).unwrap();
+        self.tick("drag-focus");
+        let following = self.inspect(|canvas| {
+            let world = canvas.world_mut();
+            let root = world.query_filtered::<bevy::prelude::Entity, bevy::prelude::With<lince_interface::native::workspace::Workspaces>>().single(world).unwrap();
+            lince_interface::native::layout::desktop::focus::following(world, root)
+        });
+        if !following {
+            self.fixture.desktop.send(Input::Action(lince_interface::host::DesktopAction::ToggleFocus)).unwrap();
+            self.tick("drag-follow");
+        }
+        self.inspect(move |canvas| {
+            let world = canvas.world_mut();
+            let root = world.query_filtered::<bevy::prelude::Entity, bevy::prelude::With<lince_interface::native::workspace::Workspaces>>().single(world).unwrap();
+            let entity = world.query::<(bevy::prelude::Entity, &lince_interface::native::layout::desktop::ApplicationWindow)>().iter(world).find(|(_, window)| window.surface == main).unwrap().0;
+            let anchor = lince_interface::native::topology::position(world, entity).unwrap();
+            world.get_mut::<lince_interface::native::canvas::CanvasView>(root).unwrap().zoom *= 0.7;
+            if let Some(mut view) = world.get_mut::<lince_interface::native::topology::view::View>(root) {
+                view.position = (anchor + (bevy::math::DVec3::from_array(view.position) - anchor) * 1.4).to_array();
+            }
+        });
+        self.tick("drag-room");
         self.configured(main);
         let before = self.geometry(main).mapping;
+        let position = self.world_position(main);
         let size = self.size(main);
         let point = self.point(main, "controls", if resize { "resize" } else { "move" });
         self.advance_time();
@@ -449,10 +481,7 @@ impl Toolkit {
                 }
             );
         } else if commit {
-            assert_ne!(
-                self.geometry(main).mapping.canvas.origin(),
-                before.canvas.origin()
-            );
+            assert_ne!(self.world_position(main), position);
         } else {
             assert_eq!(self.geometry(main).mapping, before);
         }
@@ -676,6 +705,8 @@ fn exercise(spatial: bool) {
     app.wait("dialog", |app| app.window("Park toolkit dialog").is_some());
     let dialog = app.window("Park toolkit dialog").unwrap();
     assert_eq!(dialog.parent, Some(main));
+    app.configured_size(dialog.id, "dialogSize");
+    app.click(dialog.id, "dialogControls", "field", 272);
     app.wait("dialog-focus", |app| {
         app.fixture
             .desktop

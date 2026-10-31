@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Roughness connects many contact scales (@cm-roughness-contact: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/When-Are-Rough-Surfaces-Sticky-Pastewka-Robbins.lingua#r_3560V1VSJB6E8V78NFWGNQT7DQ", #clean-manufacturing "Charge-near-a-surface-is-more-than-a-uniform-applied-field.lingua#r_55PX7VDZ84MQKJ0XV338T8BJXH") { r_4ACFZYDKNT861X9646WX2NB89E
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), rough- and bumpy-particle notes; [When are rough surfaces sticky? — Pastewka and Robbins](../sources/When-Are-Rough-Surfaces-Sticky-Pastewka-Robbins.lingua#r_3560V1VSJB6E8V78NFWGNQT7DQ), full manuscript and supplement.
+
+A large particle may touch through a few small protrusions. As a first thought experiment, replacing one ideal adhesive contact of radius R by n isolated contacts of curvature radius r gives a pull-off scale proportional to n r instead of R when all use the same sphere-contact law and W. Six 5 nm protrusions would give n r/R=0.06 relative to R=500 nm. This arithmetic is not a model of load sharing, elastic interaction or which protrusions actually contact.
+
+Use the research reading to challenge that simplification. Record the measured height map, lateral resolution, short and long wavelength cutoffs, slopes and mechanical response. Two surfaces with equal rms height can differ in their contacting geometry. An unresolved small scale can change an inferred adhesion without changing the reported coarse statistic.
+
+**Work:** Construct two sinusoidal profiles with the same rms height but wavelengths differing tenfold. Derive their rms slopes and curvature scales. Explain how a measurement bandwidth would distinguish them. Then compare the assumptions of independent-asperity and interacting-contact calculations; identify a prediction that could be tested rather than declaring either model universal.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Charge near a surface is more than a uniform applied field](Charge-near-a-surface-is-more-than-a-uniform-applied-field.lingua#r_55PX7VDZ84MQKJ0XV338T8BJXH).
+
+} r_4ACFZYDKNT861X9646WX2NB89E

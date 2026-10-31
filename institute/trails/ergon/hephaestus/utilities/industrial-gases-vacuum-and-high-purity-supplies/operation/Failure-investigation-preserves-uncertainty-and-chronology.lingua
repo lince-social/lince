@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Failure investigation preserves uncertainty and chronology (@gas-failure-evidence: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA", #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "Handover-and-change-preserve-the-meaning-of-the-system.lingua#r_50S4H3D04PB1P1DKAYTWYNWYS1") { r_7R2QYC6EQ6NSC32ZZY63DGHJPM
+**Read:** [Fatal liquid nitrogen release — CSB Foundation Food Group investigation](../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA), the complete investigation; [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), failure analysis and feedback.
+
+Preserve the as-found state, time sequence, configuration and measurement limits before fitting a cause to them. Separate a component's observed damage from the mechanism that produced it and from conditions that allowed the consequence to grow. Several mechanisms can create similar traces.
+
+Propose tests that distinguish alternatives and record what a negative test would mean. Changing a failed assembly before preserving evidence can erase the information needed to distinguish a manufacturing defect from installation, service or intervention effects.
+
+**Work:** Reassess the nitrogen case with an evidence table: established, inferred, contradicted and unresolved. Construct a different vacuum-service case from synthetic data, then revise its explanation after one new observation. State the limits of each causal claim.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Handover and change preserve the meaning of the system](Handover-and-change-preserve-the-meaning-of-the-system.lingua#r_50S4H3D04PB1P1DKAYTWYNWYS1).
+
+} r_7R2QYC6EQ6NSC32ZZY63DGHJPM

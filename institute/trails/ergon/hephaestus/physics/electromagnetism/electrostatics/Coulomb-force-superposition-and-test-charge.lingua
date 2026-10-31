@@ -1,6 +1,6 @@
 Import "../Electromagnetism.lingua"
 
-Coulomb force, superposition and a test charge (@em-coulomb: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electricity-and-Magnetism-MIT-8-02T.lingua#r_00CWY37VDJSBRF5D6A8BCD7SXT", #electromagnetism "Continuous-charge-distributions-and-singular-limits.lingua#r_2S56H6ATVPBXX4R70VY99HFAGP") { r_4BCJ9YGVJSTWDV9S67V2RDR1YD
+Coulomb force, superposition and a test charge (@em-coulomb: 0, is #chapter, #part-of @electromagnetism, #source "../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q", #source "../sources/Electricity-and-Magnetism-MIT-8-02T.lingua#r_00CWY37VDJSBRF5D6A8BCD7SXT", #electromagnetism "Continuous-charge-distributions-and-singular-limits.lingua#r_2S56H6ATVPBXX4R70VY99HFAGP", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/particles/Electrical-drift-requires-charge-as-well-as-size.lingua#r_1A3GAPZG0X47KDGE55XPAM636F") { r_4BCJ9YGVJSTWDV9S67V2RDR1YD
 **Read:** [University Physics Volume 2 — OpenStax](../sources/University-Physics-Volume-2.lingua#r_5JQ0CPQ0RNJNVH175Y9V305J5Q), chapter 5 in full; [Electricity and Magnetism — MIT 8.02T and TEAL notes](../sources/Electricity-and-Magnetism-MIT-8-02T.lingua#r_00CWY37VDJSBRF5D6A8BCD7SXT), Coulomb law and electric-field chapters.
 
 For static point charges in vacuum, the field of q at displacement r is q r/(4π ε₀ |r|³). Force on a sufficiently small test charge is q_test E. The test-charge idea separates a source property from the particular probe, while reminding us that a real probe can disturb the distribution.
@@ -12,4 +12,7 @@ Build vector sums before substituting magnitudes. Check signs, symmetry, the far
 **Continue:** [Continuous charge distributions and singular limits](Continuous-charge-distributions-and-singular-limits.lingua#r_2S56H6ATVPBXX4R70VY99HFAGP).
 
 **Return:** [Electromagnetism — charge, fields, matter, waves and physical evidence](../Electromagnetism.lingua#r_5TJPESCTTNAKY66JH2QNQYN1PY).
+
+**Continue in clean manufacturing:** [Electrical drift requires charge as well as size](../../../production/clean-manufacturing-and-contamination-control/particles/Electrical-drift-requires-charge-as-well-as-size.lingua#r_1A3GAPZG0X47KDGE55XPAM636F).
+
 } r_4BCJ9YGVJSTWDV9S67V2RDR1YD

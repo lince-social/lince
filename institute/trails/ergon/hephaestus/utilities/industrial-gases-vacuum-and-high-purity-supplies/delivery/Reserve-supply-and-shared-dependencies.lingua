@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Reserve supply and shared dependencies (@gas-supply-reserve: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH", #source "../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C", #industrial-gases-and-vacuum "Preserve-quality-through-the-complete-delivery-path.lingua#r_5S3J0KW8TCT3A138G0TXJ8K3ZJ") { r_7G4SN4K1C0R690D8BZA1S250GE
+**Read:** [Cryogenic vaporisation systems — EIGA 133/22](../sources/Cryogenic-Vaporisation-Systems-EIGA.lingua#r_6CCVCPX8ET2NE6XJ42YW7K4ZDH), continuous-supply context; [Good practices guide for loading and unloading of cryogenic liquid tankers — AIGA](../../../materials/chemical-feedstocks-and-supply-systems/sources/Cryogenic-Liquid-Tanker-Transfers-AIGA.lingua#r_52MNR8Y6S0N1MXDSX8F3XF424C), transfer responsibilities; revisit [Compare ways to supply a specified gas to its user](../../../materials/chemical-feedstocks-and-supply-systems/families/Air-gases-as-pipeline-bulk-liquid-and-cylinder-supplies.lingua#r_5SM8V9DE71V106BQ9NYPKXPG52).
+
+Reserve is useful only if it can reach the user at the required condition. Trace independent product inventory, connecting path, pressure conditioning, heat source, control, power and measurement. Two vessels connected through one unavailable component do not provide two independent delivery paths.
+
+Describe a changeover by the time histories of pressure, flow, composition and inventory. Include the response delay and the demand during it. A static diagram showing an alternative source does not establish that the transition preserves service or that the alternate material is already qualified.
+
+Separate short demand buffering, interruption reserve and replenishment planning. Their time scales and evidence differ. A buffer may cover seconds while a delivery delay lasts days; a reserve that covers a long interruption may still fail a brief peak because its vaporisation or flow capacity is insufficient.
+
+**Work:** Construct a dependency graph for a small multi-source system. Remove one shared utility and one shared component in separate scenarios. Quantify the useful remaining service with the inventory and heat balances, and identify which interfaces need changed-condition verification before the reserve is relied upon.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Preserve quality through the complete delivery path](Preserve-quality-through-the-complete-delivery-path.lingua#r_5S3J0KW8TCT3A138G0TXJ8K3ZJ).
+
+} r_7G4SN4K1C0R690D8BZA1S250GE

@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Ratios, proportions, percentages, and denominators (@ql-ratios: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-1, #source @ql-source-prealgebra, #quantitative-literacy "Powers-and-scale.lingua#r_55FCWM0V49GJXKV3YN0KYGE006") { r_2VBAHXE0WMP7E6WA0NNKV1N31S
+Ratios, proportions, percentages, and denominators (@ql-ratios: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-trades-1, #source @ql-source-prealgebra, #quantitative-literacy "Powers-and-scale.lingua#r_55FCWM0V49GJXKV3YN0KYGE006", #clean-manufacturing "Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW") { r_2VBAHXE0WMP7E6WA0NNKV1N31S
 **Read:** Math for Trades, Volume 1, Percentages in full; Prealgebra 2e chapter 6 for another sustained treatment. Include percent change and proportion problems, not only conversions of fractions into percent.
 
 A percentage is a ratio expressed per hundred. State the denominator: mass of water divided by wet mass, defective items divided by tested items, or recovered metal divided by metal entering the process. A change from 80% to 90% is ten percentage points and a 12.5% increase relative to 80%. It is not an increase of ten percent under that reference.
@@ -14,4 +14,7 @@ Then compare two production routes with different tested populations. Preserve n
 **Continue:** [Exponents, scientific notation, and orders of magnitude](Powers-and-scale.lingua#r_55FCWM0V49GJXKV3YN0KYGE006).
 
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in clean manufacturing:** [Length, area, volume, density, and scaling a shape](Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW).
+
 } r_2VBAHXE0WMP7E6WA0NNKV1N31S

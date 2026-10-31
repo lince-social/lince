@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Confinement, tunnelling and atomic levels (@mat-confinement: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0", #materials-engineering "Oscillators-normal-modes-and-quantized-energy.lingua#r_6CMAWXNPG98G7Z40VBPWVK864W") { r_1Y5B4VQ2GSFS259WRA07B2A4YW
+**Read:** [Quantum Mechanics — David Tong](../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0), the remainder of chapters 2–3 and chapter 4 through the hydrogen atom. Work bound-state, scattering and angular-momentum calculations before the later optical and magnetic studies.
+
+A finite barrier permits a decaying wave inside a classically forbidden region. Transmission is a flux ratio, so unequal incident and outgoing velocities matter. Bound states, propagating states and resonances answer different boundary-value questions. An effective mass and potential used for a semiconductor interface are model quantities, not a claim that the lattice has disappeared.
+
+Atomic orbital and spin labels describe allowed states and symmetries; occupation and interactions determine which transitions or moments appear. Confinement can shift levels, but an observed optical shift can also reflect strain, chemistry or defects.
+
+**Work:** Match a finite-well or barrier solution and check current balance. Compare an exact result with a thick-barrier approximation. Draw a proposed confinement experiment and identify a competing material-state explanation for the same signal. Explain where a one-electron atomic picture needs correction.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Oscillators, normal modes and quantized energy](Oscillators-normal-modes-and-quantized-energy.lingua#r_6CMAWXNPG98G7Z40VBPWVK864W).
+
+} r_1Y5B4VQ2GSFS259WRA07B2A4YW

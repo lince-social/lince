@@ -1,0 +1,18 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Seals, leakage, friction and the condition of surfaces (@mech-seals: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY", #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Clutches-brakes-friction-work-and-heat.lingua#r_7CBQ3W4S1ABVDRA8JRQSD80HFE", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Vacuum-joints-seals-welds-and-hidden-volumes.lingua#r_47DGR9QYT0TP1XK2TVJDDE53AH") { r_5TC8MG4GQKQ1YEVSNG6G1EV2Y5
+**Read:** [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), chapter 5; [Rolling bearings — SKF, 2018](../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY), sealing arrangements in B.8; [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), bearing-system interfaces. Consult the selected seal's actual compound and service data.
+
+A seal limits transport across an interface under a specified pressure, temperature, motion and environment. Static gaskets, O-rings, rotary lips, labyrinths and mechanical face seals work differently. Leakage, friction, wear, contamination exclusion and service life are coupled choices.
+
+A nominally correct diameter is insufficient. Surface texture, runout, lead, hardness, alignment and installation damage can determine the behavior of a moving seal. Elastomer swelling, compression set, permeation and chemical compatibility depend on the actual medium and temperature. A labyrinth permits controlled clearance and some flow; it does not promise absolute isolation.
+
+**Work:** Draw pressure and motion directions for a housing seal and a reciprocating actuator seal. Identify extrusion gaps, venting, trapped volumes and routes for dirt ingress. Formulate a leakage measurement with a stated detection limit and duration. Compare seal heat with the lubricant and bearing temperature account, and explain how replacement access constrains the assembly.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Clutches, brakes, friction work and heat](Clutches-brakes-friction-work-and-heat.lingua#r_7CBQ3W4S1ABVDRA8JRQSD80HFE).
+
+
+**Continue in gas and vacuum systems:** [Vacuum joints, seals, welds and hidden volumes](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Vacuum-joints-seals-welds-and-hidden-volumes.lingua#r_47DGR9QYT0TP1XK2TVJDDE53AH).
+
+} r_5TC8MG4GQKQ1YEVSNG6G1EV2Y5

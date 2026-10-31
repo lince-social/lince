@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Assess capability only for a supported process distribution (@cm-monitoring-capability: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY", #clean-manufacturing "Preserve-missing-censored-and-invalid-observations.lingua#r_37V4MMGQK1MWAAJ4QM2HF58YE7") { r_1S9N1XG47Z67F3GA0PVHEV83BS
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), section 6.1.6; [Measurement uncertainty in conformity assessment — JCGM 106](../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY), tolerance versus acceptance. Revisit the baseline and subgroup studies.
+
+For a stable normal population with mean μ, standard deviation σ and two-sided specification [L,U], C_p = (U−L)/(6σ) compares widths and C_pk = min((U−μ)/(3σ), (μ−L)/(3σ)) also reflects centering. These are model summaries; finite-sample estimates need uncertainty and a declared variance basis.
+
+With L = 0, U = 10, μ = 7 and σ = 1, C_p is 1.666667 while C_pk is 1. The normal population fraction above U is about 0.001349898. Moving the mean to 5 changes centering without changing C_p. A process can be statistically stable while producing unacceptable output.
+
+A count distribution, a nonnegative skewed residue distribution or a mixture of operating states need not support the normal interpretation. One-sided requirements also need an appropriate one-sided account. Avoid translating an index into a tiny defect probability without evidence for the relevant tail.
+
+**Work:** Compare a centered normal population, an off-center one and a mixture with a similar overall variance. Estimate actual nonconforming fractions and uncertainty. Separate production variation from inspection error and show why a single capability number can conceal the mechanism of failure.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Preserve missing, censored and invalid observations](Preserve-missing-censored-and-invalid-observations.lingua#r_37V4MMGQK1MWAAJ4QM2HF58YE7).
+
+} r_1S9N1XG47Z67F3GA0PVHEV83BS

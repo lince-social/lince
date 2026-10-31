@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cyclic steady state is a periodic inventory (@gas-cyclic-state: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #industrial-gases-and-vacuum "Purity-recovery-productivity-and-energy-over-a-cycle.lingua#r_50N0YYWWTTHB5BJD4T9TC7WBGN") { r_56ZNENYBHE460AWFTBGBK12JW9
+**Read:** [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM), cyclic state and shooting methods; [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H), repeated operation and numerical procedure. Use [Build a numerical validation argument across several kinds of evidence](../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8) when solving a cycle map.
+
+Let x contain the relevant spatial loading, temperature, composition and buffer states at a defined cycle phase. One complete cycle maps x to F(x). A cyclic steady state satisfies F(x)=x. Its variables continue changing during the cycle; a constant outlet average is weaker evidence than closure of the full stored state.
+
+Repeated cycling computes a fixed-point iteration. Shooting instead solves F(x)−x=0. Residual scaling matters because temperature, amount and concentration have different units and magnitudes. Spatial/time discretization and incomplete cycle convergence are separate error sources.
+
+**Work:** Demonstrate convergence for a simple affine cycle map xnext=ax+b with |a|<1, then examine a near-unity a. Compare iteration count with an algebraic fixed-point solution. For a bed model, report both state closure and integrated constituent/energy balance. Explain why a small equation-solver residual cannot prove accurate physical prediction.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Purity, recovery, productivity and energy over a cycle](Purity-recovery-productivity-and-energy-over-a-cycle.lingua#r_50N0YYWWTTHB5BJD4T9TC7WBGN).
+
+} r_56ZNENYBHE460AWFTBGBK12JW9

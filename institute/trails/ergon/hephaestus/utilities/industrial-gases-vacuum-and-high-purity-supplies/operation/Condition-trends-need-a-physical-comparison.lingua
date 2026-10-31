@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Condition trends need a physical comparison (@gas-condition: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #source "../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1", #industrial-gases-and-vacuum "Residuals-connect-observations-to-competing-mechanisms.lingua#r_1TKMSWEJ2CABH6EBZN8RP6YQDA") { r_2J8QT5CJPBNBCMFR5XDXMQXFPE
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), chapters 6–7; [Improving compressed air system performance — DOE sourcebook](../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1), maintenance; revisit the pump and surface models.
+
+Trend useful quantities against their explanatory variables. Increased filter pressure loss at increased flow need not mean faster fouling. A longer pumpdown after a humid opening is not directly comparable with a dry, unopened chamber. Normalize only with a justified model; an incorrect normalization can hide a real change.
+
+Use several observations to separate alternatives: pumping pressure and foreline pressure, temperature and power, composition and total pressure, local and remote measurements. Keep uncertainty and the instrument's own drift in the comparison.
+
+**Work:** Construct three explanations for a rising ultimate pressure and predict a different observation under each. Test the explanations against a published dataset or clearly labeled synthetic data. Report the unresolved alternatives instead of choosing the most familiar mechanism from one trend.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Residuals connect observations to competing mechanisms](Residuals-connect-observations-to-competing-mechanisms.lingua#r_1TKMSWEJ2CABH6EBZN8RP6YQDA).
+
+} r_2J8QT5CJPBNBCMFR5XDXMQXFPE

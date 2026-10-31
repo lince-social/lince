@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A proof-test interval is a model with assumptions (@gas-proof-interval: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "No-observed-failures-does-not-prove-zero-failure-rate.lingua#r_3EH9EZR3GSART17QMYHK3FNN5N") { r_0WEYAJ4V88DTB6BAFVMSGHXCMS
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), hidden failures and maintenance selection. This original ideal model explains an interval dependence; it is not a design rule for protective systems.
+
+Assume a dormant function fails undetected at constant rate λ, starts each interval fully functional and is restored instantly and perfectly every T hours. At elapsed time t, its probability of failure is 1−exp(−λt). The average over the interval is 1−[1−exp(−λT)]/(λT), approximately λT/2 when λT is small.
+
+For hypothetical λ=10⁻⁵ h⁻¹ and T=1000 h, the exact average is approximately 0.00498337; the first-order approximation is 0.005. Incomplete test coverage, repair duration, test-induced faults and common causes are absent from this model.
+
+**Work:** Integrate the probability directly and compare the approximation over several λT values. Add a failure mode that the test never detects and explain why shortening T alone cannot remove it. A complete service analysis must also account for what happens during the test itself.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [No observed failures does not prove zero failure rate](No-observed-failures-does-not-prove-zero-failure-rate.lingua#r_3EH9EZR3GSART17QMYHK3FNN5N).
+
+} r_0WEYAJ4V88DTB6BAFVMSGHXCMS

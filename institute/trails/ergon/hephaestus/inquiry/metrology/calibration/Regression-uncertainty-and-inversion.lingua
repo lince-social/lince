@@ -1,6 +1,6 @@
 Import "../Metrology.lingua"
 
-Use a fitted calibration without discarding coefficient uncertainty (@met-regression-inverse: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #metrology "Resolution-and-quantization.lingua#r_1XRZT4EC7VWK34F5JXD8MXRQF2") { r_33VGQWJCXFMMX2TJ245VDMHS4N
+Use a fitted calibration without discarding coefficient uncertainty (@met-regression-inverse: 0, is #chapter, #part-of @metrology, #source "../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46", #source "../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E", #metrology "Resolution-and-quantization.lingua#r_1XRZT4EC7VWK34F5JXD8MXRQF2", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/Base-subtraction-and-a-defined-calibration-factor.lingua#r_3Z5TE7BDQKX9ZFTNV5903W121P", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/A-dilution-test-checks-proportionality-without-fixing-the-scale.lingua#r_06SM1PSEGEFSGMMDASER4Z4PN4") { r_33VGQWJCXFMMX2TJ245VDMHS4N
 **Read:** [Measurement Process Characterization — NIST/SEMATECH](../sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), instrument calibration and regression uncertainty; [Developing and using measurement models — JCGM GUM-6](../sources/GUM-Models.lingua#r_3AAJPGTHAAF72R05SJ1VJ7HN46), clauses 8.3 and 11; [Simple Guide for Evaluating and Expressing Uncertainty — Possolo](../sources/Uncertainty-NIST-1900.lingua#r_75WCVW8CJG4TAFD3330T87588E), sections 4–7 and E7 Thermistor Calibration.
 
 Fitted coefficients are estimates with uncertainty and often covariance. Under a simple independent equal-variance linear-response model with negligible x uncertainty, residual variance estimate s² gives u²(a) = s²/Sxx, u²(b) = s²(1/n + x̄²/Sxx), and cov(a,b) = −x̄s²/Sxx, where Sxx = Σ(x_i − x̄)². These expressions belong to that model, not every calibration.
@@ -16,4 +16,10 @@ Study an errors-in-variables or observation-model treatment when uncertainty in 
 **Continue:** [Resolution, rounding, thresholds, and when repetition helps](Resolution-and-quantization.lingua#r_1XRZT4EC7VWK34F5JXD8MXRQF2).
 
 **Return:** [Measurement and metrology](../Metrology.lingua#r_3G54ENPA974K19AB5XF0P641N5).
+
+**Continue in gas and vacuum systems:** [Base subtraction and a defined calibration factor](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/measurement/Base-subtraction-and-a-defined-calibration-factor.lingua#r_3Z5TE7BDQKX9ZFTNV5903W121P).
+
+
+**Continue in clean manufacturing:** [A dilution test checks proportionality without fixing the scale](../../../production/clean-manufacturing-and-contamination-control/aerosol-measurement/A-dilution-test-checks-proportionality-without-fixing-the-scale.lingua#r_06SM1PSEGEFSGMMDASER4Z4PN4).
+
 } r_33VGQWJCXFMMX2TJ245VDMHS4N

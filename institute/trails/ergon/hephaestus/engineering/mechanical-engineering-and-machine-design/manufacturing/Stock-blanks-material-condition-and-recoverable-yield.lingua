@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Stock, blanks, material condition and recoverable yield (@mech-stock-planning: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "Workholding-location-clamping-and-distortion.lingua#r_0A9GZWVQRY4GJDY5QR8BQRSBTW") { r_10JN4N3M6T40VXEHKARYSF4M3V
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), casting/forming, machining and cost; follow the metallurgy casting and forming Records for the material-state account.
+
+Stock designation, dimensions and visible appearance do not establish a delivered material condition. Track orientation, heat treatment, surface condition, tolerances and evidence from the supplier. Decide what excess material is needed for locating, clamping, distortion correction and final finishing.
+
+A 50×50×100 mm blank has volume 250 cm³. A finished part of 150 cm³ has a geometric yield of 60% before rejected parts, cutoff losses and recoverable scrap are considered. That fraction alone does not choose the best process: a more efficient blank may demand costly tooling or create difficult defects.
+
+**Work:** Compare plate/bar, cast and forged blanks for one loaded part. Identify where their structure or residual stress matters. Draw the machining allowance and usable clamp regions. Account separately for material entering the product, recoverable offcuts/chips and losses, then connect procurement and recovery to the production plan.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Workholding, location, clamping and distortion](Workholding-location-clamping-and-distortion.lingua#r_0A9GZWVQRY4GJDY5QR8BQRSBTW).
+
+} r_10JN4N3M6T40VXEHKARYSF4M3V

@@ -1,0 +1,12 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda (@cm-nvr-source: 0, is #reference, #part-of @cm-sources) { r_2YMCRSWR07NCHECM0X4D8FJ6HJ
+Keith Gordon, Gugu Rutherford and Denisse Aranda. *Method for the Collection, Gravimetric and Chemical Analysis of Nonvolatile Residue (NVR) on Surfaces*. NASA/TM-2017-219591, March 2017. [NTRS record](https://ntrs.nasa.gov/citations/20170004508) · [111-page report and instrument appendices](https://ntrs.nasa.gov/api/citations/20170004508/downloads/20170004508.pdf).
+
+Read the main method and analytical examples, then the appendices relevant to an instrument study. The report connects a collected residue to gravimetric, FTIR and GCMS observations. Historical standards and instrument/software instructions retain their editions; they are not a universal current procedure.
+
+Title, collection, gravimetry, initial spectroscopy discussion, summary and references were inspected on 30 October 2026. Cover and printed page 4 were viewed visually. The cover font does not render its complete report number correctly here; the official catalogue supplies it. The displayed mass/concentration formula lacks grouping and is dimensionally ambiguous. The learning calculation derives its own explicit blank, volume, area and recovery account. Full instrument appendices, spectra and experiments were not reproduced. NTRS identifies US-government work permitting public use; retain component credits. No PDF is bundled.
+
+Further inspection for surface measurement covered the FTIR and GCMS interpretation on printed pages 5–8. The learning Records distinguish candidate identification, quantitative calibration and source attribution; the report’s general sensitivity and identification claims are not adopted as universal method performance. Full instrument appendices and experiments remain unreproduced.
+
+} r_2YMCRSWR07NCHECM0X4D8FJ6HJ

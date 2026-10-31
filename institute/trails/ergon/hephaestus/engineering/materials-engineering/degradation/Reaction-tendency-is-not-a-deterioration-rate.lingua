@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Reaction tendency is not a deterioration rate (@mat-degradation-thermo: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5", #source "../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5", #materials-engineering "../../../chemistry/general-chemistry/reactions/Oxidation-states-and-electron-balance.lingua#r_6V448SEZNVP40ASEQXC59PDTV9") { r_7EDRCV87WW45YA7J7K2WKV0M7C
+**Read:** [Aqueous corrosion — Cambridge DoITPoMS](../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5), reactions and potentials; [Corrosion current — Derek H. Lister](../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5), coupled reactions. Follow the shared electron-balance and Nernst Records with the earlier chemical-potential account.
+
+A thermodynamically favorable reaction may be slowed by an activation barrier, a protective film or supply of reactants. Conversely, a material that is stable against one reaction can fail by another. Write complete balanced reactions and identify the reservoir conditions before drawing conclusions from a standard-potential table.
+
+**Work:** Reconstruct one metal/aqueous equilibrium calculation from activities, temperature and a stated reference. Explain how pH, complexation or a changed gas condition moves a boundary. Distinguish an equilibrium potential–pH map from a corrosion-rate map. Show why thermodynamic permission neither predicts a localized attack site nor establishes the time until loss of function. Return to oxidation-state bookkeeping when the charge or reaction extent is ambiguous.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Balance redox changes while keeping oxidation state and charge distinct](../../../chemistry/general-chemistry/reactions/Oxidation-states-and-electron-balance.lingua#r_6V448SEZNVP40ASEQXC59PDTV9).
+
+} r_7EDRCV87WW45YA7J7K2WKV0M7C

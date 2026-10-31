@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A surface measurement has spatial and depth weighting (@cm-surface-weighting: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #source "../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV", #clean-manufacturing "Specimen-history-can-change-the-surface-before-observation.lingua#r_0FXJ11A76DENK61HS14A18W5N0") { r_0R6W16HGTMM3XQ60ZB9K6NMBHJ
+**Read:** [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5), selection of the information needed; [Attenuation and information depth in XPS — Cedric Powell](../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV), definitions. Reuse [A measurement observes a filtered field](../../../engineering/materials-engineering/research/A-measurement-observes-a-filtered-field.lingua#r_4P5XG26ENMZPFN5ED5HXZRWCV7).
+
+Represent a simplified observation as y = ∫∫w(x,z)c(x,z) dx dz + b, where x locates a surface position, z is depth, c is the property field and w is the method's sensitivity. Normalize w when interpreting y as an average; otherwise retain the response units. A spatially averaged quantity is not automatically the value at the most sensitive feature.
+
+An extract integrates material over the contacted area with a recovery weighting. An image has a field of view and resolution. A surface spectrum combines lateral and depth sensitivity. The same specimen can therefore produce different valid estimates under different measurand definitions.
+
+**Example:** Suppose 10% of an area has loading 10 µg/cm² and the remainder has none. The area mean is 1 µg/cm². A probe confined to the loaded region reports 10 µg/cm² under a uniform local weighting. Neither number alone describes the full spatial distribution.
+
+**Work:** Construct two loading fields with the same area mean but different maxima and locations. Predict a broad-area and a local observation for each. Explain which additional observation matters if the object fails because of contamination at one small contact. Preserve the weighting and sample boundary with the reported value.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Specimen history can change the surface before observation](Specimen-history-can-change-the-surface-before-observation.lingua#r_0FXJ11A76DENK61HS14A18W5N0).
+
+} r_0R6W16HGTMM3XQ60ZB9K6NMBHJ

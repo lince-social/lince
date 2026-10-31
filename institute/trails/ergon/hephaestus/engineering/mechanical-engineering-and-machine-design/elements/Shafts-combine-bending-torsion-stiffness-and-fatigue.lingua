@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Shafts combine bending, torsion, stiffness and fatigue (@mech-shafts: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Couplings-keys-splines-and-misalignment.lingua#r_6Q2XKTRV0KDQWBQT8A964VQX9J") { r_4JH2SPCN8R1KNZVMFDX7CQ865G
+**Read:** [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lecture 3 and fatigue notes; [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topics 5 and 8. Reuse the earlier beam, torsion, fatigue and rotating-machine calculations.
+
+A shaft design begins with the locations of gears, pulleys, couplings and supports. Their forces create bending in different planes as well as torque and possible axial force. A stationary transverse force on a rotating shaft creates a changing bending stress at a material point; a constant transmitted torque does not necessarily alternate in that same way.
+
+For a smooth solid circular section, nominal surface bending stress is 32M/(πd³), and torsional shear is 16T/(πd³). With d = 0.03 m, M = 100 N·m and T = 80 N·m, these are approximately 37.73 MPa and 15.09 MPa. Their instantaneous von Mises combination is approximately 45.90 MPa. It is not a fatigue-life prediction.
+
+**Work:** Recover reactions and section loads in both planes, then check deflection, slope, twist, critical-speed behavior and local fatigue at shoulders or keyways. Compare a hollow shaft, larger diameter and closer supports. Include bearing-seat geometry, assembly access, material condition and surface preparation; the strongest nominal section can still locate a gear poorly.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Couplings, keys, splines and misalignment](Couplings-keys-splines-and-misalignment.lingua#r_6Q2XKTRV0KDQWBQT8A964VQX9J).
+
+} r_4JH2SPCN8R1KNZVMFDX7CQ865G

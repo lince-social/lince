@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Verification is not physical validation (@mat-dft-verification: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5", #source "../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH", #materials-engineering "Molecular-dynamics-time-ensembles-and-boundaries.lingua#r_5J9AQ5A6Q1SEXCT2W8MJN8MH57") { r_7CBWQHG94MNC93Z0F30TAW0BVH
+**Read:** [Verifying precision in density-functional calculations — Bosoni and colleagues](../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5) in full, including the relevant supplementary input protocol; [Atomistic computer modeling of materials — MIT 3.320](../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH), DFT labs.
+
+Two implementations may agree because they solve the same approximate problem accurately. That agreement is valuable, but it does not show that the approximation describes the intended experiment. Conversely, disagreeing calculations should first be compared at matched physical and numerical assumptions before attributing the difference to software quality.
+
+Choose reference cases that isolate a calculation: symmetry, analytic limits, independently derived energies or converged implementation comparisons. Keep reference structures, energy zeros and fitting conventions explicit. Relative error becomes misleading near a zero difference; use a scale tied to the question and report absolute errors too.
+
+**Work:** Reproduce a deliberately small subset of the verification study using accessible inputs. Explain every material, structure and protocol choice. Independently inspect an equation-of-state fit, including volume range and numerical sensitivity. Then identify experimental evidence needed for a different validation question. If the available computing resources cannot support the published protocol, report the reduced calculation and its limits rather than presenting it as the complete benchmark.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Molecular dynamics, time, ensembles and boundaries](Molecular-dynamics-time-ensembles-and-boundaries.lingua#r_5J9AQ5A6Q1SEXCT2W8MJN8MH57).
+
+} r_7CBWQHG94MNC93Z0F30TAW0BVH

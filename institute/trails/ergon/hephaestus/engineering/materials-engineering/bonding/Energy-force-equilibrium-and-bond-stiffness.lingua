@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Energy, force, equilibrium and bond stiffness (@mat-bond-energy: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #materials-engineering "Ionic-covalent-metallic-and-secondary-interactions.lingua#r_4A3SRJ0A74W23AV7QEZQWQZAER") { r_3B2ZTB5HFEYVF17YBGNEMXE117
+**Read:** [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), bonding/energy lectures; [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), bonding and energy. Reuse quantitative derivatives and the mechanical work/energy account where needed.
+
+For a one-dimensional pair model U(r), force is −dU/dr. A stable local equilibrium has U′(r₀)=0 and U″(r₀)>0. Near that point, a quadratic expansion gives a local spring stiffness. This is a model of a coordinate, not a claim that a real solid is a collection of independent pair springs.
+
+For U(r)=A/r¹²−B/r⁶ with A,B positive, r₀=(2A/B)^(1/6), the well depth is −B²/(4A), and U″(r₀)=72A/r₀¹⁴. The model illustrates equilibrium and curvature; directional bonding, electron redistribution and many-body interactions can require another description.
+
+**Work:** Derive these relations and verify the minimum numerically. Compare energy, force and curvature units. Explain why a deeper well and a steeper local curvature are related but distinct design questions. Identify a property for which temperature, disorder or collective motion makes the isolated-pair picture inadequate.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Ionic, covalent, metallic and secondary interactions](Ionic-covalent-metallic-and-secondary-interactions.lingua#r_4A3SRJ0A74W23AV7QEZQWQZAER).
+
+} r_3B2ZTB5HFEYVF17YBGNEMXE117

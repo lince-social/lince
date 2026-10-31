@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend the causal account of a gas-system failure (@gas-study-failure: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA", #source "../sources/Oxygen-Deficient-Atmospheres-EIGA.lingua#r_0KCKFEBVRBMZNF4KQ9PSXB9QCA", #source "../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H", #industrial-gases-and-vacuum "Review-the-whole-working-life-of-the-gas-service.lingua#r_55CK1MK38N2YECDKRB2M4PEXND") { r_65383ESZYZ1N5PEYMZ2NA1W6RA
+**Read in full:** [Fatal liquid nitrogen release — CSB Foundation Food Group investigation](../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA), alongside [Hazards of oxygen-deficient atmospheres — EIGA 44/18](../sources/Oxygen-Deficient-Atmospheres-EIGA.lingua#r_0KCKFEBVRBMZNF4KQ9PSXB9QCA) and [The safe isolation of plant and equipment — HSE HSG253](../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H). Revisit the pressure, level and atmosphere measurement models.
+
+Reconstruct the report's physical and institutional account without resolving its acknowledged unknowns by assumption. Relate the sensing mechanism, control action, release, atmosphere and human response. Distinguish initiating conditions from failed opportunities to prevent or limit the outcome.
+
+Compare alternative modifications by the physical function they establish and the evidence that would verify it. Include common dependencies, maintenance access, emergency location and communications. A recommendation's existence is not evidence of its implementation or effectiveness.
+
+**Work:** Produce an independent reading of the evidence with explicit competing hypotheses and limits. Explain one proposed experiment or inspection that would discriminate between alternatives. Revise the account when an uncertainty remains unresolved; accurate incompleteness is preferable to an unsupported causal story.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review the whole working life of the gas service](Review-the-whole-working-life-of-the-gas-service.lingua#r_55CK1MK38N2YECDKRB2M4PEXND).
+
+} r_65383ESZYZ1N5PEYMZ2NA1W6RA

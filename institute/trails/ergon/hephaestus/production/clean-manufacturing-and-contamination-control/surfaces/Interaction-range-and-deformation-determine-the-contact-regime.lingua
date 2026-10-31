@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Interaction range and deformation determine the contact regime (@cm-adhesion-regime: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #source "../sources/When-Are-Rough-Surfaces-Sticky-Pastewka-Robbins.lingua#r_3560V1VSJB6E8V78NFWGNQT7DQ", #clean-manufacturing "Roughness-connects-many-contact-scales.lingua#r_4ACFZYDKNT861X9646WX2NB89E") { r_4TZ81HQ273F2TFVM4P6R88581R
+**Read:** [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), contact assumptions; [When are rough surfaces sticky? — Pastewka and Robbins](../sources/When-Are-Rough-Surfaces-Sticky-Pastewka-Robbins.lingua#r_3560V1VSJB6E8V78NFWGNQT7DQ), supplementary section S-I, especially its interaction-range definition and comparison of contact limits.
+
+A force range is another length in the problem. One dimensionless comparison is μ=(R W²/(E*² z₀³))^(1/3), where z₀ is a declared characteristic interaction range. Numerical factors and the definition of range vary across Tabor and Maugis conventions; document the complete expression before comparing published thresholds.
+
+A large comparison tends toward the JKR situation of substantial deformation relative to the adhesive range. A small comparison motivates a DMT-type treatment. Intermediate behavior requires a finite-range contact model. Plasticity, viscoelasticity, molecular discreteness, layers or strongly nonspherical geometry can invalidate both simple elastic limits.
+
+**Work:** Derive the dimensions and logarithmic sensitivities to R, W, E* and z₀. For the hypothetical particle used above, vary E* by a factor of 100 and z₀ by a factor of ten. Explain why an uncertain interaction range cannot be hidden inside an exact-looking pull-off calculation. Distinguish model-form uncertainty from arithmetic precision.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Roughness connects many contact scales](Roughness-connects-many-contact-scales.lingua#r_4ACFZYDKNT861X9646WX2NB89E).
+
+} r_4TZ81HQ273F2TFVM4P6R88581R

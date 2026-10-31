@@ -1,0 +1,10 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Door motion, human movement and aerosol exchange — Zheng and colleagues (@cm-door-source: 0, is #reference, #part-of @cm-sources) { r_7CWNYE36WG4XSVT18MFMZRV1DH
+Minfeng Zheng, Yaming Fan, Xiangdong Li, Daniel Lester, Xin Chen, Yiyu Li and Ivan Cole. *Aerosol exchange between pressure-equilibrium rooms induced by door motion and human movement*, Building and Environment 241, 110486 (2023), DOI 10.1016/j.buildenv.2023.110486. [Free full text at PubMed Central](https://pmc.ncbi.nlm.nih.gov/articles/PMC10232724/).
+
+Read the complete paper, separating prescribed motion, numerical approximation and validation evidence. Compare its pressure-equilibrium hospital-room problem with a proposed clean-manufacturing transfer boundary; they are different applications.
+
+Selected methods, moving-mesh and validation passages and the data-availability statement were inspected. The validation discussion acknowledges missing hinge geometry and an early plume discrepancy. Full figures, meshes and simulations were not independently reproduced; data are available on request. Publisher PDF retrieval did not yield the paper here, so the inspected source is the full-text HTML. PMC displays author copyright and an Elsevier research-reuse permission tied to its COVID resource centre; do not infer unrestricted adaptation of every component. Keep source material external.
+
+} r_7CWNYE36WG4XSVT18MFMZRV1DH

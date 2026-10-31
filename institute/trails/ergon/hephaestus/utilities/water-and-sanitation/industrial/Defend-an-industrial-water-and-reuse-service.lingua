@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Defend an industrial water and reuse service (@wu-industrial-review: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #source "../sources/Usos-Consuntivos-da-Agua-ANA.lingua#r_74SR4SEK71SX7RTST2NB6Z5YJG", #water-and-sanitation "../operations/From-the-water-to-the-measurement-used-in-a-decision.lingua#r_10B7MFX2X46JCS1C2WAKW0JECR") { r_41AADHAN4S0F7PRNGEX3W85VD3
+**Read:** Finish [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R) and the selected complete reuse account. Use [Manual de Usos Consuntivos da Água no Brasil — ANA, segunda edição](../sources/Usos-Consuntivos-da-Agua-ANA.lingua#r_74SR4SEK71SX7RTST2NB6Z5YJG) for a wider demand context and the source-specific guidance for the actual cooling, steam or purity question.
+
+Present one facility whose makeup, internal uses, reuse, evaporation, condensate, blowdown and residual destinations agree. Explain the purpose of each water-quality requirement and the evidence behind each treatment or operating claim. Include the external work: energy, chemicals, transport, laboratories, people, parts and receiving capacity.
+
+**Work:** Compare at least two complete arrangements under a normal period and a changed load or source. Reproduce one calculation independently and show where a higher nominal recovery helps or harms the whole service. Explain how the facility responds when reuse water is unavailable or unacceptable, rather than silently replacing it with an unlimited alternative supply.
+
+Deepen into one sustained thermal, chemical, microbial or process-modelling investigation with the appropriate sources. Keep restrictions, unsupported assumptions and open questions explicit. The next section develops the sensing, controls, maintenance and coordination that keep this technical arrangement working through time.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [From the water to the measurement used in a decision](../operations/From-the-water-to-the-measurement-used-in-a-decision.lingua#r_10B7MFX2X46JCS1C2WAKW0JECR).
+
+} r_41AADHAN4S0F7PRNGEX3W85VD3

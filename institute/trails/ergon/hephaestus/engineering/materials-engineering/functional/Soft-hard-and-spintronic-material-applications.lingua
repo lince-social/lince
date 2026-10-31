@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Soft, hard and spintronic material applications (@mat-magnetic-use: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1", #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #materials-engineering "Superconducting-state-vortices-and-engineering-limits.lingua#r_4NP3YHC409FR5TDKDE7P12AJKQ") { r_0JDDY37AHJDXBVF7PP81YMAPSD
+**Read:** [Electron interactions, magnetism and superconductivity — Daniel C. Ralph](../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1), sections III–IV and their cited primary work; [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), full ferromagnetic package. Reuse the electrical-power material and machine Records for a device's field geometry and duty.
+
+Soft magnetic applications often seek easy reversible response and low loss; permanent magnets seek resistance to unwanted reversal in their working circuit. These are different optimization problems. Ferrites, electrical steels, amorphous/nanocrystalline alloys and permanent-magnet families combine different electrical, magnetic, thermal and manufacturing properties.
+
+The maximum energy product of a demagnetization curve is not an unlimited stored-energy density available in any geometry. Spin-dependent transport and multilayer interfaces introduce further functions whose performance depends on interface quality, magnetic configuration and measurement conditions.
+
+**Work:** Compare a transformer core, a motor magnet and a magnetic sensing/storage stack using a complete operating specification. Trace composition, processing, texture, interfaces, loss and temperature. Reconstruct one primary result cited by Ralph and explain which demonstrated behavior would still need qualification in a manufactured component.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Superconducting state, vortices and engineering limits](Superconducting-state-vortices-and-engineering-limits.lingua#r_4NP3YHC409FR5TDKDE7P12AJKQ).
+
+} r_0JDDY37AHJDXBVF7PP81YMAPSD

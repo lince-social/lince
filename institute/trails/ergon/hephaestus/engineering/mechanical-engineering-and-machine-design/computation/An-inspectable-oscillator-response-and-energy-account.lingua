@@ -1,0 +1,73 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+An inspectable oscillator response and energy account (@mech-oscillator-example: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "../vibration/Coupled-coordinates-normal-modes-and-physical-matrices.lingua#r_0KCCW9DJNDZAXQJNTCV6EPXB4Q") { r_0S7WXXT95F193YPM09Z39GMKPJ
+**Study:** Derive the frequency response and midpoint equations before running this original Python example. Compare with [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), recitation 10, and the initial-value methods in [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65).
+
+The model has one displacement coordinate, positive constant mass and linear stiffness, nonnegative linear viscous damping, and an applied force. It uses consistent units: kg, m, s, N and rad/s in the displayed example. `harmonic_response` returns the complex displacement coefficient for a cosine force; `midpoint_step` advances one interval using its prescribed midpoint force. Neither function estimates the model parameters from a physical machine.
+
+```python
+import math
+
+
+def oscillator_parameters(mass, damping, stiffness):
+    values = tuple(float(value) for value in (mass, damping, stiffness))
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError("parameters must be finite")
+    mass, damping, stiffness = values
+    if mass <= 0 or stiffness <= 0 or damping < 0:
+        raise ValueError("positive mass and stiffness, nonnegative damping required")
+    return values
+
+
+def harmonic_response(mass, damping, stiffness, force, frequency):
+    mass, damping, stiffness = oscillator_parameters(mass, damping, stiffness)
+    force, frequency = float(force), float(frequency)
+    if not math.isfinite(force) or not math.isfinite(frequency) or frequency < 0:
+        raise ValueError("finite force and nonnegative finite angular frequency required")
+    impedance = complex(stiffness - mass * frequency * frequency, damping * frequency)
+    if not all(math.isfinite(value) for value in (impedance.real, impedance.imag)):
+        raise ValueError("impedance outside representable range")
+    if impedance == 0:
+        raise ValueError("undamped resonance has no unique bounded harmonic response")
+    result = force / impedance
+    if not all(math.isfinite(value) for value in (result.real, result.imag)):
+        raise ValueError("response outside representable range")
+    return result
+
+
+def midpoint_step(mass, damping, stiffness, position, velocity, step, force_mid):
+    mass, damping, stiffness = oscillator_parameters(mass, damping, stiffness)
+    position, velocity, step, force_mid = map(float, (position, velocity, step, force_mid))
+    if not all(math.isfinite(value) for value in (position, velocity, step, force_mid)) or step <= 0:
+        raise ValueError("finite state and force, positive finite step required")
+    spring_term = stiffness * step * step / 4
+    damping_term = damping * step / 2
+    denominator = mass + damping_term + spring_term
+    numerator = velocity * (mass - damping_term - spring_term) + step * (force_mid - stiffness * position)
+    if not all(math.isfinite(value) for value in (denominator, numerator)):
+        raise ValueError("update outside representable range")
+    next_velocity = numerator / denominator
+    next_position = position + step * (velocity + next_velocity) / 2
+    if not all(math.isfinite(value) for value in (next_position, next_velocity)):
+        raise ValueError("state outside representable range")
+    return next_position, next_velocity
+
+
+if __name__ == "__main__":
+    response = harmonic_response(2, 8, 800, 10, 20)
+    print("harmonic displacement", response, "m")
+    position, velocity = 0.1, 0.0
+    for _ in range(100):
+        position, velocity = midpoint_step(2, 0, 800, position, velocity, 0.001, 0)
+    energy = 2 * velocity**2 / 2 + 800 * position**2 / 2
+    print("undamped state after 0.1 s", position, velocity, "energy", energy, "J")
+```
+
+The harmonic result is −0.0625i m, corresponding to a 90° displacement lag. In the undamped free-motion example the initial energy is 4 J and the midpoint steps preserve it up to floating-point rounding. Compare the final state with x = 0.1 cos(20t) and v = −2 sin(20t); conserving energy does not eliminate phase error.
+
+**Investigate:** Check static compliance, frequency reflection with the corresponding complex conjugate, mass/stiffness scaling and the undamped-resonance rejection. Derive the real two-equation harmonic system independently. For every time step, compare the change in mechanical energy with applied midpoint work minus dissipated midpoint work. Halve the step and verify second-order finite-time convergence against an independent exact solution for free and forced motion. Very large or tiny quantities can exceed floating-point range or resolution even though the mathematical model exists; choose meaningful units and inspect conditioning. Contact, dry friction, nonlinear springs, parameter changes and several modes require a different model.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Coupled coordinates, normal modes and physical matrices](../vibration/Coupled-coordinates-normal-modes-and-physical-matrices.lingua#r_0KCCW9DJNDZAXQJNTCV6EPXB4Q).
+
+} r_0S7WXXT95F193YPM09Z39GMKPJ

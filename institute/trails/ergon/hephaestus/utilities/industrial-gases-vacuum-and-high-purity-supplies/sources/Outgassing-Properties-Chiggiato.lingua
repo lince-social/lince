@@ -1,0 +1,12 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Outgassing properties of vacuum materials — Paolo Chiggiato (@gas-outgassing: 0, is #reference, #part-of @gas-sources) { r_18MM2A316NWRJABS8E53468PWT
+Paolo Chiggiato. *Outgassing properties of vacuum materials for particle accelerators*, 2017 CERN Accelerator School contribution; arXiv version 2, 16 June 2020, 47 pages. [Versioned record](https://arxiv.org/abs/2006.07124v2), [complete paper](https://arxiv.org/pdf/2006.07124).
+
+Read the entire paper, including measurement methods, adsorption/desorption, diffusion and treatment histories. Derive the gas-load account and test how surface and bulk processes produce different time dependence. Follow a cited primary measurement where an engineering decision depends on a numerical outgassing value.
+
+Metadata and selected introductory, source-mechanism, accumulation-method, residence/distribution, hydrogen-diffusion and surface-limited passages were inspected on 30 October 2026. The measurement discussion identifies background, gauge response and readsorption as limits of a simple pressure-rise inference. An instrument can alter the gas balance it is intended to observe.
+
+This is an authorized public author manuscript. The arXiv distribution licence does not grant general adaptation rights. Retain version and credits; all media remain external. Material-specific reported values need their surface preparation, temperature, exposure and measurement history before reuse.
+
+} r_18MM2A316NWRJABS8E53468PWT

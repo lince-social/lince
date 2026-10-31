@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Pareto choices and the meaning of a weight (@mat-pareto: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #materials-engineering "../../mechanical-engineering-and-machine-design/design/Compare-architectures-with-physical-and-resource-accounts.lingua#r_4SQTE5K276EA679VKPTN22XYJX") { r_39GCKMMP999A7XF1HYMQ6216WV
+**Read:** [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), economics and selection; [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ), comparison methods. Continue through the shared mechanical architecture comparison.
+
+A feasible candidate is dominated when another is no worse in every declared objective and better in at least one. Undominated candidates form a Pareto set for that comparison. It can contain several defensible choices because objectives such as mass, cost and repairability do not share a natural exchange rate.
+
+Weighted sums encode judgments through normalization and weights. Changing currency units or the comparison set must not secretly change a purported physical preference. Thresholds and noncompensable requirements belong in constraints, not in a score that allows a high benefit elsewhere to erase a failed requirement. Weighted sums can also miss parts of a nonconvex Pareto frontier.
+
+**Work:** Identify dominated alternatives in a documented material/shape comparison. Explain which observations determine performance and which judgments choose among remaining options. Vary weights and normalization openly; show whether the preferred option is stable. Present an unresolved tradeoff in words and quantities rather than manufacturing a universal winner.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Compare architectures with physical and resource accounts](../../mechanical-engineering-and-machine-design/design/Compare-architectures-with-physical-and-resource-accounts.lingua#r_4SQTE5K276EA679VKPTN22XYJX).
+
+} r_39GCKMMP999A7XF1HYMQ6216WV

@@ -1,0 +1,19 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Viscoelasticity, creep, relaxation and temperature (@mech-time-dependent: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "Polymers-ceramics-composites-and-directional-response.lingua#r_42W9BD10M928ZA9BE5D9MVFYFD", #materials-engineering "../../materials-engineering/mechanical/Hereditary-response-and-thermodynamic-consistency.lingua#r_3XS8YQBY12Z2V7S11PHNEK0HG0") { r_5EQ8VH9QC9479TD3ZKYFFN8P56
+**Read:** [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Linear Viscoelasticity and Dislocation Basis of Yield and Creep; [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 3.6, 3.8–3.10.
+
+Creep is changing strain under a specified sustained stress; stress relaxation is changing stress under a specified strain history. Their curves are not interchangeable. Temperature, duration, stress and evolving material state matter, especially for polymers and high-temperature metals.
+
+A Maxwell spring and dashpot in series give strain rate σ_dot/E + σ/η. At fixed total strain, stress decays with time scale η/E. A Kelvin–Voigt spring and dashpot in parallel give σ = Eε + η ε_dot; under an ideal stress step, strain approaches σ/E over the same form of time scale. These models represent different immediate and long-time limits.
+
+For E = 2 GPa and η = 1×10¹² Pa·s, the time scale is 500 s. A Maxwell stress retained at t = 500 s is exp(−1), about 36.8%, of its initial value under fixed strain. A fitted linear model does not automatically describe tertiary creep, cracking or changing microstructure.
+
+**Work:** Derive both step responses, check units and initial/long-time limits, then compare their predictions for an assembly preload. Study a temperature-dependent constitutive law with documented calibration and test whether time–temperature superposition is justified. Keep creep deformation, creep rupture and fatigue–creep interaction as different questions.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Polymers, ceramics, composites and directional response](Polymers-ceramics-composites-and-directional-response.lingua#r_42W9BD10M928ZA9BE5D9MVFYFD).
+
+**Continue in materials engineering:** [Hereditary response and thermodynamic consistency](../../materials-engineering/mechanical/Hereditary-response-and-thermodynamic-consistency.lingua#r_3XS8YQBY12Z2V7S11PHNEK0HG0).
+
+} r_5EQ8VH9QC9479TD3ZKYFFN8P56

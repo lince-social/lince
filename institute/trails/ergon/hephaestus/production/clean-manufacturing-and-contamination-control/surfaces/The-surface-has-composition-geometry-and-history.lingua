@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+The surface has composition, geometry and history (@cm-surface-state: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #clean-manufacturing "../../../physics/thermodynamics-and-heat-transfer/equilibrium/Surface-energy-curvature-and-small-system-thermodynamics.lingua#r_1CF5QPBT4S6WVH8W7364J240V8") { r_7S5TPNAAEGD0QP31S1TBSPXERK
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), surface contamination and functional effects; [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), part 1's contact examples.
+
+A nominal material name does not define the contacting surface. Oxide, adsorbed water, machining residue, a coating, scratches and previous loading may occupy the region that actually meets a particle or liquid. The depth and lateral resolution of an observation determine which of these features it can distinguish.
+
+Separate projected area, developed area and real contact area. A rough part may have more geometric area but less intimate contact with a second solid. A reported roughness height is a statistic over a stated sampling length and instrument bandwidth; it does not fully specify asperity shape or spacing.
+
+**Work:** Describe two surfaces made from the same bulk material with different preparation histories. Predict which measurements could distinguish them without assuming that a visual inspection resolves molecular films. Define a functional question for each: optical scattering, bonding, electrical leakage, microbial retention or mechanical motion. Explain why the same amount of residue can have different consequences when its location changes.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Surface energy, curvature and small-system thermodynamics](../../../physics/thermodynamics-and-heat-transfer/equilibrium/Surface-energy-curvature-and-small-system-thermodynamics.lingua#r_1CF5QPBT4S6WVH8W7364J240V8).
+
+} r_7S5TPNAAEGD0QP31S1TBSPXERK

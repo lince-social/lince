@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Unequal areas and the mixed-potential balance (@mat-mixed-balance: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5", #source "../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5", #materials-engineering "../computation/An-inspectable-mixed-potential-and-material-loss-account.lingua#r_52QDVA9TVTEX94JA9YF8DBQ9E7") { r_3X68MRNY7HWC5TDDR6NFXYS6R7
+**Read:** [Corrosion current — Derek H. Lister](../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5), partial currents and area balance; [Aqueous corrosion — Cambridge DoITPoMS](../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5), Tafel diagrams and corrosion rate.
+
+For the simplified two-branch model, positive dissolution density is jₐ(E)=jₐ₀ exp[(E−Eₐ)/bₐ]. The magnitude of cathodic kinetic density is j꜀,kin(E)=j꜀₀ exp[(E꜀−E)/b꜀], limited by 1/j꜀=1/j꜀,kin+1/jlim. Eₐ and E꜀ specify reference points for these fitted branches, not necessarily measured equilibrium potentials. All potentials share one reference; b values use natural logarithms. A slope in V/decade equals b ln(10).
+
+At open circuit, Aₐjₐ=A꜀j꜀. Zero external current therefore does not mean zero dissolution, and unequal areas need not have equal current densities. Charge neutrality, a uniform potential and the specified branch laws are model assumptions; solution resistance and distributed local chemistry are omitted.
+
+**Work:** Derive the no-transport-limit potential analytically. For finite jlim, prove that the logarithmic current residual increases with E, so a bracketed root is unique. Convert dissolution current into mass per time and a uniform penetration rate using M, zF, area and density. Explain why that rate cannot predict maximum pit depth.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [An inspectable mixed-potential and material-loss account](../computation/An-inspectable-mixed-potential-and-material-loss-account.lingua#r_52QDVA9TVTEX94JA9YF8DBQ9E7).
+
+} r_3X68MRNY7HWC5TDDR6NFXYS6R7

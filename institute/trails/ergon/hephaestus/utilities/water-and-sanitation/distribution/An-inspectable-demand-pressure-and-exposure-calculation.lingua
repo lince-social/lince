@@ -1,0 +1,48 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+An inspectable demand, pressure and exposure calculation (@wu-distribution-example: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Transients-backflow-and-the-contamination-pathway.lingua#r_2T466ADSGSQN4SEE4YDVJR56T9") { r_7MK1BYCC2XB3BSFZ6S08A9QSEK
+**Read:** Revisit the preceding pressure-demand and exposure Records and [EPANET 2.2 manual](../sources/EPANET-22-Manual-and-Models.lingua#r_4D17YBA2R37W31ZCW7W54EDMWW), chapter 12. This original program checks a deliberately small synthetic model without requiring an external simulation package. It does not size a real network or assign disinfection credit.
+
+```python
+from math import expm1, isfinite, sqrt
+
+def delivered_flow(head, resistance, requested, full_pressure):
+    if not all(isfinite(x) for x in (head, resistance, requested, full_pressure)):
+        raise ValueError("finite inputs required")
+    if head < 0 or resistance < 0 or requested < 0 or full_pressure <= 0:
+        raise ValueError("nonnegative head, resistance and demand; positive full pressure required")
+    if head == 0 or requested == 0:
+        return 0.0, head
+    def served(pressure):
+        return requested * min(1.0, sqrt(max(pressure, 0.0) / full_pressure))
+    low, high = 0.0, requested
+    for _ in range(100):
+        mid = (low + high) / 2.0
+        pressure = head - resistance * mid * mid
+        if mid > served(pressure):
+            high = mid
+        else:
+            low = mid
+    flow = (low + high) / 2.0
+    return flow, head - resistance * flow * flow
+
+def exposure(initial, decay, duration):
+    if not all(isfinite(x) for x in (initial, decay, duration)):
+        raise ValueError("finite inputs required")
+    if min(initial, decay, duration) < 0:
+        raise ValueError("negative concentration, decay or duration")
+    if decay == 0:
+        return initial * duration
+    return initial * (-expm1(-decay * duration)) / decay
+
+flow, pressure = delivered_flow(20.0, 0.5, 10.0, 20.0)
+print("delivered_L_per_s_and_pressure_m", flow, pressure)
+print("requested_L_per_s", 10.0)
+print("exposure_mg_min_per_L", exposure(1.0, 0.02, 30.0))
+print("zero_decay_limit", exposure(1.0, 0.0, 30.0))
+```
+
+**Investigate:** Derive the pressure-demand answer algebraically. Check the no-demand, zero-head, zero-resistance and full-service cases. Change the reference units and convert resistance consistently. Compare the exposure result with a refined quadrature and its zero-decay limit. Reject physically unsupported parameter interpretations even when the program runs. Then construct the same simple hydraulic question in a versioned EPANET input and explain differences caused by its component and demand definitions.
+
+**Continue:** [Transients, backflow and the contamination pathway](Transients-backflow-and-the-contamination-pathway.lingua#r_2T466ADSGSQN4SEE4YDVJR56T9).
+} r_7MK1BYCC2XB3BSFZ6S08A9QSEK

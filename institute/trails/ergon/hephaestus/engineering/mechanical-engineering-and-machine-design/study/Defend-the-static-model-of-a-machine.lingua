@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Defend the static model of a machine (@mech-statics-review: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #mechanical-engineering "../dynamics/Describe-motion-before-predicting-its-causes.lingua#r_3Q1N06EMG3MPWM99KQN8G4TVM8") { r_3ESKMC4WAANDZ5S8HK9M7TA8Q4
+**Read:** Complete all ten chapters and substantial exercises in [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80); revisit [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ)'s principles and connections. Use the opening [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY) material to identify where deformation and material behavior become necessary.
+
+Explain a familiar mechanism from function to parts, geometry, contact, support, applied loads, reactions and internal actions. Start without unexplained specialist terms, then defend a complete mathematical account. Draw the assembly and its isolated members with consistent coordinates and action/reaction pairs.
+
+**Work:** Compare two possible arrangements under the same useful function. Independently verify reactions, moments and a section account. Include a changed load, uncertain dimension, alternative support assumption and a configuration near loss of contact or constraint. Explain where friction, flexibility or acceleration invalidates the static model.
+
+For a deeper study, design a suitable small-load educational observation, predict the measured quantities and compare with measurements and their uncertainty. Report what was actually performed separately from a proposed test. Revise a mistaken assumption when evidence requires it. Continue into motion and dynamics, retaining the load paths, model boundaries and uncertainty account. Later material response, machine elements, manufacture, operation and integrated research complete the mechanical subject.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Describe motion before predicting its causes](../dynamics/Describe-motion-before-predicting-its-causes.lingua#r_3Q1N06EMG3MPWM99KQN8G4TVM8).
+
+} r_3ESKMC4WAANDZ5S8HK9M7TA8Q4

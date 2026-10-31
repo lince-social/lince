@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Solvent cleaning needs a purity and recovery loop (@cm-solvent-process: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "../../../chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S") { r_5WBGRR7SET5MH9Q80WYZ6F8J23
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), section 2.1 and the complete solvent-process discussion.
+
+A solvent-based process combines solubility, wetting, transport and separation. The bath's initial purity does not determine its state after many parts. Dissolved residue, suspended particles, degraded solvent and material extracted from equipment can follow different recovery routes.
+
+Vapor-condensation cleaning uses a phase change to supply condensate and return liquid carrying residue. It does not guarantee that every volatile impurity separates, that trapped liquid drains or that the final object contains no solvent. The part, solvent loop, condenser, emissions and waste belong in one process account.
+
+**Work:** Draw a generic closed solvent loop and identify which contaminants would be rejected, concentrated, co-distilled or left in a recess. Link a proposed solvent to actual material and process evidence. Compare agent consumption, carryover and waste without treating a historical solvent list as an approved present-day operating procedure.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Interpret vapor pressure, phase change, and a phase diagram](../../../chemistry/general-chemistry/states/Phase-changes-and-equilibrium-maps.lingua#r_7XXDG9YQTWEGSDFX1HXPBTGY8S).
+
+} r_5WBGRR7SET5MH9Q80WYZ6F8J23

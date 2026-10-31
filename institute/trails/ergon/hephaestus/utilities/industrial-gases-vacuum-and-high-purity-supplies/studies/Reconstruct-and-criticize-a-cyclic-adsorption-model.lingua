@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Reconstruct and criticize a cyclic adsorption model (@gas-study-adsorption: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM", #source "../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H", #industrial-gases-and-vacuum "../../../physics/thermodynamics-and-heat-transfer/microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5") { r_1MW00MYZAWAZS52263CS10BRAP
+**Study:** [Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen](../sources/Nitrogen-PSA-Dynamics-Schytt.lingua#r_2H29N54JS7VR0WV7D4F1HTZCEM) and [An oxygen-separation plant model — Dhamanekar and colleagues](../sources/Oxygen-PSA-Digital-Twin-Dhamanekar.lingua#r_7YN4807VG5QJTE1TAD37NZ7E3H), complete papers, with the underlying adsorption course. Obtain the named supplementary material before claiming a reproduction of either study.
+
+Start from a closed-cell gas/solid inventory and a one-bed breakthrough problem. Establish units, storage bases, equilibrium limits, kinetic response and heat accounting. Add pressure loss, valves, buffers and cyclic switching only after those simpler cases pass independent checks. Reconcile apparent inconsistencies in printed equations explicitly.
+
+Separate equation residual, spatial/time error, incomplete periodic convergence, uncertain parameters and disagreement with experiment. Compare quantities observed at actual sensor locations after their response effects. A pressure trace fitted with uncertain valve behavior does not uniquely determine internal uptake kinetics.
+
+**Deliver:** A limited reproducible model, conservation and limiting-case checks, a convergence study and a comparison with an independently available observation. State every difference from the chosen paper and every missing data or software dependency. Defend whether the evidence supports a prediction under changed timing, material or feed composition.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Microscopic states, heat capacity and statistical bridges](../../../physics/thermodynamics-and-heat-transfer/microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5).
+
+} r_1MW00MYZAWAZS52263CS10BRAP

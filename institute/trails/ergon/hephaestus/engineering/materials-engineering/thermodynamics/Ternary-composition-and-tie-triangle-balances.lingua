@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Ternary composition and tie-triangle balances (@mat-ternary: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #materials-engineering "Defect-equilibria-charge-neutrality-and-atmosphere.lingua#r_4925ESXSJEAFKRCDX1YJGZW7NT") { r_1RQRCVYBDG112560T6951WQ7V7
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapter 9 with exercises; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), the complete Ternary Phase Diagrams package, including sections, tie lines/triangles and its Sn–Ag–Cu case.
+
+Three fractions sum to one, so ternary composition occupies a triangle with two independent coordinates. A constant-temperature section is different from a liquidus projection or a vertical section. A straight line on an arbitrary section need not be a physical tie line.
+
+Within an actual three-phase tie triangle, solve x_0=Σ f_i x_i with Σf_i=1 and f_i≥0. For phase compositions (0.8,0.1,0.1), (0.1,0.8,0.1), (0.1,0.1,0.8) and overall (0.45,0.31,0.24), fractions are (0.5,0.3,0.2). Check each component balance.
+
+**Work:** Reconstruct this example geometrically and algebraically, then compare an overall point outside the triangle. Read one real isothermal section and distinguish measured phase boundaries from assessed interpolation. Extend the conservation argument to more components without pretending a two-dimensional plot contains all constraints.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defect equilibria, charge neutrality and atmosphere](Defect-equilibria-charge-neutrality-and-atmosphere.lingua#r_4925ESXSJEAFKRCDX1YJGZW7NT).
+
+} r_1RQRCVYBDG112560T6951WQ7V7

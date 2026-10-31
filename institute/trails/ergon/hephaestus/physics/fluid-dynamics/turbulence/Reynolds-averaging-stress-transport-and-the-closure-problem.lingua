@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Reynolds averaging, stress transport and the closure problem (@fd-rans: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #fluid-dynamics "Wall-units-inner-outer-scales-and-roughness.lingua#r_5R0RB1C4ZP85MKS4SJ8DPE2D9T") { r_2WR3KYF31R7RJSN20P6PKS0PM0
+Reynolds averaging, stress transport and the closure problem (@fd-rans: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA", #source "../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ", #source "../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6", #fluid-dynamics "Wall-units-inner-outer-scales-and-roughness.lingua#r_5R0RB1C4ZP85MKS4SJ8DPE2D9T", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/particle-transport/Turbulent-transport-needs-more-than-the-mean-velocity.lingua#r_7SZ6A55R1HKBN0CN7Q6PM5013M") { r_2WR3KYF31R7RJSN20P6PKS0PM0
 **Read:** [Fluid Mechanics — David Tong](../sources/Fluid-Mechanics-Tong.lingua#r_3SP698XHQFSZZ6N9Q22NESHMEA), chapter 6 Reynolds-averaged equations; [Introductory Lectures on Turbulence — James M. McDonough](../sources/Turbulence-McDonough.lingua#r_2TBK3JC1KJ1CMNABRW3Y2AFKTQ), closure and turbulence-energy budgets; [Turbulence Modeling Resource — model definitions and benchmarks](../sources/Turbulence-Modeling-Resource.lingua#r_42VW512D9MG3Z0SBJ78N7DAPE6), precise model equations and variants.
 
 Averaging the incompressible momentum equation produces the additional flux ρ⟨u′_i u′_j⟩. If moved to a stress-like right-hand side it appears with a minus sign. Derive that convention explicitly. The mean velocity and pressure equations contain new unknown correlations, and equations for those correlations introduce further higher-order terms.
@@ -12,4 +12,7 @@ An eddy-viscosity model assumes a relation between anisotropic stress and mean s
 **Continue:** [Wall units, inner and outer scales, and roughness](Wall-units-inner-outer-scales-and-roughness.lingua#r_5R0RB1C4ZP85MKS4SJ8DPE2D9T).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in clean manufacturing:** [Turbulent transport needs more than the mean velocity](../../../production/clean-manufacturing-and-contamination-control/particle-transport/Turbulent-transport-needs-more-than-the-mean-velocity.lingua#r_7SZ6A55R1HKBN0CN7Q6PM5013M).
+
 } r_2WR3KYF31R7RJSN20P6PKS0PM0

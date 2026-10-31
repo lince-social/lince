@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Interfaces, deposits and combined exposure (@mat-degradation-interfaces: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #source "../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG", #materials-engineering "Atomic-oxygen-flight-exposure-and-ground-comparisons.lingua#r_3NSH7CCC1HN6ZXR2WANN7NNXDG") { r_28CQ1R0G083JT921V58ECCVFHR
+**Read:** [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), service environment and deposits; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), bonding and deterioration; [Polymer-composite weathering protocols — NIST SP 1200-15](../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG), exposed composite surfaces.
+
+Coatings, adhesives, fibers and substrates form interfaces with their own transport and mechanical behavior. A defect can admit liquid, a deposit can retain it, and swelling or corrosion products can load the interface. Biological growth can change local chemistry or transport, but its presence alone does not prove that it caused the damage.
+
+**Work:** Follow a bonded or coated component through preparation, exposure, local ingress and loss of function. Compare surface inspection with a cross-section and an interface-sensitive mechanical test. Separate barrier failure, cohesive failure and loss of adhesion, preserving the actual fracture path. Propose a changed exposure that distinguishes chemical weakening from mechanically driven delamination and explain the possible interaction between both.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Atomic oxygen, flight exposure and ground comparisons](Atomic-oxygen-flight-exposure-and-ground-comparisons.lingua#r_3NSH7CCC1HN6ZXR2WANN7NNXDG).
+
+} r_28CQ1R0G083JT921V58ECCVFHR

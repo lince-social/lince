@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Dynamic mechanical response, storage and loss (@mat-dynamic-moduli: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "Master-curves-aging-and-extrapolation.lingua#r_7RA8RJXAW4CMZRNPGV9DY6BBTZ") { r_06PB96QSNZJP5MJRDRMW3720DY
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), dynamic loading and generalized models in Engineering Viscoelasticity; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), section 3.6. Derive the result from the branch equation before fitting data.
+
+With the exp(iωt) convention, E*(ω)=E′+iE″=E_∞+ΣE_i iωτ_i/(1+iωτ_i). Thus E′=E_∞+ΣE_i(ωτ_i)²/[1+(ωτ_i)²], and E″=ΣE_iωτ_i/[1+(ωτ_i)²]. For ε=ε₀ sin ωt, the steady stress is ε₀(E′ sin ωt+E″ cos ωt). The dissipated work per cycle is πE″ε₀².
+
+Storage modulus, loss modulus and tan δ=E″/E′ describe different aspects of the response. Frequency in hertz differs from angular frequency by 2π. Fixture compliance, inertia, phase calibration, temperature gradients and amplitude can contaminate a measured loss peak.
+
+**Work:** Recover low- and high-frequency limits for the original example's parameters. Compare a long sinusoidal history with its analytical steady cycle, separating startup relaxation from periodic response. Explain why a single-frequency loss maximum is not a complete spectrum or a unique molecular identification.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Master curves, aging and extrapolation](Master-curves-aging-and-extrapolation.lingua#r_7RA8RJXAW4CMZRNPGV9DY6BBTZ).
+
+} r_06PB96QSNZJP5MJRDRMW3720DY

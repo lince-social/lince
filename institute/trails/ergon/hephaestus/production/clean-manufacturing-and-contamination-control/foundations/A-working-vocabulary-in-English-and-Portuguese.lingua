@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A working vocabulary for contamination and cleanliness (@cm-vocabulary: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "A-process-map-for-unwanted-material.lingua#r_3HDYXGSDA5NAR504BAWK57VBQD") { r_0ZVPAQR75W9W44NBA2SJ0Z02AV
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), definitions; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), glossary. Compare the use of a term with its application.
+
+Contamination, contaminação, is unwanted material in a specified context. Cleanliness, limpeza or grau de limpeza, describes a state relative to a requirement. Cleaning, limpeza as an operation, changes that state. A particle, partícula, is a discrete piece of matter; residue, resíduo, can include particles or a film. An aerosol, aerossol, consists of particles or droplets suspended in a gas.
+
+Sampling, amostragem, obtains observations from only part of a target. Detection, detecção, and identification, identificação, answer different questions. Bioburden, carga microbiana, requires a stated recovery and enumeration method. Sterilization, esterilização, is not a synonym for removing all chemical residues.
+
+**Work:** Build a bilingual glossary tied to your two objects. Include a physical example, an observable quantity and a counterexample for each term. Where a translation is ambiguous, retain the source's definition rather than treating the word alone as a specification.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Map where unwanted material enters, moves and leaves](A-process-map-for-unwanted-material.lingua#r_3HDYXGSDA5NAR504BAWK57VBQD).
+
+} r_0ZVPAQR75W9W44NBA2SJ0Z02AV

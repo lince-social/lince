@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Advection, diffusion, reaction and conservative scalar balances (@fd-scalar-transport: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "Mixing-stretching-diffusion-and-Taylor-dispersion.lingua#r_59FDSTWHQQ1P5GFEGPR0DG3Y54") { r_1K58Z7J4TJTKSNRNK4ENXN4YPM
+Advection, diffusion, reaction and conservative scalar balances (@fd-scalar-transport: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J", #source "../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P", #source "../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2", #fluid-dynamics "Mixing-stretching-diffusion-and-Taylor-dispersion.lingua#r_59FDSTWHQQ1P5GFEGPR0DG3Y54", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/particle-transport/Conserve-a-particle-population-in-space.lingua#r_1BFJWEWCRVH6HN99JAYZ8D2YCW") { r_1K58Z7J4TJTKSNRNK4ENXN4YPM
 **Read:** [Introdução à Mecânica dos Fluidos e aos Fenômenos de Transporte — Gobbi and colleagues](../sources/Mecanica-dos-Fluidos-e-Transportes-Gobbi-Dias.lingua#r_1F9KHVCP86X68RR7DTZASE5F1J), chapters 6–8 solute transport and balances; [Advanced fluid dynamics — Mei notes and MIT modules](../sources/Advanced-Fluid-Dynamics-Mei-MIT.lingua#r_21NXVH78F0NYDPDVTG66PG261P), chapter 4 transport and dispersion; [Microfluidics: Fluid physics at the nanoliter scale — Squires and Quake](../sources/Microfluidic-Physics-Squires-Quake.lingua#r_5TN8JGKY1B6VKGJQG859J61JE2), diffusive and reactive microtransport.
 
 For a species mass fraction Y in a mixture, start from ∂(ρY)/∂t+∇·(ρuY+j)=ω, with diffusive flux j and production ω defined consistently. A Fickian approximation j=−ρD∇Y requires its own constitutive assumptions. In a multicomponent mixture, fluxes and reactions must respect the total mass account; independently assigning every species an incompatible diffusion flux can violate it.
@@ -12,4 +12,7 @@ Derive a simple diffusion layer and a steady advective-reactive balance, checkin
 **Continue:** [Mixing, stretching, diffusion and Taylor dispersion](Mixing-stretching-diffusion-and-Taylor-dispersion.lingua#r_59FDSTWHQQ1P5GFEGPR0DG3Y54).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+
+**Continue in clean manufacturing:** [Conserve a particle population in space](../../../production/clean-manufacturing-and-contamination-control/particle-transport/Conserve-a-particle-population-in-space.lingua#r_1BFJWEWCRVH6HN99JAYZ8D2YCW).
+
 } r_1K58Z7J4TJTKSNRNK4ENXN4YPM

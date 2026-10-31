@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pressure–volume–temperature–time collection (@gas-pvtt: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Rate-of-rise-separates-flow-from-thermal-drift.lingua#r_0DW991CXYCP2HWBBQ6J4DB7PJZ") { r_4Y8G2Z3YBEH8450KP5DHJ1D5Z8
+**Read:** [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), the complete PVTt method, uncertainty and inventory-volume discussion.
+
+A collection standard determines flow from a measured change of amount over a measured interval. For a tank of known fixed volume, the ideal expression is ṅavg=(V/RΔt)(pf/Tf−pi/Ti). Use a real-gas equation of state when required. Initial and final states must represent the actual stored gas, not just one temperature sensor's indication.
+
+Add the change of amount in connecting or inventory volumes included between the meter and the collection boundary. Switching dynamics and timing determine which material crossed the defined boundary. Waiting for thermal equilibration after collection can improve the final state estimate without changing the amount already collected, provided leakage and other changes are accounted for.
+
+For a hypothetical 0.010 m³ tank, pi=100 Pa, pf=1000 Pa, Ti=Tf=300 K and Δt=60 s, the ideal average flow is approximately 6.01362×10⁻⁵ mol/s. A nonzero initial amount cannot simply be discarded.
+
+**Work:** Reconstruct both the tank and connecting-volume terms. Propagate uncertainty in the final-minus-initial difference, including shared pressure calibration and temperature correlations. Explain why an uncertainty budget from a large high-flow standard cannot be copied unchanged to a small low-flow collector.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Rate of rise separates flow from thermal drift](Rate-of-rise-separates-flow-from-thermal-drift.lingua#r_0DW991CXYCP2HWBBQ6J4DB7PJZ).
+
+} r_4Y8G2Z3YBEH8450KP5DHJ1D5Z8

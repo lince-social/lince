@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Charge near a surface is more than a uniform applied field (@cm-charge-contact: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #clean-manufacturing "../../../physics/fluid-dynamics/interfaces/Wetting-contact-lines-hysteresis-and-coating.lingua#r_0QBZZTX53DYHBPJTHRAH7YTK1D") { r_55PX7VDZ84MQKJ0XV338T8BJXH
+**Read:** [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), part 2's image-force and localized-charge discussion; revisit [Coulomb force, superposition and a test charge](../../../physics/electromagnetism/electrostatics/Coulomb-force-superposition-and-test-charge.lingua#r_4BCJ9YGVJSTWDV9S67V2RDR1YD).
+
+The earlier free-particle drift used qE. Near a boundary, the field itself can depend on the particle and surface. For an ideal point charge q at height h above an infinite grounded conducting plane in a uniform medium of permittivity ε, the image construction gives an attractive normal force magnitude q²/(16πεh²). Either sign of q is attracted in this model.
+
+A dielectric particle touching a real insulating surface is a different geometry. Charge can be localized, transferred, trapped or screened; humidity and neighboring particles may change the result. An image-force estimate and a short-range contact law should not be added without checking whether their definitions already include overlapping interactions.
+
+**Work:** Derive the ideal force using an image charge at distance 2h. Explain why the physical interaction energy includes the induced-boundary response and is −q²/(16πεh), rather than the full two-independent-charges energy. Differentiate it to recover the force. List the observations required before using this idealization for a charged manufacturing particle.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Wetting, contact lines, hysteresis and coating](../../../physics/fluid-dynamics/interfaces/Wetting-contact-lines-hysteresis-and-coating.lingua#r_0QBZZTX53DYHBPJTHRAH7YTK1D).
+
+} r_55PX7VDZ84MQKJ0XV338T8BJXH

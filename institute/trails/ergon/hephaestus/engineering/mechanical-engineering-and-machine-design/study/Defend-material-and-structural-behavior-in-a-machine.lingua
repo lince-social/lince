@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Defend material and structural behavior in a machine (@mech-materials-review: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "../elements/Turn-a-function-into-a-mechanism-and-its-interfaces.lingua#r_0MTNCTSEK8Z1B3HQYEAE17YW8T") { r_2KA62MD536H6F21EG7D20715M3
+**Read:** Complete [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY)'s full open module collection and sustained problems, revisiting connections among material state, structure, experiments and analysis. Use [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W)'s full relevant chapters and problems for the advanced studies rather than selecting isolated equations.
+
+Explain the chosen machine from load histories and deformation to stress/strain, material response, structural constraints and possible damage. Derive simple cases before applying numerical models. Distinguish displacement, yielding, instability, fracture, fatigue, creep and contact limits; identify which actually matter under the stated service and evidence.
+
+**Demonstrate:** Complete the thermal-structure, fatigue/damage and constitutive/nonlinear studies. They can reuse the same component, calculations and observations when the questions overlap. Retain independent numerical checks, source editions, material conditions, experimental uncertainty, competing explanations and revisions. Connect material selection to manufacture, inspection, maintenance and recovery.
+
+A full account includes what was actually measured or reconstructed from an external experiment, what remains a proposed investigation and what cannot yet be inferred. Continue into the connected machine-element studies, carrying material condition, loads, deformation and damage evidence into the assembly. Fabrication, continuing service and integrated design/research follow. The separate materials, manufacturing and specialist mechanics subjects retain their full scope.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Turn a function into a mechanism and its interfaces](../elements/Turn-a-function-into-a-mechanism-and-its-interfaces.lingua#r_0MTNCTSEK8Z1B3HQYEAE17YW8T).
+
+} r_2KA62MD536H6F21EG7D20715M3

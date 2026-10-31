@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Relaxation time and the distance before stopping (@cm-response-time: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "Settling-includes-buoyancy-and-a-regime-check.lingua#r_505KS8N0RQRGC9WBA1JBY3GSFD") { r_69TCZNTFWEQS1C3QEFDW0R5RJ1
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Aerosol Particle Motion in full.
+
+For constant fluid velocity and linear resistance, m dv/dt=ζ(u−v)+F. Define τ=m/ζ=mB and terminal velocity v∞=u+BF. Then v(t)=v∞+(v₀−v∞)exp(−t/τ). Integration gives position x(t)=x₀+v∞t+(v₀−v∞)τ[1−exp(−t/τ)]. These are vector relations when coefficients are scalar and constant.
+
+With no external force in still fluid, the additional travel approaches v₀τ. For a rigid sphere τ=ρ_p d² C_c/(18μ). A hypothetical 1 µm sphere with ρ_p=1000 kg/m³, μ=1.8×10⁻⁵ Pa s and the preceding slip factor has τ≈3.59081 µs. Added-fluid mass, history forces and changing flow require a richer equation when they matter.
+
+**Work:** Derive both transient expressions and verify their initial values and derivatives. Compare an instantaneous terminal-velocity approximation with the transient over times shorter and longer than τ. Explain why small τ relative to one process does not establish small τ relative to every local flow change.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Settling includes buoyancy and a regime check](Settling-includes-buoyancy-and-a-regime-check.lingua#r_505KS8N0RQRGC9WBA1JBY3GSFD).
+
+} r_69TCZNTFWEQS1C3QEFDW0R5RJ1

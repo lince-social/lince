@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Free vibration, damping and the initial state (@mech-free-vibration: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "Harmonic-forcing-amplitude-phase-and-resonance.lingua#r_58DVFP03HYVJCJ55C1VZ9DNY3N") { r_3NHYHXDH6WM8675H5HSBCNRWW1
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 19–20 and problem set 9; [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), 18.03SC constant-coefficient second-order equations, exponential and sinusoidal solutions.
+
+For m x_double_dot + c x_dot + kx = 0 with m,k > 0 and c ≥ 0, define ω_n = √(k/m) and ζ = c/(2√(km)). Substitution of exp(st) gives m s² + c s + k = 0. The roots determine underdamped oscillation, critical damping or overdamped decay. Both initial position and initial velocity are needed to determine the solution.
+
+For ζ < 1, the damped frequency is ω_d = ω_n√(1 − ζ²), and the envelope decays as exp(−ζω_n t). These are distinct rates. The logarithmic decrement between same-sign successive peaks is δ = 2πζ/√(1 − ζ²) for this model; fitting it assumes a single mode and viscous damping over the observed amplitude range.
+
+With m = 2 kg, k = 800 N/m and c = 8 N·s/m, ω_n = 20 rad/s, ζ = 0.1 and ω_d ≈ 19.8997 rad/s. An unforced trajectory loses mechanical energy at c v². A fit to decreasing peaks does not alone identify whether friction, air drag or an electrical load actually has a linear viscous law.
+
+**Work:** Derive solutions for each root case and enforce the initial conditions. Compare a measured or supplied decay with at least two damping models. Check how sensor noise and a second mode affect the estimated decrement and natural frequency.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Harmonic forcing, amplitude, phase and resonance](Harmonic-forcing-amplitude-phase-and-resonance.lingua#r_58DVFP03HYVJCJ55C1VZ9DNY3N).
+
+} r_3NHYHXDH6WM8675H5HSBCNRWW1

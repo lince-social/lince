@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Connect a monitoring signal to a proportionate response (@cm-monitoring-response: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #source "../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY", #clean-manufacturing "Maintain-the-claim-through-change-and-restoration.lingua#r_7729DVQH9XYHQKGEE5QHCK8NJB") { r_14SFA69Q0ZBZ89SWK9K08X0QR0
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), section 6.1.4 and measurement-control case studies; [Measurement uncertainty in conformity assessment — JCGM 106](../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY), the decision being made.
+
+A monitoring system includes what happens after a signal. Identify the affected operation or product interval, preserve the observations and examine the measurement's validity. Distinguish a warning about unusual behavior from evidence that a product requirement has been exceeded.
+
+Response depends on consequence and available evidence. A reference check may reveal an instrument problem; a functional observation may reveal product impact. Returning a chart to its old mean does not by itself establish that previously affected items are acceptable or that the cause has been resolved.
+
+Frequent adjustments in response to ordinary random variation can increase instability. Conversely, dismissing every signal as noise can hide a persistent change. Evaluate the response rule with the detector, including delays, workload and consequences of false and missed signals.
+
+**Work:** Follow a benign simulated excursion from detection through investigation and a justified disposition of the affected evidence and items. Compare an instrument fault with a real process shift. Specify what observation would support return to the intended operation, without pretending that the simulated exercise authorizes work on an actual facility.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Maintain the claim through change and restoration](Maintain-the-claim-through-change-and-restoration.lingua#r_7729DVQH9XYHQKGEE5QHCK8NJB).
+
+} r_14SFA69Q0ZBZ89SWK9K08X0QR0

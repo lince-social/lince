@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+A machine begins with a useful function (@mech-purpose: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #mechanical-engineering "State-the-mechanical-quantity-before-the-number.lingua#r_15BHWYB8AYJYDMG8KGC2WH01S9") { r_6JY8HRXMA2FQZ1EGBG7KE458SG
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topics 1–3, with [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7)'s project description as a later example of an integrated machine.
+
+A machine changes or transmits motion, force or energy to accomplish something. Describe the desired effect before deciding on a motor, gear or bearing. A function such as positioning a workpiece also needs a load, travel, time, accuracy, environment and continuing-use context. Several different mechanisms may satisfy it.
+
+**Work:** Explain two familiar machines in ordinary language. For each, identify input, output, supporting structure, moving parts, contacts, energy supply, operator and waste or loss. Compare a manual and powered way to produce the same effect. Ask what must remain true after wear, a change of load or an interruption.
+
+Choose one simple machine as an ongoing study. Keep observations separate from guesses about hidden parts. A photograph or a safe stationary inspection can establish visible arrangement; it cannot prove material properties or the forces inside a loaded joint. Later calculations should answer a question about that actual function.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [State the mechanical quantity before the number](State-the-mechanical-quantity-before-the-number.lingua#r_15BHWYB8AYJYDMG8KGC2WH01S9).
+
+} r_6JY8HRXMA2FQZ1EGBG7KE458SG

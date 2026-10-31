@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Collisions can change number without removing material (@cm-coagulation-entry: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9", #clean-manufacturing "Relative-diffusion-and-the-pair-collision-kernel.lingua#r_0PDZMSKB17M8BSS7ANETGX5M0F") { r_7N0H5GYRYGCGG8TRZR2C4RC0B9
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Coagulation of Particles in full; [Aerosols and coagulation — Chiang C. Mei, MIT](../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9), the full diffusion-to-a-sphere derivation and appendices.
+
+When two particles join, one combined object replaces two separate objects. Total particle count decreases while material mass can remain unchanged. A counter's size bins can change even if no material leaves the observed volume. Fragmentation produces the opposite kind of count change.
+
+Distinguish approaching, colliding, sticking and coalescing. A geometrical encounter may not create a durable aggregate; a joined pair need not immediately become a compact sphere. A collision kernel describes encounters under chosen transport assumptions, while an efficiency can represent the probability that an encounter gives the modeled outcome.
+
+**Work:** Track both number and material mass through five explicitly listed pair-merging events. Construct the size-bin counts before and after using a stated compact-sphere approximation, then explain which conclusion changes if the products remain porous aggregates.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Relative diffusion and the pair collision kernel](Relative-diffusion-and-the-pair-collision-kernel.lingua#r_0PDZMSKB17M8BSS7ANETGX5M0F).
+
+} r_7N0H5GYRYGCGG8TRZR2C4RC0B9

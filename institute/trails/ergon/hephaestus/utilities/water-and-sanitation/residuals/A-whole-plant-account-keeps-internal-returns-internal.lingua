@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A whole-plant account keeps internal returns internal (@wu-whole-plant-balance: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Defend-a-wastewater-service-from-collection-to-recovery.lingua#r_3C1VH3G7RHGDPAQPFN5D68S0V9") { r_5FGS6C0E9B8BJJPXSPEX4B6DXJ
+**Read:** [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS), process performance and balance interpretation; [Sludge Treatment and Disposal — Andreoli, von Sperling and Fernandes](../sources/Sludge-Treatment-and-Disposal.lingua#r_01W2VM1NE64Y1FDRJRM0RYKYY4), sludge processing; [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G), sidestreams. Connect the liquid, biological and residual accounts already developed.
+
+Choose an outer plant boundary and draw every external input and output. Internal recycles cancel when the unit balances are added; they still affect unit loading and dynamics. Accumulating solids or changing tank levels can explain a temporary imbalance. For COD, include oxygen-equivalent consumption and appropriate product/gas terms; for elemental nitrogen and phosphorus, include all relevant species and destinations.
+
+An original conservative-constituent exercise has external input 10 kg/day, final effluent 2, exported residual 6 and increasing inventory 2. A 20 kg/day internal recycle changes neither the external input nor the four-term closure. Counting it as a fresh load would invent mass. A second independent unit boundary can nevertheless show why equipment processes more than 10 kg/day internally.
+
+**Work:** Build a complete synthetic plant account with water, COD, nitrogen, phosphorus, dry solids, gases and energy. State what is conserved and what is transformed. Check each unit and the sum independently, propagate measurement uncertainty and investigate persistent residuals. Test whether one biased meter or unobserved batch can explain the mismatch before adjusting kinetic parameters.
+
+**Continue:** [Defend a wastewater service from collection to recovery](Defend-a-wastewater-service-from-collection-to-recovery.lingua#r_3C1VH3G7RHGDPAQPFN5D68S0V9).
+} r_5FGS6C0E9B8BJJPXSPEX4B6DXJ

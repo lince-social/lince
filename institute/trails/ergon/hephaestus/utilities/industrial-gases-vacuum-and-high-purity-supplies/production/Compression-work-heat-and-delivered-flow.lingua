@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Compression work, heat and delivered flow (@gas-compression: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #industrial-gases-and-vacuum "Minimum-separation-work-and-actual-products.lingua#r_21SM5HAW75C2KW89ZZJP5ZT9AP") { r_7VET99698PFS7BMPD03NQK498X
+**Read:** [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), gas-liquefaction/refrigeration foundations; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), compressors; [Turbines, compressors, valves, mixers and nozzles](../../../physics/thermodynamics-and-heat-transfer/balances/Turbines-compressors-valves-mixers-and-nozzles.lingua#r_5FNNDS9HS3F0FDBD0MX1H5D8YJ).
+
+For reversible isothermal compression of an ideal gas, work input per mole is RT ln(p₂/p₁). A reversible adiabatic compression follows a different path and raises temperature. Real equipment has losses, cooling, leakage and operating limits. Pressure ratio alone does not specify power without amount flow and a process model.
+
+Intercooling changes the temperature entering later stages and the heat that must be rejected. Compare a staged system at common delivered conditions and include auxiliary power, pressure losses and part-load operation. A compressor's available flow may depend on speed, inlet density and control state.
+
+**Work:** Derive the isothermal bound and the ideal-gas isentropic relation using stated heat-capacity assumptions. Compare one and two stages with ideal intercooling, then perturb stage ratios and cooling. Close the energy account and explain why the thermodynamic optimum may differ from the feasible equipment choice.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Minimum separation work and actual products](Minimum-separation-work-and-actual-products.lingua#r_21SM5HAW75C2KW89ZZJP5ZT9AP).
+
+} r_7VET99698PFS7BMPD03NQK498X

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Interfaces, curvature, wetting and size-dependent equilibrium (@mat-capillarity: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "../kinetics/Driving-force-barrier-and-the-rate-of-a-transformation.lingua#r_2C2ZDEH42SXHSK6FPS65GZ2P2P") { r_4JQ57EYRRSQK054B18F5KFGQFQ
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapter 11, especially surface energy, wetting, curvature and adsorption; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.21 lectures 5 and 17–20.
+
+An interface contributes excess free energy, and its area, orientation, chemistry and strain matter. For an isotropic spherical particle with constant interfacial energy γ and molar volume V_m, a simple capillarity model shifts chemical potential by 2γV_m/r. Halving radius doubles this shift within that model.
+
+For an ideal liquid on a smooth homogeneous rigid solid at equilibrium, Young's relation gives γ_SV−γ_SL=γ_LV cos θ. Hysteresis, roughness, reaction and pinning can prevent a measured contact angle from being that ideal equilibrium angle. Solid surface stress and surface free energy are not universally interchangeable.
+
+**Work:** Derive the spherical chemical-potential shift by varying area with amount. Compare a faceted crystal and an isotropic sphere, explaining what anisotropy changes. Design a wetting comparison that separates equilibrium assumptions from an advancing/receding observation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Driving force, barrier and the rate of a transformation](../kinetics/Driving-force-barrier-and-the-rate-of-a-transformation.lingua#r_2C2ZDEH42SXHSK6FPS65GZ2P2P).
+
+} r_4JQ57EYRRSQK054B18F5KFGQFQ

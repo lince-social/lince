@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Filter stages and common bypasses need separate accounts (@cm-filter-stages: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "Loading-changes-pressure-loss-and-can-change-capture.lingua#r_4JDER94109W5PN70AHZ2TBC34Q") { r_768C79VP9BVM9W927RDQY75GAH
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), filter trains, housings and component testing.
+
+For serial stages with penetrations P1 and P2 applying to the particles that reach each, no intervening source and no bypass, total penetration is P1P2. The downstream stage sees the population left by the first; a broad size distribution cannot always be represented by multiplying two unrelated overall averages.
+
+Two hypothetical stages each with penetration 0.001 give 10⁻⁶ for the declared particle class. A common untreated bypass b around both gives b+(1−b)P1P2, which is approximately 0.001001 for b=0.001. Two stages do not independently protect against that shared path.
+
+**Work:** Draw and compute three arrangements: serial media, parallel filtered branches and a common bypass. Add a particle source between stages. State which physical boundary each test challenges and which failure would be missed by testing the media separately.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Loading changes pressure loss and can change capture](Loading-changes-pressure-loss-and-can-change-capture.lingua#r_4JDER94109W5PN70AHZ2TBC34Q).
+
+} r_768C79VP9BVM9W927RDQY75GAH

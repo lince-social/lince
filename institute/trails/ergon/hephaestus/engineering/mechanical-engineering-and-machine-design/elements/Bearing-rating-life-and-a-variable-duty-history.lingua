@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Bearing rating life and a variable duty history (@mech-bearing-life: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY", #mechanical-engineering "Plain-bearings-fluid-films-and-starting-conditions.lingua#r_24HBFMC4DSQRYB8Q3W704J2G32") { r_221SRCZT8T7K1PSCK4CS7BVWN8
+**Read:** [Rolling bearings — SKF, 2018](../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY), B.3, especially basic rating life, variable conditions and the separate static-load discussion. Compare the model with the earlier fatigue and survival-data accounts.
+
+The basic relation L₁₀=(C/P)^p gives millions of revolutions, with p=3 for ball bearings and p=10/3 for roller bearings in this rating model. It describes a defined fatigue quantile for a population, not a guaranteed service duration for an individual bearing. At constant n revolutions/minute, L₁₀h=10⁶L₁₀/(60n).
+
+For an illustrative ball bearing with C=20 kN, P=2 kN and n=1200 rpm, the result is 1000 million revolutions or approximately 13,888.9 hours. Doubling the equivalent load reduces this basic life by eight. Do not use the calculation to erase lubrication, mounting, contamination or static-overload questions.
+
+For a simplified repeated duty with fixed C and exponent, damage per revolution leads to P_eq=(ΣNᵢPᵢᵖ/ΣNᵢ)^(1/p). Nᵢ counts revolutions, so unequal speeds require revolution weighting rather than plain time averaging. This assumes the same applicable failure model in every interval.
+
+**Work:** Compare equal-time low/high-speed intervals with equal-revolution intervals. Carry uncertainty in load and duty duration. Explain why a catalogue fatigue quantile differs from maintenance planning, system reliability and observed failure causes.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Plain bearings, fluid films and starting conditions](Plain-bearings-fluid-films-and-starting-conditions.lingua#r_24HBFMC4DSQRYB8Q3W704J2G32).
+
+} r_221SRCZT8T7K1PSCK4CS7BVWN8

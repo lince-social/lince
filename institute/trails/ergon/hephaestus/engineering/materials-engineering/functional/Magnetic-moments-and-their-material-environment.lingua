@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Magnetic moments and their material environment (@mat-moments: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0", #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB", #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #materials-engineering "../../../physics/electromagnetism/matter/Magnetization-bound-currents-H-and-hysteresis.lingua#r_1H8D8KMFTHN04KYDW84T64CQ2J") { r_2TDVYKVVQBWMGV276FG726SJGC
+**Read:** [Quantum Mechanics — David Tong](../sources/Quantum-Mechanics-Tong.lingua#r_0GY6BHCRA9CR5YGBY1AT9DRZY0), angular momentum and atomic states; [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), chapters 18–19; [Solid State Physics — David Tong](../sources/Solid-State-Physics-Tong.lingua#r_2G2CQ9C5QDEBTQ2YNMYQ5QK3MB), chapter 1; [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), quantum-gas magnetic responses; [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), magnetic types. Follow the shared magnetization Record for macroscopic conventions.
+
+Orbital motion and spin contribute magnetic moments. Their occupation, coupling and local environment determine the observable response. A moment is not a little classical spinning charged sphere. Distinguish diamagnetic, local-moment paramagnetic, itinerant and collectively ordered responses.
+
+In a dilute independent two-state moment model, M=n μ_m tanh(μ_m B/kBT). The weak-field Curie response follows by expansion. Electron degeneracy instead gives a different temperature dependence in a simple metal. Interactions, anisotropy and orbital effects can change both descriptions.
+
+**Work:** Derive the two-state result from its partition function, tracking moment, field and volume conventions. Compare low-field and saturation limits with a documented susceptibility curve. Explain which independent evidence distinguishes local moments, an impurity population and itinerant response.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Magnetization, bound currents, H and hysteresis](../../../physics/electromagnetism/matter/Magnetization-bound-currents-H-and-hysteresis.lingua#r_1H8D8KMFTHN04KYDW84T64CQ2J).
+
+} r_2TDVYKVVQBWMGV276FG726SJGC

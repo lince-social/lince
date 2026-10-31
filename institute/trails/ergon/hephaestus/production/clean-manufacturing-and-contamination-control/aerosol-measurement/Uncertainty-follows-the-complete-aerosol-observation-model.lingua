@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Uncertainty follows the complete aerosol observation model (@cm-aerosol-budget: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #source "../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE", #clean-manufacturing "Compare-complete-measurements-on-a-common-basis.lingua#r_2DNY0NFM3FXHK15P42106Q7SE3") { r_3WHZDSDPV1RTJHK4SP6XBM6JF0
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), section 21.3.9; [CPC proportionality calibration — Owen, Mulholland and Guthrie](../sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE), uncertainty discussion. Apply [Propagate uncertainty with sensitivities and covariance](../../../inquiry/metrology/uncertainty/Sensitivity-and-correlation.lingua#r_0EF35BB106S2F2ATJBXBR49DFR) to the model actually used.
+
+For a simplified concentration C = (N − B)/(VPη), let K = N − B denote the net event estimate, V the sampled volume, P transport penetration and η detector efficiency. Sensitivities are ∂C/∂K = 1/(VPη), ∂C/∂V = −C/V, ∂C/∂P = −C/P and ∂C/∂η = −C/η. Covariance matters when factors share calibration data or environmental corrections.
+
+For independent small relative uncertainties and positive K, u²(C)/C² ≈ u²(K)/K² + u²(V)/V² + u²(P)/P² + u²(η)/η². With relative standard uncertainties 10%, 2%, 5% and 3%, the combined value is about 11.7473%. The approximation is local; near zero net signal or a very uncertain small efficiency, use a model respecting the actual distributions and dependence.
+
+Distinguish an uncertain correction from model inadequacy. If a tube releases stored particles, a pure-loss penetration factor is not merely uncertain; its model omits a source. Increasing a numerical uncertainty term without addressing the omitted mechanism can leave the inference misleading.
+
+**Work:** Reproduce the sensitivities with finite perturbations and the numerical budget. Add a shared flow calibration affecting both response and volume, deriving the covariance from that common input. Compare spending effort on longer counting, better flow measurement or better loss characterization. State what improvement is useful for the actual cleanliness decision.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Compare complete measurements on a common basis](Compare-complete-measurements-on-a-common-basis.lingua#r_2DNY0NFM3FXHK15P42106Q7SE3).
+
+} r_3WHZDSDPV1RTJHK4SP6XBM6JF0

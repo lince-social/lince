@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Chemical potentials, reference states and partial properties (@mat-partial-properties: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "Ideal-mixing-and-the-statistical-origin-of-entropy.lingua#r_7D6PPV1WNXY44R21H9MN2Z42BQ") { r_5XCV5KZC6290DKZXAF4V6TQFQG
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapter 7, especially partial molar properties, Gibbs–Duhem and activities; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), thermodynamics lectures 10–11 and 16–17.
+
+For a binary molar Gibbs energy g(x), where x is the amount fraction of B, μ_A=g−xg′ and μ_B=g+(1−x)g′. Derive these from G=ng(n_B/n), taking each derivative at fixed amount of the other component. Thus a tangent's intercepts encode the two chemical potentials.
+
+Activities are defined through μ_i=μ_i°+RT ln a_i. Their reference states matter. A mole fraction alone is not an activity except within an appropriate ideal model. Partial molar volume can differ from the molar volume of an unmixed pure constituent.
+
+**Work:** Derive the two chemical potentials and verify (1−x)dμ_A+x dμ_B=0 at fixed T,p. Change a reference convention consistently and show which equilibrium predictions remain invariant. Distinguish a phase composition, a site fraction and a component activity.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Ideal mixing and the statistical origin of entropy](Ideal-mixing-and-the-statistical-origin-of-entropy.lingua#r_7D6PPV1WNXY44R21H9MN2Z42BQ).
+
+} r_5XCV5KZC6290DKZXAF4V6TQFQG

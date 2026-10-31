@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Blind prediction and changed-condition tests (@mat-blind-prediction: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND", #source "../sources/Additive-Manufacturing-Residual-Strain-AM-Bench.lingua#r_1JF3D3C7YNFKCJET729ADPZWPM", #materials-engineering "Separate-uncertainty-from-model-discrepancy.lingua#r_2RKX2F69ZM9KMZA42YYZX7X55S") { r_1QW5VXFDM42F0BNE1MKPX0Q1AP
+**Read:** [Mesoscale tensile blind predictions — AM-Bench 2022](../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND), challenge design and full results; [Manufacturing history and measured residual strain — AM-Bench 2018](../sources/Additive-Manufacturing-Residual-Strain-AM-Bench.lingua#r_1JF3D3C7YNFKCJET729ADPZWPM), announced and final measurement protocols.
+
+A useful prediction states its inputs, output, conditions and comparison before observing the answer. A previously published dataset cannot become historically blind merely because the learner has not opened its final columns; it can still support a deliberately held-out educational exercise. Keep that distinction clear.
+
+Test several observables and conditions related to the intended use. A model that matches global force may misplace local strain or failure. Different discrepancies can expose different missing mechanisms. Comparison needs uncertainty and a physical consequence of error; a league table alone explains little.
+
+**Work:** Reconstruct what was genuinely available to the AM-Bench participants. Design a held-out exercise with an explicit record of which answers were hidden during model development. Compare at least two model choices across global and local responses. Identify a changed geometry, orientation or history that would be more discriminating than another repeat of the fitted case.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Separate uncertainty from model discrepancy](Separate-uncertainty-from-model-discrepancy.lingua#r_2RKX2F69ZM9KMZA42YYZX7X55S).
+
+} r_1QW5VXFDM42F0BNE1MKPX0Q1AP

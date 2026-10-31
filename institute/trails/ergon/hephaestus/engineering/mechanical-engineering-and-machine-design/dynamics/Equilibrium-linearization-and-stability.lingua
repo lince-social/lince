@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Equilibrium, linearization and stability (@mech-linearization: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #mechanical-engineering "../vibration/Free-vibration-damping-and-the-initial-state.lingua#r_3NHYHXDH6WM8675H5HSBCNRWW1") { r_5X7T8VYXEM67P96DXJM598Y3BD
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 19–20; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), section 2.6; [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), Taylor approximation and linear differential systems.
+
+An equilibrium satisfies the full static force conditions. Perturb it by a small displacement and expand the governing forces, retaining first-order terms. In a conservative scalar system the local stiffness is the second derivative of potential at equilibrium. Positive stiffness with positive inertia gives a restoring oscillation; a potential maximum gives a growing displacement in the undamped model. A zero second derivative needs higher-order analysis.
+
+For the downward pendulum, sinθ ≈ θ gives ω_n = √(g/l). With l = 0.5 m and g = 9.81 m/s², ω_n is about 4.4294 rad/s and the small-amplitude period about 1.4185 s. Around the upward configuration the gravitational stiffness changes sign, so the same unforced pendulum is unstable there.
+
+A linearization is local in both amplitude and operating condition. Around a moving periodic operating state, the coefficient structure may itself be periodic. A stable autonomous linear model does not prove stability under arbitrary time-varying load or active control.
+
+**Work:** Compare sinθ with θ at 5°, 15° and 30°, declaring an error measure. Derive the stiffness about both pendulum equilibria and verify the characteristic roots. For a nonlinear force law with zero linear stiffness, inspect the next nonzero term instead of labelling the equilibrium from a zero-frequency calculation alone.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Free vibration, damping and the initial state](../vibration/Free-vibration-damping-and-the-initial-state.lingua#r_3NHYHXDH6WM8675H5HSBCNRWW1).
+
+} r_5X7T8VYXEM67P96DXJM598Y3BD

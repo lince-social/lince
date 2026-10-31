@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+The Einstein relation and a consistent diffusivity (@cm-einstein: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9", #clean-manufacturing "From-velocity-correlation-to-long-time-diffusion.lingua#r_2QB1W26140JYEBM8BA09FY3QVG") { r_21PWR4DVEG0AZYDZWXR47R78GH
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), Brownian Motion, pages 2–3; [Aerosols and coagulation — Chiang C. Mei, MIT](../sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9), the equilibrium comparison, with the corrected continuum limit.
+
+For an isothermal equilibrium particle in a linear-response regime, D=k_B T B. Combining this with the chosen corrected-sphere mobility gives D=k_B T C_c/(3πμd). Use absolute temperature and k_B=1.380649×10⁻²³ J/K. This relation joins diffusion and response; assigning them independently to the same equilibrium particle can contradict the model.
+
+For the hypothetical 1 µm sphere at 300 K with μ=1.8×10⁻⁵ Pa s and λ=65 nm, D≈2.84052×10⁻¹¹ m²/s. The one-coordinate root-mean-square displacement after 1 s is about 7.53727 µm, while gravitational drift over that second is about 35.1835 µm. These are different summaries, not alternative speeds.
+
+**Work:** Derive the dimensions and recompute both scales. Repeat for 0.1 µm using the same hypothetical fluid state. Explain why decreasing particle diameter can make diffusion more prominent even though inertia becomes less important.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [From velocity correlation to long-time diffusion](From-velocity-correlation-to-long-time-diffusion.lingua#r_2QB1W26140JYEBM8BA09FY3QVG).
+
+} r_21PWR4DVEG0AZYDZWXR47R78GH

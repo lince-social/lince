@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Dissolution has finite capacity and a material balance (@cm-dissolution-capacity: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "A-dissolution-rate-needs-interface-and-bulk-conditions.lingua#r_287NAVJMASVVT1WC34N4599G6Q") { r_6DBQF4MW0NF1FC83VN3JE8CG28
+**Read:** The full solution chapters assigned by [Explain solution formation through interactions and thermodynamic conditions](../../../chemistry/general-chemistry/solutions/Solvation-mixing-and-solubility.lingua#r_4PY91PEG2715V7F8H7MVGP4S95); [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), solvent cleaning.
+
+For an ideal unchanged solid with equilibrium mass concentration csat in a liquid volume V, initially at c0<csat, the available dissolution capacity is V(csat−c0). The maximum removable mass by this mechanism is the smaller of that capacity and the available residue mass. This account excludes reaction, adsorption, solvent loss and changing phases.
+
+If 12 mg of residue meets 10 mL of liquid with csat=1 mg/mL and c0=0.2 mg/mL, at most 8 mg can dissolve in that bath under the stated conditions; 4 mg remains even after unlimited equilibration time. Better mixing alone does not increase this equilibrium capacity.
+
+**Work:** Close the solid/liquid mass account and compare increasing liquid volume, replacing a bath and changing the equilibrium chemistry. State how evidence of a new solid phase or complex would change the model. Separate a measured slow approach to equilibrium from a genuine low-solubility limit.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A dissolution rate needs interface and bulk conditions](A-dissolution-rate-needs-interface-and-bulk-conditions.lingua#r_287NAVJMASVVT1WC34N4599G6Q).
+
+} r_6DBQF4MW0NF1FC83VN3JE8CG28

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Ionic, covalent, metallic and secondary interactions (@mat-bond-families: 0, is #chapter, #part-of @materials-engineering, #source "../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #materials-engineering "Electronic-states-before-functional-properties.lingua#r_5J37PG08JJQ7N9RVWGSXFHEXJN") { r_4A3SRJ0A74W23AV7QEZQWQZAER
+**Read:** [Chemistry 2e — Flowers, Theopold, Langley, and Robinson](../../../chemistry/general-chemistry/sources/Chemistry-OpenStax.lingua#r_02Y5N2VMTTPBDSNYPD4Z26EZ94), chapters 7–8 and 10; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures 10–13 and the later crystal examples; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), lecture 1 for intrachain and interchain interactions.
+
+Ionic, covalent and metallic descriptions emphasize different aspects of electronic interaction. Real bonding need not belong to only one category. Secondary interactions and hydrogen bonding can strongly affect molecular assemblies even when the bonds within each molecule are much stronger.
+
+Connect interaction directionality and available rearrangements with structure. A network, a metal lattice and a polymer chain assembly can respond differently to deformation and heating. Do not infer exact modulus, melting point or conductivity from a bonding label alone; structure, defects, composition and temperature also matter.
+
+**Work:** Compare a metal, an ionic solid, a covalent network and a molecular solid through electron accounting, geometry and one observed property. Identify where a simple explanation fails. Use actual source evidence to distinguish an explanatory trend from a universal classification rule.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Electronic states before functional properties](Electronic-states-before-functional-properties.lingua#r_5J37PG08JJQ7N9RVWGSXFHEXJN).
+
+} r_4A3SRJ0A74W23AV7QEZQWQZAER

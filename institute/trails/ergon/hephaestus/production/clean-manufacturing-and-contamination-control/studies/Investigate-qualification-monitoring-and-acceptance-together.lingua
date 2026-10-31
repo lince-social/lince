@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Investigate qualification, monitoring and acceptance together (@cm-qualification-studies: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "Qualify-a-benign-enclosure-against-an-explicit-use.lingua#r_5WSJYVT5MJYNM5HNHSX77RFT5F", #clean-manufacturing "Compare-monitoring-methods-on-a-known-changing-process.lingua#r_70ZSBQ0M6FFWFG4BX15X2NJR57", #clean-manufacturing "Combine-item-measurement-with-a-lot-decision.lingua#r_2VN28GN7ZQ8GCBWTZTHFKFQ41Y") { r_20855WKEK0RXZNDWJ6NH8XMF5J
+**Read:** the full assigned NASA realization chapter, NIST monitoring/control chapter and JCGM conformity guide. Revisit the existing facility, aerosol and surface investigations as needed.
+
+The three studies below ask whether a system supports a specified claim, whether monitoring can detect important changes, and how measurement and sampling support acceptance. Use the same benign production setting where that helps connect the arguments, while preserving each study's distinct question.
+
+Keep the physical model, simulated truth or published observations, uncertainty, assumptions and decision rule available to another reader. Reproduce the selected NIST numerical examples before extending the model. Do not present a simulation as experimental qualification of an operating facility.
+
+**Work:** Complete all three investigations and compare their conclusions. Identify a case that passes a measurement criterion but fails the intended use, and another that signals statistically without demonstrating product nonconformity. The paths rejoin in a review before specialist manufacturing and continuing service.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Qualify a benign enclosure against an explicit use](Qualify-a-benign-enclosure-against-an-explicit-use.lingua#r_5WSJYVT5MJYNM5HNHSX77RFT5F), [Compare monitoring methods on a known changing process](Compare-monitoring-methods-on-a-known-changing-process.lingua#r_70ZSBQ0M6FFWFG4BX15X2NJR57), [Combine item measurement with a lot decision](Combine-item-measurement-with-a-lot-decision.lingua#r_2VN28GN7ZQ8GCBWTZTHFKFQ41Y).
+
+} r_20855WKEK0RXZNDWJ6NH8XMF5J

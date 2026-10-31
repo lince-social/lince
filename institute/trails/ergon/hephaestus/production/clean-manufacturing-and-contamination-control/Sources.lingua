@@ -1,0 +1,46 @@
+Import "Clean-manufacturing-and-contamination-control.lingua"
+
+Books and primary sources for clean manufacturing (@cm-sources: 0, is #chapter) { r_3AA0Q34WMJ3580S9QP4CZ24AG0
+Read substantial books and reports progressively, then use exact sections for a particular mechanism or measurement. The source Records state versions, access, rights and what was actually inspected. Complete assigned reading is learning work; it is not a claim that every page or experiment has already been independently verified.
+
+- [Contamination control engineering — Tribble and colleagues, NASA CR 4740](sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5)
+- [Cleanroom programming and energy — Tschudi, Sartor and Xu](sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X)
+- [Air-cleaning systems — DOE-HDBK-1169-2022](sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X)
+- [Calibration of aerosol instruments — Chen, Fletcher and Cheng](sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP)
+- [Microbiology — Parker and colleagues, OpenStax](sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW)
+- [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB)
+- [Aseptic processing — FDA guidance, 2004](sources/Aseptic-Processing-FDA.lingua#r_7RSDD8X6WP4CBREQY9BY53HYA2)
+- [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0)
+- [Aerosols and coagulation — Chiang C. Mei, MIT](sources/Aerosols-and-Coagulation-Mei.lingua#r_433KSJ2E60YP29TNWRQV1Z7PS9)
+- [Slip-correction measurements — Kim, Mulholland, Kukuck and Pui](sources/Slip-Correction-Measurements-Kim.lingua#r_51NCSC0TX3G750ZF72EQ4FGJ49)
+- [Fundamentals of single-particle transport — Kulkarni, Baron and Willeke](sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B)
+
+- [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM)
+- [When are rough surfaces sticky? — Pastewka and Robbins](sources/When-Are-Rough-Surfaces-Sticky-Pastewka-Robbins.lingua#r_3560V1VSJB6E8V78NFWGNQT7DQ)
+- [Origin of adhesion in humid air — Kim and colleagues](sources/Origin-of-Adhesion-in-Humid-Air-Kim.lingua#r_5KY9XHR2M0AZYYGJRNTFPCPB0H)
+- [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN) (shared interfacial-phenomena course)
+
+- [Cleaning and surface properties — Mauro Taborelli](sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E)
+- [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ)
+- [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD)
+- [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2)
+- [Particle removal and MEMS damage — Hirano and colleagues](sources/Particle-Removal-and-MEMS-Damage-Hirano.lingua#r_0RH4K2MTZZG42NZ4MMZE1K6G9E)
+
+- [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46)
+- [Demand-controlled cleanroom filtration — Faulkner, Fisk and Walton](sources/Demand-Controlled-Cleanroom-Filtration-Faulkner-Fisk-Walton.lingua#r_2W1ADE030W9RFA8ATDKSYVT6XP)
+- [Door motion, human movement and aerosol exchange — Zheng and colleagues](sources/Door-Motion-Human-Movement-and-Aerosol-Exchange-Zheng.lingua#r_7CWNYE36WG4XSVT18MFMZRV1DH)
+
+- [CPC proportionality calibration — Owen, Mulholland and Guthrie](sources/CPC-Proportionality-Calibration-Owen-Mulholland-Guthrie.lingua#r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE)
+- [Mobility particle size spectrometers — Wiedensohler and colleagues](sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM)
+
+- [Planning and interpreting XPS — Baer and colleagues](sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5)
+- [Attenuation and information depth in XPS — Cedric Powell](sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV)
+
+
+Qualification and monitoring reuse [Measurement Process Characterization — NIST/SEMATECH](../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), chapter 6; [Measurement uncertainty in conformity assessment — JCGM 106](../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY); and [Systems Engineering Handbook — NASA](../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), chapter 5.
+
+Shared quantitative, chemical and metrology Records retain their own reading. [Cleaning equipment for oxygen service — EIGA 33/18](../../utilities/industrial-gases-vacuum-and-high-purity-supplies/sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0) provides a comparison with oxygen-service cleanliness. All books, articles and media remain external.
+
+**Return:** [Clean manufacturing and contamination control](Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+
+} r_3AA0Q34WMJ3580S9QP4CZ24AG0

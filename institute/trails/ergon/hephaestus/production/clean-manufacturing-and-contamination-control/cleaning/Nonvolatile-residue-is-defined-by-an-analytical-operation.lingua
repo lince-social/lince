@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Nonvolatile residue is defined by an analytical operation (@cm-nvr-definition: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "../../../chemistry/general-chemistry/solutions/Preparation-dilution-and-aliquots.lingua#r_53MS427PJ81EAEKEBXZFCK78W6") { r_1QVN0HZS2ACY1X3HQ3MAFX6KNN
+**Read:** [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), main collection and gravimetric method; [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), extraction and surface analysis.
+
+A residue result depends on the solvent, sampled area, extraction, filtration, container, evaporation conditions and final measurement. Material that is not extracted, is lost during preparation or volatilizes under the chosen conditions is not automatically represented. The term nonvolatile is tied to this operation and temperature/time history, not an absolute molecular category.
+
+Separate residue per aliquot volume, residue in the full extract, and residue per sampled surface area. Both sides and edges of an object may contribute differently. A witness coupon samples its own exposure and recovery; it does not silently become a complete measurement of a geometrically different product.
+
+**Work:** Draw every transfer from the original surface to the balance pan. Add a field blank, solvent blank and procedural blank where each answers a distinct question. Identify two possible contaminants with different recovery or volatility and explain why equal reported residue masses might conceal different initial surface states.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Prepare and dilute a solution under an explicit amount and volume model](../../../chemistry/general-chemistry/solutions/Preparation-dilution-and-aliquots.lingua#r_53MS427PJ81EAEKEBXZFCK78W6).
+
+} r_1QVN0HZS2ACY1X3HQ3MAFX6KNN

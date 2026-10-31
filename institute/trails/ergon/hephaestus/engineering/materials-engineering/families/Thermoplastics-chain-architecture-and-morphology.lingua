@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Thermoplastics, chain architecture and morphology (@mat-thermoplastics: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #materials-engineering "Thermosets-gels-and-network-state.lingua#r_0K7YJD6FK2S7FJCJKFK9FPVAQE") { r_18X611HMZS1CSBSSMNCRD75E7R
+**Read:** [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), lectures 1–8 and 17–19; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Polymer Basics and Glass Transition; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Crystallinity in Polymers, including the polyethylene tensile example. Work the corresponding public MIT assignments.
+
+Chain chemistry, molecular-mass distribution, branching, tacticity, entanglements, crystallinity and orientation all affect response. Thermoplastic behavior concerns a material's ability to soften and flow under appropriate conditions; it does not guarantee unlimited reheating without chemical damage. Distinguish melting of crystalline regions from the glass transition of an amorphous fraction.
+
+In a semicrystalline polymer, lamellae, tie chains and amorphous regions cooperate. Necking and drawing can reorganize that structure. A constant crosshead speed does not ensure a spatially uniform strain rate once deformation localizes. Fillers, plasticizers, absorbed water and prior processing can alter the observed response.
+
+**Work:** Compare polyethylene, a nylon and an amorphous thermoplastic using grade-specific evidence. Explain why a transparent/opaque appearance is an incomplete crystallinity measurement. Reconcile calorimetry, diffraction and mechanical observations rather than assigning every change to one scalar crystallinity value.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Thermosets, gels and network state](Thermosets-gels-and-network-state.lingua#r_0K7YJD6FK2S7FJCJKFK9FPVAQE).
+
+} r_18X611HMZS1CSBSSMNCRD75E7R

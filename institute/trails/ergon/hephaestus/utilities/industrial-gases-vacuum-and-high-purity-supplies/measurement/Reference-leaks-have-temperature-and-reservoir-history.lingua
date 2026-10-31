@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Reference leaks have temperature and reservoir history (@gas-leak-artifact: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7", #industrial-gases-and-vacuum "Gas-flow-measurement-is-an-inventory-balance.lingua#r_05AG44W8BJ56CRD27A9KQXG3TN") { r_3689Z22A1B9RRVGJ0MG1ZASDAQ
+**Read:** [Leak calibration — Ehrlich and Tison, NIST SP 250-38](../sources/Leak-Calibration-Ehrlich-Tison.lingua#r_622GG9PXEYJ8FGEPWD4P1DMTT7), leak-comparator, temperature-dependence and quality-control sections.
+
+A reference leak is a physical gas-flow artifact, not an immutable number. Its flow can depend on temperature, reservoir state, gas and elapsed time. An orifice and a permeation element follow different mechanisms and need different models.
+
+For an explicitly assumed activated molar-permeation model ṅ(T)=A exp(−B/T), throughput expressed at that same gas temperature is L(T)=RTṅ(T). Thus L(T)/L(T₀)=(T/T₀)exp[B(1/T₀−1/T)] and its logarithmic temperature sensitivity is 1/T+B/T². Molar flow, or throughput referred to one fixed reference temperature, instead has relative sensitivity B/T². Keep the temperature dependence of the artifact distinct from the temperature used to express its throughput. The model is conditional on the element and range, not universal for every leak.
+
+With hypothetical B=3000 K and T₀=300 K, the local relative sensitivity of L(T) is approximately 0.036667 K⁻¹; that of molar flow is 0.033333 K⁻¹. A temperature indication on an outer casing may differ from the active element, especially during a transient. Reservoir depletion and contamination can add further drift.
+
+**Work:** Compare a local linear correction with the full model over a stated range. Propagate temperature and coefficient uncertainty. Explain why a calibration at one temperature does not establish flow at another without a validated dependence and adequate thermal equilibration.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Gas-flow measurement is an inventory balance](Gas-flow-measurement-is-an-inventory-balance.lingua#r_05AG44W8BJ56CRD27A9KQXG3TN).
+
+} r_3689Z22A1B9RRVGJ0MG1ZASDAQ

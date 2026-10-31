@@ -119,6 +119,7 @@ struct Client {
     management_minimized: Vec<bool>,
     data_manager: Option<wl_data_device_manager::WlDataDeviceManager>,
     drop_payload: Vec<u8>,
+    drop_action: Option<u32>,
     drop_finished: usize,
     drop_performed: usize,
     drop_cancelled: usize,
@@ -2297,6 +2298,7 @@ impl Dispatch<wl_data_source::WlDataSource, ()> for Client {
             }
             wl_data_source::Event::DndDropPerformed => state.drop_performed += 1,
             wl_data_source::Event::DndFinished => state.drop_finished += 1,
+            wl_data_source::Event::Action { dnd_action: wayland_client::WEnum::Value(action) } => state.drop_action = Some(action.bits()),
             wl_data_source::Event::Cancelled => state.drop_cancelled += 1,
             _ => {}
         }

@@ -1,0 +1,20 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Water amount fraction, dew point and relative humidity (@gas-humidity-definitions: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ", #industrial-gases-and-vacuum "Generate-humidity-by-equilibrium-and-controlled-dilution.lingua#r_4FW4DXZAADGDQQTJYSSAA13N0B", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/facilities/Moisture-control-needs-a-water-and-energy-balance.lingua#r_6KFH4611TBEBZ10C1ENQZMYQ26") { r_7TFNVNBF898TTQ2RQ8A18ZTF79
+**Read:** [Hybrid humidity generator — NIST SP 250-83 Revision 1](../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ), §§2–3 in full; connect [Sampling delay and the condition at the point of use](../delivery/Sampling-delay-and-the-condition-at-the-point-of-use.lingua#r_4BRA287PZMBRYP29VRS8ACY8E4) to the actual phase and pressure.
+
+Water amount fraction x is a composition. Dew-point temperature is the temperature at which liquid water and vapor equilibrate for that composition and pressure; frost point uses ice. Relative humidity compares the current water amount fraction with saturation at the current gas temperature and pressure. They are different measurands.
+
+For a gas described by the report's model, saturation gives x=f(T,p)e(T)/p, where e is pure-water saturation vapor pressure and f is an enhancement factor. Dew-point inference solves this relation for T at the measurement pressure. The ideal approximation f=1 is a stated simplification, not a replacement for the full model at every accuracy level.
+
+Changing pressure without changing composition changes the dew point. Cooling or contact with surfaces can instead change the composition itself through condensation, freezing or adsorption. The sample-line history must therefore be part of an interpretation of “dry gas.”
+
+**Work:** With hypothetical e=2000 Pa, p=100000 Pa and f=1.005, obtain x=0.0201. Explain what extra information is required to express that result as relative humidity or dew point. Distinguish water vapor in the sample from total water retained as liquid or ice elsewhere in a delivery system.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Generate humidity by equilibrium and controlled dilution](Generate-humidity-by-equilibrium-and-controlled-dilution.lingua#r_4FW4DXZAADGDQQTJYSSAA13N0B).
+
+
+**Continue in clean manufacturing:** [Moisture control needs a water and energy balance](../../../production/clean-manufacturing-and-contamination-control/facilities/Moisture-control-needs-a-water-and-energy-balance.lingua#r_6KFH4611TBEBZ10C1ENQZMYQ26).
+
+} r_7TFNVNBF898TTQ2RQ8A18ZTF79

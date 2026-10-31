@@ -1,0 +1,12 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Nitrogen PSA dynamics and cyclic solutions — Schytt, Biegler and Jørgensen (@gas-psa-schytt: 0, is #reference, #part-of @gas-sources) { r_2H29N54JS7VR0WV7D4F1HTZCEM
+Marcus J. Schytt, Lorenz T. Biegler and John B. Jørgensen. *Modeling and Simulation of Nitrogen Generation by Pressure Swing Adsorption for Power-to-Ammonia*, 2026 conference manuscript. [Versioned author record](https://arxiv.org/abs/2604.09053v1), [complete eight-page paper](https://arxiv.org/pdf/2604.09053), [named supplement](https://psecommunity.org/LAPSE:2026.0016).
+
+Read the entire paper and obtain the supplement before attempting its numerical example. Compare the control volumes, phase-volume bases, pressure-loss relation, switching conditions and cycle closure with an independently derived balance. The printed definition of the phase-volume ratio and its use in the exchange term warrant reconciliation; do not silently transfer them into a solver.
+
+Metadata, model and numerical-method passages were inspected on 30 October 2026, including a visual inspection of PDF page 2. The manuscript still has placeholder publication fields. Its arXiv page identifies conference acceptance. The supplementary link returned HTTP 429; parameters, implementation and reported results were not independently reproduced.
+
+The version is CC BY-SA 4.0, with attribution and share-alike conditions for adaptations. Article access does not establish that the authors' full Julia implementation is supplied or licensed for reuse. Keep documents, data and external software outside the repository.
+
+} r_2H29N54JS7VR0WV7D4F1HTZCEM

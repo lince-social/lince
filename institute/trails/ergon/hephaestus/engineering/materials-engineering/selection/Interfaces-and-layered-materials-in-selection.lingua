@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Interfaces and layered materials in selection (@mat-selection-interfaces: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #materials-engineering "Pareto-choices-and-the-meaning-of-a-weight.lingua#r_39GCKMMP999A7XF1HYMQ6216WV") { r_61JDZQS4Q2VX4BZN2AS34CR3EW
+**Read:** Return to the functional transport/interface, joining and degradation studies; [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), joining and design.
+
+For one-dimensional steady conduction through layers, thermal resistance per area is Σtᵢ/kᵢ plus the interface resistances. A thin layer with high bulk conductivity can still produce poor assembly heat transfer through imperfect contact. Under bonded thermal expansion, mismatch introduces mechanical stresses whose distribution depends on constraint, geometry, relaxation and temperature history.
+
+Surface chemistry, roughness, adhesion, wetting, interdiffusion and corrosion can change the interface during manufacture or service. Choosing each constituent independently misses this coupled behavior. A protective coating may improve chemical resistance while limiting transport or complicating repair and recovery.
+
+**Work:** Reconstruct a layered component with at least two competing functions. Derive its transport account and a justified mismatch-stress model. Compare bulk and interface uncertainty, then predict the consequence of changing one layer thickness or preparation condition. Identify a measurement that distinguishes an interface failure from a bulk-property explanation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Pareto choices and the meaning of a weight](Pareto-choices-and-the-meaning-of-a-weight.lingua#r_39GCKMMP999A7XF1HYMQ6216WV).
+
+} r_61JDZQS4Q2VX4BZN2AS34CR3EW

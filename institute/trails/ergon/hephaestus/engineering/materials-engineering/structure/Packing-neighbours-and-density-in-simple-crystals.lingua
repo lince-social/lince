@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Packing, neighbours and density in simple crystals (@mat-packing: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "Coordination-sites-and-composition-constraints.lingua#r_3WNVDYPPJAS0YVRBEHM4GFSRPP") { r_43380X5EW4XK713V0F66KH2RV4
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Crystallography, lattice, unit cell, structure and packing sections; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lecture 16. The shared lattice Record supplies the cell/basis distinction and density account.
+
+For equal touching spheres, simple cubic, body-centred cubic and face-centred cubic conventional cells contain one, two and four spheres respectively. Their contact geometries give a=2r, √3a=4r and √2a=4r. Packing fractions are π/6, √3π/8 and π/(3√2). These are geometric idealizations; atomic radii in a real material depend on the stated convention and environment.
+
+FCC and ideal HCP have the same close-packed fraction and nearest-neighbour coordination but different stacking sequences. A packing fraction does not by itself determine electronic bonding, phase stability or a complete deformation mechanism.
+
+**Work:** Derive cell contents and contact distances with drawings or simple models. Calculate a hypothetical density independently from cell contents and volume. Compare FCC and HCP stacking and explain why their similar local packing does not make their full structures identical. Identify which observations could distinguish them.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Coordination, sites and composition constraints](Coordination-sites-and-composition-constraints.lingua#r_3WNVDYPPJAS0YVRBEHM4GFSRPP).
+
+} r_43380X5EW4XK713V0F66KH2RV4

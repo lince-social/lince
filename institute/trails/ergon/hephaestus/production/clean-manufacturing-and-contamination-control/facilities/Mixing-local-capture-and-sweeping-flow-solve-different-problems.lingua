@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Mixing, local capture and sweeping flow solve different problems (@cm-mixing-capture: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "Recirculation-removes-only-what-its-treatment-can-capture.lingua#r_5N7920FMCG7W40TN1PKWDGQBKM") { r_1GBD94E4KFSJA339DBNGJQGPA3
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), air-system concepts; [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), work-area ventilation.
+
+Dilution reduces a mixed concentration; local capture intercepts a release before it enters the room; a directed clean stream can move material away from a sensitive region. Their success depends on the source, geometry, obstacles and thermal motion.
+
+A ceiling supply described as unidirectional still encounters people, tools, wakes and return locations. Calling it laminar does not establish a laminar solution everywhere. Short-circuiting supply directly to return can leave less effective exchange where the process occurs.
+
+**Work:** Compare the three approaches for the same source and protected object. Draw likely transport paths and identify a discriminating tracer or particle observation. Use a simple bypass fraction only as an explicitly bounded model, then identify why a resolved multi-region study may be necessary.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Recirculation removes only what its treatment can capture](Recirculation-removes-only-what-its-treatment-can-capture.lingua#r_5N7920FMCG7W40TN1PKWDGQBKM).
+
+} r_1GBD94E4KFSJA339DBNGJQGPA3

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Ceramic grains, boundaries and chemical resistance (@mat-ceramic-environment: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4", #source "../sources/Glass-Stress-Corrosion-Ciccotti.lingua#r_5MYPVB5E5N1GHFSQ75B046N1QS", #materials-engineering "Concrete-pore-solution-expansion-and-durability-evidence.lingua#r_6K9T9QD672QW9RT4HXJCCM733Y") { r_767R2YHCGK2YK7EZD3S0NG6KA4
+**Read:** [Breviary Technical Ceramics — Verband der Keramischen Industrie](../sources/Breviary-Technical-Ceramics.lingua#r_7998JE61RKQF7VXXYK197KRBH4), all of section 5.6, including liquid, melt and hot-gas attack and their tests; [Stress-corrosion mechanisms in silicate glasses — Ciccotti](../sources/Glass-Stress-Corrosion-Ciccotti.lingua#r_5MYPVB5E5N1GHFSQ75B046N1QS) where a glassy boundary phase matters.
+
+A ceramic's bulk chemical formula does not specify its resistance. Grain-boundary phases, porosity, impurities and manufacturing history may provide preferential paths. Selective removal can reduce strength before a large mass change occurs. Fluid chemistry, temperature, contact duration and flow must accompany any resistance claim.
+
+**Work:** Compare surface attack, intergranular penetration and defect-associated damage with cross-sectional evidence. Explain how leaching of a minor phase changes the load-bearing structure. Reconstruct an exposure test and identify whether mass, depth, roughness or remaining strength is the relevant outcome. Assess a proposed comparison using actual grades and conditions rather than treating every oxide or carbide as one interchangeable material.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Concrete pore solution, expansion and durability evidence](Concrete-pore-solution-expansion-and-durability-evidence.lingua#r_6K9T9QD672QW9RT4HXJCCM733Y).
+
+} r_767R2YHCGK2YK7EZD3S0NG6KA4

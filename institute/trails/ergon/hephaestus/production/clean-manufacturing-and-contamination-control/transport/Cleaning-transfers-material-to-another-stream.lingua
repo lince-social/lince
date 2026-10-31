@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Cleaning transfers material to another stream (@cm-cleaning-balance: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0", #clean-manufacturing "../studies/First-investigations-of-cleanliness-and-evidence.lingua#r_62FS07J8WV8V8F8HW5Y00G46NE") { r_27BRTXWV8GMZHWVWE6H5VAG6P5
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), section 4.3; compare [Cleaning equipment for oxygen service — EIGA 33/18](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0) for a different service requirement.
+
+Account for contaminant initially present, material leaving in rinse or waste, residual material and anything introduced by the operation. Removal from the object does not mean destruction. Solvent, detached particles and residues create another stream whose handling and disposal belong to the process.
+
+For an original ideal recurrence, suppose each identical independent step leaves fraction f of the previous residue and adds fixed amount a afterward. Then M_{n+1}=fM_n+a. For 0≤f<1 the fixed amount is M∞=a/(1−f); repeating steps approaches that floor rather than necessarily approaching zero. Real cleaning can depart from both assumptions.
+
+**Work:** Derive the recurrence solution and compare removing more of the old residue with reducing the newly introduced amount. Use hypothetical values before considering a published process. Identify observations that distinguish poor removal from recontamination.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [First investigations of cleanliness and evidence](../studies/First-investigations-of-cleanliness-and-evidence.lingua#r_62FS07J8WV8V8F8HW5Y00G46NE).
+
+} r_27BRTXWV8GMZHWVWE6H5VAG6P5

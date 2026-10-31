@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Driving force, barrier and the rate of a transformation (@mat-nucleation: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "From-activated-jumps-to-diffusion.lingua#r_2843PTSRYZW5BW49Q4V9J5G0KS") { r_2C2ZDEH42SXHSK6FPS65GZ2P2P
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), section 11.7; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lecture 7 and 3.21 lectures 24–25.
+
+For a spherical embryo with isotropic interface energy γ and favorable bulk free-energy density difference −Δg_v, ΔG(r)=4πr²γ−4πr³Δg_v/3. Then r*=2γ/Δg_v and ΔG*=16πγ³/(3Δg_v²). With illustrative γ=0.1 J m⁻² and Δg_v=10⁸ J m⁻³, r*=2 nm and ΔG*≈1.676×10⁻¹⁸ J.
+
+A nucleation rate also needs attachment kinetics, available sites and a statistical prefactor. Heterogeneous sites can change the barrier, while coherency strain and composition partitioning alter the driving account. The smallest embryos may violate the continuum assumptions used above.
+
+**Work:** Derive the critical radius and barrier and test units. Compare changing γ by 20% with changing the bulk driving force by 20%. Explain why stronger thermodynamic driving at lower temperature need not imply a faster observable transformation.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [From activated jumps to diffusion](From-activated-jumps-to-diffusion.lingua#r_2843PTSRYZW5BW49Q4V9J5G0KS).
+
+} r_2C2ZDEH42SXHSK6FPS65GZ2P2P

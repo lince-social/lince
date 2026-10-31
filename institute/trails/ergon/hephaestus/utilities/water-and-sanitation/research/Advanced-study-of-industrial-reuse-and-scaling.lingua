@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Advanced study — industrial reuse and scaling (@wu-industrial-study: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #source "../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK", #source "../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD", #source "../sources/Scaling-and-Desalination-Optimization-Amusat.lingua#r_6V1098Z0KCJKRS3YJW5A3NEMRM", #water-and-sanitation "Uncertainty-sensitivity-and-optimization-of-the-whole-service.lingua#r_1NHGPKNEXKPQE1C5YT5AS86BH6") { r_0KPEXT51TH929PNA76TCW0C3N7
+**Read:** [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), [Guidelines for Water Reuse — EPA and USAID, 2012](../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK), [WaterTAP — inspectable water-treatment models](../sources/WaterTAP-Process-Models.lingua#r_6JCG0EJT4DZTWJTNKZQXF1Y3JD) and [Scaling and desalination optimization — Amusat and colleagues](../sources/Scaling-and-Desalination-Optimization-Amusat.lingua#r_6V1098Z0KCJKRS3YJW5A3NEMRM). Follow the relevant equilibrium, thermal and transport sources for the chosen unit models.
+
+Define the industrial service before the optimization: required flows and quality, return streams, heat loads, seasonal source variation, concentrate destination and interruption tolerance. Reproduce the preceding original reuse calculation, then compare it with a detailed versioned membrane or flowsheet model. Explain which added equations change the result and why.
+
+**Work:** Reconstruct a published result as far as the available model and data permit. In the scaling study, explicitly account for the proprietary OLI dependency used to generate chemistry-surrogate data. A new calculation with an open chemistry backend can be valuable, but is a model comparison whose changed assumptions must be stated.
+
+Compare two feasible treatment/reuse arrangements under a consistent boundary, including pretreatment, energy, cleaning, replacement, residual destination and lost production during interruption. Vary source composition and recovery to locate a limit imposed by chemistry, hydraulics, quality or service. For a full investigation, use independent equilibrium or balance checks and primary operating evidence; report uncertainty and a result that would make you revise the proposed arrangement.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [Uncertainty, sensitivity and optimization of the whole service](Uncertainty-sensitivity-and-optimization-of-the-whole-service.lingua#r_1NHGPKNEXKPQE1C5YT5AS86BH6).
+
+} r_0KPEXT51TH929PNA76TCW0C3N7

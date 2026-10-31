@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+An overlayer attenuation ratio can estimate a model thickness (@cm-xps-film: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV", #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #clean-manufacturing "A-patchy-film-can-imitate-a-thinner-uniform-film.lingua#r_7QQXT4HV7YN0E9WYF7NWAV2BH3") { r_0Q2EDNA8Y1YT0BPVVGX6T17Z9G
+**Read:** [Attenuation and information depth in XPS — Cedric Powell](../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV), section IV.A; [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5), surface morphology and interpretation.
+
+For a uniform planar overlayer under the stated exponential model, substrate intensity ratio R = I_s/I_s0 = exp(−h/ℓ), with h the layer thickness and ℓ = L cosθ for substrate photoelectrons traversing the layer. Thus h = −ℓ ln R. The reference I_s0 and attenuation parameter must correspond to the actual material, energy and geometry.
+
+At ℓ = 3 nm and R = 0.5, inferred h ≈ 2.07944 nm. The local sensitivities are ∂h/∂R = −ℓ/R and ∂h/∂ℓ = −ln R. Near R = 1, the thickness is small relative to plausible intensity-ratio errors. At a very small R, background and reference uncertainty can dominate the residual substrate signal.
+
+For independent standard uncertainties u(R) = 0.02 and u(ℓ) = 0.3 nm in this example, first-order u(h) is about 0.240085 nm. Include covariance when the reference and specimen observations share calibration or processing.
+
+**Work:** Derive the inverse and sensitivities, calculate the example and compare with direct perturbation. Distinguish model thickness from a geometric thickness independently observed by another technique. Identify which additional observation would test the uniform-film assumption before reporting the value as a property of the whole surface.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A patchy film can imitate a thinner uniform film](A-patchy-film-can-imitate-a-thinner-uniform-film.lingua#r_7QQXT4HV7YN0E9WYF7NWAV2BH3).
+
+} r_0Q2EDNA8Y1YT0BPVVGX6T17Z9G

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Uncertainty, identifiability and a defensible life account (@mat-durability-evidence: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT", #source "../sources/Atomic-Oxygen-Durability-NASA.lingua#r_1RMMZEYQQCZ08VRYTHCQBEEHJ0", #materials-engineering "../study/Three-studies-of-degradation-and-service-evidence.lingua#r_4D4RPQ1QYXEY5C3HMXBNNAAMJE") { r_1YFJE9N7XT0TXW4RZFYHKGV1DK
+**Read:** [Outdoor polymer service-life inference — Duan and colleagues](../sources/Polymer-Service-Life-Duan-and-Colleagues.lingua#r_06S8ZC7PTSPQYJJTFMH97NFFTT), model fitting and prediction; [Spacecraft polymer atomic-oxygen durability — NASA-HDBK-6024](../sources/Atomic-Oxygen-Durability-NASA.lingua#r_1RMMZEYQQCZ08VRYTHCQBEEHJ0), uncertainty appendices; the shared metrology and reproducible-computation material.
+
+Measurement uncertainty, specimen variation, uncertain exposure, fitted-parameter covariance and model inadequacy are different contributions. A precise fitted curve can still be poorly identified when several mechanisms generate similar observations. Prediction beyond the observed duration or conditions requires more than a narrow regression interval.
+
+**Work:** Reproduce a complete inference with dimensional checks, an independent numerical check and a held-out condition. Examine correlated calibration terms and sensitivity to the chosen functional threshold. Compare at least two plausible mechanisms or model structures. Preserve negative results and explain which new measurement would most reduce ambiguity. State the range supported by evidence and which proposed service claims remain unresolved.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Three studies of degradation and service evidence](../study/Three-studies-of-degradation-and-service-evidence.lingua#r_4D4RPQ1QYXEY5C3HMXBNNAAMJE).
+
+} r_1YFJE9N7XT0TXW4RZFYHKGV1DK

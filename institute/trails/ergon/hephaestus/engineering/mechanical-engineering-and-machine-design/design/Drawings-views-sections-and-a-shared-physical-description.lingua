@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Drawings, views, sections and a shared physical description (@mech-drawing-specification: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Desenho-Tecnico-Etchepare-Gravina.lingua#r_4MDHAHPVZTA83F05M2NK2YR5PT", #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #mechanical-engineering "Datums-reference-frames-and-accessible-features.lingua#r_1QKSZWNVRWCQ08WM46BF00MSG2") { r_1R4DJ43DYXCM9AF0T968ACKEDN
+**Read:** Read the complete introductory [Desenho Técnico — Etchepare and Gravina](../sources/Desenho-Tecnico-Etchepare-Gravina.lingua#r_4MDHAHPVZTA83F05M2NK2YR5PT) in Portuguese alongside [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), introduction, design and drawings sections. The Portuguese handout provides illustrated practice; the NPL guide develops manufacturing/measurement interpretation.
+
+A drawing communicates the intended part and how its features relate. Orthographic views, sections and detail views expose different geometry. Identify the projection convention, units, scale and section direction. A pictorial view can aid understanding without specifying an inspectable part by itself.
+
+Distinguish nominal geometry from allowable variation, material condition, surface requirements and assembly information. CAD geometry does not automatically communicate every tolerance or processing requirement. The relevant drawing convention and edition must be declared for an actual deliverable; historical teaching examples do not establish a current standard by themselves.
+
+**Work:** Sketch a shaft support in three views and a section, then explain every hidden bore, shoulder and mating face. Produce a part drawing and an assembly drawing with a parts list. Ask another reader to reconstruct the geometry and identify ambiguities. Connect each critical dimension to function or manufacture instead of dimensioning every visible edge.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Datums, reference frames and accessible features](Datums-reference-frames-and-accessible-features.lingua#r_1QKSZWNVRWCQ08WM46BF00MSG2).
+
+} r_1R4DJ43DYXCM9AF0T968ACKEDN

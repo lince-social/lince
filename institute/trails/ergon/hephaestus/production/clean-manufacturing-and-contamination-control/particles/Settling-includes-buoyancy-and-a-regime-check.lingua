@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Settling includes buoyancy and a regime check (@cm-settling-law: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "../../../physics/fluid-dynamics/similarity/Choose-physical-scales-and-read-the-dimensionless-equations.lingua#r_7W3D4FHAFRQJVC08KK9Q0V4BKP") { r_505KS8N0RQRGC9WBA1JBY3GSFD
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), particle motion and buoyancy; revisit [Creeping flow, reversibility and a translating sphere](../../../physics/fluid-dynamics/viscous/Creeping-flow-reversibility-and-a-translating-sphere.lingua#r_2NCJ64J8EHE6G7NWVKGK5DC3ZA).
+
+Balance corrected drag against buoyant weight. For a sphere, downward terminal speed is w_s=(ρ_p−ρ_f)g d² C_c/(18μ), positive when the particle is denser than the fluid. Use the signed density difference to understand a buoyant particle; do not force every object to settle downward.
+
+With d=1 µm, ρ_p=1000 kg/m³, ρ_f=1.2 kg/m³, μ=1.8×10⁻⁵ Pa s, g=9.81 m/s² and λ=65 nm in the preceding correlation, w_s≈3.51835×10⁻⁵ m/s. The resulting Re_p is about 2.35×10⁻⁶, consistent with creeping drag. A nominal 1 cm travel at terminal speed takes about 284 s in this ideal still-fluid model.
+
+**Work:** Recompute the balance, Reynolds number and travel time independently. Repeat for 0.1 and 10 µm while preserving assumptions. Compare the result with a weak air motion and explain why a larger particle's downward motion cannot be inferred from room-average air speed alone.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Choose physical scales and read the dimensionless equations](../../../physics/fluid-dynamics/similarity/Choose-physical-scales-and-read-the-dimensionless-equations.lingua#r_7W3D4FHAFRQJVC08KK9Q0V4BKP).
+
+} r_505KS8N0RQRGC9WBA1JBY3GSFD

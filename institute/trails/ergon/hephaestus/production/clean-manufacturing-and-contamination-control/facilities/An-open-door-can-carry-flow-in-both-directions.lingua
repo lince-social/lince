@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+An open door can carry flow in both directions (@cm-doorway-exchange: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #clean-manufacturing "Zero-net-airflow-does-not-mean-zero-contaminant-exchange.lingua#r_1MSWCS4S9SVVJJZQWPY8QQW1CE") { r_7AZQQX7PSG2H8KGFB79TTN3F7Z
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), printed pages 273–276 on large openings.
+
+For a known pressure difference varying with height, a simple strip model gives dQ=Cd W sign(Δp(z))√[2|Δp(z)|/ρref] dz. Integrate positive and negative portions separately. The constant reference density is an explicit approximation; an exact mass account uses the appropriate stream densities.
+
+In a hypothetical Boussinesq example, H=2 m, W=1 m, Cd=0.65, ρref=1.19 kg/m³ and ρ1−ρ2=0.02 kg/m³. Set the neutral height at H/2. Equal modeled volume flows can pass in opposite directions even though net volume flow is zero.
+
+**Work:** Integrate the strip model analytically and by independent quadrature. Compare it with replacing the doorway by one path at its mid-height, where this example has zero pressure difference. State where a hydrostatic opening model omits moving-door wakes, people, nonuniform temperatures and mechanical transients.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Zero net airflow does not mean zero contaminant exchange](Zero-net-airflow-does-not-mean-zero-contaminant-exchange.lingua#r_1MSWCS4S9SVVJJZQWPY8QQW1CE).
+
+} r_7AZQQX7PSG2H8KGFB79TTN3F7Z

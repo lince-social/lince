@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Plane–direction relations and physical mechanisms (@mat-plane-mechanisms: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "Symmetry-as-a-constraint-on-material-response.lingua#r_3G984PQ5G1ZF7C4DBBNEWAYCWM") { r_2HGR5PAH8H04E7TGAJD0HQEZH9
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Miller Indices, Slip and crystallography questions; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), crystal directions and planes. Reuse the shared metric/index derivations.
+
+A direction lies in a plane when their direct/reciprocal pairing is zero: hu+kv+lw=0 under the matching crystallographic conventions. This relation can be checked without confusing ordinary Cartesian components with fractional coordinates. Family notation collects symmetry-related objects only under the relevant symmetry.
+
+Slip, cleavage, diffusion paths, epitaxy and diffraction ask different questions about planes and directions. A dense plane is not automatically a permitted slip system or the weakest fracture plane. Energetics, available defects, bonding and loading matter.
+
+**Work:** Check whether [1 −1 0] lies in (111), then construct a non-cubic example with an explicit metric. Distinguish a geometric possibility from a mechanism demonstrated by evidence. Sketch how changing a grain's orientation changes a projected load while leaving its underlying crystal structure unchanged.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Symmetry as a constraint on material response](Symmetry-as-a-constraint-on-material-response.lingua#r_3G984PQ5G1ZF7C4DBBNEWAYCWM).
+
+} r_2HGR5PAH8H04E7TGAJD0HQEZH9

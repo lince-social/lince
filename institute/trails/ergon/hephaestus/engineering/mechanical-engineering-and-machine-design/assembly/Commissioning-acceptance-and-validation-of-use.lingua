@@ -1,0 +1,21 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Commissioning, acceptance and validation of use (@mech-commissioning: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #mechanical-engineering "../service/Operating-states-transients-and-recovery.lingua#r_160RZCKQFWGDV7XADNVX3MX136", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Commissioning-establishes-the-installed-function.lingua#r_5FPDNE8RRWEZASNK7V1KJVTRN5", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/qualification/Identify-the-installed-configuration-and-operating-state.lingua#r_33WHMZN48MRDX1RQWVAN8P54VT") { r_4K9PKAGC72FHH0SBDCEDTWGHF8
+**Read:** [Systems Engineering Handbook — NASA](../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), chapter 5, relating implementation, integration, verification, validation and transition to the actual machine; [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), project and characterization material.
+
+Before a useful performance claim, establish that the built configuration matches the intended materials, geometry, assembly and controls. Then verify particular requirements and validate the useful task under its actual conditions. Qualification of a design and acceptance of an individual item answer different questions.
+
+Begin with measurements that isolate assumptions, then progress to coupled service. Compare commanded and achieved motion, load response, temperature, power, vibration and recovery. Define how a failed observation changes the investigation. Passing one unloaded cycle does not establish full-duty life or accuracy.
+
+**Work:** Design a commissioning sequence with explicit measured quantities, conditions and acceptance rules. Explain what is demonstrated by inspection, analysis and physical tests. Include changed load, reversal and a representative operating duration. Produce an honest account of completed measurements and unresolved performance, carrying it into service rather than treating handover as the end of engineering.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Operating states, transients and recovery](../service/Operating-states-transients-and-recovery.lingua#r_160RZCKQFWGDV7XADNVX3MX136).
+
+
+**Continue in gas and vacuum systems:** [Commissioning establishes the installed function](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Commissioning-establishes-the-installed-function.lingua#r_5FPDNE8RRWEZASNK7V1KJVTRN5).
+
+
+**Continue in clean manufacturing:** [Identify the installed configuration and operating state](../../../production/clean-manufacturing-and-contamination-control/qualification/Identify-the-installed-configuration-and-operating-state.lingua#r_33WHMZN48MRDX1RQWVAN8P54VT).
+
+} r_4K9PKAGC72FHH0SBDCEDTWGHF8

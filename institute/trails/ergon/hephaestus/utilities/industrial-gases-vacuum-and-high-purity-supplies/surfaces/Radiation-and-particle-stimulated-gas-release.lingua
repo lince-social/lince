@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Radiation and particle-stimulated gas release (@gas-stimulated-release: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD", #industrial-gases-and-vacuum "Residual-gas-heat-transfer-and-cryogenic-vacuum.lingua#r_7DJDJC0A2FYP80GQ0XREKTE03H") { r_6B511QQQ1BYE3WX9XH5YW0H2Y5
+**Read:** [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.6 in full; [Surface finishing and vacuum coatings — Mauro Taborelli](../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD), the vacuum and electron-emission functions of surface coatings.
+
+Photons, electrons and ions can release material from surfaces or change their state. In an accelerator, the resulting gas can interact with the beam and produce more particles that release more gas. A simple constant thermal-outgassing model cannot describe that feedback.
+
+A desorption yield needs the incident species, energy, angle, dose history and released constituent. Conditioning can change the yield with exposure. Pumping and transport determine how the released gas redistributes; local pressure can affect the rate of further interaction. Similar source-versus-feedback reasoning is useful in plasma and electron-beam equipment, with their own physics.
+
+**Work:** Derive a one-volume linear model with constant load plus a pressure-proportional induced source. Determine the condition for a stable positive steady state. Then identify which neglected saturation, transport or surface-history effect would matter near that limit. Compare the model with one fully documented case in the chapter.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Residual-gas heat transfer and cryogenic vacuum](Residual-gas-heat-transfer-and-cryogenic-vacuum.lingua#r_7DJDJC0A2FYP80GQ0XREKTE03H).
+
+} r_6B511QQQ1BYE3WX9XH5YW0H2Y5

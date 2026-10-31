@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Chemical identification and quantity need different evidence (@cm-nvr-chemistry: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "../../../chemistry/general-chemistry/solutions/Solvation-mixing-and-solubility.lingua#r_4PY91PEG2715V7F8H7MVGP4S95") { r_60067NXDGY4HCFVMEHZ98GM03N
+**Read:** [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), FTIR and GCMS discussion and the relevant instrument appendix; [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), section 3.1.
+
+Gravimetry estimates an amount under its preparation method. Infrared features can support functional-group assignments; chromatographic retention and mass spectra can distinguish components under the method's separation and detection limits. None supplies a universal identity or concentration without references, blanks and an observation model.
+
+A library match is a candidate interpretation. Co-elution, mixtures, matrix effects, preparation losses and instrument response can produce ambiguity. An extract averages its sampled area, while a surface-sensitive probe observes a particular location and depth. Comparing their numbers requires those different sampling bases.
+
+**Work:** Design an evidence chain for an unknown film using one amount measurement and two complementary identification observations. Distinguish confirmed components from tentative assignments. Explain why an absent peak is a method-dependent limit, and choose reference material or an independent observation that could challenge your interpretation. Deeper instrument physics follows in the measurement formation.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Explain solution formation through interactions and thermodynamic conditions](../../../chemistry/general-chemistry/solutions/Solvation-mixing-and-solubility.lingua#r_4PY91PEG2715V7F8H7MVGP4S95).
+
+} r_60067NXDGY4HCFVMEHZ98GM03N

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A baseline includes state, configuration and measurement (@gas-baseline: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1", #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "../../../engineering/mechanical-engineering-and-machine-design/service/Condition-observations-diagnosis-and-prediction.lingua#r_4PJF2YX9VDRZMDF31M6C290BEP") { r_1M45ER0T3N72ZPCCQHJ0GF8XTV
+**Read:** [Improving compressed air system performance — DOE sourcebook](../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1), fact sheet 10; [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), baseline and maintenance feedback.
+
+Record a baseline under specified feed, demand, environmental and equipment conditions. Pressure, power, composition and pumpdown time are comparable only when their reference states and boundaries are retained. Store instrument identity, calibration, sample location, processing method and timestamps alongside the result.
+
+Retain the actual configuration: valve lineup, controller settings, installed materials, pump arrangement, software version and relevant repairs. A later shift in a curve can be caused by a deliberate configuration change rather than degradation. Conversely, an unchanged setpoint does not establish unchanged physical behavior.
+
+**Work:** Design a compact baseline for one compressor service and one vacuum chamber. Select observations that distinguish demand changes from equipment changes. State how you would preserve the evidence using ordinary Records, linked measurements and source files.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Condition observations, diagnosis and prediction](../../../engineering/mechanical-engineering-and-machine-design/service/Condition-observations-diagnosis-and-prediction.lingua#r_4PJF2YX9VDRZMDF31M6C290BEP).
+
+} r_1M45ER0T3N72ZPCCQHJ0GF8XTV

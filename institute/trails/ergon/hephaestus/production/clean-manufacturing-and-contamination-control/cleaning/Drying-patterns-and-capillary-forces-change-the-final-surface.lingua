@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Drying patterns and capillary forces change the final surface (@cm-drying-pattern: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD", #source "../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN", #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "Molecular-contamination-connects-the-air-to-the-process-surface.lingua#r_1ZD42S8CD5QGASSRGY76RHZP4G") { r_0PM0ZTCGPHFS301M9N4S1J5N09
+**Read:** [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD), section 11's drying discussion; [Interfacial Phenomena — John W. M. Bush, MIT 18.357](../../../physics/fluid-dynamics/sources/Interfacial-Phenomena-MIT-18-357.lingua#r_1NGF93FPCCP3FKJS0RAMN929VN), contact lines and interfacial flow; the drying and microstructure studies in [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2).
+
+A receding or pinned liquid boundary redistributes dissolved or suspended material. Flow toward an evaporating pinned edge can concentrate material there; diffusion, surface-tension gradients and moving contact lines can change the result. An average residue amount does not determine its local pattern.
+
+Compare transport time L/U with diffusion time L²/D through Pe=UL/D. This compares mechanisms under a stated geometry; it does not alone predict a ring or a uniform film. Menisci in a narrow gap also exert capillary forces that can bend or attach fine structures during liquid removal.
+
+**Work:** Choose a drying geometry and identify evaporation, liquid flow, diffusion and contact-line motion. Check the units and limiting behavior of Pe. Develop separate observations of residue distribution and structural integrity. Explain why avoiding a liquid–vapor interface may address one capillary mechanism while leaving chemical compatibility and final solvent removal unresolved.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Molecular contamination connects the air to the process surface](Molecular-contamination-connects-the-air-to-the-process-surface.lingua#r_1ZD42S8CD5QGASSRGY76RHZP4G).
+
+} r_0PM0ZTCGPHFS301M9N4S1J5N09

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Microbial material and activity (@cm-microbes: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW", #clean-manufacturing "../../../inquiry/quantitative-literacy/foundations/Exponential-and-logarithmic-scales.lingua#r_0NQPY7MA3SJ3TR97ZJRTW7ZQPG") { r_5D6DQWG0D0DWGT7W708QP2NK8J
+**Read:** [Microbiology — Parker and colleagues, OpenStax](../sources/Microbiology-OpenStax.lingua#r_4K6CQQBY6AWTZCD0EJ5PRFGFTW), chapters 1–3 and the overview of microbial groups in chapters 4–6. Continue into the growth chapter before interpreting a culture count.
+
+Biological material includes cells, structures and products with different persistence and activity. A particle count does not establish whether the particles contain organisms. A method that detects a molecular marker does not automatically establish that an organism can reproduce under the conditions of use.
+
+Treat the target as a defined biological or chemical question: material present, organisms recovered, growth under specified conditions or a particular product. The same sample can support different results under methods that answer different questions.
+
+**Work:** Compare a total particle count, an image, a culture result and a molecular assay in a published example. Write the conclusion each method supports without silently turning detection into viability, absence of detected growth into absence of all material, or identification into a full assessment of consequence.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Exponential change and logarithmic scales](../../../inquiry/quantitative-literacy/foundations/Exponential-and-logarithmic-scales.lingua#r_0NQPY7MA3SJ3TR97ZJRTW7ZQPG).
+
+} r_5D6DQWG0D0DWGT7W708QP2NK8J

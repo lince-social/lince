@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Load transfer and bounds in composite materials (@mat-composite-transfer: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "Laminate-stiffness-coupling-and-thermal-resultants.lingua#r_3Q5VE043P3F3HY1QNN0R4A7G37") { r_7N6P23V05RFHRV08YSNSTCQ05E
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Introduction to Composites; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Fibre Composites' stiffness, strength and pull-out sections; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), constitutive and interface chapters.
+
+Under ideal parallel equal-strain loading, E_parallel=V_fE_f+(1−V_f)E_m. Under an ideal series equal-stress arrangement, compliance averages instead. These idealizations explain limiting arrangements; the second is not a universal transverse-fibre modulus formula. Their assumptions exclude imperfect transfer, porosity, nonlinear constituents and evolving damage.
+
+For a cylindrical fibre of diameter d with a constant interfacial shear stress magnitude τ_i, axial force balance gives |dσ_f/dx|=4τ_i/d. Reaching a fibre strength σ_fu at the midpoint of a short fibre leads to a simple critical total length l_c=σ_fu d/(2τ_i). Actual elastic shear-lag and debonding problems can require different interface laws.
+
+**Work:** Derive both stiffness arrangements and the force-balance transfer length. Compare fibres shorter and longer than l_c, then change interface strength. Explain why an interface can improve load transfer while reducing pull-out energy, and why stiffness alone cannot predict composite strength.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Laminate stiffness, coupling and thermal resultants](Laminate-stiffness-coupling-and-thermal-resultants.lingua#r_3Q5VE043P3F3HY1QNN0R4A7G37).
+
+} r_7N6P23V05RFHRV08YSNSTCQ05E

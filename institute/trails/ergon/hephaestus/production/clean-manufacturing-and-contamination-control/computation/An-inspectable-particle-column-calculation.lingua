@@ -1,0 +1,102 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+An inspectable particle-column calculation (@cm-column-code: 0, is #chapter, #part-of @clean-manufacturing, #clean-manufacturing "../../../physics/fluid-dynamics/computation/Time-steps-CFL-stability-and-temporal-accuracy.lingua#r_60M0VT0DEYA3P6E9DC371K6PQT") { r_71QKY85BV2TV2Z1EKF6KPG92H2
+Save the following original Python program as `particle_column.py` and run it with Python 3. It uses only the standard library. `column` takes cell-average concentration in m⁻³, height in m, diffusivity in m²/s, settling speed in m/s and duration in s. The inventory outputs are particles per m² of horizontal area. Inputs describe the bounded model in the preceding Records.
+
+The demonstration uses a hypothetical 1 µm sphere in an isothermal fluid, with explicit viscosity, density, mean free path and the stated teaching slip correlation. Diffusion and settling are derived from the same mobility. It is not measured cleanroom data. The top has no particle supply, and collected particles never return.
+
+```python file=particle_column.py
+import math
+
+
+def column(initial, height, diffusion, settling, duration, steps):
+    if isinstance(steps, bool) or not isinstance(steps, int) or steps < 1:
+        raise ValueError("steps must be a positive integer")
+    values = (height, diffusion, settling, duration, *initial)
+    if any(isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) for x in values):
+        raise ValueError("all physical values must be finite numbers")
+    if len(initial) < 2 or height <= 0 or min(diffusion, settling, duration, *initial) < 0:
+        raise ValueError("use at least two cells, positive height and nonnegative other values")
+    count = len(initial)
+    dz = height / count
+    dt = duration / steps
+    rate_diffusion = diffusion / dz**2
+    rate_settling = settling / dz
+    maximum_loss = rate_settling + 3 * rate_diffusion
+    if not math.isfinite(maximum_loss) or dt * maximum_loss > 1:
+        raise ValueError("time step exceeds the positivity bound")
+    concentrations = [float(x) for x in initial]
+    initial_inventory = math.fsum(concentrations) * dz
+    deposited = 0.0
+    for _ in range(steps):
+        old = concentrations
+        deposited += dt * (settling + 2 * diffusion / dz) * old[0]
+        concentrations = [0.0] * count
+        for i in range(count):
+            downward_loss = rate_settling + (2 * rate_diffusion if i == 0 else rate_diffusion)
+            upward_loss = rate_diffusion if i + 1 < count else 0.0
+            value = (1 - dt * (downward_loss + upward_loss)) * old[i]
+            if i:
+                value += dt * rate_diffusion * old[i - 1]
+            if i + 1 < count:
+                value += dt * (rate_settling + rate_diffusion) * old[i + 1]
+            concentrations[i] = value
+    remaining = math.fsum(concentrations) * dz
+    return {
+        "concentration": concentrations,
+        "initial_per_area": initial_inventory,
+        "remaining_per_area": remaining,
+        "deposited_per_area": deposited,
+        "balance_error_per_area": remaining + deposited - initial_inventory,
+        "cell_height": dz,
+        "time_step": dt,
+    }
+
+
+def demonstration():
+    diameter = 1e-6
+    mean_free_path = 65e-9
+    viscosity = 1.8e-5
+    temperature = 300.0
+    particle_density = 1000.0
+    fluid_density = 1.2
+    gravity = 9.81
+    kn = 2 * mean_free_path / diameter
+    slip = 1 + kn * (1.257 + 0.4 * math.exp(-1.1 / kn))
+    mobility = slip / (3 * math.pi * viscosity * diameter)
+    diffusion = 1.380649e-23 * temperature * mobility
+    volume = math.pi * diameter**3 / 6
+    settling = mobility * (particle_density - fluid_density) * volume * gravity
+    height = 0.01
+    count = 80
+    duration = 200.0
+    dz = height / count
+    loss = settling / dz + 3 * diffusion / dz**2
+    steps = max(1, math.ceil(duration * loss / 0.8))
+    result = column([1e6] * count, height, diffusion, settling, duration, steps)
+    print({
+        "hypothetical_particle_diameter_m": diameter,
+        "diffusivity_m2_per_s": diffusion,
+        "settling_speed_m_per_s": settling,
+        "duration_s": duration,
+        "cells": count,
+        "steps": steps,
+        "initial_per_m2": result["initial_per_area"],
+        "remaining_per_m2": result["remaining_per_area"],
+        "deposited_per_m2": result["deposited_per_area"],
+        "balance_error_per_m2": result["balance_error_per_area"],
+    })
+
+
+if __name__ == "__main__":
+    demonstration()
+```
+
+The default 80-cell, 200-second calculation starts with 10,000 particles per m² and gives approximately 2961.68933 remaining and 7038.31067 collected. Floating-point balance error is near roundoff. These are results of this discretization, not estimates of experimental uncertainty or proof that its mesh resolves a real surface layer.
+
+**Work:** Run it from a fresh directory, preserve the exact inputs and compare the printed balance. Then study the independent solutions and refinements in the next Record. Change a boundary only after rewriting its flux and the inventory account.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Time steps, CFL stability and temporal accuracy](../../../physics/fluid-dynamics/computation/Time-steps-CFL-stability-and-temporal-accuracy.lingua#r_60M0VT0DEYA3P6E9DC371K6PQT).
+
+} r_71QKY85BV2TV2Z1EKF6KPG92H2

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Coarsening, grain growth and competing length scales (@mat-coarsening: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "Sintering-densification-and-surface-driven-redistribution.lingua#r_4Q674R3ZF1GZWEJBNYRT4W2S2Y") { r_6YJ9EQHYTWKXXMQ65B07FWSKAT
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lectures 11–12 and 3.21 lectures 17–19; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), interface curvature and phase equilibrium.
+
+Coarsening reduces interfacial energy by redistributing material among particles; grain growth changes boundary geometry among differently oriented grains. They can occur with different conservation constraints and mobilities. Particle pinning, solute drag, texture and anisotropic boundaries alter simple laws.
+
+A dilute diffusion-controlled ripening model can give a characteristic radius cubed proportional to time, while ideal curvature-driven normal grain growth often motivates a squared-size law. These exponents depend on assumptions and asymptotic regimes. A broad distribution contains information lost in one mean size.
+
+**Work:** Derive a scaling estimate from capillary chemical potential and diffusive flux. Compare it with a boundary-mobility estimate for grain growth. Test distributions and volume fractions as well as mean size, and explain why simultaneous precipitation and coarsening cannot be inferred from one fitted exponent.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Sintering, densification and surface-driven redistribution](Sintering-densification-and-surface-driven-redistribution.lingua#r_4Q674R3ZF1GZWEJBNYRT4W2S2Y).
+
+} r_6YJ9EQHYTWKXXMQ65B07FWSKAT

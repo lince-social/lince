@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Inventory and a gas material balance (@gas-inventory: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Specify-the-condition-at-the-point-of-use.lingua#r_674TAFDHSF9QJ5FQ58JXK2WKVS") { r_4SXQZKB25AVN9BK598YGJHDTJX
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), evacuation; [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), pressure-volume-temperature-time methods; the shared material-balance foundations.
+
+For a chosen boundary, the rate of change of gas amount equals inflow minus outflow plus sources from reactions or material release. Adsorption can move matter from gas into a surface inventory without removing it from the whole system. Define whether your boundary includes that surface reservoir.
+
+For an ideal gas at fixed V and T, V dp/dt=Qin−Qout when all Q use the same temperature. If temperature or volume changes, differentiate pV=nRT completely. A pressure rise during warming does not by itself establish a leak. A stationary pressure can coexist with substantial continuous gas flow.
+
+**Work:** Derive the full time derivative for variable V and T, then recover the fixed-state case. Compare an isolated warming vessel, a leaking vessel at constant temperature and a steady flowing chamber. State which additional measurements distinguish the three. Close an amount balance before interpreting a pressure trace.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Specify the condition at the point of use](Specify-the-condition-at-the-point-of-use.lingua#r_674TAFDHSF9QJ5FQ58JXK2WKVS).
+
+} r_4SXQZKB25AVN9BK598YGJHDTJX

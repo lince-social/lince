@@ -1,0 +1,19 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Inversion cannot create information that the response loses (@cm-aerosol-inversion: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM", #clean-manufacturing "../../../inquiry/metrology/uncertainty/Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG") { r_7EQ5WTVSRCQPA7WYPQ0YVTHTYX
+**Read:** [Mobility particle size spectrometers — Wiedensohler and colleagues](../sources/Mobility-Particle-Size-Spectrometers-Wiedensohler.lingua#r_1W06WPADV43B98EF8NSW9RDCWM), comparison of inversion routines. Use [Observation models, inverse questions, and Bayesian interpretation](../../../inquiry/metrology/uncertainty/Inverse-and-Bayesian-models.lingua#r_1TSJYTGBD1NY9Q7VP0BDFXZ94K) for the distinction between observations, unknowns and prior information.
+
+The two-bin example in [A response matrix describes what each channel can observe](A-response-matrix-describes-what-each-channel-can-observe.lingua#r_4X7ZW1THRHMVFBYWCHKDHXXMYT) has determinant 0.54 and an exact noiseless inverse. Observed counts fluctuate, the response is uncertain, and nonnegative concentration constraints can become relevant. A negative unconstrained estimate signals the need to examine the observation model; silently replacing it by zero changes the estimator.
+
+Consider instead response rows (0.5, 0.49) and (0.5, 0.51), again for 1 cm³. Both columns nearly agree. Population (100, 100) gives (99, 101); the small observation change to (100, 100) gives the exact inverse (200, 0). A small determinant alone is scale-dependent, but here the fixed physical normalization exposes weak separation of the two bins.
+
+Regularization, smoothness assumptions and Bayesian priors can stabilize a solution by adding information or preferences. They do not make the instrument resolve every chosen bin. Compare predicted observations and sensitivity to the assumptions, not just the smoothness of the recovered curve.
+
+For independent disjoint-channel Poisson counts, the likelihood is proportional to ∏ exp(−λ_i)λ_i^k_i/k_i!, with λ = Ac + b. Cumulative channels require a joint model consistent with their dependence.
+
+**Work:** Reproduce both examples and perturb counts, response coefficients and background separately. Compare a coarser binning with a regularized fine grid. Explain which feature is supported by observations and which depends mainly on the reconstruction choice.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Sampling contributions, thresholds, and results near zero](../../../inquiry/metrology/uncertainty/Sampling-and-censoring.lingua#r_3RRJRMNNAPMVYJ9Z6VGY2DV0CG).
+
+} r_7EQ5WTVSRCQPA7WYPQ0YVTHTYX

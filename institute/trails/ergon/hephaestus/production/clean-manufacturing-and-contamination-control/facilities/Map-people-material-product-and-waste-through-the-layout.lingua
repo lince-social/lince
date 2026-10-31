@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Map people, material, product and waste through the layout (@cm-facility-flows: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "Product-protection-and-containment-can-require-different-boundaries.lingua#r_099FT5EV3YBZATTMY21NFEE1BR") { r_129VQ3R7CAJVEXHTC7PT61KD1H
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), architecture and mechanical layout; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), premises and transfers.
+
+A floor plan contains paths through time as well as rooms. Incoming components, cleaned tools, operators, rejected parts and waste may use the same space at different times. Doors, pass-throughs, staging areas and maintenance access create contacts and interruptions.
+
+Distinguish adjacency from a demonstrated transfer process. A short walking route can increase crossings; a remote service point can extend an exposed transfer or delay restoration. Separate normal production, replenishment, cleaning, intervention and emergency movement when evaluating a layout.
+
+**Work:** Trace one item from receipt to use and one worker through an entire task. Add the associated packaging and waste. Identify where the material's condition changes and how it is observed. Revise a crossing or exposed transfer and account for the new time, space and handling it requires.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Product protection and containment can require different boundaries](Product-protection-and-containment-can-require-different-boundaries.lingua#r_099FT5EV3YBZATTMY21NFEE1BR).
+
+} r_129VQ3R7CAJVEXHTC7PT61KD1H

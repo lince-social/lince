@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Amorphous order, glasses and observation times (@mat-amorphous: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #materials-engineering "Coordinates-directions-and-planes-in-a-material.lingua#r_5SHPY9KV7G0H35MZB186PM7PVK") { r_7X7BJ9BSKK8TG5124YJ5YWZCN9
+**Read:** [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures 21–24; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), atomic-scale structure and The Glass Transition; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), glass-transition and morphology lectures.
+
+Absence of long-range translational periodicity is not absence of structure. Neighbour distances, bond angles, network connectivity and local packing can remain strongly organized. A glass may preserve a nonequilibrium structure whose response depends on thermal history and the observation timescale.
+
+Distinguish a glass transition from a simple equilibrium melting boundary. A polymer can contain crystalline regions and an amorphous fraction with different responses. A broad diffraction feature supports a disorder account but does not establish every local arrangement or exclude a small crystalline contribution.
+
+**Work:** Compare a crystalline, amorphous and partly crystalline description of one chemical system. State what diffraction, calorimetry and mechanical observations could distinguish. Explain how changing the heating rate or measurement duration could change an apparent transition. Reserve quantitative kinetics and viscoelasticity claims for the later derivations and evidence.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Coordinates, directions and planes in a material](Coordinates-directions-and-planes-in-a-material.lingua#r_5SHPY9KV7G0H35MZB186PM7PVK).
+
+} r_7X7BJ9BSKK8TG5124YJ5YWZCN9

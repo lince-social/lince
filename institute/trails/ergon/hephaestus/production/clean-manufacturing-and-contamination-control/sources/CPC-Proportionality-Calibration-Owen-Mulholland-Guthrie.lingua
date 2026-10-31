@@ -1,0 +1,10 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+CPC proportionality calibration — Owen, Mulholland and Guthrie (@cm-cpc-proportionality-source: 0, is #reference, #part-of @cm-sources) { r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE
+Miles Owen, George Mulholland and Will Guthrie. *Condensation Particle Counter Proportionality Calibration from 1 particle·cm⁻³ to 10⁴ particles·cm⁻³*. [NIST catalogue, posted November 2011](https://www.nist.gov/publications/condensation-particle-counter-proportionality-calibration-1-particlecm3-104) · [Seventeen-page institutional manuscript](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=907153) · [Published article DOI](https://doi.org/10.1080/02786826.2011.637998).
+
+Read the entire manuscript, including dilution, coincidence correction, the absolute calibration and appendices on flow and splitter bias. Separate the evidence for proportional response from the reference comparison fixing its scale. Reconstruct the experimental argument before generalizing it to another particle population or instrument.
+
+The institutional manuscript's introduction, apparatus, dilution methods, primary calibration, uncertainty discussion and splitter appendix were inspected. Equation (1) on PDF page 4 and equations (B4)–(B6) on page 16 were viewed to recover notation lost by extraction. The full experiment and original datasets have not been independently reproduced. The catalogue's bibliographic fields and the linked manuscript are not identical to a checked final publisher edition. Free institutional reading was verified; blanket adaptation rights were not established. The manuscript and figures remain external.
+
+} r_7XKKJ1Q7HNDS2BEPSHZDJMTKVE

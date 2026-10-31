@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Filter efficiency needs a size spectrum and a measurement basis (@cm-filter-basis: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "Depth-filtration-can-be-modelled-as-conditional-survival.lingua#r_5B8HE1ACJ8E593NVN4HFDS28A3") { r_1ZJAQ08ES8NY5GGG51TSBFF322
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), sections 4.1.1–4.1.4; revisit particle mobility, impaction and collection.
+
+Penetration P is downstream amount divided by upstream amount under matched flow and sampling conditions; efficiency is 1−P. Specify particle size, shape, charge, flow, loading and whether amount means number or mass. A nameplate class is tied to its test method and edition.
+
+Fibrous capture combines diffusion, interception, inertia and sometimes electrostatic effects. It is not simply sieving through holes smaller than each particle. The most penetrating size is a system-dependent minimum of capture, not a universal smallest removable particle.
+
+**Work:** For equal numbers of hypothetical spherical particles of diameters 0.1 and 1 µm with equal density, use efficiencies 0.50 and 0.99. Compute overall number efficiency and mass efficiency separately. Explain why reporting only the more favorable number could misrepresent protection of a size-sensitive process.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Depth filtration can be modelled as conditional survival](Depth-filtration-can-be-modelled-as-conditional-survival.lingua#r_5B8HE1ACJ8E593NVN4HFDS28A3).
+
+} r_1ZJAQ08ES8NY5GGG51TSBFF322

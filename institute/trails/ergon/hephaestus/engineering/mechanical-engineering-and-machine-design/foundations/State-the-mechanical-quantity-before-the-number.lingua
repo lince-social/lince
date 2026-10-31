@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+State the mechanical quantity before the number (@mech-quantity-question: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_15BHWYB8AYJYDMG8KGC2WH01S9
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), sections 1.1–1.4. Follow the shared units Record next and return with a declared basis for each quantity.
+
+Length, time, mass, force, angle, torque, power and temperature describe different observations. A number such as 500 means little without the quantity, unit, location and operating condition. Mass is not force: in a declared local gravitational field, weight has magnitude mg. A rated maximum is not necessarily the present operating value.
+
+For an original illustration, a 12 kg object has weight approximately 117.72 N if g = 9.81 m/s² is assumed. A support carrying that static load may see a different force during acceleration or impact. Keep the assumed model visible rather than attaching the same number to every use of the object.
+
+**Work:** Make a small table of measured or stated quantities for your selected machine. Explain how each could be observed and distinguish a nominal size, measurement, tolerance and operating limit. Use the shared mathematics only as far as this question requires, then return to the machine.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Units, dimensions, and equations that can make sense](../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
+} r_15BHWYB8AYJYDMG8KGC2WH01S9

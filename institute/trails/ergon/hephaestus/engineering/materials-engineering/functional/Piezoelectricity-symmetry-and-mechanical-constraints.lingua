@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Piezoelectricity, symmetry and mechanical constraints (@mat-piezoelectric: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #materials-engineering "Pyroelectric-and-thermoelectric-materials.lingua#r_0GEX1Y9047ZM1RRK5NZMQW4HG9") { r_5ZGBZAXYXP5F3QA2XMPWVF16HF
+**Read:** [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), the whole Piezoelectricity package, including poling and depolarization; revisit the shared tensor and mechanical-boundary foundations.
+
+In a consistent small-signal convention, strain S=sᴱT+dᵀE and electric displacement D=dT+εᵀE. Here T denotes stress, not temperature; superscripts identify quantities measured at fixed field or stress. Mechanical clamping changes the effective electrical response. The converse and direct effects belong to the same coupled energy account.
+
+Crystal symmetry constrains which tensor components can exist. A random unpoled ceramic aggregate can average out responses that individual domains possess. Poling changes domain populations; temperature, field and stress history can undo or modify the useful state.
+
+**Work:** Derive the one-dimensional open-circuit versus short-circuit response and check units of d in C/N and m/V. Compare a force sensor and displacement actuator through geometry, preload, resonance, losses and thermal limits. Distinguish a reversible small-signal coefficient from a large switching strain.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Pyroelectric and thermoelectric materials](Pyroelectric-and-thermoelectric-materials.lingua#r_0GEX1Y9047ZM1RRK5NZMQW4HG9).
+
+} r_5ZGBZAXYXP5F3QA2XMPWVF16HF

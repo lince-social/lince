@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Follow a structure model back to its original evidence (@mat-model-entry: 0, is #chapter, #part-of @materials-engineering, #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #materials-engineering "../../../../gaia/earth/mineralogy-and-petrology/analysis/Read-and-test-a-crystal-structure-record.lingua#r_1SVFJVQWKZM86VHF3Z5Y2XWVX1") { r_4R3W9S86JB8FRW41F28V0417X1
+**Read:** [Crystallography Open Database — structures, citations, and CIF records](../../../../gaia/earth/mineralogy-and-petrology/sources/Crystallography-Open-Database.lingua#r_0GWYXPDY9KYA4V4AXPCEFJG9RG), one identified structure and original publication; [Crystallographic teaching pamphlets — IUCr](../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), relevant structure/notation material. Continue through the shared CIF Record next.
+
+A structure file is a compact model with a history. Its cell, basis, occupancies, displacement parameters, constraints and refinement conditions need to be interpreted together. A viewer may draw fully occupied, sharply located atoms even when the source describes averages, uncertainty or disorder.
+
+Select a record because it answers a material question, not because its rendering looks convincing. Preserve original authors, experimental conditions and revision. Distinguish a calculated structure from one refined against measurements, and a model parameter from a directly observed quantity.
+
+**Work:** Trace one claim about density, coordination or symmetry through its source file to the original evidence. Recalculate one geometric/compositional consequence independently. Explain which missing information prevents a stronger conclusion and continue into the complete shared model-reading study.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Read a CIF as a traceable model and compare it with its original evidence](../../../../gaia/earth/mineralogy-and-petrology/analysis/Read-and-test-a-crystal-structure-record.lingua#r_1SVFJVQWKZM86VHF3Z5Y2XWVX1).
+
+} r_4R3W9S86JB8FRW41F28V0417X1

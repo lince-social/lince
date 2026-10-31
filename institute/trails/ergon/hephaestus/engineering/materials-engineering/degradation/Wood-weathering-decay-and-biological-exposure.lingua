@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Wood weathering, decay and biological exposure (@mat-wood-degradation: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "Interfaces-deposits-and-combined-exposure.lingua#r_28CQ1R0G083JT921V58ECCVFHR") { r_16JPZZQQVC7Q87Q4418D4GEZ4F
+**Read:** [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapters 14–16 in full, with chapters 4 and 13 for moisture and drying. Chapter 14 is by Rachel Arango, Stan T. Lebow and Jessie A. Glaeser.
+
+Separate surface weathering, dimensional response, fungal stain, structural decay, insect damage and marine-borer attack. They involve different agents and exposure conditions. Moisture history and detailing affect whether favorable conditions persist; species, sapwood/heartwood, prior treatment and access paths matter. Appearance alone does not quantify retained load capacity.
+
+**Work:** Reconstruct a service case with wood identity, moisture/temperature history, geometry and evidence for the damaging agent. Compare surface and internal observations and identify the uncertainty in remaining useful section or properties. Explain a prevention strategy through its mechanism and limits. Read preservation methods as material-science evidence; any operational choice of a regulated treatment requires the applicable current product and use information.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Interfaces, deposits and combined exposure](Interfaces-deposits-and-combined-exposure.lingua#r_28CQ1R0G083JT921V58ECCVFHR).
+
+} r_16JPZZQQVC7Q87Q4418D4GEZ4F

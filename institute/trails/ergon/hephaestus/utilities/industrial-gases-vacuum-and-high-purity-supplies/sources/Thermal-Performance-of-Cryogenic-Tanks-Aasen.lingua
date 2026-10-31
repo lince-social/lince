@@ -1,0 +1,10 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Thermal performance of cryogenic storage tanks — Aasen and colleagues (@gas-cryotank-study: 0, is #reference, #part-of @gas-sources) { r_2GPG0AVVS87R5ZY5Z5GVJEAEN7
+Ailo Aasen, Sindre Stenen Blakseth, André Massing, Petter Nekså and Magnus Aa. Gjennestad. *Thermal performance estimation for cryogenic storage tanks: Application to liquid hydrogen*, arXiv:2501.18451v1, submitted 30 January 2025. [Versioned record](https://arxiv.org/abs/2501.18451v1) · [Full 20-page manuscript](https://arxiv.org/pdf/2501.18451).
+
+Read the whole manuscript, beginning with §§2.1–2.4 on properties, conductivity integrals, bounds and networks, then numerical methods and the tank study. Separate an assumption-dependent bound from an observed equipment performance.
+
+Metadata and selected model, numerical-method and case-boundary passages were inspected on 30 October 2026; figure 1 and equations on PDF page 5 were visually checked. Its arXiv licence permits repository distribution, not general adaptation. A complete author-code/data package and independent reproduction of the tank case were not established. The paper remains an external reading; the trail's simple calculations are independently derived ideal cases.
+
+} r_2GPG0AVVS87R5ZY5Z5GVJEAEN7

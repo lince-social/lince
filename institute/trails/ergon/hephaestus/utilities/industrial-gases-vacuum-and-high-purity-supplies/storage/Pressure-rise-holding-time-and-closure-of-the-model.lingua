@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pressure rise, holding time and closure of the model (@gas-pressure-rise-storage: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "Stratification-mixture-change-and-internal-relaxation.lingua#r_4Y9PJ7DH99MCJC8NPD8506M4RQ") { r_5WF68YB7VMMVDFHNH1TH888QZQ
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), real-fluid properties and closed/open energy accounts; [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), cryogenic storage.
+
+A sealed vessel with heat entering has fixed mass and volume but increasing internal energy. For a hypothetical uniform ideal gas with constant cv and no wall storage, dp/dt=(γ−1)Q̇/V. A two-phase cryogenic vessel requires an equilibrium or nonequilibrium relation between U, V, mass and the phase states; the ideal-gas slope is not transferable to it.
+
+In a homogeneous equilibrium calculation, advance U using the energy balance, then solve for temperature, pressure and phase fraction subject to the fixed volume and component inventories. Verify that the solution remains within the property model's domain. Near phase boundaries, a naive temperature update can violate both energy and volume constraints.
+
+Holding time depends on the initial state, allowable endpoint, heat input and control behavior. Heat input may itself change with insulation condition and weather. Thermal stratification and delayed interfacial equilibration can defeat a single-temperature model even when its integrated energy balance closes.
+
+**Work:** Derive the ideal-gas pressure slope and compare it with a closed two-phase conceptual model. List the property and heat-transfer data needed for a numerical holding-time prediction; distinguish an uncertainty interval from an unverified assumed margin.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Stratification, mixture change and internal relaxation](Stratification-mixture-change-and-internal-relaxation.lingua#r_4Y9PJ7DH99MCJC8NPD8506M4RQ).
+
+} r_5WF68YB7VMMVDFHNH1TH888QZQ

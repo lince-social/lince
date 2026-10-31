@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Rotating imbalance, critical speed and machine loads (@mech-imbalance: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #mechanical-engineering "Distributed-mass-stiffness-and-continuous-vibration.lingua#r_7FBSCQHXNQGXNV81TKQ4ZWKCZ4") { r_4EY3NN0859SB8AATY9X5DN5BGK
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lecture 9 and recitation 6, followed by lectures 20–26; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), rigid-body kinematics and inertia. Return to the machine's actual support and shaft geometry.
+
+A mass m_e at eccentricity e rotating at constant angular speed Ω produces a rotating inertial-force demand with magnitude m_e e Ω² in the simple rigid-rotor model. Static unbalance and couple unbalance require different correction information; balancing one plane does not automatically correct a two-plane rotor.
+
+An unbalance product of 0.0001 kg·m at 3000 rpm gives force magnitude about 9.8696 N. The rotor's displacement also depends on support stiffness, damping, mode shape and speed. Force increasing as Ω² does not imply displacement increasing as Ω² throughout a resonance crossing.
+
+A simple flexible-rotor model can have a critical speed near a lateral natural frequency. Gyroscopic terms, asymmetric supports, spin-dependent properties, internal damping and rubbing can change the frequencies and stability. A single stationary oscillator is an introduction, not a certificate for an arbitrary rotor's permissible speed.
+
+**Work:** Predict the response to a known unbalance in a declared one-mode model and sweep speed through its resonance. Separate shaft motion, bearing force and casing motion. Compare run-up and settled assumptions, include phase relative to shaft angle, and state what additional measurements would distinguish unbalance from misalignment or a loosened support. Actual high-speed balancing and overspeed tests need appropriate facilities and procedures.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Distributed mass, stiffness and continuous vibration](Distributed-mass-stiffness-and-continuous-vibration.lingua#r_7FBSCQHXNQGXNV81TKQ4ZWKCZ4).
+
+} r_4EY3NN0859SB8AATY9X5DN5BGK

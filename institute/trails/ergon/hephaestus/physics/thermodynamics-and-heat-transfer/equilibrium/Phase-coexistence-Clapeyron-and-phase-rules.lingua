@@ -1,6 +1,6 @@
 Import "../Thermodynamics-and-heat-transfer.lingua"
 
-Phase coexistence, Clapeyron slopes and phase rules (@th-coexistence: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #thermodynamics-and-heat-transfer "Surface-energy-curvature-and-small-system-thermodynamics.lingua#r_1CF5QPBT4S6WVH8W7364J240V8") { r_4RC5M920WZB08JG03SSHM0DQTQ
+Phase coexistence, Clapeyron slopes and phase rules (@th-coexistence: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #source "../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #thermodynamics-and-heat-transfer "Surface-energy-curvature-and-small-system-thermodynamics.lingua#r_1CF5QPBT4S6WVH8W7364J240V8", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/storage/Liquid-vapor-inventory-and-why-pressure-is-not-a-level.lingua#r_1NRRBC1S60NXSZJ9TZ0GZB6K5B") { r_4RC5M920WZB08JG03SSHM0DQTQ
 **Read:** [Thermodynamics and Chemistry — Howard DeVoe](../sources/Thermodynamics-and-Chemistry-DeVoe.lingua#r_2YHHGY26Y8X9MS9DB3MXZHD1D1), chapters 8, 12 and 13 in full; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), multiphase equilibrium; [IAPWS-95 — fundamental water properties](../sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z), vapour-liquid equilibrium and phase limits.
 
 At equilibrium, coexisting phases satisfy the appropriate equality of chemical potentials, with mechanical/thermal conditions and any interfacial effects stated. Derive the Clapeyron relation dp/dT = Δs/Δv = L/(TΔv) for a pure-substance coexistence curve, using consistent molar or mass-specific quantities.
@@ -12,4 +12,7 @@ Count degrees of freedom with the applicable phase rule, species and constraints
 **Continue:** [Surface energy, curvature and small-system thermodynamics](Surface-energy-curvature-and-small-system-thermodynamics.lingua#r_1CF5QPBT4S6WVH8W7364J240V8).
 
 **Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+
+**Continue in gas and vacuum systems:** [Liquid–vapor inventory and why pressure is not a level](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/storage/Liquid-vapor-inventory-and-why-pressure-is-not-a-level.lingua#r_1NRRBC1S60NXSZJ9TZ0GZB6K5B).
+
 } r_4RC5M920WZB08JG03SSHM0DQTQ

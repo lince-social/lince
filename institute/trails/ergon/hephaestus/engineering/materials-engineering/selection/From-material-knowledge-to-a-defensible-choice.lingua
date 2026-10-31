@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+From material knowledge to a defensible choice (@mat-selection-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #materials-engineering "A-property-value-needs-a-material-state-and-a-source.lingua#r_10FJ85Q2QZ5982RP0J9FZ3BB9P") { r_4YF5NP31S3C89XZT6FSP4FXC6J
+**Read progressively:** [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), all three selection lectures and the public coursework; [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), the whole book; [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ), the full report. Complete the later cost and life-cycle readings as those questions enter the route.
+
+A material choice concerns a useful object in a stated situation. A light panel, transparent cover, electrical contact and hot seal have different functions even when they share chemical elements. Begin with what must remain true during manufacture, transport, use, maintenance and recovery. State which dimensions and processes can change and which interfaces already exist.
+
+Separate a constraint that must be met from an objective that can improve. Low mass, low cost and long life are not interchangeable. A catalogue label does not supply the state-dependent evidence needed to evaluate them. This section uses the preceding structure, kinetics, response, processing and degradation work to make and criticize choices.
+
+**Work:** Describe three objects through function, loading or fields, environment, duration, geometry freedoms and observable success. State a plausible alternative material/process route for each and the evidence needed to compare it. Keep the possibility that none of the initial candidates is feasible.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [A property value needs a material state and a source](A-property-value-needs-a-material-state-and-a-source.lingua#r_10FJ85Q2QZ5982RP0J9FZ3BB9P).
+
+} r_4YF5NP31S3C89XZT6FSP4FXC6J

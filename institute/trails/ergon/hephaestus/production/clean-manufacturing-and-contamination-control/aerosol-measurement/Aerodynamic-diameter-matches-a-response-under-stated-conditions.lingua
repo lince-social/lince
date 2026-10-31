@@ -1,0 +1,19 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Aerodynamic diameter matches a response under stated conditions (@cm-aerodynamic-sizing: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "A-mobility-classifier-connects-drag-charge-flow-and-voltage.lingua#r_5MDKM4K339GZY6VX57G2V6WPJV") { r_2SBHD3T51J3HNC0HJGBRYC4GSJ
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), aerodynamic sizing and collection devices. Revisit [What a particle diameter means](../foundations/What-a-particle-diameter-means.lingua#r_4VXPHVKHVM7244VHQEMMZ1B4MZ) and the settled-sphere transport calculation.
+
+Aerodynamic diameter conventionally compares the motion of a particle with that of a unit-density sphere. In a continuum creeping-flow settling approximation, negligible gas buoyancy and a defined dynamic shape factor χ give d_a = d_v√(ρp/(ρ₀χ)), where d_v is volume-equivalent diameter and ρ₀ is the reference density. This is an equivalence of response within a model.
+
+Including slip requires an implicit relation d_a² Cc(d_a) = d_v² Cc(d_v)ρp/(ρ₀χ), with a compatible definition of χ. The simple square-root scaling is no longer the complete solution. For a non-spherical particle, choosing the reference diameter and drag convention consistently matters.
+
+**Example:** In the continuum model, d_v = 2 µm, ρp/ρ₀ = 4 and χ = 2 give d_a ≈ 2.82843 µm. A compact sphere of the same material and volume would instead give 4 µm. Neither value is a universal optical equivalent diameter.
+
+Impactors and time-of-flight instruments observe different aspects of aerodynamic behavior. Stage collection is spread over a response curve; bounce, wall loss and re-entrainment alter collected amounts. Flow and gas conditions change the relation.
+
+**Work:** Derive the continuum relation by equating terminal velocities. Solve a stated slip-corrected example numerically and verify both sides. Draw overlapping collection curves for two impactor stages and explain why mass on a stage is not exactly the mass in a sharply bounded diameter interval.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A mobility classifier connects drag, charge, flow and voltage](A-mobility-classifier-connects-drag-charge-flow-and-voltage.lingua#r_5MDKM4K339GZY6VX57G2V6WPJV).
+
+} r_2SBHD3T51J3HNC0HJGBRYC4GSJ

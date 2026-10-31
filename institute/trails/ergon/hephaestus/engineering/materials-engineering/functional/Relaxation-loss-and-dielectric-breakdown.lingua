@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Relaxation, loss and dielectric breakdown (@mat-dielectric-loss: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #materials-engineering "Ferroelectric-order-switching-and-history.lingua#r_08XCVTF70MAK6YKWKZYPC0S70G") { r_659TX1SCKG5RS4AVZXEXNQ6TWS
+**Read:** [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), dielectric loss/breakdown and ferroelectric measurement; the shared electromagnetic response-model and loss discussions. Use the existing NIST permittivity/permeability source for methods.
+
+For a single Debye relaxation under exp(−iωt), ε_r=ε∞+Δε/(1−iωτ). The imaginary part peaks at ωτ=1, with height Δε/2. A distribution of times, interfacial charge or conduction can change the shape. A Lorentz resonance solves a different underlying dynamical equation.
+
+With peak field amplitude E0, average dielectric power density is ωε0 Im(ε_r)|E0|²/2 under these assumptions. Report RMS versus peak conventions. Breakdown concerns an evolving failure process involving field, defects, thickness, temperature and time; it is not just a very large value of linear dielectric loss.
+
+**Work:** Derive the peak and both frequency limits. Compare spectra from two thicknesses or electrode configurations, testing bulk and interfacial explanations. Reconstruct one documented breakdown distribution with the actual test geometry and duration rather than transferring its characteristic field uncritically to another component.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Ferroelectric order, switching and history](Ferroelectric-order-switching-and-history.lingua#r_08XCVTF70MAK6YKWKZYPC0S70G).
+
+} r_659TX1SCKG5RS4AVZXEXNQ6TWS

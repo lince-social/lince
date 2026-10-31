@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Positions, directions and coordinate choices (@mech-coordinate-question: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "../../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J") { r_37SPYW81CMEZ656CVSB1F3T3SV
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapter 2 in full. Follow the shared vectors Record next for the coordinate language used by forces and moments.
+
+A position identifies where an interaction acts; a direction identifies how a vector is oriented. A displacement relates two positions. Choosing axes does not change the physical machine, but it changes the components used to describe it. Always state origin, orientation and sign convention before combining component values.
+
+**Work:** Mark two points and an applied-force direction on your machine sketch. Resolve that same force in two coordinate systems and reconstruct its magnitude. Explain the difference between a unit direction, a position vector and a force vector. Check dimensions when multiplying components.
+
+Begin in a plane where the geometry supports that approximation, then explain what would require a three-dimensional account. A projected drawing can hide an offset that changes a moment; an unexplained two-dimensional model can therefore omit a load path.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Vectors, coordinate systems, and spatial meaning](../../../inquiry/quantitative-literacy/foundations/Vectors-and-projections.lingua#r_477P2M3HVZQ0PT56SF027VP68J).
+
+} r_37SPYW81CMEZ656CVSB1F3T3SV

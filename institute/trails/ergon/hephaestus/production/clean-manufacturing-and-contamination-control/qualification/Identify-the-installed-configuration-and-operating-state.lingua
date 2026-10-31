@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Identify the installed configuration and operating state (@cm-qualification-states: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #clean-manufacturing "Connect-each-requirement-to-discriminating-evidence.lingua#r_33HA0EAAXHMA73J2V5YW99AN6V") { r_33WHMZN48MRDX1RQWVAN8P54VT
+**Read:** [Commissioning, acceptance and validation of use](../../../engineering/mechanical-engineering-and-machine-design/assembly/Commissioning-acceptance-and-validation-of-use.lingua#r_4K9PKAGC72FHH0SBDCEDTWGHF8) and [Systems Engineering Handbook — NASA](../../../engineering/mechanical-engineering-and-machine-design/sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), integration and verification. Revisit the facility studies and their actual system boundaries.
+
+Evidence belongs to a configuration: equipment, materials, layout, software settings, sensors, utility connections and relevant maintenance state. A drawing of the intended installation does not establish what was built. A component certificate does not demonstrate every interface after assembly.
+
+Distinguish observations of an unoccupied installation, a prepared facility and the facility during its defined work. People, product loading, access events, heat and equipment operation can change the source and transport terms. An empty-room result cannot silently stand for the production state.
+
+Describe startup, steady operation, a representative disturbance and recovery where these affect the claim. Preserve which state was observed and what separates it from the intended use. Formal labels differ across industries; use the applicable definitions when making an actual compliance claim.
+
+**Work:** Build a configuration and state account for a simulated enclosure. Trace one changed sensor position and one changed internal obstruction through the evidence. Explain which earlier observations still apply and which would need reconsideration.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Connect each requirement to discriminating evidence](Connect-each-requirement-to-discriminating-evidence.lingua#r_33HA0EAAXHMA73J2V5YW99AN6V).
+
+} r_33WHMZN48MRDX1RQWVAN8P54VT

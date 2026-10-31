@@ -1,0 +1,12 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Total and Partial Pressure Measurement — Karl Jousten (@gas-pressure-measurement: 0, is #reference, #part-of @gas-sources) { r_7SH9NGBWVVK5YN24S2VZPTW45M
+Karl Jousten. *Total and Partial Pressure Measurement*, 2017 CERN Accelerator School contribution, author manuscript published 4 June 2020, 14 pages. [Record](https://arxiv.org/abs/2006.02707v1), [complete paper](https://arxiv.org/pdf/2006.02707).
+
+Read the complete account of pressure realization, gauge principles, comparison calibration and quadrupole analysis. Derive how a gas-dependent signal is turned into a reported pressure and examine what information is lost in an unknown mixture. Compare a reference calibration with the conditions at the actual gauge port.
+
+Metadata and selected gauge-principle, ionization-sensitivity, comparison-calibration, quadrupole-source/filter and detection passages were inspected on 30 October 2026. The rod geometry and equations on PDF page 8 were checked visually. The learning Record derives its own explicit SI potential/voltage convention rather than copying unexplained numerical coefficients. The paper explains that comparison requires matching molecular density and velocity distributions, a stronger condition than matching a scalar pressure reading. Standards references describe the paper's period; consult the actual current edition when a specific standards claim is required.
+
+The author manuscript is freely readable through arXiv under its nonexclusive distribution licence. General adaptation permission was not established; preserve credits and keep the paper external. Public explanatory text does not supply the complete cited standards.
+
+} r_7SH9NGBWVVK5YN24S2VZPTW45M

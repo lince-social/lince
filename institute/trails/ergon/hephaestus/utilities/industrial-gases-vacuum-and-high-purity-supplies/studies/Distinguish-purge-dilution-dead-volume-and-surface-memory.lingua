@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Distinguish purge dilution, dead volume and surface memory (@gas-study-purge: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #industrial-gases-and-vacuum "Review-delivery-from-stored-state-to-accepted-use.lingua#r_5YDSGAWT2X43S7P3JQ7HPBNCA8") { r_3FT18T58PPXH1C5Z59CQE13ZKT
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), complete surface/measurement development; [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), assigned composition and stability; revisit the delivery quality and sampling Records.
+
+Compare three independently derived models: a well-mixed volume, two exchanging volumes and gas/surface storage. Give each the same initial impurity amount where meaningful, the same inlet condition and an explicit consumed-gas budget. Predict both the outlet signal and impurity remaining inside the system.
+
+Derive the ideal pressure-cycle dilution relation and its assumptions. Compare it with continuous purge without assuming that either model resolves real dead spaces. Investigate a nonzero inlet impurity, a sustained source and a change in temperature or exchange rate. State when a target is mathematically unreachable under the assumed conditions.
+
+Use independently implemented balances or analytical solutions to verify computations. Compare early-time response, late-time tail and rebound after an interruption. Show which parameters can be inferred from one outlet trace and which require another observation; a good fit alone does not identify a unique mechanism.
+
+**Demonstrate:** Conservation, model limits, uncertainty and an observation capable of rejecting a plausible competing explanation. Carry sampling-line and instrument response into the inference so the measuring apparatus is not silently treated as instantaneous and inert.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review delivery from stored state to accepted use](Review-delivery-from-stored-state-to-accepted-use.lingua#r_5YDSGAWT2X43S7P3JQ7HPBNCA8).
+
+} r_3FT18T58PPXH1C5Z59CQE13ZKT

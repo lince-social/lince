@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Choose subgroups that preserve the question about variation (@cm-monitoring-subgroups: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Interpret-a-Shewhart-signal-under-its-probability-model.lingua#r_39482SFV88STX9MW0WHZ4VBQ8G") { r_131PSPRZN5MNDR7J4R3TNV2GBC
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), section 6.3.2.1, mean and variation charts. Revisit [Separate sampling, preparation and analysis in a comparison](../surface-measurement/Separate-sampling-preparation-and-analysis-in-a-comparison.lingua#r_45Z6TMPNGW0W9QRZ5MTMMTYACK).
+
+A subgroup groups observations so that its within-group variation has a defined meaning. Samples taken close together under a common state can describe short-term variation while between-group changes remain visible. Combining distant states within every subgroup can conceal the very shift being sought.
+
+For independent observations with variance σ², a mean of n observations has variance σ²/n. Shared effects add covariance terms. A subgroup of four nearly identical readings from one instrument state is not equivalent to four independent observations of the production population.
+
+Examine dispersion alongside location. A constant mean can conceal increased variability, mixed populations or alternation between states. A stable within-group estimate does not establish stable between-group behavior.
+
+**Work:** Use one simulated sequence to compare consecutive groups, interleaved groups and groups organized by process state. Show which construction hides a step or periodic change. Report the subgroup definition, sampling interval and variance quantity used to set limits.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Interpret a Shewhart signal under its probability model](Interpret-a-Shewhart-signal-under-its-probability-model.lingua#r_39482SFV88STX9MW0WHZ4VBQ8G).
+
+} r_131PSPRZN5MNDR7J4R3TNV2GBC

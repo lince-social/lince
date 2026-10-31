@@ -1,0 +1,13 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Defend a pressure network and material transfer boundary (@cm-study-pressure-transfer: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #source "../sources/Door-Motion-Human-Movement-and-Aerosol-Exchange-Zheng.lingua#r_7CWNYE36WG4XSVT18MFMZRV1DH", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "Review-the-facility-before-qualifying-its-performance.lingua#r_0BZHWZQZAKQ0NY2JHYWRF4WG6P") { r_1FEVBHDVKEDYA9HFMTVJQ6JWAF
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), complete theory and a worked application; [Door motion, human movement and aerosol exchange — Zheng and colleagues](../sources/Door-Motion-Human-Movement-and-Aerosol-Exchange-Zheng.lingua#r_7CWNYE36WG4XSVT18MFMZRV1DH) in full; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), the relevant transfer/barrier sections.
+
+Model a layout with room, airlock, local process and outdoor paths. Solve pressure and mass balances before contaminant transport. Then identify a transfer event requiring more spatial or temporal detail than the steady network.
+
+**Work:** Reproduce the two-room and counterflow examples, including reversals and zero-net-flow exchange. Compare network prediction with the assumptions and validation evidence of the moving-boundary study. Propose observations that discriminate leakage, buoyancy and motion. Defend the product, worker and neighboring-room consequences separately.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review the facility before qualifying its performance](Review-the-facility-before-qualifying-its-performance.lingua#r_0BZHWZQZAKQ0NY2JHYWRF4WG6P).
+
+} r_1FEVBHDVKEDYA9HFMTVJQ6JWAF

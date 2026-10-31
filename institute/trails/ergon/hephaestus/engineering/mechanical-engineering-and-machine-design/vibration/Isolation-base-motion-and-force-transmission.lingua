@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Isolation, base motion and force transmission (@mech-isolation: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #mechanical-engineering "../computation/Time-stepping-must-preserve-the-stated-mechanical-account.lingua#r_6353VA4JT9P63EM1CV7PHS3FG0") { r_3VD5F5GCYEFAF8DE89MKBF7JQE
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lecture 21 and recitation 10. Draw the mass, base, spring and damper before selecting a response ratio.
+
+For a moving base y(t) and absolute mass displacement x(t), m x_double_dot + c(x_dot − y_dot) + k(x − y) = 0. With harmonic base motion, X/Y = (k + i cω)/(k − mω² + i cω). Relative travel X − Y, absolute mass motion X and force transmitted into the support answer different questions.
+
+For a fixed base with harmonic force applied to the mass, transmitted-force amplitude divided by applied-force amplitude has the same magnitude expression √(1 + (2ζr)²)/√((1 − r²)² + (2ζr)²), with r = ω/ω_n. For this simple model that ratio falls below one only above r = √2. Added damping reduces the resonant peak but can increase high-frequency transmission. State which input and output make this formula relevant.
+
+At r = 3 and ζ = 0.1, the ratio is about 0.1454. A soft mount may reduce transmission while requiring large travel and changing alignment. Static sag, starting/stopping through resonance, contact clearances, temperature and mount aging matter alongside the steady ratio.
+
+**Work:** Derive the base-motion and force-excitation equations separately, then compare their ratios. Choose a hypothetical service frequency band and state the tradeoff between static deflection, peak travel and transmitted force. Check the whole operating-speed sweep rather than only its final speed.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Time stepping must preserve the stated mechanical account](../computation/Time-stepping-must-preserve-the-stated-mechanical-account.lingua#r_6353VA4JT9P63EM1CV7PHS3FG0).
+
+} r_3VD5F5GCYEFAF8DE89MKBF7JQE

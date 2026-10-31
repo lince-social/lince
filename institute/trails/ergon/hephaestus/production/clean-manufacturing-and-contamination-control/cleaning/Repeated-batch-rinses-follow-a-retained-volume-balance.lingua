@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Repeated batch rinses follow a retained-volume balance (@cm-rinse-batch: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "Continuous-rinsing-has-an-inlet-limit-and-an-integrated-discharge.lingua#r_1ZE1NGJ94T8924QK4483MSXDBW") { r_0VPNW769S6J7QGENMMDYRARF5X
+**Read:** The solution-preparation reading already assigned by [Prepare and dilute a solution under an explicit amount and volume model](../../../chemistry/general-chemistry/solutions/Preparation-dilution-and-aliquots.lingua#r_53MS427PJ81EAEKEBXZFCK78W6); [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), the physical rinsing sequence.
+
+For a retained liquid volume vr at concentration cn mixed completely with fresh rinse volume vb at concentration cin, followed by drainage back to vr, cn+1=(vr cn+vb cin)/(vr+vb). Thus cn−cin=(c0−cin)[vr/(vr+vb)]^n when the volumes and inlet concentration remain fixed.
+
+With hypothetical vr=1 mL, vb=9 mL and clean inlet, three ideal repetitions leave 0.001 of the initial concentration. The result assumes all retained liquid exchanges, no additional source, constant volumes and no adsorption or reaction. It does not prove every surface has that state.
+
+**Work:** Derive each stage from solute conservation, including the drained waste. Compare one large rinse and several smaller rinses using the same total fresh-liquid amount. Explain what changes when the next object imports new soil or the rinse is reused. Carry inlet contamination through the calculation rather than assuming its value is zero.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Continuous rinsing has an inlet limit and an integrated discharge](Continuous-rinsing-has-an-inlet-limit-and-an-integrated-discharge.lingua#r_1ZE1NGJ94T8924QK4483MSXDBW).
+
+} r_0VPNW769S6J7QGENMMDYRARF5X

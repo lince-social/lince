@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Transport connects the source to the sensitive place (@cm-transport-entry: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "Flux-deposition-and-time-of-exposure.lingua#r_3ZWNG6Y02XA6FZ3V8AVB6BCZJP") { r_79HSQ4MDC0MQ3Z2GJMR6133HXG
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), prevention and monitoring; [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), aerosol behavior and filter collection.
+
+Identify a source, a route of transfer and a sensitive destination. Airflow, liquid flow, contact, gravity, random molecular motion and electrical forces can contribute differently. Removing one route does not establish that the others are negligible.
+
+Choose the tracked quantity: number in a size interval, mass of a chemical species or a biological observation. Write its accumulation as input minus output plus generation minus removal or transformation. Keep a deposited surface inventory separate from the airborne one; material can move between them.
+
+**Work:** Draw the paths from a moving part, a person and a cleaning operation to one sensitive surface. For each, identify a measurable source quantity, a plausible transfer mechanism and an observation that could distinguish that mechanism from another.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Flux, deposition and time of exposure](Flux-deposition-and-time-of-exposure.lingua#r_3ZWNG6Y02XA6FZ3V8AVB6BCZJP).
+
+} r_79HSQ4MDC0MQ3Z2GJMR6133HXG

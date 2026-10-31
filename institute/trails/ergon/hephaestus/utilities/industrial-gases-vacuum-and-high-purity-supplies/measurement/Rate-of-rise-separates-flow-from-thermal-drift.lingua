@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Rate of rise separates flow from thermal drift (@gas-rate-rise: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #source "../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB", #industrial-gases-and-vacuum "Constant-pressure-displacement-and-small-flow-corrections.lingua#r_4DK13066RFJDRWVXAJ6CHC3H1K") { r_0DW991CXYCP2HWBBQ6J4DB7PJZ
+**Read:** [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5), rate-of-rise methods; [A constant-pressure flowmeter — Eckel and colleagues](../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB), general differentiated inventory equation.
+
+For a fixed-volume ideal gas with net molar accumulation ṅ, ṅ=(V/RT)[ṗ−(p/T)Ṫ]. A pressure slope alone gives amount flow only when the thermal term is negligible or corrected. At high background pressure, even a small temperature drift can imitate a substantial flow.
+
+Take hypothetical V=0.010 m³, T=300 K, p=1000 Pa, ṗ=0.10 Pa/s and Ṫ=0.010 K/s. The thermal term is 0.033333 Pa/s, one third of the observed pressure slope. The corrected amount rate is about 2.67272×10⁻⁷ mol/s, whereas ignoring temperature gives about 4.00908×10⁻⁷ mol/s.
+
+The collected gas and vessel wall can have different temperature histories during filling. A fitted slope also depends on the chosen interval and time-correlated sensor response. If the vessel has a background gas source or an outlet, net accumulation is not equal to the desired inlet flow.
+
+**Work:** Derive the equation, then simulate a pressure rise with zero added amount and changing temperature. Choose observations that distinguish thermal drift from genuine flow. Compare instantaneous derivatives with an integrated amount balance over the same interval.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Constant-pressure displacement and small-flow corrections](Constant-pressure-displacement-and-small-flow-corrections.lingua#r_4DK13066RFJDRWVXAJ6CHC3H1K).
+
+} r_0DW991CXYCP2HWBBQ6J4DB7PJZ

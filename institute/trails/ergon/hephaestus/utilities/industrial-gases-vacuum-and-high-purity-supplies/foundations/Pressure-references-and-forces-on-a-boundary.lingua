@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pressure references and forces on a boundary (@gas-pressure: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "../../../chemistry/industrial-chemistry/foundations/Amount-composition-purity-throughput-and-time.lingua#r_3VZAMY6D4469SV1678W5B3JS5T") { r_6AZ7NMEDKWCM16PDFZHC1T6XXK
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), pressure definitions; [Pressure reference, stress and a pressure measurement](../../../physics/fluid-dynamics/statics/Pressure-reference-stress-and-a-pressure-measurement.lingua#r_5KKK4Q5KPBS1CCXVZ72RYBJMKK) and [Begin with a question and specify the measurand](../../../inquiry/metrology/foundations/Question-and-measurand.lingua#r_7ZNCJFEGXNJSGJJJKGYH6MGFE6). Work in SI units before converting a source's conventions.
+
+For uniform normal pressure over a flat area, force magnitude is pA. A wall separating two pressures experiences a net load set by their difference, with orientation and supports determining the structural response. Reducing internal pressure does not remove the force exerted by the outside atmosphere.
+
+Absolute pressure uses an absolute zero reference. Gauge pressure is a difference from a specified local reference, often ambient pressure; differential pressure compares two specified ports. Record which one is meant. One bar is 100,000 Pa and one millibar is 100 Pa. Vacuum classifications describe useful ranges, but the applicable molecular-flow regime also depends on size and temperature.
+
+**Example:** A uniform 100 kPa difference over 0.01 m² gives 100,000 N/m² × 0.01 m² = 1,000 N. The same load remains whether the difference came from raising pressure on one side or lowering it on the other. Its distribution into a curved wall or support requires a structural model.
+
+**Work:** Calculate the load on a 0.01 m² flat boundary with a 100 kPa pressure difference. Convert several absolute and gauge readings using a stated ambient pressure. Show how the same gauge reading can imply different gas densities at different locations. Separate the force calculation from qualification of the wall, seal or support.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [State chemical quantities, composition, purity and throughput on a usable basis](../../../chemistry/industrial-chemistry/foundations/Amount-composition-purity-throughput-and-time.lingua#r_3VZAMY6D4469SV1678W5B3JS5T).
+
+} r_6AZ7NMEDKWCM16PDFZHC1T6XXK

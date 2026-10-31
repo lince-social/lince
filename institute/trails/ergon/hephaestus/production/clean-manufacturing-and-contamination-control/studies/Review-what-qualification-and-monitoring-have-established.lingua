@@ -1,0 +1,14 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Review what qualification and monitoring have established (@cm-qualification-review: 0, is #chapter, #part-of @clean-manufacturing) { r_45F6FDPJHZ5MG7Y0K55BMA3H0X
+Connect the three investigations to the source, transport, surface and observation models developed earlier. Explain the installed configuration, supported operating domain, sampling design and measurement assumptions behind each conclusion.
+
+Defend the distinction between a system requirement, a product tolerance, an acceptance rule and a statistical monitoring limit. Reconstruct the key numerical examples and identify the consequences of dependence, parameter estimation, missing observations and shared errors. Explain how the evidence changes after an intervention.
+
+Continue into specialist manufacturing and continuing operation: contamination affects useful yield, preservation, maintenance and transfers across an entire production system. The sensitive-data TODO for specialist microbial laboratory methods remains in [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN); this review does not close it.
+
+**Work:** Present one coherent process argument that uses all three studies. Include a competing explanation and an observation that would alter the conclusion. State the remaining limits without turning a bounded demonstration into a claim that the whole field is finished.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+
+} r_45F6FDPJHZ5MG7Y0K55BMA3H0X

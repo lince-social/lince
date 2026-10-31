@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A gas-equivalent reading is not a mixture analysis (@gas-gauge-mixtures: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "The-gauge-can-change-the-gas-at-its-own-inlet.lingua#r_1KSEFRSR9NJ56SGBFVWG6ZAXPC") { r_2NZ4WVFZ4F5PZ63NHAKCH3C1M1
+**Read:** [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), relative gas sensitivity; [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), calibration and partial-pressure discussion.
+
+In a linear additive ion-current model, Ic=IeΣKi pi. If a controller divides by KN2Ie, the displayed nitrogen-equivalent pressure is pN2eq=Σsi pi, where si=Ki/KN2. The actual total pressure is Σpi. They coincide only for particular compositions or sensitivities.
+
+As a hypothetical two-gas example, let partial pressures be 2×10⁻⁶ and 3×10⁻⁶ Pa and relative sensitivities 1 and 0.4. The equivalent reading is 3.2×10⁻⁶ Pa while the total is 5×10⁻⁶ Pa. One number cannot determine both unknown partial pressures. A pure-gas correction cannot solve an unidentified mixture.
+
+Sensitivity factors can depend on instrument condition and pressure. Ion fragmentation, multiply charged ions and additional backgrounds complicate other instruments too. State the gas basis with a reported equivalent indication and preserve the uncertainty of any conversion.
+
+**Work:** Find several nonnegative mixtures that produce the same hypothetical equivalent reading. Identify what additional independent observation would make the mixture inference possible, then test whether that observation has a sufficiently different response to the components.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [The gauge can change the gas at its own inlet](The-gauge-can-change-the-gas-at-its-own-inlet.lingua#r_1KSEFRSR9NJ56SGBFVWG6ZAXPC).
+
+} r_2NZ4WVFZ4F5PZ63NHAKCH3C1M1

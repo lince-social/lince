@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Functions, constraints, objectives and free variables (@mat-selection-constraints: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #materials-engineering "Derive-tie-indices-from-force-and-extension.lingua#r_1YX1JWASXFFJF54TJP8EE9F2XS") { r_1B87JWV0TC39K2C2S59BMZ0FQQ
+**Read:** [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), selection lectures 11–13; [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ), section 2.2. Use the previous response and service evidence to specify actual conditions.
+
+Write a requirement as an observable statement: a stated load with bounded deflection, a thermal resistance in a given space, a leakage rate at a pressure and temperature, or optical transmission over a wavelength interval. The adjective strong or sustainable does not determine a calculation. Specify duration and changes in state as well as the initial requirement.
+
+List free variables such as thickness, section shape, composition, processing or layer arrangement. List fixed variables separately. A useful model is minimize an objective f(x,m) subject to inequalities gᵢ(x,m)≤0, where x describes permitted design choices and m the material state. A material index is a special simplification of this problem, not its definition.
+
+**Work:** Translate a structural and a functional object into explicit constraints and objectives. Check units and identify variables that are coupled by processing. Show how changing one fixed dimension into a free variable changes the optimization problem before calculating any ranking.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Derive tie indices from force and extension](Derive-tie-indices-from-force-and-extension.lingua#r_1YX1JWASXFFJF54TJP8EE9F2XS).
+
+} r_1B87JWV0TC39K2C2S59BMZ0FQQ

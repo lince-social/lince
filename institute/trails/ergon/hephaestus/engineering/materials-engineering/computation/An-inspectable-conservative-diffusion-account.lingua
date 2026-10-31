@@ -1,0 +1,52 @@
+Import "../Materials-engineering.lingua"
+
+An inspectable conservative diffusion account (@mat-diffusion-example: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "../kinetics/Interdiffusion-reference-frames-and-Kirkendall-motion.lingua#r_1EWRVAS34983V2QPFKAR2FSYP4", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Bulk-diffusion-and-the-identity-of-the-moving-species.lingua#r_1FPGB0TZ00BG7JFQ7EWPDS3BQ3") { r_3EK1TAWX9NZ8ADXEWZEV0XGA6E
+**Read:** The preceding conservation and finite-body derivations; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), diffusion solutions. This original standard-library Python example evolves equal-width cell averages in a sealed one-dimensional slab with constant D, constant density/site density and no reactions.
+
+The input time is the Fourier number Dt/L². At an interior face, a centered concentration difference sets the exchange; zero exchange at each end closes the specimen. The explicit ratio r=DΔt/Δx² must be at most 1/2. Every update is a nonnegative weighted average, and the update matrix has unit column sums, preserving the mean apart from rounding. Concentrations are normalized fractions in [0,1].
+
+```python
+from math import ceil, fsum, isfinite
+
+def sealed_diffusion(values, fourier_time, max_ratio=.4):
+    values=tuple(values)
+    n=len(values)
+    if not 2 <= n <= 2048 or not all(isfinite(c) and 0 <= c <= 1 for c in values):
+        raise ValueError("2 to 2048 finite cell fractions in [0,1] required")
+    if not isfinite(fourier_time) or fourier_time < 0:
+        raise ValueError("finite nonnegative Dt/L^2 required")
+    if not isfinite(max_ratio) or not 0 < max_ratio <= .5:
+        raise ValueError("explicit ratio must be in (0,0.5]")
+    amount=fourier_time*n*n
+    requested=amount/max_ratio
+    if not isfinite(requested) or requested > 1000000:
+        raise ValueError("teaching calculation limited to one million steps")
+    if amount == 0:
+        return dict(values=values, steps=0, mean=fsum(values)/n)
+    steps=max(1,ceil(requested))
+    ratio=amount/steps
+    current=list(values)
+    for _ in range(steps):
+        following=[0.0]*n
+        following[0]=fsum(((1-ratio)*current[0],ratio*current[1]))
+        following[-1]=fsum((ratio*current[-2],(1-ratio)*current[-1]))
+        for i in range(1,n-1):
+            following[i]=fsum((ratio*current[i-1],(1-2*ratio)*current[i],ratio*current[i+1]))
+        current=following
+    return dict(values=tuple(current),steps=steps,mean=fsum(current)/n)
+
+result=sealed_diffusion([1.0]*8+[0.0]*8,.02)
+print(result)
+```
+
+The example's conserved mean is 0.5. Uniform data remain uniform; reversing the spatial order reverses the answer. A mesh calculation is not a measured diffusivity. The teaching limits keep the calculation finite and explicit; they are not physical material limits.
+
+**Work:** Derive the face balance and prove discrete conservation and boundedness. Compare against exact rational updates and a cosine-mode continuum solution. Refine both space and time at the same physical Fourier time. Then explain why adding concentration-dependent thermodynamics or a permeable surface requires changing the model, not just a plot label.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Interdiffusion, reference frames and Kirkendall motion](../kinetics/Interdiffusion-reference-frames-and-Kirkendall-motion.lingua#r_1EWRVAS34983V2QPFKAR2FSYP4).
+
+
+**Continue in gas and vacuum systems:** [Bulk diffusion and the identity of the moving species](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Bulk-diffusion-and-the-identity-of-the-moving-species.lingua#r_1FPGB0TZ00BG7JFQ7EWPDS3BQ3).
+
+} r_3EK1TAWX9NZ8ADXEWZEV0XGA6E

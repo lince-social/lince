@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Wood and composite recovery preserve some structure (@mat-wood-recovery: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #source "../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #materials-engineering "../life-cycle/Functional-equivalence-before-life-cycle-comparison.lingua#r_5B56F16TK8HZ3DSYF33YQ2PQ4Y") { r_1JZJQF6J1ZD4P2ED10REPZ2J92
+**Read:** [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), the full structure, moisture, grading, adhesives/composites, deterioration and preservation chapters; [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1), product-level separation as a contrasting material system.
+
+Wood can retain useful oriented structure through reuse, while machining or fiberization changes dimensions, surface and load transfer. Moisture history, decay, fastener holes, checks, treatments and adhesives affect the next function. Recovered fibers and particles are different feed states from an intact member. Composite reinforcement can retain some properties while losing length, surface quality or its original interface.
+
+Distinguish material recovery from energy recovery. Neither retained mass nor a renewable origin determines the full environmental account. Track treatments and contaminants into the intended output and residual routes rather than assuming that all wood or composite feed is interchangeable.
+
+**Work:** Compare an intact-element reuse route with a particle/fiber recovery route for a documented product. State the evidence needed for grading, bonding and service in the new use. Account for yield, added binder, drying and transport. Explain which structural information is preserved, which is destroyed and what must be recreated.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Functional equivalence before life-cycle comparison](../life-cycle/Functional-equivalence-before-life-cycle-comparison.lingua#r_5B56F16TK8HZ3DSYF33YQ2PQ4Y).
+
+} r_1JZJQF6J1ZD4P2ED10REPZ2J92

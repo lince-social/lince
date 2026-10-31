@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Cryosorption, trapping and finite gas capacity (@gas-cryosorption: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Getter-pumping-and-an-activated-material-state.lingua#r_7C3XMEAFNZXNMD8EN9MGQ1E13S") { r_16FYKH4H2JVB7F6JEKG03K0VRF
+**Read:** [Vacuum technology for superconducting devices — Paolo Chiggiato](../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9), the three cryopumping mechanisms; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.5.1–II.8.5.2; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), cryopump capacity and regeneration.
+
+A porous cold sorbent can bind molecules more strongly than their own condensed phase would. Cryosorption depends on surface area, adsorption energies, loading and temperature. Cryotrapping retains one species within another deposited material; it is a different account from condensation of a pure substance.
+
+Species compete for accessible sites, and a shielding geometry can direct some gases toward one surface while protecting another. Gas capacity needs a constituent, thermal state and performance criterion. Regeneration releases stored material and changes the surrounding pressure and thermal load.
+
+**Work:** Compare the capacity implied by a low-coverage isotherm with the amount captured during a stated service interval. Account for all retained species and the gas released during restoration. Explain why a cryopump with unused capacity for one constituent may already be limited by another, and why a low operating pressure does not reveal the entire stored inventory.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Getter pumping and an activated material state](Getter-pumping-and-an-activated-material-state.lingua#r_7C3XMEAFNZXNMD8EN9MGQ1E13S).
+
+} r_16FYKH4H2JVB7F6JEKG03K0VRF

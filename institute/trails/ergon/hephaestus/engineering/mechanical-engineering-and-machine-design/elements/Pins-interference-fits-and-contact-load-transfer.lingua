@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Pins, interference fits and contact load transfer (@mech-pins-fits: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Fastener-Design-Manual-NASA.lingua#r_78PXGW34SMJ44D965DX01WGZH5", #source "../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY", #mechanical-engineering "Welded-brazed-and-bonded-connections.lingua#r_7GS9WVN78MJX9FTD3H0RQXEPCY") { r_163CTK1HTN3FZTB5FVK0GT5HKZ
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 9; [Fastener Design Manual — NASA-RP-1228](../sources/Fastener-Design-Manual-NASA.lingua#r_78PXGW34SMJ44D965DX01WGZH5), shear/tension and bearing in connections; [Rolling bearings — SKF, 2018](../sources/Rolling-Bearings-SKF.lingua#r_2TAPCQAW8KE8F4YAHNE20HCQYY), interfaces and fits in B.6. Revisit pressure-cylinder elasticity for interference calculations.
+
+A pin can transmit shear and local bearing force while allowing rotation or locating parts. Plate thickness, hole clearance, pin bending, edge distance, net section and repeated contact affect the actual failure mechanisms. A double-shear sketch does not guarantee equal shear in both planes when the assembly is asymmetric.
+
+A 10 mm pin carrying 4 kN in ideal symmetric double shear has average shear approximately 25.465 MPa. If a 5 mm-thick central lug carries all 4 kN, its nominal bearing stress F/(dt) is 80 MPa. These averages do not capture edge peaks or plate tearing.
+
+An interference fit creates contact pressure through compatible elastic deformations. A simplified uniformly contacting cylindrical interface with pressure p, friction μ, diameter d and length L has torque capacity μpπd²L/2. With p=20 MPa, μ=0.15, d=40 mm and L=30 mm, this is approximately 226.195 N·m.
+
+**Work:** Derive pressure from actual shaft/hub compliance and interference, then examine temperature and assembly. Check yielding, edge effects, fretting and removal. Distinguish locating accuracy from load capacity.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Welded, brazed and bonded connections](Welded-brazed-and-bonded-connections.lingua#r_7GS9WVN78MJX9FTD3H0RQXEPCY).
+
+} r_163CTK1HTN3FZTB5FVK0GT5HKZ

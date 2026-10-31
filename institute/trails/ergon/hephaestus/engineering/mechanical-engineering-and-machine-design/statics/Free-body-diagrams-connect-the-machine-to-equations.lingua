@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Free-body diagrams connect the machine to equations (@mech-free-body: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "Moments-couples-and-the-location-of-a-force.lingua#r_77XC5BZ6V561GD2THKBYWK6F3F") { r_13TYQPAC65GANNDNX582ZKP6DM
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), section 5.2 and the associated equilibrium examples. Work diagrams for several configurations before relying on a force formula.
+
+Choose the body, remove its surroundings and replace each external interaction by the force or moment it can exert under the declared support model. Include weight when relevant and mark distances or position vectors. Do not add internal forces to the diagram of an entire unsplit body.
+
+**Work:** Draw the same assembly as a whole, as two connected parts and as a cut section. Pair the interactions at the removed connection. Count unknown components and state what the support permits: a planar ideal pin can transmit two force components while permitting rotation; an ideal roller supplies one normal component; an ideal fixed support also supplies a moment.
+
+Use an independent sketch or a physical model to challenge the support assumptions. A real joint can have compliance, clearance and friction. An equilibrium calculation is conditional on those approximations and cannot establish them by itself.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Moments, couples and the location of a force](Moments-couples-and-the-location-of-a-force.lingua#r_77XC5BZ6V561GD2THKBYWK6F3F).
+
+} r_13TYQPAC65GANNDNX582ZKP6DM

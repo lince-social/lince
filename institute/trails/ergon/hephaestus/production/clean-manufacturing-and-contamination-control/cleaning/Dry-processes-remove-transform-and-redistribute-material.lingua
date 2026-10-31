@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Dry processes remove, transform and redistribute material (@cm-dry-cleaning: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2", #clean-manufacturing "UV-and-ozone-cleaning-depend-on-chemistry-and-access.lingua#r_3DSBCVKD6VVQBGSBNRQBC7W2GH") { r_0SDVF8GQCXAS908WH5AVNB9FR4
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), glow-discharge cleaning; [Cleaning technology in semiconductor device manufacturing VIII — ECS proceedings](../sources/Cleaning-Technology-in-Semiconductor-Device-Manufacturing-VIII.lingua#r_1CVF9XCJR7E3J37X5150BDS5Y2), selected complete dry and cryogenic cleaning articles.
+
+A dry process may sputter material, chemically convert it into volatile products, detach it mechanically or combine mechanisms. The source of particles or reactive species, their energy and transport, and the fate of released material form one system.
+
+Sputtering can expose a desired surface while implanting gas, altering roughness or depositing material on another component. A reactive treatment can change a functional oxide or polymer as well as remove a residue. Shadowing and confined geometry affect access.
+
+**Work:** Compare one physical and one reactive method for the same declared residue and substrate. Draw where removed material goes and identify possible redeposition. Define an endpoint observation and a damage observation. Use the actual paper's apparatus and conditions to explain the mechanism rather than treating the word plasma as a complete process description.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [UV and ozone cleaning depend on chemistry and access](UV-and-ozone-cleaning-depend-on-chemistry-and-access.lingua#r_3DSBCVKD6VVQBGSBNRQBC7W2GH).
+
+} r_0SDVF8GQCXAS908WH5AVNB9FR4

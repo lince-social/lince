@@ -1,0 +1,44 @@
+Import "../Materials-engineering.lingua"
+
+An inspectable symmetric phase-separation account (@mat-regular-example: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "../thermodynamics/Read-binary-diagrams-with-their-constraints-and-basis.lingua#r_70VAEYWMTB5QF46JQ52RANZQX7") { r_1ZQTEHAPQAXJECBG9EBDQDJZGZ
+**Read:** The preceding regular-solution and common-tangent derivations; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), sections 7.11 and 8.4–8.5. The original program uses only Python's standard library.
+
+Let χ=Ω/(RT). Symmetry makes the coexistence tangent horizontal and its endpoints x and 1−x. With y=ln[(1−x)/x]>0, solve χ tanh(y/2)−y=0 for the nonzero root. Bisection uses the residual divided by y; its small-y series avoids cancellation close to the critical point. The limit χ≤2 has no finite miscibility gap. Inputs are deliberately bounded to −20≤χ≤20 for this teaching calculation.
+
+```python
+from math import exp, isfinite, sqrt, tanh
+
+def symmetric_regular_solution(chi):
+    if not isfinite(chi) or not -20 <= chi <= 20:
+        raise ValueError("finite teaching interaction chi in [-20,20] required")
+    if chi <= 2:
+        return dict(binodal=None, spinodal=None, critical=(chi == 2))
+    low,high=0.0,chi
+    for _ in range(100):
+        y=(low+high)/2
+        if y < .001:
+            q=y*y
+            residual=(chi-2)/2-chi*q/24+chi*q*q/240-17*chi*q*q*q/40320
+        else:
+            residual=chi*tanh(y/2)/y-1
+        if residual > 0:
+            low=y
+        else:
+            high=y
+    y=(low+high)/2
+    x=1/(1+exp(y))
+    s=sqrt((chi-2)/chi)
+    return dict(binodal=(x,1-x), spinodal=((1-s)/2,(1+s)/2), critical=False)
+
+for chi in (1.5,2.0,2.01,3.0,5.0):
+    print(chi,symmetric_regular_solution(chi))
+```
+
+At χ=3, coexistence compositions are approximately 0.07072018 and 0.92927982; the spinodal limits are approximately 0.21132487 and 0.78867513. These are predictions of the declared symmetric model, not measured alloy data. The algorithm does not search different phase structures or fit an assessed database.
+
+**Work:** Verify chemical-potential equality, curvature signs and a supporting tangent independently. Derive the near-critical separation and test convergence toward χ=2. Apply conservation to an overall composition, then perturb the model to break symmetry and explain why this specific solver no longer applies.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Read binary diagrams with their constraints and basis](../thermodynamics/Read-binary-diagrams-with-their-constraints-and-basis.lingua#r_70VAEYWMTB5QF46JQ52RANZQX7).
+
+} r_1ZQTEHAPQAXJECBG9EBDQDJZGZ

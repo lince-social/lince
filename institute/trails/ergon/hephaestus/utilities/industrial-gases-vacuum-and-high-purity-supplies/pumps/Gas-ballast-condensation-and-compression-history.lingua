@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Gas ballast, condensation and compression history (@gas-ballast: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Roots-stages-backing-capacity-and-thermal-load.lingua#r_18GNK54GXRKDQ4VEYE96WX7J80") { r_5W10BTDT5A0D99R9H5BJNVQZD7
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), section 2.1.2.2.4 and the wet-process discussion in 2.2.3.
+
+A condensable constituent can reach its saturation partial pressure while the trapped gas is compressed. Liquid formation changes the pump's inventory and can contaminate a sealing fluid. The relevant comparison is vapor partial pressure against saturation pressure at the local temperature, not total inlet pressure alone.
+
+Gas ballast admits another gas during a suitable part of the compression cycle. It can allow the exhaust valve to open before the vapor reaches a condensing state. This changes total transferred amount, attainable pressure, exhaust composition and heat. Its effectiveness depends on timing, quantity, temperature and the chosen vapor.
+
+**Work:** Use a hypothetical ideal-mixture compression path to follow vapor partial pressure with and without added noncondensable gas. Identify where a specified saturation relation predicts condensation. Close the amount balance and explain why ballast does not remove liquid already stored elsewhere or establish compatibility of a reactive gas mixture.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Roots stages, backing capacity and thermal load](Roots-stages-backing-capacity-and-thermal-load.lingua#r_18GNK54GXRKDQ4VEYE96WX7J80).
+
+} r_5W10BTDT5A0D99R9H5BJNVQZD7

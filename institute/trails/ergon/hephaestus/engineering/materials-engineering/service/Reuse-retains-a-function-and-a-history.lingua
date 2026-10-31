@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Reuse retains a function and a history (@mat-material-reuse: 0, is #chapter, #part-of @materials-engineering, #source "../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "../../mechanical-engineering-and-machine-design/service/Disassembly-reuse-and-material-recovery.lingua#r_0VT0VXMB3D4PXCRTJFPCQYXWFQ") { r_0YR45G1N84REB3Q6218RNQ8J4H
+**Read:** The shared mechanical disassembly/reuse Record; [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1), product-level recovery; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), grading and service properties.
+
+Reuse preserves some component form and embodied processing, but also inherits uncertainty about state and history. The next use may have a different load, environment, interface or lifetime. Material identification and inspection have to support the next function, not merely confirm that an object still exists.
+
+Disassembly can preserve or damage useful states. Adhesives, coatings, embedded components and inaccessible fasteners affect separation, contamination and the work required. Compare reuse, repair, remanufacture and feed recovery through explicit output functions and quantities.
+
+**Work:** Follow a component through removal, examination and a proposed second use. Identify which evidence transfers and which must be re-established. Compare a whole-component route with material recovery, including yield, additional work and loss of function. Explain a case where preserving a component is preferable and a case where its unknown history prevents the proposed claim.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Disassembly, reuse and material recovery](../../mechanical-engineering-and-machine-design/service/Disassembly-reuse-and-material-recovery.lingua#r_0VT0VXMB3D4PXCRTJFPCQYXWFQ).
+
+} r_0YR45G1N84REB3Q6218RNQ8J4H

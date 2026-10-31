@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Denitrification, carbon allocation and internal recycle (@wu-denitrification: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Phosphorus-removal-needs-a-solid-destination.lingua#r_3DKJ8SAQ59TN0RWRSVZH23FCPD") { r_79V9Q1RY4KAANP9RK7T0CP6AC1
+**Read:** [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G), chapter 4's denitrification material and chapter 6's configurations; [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), electron-donor use and process models. Keep each carbon source's stoichiometry and acclimation evidence distinct.
+
+Using nitrate or nitrite as an electron acceptor can convert nitrogen to gases under suitable conditions. An anoxic zone and an anaerobic zone mean different biochemical conditions in these models. Internal recycle moves nitrate between zones, but also moves water and possibly oxygen; a larger recycle is not an unlimited source of removal.
+
+Reduction from nitrate nitrogen to N₂ corresponds to five electron equivalents per N, or 40/14 ≈ 2.857 g oxygen-equivalent per g N, ignoring growth and other sinks. Reducing 20 kg nitrate-N/day therefore represents about 57.14 kg/day of this electron-acceptor equivalent. Actual external substrate demand requires its composition, yield and competing uses. Biomass synthesis, dissolved oxygen carryover and residual substrate alter the practical account.
+
+**Work:** Compare allocating influent carbon to a pre-anoxic zone, primary sludge digestion and other biological needs. Draw all nitrate, organic-carbon and oxygen paths before adding a recycle. Develop a measured or published nitrate-utilization study and test a donor-specific model against another condition. Include residual donor, handling, supply dependency and greenhouse-gas uncertainty in an advanced comparison.
+
+**Continue:** [Phosphorus removal needs a solid destination](Phosphorus-removal-needs-a-solid-destination.lingua#r_3DKJ8SAQ59TN0RWRSVZH23FCPD).
+} r_79V9Q1RY4KAANP9RK7T0CP6AC1

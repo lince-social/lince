@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Buckling, instability and imperfection sensitivity (@mech-buckling: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "../materials/Yield-criteria-combined-stress-and-mechanism.lingua#r_7FR7N6AXQPGRZZBQ57DX4FJCKR") { r_5STRWPJ4FV46KPMW484SJNTR36
+**Read:** [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), rod stability in chapter 10 and energy methods in chapter 5; revisit the dynamics stability derivation. Use the actual loaded geometry rather than identifying failure only with a stress threshold.
+
+A compressed member can lose stability before its material reaches its uniaxial yield strength. For an ideal straight uniform Euler column with the stated end conditions, P_cr = π²EI/(K L)². The effective-length factor K represents that idealized boundary model; it is not a free fitting knob for every assembly.
+
+For a pinned–pinned column with E = 200 GPa, I = 1×10⁻⁸ m⁴ and L = 1 m, the ideal critical load is about 19.739 kN. A real initial curvature creates bending before that ideal bifurcation. Eccentric loading, residual stress, material nonlinearity, local section buckling and joint flexibility can change the limiting behavior.
+
+**Work:** Derive the pinned-column eigenvalue from the beam equation and again from an energy approximation. Add a sinusoidal initial imperfection and derive its load-dependent amplification in the elastic model. Explain why a computed eigenvalue is not a complete collapse-load prediction. Compare global and local instability for a thin-walled member before selecting a usable load range.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Yield criteria, combined stress and mechanism](../materials/Yield-criteria-combined-stress-and-mechanism.lingua#r_7FR7N6AXQPGRZZBQ57DX4FJCKR).
+
+} r_5STRWPJ4FV46KPMW484SJNTR36

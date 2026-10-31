@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Growth, substrate and the meaning of a rate law (@wu-biological-growth: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Hydraulic-retention-and-solids-retention-are-different-clocks.lingua#r_6GACCJV20WAZHC94KPQPR6PTF7") { r_4Z4ZG63Z0BSBE7HWSAYWRFHW4N
+**Read:** [Basic Principles of Wastewater Treatment — von Sperling](../sources/Basic-Principles-of-Wastewater-Treatment.lingua#r_083WF4FQEZQHB29YJBHWVZ0BEV), biological kinetics; [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lectures 14–15; then [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), kinetic descriptions. Work the introductory derivations before adding several microbial groups.
+
+Let X be a declared biomass concentration, S a limiting substrate concentration, μ a specific gross growth rate and b a loss coefficient. A teaching model uses μ = μmax S/(Ks + S), with net growth (μ − b)X. Ks has the same concentration units as S; at S = Ks the gross rate is half μmax. This empirical relation does not imply that every mixed community has one immutable pair of coefficients.
+
+A yield Y links newly produced biomass to consumed substrate on explicitly stated bases. For a batch model with no decay, uptake is μX/Y and biomass growth is μX, giving conservation of S + X/Y. With decay, that simple invariant no longer closes unless decay products and their destinations are included. Do not hide them in an unexplained disappearance term.
+
+**Work:** Draw the low- and high-substrate limits and distinguish gross growth from net growth and respiration. Estimate plausible parameter combinations from a published experiment, preserving temperature, analytical basis and the biomass definition. Test whether the experiment actually separates μmax, Ks and Y. Extend to oxygen or temperature dependence only when the additional measurements can support it.
+
+**Continue:** [Hydraulic retention and solids retention are different clocks](Hydraulic-retention-and-solids-retention-are-different-clocks.lingua#r_6GACCJV20WAZHC94KPQPR6PTF7).
+} r_4Z4ZG63Z0BSBE7HWSAYWRFHW4N

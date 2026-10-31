@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A patchy film can imitate a thinner uniform film (@cm-xps-heterogeneity: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV", #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #clean-manufacturing "Depth-profiling-changes-the-specimen-it-measures.lingua#r_1A7T7VWASDBMTJY6Z9MK8XG9TN") { r_7QQXT4HV7YN0E9WYF7NWAV2BH3
+**Read:** [Attenuation and information depth in XPS — Cedric Powell](../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV), overlayer assumptions and island growth; [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5), morphology and analysis region.
+
+If fractions f_j of the observed area carry thicknesses h_j, the simple substrate ratio becomes R = Σ f_j exp(−h_j/ℓ), with Σf_j = 1 and equivalent response apart from thickness. A uniform-film inverse returns h_eff = −ℓ ln R, not generally the area mean Σf_j h_j.
+
+For half the area bare and half covered by a 6 nm layer, with ℓ = 3 nm, R = (1 + exp(−2))/2 ≈ 0.567668 and h_eff ≈ 1.69866 nm. The actual area-mean thickness is 3 nm. Convexity of the exponential gives h_eff ≤ mean thickness under this model; thin or bare regions contribute disproportionately to the substrate signal.
+
+Changing emission angle changes the weighting. In this example, using ℓ = 1.5 nm gives h_eff ≈ 1.01250 nm. A physical uniform film would retain its thickness after a correctly modeled angle change. Multiple angles can reveal inconsistency with a simple film, while finite observations still need not uniquely determine an arbitrary thickness distribution.
+
+**Work:** Reproduce the example, check the uniform and fully bare limits, and construct another distribution matching one observed ratio. Compare an angle observation with a spatial image as ways to constrain the ambiguity. Keep roughness, local surface normals and scattering within the interpretation's stated limits.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Depth profiling changes the specimen it measures](Depth-profiling-changes-the-specimen-it-measures.lingua#r_1A7T7VWASDBMTJY6Z9MK8XG9TN).
+
+} r_7QQXT4HV7YN0E9WYF7NWAV2BH3

@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Digestion, gas recovery and the heat that must be supplied (@wu-digestion-energy: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Residual-destinations-contaminants-and-evidence-for-use.lingua#r_3BSDN0JETZ28RT8RN9KYS33DEH") { r_65VY5Z1WK0DN1CZ8FHETKW7NWT
+**Read:** [Sludge Treatment and Disposal — Andreoli, von Sperling and Fernandes](../sources/Sludge-Treatment-and-Disposal.lingua#r_01W2VM1NE64Y1FDRJRM0RYKYY4), stabilization and digestion, with [Anaerobic Reactors — Chernicharo](../sources/Anaerobic-Reactors-Chernicharo.lingua#r_1AW64A0Q4V7K5SHSNVJYHNZM6F) and [Water and Wastewater Treatment Engineering — MIT 1.85](../sources/Water-and-Wastewater-Treatment-Engineering-MIT.lingua#r_396YEC55H29CR6J4ZBZX5JBY60), lecture 22. Return to thermodynamics for heat capacity, heat losses and energy conversion where needed.
+
+Stabilization and energy recovery need separate evidence. Volatile-solids destruction, methane formation, collected gas and usable energy are different boundaries. Gas composition, water vapour, temperature, pressure, leakage and dissolved methane affect the quantity reported. An ideal COD-to-methane relation is an upper accounting relation for a specified conversion, not a guaranteed production yield.
+
+In an original rounded stoichiometric example, 400 kg COD/day converted entirely into methane corresponds to 100 kg CH₄/day. At a declared heating value of 50 MJ/kg, this is 5,000 MJ/day of fuel energy before collection and conversion losses. Heating 50,000 kg/day of a water-like feed by 15 K at 4.18 kJ/(kg·K) requires 3,135 MJ/day before vessel losses or recovery. Compare these quantities on the same day and boundary.
+
+**Work:** Add actual conversion, collection and utilization efficiencies, parasitic demand, heat recovery and seasonal conditions. Explain whether a proposed electrical or thermal credit displaces a real demand at a useful time. Examine emissions and outage scenarios alongside energy. For advanced work, reconcile gas measurements with COD/solids balances and identify where uncertainty prevents a claim of energy self-sufficiency.
+
+**Continue:** [Residual destinations, contaminants and evidence for use](Residual-destinations-contaminants-and-evidence-for-use.lingua#r_3BSDN0JETZ28RT8RN9KYS33DEH).
+} r_65VY5Z1WK0DN1CZ8FHETKW7NWT

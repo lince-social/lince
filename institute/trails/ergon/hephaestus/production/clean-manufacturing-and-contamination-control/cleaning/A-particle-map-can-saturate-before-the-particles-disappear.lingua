@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A particle map can saturate before the particles disappear (@cm-pixel-counts: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Particle-Removal-and-MEMS-Damage-Hirano.lingua#r_0RH4K2MTZZG42NZ4MMZE1K6G9E", #clean-manufacturing "Dry-processes-remove-transform-and-redistribute-material.lingua#r_0SDVF8GQCXAS908WH5AVNB9FR4") { r_2Y4R7MPT73HD67YPG6PFFA27JB
+**Read:** [Particle removal and MEMS damage — Hirano and colleagues](../sources/Particle-Removal-and-MEMS-Damage-Hirano.lingua#r_0RH4K2MTZZG42NZ4MMZE1K6G9E), printed page 158, equation 1 and the counting procedure.
+
+Suppose N independently placed particles choose among M equal map cells uniformly, and a cell reports only occupied or empty. The probability a given cell is empty is (1−1/M)^N, so the expected occupied count is M[1−(1−1/M)^N]. This is an occupancy model, not a direct particle count. At low occupancy it approaches N; at high occupancy it saturates near M.
+
+For M=1024 and N=50, the expectation is about 48.82 occupied cells. At N=10,000 it is about 1023.94. Comparing two occupied-cell counts can therefore distort a true particle-removal fraction when the initial specimen is crowded. Clustering or unequal detection requires another observation model.
+
+**Work:** Derive the expectation using indicator variables and compare it with the second-order expansion N−N(N−1)/(2M). Invert the mean relation where it is informative and examine sensitivity near saturation. Explain how another magnification, sampling method or count channel could test the assumed distribution without declaring the expected value to be an exact count in one image.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Dry processes remove, transform and redistribute material](Dry-processes-remove-transform-and-redistribute-material.lingua#r_0SDVF8GQCXAS908WH5AVNB9FR4).
+
+} r_2Y4R7MPT73HD67YPG6PFFA27JB

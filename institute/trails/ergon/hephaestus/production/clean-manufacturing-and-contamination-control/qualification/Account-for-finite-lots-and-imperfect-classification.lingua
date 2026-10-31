@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Account for finite lots and imperfect classification (@cm-qualification-finite: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Predetermine-how-additional-sampling-affects-a-decision.lingua#r_3PYMQF2KK5E8RF0SY79E5TZYYN") { r_1HE80AB3137D571YYYFQ67Z64N
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), acceptance sampling assumptions. Revisit [Conformity decisions, guard bands, and the risk being controlled](../../../inquiry/metrology/practice/Conformity-and-risk.lingua#r_41AJHYZ4Q8B821Z892PNNK1MEJ) for the evidence behind an item's classification.
+
+Sampling without replacement from a finite lot creates dependence. If N items contain exactly D nonconforming items and n are selected uniformly, P(K=k) = C(D,k)C(N−D,n−k)/C(N,n), for feasible k. Sum this hypergeometric probability over the acceptance region.
+
+For N = 100, D = 5 and n = 20, the probability of finding none is about 0.3193094. The independent binomial approximation gives 0.95²⁰ ≈ 0.3584859. The difference matters because the sample is a substantial fraction of the lot.
+
+If classification sensitivity is s and specificity is q, an independent item's observed positive probability is sp + (1−q)(1−p). A count of reported defects is therefore not automatically a count of actual defects. Unknown or condition-dependent classification performance introduces further uncertainty.
+
+**Work:** Compare exact and approximate OC curves as the sampling fraction changes. Introduce imperfect classification and identify which claims require independent validation of the inspection method. Keep the physical defect definition separate from its observed label.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Predetermine how additional sampling affects a decision](Predetermine-how-additional-sampling-affects-a-decision.lingua#r_3PYMQF2KK5E8RF0SY79E5TZYYN).
+
+} r_1HE80AB3137D571YYYFQ67Z64N

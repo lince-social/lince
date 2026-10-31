@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Join equilibrium, kinetics and measured material history (@mat-change-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #materials-engineering "Advanced-study-of-phase-stability-and-assessed-data.lingua#r_1H5JPTVYQ59V2FHEEBJH77GVR0", #materials-engineering "Advanced-study-of-diffusion-and-parameter-identifiability.lingua#r_7XSP66B9DXGRKQZY3VC2F430B6", #materials-engineering "Advanced-study-of-transformation-and-processing-history.lingua#r_270VGJK7XZA8D64M0NDZMDDDR2") { r_2PF9SQQQ225YJBHRW9ENRANFEK
+**Read:** Complete [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), all twelve chapters and substantial exercises; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB)'s phase/diffusion packages; [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16)'s available kinetics sequence, deriving missing steps from the fuller readings and original calculations.
+
+The three studies linked next develop equilibrium assessment, transport inference and process-driven microstructure. Complete all three as complementary parts of material formation. Reuse one material where useful, while comparing mechanisms across at least one metal, one ceramic/glass and one polymer.
+
+**Work:** Preserve constraints, parameter provenance, numerical verification and observations. A planned experiment is not an acquired result. Where published data are used, distinguish reproducing an author's calculation from independently testing the model against other evidence. Bring the three accounts together before moving into complete family, property and service studies.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Advanced study of phase stability and assessed data](Advanced-study-of-phase-stability-and-assessed-data.lingua#r_1H5JPTVYQ59V2FHEEBJH77GVR0), [Advanced study of diffusion and parameter identifiability](Advanced-study-of-diffusion-and-parameter-identifiability.lingua#r_7XSP66B9DXGRKQZY3VC2F430B6), [Advanced study of transformation and processing history](Advanced-study-of-transformation-and-processing-history.lingua#r_270VGJK7XZA8D64M0NDZMDDDR2).
+
+} r_2PF9SQQQ225YJBHRW9ENRANFEK

@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Review pumping, material history and the measured state (@gas-pumps-review: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "../storage/Connect-stored-gas-with-a-delivered-service.lingua#r_72SSPTZKFHB4DTXR1MSW0KNN8S") { r_5QS86VWMREAY4AADFCSZEB5XKQ
+**Review:** [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), the full exercises and solutions; the three preceding investigations, with their primary sources.
+
+Explain the same vacuum system through three connected accounts: gas transfer and capture, changing material inventory, and observations made by real instruments. Reconcile the amounts and times across them. A plausible pump curve, a low outgassing result and an apparently stable pressure are not independent guarantees of the required service.
+
+Compare your derived limits with the measured or documented evidence. Revisit assumptions that were adequate for an introductory calculation but failed during an integrated investigation. Preserve unresolved alternatives and propose the observation that could settle them.
+
+**Work:** Present a changed-condition prediction and defend its uncertainty and domain. Trace the resources and maintenance needed to sustain the claimed state. Revise the account after criticism, retaining the distinction between quantities you calculated, quantities you measured and source results you have not independently reproduced.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+
+
+**Continue in gas and vacuum systems:** [Connect stored gas with a delivered service](../storage/Connect-stored-gas-with-a-delivered-service.lingua#r_72SSPTZKFHB4DTXR1MSW0KNN8S).
+
+} r_5QS86VWMREAY4AADFCSZEB5XKQ

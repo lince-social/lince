@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Blanks, recovery and the origin of a signal (@cm-blanks: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "../../../inquiry/metrology/foundations/Traceability-chain.lingua#r_7XW6NVMPW7PMPJPBESW5G1757N") { r_3NHG85VQ6ZKJCQ5XSRT60FKM74
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), calibration design; [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), molecular and particulate monitoring.
+
+A blank follows defined parts of the procedure without the intended sample contribution. A field blank, transport blank and instrument blank isolate different possible sources; one cannot automatically substitute for another. Recovery experiments examine how much of a known addition the procedure reports under chosen conditions.
+
+Subtracting a mean blank changes a value but does not remove uncertainty in that blank or establish that contamination was identical in the real sample. A recovered fraction measured on a smooth reference surface may not describe a rough, porous or chemically different product.
+
+**Work:** Design a set of blanks for a published sampling procedure and state the question each answers. Construct a hypothetical low signal close to the blank and carry the uncertainties through the difference. Explain which recovery evidence would transfer to a different surface and which would need new study.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A documented calibration chain for a particular result](../../../inquiry/metrology/foundations/Traceability-chain.lingua#r_7XW6NVMPW7PMPJPBESW5G1757N).
+
+} r_3NHG85VQ6ZKJCQ5XSRT60FKM74

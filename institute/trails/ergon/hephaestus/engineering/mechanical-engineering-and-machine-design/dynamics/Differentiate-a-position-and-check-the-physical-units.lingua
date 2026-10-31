@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Differentiate a position and check the physical units (@mech-kinematics: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65", #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #mechanical-engineering "Recover-a-motion-from-rates-and-initial-information.lingua#r_09V8H4YW03E42GB97KEEGXWYDK") { r_049JX2TZBB3WS6CDR6574772SG
+**Study:** [Calculus and differential equations for dynamics — MIT Scholar courses](../sources/Calculus-and-Differential-Equations-MIT-Scholar.lingua#r_3VWHWXQT3WB39Y221AV2W9AE65), 18.01SC units 1–2, including chain rule and related rates; [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 2–4.
+
+Write x(t) = x₀ + v₀t + at²/2 with x₀ in metres, v₀ in metres per second and constant a in metres per second squared. Differentiation gives v(t) = v₀ + at and d²x/dt² = a. The coefficients carry units; a polynomial with bare numbers does not specify a motion until its units are declared.
+
+For x₀ = 0, v₀ = 0.4 m/s and a = 0.6 m/s², at t = 2 s the displacement is 2 m and velocity 1.6 m/s. Recover the same velocity from the slope of increasingly short secants. For x = A cos(ωt), v = −Aω sin(ωt) and a = −Aω² cos(ωt); ω has units rad/s and must be converted from cycles per second or revolutions per minute.
+
+For a vector position differentiate each component in a fixed basis. A moving basis has its own time derivative, which the later rotating-frame step supplies. For y = f(x(t)), dy/dt = (df/dx)(dx/dt); verify this by comparing small increments before using the chain rule in a mechanism.
+
+**Work:** Derive the sinusoidal velocity and acceleration, check peak values and times, and recover the constant-acceleration example without a memorized travel formula. A sinusoid of amplitude 2 mm at 5 Hz has peak speed about 0.06283 m/s and peak acceleration 1.9739 m/s². Explain why increasing frequency can increase acceleration strongly even when travel stays small.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Recover a motion from rates and initial information](Recover-a-motion-from-rates-and-initial-information.lingua#r_09V8H4YW03E42GB97KEEGXWYDK).
+
+} r_049JX2TZBB3WS6CDR6574772SG

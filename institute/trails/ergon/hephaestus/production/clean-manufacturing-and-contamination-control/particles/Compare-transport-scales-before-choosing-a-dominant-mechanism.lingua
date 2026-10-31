@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Compare transport scales before choosing a dominant mechanism (@cm-transport-competition: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #source "../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B", #clean-manufacturing "Collisions-can-change-number-without-removing-material.lingua#r_7N0H5GYRYGCGG8TRZR2C4RC0B9") { r_2DKYTTMMC01PX03Z9BDHG4GYXV
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), particle motion, mass diffusion and electrostatics; [Fundamentals of single-particle transport — Kulkarni, Baron and Willeke](../sources/Single-Particle-Transport-Kulkarni-Baron-Willeke.lingua#r_34AB62TA1PZDEMM8QQZ0W3A06B), Péclet and Schmidt numbers.
+
+Over length L, compare a drift time L/|v_d| with a diffusion time L²/D. Their ratio produces a Péclet-type number |v_d|L/D. Compare particle relaxation with each changing-flow time separately. A conclusion at room scale may reverse within a small gap or near a collector.
+
+Do not add a root-mean-square diffusive displacement to deterministic drift as though both were velocities with the same sign. A probability equation can combine drift and diffusion while preserving their different meanings. For multiple deterministic forces in a linear regime, add the signed vector drifts before deciding the net direction.
+
+**Work:** Build a table of assumptions and timescales for 0.1, 1 and 10 µm hypothetical spheres. Repeat at two distances. Explain which mechanisms warrant a detailed calculation in each case and where a missing material or field measurement prevents a ranking.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Collisions can change number without removing material](Collisions-can-change-number-without-removing-material.lingua#r_7N0H5GYRYGCGG8TRZR2C4RC0B9).
+
+} r_2DKYTTMMC01PX03Z9BDHG4GYXV

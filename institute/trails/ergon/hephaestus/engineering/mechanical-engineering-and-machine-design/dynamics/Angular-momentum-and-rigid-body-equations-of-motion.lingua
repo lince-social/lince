@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Angular momentum and rigid-body equations of motion (@mech-angular-momentum: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #mechanical-engineering "Ask-where-the-energy-and-power-go.lingua#r_01R07JT0E9WF13FSXVBGV6JWXM") { r_5Q07B3SQ0DPMKV6XDW9HPZXN1E
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 5–14; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), sections 3.2–3.3.
+
+For a fixed inertial origin, net external moment equals the inertial rate of angular momentum about that origin. About the centre of mass of a closed constant-mass system, the corresponding moment equation also holds. A moving point chosen for convenience needs its own transport terms; it is not automatically a valid fixed pivot.
+
+For planar rigid-body motion about its centre, the scalar moment equation is M_G = I_G α. Combine it with the two translational equations and the kinematic constraints to determine reactions and acceleration. In three dimensions, using body-fixed components gives M = I ω_dot + ω × (Iω) for a rigid body; dropping the cross-product term is generally wrong.
+
+A uniform solid cylinder rolling without slip down a slope has a_G = g sin(θ)/(1 + I_G/(mR²)). With I_G = mR²/2 and θ = 30°, a_G = 3.27 m/s² when g = 9.81 m/s². Static friction supplies the needed torque; check its required magnitude against the available contact friction before assuming rolling.
+
+**Work:** Solve the same rolling problem by translation/rotation equations and later by energy. Include the contact force and normal reaction. Explain why a stationary contact point at one instant is not a permanently fixed material pivot, and identify precisely when a moment-about-contact shortcut gives the correct equation.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Ask where the energy and power go](Ask-where-the-energy-and-power-go.lingua#r_01R07JT0E9WF13FSXVBGV6JWXM).
+
+} r_5Q07B3SQ0DPMKV6XDW9HPZXN1E

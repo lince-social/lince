@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A local barrier needs an interface and an access state (@cm-barrier-interface: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "People-and-processes-are-time-dependent-particle-sources.lingua#r_5PR0C1S8SCP2HH8XMTSWNBW0RY") { r_0AWNHCH9SYH20GNB3NAD5KGZ51
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), gloveboxes, small units and housing design; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), isolators and restricted-access systems.
+
+A local enclosure can separate a sensitive process from surrounding activity. Its performance depends on supply/exhaust paths, walls, gloves or manipulators, transfer ports, seals and the task being performed. A label such as isolator does not define all those conditions.
+
+Opening, loading, replacing a component and decontaminating can produce states unlike normal operation. A glove or gasket is both a mechanical object and a contamination boundary. Its materials and service history matter.
+
+**Work:** Draw the boundary in normal operation and during one necessary intervention. Trace the incoming object, displaced air and operator contact. Define observations of leakage, retained material and restored function. Explain which assumptions about the surrounding room remain necessary even with local protection.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [People and processes are time-dependent particle sources](People-and-processes-are-time-dependent-particle-sources.lingua#r_5PR0C1S8SCP2HH8XMTSWNBW0RY).
+
+} r_0AWNHCH9SYH20GNB3NAD5KGZ51

@@ -1,6 +1,6 @@
 Import "../Thermodynamics-and-heat-transfer.lingua"
 
-Fouling, maldistribution, pressure loss and exchanger service (@th-exchanger-reality: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "Sensible-latent-and-reactive-thermal-storage.lingua#r_3TJT4KE8M619Y9628FD3N3K3W9") { r_1772HCRCTXFNDXMGCNSDTJBW4W
+Fouling, maldistribution, pressure loss and exchanger service (@th-exchanger-reality: 0, is #chapter, #part-of @thermodynamics-and-heat-transfer, #source "../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4", #source "../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC", #thermodynamics-and-heat-transfer "Sensible-latent-and-reactive-thermal-storage.lingua#r_3TJT4KE8M619Y9628FD3N3K3W9", #water-and-sanitation "../../../utilities/water-and-sanitation/industrial/Steam-feed-blowdown-and-condensate-on-one-boundary.lingua#r_2VD0HVV4M8JY7JBSQ81JXKCAVC") { r_1772HCRCTXFNDXMGCNSDTJBW4W
 **Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), complete applicable exchanger methods and limitations; [Guarded-hot-plate evidence — NIST SP 260-201](../sources/Guarded-Hot-Plate-and-SRM-1450e-NIST.lingua#r_1PP28H0Y6N7RVY89W9HSQY18E4), measurement/conditioning reasoning; [Advanced Thermodynamics — MIT 2.43, Spring 2024](../sources/Advanced-Thermodynamics-MIT-2-43.lingua#r_5GXQQ35FEFJM34SWA12X8QHGKC), whole-service performance accounting.
 
 An exchanger's sustained performance depends on more than clean-wall heat-transfer area. Flow maldistribution, bypass, fouling, deposits, corrosion, contact changes and fluid-property variation can alter local and total behavior. Pressure loss can increase pumping power or reduce the actual flow.
@@ -12,4 +12,6 @@ For an integrated service, include inspection, access, cleaning, compatible mate
 **Continue:** [Sensible, latent and reactive thermal storage](Sensible-latent-and-reactive-thermal-storage.lingua#r_3TJT4KE8M619Y9628FD3N3K3W9).
 
 **Return:** [Thermodynamics and heat transfer](../Thermodynamics-and-heat-transfer.lingua#r_6KQBZNJM6WNV9A69R3DZY1NH7E).
+**Water and sanitation continuation:** [Steam, feed, blowdown and condensate on one boundary](../../../utilities/water-and-sanitation/industrial/Steam-feed-blowdown-and-condensate-on-one-boundary.lingua#r_2VD0HVV4M8JY7JBSQ81JXKCAVC).
+
 } r_1772HCRCTXFNDXMGCNSDTJBW4W

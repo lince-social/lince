@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Zeta potential is inferred at a hydrodynamic boundary (@cm-zeta: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD", #source "../sources/Particle-Removal-and-MEMS-Damage-Hirano.lingua#r_0RH4K2MTZZG42NZ4MMZE1K6G9E", #clean-manufacturing "Compatibility-includes-the-residue-substrate-coating-and-bath.lingua#r_3DAN7D93CMNJSQYXXV7Y6D70ZQ") { r_7S9549DKQ7E4KHG44HYK0QM3XE
+**Read:** [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD), section 10.7; [Particle removal and MEMS damage — Hirano and colleagues](../sources/Particle-Removal-and-MEMS-Damage-Hirano.lingua#r_0RH4K2MTZZG42NZ4MMZE1K6G9E), the role assigned to surface interactions in its particular cleaning comparison.
+
+An electrophoretic measurement gives velocity relative to fluid per applied electric field. Inferring zeta potential requires an electrokinetic model. In the thin-double-layer, weak-field Smoluchowski limit, mobility µep≈εζ/η. Here ζ belongs to an idealized hydrodynamic slip plane and is not automatically the potential at the chemical surface.
+
+Geometry, double-layer thickness, surface conduction, polarization and suspension conditions can change the inference. A value measured on dispersed powder in one liquid may not describe an attached particle on a processed wafer in another liquid. The hypothetical mobility below corresponds to approximately −28.81 mV within the stated model.
+
+**Work:** Convert a hypothetical mobility −2×10⁻⁸ m²/(V s), η=10⁻³ Pa s and ε=78.4ε0 to ζ, checking its sign and units. State the required ratio between particle size and screening length. Design a comparison that controls pH and ionic composition while separating altered electrostatic interaction from a changed removal flow.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Compatibility includes the residue, substrate, coating and bath](Compatibility-includes-the-residue-substrate-coating-and-bath.lingua#r_3DAN7D93CMNJSQYXXV7Y6D70ZQ).
+
+} r_7S9549DKQ7E4KHG44HYK0QM3XE

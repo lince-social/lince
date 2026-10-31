@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Phase-field verification — PFHub and Jokisaari and colleagues (@mat-pfhub: 0, is #reference, #part-of @mat-sources) { r_7KGRCP4TAWMTKVM4VZ5GVYT34K
+NIST [PFHub benchmark collection](https://pages.nist.gov/pfhub/benchmarks/), including [conserved-field spinodal evolution](https://pages.nist.gov/pfhub/benchmarks/benchmark1.ipynb/) and an [Allen–Cahn manufactured-solution benchmark](https://pages.nist.gov/pfhub/benchmarks/benchmark7.ipynb/).
+
+Andrea M. Jokisaari, Peter W. Voorhees, Jonathan E. Guyer, James A. Warren and Olle G. Heinonen. *Phase field benchmark problems for dendritic growth and linear elasticity*, Computational Materials Science (2018), DOI 10.1016/j.commatsci.2018.03.015. [Official publication](https://www.nist.gov/publications/phase-field-benchmark-problems-dendritic-growth-and-linear-elasticity), [public manuscript](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=924430). The hosted preprint carries a different date from the journal publication.
+
+Read the benchmark specifications and paper in full; reproduce conserved and nonconserved examples, then a coupled problem. Compare equations, boundaries, scales and numerical refinement before comparing pictures. An equilibrium benchmark does not establish physical transformation time.
+
+Selected specifications and manuscript introduction/elasticity discussion were inspected on 30 October 2026. The [repository licence](https://github.com/usnistgov/pfhub/blob/nist-pages/LICENSE.md) provides broad reuse with attribution and modification notices; preserve separate credits. The repository is archived, so treat the published benchmark version as a dated reference. No solver or benchmark result is bundled or claimed to have been reproduced here.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_7KGRCP4TAWMTKVM4VZ5GVYT34K

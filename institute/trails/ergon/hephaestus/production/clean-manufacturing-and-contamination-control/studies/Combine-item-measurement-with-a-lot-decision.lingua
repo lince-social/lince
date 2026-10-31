@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Combine item measurement with a lot decision (@cm-study-acceptance: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY", #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Review-what-qualification-and-monitoring-have-established.lingua#r_45F6FDPJHZ5MG7Y0K55BMA3H0X") { r_2VN28GN7ZQ8GCBWTZTHFKFQ41Y
+**Read:** [Measurement uncertainty in conformity assessment — JCGM 106](../../../inquiry/metrology/sources/GUM-Conformity.lingua#r_0VFKYJZJC8BXM2T2TSY58DD6SY) in full; [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), section 6.2, including its operating-characteristic example.
+
+Construct a benign lot with known simulated item values, a functional tolerance, inspection uncertainty and a sampling rule. Distinguish actual item conformity, observed classification and the disposition of the lot. Include a common calibration offset shared by the inspected items.
+
+Reproduce the handbook's n = 52, c = 3 binomial calculation, then compare a finite-lot model and imperfect inspection. Evaluate a declared guard band alongside the lot rule. Report the risk definitions rather than combining unlike conditional and population-level probabilities.
+
+Compare predetermined staged sampling with ad hoc retesting. Examine the assumptions behind rectifying-inspection averages, including successful screening and replacement. A low calculated average outgoing fraction is not a guarantee about every accepted lot.
+
+**Result to explain:** A complete sampling-and-measurement decision account with independently checked probabilities, uncertainty and consequences. State which evidence concerns one item, one lot or the continuing production process, and how each would be challenged.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review what qualification and monitoring have established](Review-what-qualification-and-monitoring-have-established.lingua#r_45F6FDPJHZ5MG7Y0K55BMA3H0X).
+
+} r_2VN28GN7ZQ8GCBWTZTHFKFQ41Y

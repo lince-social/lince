@@ -1,0 +1,10 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Slip-correction measurements — Kim, Mulholland, Kukuck and Pui (@cm-slip-source: 0, is #reference, #part-of @cm-sources) { r_51NCSC0TX3G750ZF72EQ4FGJ49
+Jung Hyeun Kim, George W. Mulholland, Scott R. Kukuck and David Y. H. Pui. *Slip Correction Measurements of Certified PSL Nanoparticles Using a Nanometer Differential Mobility Analyzer (Nano-DMA) for Knudsen Number From 0.5 to 83*, Journal of Research of NIST 110(1), 31–54, 2005. [Official record](https://www.nist.gov/publications/slip-correction-measurements-certified-psl-nanoparticles-using-nanometer-differential) · [24-page paper](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=861332).
+
+Read the whole paper: apparatus, mobility inference, pressure changes, particle references, fitting and uncertainty. Compare the resulting correlation with a textbook's coefficients using the same mean-free-path convention. A fitted expression carries experimental scope.
+
+Official metadata and the PDF title, abstract and introductory regime discussion were inspected through the web reader on 30 October 2026. Local PDF retrieval returned 403. The PDF spells the first author's name as above; the catalogue uses a different rendering and lists March 2005 while the issue says January–February. Full experimental results were not reproduced. Institutional full text is linked; retain authorship and component credits rather than inferring blanket adaptation permission from hosting. No media is stored in the repository.
+
+} r_51NCSC0TX3G750ZF72EQ4FGJ49

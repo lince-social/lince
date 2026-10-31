@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Scale stress, spallation and ambiguous mass change (@mat-scale-failure: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K", #materials-engineering "Physical-aging-chemical-change-and-reversible-conditioning.lingua#r_0Q4R0Y9ECQH5FX72JVXZ0F999R") { r_516VYCBDABJ2BJNBP8FYCTSQJP
+**Read:** [Oxide-scale growth and discontinuities — Ulrich, Glatzel and Galetz](../sources/Oxide-Scale-Kinetics-Ulrich-and-Colleagues.lingua#r_5ZVWBZKX1ATCMAF2H08XD87C6K) in full; the earlier thermal mismatch and interface-fracture Records.
+
+Growth strain and thermal-expansion mismatch can load an oxide film and its interface. A mass trace can combine oxygen uptake, volatile products, detached scale and renewed exposure of substrate. Even a small net mass change can conceal considerable reaction. Collection of spalled material and cross-sectional evidence help close the account.
+
+**Work:** Reconstruct a thermal cycle and estimate the mismatch strain under stated constraints, then explain why that estimate alone does not determine delamination. Compare an intact-scale kinetic model with one allowing measured loss or discontinuities. Use the primary article to test whether an inferred jump reflects a plausible local event, and distinguish fitted discontinuity parameters from independently observed crack or spallation geometry.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Physical aging, chemical change and reversible conditioning](Physical-aging-chemical-change-and-reversible-conditioning.lingua#r_0Q4R0Y9ECQH5FX72JVXZ0F999R).
+
+} r_516VYCBDABJ2BJNBP8FYCTSQJP

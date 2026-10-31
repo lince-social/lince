@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+A property value needs a material state and a source (@mat-selection-data: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #materials-engineering "Procedure-dependent-and-system-dependent-properties.lingua#r_6KKXGWVK47M4CB4KZ48MKJAPT0") { r_10FJ85Q2QZ5982RP0J9FZ3BB9P
+**Read:** [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K), chapters 3–4 and the later evaluation examples; use the existing metrology reading on the measurand.
+
+Record composition, grade, processing, orientation, specimen geometry, surface, conditioning, temperature, rate and measurement method with each consequential value. Retain units, edition, page/table and whether the number is measured, fitted, typical, specified or estimated. Missing context is a limitation, not a zero uncertainty.
+
+Two values with the same property name may answer different questions. A datasheet tensile strength, a lower-tail estimate from a declared population and a permitted design input have different evidential roles. A general table may screen broad families without supporting a final component calculation. Correlation between properties can arise from common processing or common calibration.
+
+**Work:** Reconcile three reports about one nominal material. Reconstruct their actual states and test conditions before averaging or ranking them. Carry one documented property range through a component requirement. Identify a missing condition that could reverse the choice and the measurement or source needed to resolve it.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Procedure-dependent and system-dependent properties](Procedure-dependent-and-system-dependent-properties.lingua#r_6KKXGWVK47M4CB4KZ48MKJAPT0).
+
+} r_10FJ85Q2QZ5982RP0J9FZ3BB9P

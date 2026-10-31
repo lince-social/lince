@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Polarization measurements and independent loss evidence (@mat-polarization-evidence: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5", #source "../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5", #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #materials-engineering "Passivation-film-breakdown-and-repassivation.lingua#r_4G1NCN3RFJ1A47KN9SQEHGFQWA") { r_4M06SRBKACNKX2ZBEVR2T3KG2B
+**Read:** [Aqueous corrosion — Cambridge DoITPoMS](../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5), measurements and rate; [Corrosion current — Derek H. Lister](../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5), polarization; [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), test interpretation.
+
+A measured curve includes reference stability, solution resistance, surface preparation, exposed geometry, scan or hold history and transport. Changing the potential can itself change the surface. An inferred corrosion current is therefore conditional on the fitting model and interval. Compare it with independent mass loss, solution analysis or section measurements under compatible conditions.
+
+**Work:** Reconstruct one published measurement, including the complete potential/time procedure and treatment of instrument artifacts. Fit at least two defensible intervals or models and report the variation in inferred rate. Close a charge/material account while allowing for competing reactions and retained corrosion products. Explain how a small average mass loss can coexist with a severe local defect. Identify the observation that would distinguish a fitting error from a genuine change in mechanism.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Passivation, film breakdown and repassivation](Passivation-film-breakdown-and-repassivation.lingua#r_4G1NCN3RFJ1A47KN9SQEHGFQWA).
+
+} r_4M06SRBKACNKX2ZBEVR2T3KG2B

@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+From a load history to a material response (@mech-material-entry: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #mechanical-engineering "Load-extension-stiffness-and-recoverable-deformation.lingua#r_48SM2DMGKVVHE2EVHKFN03NW8J") { r_4WFJ7XEN9RDM02YGY3S5A0YW9A
+**Read:** [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Introduction to Elasticity, Atomistics of Elasticity and Stress–Strain Curves. Read all the modules progressively through the following material and structural studies, including their problems. Use [Applied Mechanics of Solids — Allan F. Bower](../sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), chapters 1–3, to deepen the mathematical description after the introductory examples.
+
+The statics and dynamics work tells us which loads and motions a model predicts. It does not yet say whether a real part returns to shape, permanently bends, cracks, wears or loses its useful alignment. Observe a ruler under a small load, a compressed spring and a piece of soft polymer: their shapes and time responses can differ even when the applied force is similar.
+
+Start with the useful function and load history. A part can fail its function through excessive displacement before any material breaks. Another may appear stiff while containing a crack that grows under repeated service. Material, geometry, surface, joints, temperature, environment and history belong in the explanation.
+
+**Work:** For the machine studied so far, list the displacement, force, temperature and cycle histories relevant to each loaded part. Separate known observations from assumed loads. Name at least three distinct ways the function could be lost and identify the quantity each requires you to understand. This section introduces the mechanics needed to investigate them.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Load, extension, stiffness and recoverable deformation](Load-extension-stiffness-and-recoverable-deformation.lingua#r_48SM2DMGKVVHE2EVHKFN03NW8J).
+
+} r_4WFJ7XEN9RDM02YGY3S5A0YW9A

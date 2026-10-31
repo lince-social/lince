@@ -35,6 +35,8 @@ mod capture_lifetime;
 mod windowed_fullscreen;
 mod compact;
 mod scratch;
+mod ordinary;
+mod providers;
 #[cfg(feature = "session")]
 mod power;
 
@@ -236,7 +238,7 @@ impl Fixture {
             }
             assert!(
                 Instant::now() < deadline,
-                "The real dispatcher did not reach the expected state: current={:?}, pending={:?}, hover={:?}, dragging={}, pointer={:?}, sent={:?}, native_keyboard={}",
+                "The real dispatcher did not reach the expected state: current={:?}, pending={:?}, hover={:?}, dragging={}, pointer={:?}, sent={:?}, native_keyboard={}, drops={:?}",
                 self.desktop.current.as_ref().map(|current| (
                     current.input_serial,
                     current.frame.input.keyboard_modal,
@@ -250,6 +252,7 @@ impl Fixture {
                 self.desktop.pointer,
                 self.desktop.pointer_sent,
                 self.desktop.native_keyboard,
+                (self.client.drop_performed, self.client.drop_finished, self.client.drop_cancelled, self.client.drop_held.len()),
             );
             std::thread::sleep(Duration::from_millis(2));
         }
@@ -372,7 +375,7 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
             .as_ref()
             .is_some_and(|current| current.frame.input.keyboard_modal)
     });
-    let point = fixture.inspect(move |canvas| {
+    let preview = fixture.inspect(move |canvas| {
         let world = canvas.world_mut();
         let entity = world
             .query::<(Entity, &Name)>()
@@ -380,10 +383,9 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
             .find(|(_, name)| name.as_str() == format!("overview.workspace.{destination}"))
             .unwrap()
             .0;
-        super::overview::center(canvas, entity)
-            .as_dvec2()
-            .to_array()
+        entity
     });
+    let point = opening::point(&mut fixture, preview).expect("The workspace preview needs a presented native input target");
     let surface = fixture.desktop.server.windows()[0].surface.clone();
     fixture.desktop.server.focus_surface(
         Some(surface.clone()),
@@ -414,8 +416,7 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
     }
     let (serial, release) = fixture.pause();
     fixture.desktop.pending_output = Some((serial, None));
-    fixture.desktop.pointer = point;
-    fixture.desktop.motion(3).unwrap();
+    fixture.desktop.move_pointer(point, 3).unwrap();
     for _ in 0..8 {
         fixture.exchange();
     }
@@ -472,7 +473,7 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
     release.send(()).unwrap();
     fixture.until(|fixture| {
         fixture.desktop.current.as_ref().is_some_and(|current| {
-            !current.frame.input.keyboard_modal && current.frame.input.drop_target.is_some()
+            !fixture.desktop.input_pending() && !current.frame.input.keyboard_modal && current.frame.input.drop_target.is_some()
         })
     });
     assert_eq!(
@@ -502,7 +503,7 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
     };
     let observed = Arc::new(std::sync::Mutex::new(Vec::new()));
     let trace = observed.clone();
-    let point = fixture.inspect(move |canvas| {
+    fixture.inspect(move |canvas| {
         let press = trace.clone();
         let release = trace.clone();
         let click = trace.clone();
@@ -527,12 +528,9 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
             .observe(move |_: On<bevy::ui_widgets::Activate>| {
                 trace.lock().unwrap().push("activate");
             });
-        super::overview::center(canvas, choice)
-            .as_dvec2()
-            .to_array()
     });
-    fixture.desktop.pointer = point;
-    fixture.desktop.motion(7).unwrap();
+    let point = opening::point(&mut fixture, choice).expect("The import choice needs a presented native input target");
+    fixture.desktop.move_pointer(point, 7).unwrap();
     fixture.tick();
     assert!(
         matches!(

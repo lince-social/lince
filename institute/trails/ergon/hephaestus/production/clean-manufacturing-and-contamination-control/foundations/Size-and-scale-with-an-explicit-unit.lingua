@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Size and scale with an explicit unit (@cm-scale: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #clean-manufacturing "../../../chemistry/general-chemistry/foundations/Substances-mixtures-and-phases.lingua#r_07Y9PYVRA9HSVSZWQC4N0X8ZZS") { r_5SD3RX4QRGE1K0BJ9PW1Z41RK8
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), definitions; [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), section 21.2. Use the shared arithmetic and units reading as needed.
+
+A millimetre is 10⁻³ m, a micrometre 10⁻⁶ m and a nanometre 10⁻⁹ m. Squaring or cubing a length conversion also squares or cubes its factor. A particle's relevant size can be comparable to a gap, coating or pattern even when it is too small to see unaided.
+
+Size alone does not identify material or effect. A hard fragment, soft droplet and biological aggregate with the same nominal diameter can behave differently. State both the dimensional comparison and what physical behavior you expect from it.
+
+**Work:** Draw a scale from metres to nanometres and place your object's dimensions on it. Convert 0.5 µm into metres and nanometres, and 1 cm² into square metres. Compare a hypothetical 10 µm particle with a 20 µm gap without assuming that every such particle will enter, lodge or damage the gap.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Substances, mixtures, components, and phases](../../../chemistry/general-chemistry/foundations/Substances-mixtures-and-phases.lingua#r_07Y9PYVRA9HSVSZWQC4N0X8ZZS).
+
+} r_5SD3RX4QRGE1K0BJ9PW1Z41RK8

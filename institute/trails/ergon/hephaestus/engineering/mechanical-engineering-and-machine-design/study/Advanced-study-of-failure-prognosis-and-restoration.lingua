@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Advanced study of failure, prognosis and restoration (@mech-service-study: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY", #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #mechanical-engineering "Defend-an-integrated-machine-through-its-service.lingua#r_63N2NG8PE1A88PY32FVFEX15NA") { r_61M6ZQR4JBTJDPTVZ714SYNQH0
+**Read:** [Diagnostic and prognostic capabilities — Vogl, Weiss and Helu](../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY), complete review and relevant primary references; [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), damage, inspection and maintenance; the earlier fatigue/contact and material-state studies.
+
+Choose a component whose degradation affects a measurable machine function. Build a mechanism-based account of loading, damage and observed response. Compare at least two hypotheses, including an operating-condition or measurement explanation that does not require damage.
+
+**Derive:** Connect exposure to a damage variable and an observable, stating uncertainty and unidentifiable parameters. Compare periodic intervention, condition-triggered intervention and a design change through downtime, resources and retained function. Include consequences of missed and false detections.
+
+**Investigate:** Evaluate prediction on later service or another machine without leaking future information into training. Censored surviving components still contain information; do not discard them as uninteresting. Examine whether a repair restores the original function or changes the degradation process. Reassess the model after intervention. Distinguish a documented laboratory demonstration from a validated service-life prediction.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend an integrated machine through its service](Defend-an-integrated-machine-through-its-service.lingua#r_63N2NG8PE1A88PY32FVFEX15NA).
+
+} r_61M6ZQR4JBTJDPTVZ714SYNQH0

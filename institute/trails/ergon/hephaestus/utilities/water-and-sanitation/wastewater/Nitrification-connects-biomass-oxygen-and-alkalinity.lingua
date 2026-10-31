@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Nitrification connects biomass, oxygen and alkalinity (@wu-nitrification: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Denitrification-carbon-allocation-and-internal-recycle.lingua#r_79V9Q1RY4KAANP9RK7T0CP6AC1") { r_3AE060ECT4XBBC5HKNJ9K4TG1X
+**Read:** [Nutrient Control Design Manual — US EPA](../sources/Nutrient-Control-Design-Manual-EPA.lingua#r_5MZ6AJ5ZW61R793FSA311WAJ2G), chapter 4, especially reactions, kinetic groups and environmental effects; [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), nitrogen transformations. Revisit the carbonate and alkalinity foundations before interpreting a pH change.
+
+Oxidation of ammonium through nitrite to nitrate changes nitrogen form. It does not by itself remove nitrogen from the water. Slow net growth under the actual conditions can constrain biomass retention, while oxygen, temperature, pH, inhibition and substrate availability affect rates. A stable bulk oxygen reading does not prove adequate transfer everywhere.
+
+Ignoring biomass synthesis, balance NH₄⁺ + 2 O₂ → NO₃⁻ + 2 H⁺ + H₂O. Using rounded atomic masses gives 64/14 ≈ 4.571 g O₂ per g nitrogen and acidity equivalent to 100/14 ≈ 7.143 g CaCO₃ alkalinity per g nitrogen. For 30 kg N/day oxidized, these ideal stoichiometric terms are about 137.14 kg O₂/day and 214.29 kg CaCO₃-equivalent/day. They are not universal chemical dosing instructions or a complete oxygen budget.
+
+**Work:** Follow nitrogen through influent, effluent, biomass, nitrite and nitrate. Reconcile alkalinity and oxygen measurements with alternative explanations for incomplete conversion. Extend to separate ammonia- and nitrite-oxidizing groups and temperature-dependent retention constraints, then test predictions on a colder period or disturbance excluded from fitting.
+
+**Continue:** [Denitrification, carbon allocation and internal recycle](Denitrification-carbon-allocation-and-internal-recycle.lingua#r_79V9Q1RY4KAANP9RK7T0CP6AC1).
+} r_3AE060ECT4XBBC5HKNJ9K4TG1X

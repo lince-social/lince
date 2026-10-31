@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Belts, chains and the loads hidden in a drive (@mech-belts-chains: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #mechanical-engineering "Screw-drives-lead-efficiency-and-position-under-load.lingua#r_2Q7VDQ95V5NTHAMPN46N8PRMBH") { r_2D43SPEMAN467ZKPHH4KSVGY0W
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 5; [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), lecture 12. Compare friction-belt, toothed-belt and chain service using each selected drive's own data.
+
+A belt transmits torque through a tension difference: T=(F_tight−F_slack)r. The support also feels the vector sum of span tensions, so low transmitted torque does not imply a lightly loaded shaft. In an ideal stationary rope on a cylinder at impending slip, the capstan limit is F_tight/F_slack=exp(μβ); belt motion, centrifugal effects and V-groove geometry require their own extensions.
+
+At T=10 N·m and r=0.05 m, the tension difference is 200 N. Span tensions 500 and 300 N meet that difference, while producing approximately 800 N radial load when the span directions are nearly parallel. Their actual resultant follows the layout.
+
+**Work:** Compare initial tension, available wrap, fatigue, slip/creep, tracking and maintenance. Explain how a toothed belt trades frictional slip for tooth engagement, tensile compliance and backlash effects. For chain drive, derive the speed fluctuation from polygonal engagement and consider lubrication, elongation and sprocket wear. Include guard and adjustment access in the physical layout.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Screw drives, lead, efficiency and position under load](Screw-drives-lead-efficiency-and-position-under-load.lingua#r_2Q7VDQ95V5NTHAMPN46N8PRMBH).
+
+} r_2D43SPEMAN467ZKPHH4KSVGY0W

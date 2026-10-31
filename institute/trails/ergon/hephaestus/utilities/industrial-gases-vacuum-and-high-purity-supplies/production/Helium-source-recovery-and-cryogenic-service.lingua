@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Helium source, recovery and cryogenic service (@gas-helium: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #industrial-gases-and-vacuum "Carbon-dioxide-recovery-and-product-history.lingua#r_3QG37WQ2G4Y9ZJ2D4TRSX7H1RQ") { r_5N4GP9YRZMNWE1BJSS0H0S50F2
+**Read:** [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), helium; [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783), helium properties, liquefaction and cryocoolers; the primary methods behind a chosen recovery example.
+
+Helium supply connects particular source streams with separation, purification, compression and sometimes liquefaction. Its use in cryogenic service must account for heat leaks, boil-off, recovery piping, purification and returned gas. A closed recovery path can still lose material through leaks, maintenance and contamination rejection.
+
+At very low temperature, helium's properties require an appropriate model rather than an ideal-gas extrapolation. Trace air or water in recovered gas can affect the cold equipment. A recovery percentage needs a boundary and a time interval that include startup, transfers and maintenance.
+
+**Work:** Build an amount and energy account for a documented helium service and recovery arrangement. Separate recovery from requalification and reliquefaction yield. Examine one contamination event and one loss of electrical or cooling service. Identify the measurements needed to distinguish an inventory discrepancy from a change in storage state.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Carbon-dioxide recovery and product history](Carbon-dioxide-recovery-and-product-history.lingua#r_3QG37WQ2G4Y9ZJ2D4TRSX7H1RQ).
+
+} r_5N4GP9YRZMNWE1BJSS0H0S50F2

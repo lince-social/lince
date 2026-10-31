@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Use a result with a defined acceptance question (@gas-measurement-decision: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #industrial-gases-and-vacuum "Cold-atoms-connect-collision-rates-to-gas-density.lingua#r_402V0CS0ZRT79P98VSFZ6JVR1V") { r_2S7GJSS4W2BXNKSKKWRVJC2QXN
+**Read:** The shared conformity-decision Record, [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW) reporting and [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8) certification context.
+
+Translate a service requirement into the quantity actually measured. A maximum impurity, maximum pressure or allowable leak applies to a boundary and set of conditions. A measurement at a convenient location may need a justified transfer model before it can answer that question.
+
+State the decision rule and consequences of accepting or rejecting an uncertain result. An uncertainty interval overlapping a limit does not have one universal interpretation. A guard band is part of a defined risk model, not a substitute for understanding the process or reducing a dominant uncertainty.
+
+Separate a passing measurement from evidence about future behavior. Drift, changing demand and unobserved intervals can matter to continuing service. Use monitoring and changed-condition studies to establish how a result is expected to remain applicable.
+
+**Work:** Compare two decisions using the same estimated quantity and uncertainty but different consequences and requirements. Identify the extra observation that could change the decision most efficiently. Preserve the result, conditions and rule so another party can understand exactly what was accepted.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Cold atoms connect collision rates to gas density](Cold-atoms-connect-collision-rates-to-gas-density.lingua#r_402V0CS0ZRT79P98VSFZ6JVR1V).
+
+} r_2S7GJSS4W2BXNKSKKWRVJC2QXN

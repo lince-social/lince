@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend energy and recovery on an accepted-output basis (@gas-study-recovery: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1", #source "../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR", #industrial-gases-and-vacuum "Review-the-whole-working-life-of-the-gas-service.lingua#r_55CK1MK38N2YECDKRB2M4PEXND") { r_605PX9XK6GRP0NC4821DSG78VQ
+**Read in full:** [Improving compressed air system performance — DOE sourcebook](../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1) and [Conservation of helium while maintaining high system purity — White and colleagues](../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR). Return to the relevant separation, storage, surface and flow-metrology sources.
+
+Develop two connected analyses: the resource use of a gas supply over a changing demand cycle, and the return of a valuable gas through capture/purification. Reconcile amount, component inventories and energy before comparing alternatives. Include quality rejection, standby, regeneration and restoration after an interruption.
+
+Use the independently derived pump/refill model to test the difference between low-pressure composition and final composition. Identify which paper parameters are measured, fitted, assumed or absent. Do not equate a matching illustrative curve with an independent experimental reproduction.
+
+**Work:** Compare at least two interventions under the same accepted-output requirement. Propagate relevant uncertainty and examine a case where the ranking reverses. Provide the derivations and inputs needed for another reader to reproduce your account and identify where actual installation data would change it.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review the whole working life of the gas service](Review-the-whole-working-life-of-the-gas-service.lingua#r_55CK1MK38N2YECDKRB2M4PEXND).
+
+} r_605PX9XK6GRP0NC4821DSG78VQ

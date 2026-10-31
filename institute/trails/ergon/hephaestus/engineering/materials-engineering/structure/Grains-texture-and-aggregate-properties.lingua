@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Grains, texture and aggregate properties (@mat-grains: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "../defects/Point-defects-occupancy-and-charge-balance.lingua#r_4TKYF4R5ZSNVGCRRQN8DXR7C0G") { r_7WA8PG19FDCAKAD6GW83F29PMW
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Atomic Scale Structure of Materials, polycrystals, and Crystallographic Texture; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), texture/microscopy; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), symmetry and structure lectures.
+
+A polycrystal contains grains with orientations, boundaries and a size/shape distribution. Texture describes a non-random orientation distribution. A random-looking etched image does not prove random crystallographic orientation, and a two-dimensional section does not directly display the three-dimensional grain-size distribution.
+
+Aggregate properties depend on the local constitutive response and how fields pass between grains. Averaging tensor components is a model with boundary and interaction assumptions. The same microstructure can appear more or less homogeneous depending on the observation scale and property.
+
+**Work:** Compare a rolled sheet, a cast body and a single crystal through plausible orientation and shape descriptions. Predict a direction-sensitive observation, then identify what microscopy or diffraction could test. Distinguish an orientation map from an ordinary optical image and separate grain-size evidence from a processing story inferred without data.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Point defects, occupancy and charge balance](../defects/Point-defects-occupancy-and-charge-balance.lingua#r_4TKYF4R5ZSNVGCRRQN8DXR7C0G).
+
+} r_7WA8PG19FDCAKAD6GW83F29PMW

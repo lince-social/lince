@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Study the Foundation Food Group investigation (@gas-nitrogen-case: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA", #industrial-gases-and-vacuum "Oxygen-service-connects-ignition-material-and-flow.lingua#r_7A6050YC4529EE0FFXPV5982K7") { r_5KTA4K1WGJPDDXHVCY8NX76C70
+**Read in full:** [Fatal liquid nitrogen release — CSB Foundation Food Group investigation](../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA).
+
+The CSB investigated the 2021 liquid-nitrogen release that killed six people. Its tests linked overflow to a bent bubbler tube whose tip no longer represented the intended liquid level. The investigation also examined atmospheric monitoring, emergency preparedness, process management and the supplier/customer relationship.
+
+Separate that supported mechanism from the unresolved origin of the bend. The report considered competing explanations but could not determine exactly how or when the tube was damaged. A convincing failure mechanism does not fill every gap in the chronology.
+
+**Work:** Reconstruct the evidence chain using the report's sections and tests. For each conclusion, identify an observation, an assumption and any alternative that remains possible. Compare changes that prevent release, detect a hazardous atmosphere or reduce exposure after release. Explain their dependencies and why unprotected attempts to rescue someone can create additional casualties. Do not turn the case into blame assigned from hindsight.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Oxygen service connects ignition, material and flow](Oxygen-service-connects-ignition-material-and-flow.lingua#r_7A6050YC4529EE0FFXPV5982K7).
+
+} r_5KTA4K1WGJPDDXHVCY8NX76C70

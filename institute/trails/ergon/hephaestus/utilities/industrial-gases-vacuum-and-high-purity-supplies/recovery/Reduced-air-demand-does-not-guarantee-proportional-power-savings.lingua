@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Reduced air demand does not guarantee proportional power savings (@gas-part-load-energy: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1", #industrial-gases-and-vacuum "Heat-recovery-needs-a-compatible-sink-and-time.lingua#r_2XXE3EDF5YYMNDGMTYPHMRZCFZ") { r_378MG5SXNE9HESQC4648730FST
+**Read:** [Improving compressed air system performance — DOE sourcebook](../sources/Compressed-Air-Performance-DOE.lingua#r_314KZNMGSKES8KZPTXKB8V1JD1), fact sheets 3–5 and 10. This is an original two-state arithmetic example, not a manufacturer performance curve.
+
+Assume a compressor consumes 100 kW while supplying 10 reference m³/min, and 30 kW while unloaded with zero useful delivery. At a loaded fraction of 0.7, mean power is 79 kW and delivery 7 reference m³/min; specific energy is 79/420≈0.188095 kWh per reference m³. At fraction 0.5, power is 65 kW, delivery 5 reference m³/min and specific energy 65/300≈0.216667 kWh per reference m³.
+
+The lower-demand case uses less total energy over an equal interval but has a higher ratio of energy to output. The calculation assumes settled states, negligible transition energy and enough storage to support the cycle. Real unloading, blowdown, motor limits and pressure control need measured curves and histories.
+
+**Work:** Derive the general ratio [fPL+(1−f)PU]/(fQL). Compare leak reduction with a control change that allows a unit to stop. Include the evidence needed to turn a reduced flow estimate into a justified energy-saving claim.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Heat recovery needs a compatible sink and time](Heat-recovery-needs-a-compatible-sink-and-time.lingua#r_2XXE3EDF5YYMNDGMTYPHMRZCFZ).
+
+} r_378MG5SXNE9HESQC4648730FST

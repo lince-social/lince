@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Material families and mechanical response — Cambridge DoITPoMS (@mat-doitpoms-response: 0, is #reference, #part-of @mat-sources) { r_79PNN694CQ82ENKZC6STQJ5KN9
+University of Cambridge, Department of Materials Science and Metallurgy. Read the complete [Introduction to Mechanical Properties](https://www.doitpoms.ac.uk/tlplib/mechanical_properties/index.php), [Ceramics](https://www.doitpoms.ac.uk/tlplib/ceramics/index.php), [Crystallinity in Polymers](https://www.doitpoms.ac.uk/tlplib/polymers/index.php), [The Stiffness of Rubber](https://www.doitpoms.ac.uk/tlplib/stiffness-of-rubber/index.php), [Mechanisms of Plasticity](https://www.doitpoms.ac.uk/tlplib/work_harden/index.php), [Brittle Fracture](https://www.doitpoms.ac.uk/tlplib/brittle_fracture/index.php), [Toughening of Materials](https://www.doitpoms.ac.uk/tlplib/toughen/index.php), [Creep Deformation of Metals](https://www.doitpoms.ac.uk/tlplib/creep/index.php) and [The Structure and Mechanical Behaviour of Wood](https://www.doitpoms.ac.uk/tlplib/wood/index.php), with their questions. The earlier structure source already supplies Fibre Composites, Slip, Polymer Basics and Glass Transition.
+
+Indexes and selected ceramic reliability/thermal-shock, zirconia transformation/constraint, polymer stress–strain, rubber thermodynamics, wood moisture, composite laminate and forest-hardening pages were inspected directly on 30 October 2026. They provide useful derivations and observations, but examples need their conditions. A Weibull-modulus threshold is not a universal reliability rule; a polymer cannot be assigned a universal brittle/ductile label without state and loading conditions. Re-derive the thermal-shock page's displayed temperature relation: its coefficient needs a square root for dimensional consistency with the preceding energy derivative. The learning Record makes this an explicit criticism exercise.
+
+The inspected footer states CC BY-NC-SA 4.0 except where otherwise noted. Preserve package authors and component credits. These are external readings; not every interactive experiment or film has been exercised, and no collection or media is copied into Lince.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_79PNN694CQ82ENKZC6STQJ5KN9

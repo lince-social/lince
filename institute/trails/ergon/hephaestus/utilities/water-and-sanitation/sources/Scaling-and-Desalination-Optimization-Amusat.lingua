@@ -1,0 +1,11 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Scaling and desalination optimization — Amusat and colleagues (@wu-scaling-study: 0, is #reference, #part-of @wu-sources) { r_6V1098Z0KCJKRS3YJW5A3NEMRM
+Oluwamayowa O. Amusat, Adam A. Atia, Alexander V. Dudchenko and Timothy V. Bartholomew. Modeling Framework for Cost Optimization of Process-Scale Desalination Systems with Mineral Scaling and Precipitation. ACS ES&T Engineering 4(5), 1028–1047, 2024. [DOI and supporting information](https://doi.org/10.1021/acsestengg.3c00537) · [Author-institution full text](https://escholarship.org/content/qt71b5n2z2/qt71b5n2z2.pdf).
+
+Read the article and available supporting material, then reconstruct a declared calculation and investigate its assumptions. The accessible institutional PDF and methods were inspected on 30 October 2026; the publisher endpoint returned 403. The article is CC BY-NC-ND 4.0, with attribution and component notices retained.
+
+This case uses WaterTAP with chemistry-surrogate data generated using OLI Systems. Free article access and open process code do not make that proprietary dependency disappear. Report precisely which published results can be checked from available data. An independently developed open-chemistry comparison is a new model comparison, not an exact replication of an unavailable backend.
+
+**Return:** [Water and sanitation sources](../Sources.lingua#r_7AMRJFFR11FF35KJM7Y7M05B3M).
+} r_6V1098Z0KCJKRS3YJW5A3NEMRM

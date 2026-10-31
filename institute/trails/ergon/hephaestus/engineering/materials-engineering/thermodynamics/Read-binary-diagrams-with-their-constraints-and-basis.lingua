@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Read binary diagrams with their constraints and basis (@mat-binary: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "Ternary-composition-and-tie-triangle-balances.lingua#r_1RQRCVYBDG112560T6951WQ7V7") { r_70VAEYWMTB5QF46JQ52RANZQX7
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), the whole of chapter 8 and its exercises; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), Phase Diagrams and Solidification; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), thermodynamics lectures 15–20.
+
+Read axes, composition basis, pressure and permitted phases before following a temperature path. A tie line supplies coexisting phase compositions; the overall composition determines their fractions. For a nonreacting bulk equilibrium system with C independent components and P phases, F=C−P+2; fixing pressure removes one degree of freedom. Additional constraints require care.
+
+Distinguish isomorphous, eutectic, peritectic, eutectoid, compound and miscibility-gap behavior by actual phase relationships. A eutectic microconstituent contains multiple phases. An equilibrium diagram alone does not predict grain size, lamellar spacing, retained metastable phases or segregation after finite-rate cooling.
+
+**Work:** Follow three compositions through a documented binary diagram, deriving phase amounts at selected temperatures. Distinguish primary solid from the later two-phase microconstituent. Explain an apparent phase-rule violation by checking assumptions before changing the rule.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Ternary composition and tie-triangle balances](Ternary-composition-and-tie-triangle-balances.lingua#r_1RQRCVYBDG112560T6951WQ7V7).
+
+} r_70VAEYWMTB5QF46JQ52RANZQX7

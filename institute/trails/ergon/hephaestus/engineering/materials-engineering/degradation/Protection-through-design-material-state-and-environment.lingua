@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Protection through design, material state and environment (@mat-degradation-control: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5", #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #source "../sources/Hydrogen-Embrittlement-Bhadeshia.lingua#r_1VT41JGPGJ3NGXT47VKG1DFCT4", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "Choose-the-question-before-the-accelerated-test.lingua#r_5EDB1E67D3H8EPCGQFFKQDCAJG") { r_57R2PY4NX1NAX8J91ZWGQSK706
+**Read:** [Aqueous corrosion — Cambridge DoITPoMS](../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5), corrosion control; [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), the complete guide; [Prevention of hydrogen embrittlement in steels — Bhadeshia](../sources/Hydrogen-Embrittlement-Bhadeshia.lingua#r_1VT41JGPGJ3NGXT47VKG1DFCT4), entry barriers; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), preservation and finishing.
+
+Protection can change the material, isolate incompatible contacts, alter environment, reduce stagnant regions, control electrochemical potential or provide a maintainable barrier. Each choice affects other requirements. A coating can introduce a vulnerable edge or conceal underlying damage; a protective potential can alter competing reactions. The operating range and monitoring evidence belong with the proposed method.
+
+**Work:** Compare three mechanisms of protection for one stated service case, including preparation, defects, inspection and renewal. Derive the expected effect on the controlling balance and identify a failure mode introduced by each choice. Explain which evidence supports sustained protection after damage or interruption. Carry this comparison forward into material selection and whole-life design, where cost, resources and recovery will also enter.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Choose the question before the accelerated test](Choose-the-question-before-the-accelerated-test.lingua#r_5EDB1E67D3H8EPCGQFFKQDCAJG).
+
+} r_57R2PY4NX1NAX8J91ZWGQSK706

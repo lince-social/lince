@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Strengthening, competing obstacles and tradeoffs (@mat-obstacle-comparison: 0, is #chapter, #part-of @materials-engineering, #source "../../../materials/metals-and-metallurgical-production/sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F", #source "../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #materials-engineering "Localization-rate-size-and-the-limits-of-a-flow-law.lingua#r_5J64PKM1N08DWXHZF3ASJ1R6FB") { r_4441EWTTANM8P5QB6HPAMXEGTM
+**Read:** [Metals, alloys, steels, and graduate modeling — Bhadeshia teaching materials](../../../materials/metals-and-metallurgical-production/sources/Metals-Alloys-and-Graduate-Teaching-Bhadeshia.lingua#r_0HZJKN8WC6SEWA0DABM8P4HC3F), strengthening and precipitation teaching; [Mechanical Behavior of Materials — Krystyn Van Vliet, MIT 3.22](../../../materials/metals-and-metallurgical-production/sources/Mechanical-Behavior-MIT-3-22.lingua#r_53J3ZM414SJR3SFW7Q1G8ZJWDC), microstructural strengthening problems; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Mechanisms of Plasticity. Work the shared strengthening and precipitation Records before making the following comparisons.
+
+A simple forest-hardening contribution scales as αGb√ρ, with dislocation density ρ measured as line length per volume. Quadrupling ρ doubles this contribution when the other quantities remain fixed; it does not imply that total yield stress doubles. Grain-boundary, solute and particle contributions need mechanisms and ranges of validity.
+
+Particles can be cut or bypassed. A processing history that changes size, spacing, coherency and fraction can move the controlling mechanism. Strength gains can compete with ductility, toughness, conductivity, stability or fabrication demands. Adding empirical contributions linearly is a model choice, not a universal physical law.
+
+**Work:** Compare a work-hardened, grain-refined and precipitation-hardened state using complete test conditions and microscopy. Derive a strengthening trend and test it outside the fitted range. Explain an overaged response using both kinetics and obstacle physics, retaining evidence that contradicts a preferred mechanism.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Localization, rate, size and the limits of a flow law](Localization-rate-size-and-the-limits-of-a-flow-law.lingua#r_5J64PKM1N08DWXHZF3ASJ1R6FB).
+
+} r_4441EWTTANM8P5QB6HPAMXEGTM

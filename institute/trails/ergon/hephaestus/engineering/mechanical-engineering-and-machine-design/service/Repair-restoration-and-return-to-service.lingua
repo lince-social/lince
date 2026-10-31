@@ -1,0 +1,20 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Repair, restoration and return to service (@mech-restoration: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV", #source "../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #mechanical-engineering "Disassembly-reuse-and-material-recovery.lingua#r_0VT0VXMB3D4PXCRTJFPCQYXWFQ", #materials-engineering "../../materials-engineering/service/Reuse-retains-a-function-and-a-history.lingua#r_0YR45G1N84REB3Q6218RNQ8J4H", #industrial-gases-and-vacuum "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Restoration-includes-cleanliness-calibration-and-service.lingua#r_6XBZHEGMYMKKT920NK10Y9WT3Y") { r_1RF5PD4EHJKFZ57X6RSFKXJK1X
+**Read:** [Bearing maintenance handbook — SKF, 2011](../sources/Bearing-Maintenance-Handbook-SKF.lingua#r_2KXP88XVRZAFSYK92QAM6QYYRV), dismounting, inspection and mounting; [Systems Engineering Handbook — NASA](../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), verification and transition. Reuse the dimensional and material-state studies.
+
+A repaired machine has a new physical history. Replacement, machining, welding, coating or adjustment can alter geometry, residual stress, contact and control settings. Restoring movement alone does not establish restored load capacity, accuracy or service life.
+
+Define the retained function, accepted change and evidence needed for return. Inspect mating parts, alignment and contamination pathways as well as the visibly failed item. A substitute component must meet the relevant interface and service requirements; matching a catalogue name or outer size is insufficient.
+
+**Work:** Plan two repair options, including replacement of an assembly. Compare resources, uncertainty, downtime and future repairability. Recalculate a changed load path or fit and specify the necessary measurements. Test the restored useful function under representative conditions and preserve unresolved limitations in the operating account.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Disassembly, reuse and material recovery](Disassembly-reuse-and-material-recovery.lingua#r_0VT0VXMB3D4PXCRTJFPCQYXWFQ).
+
+**Continue in materials engineering:** [Reuse retains a function and a history](../../materials-engineering/service/Reuse-retains-a-function-and-a-history.lingua#r_0YR45G1N84REB3Q6218RNQ8J4H).
+
+
+**Continue in gas and vacuum systems:** [Restoration includes cleanliness, calibration and service](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/operation/Restoration-includes-cleanliness-calibration-and-service.lingua#r_6XBZHEGMYMKKT920NK10Y9WT3Y).
+
+} r_1RF5PD4EHJKFZ57X6RSFKXJK1X

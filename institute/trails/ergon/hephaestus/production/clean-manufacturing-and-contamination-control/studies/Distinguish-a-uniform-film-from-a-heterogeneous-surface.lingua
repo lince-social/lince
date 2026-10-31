@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Distinguish a uniform film from a heterogeneous surface (@cm-study-surface-film: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #source "../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV", #clean-manufacturing "Review-the-evidence-about-the-surface.lingua#r_6ZT8HE7DSJ064B1VX5QCS4DWC8") { r_0ERWDRZST63TEJWACK3AP963H6
+**Read:** [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5) and [Attenuation and information depth in XPS — Cedric Powell](../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV), with the shared observation-model and uncertainty foundations.
+
+Begin with a uniform benign model film and reproduce its substrate attenuation, depth weighting and areal mass. Add a patchy thickness distribution and predict the results at two emission angles. Compare a uniform-film inverse with the known distribution and its area mean.
+
+Include uncertainties in reference intensity, attenuation parameter, geometry and background. Identify parameter combinations that one observation cannot separate. Examine whether a second angle, a spatial image or a mass measurement adds the most useful information for the process question.
+
+Extend the model to a blurred depth profile and distinguish actual layer variation from measurement broadening. Keep the simplified kernel separate from a validated instrument response. Compare its assumptions with the guide's discussion of elastic scattering, morphology and application-specific attenuation lengths.
+
+**Result to explain:** A reproducible forward/inverse analysis, checked limiting cases and a defensible thickness or heterogeneity claim. State what further evidence would be needed before applying that claim to a real manufactured surface.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Review the evidence about the surface](Review-the-evidence-about-the-surface.lingua#r_6ZT8HE7DSJ064B1VX5QCS4DWC8).
+
+} r_0ERWDRZST63TEJWACK3AP963H6

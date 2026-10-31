@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Getter pumping and an activated material state (@gas-getter: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Ion-pumps-and-gas-dependent-capture.lingua#r_45T7CJ2NFA9XNMN721KHCY3SVW") { r_7C3XMEAFNZXNMD8EN9MGQ1E13S
+**Read:** [Surface finishing and vacuum coatings — Mauro Taborelli](../sources/Surface-Finishing-and-Vacuum-Coatings-Taborelli.lingua#r_7KSQ0A3V3YH02RRXRKCRFAKRKD), section 4.1 with its preparation context; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.4.4; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), sorption and getter pumps.
+
+A getter binds selected gases through surface chemistry or incorporation into the material. An exposed surface can become covered or passivated. Activation restores useful surface conditions through a material-specific thermal and chemical history; it does not make all gases equally pumpable.
+
+Non-evaporable getter films can distribute pumping along chamber walls, reducing the importance of a remote port's conductance for captured species. Film composition, microstructure, adhesion, coverage, thickness and exposure cycles connect manufacturing to pumping speed and capacity. Noble gases and some stable molecules still require another removal mechanism under common room-temperature getter conditions.
+
+**Work:** Trace a chosen getter film from deposition and characterization through activation, exposure, loading and reactivation. Distinguish capture probability, accessible area and bulk storage. Explain how a coating defect or changed gas composition can affect service while a measurement of another species remains favorable.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Ion pumps and gas-dependent capture](Ion-pumps-and-gas-dependent-capture.lingua#r_45T7CJ2NFA9XNMN721KHCY3SVW).
+
+} r_7C3XMEAFNZXNMD8EN9MGQ1E13S

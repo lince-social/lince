@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+A shared vocabulary for gases and vacuum (@gas-vocabulary: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #industrial-gases-and-vacuum "../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1") { r_6S1VHW9H1BE3PBBWZPKFWGTCEP
+**Read:** [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), basic definitions; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), how to use the book. Use the Portuguese introduction for familiar terms, then retain the technical definitions in the deeper sources.
+
+A gas, gás, is a state of matter; vapor, vapor, commonly emphasizes a substance that may condense under relevant conditions. Pressure, pressão, describes mechanical stress; flow rate, vazão, measures transfer per time. Amount of substance, quantidade de matéria, is counted in moles. Purity, pureza, needs a stated composition and impurity basis.
+
+Distinguish adsorption, adsorção, at a surface from absorption, absorção, into a material. Desorption, dessorção, releases an adsorbed species. Outgassing describes gas released by materials into the system; degassing, desgaseificação, often describes an intentional removal treatment. A real leak, vazamento real, crosses a boundary; a trapped pocket can behave as a virtual leak, vazamento virtual.
+
+**Work:** Build an illustrated glossary for your two applications. For each term, name an observable quantity or process rather than substituting another vague word. Explain why low pressure, low oxygen content, low particle count and low water content are distinct requirements.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Units, dimensions, and equations that can make sense](../../../inquiry/quantitative-literacy/foundations/Units-and-dimensions.lingua#r_3A511KGNX59K2YHKT83NM38NE1).
+
+} r_6S1VHW9H1BE3PBBWZPKFWGTCEP

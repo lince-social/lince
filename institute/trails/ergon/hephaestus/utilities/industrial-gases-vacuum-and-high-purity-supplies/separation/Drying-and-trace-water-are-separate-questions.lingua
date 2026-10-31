@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Drying and trace water are separate questions (@gas-drying: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "Trace-purification-getters-and-reactive-removal.lingua#r_1TZY5JZTGZHK3NE5CY05JJ5NGM") { r_5VFPSY2KNZR8B47AW31RH3ACN0
+**Read:** [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), air pretreatment; [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH), feed conditioning; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), water impurity and specification conventions; [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), water on surfaces.
+
+Cooling can remove water by condensation; a coalescing filter removes entrained droplets; an adsorbent can remove vapor. These are different mechanisms. A particle or aerosol filter does not establish a low molecular water concentration.
+
+Dew point depends on water partial pressure and the stated total-pressure basis. Pressure dew point and an expanded sample's dew point need conversion through the amount fraction and equilibrium relation. In a very clean system, water released from walls and sample lines can dominate a transient even when incoming gas is dry.
+
+**Work:** Trace water in vapor, droplets, ice and surface reservoirs through a supply path. Convert between a declared water amount fraction and dew point using an identified vapor-pressure relation within its range. Explain which changes follow from pressure reduction alone and which imply additional adsorption, condensation or leakage.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Trace purification, getters and reactive removal](Trace-purification-getters-and-reactive-removal.lingua#r_1TZY5JZTGZHK3NE5CY05JJ5NGM).
+
+} r_5VFPSY2KNZR8B47AW31RH3ACN0

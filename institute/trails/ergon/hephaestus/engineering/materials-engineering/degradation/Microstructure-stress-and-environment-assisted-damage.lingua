@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Microstructure, stress and environment-assisted damage (@mat-environment-load: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #source "../sources/Hydrogen-Embrittlement-Bhadeshia.lingua#r_1VT41JGPGJ3NGXT47VKG1DFCT4", #materials-engineering "../../../materials/metals-and-metallurgical-production/testing/Corrosion-environment-surface-microstructure-and-load.lingua#r_761808KRW6H2NDYPQT1JD8NCKC") { r_68SJE8K4FXHJF0CZ2FXCZW2M38
+**Read:** [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), the complete testing critique; [Prevention of hydrogen embrittlement in steels — Bhadeshia](../sources/Hydrogen-Embrittlement-Bhadeshia.lingua#r_1VT41JGPGJ3NGXT47VKG1DFCT4); the shared metallurgical corrosion Record. Revisit fracture, residual stress and precipitate/grain-boundary structure.
+
+Environment-assisted cracking depends on a susceptible material state, environment and mechanical history. Similar visible cracks can arise through different mechanisms. Heat treatment, segregation, weld regions and residual stress may matter as much as nominal composition. Stress-corrosion and corrosion-fatigue investigations must preserve their static/cyclic and time-dependent conditions.
+
+**Work:** Reconstruct a published case from material history through exposure, load, crack location and fracture evidence. Compare a chemical dissolution explanation with a hydrogen-related or mechanically dominated alternative where plausible. Distinguish crack initiation from propagation and a ranking test from a service prediction. Specify what a changed heat treatment or surface condition would test; an attractive fracture photograph alone is not a complete mechanism argument.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Explain corrosion through electrochemistry, transport, local structure, and actual exposure](../../../materials/metals-and-metallurgical-production/testing/Corrosion-environment-surface-microstructure-and-load.lingua#r_761808KRW6H2NDYPQT1JD8NCKC).
+
+} r_68SJE8K4FXHJF0CZ2FXCZW2M38

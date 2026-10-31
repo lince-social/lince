@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Integrated study of a cryogenic helium service (@gas-study-helium-system: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783", #source "../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7", #source "../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Compare-integrated-studies-and-transfer-only-justified-results.lingua#r_0DC4WK9Q9HNNKWC509DZTN11KK") { r_5BPE5NDG1R8P7R92M9QFYNVJG9
+**Read:** The complete [Cryogenic Engineering — M. D. Atrey, IIT Bombay](../sources/Cryogenic-Engineering-Atrey.lingua#r_65F71B6VYE8297NF8ZN1D3S783); [Thermal performance of cryogenic storage tanks — Aasen and colleagues](../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7) and [Conservation of helium while maintaining high system purity — White and colleagues](../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR) in full; relevant complete chapters of [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN) and [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5).
+
+Define a helium service with a stated thermal load, pressure state, inventory and availability requirement. Connect compression/refrigeration, insulation, thermal interfaces, storage, transfer and return purity. Distinguish liquid inventory, gas inventory, useful refrigeration and recovered helium amount.
+
+Compare ordinary service with a warmup, an interrupted utility and contamination entering the return. Reconcile changing phase inventory and wall heat capacity with flow measurements. Include the dependence of purification and recovery on skilled work and common utilities.
+
+**Work:** Build a defensible mass/component/energy model and one independently checked transient. Analyze what the published helium-conservation experiment establishes and what additional evidence your system needs. Avoid transferring the paper's cutoff, purity specification or vessel assumptions without justification.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Compare integrated studies and transfer only justified results](Compare-integrated-studies-and-transfer-only-justified-results.lingua#r_0DC4WK9Q9HNNKWC509DZTN11KK).
+
+} r_5BPE5NDG1R8P7R92M9QFYNVJG9

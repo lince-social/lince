@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Periodic, disordered and hierarchical structure (@mat-structure-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "../../../chemistry/general-chemistry/states/Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA") { r_3PVWG9ZVZ4CP2A7NMEZJ4QATG0
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Atomic Scale Structure of Materials in full; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures 14–24 progressively; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), crystal structure and descriptive examples.
+
+Describe structure at the scale relevant to the question: atomic arrangement, molecules, crystallites, grains, pores, fibres, layers and their interfaces. Crystalline order is one form of organization. A noncrystalline material can have strong local correlations, and a crystalline material can contain defects and many differently oriented grains.
+
+Connect the representation to evidence. A ball-and-stick drawing specifies a model; a micrograph records contrast produced by an interaction; a diffraction pattern constrains spatial correlations. None is a complete picture of every scale.
+
+**Work:** Draw three levels of structure for the recurring object. Identify what each drawing omits and which method could investigate it. Follow the shared crystal-structure and lattice Records before using unit-cell geometry, keeping noncrystalline and composite materials in view.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect crystal structure, defects, and composition with material properties](../../../chemistry/general-chemistry/states/Crystals-disorder-and-material-properties.lingua#r_2D2PGMBBES807ABNV8V0A46JZA).
+
+} r_3PVWG9ZVZ4CP2A7NMEZJ4QATG0

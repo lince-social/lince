@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Trace contamination and a meaningful detection limit (@gas-trace-evidence: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "Flow-rate-needs-a-state-and-a-basis.lingua#r_7T0N86P6QE379Y7FDNF7TNBHMX") { r_53D7327JMNK7SAJ7957AHYEFPC
+**Read:** [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), measurement, value assignment and uncertainty; [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), species-dependent response; shared metrology evidence.
+
+A trace concentration is inferred through a measurement procedure with blanks, calibration, sampling and interference. A number below a stated detection threshold does not establish absence. The sampling line can adsorb, release or react with the substance, so the instrument may observe a changed sample.
+
+Distinguish repeatability, bias, drift, limit of detection, quantification range and the uncertainty of a reported amount fraction. These have different definitions and uses. A very precise repeated reading can be consistently wrong when the reference mixture or sample path has changed.
+
+**Work:** Draw the measurement chain for a selected trace impurity from the process point to the detector. Identify a blank, a calibration check and a potential memory effect. Explain what can be concluded from a nondetection under stated conditions, and what extra evidence is needed to compare it with an acceptance limit.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Flow rate needs a state and a basis](Flow-rate-needs-a-state-and-a-basis.lingua#r_7T0N86P6QE379Y7FDNF7TNBHMX).
+
+} r_53D7327JMNK7SAJ7957AHYEFPC

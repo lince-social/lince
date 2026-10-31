@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Polymer time response and observation windows (@mat-polymer-time: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "../../mechanical-engineering-and-machine-design/materials/Viscoelasticity-creep-relaxation-and-temperature.lingua#r_5EQ8VH9QC9479TD3ZKYFFN8P56") { r_3WP9V6GG5MCVH8KS4AS9ZW110F
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), the complete 38-page Engineering Viscoelasticity module and exercises; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), lectures 7–9 and 17–19; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), section 3.6. Continue through the shared Maxwell/Kelvin and temperature treatment.
+
+A polymer's relevant timescales range from local rearrangements to large-scale chain motion. A loading duration short compared with a relaxation time can expose stiffness that is absent in a slow test. Temperature and plasticization can shift those timescales; a glass transition observed at one rate is not a rate-independent melting point.
+
+Start with fixed-strain relaxation and fixed-stress creep, then periodic loading. Check proportionality across several amplitudes before using linear superposition. A transient experimental ramp is not an ideal instantaneous step, and a slowly equilibrating specimen can drift during a nominally constant-temperature test.
+
+**Work:** Design a comparison that separates strain amplitude, observation duration and temperature. Identify the initial and long-time responses and the physical evidence for a linear range. Explain which observations a spring–dashpot model can represent and which require evolving structure, large strain or damage.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Viscoelasticity, creep, relaxation and temperature](../../mechanical-engineering-and-machine-design/materials/Viscoelasticity-creep-relaxation-and-temperature.lingua#r_5EQ8VH9QC9479TD3ZKYFFN8P56).
+
+} r_3WP9V6GG5MCVH8KS4AS9ZW110F

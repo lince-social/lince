@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Fragmentation patterns as a response matrix (@gas-spectrum-model: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #industrial-gases-and-vacuum "../../../inquiry/metrology/uncertainty/Inverse-and-Bayesian-models.lingua#r_1TSJYTGBD1NY9Q7VP0BDFXZ94K") { r_4YV5WH8AA3BQAM1PKGYBW52746
+**Read:** [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M), ion sources, detection and quantitative partial-pressure analysis; [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), gas-specific sensitivity.
+
+For a restricted linear operating range, model measured channels as y=A p+b+ε. Vector p contains candidate partial pressures; A contains their responses at each channel; b is background. The model joins fragmentation, ionization, transmission and detector response under specified settings.
+
+As a deliberately hypothetical two-species example, let A=[[1,0.2],[0.1,1]] in chosen signal units per pressure unit and p=[2,3]. The background-free signal is [2.6,3.2]. The matrix is not a published molecular fragmentation pattern: it illustrates why one species can contribute to several channels and vice versa.
+
+More channels can test a proposed composition if their responses add independent information. Unknown species, nonlinear source behavior or changing gain can make even an overdetermined fit misleading. Residual structure is evidence to examine, not a reason to add unlimited adjustable species.
+
+**Work:** Recover the two hypothetical pressures, add a third independent channel and predict it before fitting. Perturb both the signal and calibration coefficients. Explain which uncertainty comes from measuring y and which comes from estimating A.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Observation models, inverse questions, and Bayesian interpretation](../../../inquiry/metrology/uncertainty/Inverse-and-Bayesian-models.lingua#r_1TSJYTGBD1NY9Q7VP0BDFXZ94K).
+
+} r_4YV5WH8AA3BQAM1PKGYBW52746

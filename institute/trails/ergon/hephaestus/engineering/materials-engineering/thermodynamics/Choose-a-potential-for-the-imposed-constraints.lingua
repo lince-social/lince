@@ -1,0 +1,17 @@
+Import "../Materials-engineering.lingua"
+
+Choose a potential for the imposed constraints (@mat-potentials: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #materials-engineering "../../../chemistry/general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H") { r_2S1B9Z2EJWT5SER5ME17ES9X0G
+**Read:** [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), chapters 3–4 in full, including their derivations and exercises; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), thermodynamics lectures 8–10.
+
+**Before using the differentials:** [Small changes, derivatives, and first-order approximations](../../../inquiry/quantitative-literacy/models/Small-changes-and-derivatives.lingua#r_4T51QH8VRCNNMY5WD30VJS5P52) introduces ordinary and partial derivatives from finite changes. A partial derivative changes one input while keeping specified others fixed; a total differential combines their first-order effects. Work that preparation and check units before treating the coefficients in dG as physical responses.
+
+U, H=U+pV, F=U−TS and G=U+pV−TS describe related thermodynamic information with different natural variables. For a simple multicomponent hydrostatic system, dG=−S dT+V dp+Σμ_i dn_i. A closed system at fixed temperature and pressure approaches a minimum total G subject to its allowed changes. Fixed temperature and volume instead motivate F. External fields, elastic constraints and interfaces require explicit treatment.
+
+A local stationary point need not be the global equilibrium, and a stable phase under a constrained process may differ from the unconstrained minimum. Compare admissible states using the same inventories, reference conventions and constraints.
+
+**Work:** Derive dF and dG from the fundamental relation. Identify the appropriate constraints for a sealed rigid vessel, a pressure-controlled specimen and a coherently constrained inclusion. Explain where the simple hydrostatic equation is inadequate. Continue into the shared chemical-potential treatment.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Connect chemical potential, activities, and the reaction direction](../../../chemistry/general-chemistry/energy/Chemical-potential-and-reaction-affinity.lingua#r_5NRB2N57XAZFAEFYGEF9SK3E5H).
+
+} r_2S1B9Z2EJWT5SER5ME17ES9X0G

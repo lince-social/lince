@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend trace composition through sampling and inference (@gas-study-measure-composition: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #source "../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ", #source "../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M", #industrial-gases-and-vacuum "Review-what-the-measurements-establish-about-the-service.lingua#r_00STQ667X1Y8PNYK73F7YC4AXE") { r_79T3S74PWKCF7DC8C59RRY0Y16
+**Read in full:** [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8) and [Hybrid humidity generator — NIST SP 250-83 Revision 1](../sources/Hybrid-Humidity-Generator-NIST.lingua#r_6C1ZNNWH3JHFPV8CNY0FW26BGQ), with the quantitative analyzer sections of [Total and Partial Pressure Measurement — Karl Jousten](../sources/Total-and-Partial-Pressure-Jousten.lingua#r_7SH9NGBWVVK5YN24S2VZPTW45M).
+
+Choose a trace impurity in a defined gas matrix and follow reference preparation/value assignment, delivery, sampling, response and inference. Specify the stream interval represented by the result. A sensitivity or detection claim must include the matrix, blank, response time and interference evidence that make it meaningful.
+
+Compare two genuinely different measurement responses. Use dilution, recovery, blank sequences and changed concentration to separate calibration error from sampling loss and surface memory. Where a spectral matrix is used, investigate rank, conditioning and uncertainty in the calibration itself.
+
+Propagate common reference and flow errors through the calibration points. Show how a plausible model can fit the same observations yet imply a different impurity amount. Design a further observation that distinguishes the models before making an acceptance claim.
+
+**Demonstrate:** A traceable composition account, justified uncertainty, explicit detection/decision statements and reproducible calculations. Preserve unresolved evidence and explain how the claim changes after a source, regulator, sampling line or operating condition is changed.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Review what the measurements establish about the service](Review-what-the-measurements-establish-about-the-service.lingua#r_00STQ667X1Y8PNYK73F7YC4AXE).
+
+} r_79T3S74PWKCF7DC8C59RRY0Y16

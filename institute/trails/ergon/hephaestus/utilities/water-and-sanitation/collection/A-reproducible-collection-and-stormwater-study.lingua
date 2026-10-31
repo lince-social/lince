@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A reproducible collection and stormwater study (@wu-collection-study: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "../wastewater/COD-BOD-solids-and-the-fractions-a-model-needs.lingua#r_5QEQEGB02AAYFH7MFMJ3H8W3Q2") { r_2A8HPWPTS3A5BWCJWCA6C3JTCP
+**Read:** Complete the [SWMM — drainage, collection and reproducible hydraulic models](../sources/Storm-Water-Management-Model-SWMM.lingua#r_65K5ER0T3C8RC87J6M6XXS34NE) tutorial and follow its reporting and reference-manual explanations. Use [Assessment of Treatment Plant Performance and Water Quality Data — von Sperling, Verbyla and Oliveira](../sources/Treatment-Plant-Performance-and-Water-Quality-Data.lingua#r_5PZG8VN422GHD657FBDR5KRWGS) to distinguish calibration evidence from a persuasive-looking hydrograph.
+
+Build a small documented catchment and collection network containing a storage node, a constrained outlet and a variable downstream level. Preserve the rainfall time series, dry-weather flow, infiltration assumptions, pipe geometry, elevations and routing options. First reproduce a hand-checkable volume account; then introduce runoff generation and hydraulic routing separately.
+
+Check continuity diagnostics and convergence as you reduce runoff and routing time steps. Compare a free outfall with a raised boundary, a blocked conduit and a pumping outage. Evaluate delivered flow, flooding, stored volume and pollutant mass rather than selecting only the most favourable peak. Report whether surface flooding leaves the model or is explicitly stored and allowed to return.
+
+**Work:** Design an observation plan that can distinguish wrong rainfall input, wrong connected area and wrong pipe geometry. Fit a declared subset of observations and test another storm or dry-weather period. Investigate parameter combinations that fit one hydrograph equally well. Finish with a defended collection account and its uncertainty, ready to become the treatment plant's time-varying inlet.
+
+**Continue:** [COD, BOD, solids and the fractions a model needs](../wastewater/COD-BOD-solids-and-the-fractions-a-model-needs.lingua#r_5QEQEGB02AAYFH7MFMJ3H8W3Q2).
+} r_2A8HPWPTS3A5BWCJWCA6C3JTCP

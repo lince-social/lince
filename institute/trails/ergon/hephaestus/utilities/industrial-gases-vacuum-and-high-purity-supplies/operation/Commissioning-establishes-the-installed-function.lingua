@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Commissioning establishes the installed function (@gas-commissioning: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #industrial-gases-and-vacuum "A-baseline-includes-state-configuration-and-measurement.lingua#r_1M45ER0T3N72ZPCCQHJ0GF8XTV") { r_5FPDNE8RRWEZASNK7V1KJVTRN5
+**Read:** [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), acceptance and facilities acquisition; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), commissioning and change; [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), installation/inspection context.
+
+A component certificate does not establish the assembled system's behavior. Compare the installed connections, materials, instrumentation and control configuration with the intended service. Acceptance evidence should address the useful output, the transitions and the protective functions at their actual interfaces.
+
+Separate manufacturing inspection, installation checks, calibration, functional testing and validation of use. Each supports a different claim. A pressure boundary can pass one test while a sample line contaminates the delivered gas; a controller can operate correctly while its sensor describes the wrong location.
+
+**Work:** Build an evidence map for one published installation: requirement, physical mechanism, observation and acceptance basis. Include changed demand and interrupted utilities. Identify which demonstrations can be made with calculation or simulation and which require qualified physical testing on the actual equipment.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A baseline includes state, configuration and measurement](A-baseline-includes-state-configuration-and-measurement.lingua#r_1M45ER0T3N72ZPCCQHJ0GF8XTV).
+
+} r_5FPDNE8RRWEZASNK7V1KJVTRN5

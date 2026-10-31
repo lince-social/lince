@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Defend purification and point-of-use quality (@gas-study-purity: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8", #source "../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT", #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #source "../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0", #industrial-gases-and-vacuum "../../../physics/thermodynamics-and-heat-transfer/microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5") { r_5BF2KBEHHJXNRREY8X3322A69W
+**Study:** [Certification of gas-mixture reference materials — NIST SP 260-222](../sources/Gas-Mixture-Reference-Materials-NIST.lingua#r_471GDGAT44EMNYFBERQSMVE2C8), complete reference-mixture report; [Gases and Applications — Linde](../sources/Gases-and-Applications-Linde.lingua#r_72580QNZ60FMQAARB8ZG7SRTFT), selected full gas/specification entries; [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH) and [Cleaning equipment for oxygen service — EIGA 33/18](../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0), complete relevant application sections.
+
+Choose a gas and an application with at least two materially different impurity concerns. Follow production, conditioning, storage, transfer, final purification, sample preparation and measurement. Maintain separate inventories for gas, condensed phases, surfaces and retained contaminants where those mechanisms matter.
+
+Construct an evidence chain from source composition to accepted point-of-use condition. Include reference validity, blanks, memory, detection/quantification, uncertainty, distribution history and a failure investigation. Explain which evidence supports a numerical statement and which merely indicates a process operated as intended.
+
+**Deliver:** A complete service-quality account with a worked constituent balance, a measurement plan and a diagnosis of an introduced contamination event. Compare two plausible causes using discriminating evidence. Revise the account after a changed supply package, purifier state or downstream maintenance operation, preserving traceable definitions and units.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Microscopic states, heat capacity and statistical bridges](../../../physics/thermodynamics-and-heat-transfer/microscopic/Microscopic-states-heat-capacity-and-statistical-bridges.lingua#r_6A7NAN2B4VD8KZ1AXPTCFCWZB5).
+
+} r_5BF2KBEHHJXNRREY8X3322A69W

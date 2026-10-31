@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Interpret a Shewhart signal under its probability model (@cm-monitoring-shewhart: 0, is #chapter, #part-of @clean-manufacturing, #source "../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN", #clean-manufacturing "Use-count-models-with-the-actual-discreteness-of-the-data.lingua#r_6RMDBC2M8SQC35WZZS59132KDA") { r_39482SFV88STX9MW0WHZ4VBQ8G
+**Read:** [Measurement Process Characterization — NIST/SEMATECH](../../../inquiry/metrology/sources/Statistical-Handbook.lingua#r_6S3221KSX1KKGPJNXKC3N022NN), sections 6.3.1–6.3.2, control-chart assumptions and limits.
+
+For independent normal observations with known mean μ and standard deviation σ, a two-sided single-point rule at μ ± 3σ has signal probability about 0.002699796 per observation under the baseline. Its average run length is 1/α ≈ 370.398 observations under these specific assumptions. This average is not a guaranteed time without a signal.
+
+Over 100 independent observations the probability of at least one signal is 1−(1−α)¹⁰⁰ ≈ 0.236884. Estimated limits, additional run rules and dependence change these results. A chart signal requests examination; it does not identify a physical cause.
+
+For subgroup means of four independent observations, a persistent upward mean shift of one original σ is two standard errors. Under unchanged known variance, the two-sided three-standard-error rule signals with probability about 0.158656 per subgroup after the shift. The missed-change probability remains substantial.
+
+**Work:** Derive these probabilities and compare sudden, gradual and temporary shifts. Convert observations to elapsed time using the actual sampling schedule. Keep control limits distinct from product specification limits.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Use count models with the actual discreteness of the data](Use-count-models-with-the-actual-discreteness-of-the-data.lingua#r_6RMDBC2M8SQC35WZZS59132KDA).
+
+} r_39482SFV88STX9MW0WHZ4VBQ8G

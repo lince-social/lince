@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Gear geometry, ratio and conjugate motion (@mech-gear-geometry: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7", #mechanical-engineering "Gear-loads-root-strength-contact-and-transmission-error.lingua#r_0FE908RW7PKYPAJFRDNDSS8QHH") { r_2AAYHDQVB8KREPCYQGNFJSC6CP
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), topic 6, gears; [Elements of Mechanical Design — MIT 2.72, Spring 2009](../sources/Elements-of-Mechanical-Design-MIT-2-72.lingua#r_31S9Z88TMF2875BF5KA5825GX7), the gear-kinematics material associated with lecture 12 and the geometry used in lecture 13. Reconstruct the geometry rather than copying a tooth picture.
+
+For compatible external spur gears, pitch diameters satisfy d=mz in the metric module convention. Ideal pitch-line speeds agree, so ω₁/ω₂=−z₂/z₁. Tooth contact must transmit the desired ratio through the whole engagement, not just when two pitch circles touch on paper. Involute profiles provide the familiar constant-ratio geometry with a defined line of action.
+
+With module 2 mm and tooth counts 20 and 60, pitch diameters are 40 and 120 mm; the nominal centre distance is 80 mm and output speed is one-third input speed in the opposite direction. Pressure angle, contact ratio, interference, undercut, backlash and profile modifications require additional geometry.
+
+**Work:** Construct the base and pitch circles and explain the common-normal condition for conjugate motion. Trace one engagement and identify when one or more pairs carry load. Compare spur, helical, bevel and worm arrangements, including thrust, sliding and manufacturing consequences. Keep tooth-count ratio separate from elastic transmission error under load.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Gear loads, root strength, contact and transmission error](Gear-loads-root-strength-contact-and-transmission-error.lingua#r_0FE908RW7PKYPAJFRDNDSS8QHH).
+
+} r_2AAYHDQVB8KREPCYQGNFJSC6CP

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of polymer history and inference (@mat-polymer-response-study: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #materials-engineering "Defend-the-material-family-and-mechanical-response-account.lingua#r_1SG5WSPXBJNEJ95BJ5ZB8NZ2D9") { r_4A2JX239ZXRJ46XB09TH4G0F6V
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Engineering Viscoelasticity in full with exercises; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), lectures 7–9 and 17–19 with their assignments; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), sections 3.5–3.6 and 3.10. Follow at least two primary investigations of one polymer system with different conditioning or loading protocols.
+
+Derive a constitutive account from measured histories and molecular/structural evidence. Compare an elastic, a linear hereditary and an appropriate nonlinear hypothesis. Reproduce the original loading-history example independently before changing its model. Use positive relaxation branches when that physical representation is chosen, and disclose which time ranges the data constrain.
+
+**Produce:** A complete material-state and protocol description; independently verified response and energy calculations; parameter/uncertainty analysis; predictions for a withheld ramp/hold/cycle or temperature; and a criticism of at least one extrapolation. Analyze a finite-amplitude or evolving-state case that the linear program cannot represent. Explain what an additional experiment would resolve and revise the account after a failed prediction.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the material-family and mechanical-response account](Defend-the-material-family-and-mechanical-response-account.lingua#r_1SG5WSPXBJNEJ95BJ5ZB8NZ2D9).
+
+} r_4A2JX239ZXRJ46XB09TH4G0F6V

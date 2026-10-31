@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Zero observations do not establish zero contamination (@cm-zero: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP", #source "../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB", #clean-manufacturing "Blanks-recovery-and-the-origin-of-a-signal.lingua#r_3NHG85VQ6ZKJCQ5XSRT60FKM74") { r_0TDKZSZ3SD0CCBG90BVBG7S0D5
+**Read:** [Calibration of aerosol instruments — Chen, Fletcher and Cheng](../sources/Aerosol-Instrument-Calibration-Chen-Fletcher-Cheng.lingua#r_03PDE8353KQ9HQKJNAHRH99NPP), calibration and uncertainty; [Sterile pharmaceutical products — WHO TRS 1044, Annex 2](../sources/Sterile-Products-WHO.lingua#r_6BVEG1GSVGGGD566CJKD254DSB), principles and environmental monitoring. The bound below is an original statistical model, not a regulatory acceptance rule.
+
+If arrivals are independent with constant concentration C and a perfect counter observes volume V, zero counts have probability exp(−CV). Inverting that probability gives the one-sided 95 percent upper bound Cᵤ=−ln(0.05)/V≈2.995732/V. With V=0.1 m³ and zero observed counts, the bound is about 29.9573 m⁻³ under this model.
+
+If each arrival is independently detected with known probability r, replace V with rV. For r=0.5 the bound doubles. Unknown recovery, background, clustering or unobserved times require a different account; a zero report cannot make those uncertainties disappear.
+
+**Work:** Derive the bound from the probability of zero events and verify it by substitution. Compare two sampling volumes and recovery assumptions. Explain why the calculation alone cannot prove that a manufactured batch is sterile.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Blanks, recovery and the origin of a signal](Blanks-recovery-and-the-origin-of-a-signal.lingua#r_3NHG85VQ6ZKJCQ5XSRT60FKM74).
+
+} r_0TDKZSZ3SD0CCBG90BVBG7S0D5

@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Composite consolidation, orientation and residual stress (@mat-composite-process: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #materials-engineering "Powder-feedstock-distributions-and-surface-state.lingua#r_1HRCQ6Z4XYVW85DT763HRH204V") { r_31F2EW01TT9ZWXZ7W2F0Z208TN
+**Read:** [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), crystallization and network mechanics; [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapter 11 for composite manufacture; the earlier laminate and thermal-mismatch readings.
+
+Pressure, vacuum, temperature and fibre architecture influence contact, resin redistribution, voids and orientation. Chemical shrinkage and thermal mismatch create stresses as the matrix gains stiffness. A final fibre volume fraction does not reveal the full spatial distribution of resin or the history of restraint.
+
+**Work:** Reconstruct a laminated or short-fibre process from raw constituents through finished dimensions. Combine a transport/cure account with a stated laminate approximation and compare the predicted curvature or strain with independent observations. Separate porosity, debonding and fibre misalignment as competing explanations of a strength loss. Retain cure and moisture history when comparing specimens, and identify which measurements would reveal a hidden through-thickness gradient.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Powder feedstock, distributions and surface state](Powder-feedstock-distributions-and-surface-state.lingua#r_1HRCQ6Z4XYVW85DT763HRH204V).
+
+} r_31F2EW01TT9ZWXZ7W2F0Z208TN

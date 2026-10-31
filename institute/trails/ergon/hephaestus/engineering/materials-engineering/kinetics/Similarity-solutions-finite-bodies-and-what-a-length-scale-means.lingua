@@ -1,0 +1,18 @@
+Import "../Materials-engineering.lingua"
+
+Similarity solutions, finite bodies and what a length scale means (@mat-diffusion-solutions: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB", #materials-engineering "../computation/An-inspectable-conservative-diffusion-account.lingua#r_3EK1TAWX9NZ8ADXEWZEV0XGA6E", #industrial-gases-and-vacuum "../computation/An-inspectable-conservative-diffusion-account.lingua#r_3EK1TAWX9NZ8ADXEWZEV0XGA6E") { r_1Q16MVYWQQ6T259JDGMK0BD04Y
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), the full 3.205 lecture 3 slides and 3.21 lectures 7–9; [Phases, diffusion and solidification — Cambridge DoITPoMS](../sources/Phases-and-Diffusion-DoITPoMS.lingua#r_4HHCB32507KCQ5FPHGT4JD5GTB), Diffusion, Fick's second law.
+
+For a semi-infinite body initially at c_0, a maintained surface value c_s and constant D, c=c_0+(c_s−c_0)erfc[x/(2√Dt)]. For an infinite diffusion couple, use the corresponding error-function step solution. The numerical factor in a reported penetration depth depends on the specified concentration threshold.
+
+A finite sealed slab approaches its conserved mean. Its zero-flux cosine modes decay as exp[−D(nπ/L)²t]. Boundary-controlled uptake, reaction, trapping or composition-dependent D invalidate the simple forms. With D=10⁻¹⁴ m² s⁻¹ and t=3600 s, √Dt=6 μm, not a universal fully transformed-layer thickness.
+
+**Work:** Substitute a similarity solution into the equation and verify its initial/boundary limits. Derive a cosine-mode decay rate. Compare a measured concentration threshold with √Dt and calculate when the opposite boundary makes the semi-infinite approximation questionable.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [An inspectable conservative diffusion account](../computation/An-inspectable-conservative-diffusion-account.lingua#r_3EK1TAWX9NZ8ADXEWZEV0XGA6E).
+
+
+**Continue in gas and vacuum systems:** [An inspectable conservative diffusion account](../computation/An-inspectable-conservative-diffusion-account.lingua#r_3EK1TAWX9NZ8ADXEWZEV0XGA6E).
+
+} r_1Q16MVYWQQ6T259JDGMK0BD04Y

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Regeneration restores a useful state (@gas-regeneration: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #industrial-gases-and-vacuum "Pressure-swing-separation-as-a-sequence-of-states.lingua#r_0P7X3W2R2KVB8MZYJNXC2F8ARA") { r_0RK5ZEFDST1C43EPF2CH2924D7
+**Read:** [Adsorption Science and Technology — Sourav Mondal, IIT Kharagpur](../sources/Adsorption-Science-and-Technology-Mondal.lingua#r_4P0F5BH9XEAJQPGJ0CTTJ76XM5), regeneration and PSA; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), prepurification; [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH), generator operation and quality.
+
+A sorbent's ability to capture more material depends on its present state. Lowering partial pressure, heating or changing purge composition can drive release, but the process has finite transport and thermal times. Restoring total pressure alone does not establish that the internal loading profile has recovered.
+
+Include desorbed material and purge in the constituent balance. Heating, cooling and repressurization consume time and utilities; a nominally large adsorption capacity may be unavailable in a short operating cycle. Irreversible fouling or chemical change can reduce recoverable performance over many cycles.
+
+**Work:** Compare ideal pressure-swing and temperature-swing working capacities from stated isotherms. Add finite regeneration time and estimate the remaining loading. Explain why a breakthrough measurement after one regeneration does not alone establish long-term repeatability. Specify evidence that distinguishes incomplete regeneration from permanent adsorbent change.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Pressure-swing separation as a sequence of states](Pressure-swing-separation-as-a-sequence-of-states.lingua#r_0P7X3W2R2KVB8MZYJNXC2F8ARA).
+
+} r_0RK5ZEFDST1C43EPF2CH2924D7

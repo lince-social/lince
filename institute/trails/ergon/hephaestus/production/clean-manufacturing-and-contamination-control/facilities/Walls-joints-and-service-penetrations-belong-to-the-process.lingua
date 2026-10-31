@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Walls, joints and service penetrations belong to the process (@cm-envelope-materials: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "Separate-supply-return-recirculation-makeup-and-exhaust.lingua#r_07Y7S74B7TQX0X374HA91EZK4K") { r_0AV04KWMMWSA7M60EQXJZQ6H2Z
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), architecture and layout; [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), housing design; [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), material compatibility.
+
+Floors, panels, coatings, seals and penetrations can release material, retain liquid, obstruct cleaning or leak air. Their installed joints and aged condition can matter more than an isolated material coupon. Surface finish must be considered with cleaning chemistry, abrasion and repair.
+
+Concealed spaces and service penetrations connect the room to return plenums or neighboring zones. A nominally closed wall may be an airflow path. Construction, replacement and later modifications change that path.
+
+**Work:** Section a hypothetical wall/floor junction and a utility penetration. Mark contact materials, drainage, trapped regions, inspection access and pressure boundaries. Compare an initial installation with a repair. State what evidence would support continued use after chemical or mechanical exposure.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Separate supply, return, recirculation, makeup and exhaust](Separate-supply-return-recirculation-makeup-and-exhaust.lingua#r_07Y7S74B7TQX0X374HA91EZK4K).
+
+} r_0AV04KWMMWSA7M60EQXJZQ6H2Z

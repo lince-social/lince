@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Dimensions, datums and the meaning of a fit (@mech-dimensions: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #source "../sources/Precision-Machine-Design-MIT-2-75.lingua#r_1NC9D5QBNMR4S8THM7KFNG32KB", #mechanical-engineering "Choose-the-model-and-keep-its-boundary-visible.lingua#r_50DYM9BTTETPVTR2Z7DE3VHK91") { r_4PZNBTXHP4330SZCC6JBBSSB7R
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), structural connections and bearings; use [Precision Machine Design — MIT 2.75, Fall 2001](../sources/Precision-Machine-Design-MIT-2-75.lingua#r_1NC9D5QBNMR4S8THM7KFNG32KB) later for the deeper constraint and error account. The examples here use ordinary interval reasoning before formal drawing specifications.
+
+A dimension is measured between specified features. A datum supplies a reference; changing the reference can change the interpreted error. A tolerance describes an allowed range under a defined specification and measurement method. It is not automatically the uncertainty of the measurement or the variation actually observed in production.
+
+For an original ideal interval example, a hole diameter in [20.010, 20.030] mm and a shaft in [19.980, 20.000] mm give diametral clearance in [0.010, 0.050] mm. Radius clearance is half this value for ideal concentric cylinders. Form, alignment, thermal expansion and loading require more than these two size intervals.
+
+**Work:** Identify the reference features and functional consequence of one clearance or interference. Compare worst-case interval reasoning with an argument based on observed manufacturing variation. Explain why a statistical assumption about independent dimensions needs evidence before it can replace the worst-case account.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Choose the model and keep its boundary visible](Choose-the-model-and-keep-its-boundary-visible.lingua#r_50DYM9BTTETPVTR2Z7DE3VHK91).
+
+} r_4PZNBTXHP4330SZCC6JBBSSB7R

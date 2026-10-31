@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+UV fluence, reactor validation and operating envelopes (@wu-uv-validation: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Byproducts-precursors-and-linked-treatment-decisions.lingua#r_5KA7KPJQHCMBQQ04QNFJZ6PD28") { r_1FSGHH3PH8RJ6P04C8Y1HKD373
+**Read:** [EPA UV manual](../sources/Ultraviolet-Disinfection-Guidance-EPA.lingua#r_1X6EKSQ3HSS90RN9N9289MQNNX), chapters 2–6, with emphasis on chapter 5; then [UV toolkit](../sources/Ultraviolet-Treatment-Toolkit-EPA.lingua#r_6R1F12GS8S7ZVACAQ1X2VDMJGZ), validation-report contents and operating review. Read the worked cases before evaluating a proposed installation.
+
+A lamp's electrical power is not the fluence received by a microorganism. Water transmission, trajectories, lamp state and reactor geometry affect exposure. The validated operating envelope connects a particular reactor and test evidence to conditions that can be monitored. A reduction-equivalent dose inferred from a challenge response is not simply the arithmetic mean of all particle fluences.
+
+**Work:** Use a published report to build a traceable table of allowed flow, transmission, sensor response, lamp configurations and relevant corrections. For each limit, name the measurement and evidence behind it. Compare a calculated-dose approach with an intensity-setpoint approach. Label a missing sensor or out-of-range condition as missing validation coverage rather than extrapolating by convenience.
+
+Construct a synthetic time log with a lamp outage, declining transmission and one sensor discrepancy. Determine which intervals fall outside the report's envelope, calculate the affected water volume from their actual flow history, and describe its disposition under the system's response plan. The exercise evaluates evidence; do not culture challenge organisms or substitute a home UV experiment for validated reactor performance.
+
+**Continue:** [Byproducts, precursors and linked treatment decisions](Byproducts-precursors-and-linked-treatment-decisions.lingua#r_5KA7KPJQHCMBQQ04QNFJZ6PD28).
+} r_1FSGHH3PH8RJ6P04C8Y1HKD373

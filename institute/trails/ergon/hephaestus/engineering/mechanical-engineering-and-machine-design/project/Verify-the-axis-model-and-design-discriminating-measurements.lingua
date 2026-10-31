@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Verify the axis model and design discriminating measurements (@mech-project-verification: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48", #source "../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ", #mechanical-engineering "Construct-characterize-and-revise-a-machine.lingua#r_6GACHZXQYV6WAJEQ0DVZW5P693") { r_2JQWMJQC4W6D8Q0C6KJ47MP30S
+**Read:** [Engineering drawings for measurement — NPL Guide 79](../sources/Engineering-Drawings-for-Measurement-NPL.lingua#r_48E0H38P8GEB0XPX68MYXGGA48), inspection interpretation; [Systems Engineering Handbook — NASA](../sources/Systems-Engineering-Handbook-NASA.lingua#r_7ZQFZ9E1NAVG27SE2R5S24PDBQ), verification/validation; revisit metrology uncertainty and experimental design.
+
+First test mathematical consistency: integrated speed equals travel, final speed returns to zero, and signed shaft work equals resistance work over a rest-to-rest cycle. Check triangular/trapezoidal continuity and dimensional scaling. Then test the model's physical assumptions with separate observations of position, current, force and temperature.
+
+An encoder mounted on the motor cannot independently validate the motion conversion assumed by that same encoder. Use an independent displacement reference at the useful point, with its mounting and uncertainty described. Compare forward/reverse moves, several speeds, loads and thermal states. Separate fitting a friction or lead-error model from evaluating it on another condition.
+
+**Work:** Specify calibration and held-out observations, including a result that would falsify the revised accuracy claim. Estimate the measurement uncertainty before interpreting a discrepancy. Compare residuals against position, direction, load and temperature; revise a physical assumption instead of hiding every disagreement in a fitted correction.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Construct, characterize and revise a machine](Construct-characterize-and-revise-a-machine.lingua#r_6GACHZXQYV6WAJEQ0DVZW5P693).
+
+} r_2JQWMJQC4W6D8Q0C6KJ47MP30S

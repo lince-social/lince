@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Choose the question before the accelerated test (@mat-degradation-test: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6", #source "../sources/Alkali-Aggregate-Reactivity-FHWA.lingua#r_1RPCXTH7BRN45SFFG6XC76WZNK", #source "../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG", #materials-engineering "Acceleration-factors-and-mechanism-changes.lingua#r_5YXB9GW3RQ1FN1E4QHMKQSV2PS") { r_5EDB1E67D3H8EPCGQFFKQDCAJG
+**Read:** [Corrosion control and interpretation of tests — NPL](../sources/Corrosion-and-Test-Interpretation-NPL.lingua#r_6SEQ1G67MES2K0JB6X7AEA4WD6), Turnbull's complete critique; [Alkali-Aggregate Reactivity Facts Book — FHWA](../sources/Alkali-Aggregate-Reactivity-FHWA.lingua#r_1RPCXTH7BRN45SFFG6XC76WZNK), test and diagnosis chapters; [Polymer-composite weathering protocols — NIST SP 1200-15](../sources/Polymer-Weathering-Protocols-NIST.lingua#r_2WPNZEDVAHNBVD1GS5W878PZCG), protocols.
+
+A test may seek a mechanism, compare candidates, check production consistency or predict service life. These questions demand different evidence. An intentionally severe ranking exposure can be useful without reproducing service, but its ranking may change under another mechanism. Specify the decision and the population of material states before choosing a convenient apparatus.
+
+**Work:** Reconstruct a test with composition, processing, geometry, surface, load, local environment and observation schedule. Identify controls and replication needed to separate material variation from apparatus variation. Evaluate whether an accelerated condition changes local chemistry or stress state. Explain what conclusion the test supports and what additional evidence would be required to use it for a different question.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Acceleration factors and mechanism changes](Acceleration-factors-and-mechanism-changes.lingua#r_5YXB9GW3RQ1FN1E4QHMKQSV2PS).
+
+} r_5EDB1E67D3H8EPCGQFFKQDCAJG

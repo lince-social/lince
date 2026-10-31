@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Derive tie indices from force and extension (@mat-tie-index: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Performance-Indices-Reference-Booklet.lingua#r_4ANTT1YWPSEVTS9J36CHQ1WEGE", #materials-engineering "Bending-indices-change-with-geometry-freedoms.lingua#r_7M7ECRGQ52AJ3TKQY2T6SQDCSQ") { r_1YX1JWASXFFJF54TJP8EE9F2XS
+**Read:** [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), the tensile-tie derivation; [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), axial loading; [Performance Indices Reference Booklet — Kaitlin Tyler and Harriet Parnell](../sources/Performance-Indices-Reference-Booklet.lingua#r_4ANTT1YWPSEVTS9J36CHQ1WEGE), axial indices after your own derivation.
+
+For a uniform tie of fixed length L and free area A, mass is ρAL. A force F and admissible tensile stress σₐ require A≥F/σₐ. Minimizing mass under this constraint gives m≥FLρ/σₐ, so the strength-limited index to maximize is σₐ/ρ. Under linear elasticity, extension FL/(EA)≤δ instead gives A≥FL/(Eδ), with index E/ρ. The allowable stress is an input requiring justification, not automatically a tabulated ultimate strength.
+
+When both constraints act, A must exceed both bounds. The governing bound can differ between candidates. Directional response, connection failure, fatigue, creep and instability require their own checks when applicable. A strength index cannot silently include them.
+
+**Work:** Derive both results from force balance and deformation, then find two hypothetical materials whose ranking reverses between the two constraints. Change the objective from mass to material purchase cost at a stated price per mass and derive the new index. Explain why this still omits processing and service costs.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Bending indices change with geometry freedoms](Bending-indices-change-with-geometry-freedoms.lingua#r_7M7ECRGQ52AJ3TKQY2T6SQDCSQ).
+
+} r_1YX1JWASXFFJF54TJP8EE9F2XS

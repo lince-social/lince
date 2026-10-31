@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Sintering, densification and surface-driven redistribution (@mat-sintering: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "Recovery-recrystallization-and-the-state-left-by-processing.lingua#r_6YGACSTQV93YY1J2NBGQVVHA4T") { r_4Q674R3ZF1GZWEJBNYRT4W2S2Y
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lecture 12 and 3.21 lecture 20; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), interfaces and chemical potentials; the later ceramic processing section for full fabrication practice.
+
+Curvature creates chemical-potential differences that can drive transport between particle surfaces, contacts and pores. Neck growth, densification and grain growth are related observations but not equivalent processes. Material transported along a surface can enlarge a neck without the same center-to-center shrinkage produced by a densifying mechanism.
+
+Atmosphere, powder surface chemistry, size distribution, packing, binders, pressure and temperature history affect the evolving structure. Closed pores and trapped gas can oppose densification. A small polished region may hide a through-thickness density gradient.
+
+**Work:** Compare two idealized transport paths and track volume, pore geometry and particle-center separation. Design measurements that distinguish neck growth from bulk densification. Include shrinkage and gas removal in the process account rather than choosing a firing time from a single micrograph.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Recovery, recrystallization and the state left by processing](Recovery-recrystallization-and-the-state-left-by-processing.lingua#r_6YGACSTQV93YY1J2NBGQVVHA4T).
+
+} r_4Q674R3ZF1GZWEJBNYRT4W2S2Y

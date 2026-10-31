@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Compare surface amount, state and useful function (@cm-surface-account: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "../studies/Investigate-adhesion-wetting-and-surface-storage.lingua#r_79WWFX8V013RSVPGX32ZX0XA89") { r_2AXS2TGNMGTY2T6D13B9YHA0SC
+**Read:** [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), connect surface-contamination quantities to performance; revisit [Film mass, thickness and composition](../foundations/Film-mass-thickness-and-composition.lingua#r_01JP23J8EAA8RR6D1KN8M1R0VN), the film-thickness Record in the opening.
+
+Keep separate accounts of amount, distribution, chemical state and function. Removing a large particle may improve one optical signal while a residual molecular film changes another. A cleaning step can reduce one contaminant while changing an oxide or roughness that the process needs. A measured low airborne count does not determine any of these surface states.
+
+Define a system boundary around the object and every cleaning or storage stream. Use an amount basis appropriate to the question: molecular species, elemental inventory, particle size classes or a functional response. Conversion among species can preserve elements without preserving the original molecule or particle count.
+
+**Work:** Revisit the process map with the new contact and reservoir models. Choose two independent surface observations and one functional observation. Predict which outcomes would support removal, redistribution, transformation or measurement loss. Carry this account into the next study of chemical residues and cleaning rather than choosing a cleaning method from a single adhesion number.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Investigate adhesion, wetting and surface storage](../studies/Investigate-adhesion-wetting-and-surface-storage.lingua#r_79WWFX8V013RSVPGX32ZX0XA89).
+
+} r_2AXS2TGNMGTY2T6D13B9YHA0SC

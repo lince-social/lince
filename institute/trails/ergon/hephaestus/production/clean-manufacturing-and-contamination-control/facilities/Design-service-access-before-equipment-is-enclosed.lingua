@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Design service access before equipment is enclosed (@cm-maintenance-layout: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "Construction-and-handover-must-preserve-the-intended-system.lingua#r_6DHN0SKFD5N9XXM4Y7FJ17HXMQ") { r_2J1WF13AKSKK3TN922QJR27K7R
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), housings, access and maintenance; [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), mechanical layout; [Human access, stored energy and isolation](../../../engineering/mechanical-engineering-and-machine-design/service/Human-access-stored-energy-and-isolation.lingua#r_0FD90Y234EJ4QAT78JTCYQNTEE) and its complete service readings.
+
+An installed system must permit inspection, sampling, filter or seal replacement, cleaning, isolation and restoration. Access can disturb a contamination boundary or expose stored energy. Space for an operating component does not necessarily provide space for its removal.
+
+Locate test ports, isolation points and handling routes with the expected task. Keep the destination of removed media and washings in the same system account. A difficult intervention can create repeated contamination and prolonged downtime.
+
+**Work:** Trace one replacement from an operating state through isolation and removal to restored service. Draw worker positions, tools, lifting space and the path of the used component. Identify observations that establish the restored boundary and function, then compare two layouts by the work they actually permit.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Construction and handover must preserve the intended system](Construction-and-handover-must-preserve-the-intended-system.lingua#r_6DHN0SKFD5N9XXM4Y7FJ17HXMQ).
+
+} r_2J1WF13AKSKK3TN922QJR27K7R

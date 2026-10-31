@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Luminescence, traps and optical material state (@mat-luminescence: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN", #source "../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS", #materials-engineering "Magnetic-moments-and-their-material-environment.lingua#r_2TDVYKVVQBWMGV276FG726SJGC") { r_6RK2H4WT78NXST1S0SEQ1BFHQR
+**Read:** [Electrical, Optical, and Magnetic Properties of Materials — MIT 3.23](../sources/Functional-Materials-MIT-3-23.lingua#r_3TPN5CK13R844S7PGFK7C1STVN), luminescence, excitons and quantum-well readings; [Introdução à Física do Estado Sólido — Lucy V. C. Assali](../sources/Fisica-do-Estado-Solido-Assali-IFUSP.lingua#r_3KCKPSW6FY72YA5689VPH8N5PS), semiconductor carriers; return to the earlier defects and interfaces accounts.
+
+Excited populations can decay through radiative and nonradiative channels. For a simple first-order isolated population, dn/dt=−(kr+knr)n and quantum yield is kr/(kr+knr). A measured lifetime alone gives their sum, not each rate. Reabsorption, excitation dependence, trapping, surfaces and instrument response can produce more complicated signals.
+
+Material processing can alter color centres, dopants, defects, roughness and phase composition. Useful optical behavior therefore depends on a documented material state. High emission efficiency in one small specimen does not establish light extraction, heat removal or stable performance in a device.
+
+**Work:** Combine lifetime and yield to infer rates in the declared model, then test a second excitation level or temperature. Compare a luminescent ceramic, a semiconductor emitter and an optical glass through their different mechanisms. Follow one primary study from specimen preparation to spectral and temporal evidence.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Magnetic moments and their material environment](Magnetic-moments-and-their-material-environment.lingua#r_2TDVYKVVQBWMGV276FG726SJGC).
+
+} r_6RK2H4WT78NXST1S0SEQ1BFHQR

@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Reproduce a primary result with explicit evidence levels (@gas-reproduce: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB", #source "../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR", #source "../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D", #industrial-gases-and-vacuum "Design-evidence-that-can-distinguish-competing-models.lingua#r_7TPSBM0ZKVA120251MWAJNJRAH") { r_1X534F0YXWAD1X97F38JKVAFHY
+**Read:** The complete chosen primary paper and its available methods, supplements and data. Useful starting points are [A constant-pressure flowmeter — Eckel and colleagues](../sources/Constant-Pressure-Flowmeter-Eckel.lingua#r_5JSJ3BT42VQZ4S2AGZBVMC89DB), [Conservation of helium while maintaining high system purity — White and colleagues](../sources/Helium-Conservation-White.lingua#r_3DSV0B9MRH66ZES2M2H75FPJWR), [Comparing vacuum-chamber materials and treatments — Fedchak and colleagues](../sources/Outgassing-Comparison-Fedchak.lingua#r_0CR7DXJZ2Z6J97G0NGV2RQNM8D) and the adsorption manuscripts.
+
+Separate algebraic verification, implementation of a published model, reproduction of reported numerical outputs and independent experimental replication. These achievements require different evidence. Missing raw data or unavailable proprietary software limits the claim; it does not justify silently substituting invented input.
+
+Specify source versions, units, geometry, properties, boundary conditions, numerical choices and uncertainty. Reproduce a tractable result first, then test a limit or altered assumption. If data must be read from a figure, report digitization and axis uncertainty and preserve the figure's version.
+
+**Work:** Deliver an inspectable derivation or computation with independent checks and a discrepancy account. Explain every unavailable input and the resulting limit. Do not call a related original teaching model a reproduction of the paper. Preserve the complete evidence with ordinary linked Records and source files.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Design evidence that can distinguish competing models](Design-evidence-that-can-distinguish-competing-models.lingua#r_7TPSBM0ZKVA120251MWAJNJRAH).
+
+} r_1X534F0YXWAD1X97F38JKVAFHY

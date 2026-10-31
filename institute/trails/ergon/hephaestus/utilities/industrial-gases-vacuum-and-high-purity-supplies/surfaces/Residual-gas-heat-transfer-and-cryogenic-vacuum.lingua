@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Residual-gas heat transfer and cryogenic vacuum (@gas-gas-heat: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9", #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #industrial-gases-and-vacuum "../computation/An-inspectable-network-pumpdown-and-gas-balance.lingua#r_0VC5EBA7F2PQHGCGYYJPKGM49D") { r_7DJDJC0A2FYP80GQ0XREKTE03H
+**Read:** [Vacuum technology for superconducting devices — Paolo Chiggiato](../sources/Vacuum-for-Superconducting-Devices-Chiggiato.lingua#r_2PJTDCZXJ91HF8Q1BBY9FNMWH9), the complete molecular heat-transfer derivation; [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), cryo-vacuum; the shared thermal account of radiation, supports and interfaces.
+
+Gas molecules carry energy between surfaces even when bulk convection is absent. In a free-molecular model, the rate depends on incident flux and the energy exchanged at each surface. Accommodation, gas identity, temperatures and geometry are essential; a continuum conductivity formula has a different regime. Use flux-weighted energy: molecules crossing a plane from an ideal monatomic Maxwell gas carry mean translational energy 2kBT. Derive this moment before adding internal degrees of freedom and accommodation.
+
+For fixed temperatures and accommodation in the dilute free-molecular limit, gas-mediated heat transfer commonly scales with gas density or pressure. Radiation and solid-support conduction do not disappear when gas pressure falls. A low-pressure reading at a warm port also needs interpretation before representing conditions near a cold surface.
+
+**Work:** Derive a molecular energy-flux estimate using explicit degrees of freedom and accommodation assumptions. Compare it with radiation and a support-conduction estimate. Identify the regime where further pumping produces little reduction in total heat load, and explain how loss of insulation vacuum changes both thermal and gas inventories.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [An inspectable network pumpdown and gas balance](../computation/An-inspectable-network-pumpdown-and-gas-balance.lingua#r_0VC5EBA7F2PQHGCGYYJPKGM49D).
+
+} r_7DJDJC0A2FYP80GQ0XREKTE03H

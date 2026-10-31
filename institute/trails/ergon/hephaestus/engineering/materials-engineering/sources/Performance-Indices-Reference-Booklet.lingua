@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Performance Indices Reference Booklet — Kaitlin Tyler and Harriet Parnell (@mat-indices-book: 0, is #reference, #part-of @mat-sources) { r_4ANTT1YWPSEVTS9J36CHQ1WEGE
+Kaitlin Tyler and Harriet Parnell, Ansys, copyright 2022. [Performance Indices Reference Booklet](https://www.ansys.com/content/dam/amp/2021/august/webpage-requests/education-resources-dam-upload-batch-6/performance-indices-booklet-bokpeien22.pdf), 33 PDF pages.
+
+Use the full booklet as a derivation and checking exercise after the MIT selection lessons. For each index, recover the function, constraint, geometry freedoms, constitutive assumptions and objective. A tabulated expression is meaningful only under those conditions. For example, pure axial compression with a fixed area has no section-shape dependence in its axial elastic stiffness; instability introduces a different problem.
+
+Contents, introductory derivations and the stiffness-index table on PDF page 4 were inspected, including the table image, on 30 October 2026. Freely accessible publisher PDF; no general open adaptation licence was established. It does not supply a free material-property database or proprietary selection software. Keep the PDF external and distinguish independent derivations from reproduced publisher figures.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_4ANTT1YWPSEVTS9J36CHQ1WEGE

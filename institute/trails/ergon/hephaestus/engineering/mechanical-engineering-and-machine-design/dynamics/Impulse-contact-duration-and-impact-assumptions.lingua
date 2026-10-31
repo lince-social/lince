@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Impulse, contact duration and impact assumptions (@mech-impulse: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3", #source "../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA", #mechanical-engineering "Mass-inertia-and-the-geometry-of-moving-matter.lingua#r_677BAAY5R0MP9FED713TF4ABQC") { r_1F3HPZVW0CXM9752X2W84TPGEW
+**Study:** [Engineering Dynamics — MIT 2.003SC, Fall 2011](../sources/Engineering-Dynamics-MIT-2-003SC.lingua#r_37MSK6EJHRV95GXWA23P4ZJPZ3), lectures 5–6; [Classical Dynamics — David Tong](../sources/Classical-Dynamics-David-Tong.lingua#r_2M330E943Q98XH7BJKXETRWKNA), section 1.3.1. Use the integrals already developed to connect force history and momentum change.
+
+Impulse is the time integral of force and equals the change in momentum for the selected closed system. An observed momentum change determines an impulse, not the peak force or detailed duration of a contact. A triangular and a rectangular pulse can have the same impulse and different peaks.
+
+A 0.5 kg slider slows from 2 m/s to rest. The stopping impulse is −1 N·s and the change in kinetic energy is −1 J. Over 0.02 s, the average stopping force is −50 N; a triangular force pulse of that duration and impulse reaches 100 N in magnitude. The energy must be accounted for in deformation, heat, sound or other degrees of freedom.
+
+A coefficient of restitution relates normal approach and separation speeds for a specified impact model. It is empirical and depends on the bodies, conditions and velocity range. Momentum conservation for an isolated pair does not imply conservation of their kinetic energy, and it does not determine rebound without further information.
+
+**Work:** Derive a two-body one-dimensional collision with a declared restitution coefficient. Check total momentum and the predicted kinetic-energy loss for 0 ≤ e ≤ 1. Compare this lumped impact description with a finite spring–damper contact, including the conditions under which contact opens. Keep the applied-load history available for the later strength and fatigue studies.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Mass inertia and the geometry of moving matter](Mass-inertia-and-the-geometry-of-moving-matter.lingua#r_677BAAY5R0MP9FED713TF4ABQC).
+
+} r_1F3HPZVW0CXM9752X2W84TPGEW

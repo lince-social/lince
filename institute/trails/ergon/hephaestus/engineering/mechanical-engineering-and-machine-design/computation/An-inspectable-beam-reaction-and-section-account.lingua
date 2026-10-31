@@ -1,0 +1,58 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+An inspectable beam reaction and section account (@mech-beam-example: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80", #mechanical-engineering "../study/Defend-the-static-model-of-a-machine.lingua#r_3ESKMC4WAANDZ5S8HK9M7TA8Q4") { r_3ST3WWAE3FMTEGFBA2B2T57GHF
+**Read:** [Engineering Statics — Baker and Haynes](../sources/Engineering-Statics-Baker-and-Haynes.lingua#r_3DXGKGQSPPA9YDNH2WSB8XRN80), chapters 5, 7 and 8. Derive reactions and cut-section equations before running this original program.
+
+The model is a straight planar beam with ideal supports at 0 and L, a uniform transverse line load and specified transverse point loads. Downward applied loads are positive, upward reactions positive, and section signs follow the displayed left-part equilibrium. Inputs use consistent units, such as m, N and N/m. Reactions of either sign are mathematical results; a negative result may be incompatible with a contact-only support.
+
+```python
+from math import fsum, isfinite
+
+
+def checked_loads(span, distributed, point_loads):
+    if not isfinite(span) or span <= 0 or not isfinite(distributed):
+        raise ValueError("span must be positive and loads finite")
+    loads = tuple(point_loads)
+    for position, force in loads:
+        if not isfinite(position) or not isfinite(force) or not 0 <= position <= span:
+            raise ValueError("point load must have finite force and a position on the beam")
+    return loads
+
+
+def beam_reactions(span, distributed, point_loads):
+    loads = checked_loads(span, distributed, point_loads)
+    right = distributed * span / 2 + fsum(force * (position / span) for position, force in loads)
+    left = distributed * span / 2 + fsum(force * ((span - position) / span) for position, force in loads)
+    if not isfinite(left) or not isfinite(right):
+        raise ValueError("reaction outside numerical range")
+    return left, right
+
+
+def beam_section(span, distributed, point_loads, position, side="right"):
+    loads = checked_loads(span, distributed, point_loads)
+    if not isfinite(position) or not 0 < position < span or side not in ("left", "right"):
+        raise ValueError("choose an interior section and a left or right limit")
+    left, right = beam_reactions(span, distributed, loads)
+    before = [(x, force) for x, force in loads if x < position or (side == "right" and x == position)]
+    shear = left - distributed * position - fsum(force for _, force in before)
+    moment = left * position - distributed * position**2 / 2
+    moment -= fsum(force * (position - x) for x, force in before)
+    if not isfinite(shear) or not isfinite(moment):
+        raise ValueError("section result outside numerical range")
+    return shear, moment
+
+
+if __name__ == "__main__":
+    loads = [(1.0, 300.0)]
+    print(beam_reactions(4.0, 100.0, loads))
+    print(beam_section(4.0, 100.0, loads, 2.0))
+```
+
+The example returns reactions (425, 275) N and, at x = 2 m, shear −75 N and moment 350 N·m. At a point load the shear has different left and right limits while moment remains continuous. Sections are restricted to the open span, so the function does not confuse a support's boundary jump with an interior limit.
+
+**Investigate:** Check the whole force and moment balances, then obtain each section result independently from the right-hand portion. Compare unloaded, uniform-only, point-only and mixed cases; reflect the loads and exchange the supports. Check the point-load jump and continuity of moment. For the example, locate the maximum bending moment by a zero-shear condition rather than assuming it occurs at midspan. This model does not predict stress, deformation, buckling, fatigue or dynamic response.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Defend the static model of a machine](../study/Defend-the-static-model-of-a-machine.lingua#r_3ESKMC4WAANDZ5S8HK9M7TA8Q4).
+
+} r_3ST3WWAE3FMTEGFBA2B2T57GHF

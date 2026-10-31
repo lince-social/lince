@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Exchange interactions and magnetic order (@mat-exchange: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1", #source "../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5", #source "../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2", #materials-engineering "Domains-anisotropy-and-hysteresis.lingua#r_7V12JXAAGXS24YD7GW5PWBWXBP") { r_2XDJ68PA7HDHFCM6TFSZNTCFMG
+**Read:** [Electron interactions, magnetism and superconductivity — Daniel C. Ralph](../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1), sections I–II in full and the related homework; [Solid State Physics — Steven H. Simon, 2012 draft](../sources/Solid-State-Physics-Simon-2012.lingua#r_3R4Q71S31MD0EH6YVDQQ2ESKH5), chapters 20–22; [Statistical Physics — David Tong](../sources/Statistical-Physics-Tong.lingua#r_7FMG47HD1MT706NT3CABRTFNS2), chapter 5.
+
+The antisymmetry of many-electron states and their interactions can favor different spin correlations. Exchange is not simply the classical dipole interaction renamed. An itinerant Stoner argument compares the kinetic cost of spin polarization with an interaction-energy reduction. State whether the density of states is per spin before writing its instability condition.
+
+Localized-spin and itinerant models answer different questions and can overlap imperfectly in real materials. Ferromagnets, antiferromagnets and ferrimagnets have different arrangements and net moments. A mean-field transition temperature is not proof that fluctuations and dimensionality are negligible.
+
+**Work:** Construct the two-electron singlet/triplet account, derive a stated Stoner or localized-spin mean-field criterion, and compare it with a limiting case where the approximation fails. Relate a documented material's structure and occupation to the chosen model, rather than assigning magnetic order from a generic element label.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Domains, anisotropy and hysteresis](Domains-anisotropy-and-hysteresis.lingua#r_7V12JXAAGXS24YD7GW5PWBWXBP).
+
+} r_2XDJ68PA7HDHFCM6TFSZNTCFMG

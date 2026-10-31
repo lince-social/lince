@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Reactive processing, conversion, gelation and vitrification (@mat-reactive-processing: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614", #source "../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0", #source "../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P", #materials-engineering "Derive-a-coupled-cure-and-heat-account.lingua#r_4S1BDTCH10000YGV8FAG1RPYGT") { r_07WYT3ZV0DCHFBAAEHWR4MS771
+**Read:** [Simultaneous rheology and cure kinetics — Romberg and Kotula, 2023](../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614) and [Epoxy conversion from rheology — Romberg and colleagues, 2024](../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0), complete papers; [Polymer Physics — MIT 3.063](../sources/Polymer-Physics-MIT-3-063.lingua#r_5EPM1GX0YZDKN71N771PQCWQ5P), network formation. Return to chemical kinetics and the earlier network-state Record.
+
+Conversion measures reaction progress under a stated chemical definition. Gelation concerns connectivity; vitrification concerns mobility relative to the process timescale. None can universally replace the others. Heating can initially reduce viscosity or a filler network's yield response before reaction raises stiffness. A process that holds its shape at room temperature can therefore deform during cure.
+
+**Work:** Reconstruct how conversion and rheological response were measured independently in the NIST studies. Track normalization, compliance, conditioning and temperature history. Compare a first-order, autocatalytic and diffusion-limited account where the evidence permits. Identify which parameters are determined by isothermal data and which require another thermal history. Do not claim that a single modulus crossing establishes a universal gel criterion.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Derive a coupled cure and heat account](Derive-a-coupled-cure-and-heat-account.lingua#r_4S1BDTCH10000YGV8FAG1RPYGT).
+
+} r_07WYT3ZV0DCHFBAAEHWR4MS771

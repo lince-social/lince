@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Independent mechanical investigation and revision (@mech-independent-research: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4", #source "../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V", #source "../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY", #mechanical-engineering "Completion-and-continuing-mechanical-studies.lingua#r_6SRKN6GWDTE4453PVA7T2FYGVF") { r_59GJ8QGKR4RTAH7BTSZKPR1QWF
+**Read:** Follow the primary literature for the chosen question, using [Principles and Techniques for Designing Precision Machines — Hale](../sources/Precision-Machine-Design-Hale-Thesis.lingua#r_3V7NVTW0ER7HDK3BJ1HCNPZYN4), [Thermal-error measurement — Li and colleagues, 2024](../sources/Thermal-Error-Measurement-Li-and-Colleagues.lingua#r_5RZ5P1Q821VSD4MQC6RRC5EW2V) and [Diagnostic and prognostic capabilities — Vogl, Weiss and Helu](../sources/Manufacturing-Diagnostics-and-Prognostics-Vogl.lingua#r_11J2W3H9ZM5J2Q1VYVMF1D41HY) as models to examine rather than templates to copy.
+
+Choose an unresolved question arising from the machine studies: a mechanism model that fails under reversal, a manufacturing variation that controls function, a thermal compensation that does not transfer, or a degradation signal confounded by operating state. Establish what is already known and why the next comparison is informative.
+
+**Develop:** Derive a testable prediction and competing explanation. Construct a numerical or physical investigation with convergence/calibration checks, uncertainty and independent evaluation. Preserve negative results and distinguish exploratory choices from later confirmation. State the exact data, apparatus, software and rights needed for another person to reproduce the work.
+
+**Defend:** Compare with primary research at the level of assumptions and evidence, not just summary conclusions. Seek a technically informed critique, answer it with analysis or new observations, and revise the claim. Publish the original explanation and permissible supporting material as ordinary linked Records. Knowledge remains revisable after a demanding study is completed.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Completion and continuing mechanical studies](Completion-and-continuing-mechanical-studies.lingua#r_6SRKN6GWDTE4453PVA7T2FYGVF).
+
+} r_59GJ8QGKR4RTAH7BTSZKPR1QWF

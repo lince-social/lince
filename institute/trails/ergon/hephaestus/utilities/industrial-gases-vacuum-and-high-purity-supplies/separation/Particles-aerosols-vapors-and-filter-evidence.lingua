@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Particles, aerosols, vapors and filter evidence (@gas-filtration: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH", #source "../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0", #industrial-gases-and-vacuum "../studies/Compare-three-routes-to-an-accepted-air-gas-service.lingua#r_4ZE261Y4XK4JFSF4W7HRFPPWGP", #industrial-gases-and-vacuum "../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8", #industrial-gases-and-vacuum "../studies/Defend-purification-and-point-of-use-quality.lingua#r_5BF2KBEHHJXNRREY8X3322A69W") { r_680V115JM8QNF7WXGCY0Q2SWTM
+**Read:** [On-site nitrogen generators for food use — EIGA 194/24](../sources/Onsite-Nitrogen-Generators-EIGA.lingua#r_2VHG044YCF1X5GZRJVJJFN7NFH), feed conditioning; [Cleaning equipment for oxygen service — EIGA 33/18](../sources/Cleaning-for-Oxygen-Service-EIGA.lingua#r_27WYRBCNFB89Z5DXR0PMHWNES0), contamination and inspection; the existing fluid transport and contamination material.
+
+Particles, droplets and dissolved or gaseous molecules follow different transport and removal mechanisms. A filter's stated pore size does not fully describe collection efficiency, retention under changing flow, particle generation or chemical compatibility. A coalescer's performance against droplets does not establish removal of vapor.
+
+Measure the quantity relevant to service: particle number or mass by size, nonvolatile residue, a specific gas constituent, or deposition on a witness surface. An efficient upstream filter can coexist with downstream contamination from assembly, wear or surface release.
+
+**Work:** Compare two hypothetical contamination specifications and identify appropriate sampling locations and measurements. Trace a pressure/flow transient that could change retention or release stored material. Explain which evidence would support continuing cleanliness after maintenance, including the preservation of cleaned parts before reassembly.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Compare three routes to an accepted air-gas service](../studies/Compare-three-routes-to-an-accepted-air-gas-service.lingua#r_4ZE261Y4XK4JFSF4W7HRFPPWGP), [Build a numerical validation argument across several kinds of evidence](../../../inquiry/reproducible-computation/numerics/A-numerical-validation-study.lingua#r_7EY9S6DXHFHSJAGA30W35A4ZD8), [Defend purification and point-of-use quality](../studies/Defend-purification-and-point-of-use-quality.lingua#r_5BF2KBEHHJXNRREY8X3322A69W).
+
+} r_680V115JM8QNF7WXGCY0Q2SWTM

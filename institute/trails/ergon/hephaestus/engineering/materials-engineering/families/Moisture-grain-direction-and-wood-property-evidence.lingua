@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Moisture, grain direction and wood property evidence (@mat-wood-moisture: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM", #source "../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9", #materials-engineering "../mechanical/Measure-response-before-selecting-a-material-law.lingua#r_4R1J7QDQJB51X68DBRVHDCE2F6") { r_4R9G8XNCS0G4H4FD4T87S8GPG7
+**Read:** [Wood Handbook — Forest Products Laboratory, 2021](../sources/Wood-Handbook-FPL-2021.lingua#r_2SP2KMHCD78MQGZN69GKPGJ3WM), chapters 4–7 and 10–13; [Material families and mechanical response — Cambridge DoITPoMS](../sources/Material-Families-and-Mechanical-Response-DoITPoMS.lingua#r_79PNN694CQ82ENKZC6STQJ5KN9), Wood's moisture experiment and its stated specimen conditions.
+
+On the usual dry-mass basis, moisture content is 100(m_wet−m_dry)/m_dry percent. A 120 g specimen that dries to 100 g has 20% moisture content on that basis, not 16.7%. Bound water in cell walls and free water in cavities have different relations to swelling and mechanical response. Sorption history, temperature, species and equilibration matter.
+
+Distinguish longitudinal, radial and tangential response and the effects of knots, grain deviation and checks. Moisture cycling under load can change deformation beyond a simple dry-versus-wet modulus comparison. Adhesive performance and differential movement also matter in engineered wood.
+
+**Work:** Reconstruct a documented moisture/property comparison with its mass basis, conditioning and geometry. Explain how a clear-wood test relates to a graded product without substituting its mean strength for a design value. Propose measurements separating moisture redistribution, elastic strain, creep and damage.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Measure response before selecting a material law](../mechanical/Measure-response-before-selecting-a-material-law.lingua#r_4R1J7QDQJB51X68DBRVHDCE2F6).
+
+} r_4R9G8XNCS0G4H4FD4T87S8GPG7

@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Screening with several active constraints (@mat-multiple-constraints: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #materials-engineering "An-inspectable-beam-selection-example.lingua#r_3Z71XZGNKB3DR2J1M9JN7EQVJV") { r_3M3JZK76NYCVMKXTAK61WZ1JRA
+**Read:** [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), selection and process lectures; [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ), complete worked cases. Revisit your constraint definitions.
+
+For each candidate, solve all applicable constraints using a consistent material state. The largest lower bound on a free dimension governs only when every constraint can be expressed that way. Temperature, compatibility, process availability or a maximum envelope may remove a candidate entirely. Missing evidence is not proof that a requirement passes or fails.
+
+Keep the reason for rejection and distinguish physical infeasibility from insufficient information. When no candidate works, reconsider the permitted architecture, process or requirement with an explicit account of the change. Selecting the highest score from an infeasible list does not solve the problem.
+
+**Work:** Build a comparison with strength, stiffness, dimensional envelope and environment constraints. Identify the active constraint for every feasible candidate and calculate unused margins. Perturb each requirement and locate a change of governing constraint. Show one ranking from a single index that disagrees with the fully constrained comparison, and explain the cause.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [An inspectable beam-selection example](An-inspectable-beam-selection-example.lingua#r_3Z71XZGNKB3DR2J1M9JN7EQVJV).
+
+} r_3M3JZK76NYCVMKXTAK61WZ1JRA

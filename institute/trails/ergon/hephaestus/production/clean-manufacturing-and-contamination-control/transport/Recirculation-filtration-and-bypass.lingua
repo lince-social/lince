@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Recirculation, filtration and bypass (@cm-filter-balance: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #clean-manufacturing "Filter-capture-is-not-a-single-pore-size.lingua#r_0YFX365S5CV4JF6N1V39N02KQX") { r_2PYGBXM8TFGPQ1WGHP4CSRDFAA
+**Read:** [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), collection, retention and installation; [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), recirculation systems.
+
+Recirculated air returns to the same volume. If a filter removes fraction η of a specified particle class at recirculation rate Q_r, its ideal removal rate is ηQ_r C, not Q_r C unless η=1. The well-mixed balance therefore gains ηQ_r in the coefficient multiplying C. The rate ηQ_r has units of clean-air delivery for this model and this particle class.
+
+If fraction b of the flow bypasses the medium completely, overall penetration is P=b+(1−b)(1−η), and effective removal is (1−b)η. With η=0.999 and b=0.01, P=0.01099. A small bypass can dominate the total passage even when the medium itself performs well.
+
+**Work:** Derive both relations by splitting the flow. Compare improving the medium with reducing bypass for the hypothetical numbers. Explain why laboratory media performance, installed leakage and the air reaching the product require distinct observations.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Filter capture is not a single pore size](Filter-capture-is-not-a-single-pore-size.lingua#r_0YFX365S5CV4JF6N1V39N02KQX).
+
+} r_2PYGBXM8TFGPQ1WGHP4CSRDFAA

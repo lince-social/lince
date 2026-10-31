@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Withdrawal cooling and the remaining inventory (@gas-withdrawal: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ", #industrial-gases-and-vacuum "Filling-heating-and-the-state-after-rest.lingua#r_40BQVRJYCA7X9K0CHB5C4NVTGY") { r_5MS3TXRF6DFX1F4JJTBBXT9C2S
+**Read:** [Engineering Thermodynamics — Olivier Cleynen](../../../physics/thermodynamics-and-heat-transfer/sources/Engineering-Thermodynamics-Cleynen.lingua#r_38CM7HKS0GSN5T09YDXFKHRVGQ), ideal-gas properties and unsteady open systems; compare [A storage vessel needs mass and energy balances](A-storage-vessel-needs-mass-and-energy-balances.lingua#r_08N1RNVEKDZ9XJM90S5KC5CXPT).
+
+An idealized rigid, insulated, well-mixed vessel loses a calorically perfect gas. With constant cv, cp and γ=cp/cv, no inlet or shaft work, and outlet enthalpy cpT evaluated at the vessel state, d(mcvT)=cpT dm, where dm is negative during withdrawal. Therefore T/T₀=(m/m₀)^(γ−1) and p/p₀=(m/m₀)^γ. The gas left behind cools because the outflow carries enthalpy.
+
+For γ=1.4 and half the initial mass remaining, T/T₀≈0.757858 and p/p₀≈0.378929. Starting at 300 K gives about 227.357 K in this limiting model. The equally simple isothermal limit gives p/p₀=0.5, with heat entering to sustain temperature. Neither limit is automatically a real cylinder history.
+
+If the vessel must remain above pmin, the ideal adiabatic remaining fraction is (pmin/p₀)^(1/γ), whereas the isothermal fraction is pmin/p₀. This changes usable inventory even before regulator losses are considered. Heat transfer during pauses can restore pressure without adding mass.
+
+**Work:** Derive the equations from the storage balance, check the signs and compare slow withdrawal, rapid withdrawal and recovery during rest. Explain why using the initial temperature for every pressure-to-inventory conversion produces a systematic error.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Filling, heating and the state after rest](Filling-heating-and-the-state-after-rest.lingua#r_40BQVRJYCA7X9K0CHB5C4NVTGY).
+
+} r_5MS3TXRF6DFX1F4JJTBBXT9C2S

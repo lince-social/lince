@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Ion pumps and gas-dependent capture (@gas-ion-pump: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN", #source "../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR", #industrial-gases-and-vacuum "Forelines-traps-and-the-complete-exhaust-boundary.lingua#r_1ATY1553GS5Z6V1JHZGJMTD22J") { r_45T7CJ2NFA9XNMN721KHCY3SVW
+**Read:** [Vacuum systems — Vincent Baglin and Roberto Kersevan](../sources/Vacuum-Systems-Baglin-Kersevan.lingua#r_1K9ATEHFM7ET2H8TRHC3QNCRFN), II.8.3.3; [Fundamentals of Vacuum Technology — Walter Umrath and contributors](../sources/Fundamentals-of-Vacuum-Technology-Leybold.lingua#r_1S93A5X32978GSHZH4CF96VPQR), sputter-ion pumps in section 2.1.8.
+
+An ion pump combines electron motion, gas ionization and interactions with electrodes. Reactive sputtered material can bind some gases; implantation and burial contribute for other species. The pump stores material internally and has no ordinary continuous exhaust path.
+
+Capture and release depend on gas species, electrode state, discharge behavior and operating pressure. Pump current can provide a pressure-related signal only with a suitable calibration and interpretation. A current change can also reflect a changed gas composition or discharge condition.
+
+**Work:** Draw the paths of electrons, ions and neutral molecules and identify where energy and material enter the electrodes. Compare chemically active and inert constituents. Explain why a nominal pumping-speed rating and a current-to-pressure conversion need their own conditions, and how accumulated gas and electrode erosion affect continuing operation.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Forelines, traps and the complete exhaust boundary](Forelines-traps-and-the-complete-exhaust-boundary.lingua#r_1ATY1553GS5Z6V1JHZGJMTD22J).
+
+} r_45T7CJ2NFA9XNMN721KHCY3SVW

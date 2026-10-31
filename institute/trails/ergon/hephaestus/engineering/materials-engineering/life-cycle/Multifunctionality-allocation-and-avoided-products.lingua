@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Multifunctionality, allocation and avoided products (@mat-life-allocation: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX", #source "../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1", #materials-engineering "Lifetime-repair-and-replacement-change-the-reference-flow.lingua#r_0P67R52GK04MX778TQNWRHHHVQ") { r_5J4MEP7Y4KY5G7G9EQ8XC6M80S
+**Read:** [Life-cycle assessment, detailed guidance — ILCD Handbook](../sources/Life-Cycle-Assessment-Detailed-Guide-ILCD.lingua#r_6YXH2DKX7XZRCE6XSCJ2QGJ3YX), section 7.9 and annex 14 in full; [Metal Recycling: Opportunities, Limits, Infrastructure — UNEP International Resource Panel](../../../materials/metals-and-metallurgical-production/sources/Metal-Recycling-UNEP-IRP.lingua#r_40JXFY43ST442BB8MJEAYJT9N1), coupled recovery systems.
+
+A process can provide several products or services. Subdivision may isolate some flows; system expansion can represent additional functions; allocation divides shared burdens according to a stated rule. Mass, economic value and a physical causal relation are not equivalent justifications. A convenient allocation factor is not necessarily a mechanism.
+
+An avoided-product claim needs a counterfactual: what output is displaced, in what quantity, quality, market and time? Recovery can provide material while also treating waste. Avoid assigning a full benefit to multiple participants for the same physical substitution. Keep recycling assumptions consistent between the supplying and receiving systems.
+
+**Work:** Analyze a two-product recovery process using subdivision where supported, then two explicit treatments of the remaining shared flows. Check that allocated quantities reconcile with the undivided account. Compare with a system-expansion scenario and state its displacement assumptions. Explain a ranking change without presenting one convention as a measured physical fact.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Lifetime, repair and replacement change the reference flow](Lifetime-repair-and-replacement-change-the-reference-flow.lingua#r_0P67R52GK04MX778TQNWRHHHVQ).
+
+} r_5J4MEP7Y4KY5G7G9EQ8XC6M80S

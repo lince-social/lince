@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Settling flux, blankets and the limits of a single index (@wu-solids-flux: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "A-batch-cycle-allocates-time-volume-and-biological-conditions.lingua#r_6Q2ERG99K92NC45ZH9MPF1JZ54") { r_1MAYFYXBANP0CPDB34EJPEGT05
+**Read:** [Activated Sludge and Aerobic Biofilm Reactors — von Sperling](../sources/Activated-Sludge-and-Aerobic-Biofilm-Reactors.lingua#r_0WMGVEM60J63M01SJJDQ9357GE) and [Biological Wastewater Treatment — Chen and colleagues, second edition](../sources/Biological-Wastewater-Treatment-Chen-and-Colleagues.lingua#r_1AE9DK0YWQR5GDECZ9KK1JJP37), secondary separation and settling models. Revisit the earlier settling foundations, recognizing that concentrated biological suspensions need a different account from isolated particles.
+
+A settling test can produce concentration-dependent settling velocity v(X). Gravitational solids flux is Xv(X); underflow transport and feed conditions complete a clarifier model. A blanket rising over time is stored mass, not simply a bad effluent concentration. A single settled-volume index cannot establish the whole flux curve or explain every failure.
+
+As an original dimensional example, X = 3 kg/m³ with a measured test velocity of 0.5 m/hour gives 1.5 kg/(m²·hour) of gravitational flux for that test condition. An underflow superficial speed of 0.2 m/hour contributes 0.6 kg/(m²·hour) at the same concentration. These local quantities do not by themselves prove a separator can accept the applied feed flux.
+
+**Work:** Fit and compare two settling relations to a declared dataset, preserving temperature and sampling conditions. Plot total transport against concentration, state the boundary and limiting-flux interpretation, and test sensitivity to uncertain concentrated-settling behaviour. Compare model predictions against blanket and effluent observations from another period. Include bulking, rising sludge and hydraulic short-circuiting as distinct hypotheses requiring evidence.
+
+**Continue:** [A batch cycle allocates time, volume and biological conditions](A-batch-cycle-allocates-time-volume-and-biological-conditions.lingua#r_6Q2ERG99K92NC45ZH9MPF1JZ54).
+} r_1MAYFYXBANP0CPDB34EJPEGT05

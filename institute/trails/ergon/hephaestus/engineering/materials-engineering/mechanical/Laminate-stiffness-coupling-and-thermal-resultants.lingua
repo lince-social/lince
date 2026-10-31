@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Laminate stiffness, coupling and thermal resultants (@mat-laminates: 0, is #chapter, #part-of @materials-engineering, #source "../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #materials-engineering "Composite-failure-interfaces-and-progressive-damage.lingua#r_1CYDEPDR6YTXBKQCX79C991A1T") { r_3Q5VE043P3F3HY1QNN0R4A7G37
+**Read:** [Modules in Mechanics of Materials — David Roylance](../../mechanical-engineering-and-machine-design/sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), the complete 18-page Laminated Composite Plates module and problems; [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Fibre Composites' off-axis, laminate, balanced and symmetric sections. Revisit the earlier tensor and elastic-energy work.
+
+For a thin bonded laminate in classical small-deflection theory, choose ε(z)=ε⁰+zκ and define N=∫σ dz, M=∫zσ dz. With transformed ply stiffness Q̄_k, A=ΣQ̄_kΔz, B=½ΣQ̄_kΔ(z²), D=⅓ΣQ̄_kΔ(z³). Thus [N;M]=[A B;B D][ε⁰;κ] minus the corresponding free-strain resultants. A has units N m⁻¹, B units N and D units N m.
+
+A symmetric layup about the chosen midplane gives B=0 under these assumptions. Balanced angle pairs can remove particular in-plane shear couplings; balance and symmetry are different properties. Neither guarantees absence of local interlaminar stress, delamination or all bending/twisting coupling.
+
+**Work:** Derive A,B,D for a two-ply orthotropic stack, reverse its stacking order and show A,D unchanged but B sign-reversed. Compare with a symmetric stack. Apply thermal free strains and recover ply stresses, checking force/moment balance and energy. State the theory's limitations near edges, holes and thick or damaged regions.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Composite failure, interfaces and progressive damage](Composite-failure-interfaces-and-progressive-damage.lingua#r_1CYDEPDR6YTXBKQCX79C991A1T).
+
+} r_3Q5VE043P3F3HY1QNN0R4A7G37

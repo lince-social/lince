@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Microscopy needs contrast, scale and a defined feature (@cm-surface-microscopy: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #clean-manufacturing "Segmentation-turns-an-image-into-a-measurement-model.lingua#r_3MV4SVK77B5D1AEXX09RVT0TCF") { r_66H3E8G28WSG2KFPTM5DE6QZBB
+**Read:** the microscopy readings in [Prepare and interpret microscopy with a contrast model](../../../engineering/materials-engineering/measurement/Prepare-and-interpret-microscopy-with-a-contrast-model.lingua#r_2WXVFFSYPQSVRF0PPA8DS1F6RN) and the image model in [Optical power, spectra, images, and model-defined features](../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T). Use [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5) for comparison with a chemically sensitive observation.
+
+An image maps an interaction into contrast. Brightness can reflect height, composition, orientation, illumination or preparation. A dark patch is not automatically a contaminant, and a small bright spot is not automatically one particle. Define the feature being counted or measured.
+
+Pixel size sets sampling of the recorded image; the optical or probe response sets how nearby features blend. Increasing the displayed magnification adds no independent spatial information. Scale calibration, distortion, focus, noise and boundary definition all contribute to a size result.
+
+For a deliberately simple blur model, an ideal intensity field f is convolved with normalized point-spread function h and then sampled: y_j = ∫h(x_j − x)f(x)dx + ε_j. Different fine structures can produce nearly the same sampled image. A sharpening algorithm adds assumptions about that missing information.
+
+**Work:** Compare two synthetic spots as their spacing approaches the blur width. Define a counting rule before inspecting the result, then vary focus or threshold. Explain how an independent contrast method could distinguish a topographic feature from a chemical residue. Retain the unprocessed image and the processing settings used for the reported measurement.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Segmentation turns an image into a measurement model](Segmentation-turns-an-image-into-a-measurement-model.lingua#r_3MV4SVK77B5D1AEXX09RVT0TCF).
+
+} r_66H3E8G28WSG2KFPTM5DE6QZBB

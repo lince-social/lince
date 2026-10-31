@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Coupled properties and the complete functional stack (@mat-functional-coupling: 0, is #chapter, #part-of @materials-engineering, #source "../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG", #source "../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM", #source "../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1", #materials-engineering "../../../physics/thermodynamics-and-heat-transfer/microscopic/Coupled-fluxes-Onsager-relations-and-driving-forces.lingua#r_6Z9NJX0N7J73Q2KHB8R7DNSNSB") { r_49NEDKG28NPYHMGK4E7S3RG84F
+**Read:** [Nano-to-Macro Transport Processes — MIT 2.57](../../../physics/thermodynamics-and-heat-transfer/sources/Nano-to-Macro-Transport-MIT-2-57.lingua#r_1YF7TD689ZRGQ51D4B3NGVHZQG), coupled charge/heat transport; [Functional material response — Cambridge DoITPoMS](../sources/Functional-Response-DoITPoMS.lingua#r_6WMQKCE9PFYYETKPTR50DH6RTM), piezoelectric and pyroelectric applications; [Electron interactions, magnetism and superconductivity — Daniel C. Ralph](../sources/Interacting-Electrons-Magnetism-Superconductivity-Ralph.lingua#r_3B28YDT2Z6KYBRZ8DHM1069TW1), material-device examples. Follow the shared thermodynamic coupled-flux Record.
+
+A useful stack may need to conduct heat, block electrical leakage, transmit light, adhere to another material and survive strain simultaneously. Improvements in one response can worsen another. A filler that increases conductivity can change stiffness, interface losses, dielectric strength or processability.
+
+Coupled coefficients must use compatible constraints and conventions. Positivity of dissipation restricts admissible near-equilibrium transport matrices; reversible couplings need their own energy account. Mechanical restraint, external fields and temperature gradients can change the measured effective response.
+
+**Work:** Construct one stack-level account for an electronic package, a sensor or an energy-conversion element. Identify bulk and interface parameters, boundary conditions and uncertainties. Compare two feasible material states and explain a tradeoff through mechanisms rather than a single weighted catalogue score.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Coupled fluxes, Onsager relations and driving forces](../../../physics/thermodynamics-and-heat-transfer/microscopic/Coupled-fluxes-Onsager-relations-and-driving-forces.lingua#r_6Z9NJX0N7J73Q2KHB8R7DNSNSB).
+
+} r_49NEDKG28NPYHMGK4E7S3RG84F

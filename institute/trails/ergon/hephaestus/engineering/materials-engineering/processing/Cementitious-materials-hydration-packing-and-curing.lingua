@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Cementitious materials, hydration, packing and curing (@mat-cementitious: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Virtual-Cement-and-Concrete-Laboratory-NIST.lingua#r_4NPHRVT86304FBP77DTHKMZ0VA", #materials-engineering "Wood-drying-bonding-and-engineered-natural-materials.lingua#r_4N3TQDK8XMYHMMZWJZX4GTV33Q") { r_4W2FRYNVAWC89ZV8KB49M0PAA1
+**Read:** [Virtual Cement and Concrete Testing Laboratory — NIST SP 1173](../sources/Virtual-Cement-and-Concrete-Laboratory-NIST.lingua#r_4NPHRVT86304FBP77DTHKMZ0VA), the full guide and cited underlying hydration-model papers. Return to reaction extent, porous transport and thermal balance.
+
+A cementitious composite develops binding phases by reaction; hardening is not simply drying. Water availability, particle distribution, supplementary constituents, temperature and aggregate restraint affect the evolving pore network and stress. Degree of reaction, connected porosity and measured strength are related quantities with distinct definitions.
+
+**Work:** Reconstruct a documented paste or mortar mixture with mass and volume fractions. Compare sealed, water-supplied and drying conditions and isothermal versus heat-retaining curing. Explain why the same initial water/binder ratio cannot specify all later properties. Compare a modeled microstructure with calorimetry and an independent property measurement, retaining voxel scale and model assumptions. Separate material-state reasoning here from the fuller cement, aggregate, civil-construction and infrastructure production subjects.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Wood drying, bonding and engineered natural materials](Wood-drying-bonding-and-engineered-natural-materials.lingua#r_4N3TQDK8XMYHMMZWJZX4GTV33Q).
+
+} r_4W2FRYNVAWC89ZV8KB49M0PAA1

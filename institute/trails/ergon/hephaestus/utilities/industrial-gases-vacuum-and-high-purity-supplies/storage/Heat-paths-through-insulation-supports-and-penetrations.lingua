@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Heat paths through insulation, supports and penetrations (@gas-heat-paths: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/thermodynamics-and-heat-transfer/sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD", #source "../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7", #industrial-gases-and-vacuum "Integrate-conductivity-across-a-cryogenic-temperature-range.lingua#r_72AYDKG2W2SZRGWPCDQ9N0PJ4V") { r_5RVKQM0W3ETWSFCD0XH7TCY9T6
+**Read:** [A Heat Transfer Textbook — Lienhard and Lienhard](../../../physics/thermodynamics-and-heat-transfer/sources/A-Heat-Transfer-Textbook-Lienhard.lingua#r_7TKQ2D5YRNQ8XVHXNJQDRANWKD), conduction and radiation chapters; [Thermal performance of cryogenic storage tanks — Aasen and colleagues](../sources/Thermal-Performance-of-Cryogenic-Tanks-Aasen.lingua#r_2GPG0AVVS87R5ZY5Z5GVJEAEN7), model construction.
+
+Build a thermal account with parallel paths for insulation, supports, piping and other penetrations. Series layers share a heat rate; parallel paths share boundary temperatures only if those boundaries are actually uniform. A small conductive support can carry a substantial fraction of the total heat while creating a local cold spot in an otherwise warm shell.
+
+For two large diffuse-gray parallel surfaces with view factor one, net radiative transfer is σA(Th⁴−Tc⁴)/(1/εh+1/εc−1), under the usual opaque-surface assumptions. Different areas, shields, spectral behavior or nonuniform temperatures need a different radiative network. Low gas pressure suppresses convection but does not remove radiation or solid conduction.
+
+An effective insulation conductivity may already include pore radiation or gas transport under specified conditions. Adding those contributions again can double-count them. Contact pressure, compression, moisture, gas species and vacuum history can change the measured effective behavior.
+
+**Work:** Rank heat paths using transparent hypothetical values, then perturb each value and boundary temperature. Explain which ranking is robust and which depends on poorly known material or contact data. Report an energy sum rather than only the largest estimated contribution.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Integrate conductivity across a cryogenic temperature range](Integrate-conductivity-across-a-cryogenic-temperature-range.lingua#r_72AYDKG2W2SZRGWPCDQ9N0PJ4V).
+
+} r_5RVKQM0W3ETWSFCD0XH7TCY9T6

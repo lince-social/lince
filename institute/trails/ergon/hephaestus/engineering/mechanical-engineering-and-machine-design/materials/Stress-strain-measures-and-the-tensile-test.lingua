@@ -1,0 +1,17 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Stress–strain measures and the tensile test (@mech-tensile-measures: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY", #mechanical-engineering "../../../materials/metals-and-metallurgical-production/testing/Tension-compression-strain-measures-and-test-system-evidence.lingua#r_5ARM33P0NFFGJ20F97BH5BXD2S", #materials-engineering "../../../materials/metals-and-metallurgical-production/testing/Tension-compression-strain-measures-and-test-system-evidence.lingua#r_5ARM33P0NFFGJ20F97BH5BXD2S") { r_61ZDKD8MXWTDZ7Q1M9SECY1Z5P
+**Read:** [Modules in Mechanics of Materials — David Roylance](../sources/Mechanics-of-Materials-Roylance.lingua#r_7K2RYA9504FGFGJTVWHMWXD5WY), Stress–Strain Curves, then the shared metallurgy Record on tensile/compression evidence. The available open course readings support the work; the shared Record's restricted handbook is an additional reference when accessible.
+
+Engineering stress is load divided by initial area, and engineering strain is change in gauge length divided by initial length. True axial stress uses the current area. Logarithmic axial strain integrates dL/L to give ln(L/L₀) during a homogeneous uniaxial length change. These definitions answer different measurement questions.
+
+Before necking, uniform deformation and approximate volume conservation give σ_true = σ_engineering(1+e) and ε_log = ln(1+e). If engineering stress is 200 MPa at e = 0.1, those assumptions give 220 MPa and approximately 0.09531. After necking, a global gauge extension does not recover the local strain or multiaxial neck stress by the same conversion.
+
+**Work:** Draw the specimen and distinguish crosshead travel, grip motion, gauge extension and local area measurement. Identify the initial linear slope, a declared proof-stress convention, ultimate engineering stress and final extension without treating them as interchangeable. Continue into the shared experimental account before using a test curve as a constitutive law.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Interpret tension and compression through specimen, machine, strain measure, and material state](../../../materials/metals-and-metallurgical-production/testing/Tension-compression-strain-measures-and-test-system-evidence.lingua#r_5ARM33P0NFFGJ20F97BH5BXD2S).
+
+**Continue in materials engineering:** [Interpret tension and compression through specimen, machine, strain measure, and material state](../../../materials/metals-and-metallurgical-production/testing/Tension-compression-strain-measures-and-test-system-evidence.lingua#r_5ARM33P0NFFGJ20F97BH5BXD2S).
+
+} r_61ZDKD8MXWTDZ7Q1M9SECY1Z5P

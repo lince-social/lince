@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Select for charge, heat, light and magnetic response (@mat-functional-selection: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #materials-engineering "Interfaces-and-layered-materials-in-selection.lingua#r_61JDZQS4Q2VX4BZN2AS34CR3EW") { r_5KWWMHA5TV3SJJNT08MTH6TGQ0
+**Read:** Revisit the complete functional-properties sequence and its sources; [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), selection methods; [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ), insulation case.
+
+For a uniform electrical conductor of fixed length L, resistance R=L/(σA) and mass ρAL give a mass index σ/ρ under a resistance constraint. For a plane insulation layer at fixed area and required thermal resistance per area R″=t/k, mass per area is ρkR″. Minimizing it favors small ρk, provided thickness, radiation, moisture, temperature and mechanical constraints are also satisfied. The two functions require different transport behavior.
+
+Optical transmission requires a wavelength and thickness; a magnetic comparison requires field history and frequency. Dielectric loss, thermal expansion, contact resistance and environmental stability may govern useful performance even when a bulk conductivity or permeability appears favorable.
+
+**Work:** Derive the conductor and insulation relations and challenge their assumptions. Compare two complete material states for an optical window, electrical contact or magnetic component using frequency/temperature-dependent evidence. Include a constraint from another physical field and explain why a single scalar property cannot represent the complete choice.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Interfaces and layered materials in selection](Interfaces-and-layered-materials-in-selection.lingua#r_61JDZQS4Q2VX4BZN2AS34CR3EW).
+
+} r_5KWWMHA5TV3SJJNT08MTH6TGQ0

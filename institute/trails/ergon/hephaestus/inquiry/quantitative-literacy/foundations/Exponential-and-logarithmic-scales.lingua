@@ -1,6 +1,6 @@
 Import "../Quantitative-literacy.lingua"
 
-Exponential change and logarithmic scales (@ql-logarithms: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-algebra, #quantitative-literacy "Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW") { r_0NQPY7MA3SJ3TR97ZJRTW7ZQPG
+Exponential change and logarithmic scales (@ql-logarithms: 0, is #chapter, #part-of @quantitative-literacy, #source @ql-source-algebra, #quantitative-literacy "Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/foundations/Growth-changes-a-contamination-inventory.lingua#r_3C2YBFMP7PGR2VF917VSAEXJXN") { r_0NQPY7MA3SJ3TR97ZJRTW7ZQPG
 **Read:** Algebra and Trigonometry 2e chapter 6 completely. Revisit exponential models, logarithm properties, and the distinction between linear, exponential, and logarithmic relationships. Use the graph exercises before taking a fitted line as evidence of a mechanism.
 
 For a constant fractional change per interval, x_n = x₀a^n. The exponent n is dimensionless and the interval must be stated. Multiplying by 0.98 at each of ten stages leaves 0.98^10, about 0.8171, of the original. A repeated loss is not the same as subtracting ten times 2% of a changing denominator.
@@ -14,4 +14,7 @@ Revisit these distinctions when a material specification uses orders of magnitud
 **Continue:** [Length, area, volume, density, and scaling a shape](Geometry-and-volume.lingua#r_6DCACA5A4YM1PC08DT5WEW3BHW).
 
 **Return:** [Quantitative and technical literacy](../Quantitative-literacy.lingua#r_4XVN56PQC13JGNFPV0CSGXDCZ2).
+
+**Continue in clean manufacturing:** [Growth changes a contamination inventory](../../../production/clean-manufacturing-and-contamination-control/foundations/Growth-changes-a-contamination-inventory.lingua#r_3C2YBFMP7PGR2VF917VSAEXJXN).
+
 } r_0NQPY7MA3SJ3TR97ZJRTW7ZQPG

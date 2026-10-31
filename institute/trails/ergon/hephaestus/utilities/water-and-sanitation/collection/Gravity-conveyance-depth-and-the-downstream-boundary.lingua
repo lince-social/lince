@@ -1,0 +1,13 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Gravity conveyance, depth and the downstream boundary (@wu-sewer-hydraulics: 0, is #chapter, #part-of @water-and-sanitation, #water-and-sanitation "Rainfall-infiltration-storage-and-overflow-history.lingua#r_5CB14S98HVP0SJ9KHJJGYJW5FN") { r_3W9M54407B0RQZAVCHCF1J3Q88
+**Read:** [Manual de Saneamento — Funasa, fifth edition](../sources/Manual-de-Saneamento-Funasa.lingua#r_65G5YY3QVCA8HAXMPC8RTPKEWE), sewer conveyance, and [SWMM — drainage, collection and reproducible hydraulic models](../sources/Storm-Water-Management-Model-SWMM.lingua#r_65K5ER0T3C8RC87J6M6XXS34NE), hydraulic components and routing. Revisit the fluid-dynamics explanations of head, friction and open-channel flow when their terms appear.
+
+A gravity sewer may carry a free surface, become surcharged or respond to a downstream water level. A uniform-flow equation only answers the conditions it assumes. In SI units, Manning's relation is Q = A R^(2/3) S^(1/2)/n, where A is flowing area, R is area divided by wetted perimeter, S is the energy slope in the uniform-flow interpretation, and n carries the empirical roughness convention. Pipe bed slope is not always the instantaneous energy slope.
+
+For an original ideal half-full circular pipe with diameter 0.4 m, A = πD²/8 and R = D/4. With n = 0.013 and S = 0.002, calculate approximately 0.0466 m³/s and mean speed 0.741 m/s. These are results of the declared model, not minimum cleansing velocities or a design approval.
+
+**Work:** Explain why R at half-full equals R at full circumference geometry but the hydraulic regimes need not match. Compare normal-depth reasoning with downstream backwater and transient storage. Trace an elevated receiving level through manholes, pumps and overflow paths. For advanced work, reproduce a simple steady benchmark before comparing kinematic and dynamic routing with changing boundary levels.
+
+**Continue:** [Rainfall, infiltration, storage and overflow history](Rainfall-infiltration-storage-and-overflow-history.lingua#r_5CB14S98HVP0SJ9KHJJGYJW5FN).
+} r_3W9M54407B0RQZAVCHCF1J3Q88

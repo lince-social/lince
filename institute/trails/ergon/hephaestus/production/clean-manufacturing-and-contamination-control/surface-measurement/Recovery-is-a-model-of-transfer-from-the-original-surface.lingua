@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Recovery is a model of transfer from the original surface (@cm-surface-recovery: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #source "../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T", #clean-manufacturing "../../../chemistry/general-chemistry/measurement/Spectroscopic-evidence-and-calibration.lingua#r_5KF8FB97G6AMW8SNB4Y21E2ZHZ") { r_1C6MJZPWGXPN2FAJ0XFVWEY32K
+**Read:** [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), collection and mass account; [Analytical Chemistry 2.1 — David Harvey](../../../chemistry/general-chemistry/sources/Analytical-Chemistry-Harvey.lingua#r_0XMY75E3FRXRGR3BK28V3JAC0T), chapter 7. Use [Chemical measurements — matrix, recovery, selectivity, and reference material](../../../inquiry/metrology/applications/Chemical-and-reference-material-measurements.lingua#r_78FAVM8QZ3F7N4DQP2DDP1R7KQ) and revisit [Carry blank, volume, area and recovery through the mass account](../cleaning/Carry-blank-volume-area-and-recovery-through-the-mass-account.lingua#r_7MYKMA105SHGW3CRKG9FMNPTCF).
+
+Recovery connects the original target with the material that reaches analysis. It can depend on chemical species, surface state, geometry and history. A reference addition can test part of the procedure while behaving differently from material incorporated into an aged deposit.
+
+For an original ideal model, let each successive extraction remove constant fraction r of the remaining recoverable mass M₀. Collected mass on extraction j is m_j = r(1 − r)^(j−1)M₀. The first two masses imply r = 1 − m₂/m₁ and M₀ = m₁/r when the assumptions hold. With m₁ = 6 µg and m₂ = 2.4 µg, r = 0.6 and M₀ = 10 µg; the predicted third mass is 0.96 µg.
+
+Several residue populations with different recovery fractions produce a sum of geometric sequences. Two observations cannot identify all of them. Repeated extraction can also alter the surface or the residue, breaking the constant-fraction model.
+
+**Work:** Derive the model, account for collected and remaining mass, and compare it with a two-population example. Introduce a constant blank and show its effect on the inferred ratio. Explain which evidence would justify applying a recovery correction to native material and when the result should remain a recovered-mass measurement.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Use a spectrum as chemical evidence with an observation model](../../../chemistry/general-chemistry/measurement/Spectroscopic-evidence-and-calibration.lingua#r_5KF8FB97G6AMW8SNB4Y21E2ZHZ).
+
+} r_1C6MJZPWGXPN2FAJ0XFVWEY32K

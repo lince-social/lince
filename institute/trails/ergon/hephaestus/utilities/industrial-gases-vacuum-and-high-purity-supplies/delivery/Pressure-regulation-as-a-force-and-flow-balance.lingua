@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Pressure regulation as a force and flow balance (@gas-regulator: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9", #industrial-gases-and-vacuum "Read-a-regulator-curve-at-the-actual-supply-state.lingua#r_1E6JC8MFED7TYMFXMDZQQP1K3K") { r_5S7TFR7QYK2Z6RDZEQCTMFQ1RV
+**Read:** [Pressure regulator flow curves — Swagelok technical bulletin](../sources/Pressure-Regulator-Flow-Curves-Swagelok.lingua#r_4RBBVMRQSACN4TR38CDAMQ17K9), introductory operating explanations and one complete product curve family.
+
+A pressure-reducing regulator changes its opening in response to forces on sensing and actuating parts. Downstream pressure contributes a force through a sensing area; springs, diaphragm or piston stiffness, friction and upstream forces also matter. This physical balance explains why the output can change with flow and inlet pressure.
+
+The downstream system sets a demand relation between pressure and flow. The operating point must satisfy both that relation and the regulator's behavior. Setting a nominal pressure does not set an independently fixed flow, and a regulator alone is not a gas-amount measurement.
+
+Distinguish pressure reduction from back-pressure control. The sensed side, actuation sign and controlled quantity differ. A downstream volume stores gas, so a change in valve opening can create a pressure transient even before the final steady operating point is reached. Compressibility, sensor/actuator delay and friction can produce oscillation or hysteresis.
+
+**Work:** Draw a qualitative force balance and the connected gas inventory. Explain what changes when upstream pressure falls while downstream demand is unchanged. Identify which parts of the response can be inferred from a steady flow curve and which require dynamic evidence.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Read a regulator curve at the actual supply state](Read-a-regulator-curve-at-the-actual-supply-state.lingua#r_1E6JC8MFED7TYMFXMDZQQP1K3K).
+
+} r_5S7TFR7QYK2Z6RDZEQCTMFQ1RV

@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Buoyancy and wind can compete with mechanical pressure (@cm-stack-wind: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46", #source "../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X", #clean-manufacturing "An-open-door-can-carry-flow-in-both-directions.lingua#r_7AZQQX7PSG2H8KGFB79TTN3F7Z") { r_44PV55ESMT6BHNTS2DT5XSA4JS
+**Read:** [Multizone airflow and contaminants — Dols and Polidoro, CONTAM 3.4](../sources/CONTAM-Multizone-Airflow-and-Contaminants-NIST.lingua#r_5HECDC480RSYAJ3SQ2QNFHCN46), wind and hydrostatic airflow models; [Air-cleaning systems — DOE-HDBK-1169-2022](../sources/Air-Cleaning-Handbook-DOE.lingua#r_09QPEZ76E9W6HS7R55X2K8TB3X), section 4.5.5; the full readings in [Hydrostatic balance, gravity and density variation](../../../physics/fluid-dynamics/statics/Hydrostatic-balance-gravity-and-density-variation.lingua#r_0BMK5JN8XP72JR1WQG5B52PFMS) and [Boussinesq flow, natural convection, plumes and instability](../../../physics/fluid-dynamics/geophysical/Boussinesq-flow-natural-convection-plumes-and-instability.lingua#r_3D346A9GVA8D8T39K4KHG0X3W0).
+
+With uniform density in each adjacent zone and height z upward, Δp(z)=Δp(0)−g(ρ1−ρ2)z. A pressure measured at one height can therefore differ in sign from another height. Thermal plumes and stratification can additionally alter local transport.
+
+A simplified external wind term is Δpw=½ρU²ΔCp. For hypothetical ρ=1.2 kg/m³, U=5 m/s and ΔCp=0.6, it is 9 Pa. The pressure coefficient depends on direction, building geometry and surroundings; the example does not supply a site coefficient.
+
+**Work:** Compare the wind scale with the two-room example. Find the neutral height of a stated hydrostatic pressure difference. Draw nearby intakes, exhausts and possible re-entry paths. Explain what additional evidence is needed before converting a prevailing-wind diagram into a reliable intake or discharge location.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [An open door can carry flow in both directions](An-open-door-can-carry-flow-in-both-directions.lingua#r_7AZQQX7PSG2H8KGFB79TTN3F7Z).
+
+} r_44PV55ESMT6BHNTS2DT5XSA4JS

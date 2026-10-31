@@ -1,6 +1,6 @@
 Import "../Fluid-dynamics.lingua"
 
-Cavitation, nucleation, bubble dynamics and pressure history (@fd-cavitation-dynamics: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578", #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../../thermodynamics-and-heat-transfer/sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #fluid-dynamics "../multiphase/Particle-response-settling-Brownian-motion-and-deposition.lingua#r_4HE4FR5RX1H2Z2H18573WWM5MV") { r_3N65MAD5CF80Q2W5Q82GJG167S
+Cavitation, nucleation, bubble dynamics and pressure history (@fd-cavitation-dynamics: 0, is #chapter, #part-of @fluid-dynamics, #source "../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578", #source "../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM", #source "../../thermodynamics-and-heat-transfer/sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z", #fluid-dynamics "../multiphase/Particle-response-settling-Brownian-motion-and-deposition.lingua#r_4HE4FR5RX1H2Z2H18573WWM5MV", #materials-engineering "../../../engineering/materials-engineering/degradation/Coupled-damage-and-the-order-of-events.lingua#r_316YMRNP30DJAKZWTSMXSWGXQ5", #clean-manufacturing "../../../production/clean-manufacturing-and-contamination-control/cleaning/Acoustic-assistance-can-remove-particles-and-damage-structures.lingua#r_47PB7JEPT28DN4FHMPQVN4J2WB") { r_3N65MAD5CF80Q2W5Q82GJG167S
 **Read:** [Cavitation and Bubble Dynamics — Christopher E. Brennen](../sources/Cavitation-and-Bubble-Dynamics-Brennen.lingua#r_6GM4NG1BV40GS5D4SQCSAX2578), complete nucleation and spherical-dynamics chapters, then the relevant flow chapters; [Fundamentals of Multiphase Flow — Christopher E. Brennen](../sources/Fundamentals-of-Multiphase-Flow-Brennen.lingua#r_0T6RH2YC70Z23SR3H4QZDJ69JM), bubble and interphase dynamics; [IAPWS-95 — fundamental water properties](../../thermodynamics-and-heat-transfer/sources/IAPWS-95-Fundamental-Water-Formulation.lingua#r_4JH7YVKGMCC4R7MK1F5S1XY90Z), water-state and saturation definitions.
 
 Vapor formation in a liquid depends on local thermodynamic conditions, nuclei, dissolved gas and the pressure history. A vapor-pressure comparison is an important first estimate, but an onset prediction also involves the physical population of nuclei and the time available for growth. Gauge pressure alone is insufficient for a phase-state calculation.
@@ -12,4 +12,9 @@ Relate the local pressure field in a pump inlet, valve or vortex to the bubble m
 **Continue:** [Particle response, settling, Brownian motion and deposition](../multiphase/Particle-response-settling-Brownian-motion-and-deposition.lingua#r_4HE4FR5RX1H2Z2H18573WWM5MV).
 
 **Return:** [Fluid dynamics — motion, forces, transport and evidence](../Fluid-dynamics.lingua#r_7PQW1WDHK708BFV23MD8ET61VZ).
+**Continue in materials engineering:** [Coupled damage and the order of events](../../../engineering/materials-engineering/degradation/Coupled-damage-and-the-order-of-events.lingua#r_316YMRNP30DJAKZWTSMXSWGXQ5).
+
+
+**Continue in clean manufacturing:** [Acoustic assistance can remove particles and damage structures](../../../production/clean-manufacturing-and-contamination-control/cleaning/Acoustic-assistance-can-remove-particles-and-damage-structures.lingua#r_47PB7JEPT28DN4FHMPQVN4J2WB).
+
 } r_3N65MAD5CF80Q2W5Q82GJG167S

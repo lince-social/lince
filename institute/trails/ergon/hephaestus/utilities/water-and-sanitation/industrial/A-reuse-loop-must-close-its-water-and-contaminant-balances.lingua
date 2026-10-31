@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+A reuse loop must close its water and contaminant balances (@wu-reuse-balance: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK", #water-and-sanitation "An-inspectable-reuse-loop-and-concentrate-account.lingua#r_1T617HHC1XV1R97DQ0EB21QSH5") { r_3VW32HDCMEXER9KQ5B4W83QVAR
+**Read:** [Guidelines for Water Reuse — EPA and USAID, 2012](../sources/Guidelines-for-Water-Reuse-EPA-USAID.lingua#r_5D8YEK23KH0G3994XRY2JA16PK), section 3.5 and the relevant treatment accounts; revisit the membrane recovery and concentrate Records. Follow a constituent as well as water when claiming a saving.
+
+Consider an original constant-flow process with demand Q, return fraction r, treatment water recovery y and permeate/feed concentration ratio p for one conserved constituent. Recycle flow is R = ryQ and makeup is F = Q − R. The process adds constituent mass L per time without changing water volume. If inlet concentration is Cin, outlet concentration is Cout = Cin + L/Q. Recycle concentration is pCout, so Q Cin = F Cf + R pCout. Thus Cin = [F Cf + R p L/Q]/[Q − Rp]. Rejected concentrate and the non-returned process flow close the outside boundary.
+
+Use Q = 100 m³/hour, r = 0.8, y = 0.75, p = 0.1, Cf = 0.1 kg/m³ and L = 5 kg/hour. Recycle is 60 and makeup 40 m³/hour; Cin ≈ 0.045745 and Cout ≈ 0.095745 kg/m³. The 20 m³/hour concentrate is about 0.354255 kg/m³. External solute input is 9 kg/hour, equalling concentrate plus the 20 m³/hour process discharge.
+
+**Work:** Explain why treatment selectivity can lower inlet concentration below makeup concentration, while unselective reuse can accumulate material. Test increased recovery, a changed feed and loss of treatment. These are synthetic constant-density balances, with no evaporation or reactions; add those processes explicitly rather than applying the formula outside its boundary.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [An inspectable reuse-loop and concentrate account](An-inspectable-reuse-loop-and-concentrate-account.lingua#r_1T617HHC1XV1R97DQ0EB21QSH5).
+
+} r_3VW32HDCMEXER9KQ5B4W83QVAR

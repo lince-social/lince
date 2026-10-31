@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Springs, energy, stress, stability and cyclic service (@mech-springs: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ", #mechanical-engineering "Flexure-guides-compliance-parasitic-motion-and-range.lingua#r_7V0ZKS4RD134373JWW91K3AS05") { r_6AQQC8GHC4CQNCMEH4J9PZMBTM
+**Read:** [FUNdaMENTALS of Design — Alexander Slocum](../sources/FUNdaMENTALS-of-Design-Slocum.lingua#r_58Q6VQJ3FXXGXRBJ3DK0AVC3WQ), structures and stored-energy elements in topics 7–8; revisit elastic energy, torsion, fatigue and vibration. Compare the selected spring family's published geometry and material evidence.
+
+A spring deliberately stores recoverable energy over a useful motion. For a linear spring F=kδ and stored energy is kδ²/2, relative to a declared unloaded state. Preload changes the operating force range and the energy available on release. Coil, leaf, torsion and disc springs meet different motion and packaging requirements.
+
+For an ideal close-coiled round-wire helical compression spring, k=Gd⁴/(8D³n), where d is wire diameter, D mean coil diameter and n the active coil count. With G=80 GPa, d=4 mm, D=32 mm and n=8, k=9765.625 N/m. A 10 mm deflection then requires approximately 97.656 N and stores 0.488281 J. Curvature and direct shear affect the wire's actual peak stress.
+
+**Work:** Derive this stiffness from torsional strain energy. Check solid height, end conditions, buckling, surge and cyclic stress separately. Compare two geometries with the same stiffness but different stress and envelope. Explain how relaxation, corrosion or an overload changes the service claim.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Flexure guides, compliance, parasitic motion and range](Flexure-guides-compliance-parasitic-motion-and-range.lingua#r_7V0ZKS4RD134373JWW91K3AS05).
+
+} r_6AQQC8GHC4CQNCMEH4J9PZMBTM

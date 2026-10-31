@@ -1,0 +1,15 @@
+Import "../Mechanical-engineering-and-machine-design.lingua"
+
+Specify a joint through its production history (@mech-joining-production: 0, is #chapter, #part-of @mechanical-engineering, #source "../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E", #mechanical-engineering "../../../materials/metals-and-metallurgical-production/manufacturing/Joining-weld-metallurgy-heat-affected-zones-and-dissimilar-materials.lingua#r_4D14X4AKXB4YK072HE2FCYD68A") { r_0R69JS8YX8H184AWEGJ6EQH9CR
+**Read:** [Design and Manufacturing II — MIT 2.008, 2025](../sources/Design-and-Manufacturing-II-MIT-2025.lingua#r_2FHEWYSEAHBY7X6030TW00F32E), joining lectures 9–10, then the shared metallurgy joining Record linked next. Carry forward the earlier structural-joint load analysis.
+
+The required joint performance must survive its manufacturing process. Joint preparation, consumable, heat or force input, alignment and environment affect the delivered connection. Inspecting a final seam or bond surface cannot reveal every important condition that existed during joining.
+
+Connect the drawing, procedure and evidence. A procedure demonstrated on a coupon has a defined material, geometry and process domain; transferring it to another thickness or restraint needs an argument. Distortion and residual stress can affect subsequent assembly even if the nominal joint strength is adequate.
+
+**Work:** Write a physical account of one joint before, during and after production. Identify what can be measured during processing and what needs later inspection or destructive evidence. Continue into the shared material/processing study before choosing a qualification or inspection method.
+
+**Return:** [Mechanical engineering and machine design](../Mechanical-engineering-and-machine-design.lingua#r_0017YZ63HZBZ4P4WD8DECVWE4R).
+**Continue:** [Explain a joint through chemistry, heat, flow, transformations, and evidence across its regions](../../../materials/metals-and-metallurgical-production/manufacturing/Joining-weld-metallurgy-heat-affected-zones-and-dissimilar-materials.lingua#r_4D14X4AKXB4YK072HE2FCYD68A).
+
+} r_0R69JS8YX8H184AWEGJ6EQH9CR

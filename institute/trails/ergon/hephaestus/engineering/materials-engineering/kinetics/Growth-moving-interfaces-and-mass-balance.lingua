@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Growth, moving interfaces and mass balance (@mat-growth: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16", #source "../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z", #materials-engineering "Solidification-partitioning-segregation-and-morphological-stability.lingua#r_5CHRBTJKPKKJQ5V4WDW12GGV78") { r_2HDMEC7ZE4AWV1QK9YWSKEJMWG
+**Read:** [Materials kinetics — MIT 3.205 and 3.21](../sources/Kinetic-Processes-in-Materials-MIT.lingua#r_2BZVQ9NG9Y2XTF4QG0H3JYYS16), 3.205 lecture 8 and 3.21 lectures 26–27; [Termodinâmica dos Materiais — Cota, 2026](../sources/Termodinamica-dos-Materiais-Cota.lingua#r_05ES8F38ASNQEQMZ0HY6709Z0Z), phase equilibrium and interfaces.
+
+A moving interface converts one phase into another while conserving each component. With a normal from α to β and consistent laboratory-frame normal fluxes, v(c_β−c_α)=J_β−J_α follows from a thin moving control volume. The sign is meaningless without those definitions. Interfacial attachment and transport can each limit the velocity.
+
+Diffusion-limited growth often produces a length proportional to √t in a bounded regime; constant interface-controlled speed instead gives a length proportional to t. Latent heat, composition-dependent diffusion, curvature and interaction with nearby particles can change these behaviors.
+
+**Work:** Derive the jump balance with an explicit orientation and check it by advancing a small interface distance. Compare two growth laws against early and late observations without fitting one exponent over a crossover. Include latent-heat removal when applying the argument to solidification.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Solidification, partitioning, segregation and morphological stability](Solidification-partitioning-segregation-and-morphological-stability.lingua#r_5CHRBTJKPKKJQ5V4WDW12GGV78).
+
+} r_2HDMEC7ZE4AWV1QK9YWSKEJMWG

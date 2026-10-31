@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Design evidence that can distinguish competing models (@gas-research-design: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW", #source "../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5", #industrial-gases-and-vacuum "Model-discrepancy-and-scale-limit-the-research-claim.lingua#r_3KHYR0QA40NMGYJYR1G8X7JAAN") { r_7TPSBM0ZKVA120251MWAJNJRAH
+**Read:** [Calibration of ionization vacuum gauges — Fedchak and colleagues](../sources/Ionization-Gauge-Calibration-Fedchak.lingua#r_18KG5KWT64MPYQ4D47V1T99CKW), [Gas flow standards and their uncertainty — Wright and colleagues](../sources/Gas-Flow-Standards-NIST.lingua#r_2FJV0VJ3K710PNV7E45JGGJXG5) and the complete experimental study closest to the question; use the shared metrology Records for sensitivity and inverse inference.
+
+Choose observations that respond differently to the competing mechanisms. Varying temperature, geometry, time, gas composition or sample history can expose a dependence hidden in one operating point. The chosen range must remain within justified apparatus and material conditions.
+
+Analyze identifiability before fitting. Two parameters can compensate for one another even when a fit looks excellent. Include controls, blanks, drift, repeatability and independent validation data where appropriate. Replicate the physical process, not only repeated processing of the same signal.
+
+**Work:** Predict observations under two models, including uncertainty. Determine what measurement precision and range would separate them. If an actual qualified experiment is unavailable, clearly separate an experimental proposal from completed observations and use the model analysis to state what remains untested.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Model discrepancy and scale limit the research claim](Model-discrepancy-and-scale-limit-the-research-claim.lingua#r_3KHYR0QA40NMGYJYR1G8X7JAAN).
+
+} r_7TPSBM0ZKVA120251MWAJNJRAH

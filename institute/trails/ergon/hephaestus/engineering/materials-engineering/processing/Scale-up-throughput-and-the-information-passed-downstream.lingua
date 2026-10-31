@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Scale-up, throughput and the information passed downstream (@mat-process-scaleup: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR", #source "../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0", #materials-engineering "../study/Three-studies-of-processing-and-material-state.lingua#r_6D1YTNVD0H9D66A9HA8TETF9KP") { r_5MRDYY2AJK43WXP0Z1YYPTS0M2
+**Read:** [Materials Processing — MIT 3.044, Spring 2013](../sources/Materials-Processing-MIT-3044.lingua#r_5RCMWE5WA6D0WS1ETHWRZVXMFR), scaling and process limits; [Manufacturing — The Open University](../sources/Manufacturing-Open-University.lingua#r_5WVG0HEJ30KYA0GMVCHEZBY9X0), costs; the existing production-resource and process-control readings.
+
+Scaling changes geometry, transport, residence distributions, temperature uniformity and the relative burden of preparation, inspection and recovery. A demonstration with one small specimen does not establish throughput or yield at a sustained production rate. More sensors cannot compensate for an unidentifiable state without a measurement strategy.
+
+**Work:** Reconstruct a pilot-to-production comparison with heat, material and accepted-output boundaries. Identify the limiting operation and evaluate variability, tool wear, start-up and interruption histories. Specify the information passed with a batch: origin/composition, conditioning, process history, sampling, uncertainty and the range supported by tests. Connect those ordinary records to maintenance and later failure investigation without treating a completed inspection form as evidence by itself.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Three studies of processing and material state](../study/Three-studies-of-processing-and-material-state.lingua#r_6D1YTNVD0H9D66A9HA8TETF9KP).
+
+} r_5MRDYY2AJK43WXP0Z1YYPTS0M2

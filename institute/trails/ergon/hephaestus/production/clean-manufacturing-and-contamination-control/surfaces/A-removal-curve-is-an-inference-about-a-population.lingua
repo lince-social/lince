@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A removal curve is an inference about a population (@cm-retention-population: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #clean-manufacturing "../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Residence-time-activation-and-surface-coverage.lingua#r_48MYBH8H4756WWNK4ABCM2K1RT") { r_68Y195WH7SFDA26FZ3895MZVSH
+**Read:** [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), population and method comparisons; revisit the earlier sampling and recovery account.
+
+If independent contacts have fixed release thresholds T and a uniform known drive f, a simplified deterministic model predicts released fraction P(T≤f). The curve is then a cumulative distribution under those assumptions. Real contacts can experience different forces, time-dependent activation, rolling, redeposition and measurement losses; the observed fraction need not be the threshold distribution.
+
+For hypothetical thresholds uniformly distributed between 2 and 10 nN, the ideal released fraction at 6 nN is one half. If the observation method detects only 80% of released particles, the detected fraction of the original population is 0.4. A recovery correction is justified only when its sampling basis and applicability are established.
+
+**Work:** Construct two physically different explanations for the same observed removal curve, one involving contact variability and another involving nonuniform drive. State an additional observation that separates them. Track attached, detached, captured, redeposited and unobserved material through a single inventory; a decrease on the initial surface does not establish successful capture elsewhere.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Residence time, activation and surface coverage](../../../utilities/industrial-gases-vacuum-and-high-purity-supplies/surfaces/Residence-time-activation-and-surface-coverage.lingua#r_48MYBH8H4756WWNK4ABCM2K1RT).
+
+} r_68Y195WH7SFDA26FZ3895MZVSH

@@ -1,0 +1,11 @@
+Import "../Materials-engineering.lingua"
+
+Spacecraft polymer atomic-oxygen durability — NASA-HDBK-6024 (@mat-nasa-durability: 0, is #reference, #part-of @mat-sources) { r_1RMMZEYQQCZ08VRYTHCQBEEHJ0
+[NASA handbook and revision register](https://standards.nasa.gov/standard/nasa/nasa-hdbk-6024), [207-page handbook with Change 2](https://standards.nasa.gov/sites/default/files/standards/NASA/Baseline-w/CHANGE-2/2/2022-12-16-NASA-HDBK-6024_w-Chg-2_Reval-Final.pdf). Baseline 27 June 2014, Change 2 and revalidation 16 December 2022; the register was active when checked on 30 October 2026 and does not list it as a mandatory NASA standard.
+
+Read the environment/interaction and measurement chapters, then flight evidence, ground-to-space comparisons, prediction and uncertainty appendices. Revision metadata, contents and selected erosion-yield, witness-material and dehydration passages were inspected. Atomic-oxygen erosion provides a well-documented comparison between laboratory and service exposure; the handbook is not a complete treatment of radiation damage.
+
+Publicly released institutional reference. Preserve government authorship and credited third-party rights; text and media remain external. Keep actual atom fluence distinct from a witness-based effective laboratory fluence.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_1RMMZEYQQCZ08VRYTHCQBEEHJ0

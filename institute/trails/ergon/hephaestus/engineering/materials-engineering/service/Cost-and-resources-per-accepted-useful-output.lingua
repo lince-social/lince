@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Cost and resources per accepted useful output (@mat-material-cost: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C", #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #materials-engineering "../../mechanical-engineering-and-machine-design/manufacturing/Make-buy-capacity-and-the-cost-of-useful-parts.lingua#r_3JKS2MK3JP6FKB4MENRQDSP6YH") { r_109Y60MW4B48Z4KBQPE0J10454
+**Read:** [Economic and environmental issues in materials selection — MIT 3.080](../sources/Economic-and-Environmental-Materials-Selection-MIT.lingua#r_36KMERFT8SDRP30MT63KQ5WS6C), the complete economics/cost-modeling lectures, EE assignments and CM1; [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ), framework. Continue through the shared mechanical production-resource account.
+
+Purchase price per kilogram omits geometry, yield, tooling, labor, energy, treatment, inspection and rejects. For N attempted parts with accepted fraction y, a simplified cost per accepted part is [fixed cost + N×variable cost]/(yN). State the boundary: rework, salvage and feedback may require a richer balance. Do not count recovered scrap as both avoided purchase and full sale income without following the flows.
+
+Batch size, throughput and downtime change cost and resource use. Different routes can cross over with production volume. Cost estimates require a date, location, currency basis, scale and included activities. Life-cycle financial comparisons also need a declared discounting convention, distinct from physical mass and energy balances.
+
+**Work:** Derive a two-route crossover with different tooling, cycle time and accepted yield. Independently check total material and useful output. Vary demand and failure/rework assumptions. Explain which economically attractive option relies on unverified process capability or an unavailable supply state.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Make, buy, capacity and the cost of useful parts](../../mechanical-engineering-and-machine-design/manufacturing/Make-buy-capacity-and-the-cost-of-useful-parts.lingua#r_3JKS2MK3JP6FKB4MENRQDSP6YH).
+
+} r_109Y60MW4B48Z4KBQPE0J10454

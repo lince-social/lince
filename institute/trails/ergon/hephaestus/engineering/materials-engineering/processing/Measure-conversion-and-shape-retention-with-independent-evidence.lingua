@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+Measure conversion and shape retention with independent evidence (@mat-cure-evidence: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614", #source "../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0", #materials-engineering "Composite-impregnation-flow-fronts-and-voids.lingua#r_55QN4268KQCZ5RJH6YYEBQ39R4") { r_48NCQYPM0KY28VRCK8WGM8DK85
+**Read:** [Simultaneous rheology and cure kinetics — Romberg and Kotula, 2023](../sources/Rheology-and-Cure-Kinetics-Romberg-Kotula.lingua#r_17JNF4M1B6SKKEWAMQAXB3B614) and [Epoxy conversion from rheology — Romberg and colleagues, 2024](../sources/Epoxy-Conversion-Models-Romberg-and-Colleagues.lingua#r_2P4B2NBQT7APB3CQ2KDQ6MGMX0), including methods and model comparisons. Revisit spectroscopy, thermal analysis and rheometry.
+
+A residual calorimetric exotherm, a reactive Raman band and a storage modulus measure different aspects of material state. Instrument response, baseline, reference signal, temperature and sample preparation enter their interpretation. A relation fitted between conversion and modulus can change with filler, frequency or network architecture.
+
+**Work:** Reconstruct a full conversion calculation from a documented spectrum or thermal measurement, distinguishing raw observations from digitized published curves. Repeat the inference with a justified alternate baseline or normalization. Compare the resulting conversion uncertainty with the uncertainty in a deformation or final-state prediction. Reserve a thermal history or filler condition for prediction. State clearly if raw data cannot be retrieved; do not silently replace missing measurements with fabricated ones.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Composite impregnation, flow fronts and voids](Composite-impregnation-flow-fronts-and-voids.lingua#r_55QN4268KQCZ5RJH6YYEBQ39R4).
+
+} r_48NCQYPM0KY28VRCK8WGM8DK85

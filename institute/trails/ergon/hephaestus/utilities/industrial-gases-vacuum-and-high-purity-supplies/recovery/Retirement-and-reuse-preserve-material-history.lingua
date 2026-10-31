@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Retirement and reuse preserve material history (@gas-retirement: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ", #source "../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H", #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #industrial-gases-and-vacuum "Skilled-work-and-supply-keep-the-physical-system-available.lingua#r_7QWVJP5M8N0YSNXVJ04D809HN3") { r_0NDX7NHS00QRN06YGAYZ17NBYY
+**Read:** [Static vacuum insulated cryogenic vessels — EIGA 224/20](../sources/Static-Cryogenic-Vessels-EIGA.lingua#r_3RWNED7WZ5GMG7X76ZT96A63HZ), relocation/inspection context; [The safe isolation of plant and equipment — HSE HSG253](../sources/Safe-Isolation-HSE.lingua#r_2MDH4HPKRVQ21W24H0ESCKZ13H), extended isolations; [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), lifecycle considerations.
+
+Retiring a system changes its boundaries and custodians. Account for remaining gas, trapped fluid, adsorbed material, pressurized components and records needed by the next recipient. A physically disconnected component may still retain contamination or stored energy.
+
+Separate reuse in the same qualified service, reuse in a different service and material recycling. A vessel, regulator or vacuum component carries a history of temperature, pressure, chemical exposure, cleaning and repair. Missing history can limit what can be justified about its next function.
+
+**Work:** Describe the evidence needed to transfer a used component into another system. Trace residual gas and material to an identified destination in the balance. Compare preservation of a working component with recovery of its constituent materials without assuming either is always preferable.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Skilled work and supply keep the physical system available](Skilled-work-and-supply-keep-the-physical-system-available.lingua#r_7QWVJP5M8N0YSNXVJ04D809HN3).
+
+} r_0NDX7NHS00QRN06YGAYZ17NBYY

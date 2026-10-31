@@ -1,0 +1,17 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Photoelectron energy requires a reference and an interpretation (@cm-xps-energy: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5", #source "../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV", #clean-manufacturing "Depth-sensitivity-is-a-weighting-function.lingua#r_4HYZF57PBHJYF68FH8J99FYVYW") { r_1ACWBZJBXG0G18Y8VEGKY2R4N1
+**Read:** [Planning and interpreting XPS — Baer and colleagues](../sources/XPS-Planning-Interpretation-and-Reporting-Baer.lingua#r_6CY69TZ791W5PW0SZCY536SVH5), chemical-state interpretation and spectral fitting; [Attenuation and information depth in XPS — Cedric Powell](../sources/XPS-Attenuation-and-Information-Depth-Powell.lingua#r_0RF0DVE5MXB1BAG8S0W48X46TV), introduction.
+
+X-ray photoelectron spectroscopy relates detected electron energies and intensities to the specimen under a defined excitation and spectrometer configuration. In a simple referenced energy account, binding energy E_B = hν − E_K − φ, with photon energy hν, measured kinetic energy E_K and a compatible spectrometer work-function reference φ. Keep the reference convention explicit.
+
+Specimen charging can shift apparent energies or broaden features. An assigned reference peak can be chemically variable, so forcing it to a preferred value is itself an assumption. A shifted peak needs evaluation against calibration, charging, chemistry and overlapping contributions.
+
+For a hypothetical hν = 1000 eV, E_K = 700 eV and φ = 4 eV, E_B = 296 eV. An unaccounted +2 eV shift in measured kinetic energy changes the inferred value to 294 eV. The arithmetic does not determine which physical mechanism caused the shift.
+
+**Work:** Build a consistent energy-reference account and compare two possible explanations of a shifted spectrum. Examine which peak separations or independent observations could distinguish a shared offset from a changed chemical state. Require physically justified components when fitting a spectrum rather than accepting every mathematically convenient peak.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Depth sensitivity is a weighting function](Depth-sensitivity-is-a-weighting-function.lingua#r_4HYZF57PBHJYF68FH8J99FYVYW).
+
+} r_1ACWBZJBXG0G18Y8VEGKY2R4N1

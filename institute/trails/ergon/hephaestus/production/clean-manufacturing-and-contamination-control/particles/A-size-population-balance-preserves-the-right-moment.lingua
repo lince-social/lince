@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+A size-population balance preserves the right moment (@cm-population-balance: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "When-the-simple-coagulation-model-fails.lingua#r_1XPSGKZR954R770RGQFCF2EEX0") { r_1HEA25FGABJ32G8RPRBPHT9028
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), coagulation of many sizes. Follow the later kernel and growth treatments in the complete notes.
+
+Let n_k count clusters containing k identical material units. Under binary merging, dn_k/dt=(1/2)Σ_{i+j=k}β_ij n_i n_j−n_kΣ_jβ_kj n_j. The first term creates class k, while the second removes it when it meets any partner. The symmetric kernel and factor convention must be consistent.
+
+For an untruncated nonfragmenting, nonreacting closed system, Σk n_k is the material-unit concentration and is conserved. Total number Σn_k decreases. A finite numerical size range can lose mass when products exceed its last class; hiding that loss by renormalizing the distribution conceals a model error.
+
+**Work:** Derive both moment balances by relabelling the sums. Implement a small event-based example with an explicit overflow class and compare its material inventory with a truncated version. Distinguish exact conservation of a discretization from accuracy of its predicted distribution.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [When the simple coagulation model fails](When-the-simple-coagulation-model-fails.lingua#r_1XPSGKZR954R770RGQFCF2EEX0).
+
+} r_1HEA25FGABJ32G8RPRBPHT9028

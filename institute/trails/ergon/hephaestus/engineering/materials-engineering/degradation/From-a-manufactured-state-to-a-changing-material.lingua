@@ -1,0 +1,13 @@
+Import "../Materials-engineering.lingua"
+
+From a manufactured state to a changing material (@mat-degradation-entry: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5", #source "../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5", #source "../../../materials/metals-and-metallurgical-production/sources/Environmental-Degradation-of-Materials-NPTEL.lingua#r_06WSRAYJJKWNTT146BKY5BN4QQ", #materials-engineering "Exposure-histories-surfaces-and-service-boundaries.lingua#r_6J73991NK6H2B8FQXE4MT8QW3P") { r_7N670RYBBFA2B12T71PBYGTCBF
+**Read progressively:** [Aqueous corrosion — Cambridge DoITPoMS](../sources/Aqueous-Corrosion-DoITPoMS.lingua#r_3P6KCGYFDFBG1WYEJ2EZY6G7J5) in full, followed by [Corrosion current — Derek H. Lister](../sources/Corrosion-Current-Lister.lingua#r_13M9DHG16SHQ1WG0C46CADMMD5) and the complete relevant [Environmental Degradation of Materials — Kallol Mondal, NPTEL](../../../materials/metals-and-metallurgical-production/sources/Environmental-Degradation-of-Materials-NPTEL.lingua#r_06WSRAYJJKWNTT146BKY5BN4QQ) sequence. Read the family-specific books and investigations as they enter the route; the earlier mechanics, kinetics and processing accounts explain their assumptions.
+
+Begin with a painted steel fitting, a clear polymer cover, a concrete joint and a wooden member. Describe what each must keep doing, its initial state and the environments it actually experiences. Deterioration may change geometry, stiffness, transparency, insulation, permeability or adhesion before a part visibly breaks. The time since manufacture alone does not specify its exposure.
+
+**Work:** Make a material-state and service history for each object. Separate an observed change, a proposed mechanism and a consequence for function. Identify evidence that could disprove the proposed mechanism. Carry processing defects and residual stresses into the account; service does not begin with an ideal material. These Records connect chemical, biological, contact and environmental changes before the later selection and whole-life investigations.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Exposure histories, surfaces and service boundaries](Exposure-histories-surfaces-and-service-boundaries.lingua#r_6J73991NK6H2B8FQXE4MT8QW3P).
+
+} r_7N670RYBBFA2B12T71PBYGTCBF

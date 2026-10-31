@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Name the residue and the component being followed (@cm-residue-identity: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #source "../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ", #clean-manufacturing "Nonvolatile-residue-is-defined-by-an-analytical-operation.lingua#r_1QVN0HZS2ACY1X3HQ3MAFX6KNN") { r_1SP39RY5H31719T4HJ9JTYYXX8
+**Read:** [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), introduction and method selection; [Nonvolatile residue collection and analysis — Gordon, Rutherford and Aranda](../sources/Nonvolatile-Residue-Collection-and-Analysis-NASA.lingua#r_2YMCRSWR07NCHECM0X4D8FJ6HJ), collection and chemical identification.
+
+Distinguish a molecular species, an element, a phase and a functional class. An organic film may contain many molecules; a total-carbon result does not identify them. Silicon in a surface measurement can belong to the substrate, an oxide, a silicate particle or a silicone residue. Their consequences and removal mechanisms differ.
+
+A cleaning reaction can destroy the original molecule while preserving its elemental inventory. Dissolution changes location and speciation without necessarily destroying the contaminant. Particles can fragment or aggregate, so particle number is not generally a conserved component.
+
+**Work:** Write separate accounts for total mass, one element and one identified residue through a proposed cleaning sequence. Mark unknown compositions and material introduced by the cleaning agent itself. Identify which observation would distinguish transfer, conversion and simple dilution. Keep the original function in view when deciding whether a changed surface is acceptable.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Nonvolatile residue is defined by an analytical operation](Nonvolatile-residue-is-defined-by-an-analytical-operation.lingua#r_1QVN0HZS2ACY1X3HQ3MAFX6KNN).
+
+} r_1SP39RY5H31719T4HJ9JTYYXX8

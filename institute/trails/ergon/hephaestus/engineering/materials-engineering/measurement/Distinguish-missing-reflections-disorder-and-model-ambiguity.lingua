@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Distinguish missing reflections, disorder and model ambiguity (@mat-diffraction-limits: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "Follow-a-structure-model-back-to-its-original-evidence.lingua#r_4R3W9S86JB8FRW41F28V0417X1") { r_7JPN5HBJ0RCEMB8C0NT8J0V74Y
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), diffraction information and applications; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), lectures 17–19 and 21; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), diffraction/identification and refinement.
+
+Several structures can share some peak positions or similar patterns. A weak peak may be absent from the measurement because of geometry, sensitivity, overlap or background, rather than a symmetry condition. Preferred orientation and finite domains can change what a powder experiment emphasizes.
+
+Use the entire relevant evidence: positions, relative intensity under an adequate model, widths, diffuse scattering, composition, processing and independent observations. A perfect fit to a small selected subset is weaker than a model that explains withheld features. Do not infer unique local order from an average periodic model alone.
+
+**Work:** Construct two models with shared peak positions but different basis factors. Explain which additional reflection or independent measurement distinguishes them. Vary one instrumental or specimen effect and examine whether it could mimic the structural difference. Report an unresolved ambiguity explicitly and propose a discriminating observation.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Follow a structure model back to its original evidence](Follow-a-structure-model-back-to-its-original-evidence.lingua#r_4R3W9S86JB8FRW41F28V0417X1).
+
+} r_7JPN5HBJ0RCEMB8C0NT8J0V74Y

@@ -1,0 +1,15 @@
+Import "../Water-sanitation-and-industrial-utilities.lingua"
+
+Condensate recovery and the evidence behind steam quality (@wu-condensate: 0, is #chapter, #part-of @water-and-sanitation, #source "../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R", #water-and-sanitation "High-purity-water-is-a-distribution-and-measurement-problem-too.lingua#r_72TZ7SZVXT1GPW21YQABMTFQSF") { r_2VCZC2RWF611KWSQA39K4F5XKT
+**Read:** Complete the generation, distribution, end-use and recovery account in the [DOE steam-system sourcebook](https://www.energy.gov/sites/prod/files/2014/05/f15/steamsourcebook.pdf), then [Industrial Water Treatment Operation and Maintenance — UFC 3-230-13](../sources/Industrial-Water-Treatment-UFC-3-230-13.lingua#r_41KNKBCA6GZWQ6VAJGAPG2HJ3R), chapter 4's condensate and corrosion material. Retain the DOE second edition, revised 2012, and its component notices when keeping a personal copy.
+
+Recovered condensate can return useful water and heat, but its history may also return contamination. Flashing, traps, pressure changes, corrosion and contact with process materials affect what reaches the receiving tank. A nominal return percentage does not identify steam dryness, purity or fitness for a product-contact use.
+
+An original sensible-heat comparison returns 7,000 kg/hour at 90°C instead of supplying that mass as 20°C makeup. With a declared heat capacity 4.18 kJ/(kg·K), the difference is about 568.94 kW before losses and other process changes. Use enthalpy properties when phase change or substantial pressure effects matter. Do not count the same recovered heat again as a second saving elsewhere in the system.
+
+**Work:** Develop a condensate acceptance and diversion account with sampling locations, response times and evidence about potential process leaks. Compare return, separate recovery and disposal using their complete downstream demands. Investigate a failed trap or exchanger leak from published measurements or an authorized training arrangement, and distinguish evidence for heat loss from evidence for contaminant transfer.
+
+**Return:** [Water, sanitation and industrial utilities](../Water-sanitation-and-industrial-utilities.lingua#r_7B9GRCJFHVBEEQEXKWCR2QMMPN).
+**Continue:** [High-purity water is a distribution and measurement problem too](High-purity-water-is-a-distribution-and-measurement-problem-too.lingua#r_72TZ7SZVXT1GPW21YQABMTFQSF).
+
+} r_2VCZC2RWF611KWSQA39K4F5XKT

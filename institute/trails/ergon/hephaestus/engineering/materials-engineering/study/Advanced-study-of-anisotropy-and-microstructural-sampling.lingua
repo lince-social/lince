@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Advanced study of anisotropy and microstructural sampling (@mat-anisotropy-study: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX", #source "../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "Defend-the-structural-description-of-an-engineered-material.lingua#r_343YS1SHWD9DDHP6QFZXWVBX9C") { r_7ESGFS0F98WKVCDJB7QS7HJPJQ
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Tensors in Materials Science and Crystallographic Texture in full; [Crystallographic teaching pamphlets — IUCr](../../../../gaia/earth/mineralogy-and-petrology/sources/IUCr-Crystallographic-Teaching.lingua#r_334MQS5KEVRJ17XKK0WKCP6KWX), crystal physics; [Fundamentals of Materials Science — MIT 3.012](../sources/Fundamentals-of-Materials-Science-MIT-3-012.lingua#r_1JE4A3P3KKM0FZXERWFATXCS1Z), structure/bonding lectures 20–21; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), complete relevant microscopy and symmetry material.
+
+Choose a material with a directional or heterogeneous response, such as a sheet, fibre composite or textured ceramic. Define the useful property, specimen frame, measurement boundary conditions and relevant scales. Identify which structural observations are genuinely available.
+
+**Derive:** Transform a second-rank property model between frames and check invariants. Compare two idealized aggregate arrangements with the same constituent data, stating the imposed fields and continuity conditions. Explain why an orientation average alone may not determine an effective property.
+
+**Investigate:** Design or reconstruct measurements in more than one direction and region. Compare within-specimen, between-specimen and method uncertainty. Challenge one inference from an image with an independent observation. Revise the sampling or structural account where the evidence fails to support a representative material claim.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Defend the structural description of an engineered material](Defend-the-structural-description-of-an-engineered-material.lingua#r_343YS1SHWD9DDHP6QFZXWVBX9C).
+
+} r_7ESGFS0F98WKVCDJB7QS7HJPJQ

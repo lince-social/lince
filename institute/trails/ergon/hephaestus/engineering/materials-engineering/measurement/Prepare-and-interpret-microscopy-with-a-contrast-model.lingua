@@ -1,0 +1,18 @@
+Import "../Materials-engineering.lingua"
+
+Prepare and interpret microscopy with a contrast model (@mat-microscopy: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF", #source "../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP", #materials-engineering "Use-diffraction-to-test-a-structural-model.lingua#r_726YWJVGXJX6S1H7MK7BRRF17D", #clean-manufacturing "../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T") { r_2WXVFFSYPQSVRF0PPA8DS1F6RN
+**Read:** [Materials structure and observation — Cambridge DoITPoMS](../sources/Materials-Structure-and-Observation-DoITPoMS.lingua#r_57315283EDNWKYC1PQE23G2AKF), Optical Microscopy for preparation, illumination and resolution, Introduction to Microstructural Examination for documented examples, and Atomic Scale Structure of Materials; [Mineralogy — Dexter Perkins, open editions](../../../../gaia/earth/mineralogy-and-petrology/sources/Mineralogy-Perkins.lingua#r_3Y3EJ93EG4V7Q0TZBCRRXVNVKP), microscopy; the linked metrology treatment for resolution and sampling.
+
+An image records contrast produced by illumination or a probe interacting with a prepared specimen. Polishing relief, etching, orientation, composition, thickness and charging can produce different contrast mechanisms. Magnification is not resolution, and apparent boundaries may arise from preparation or imaging rather than a distinct phase.
+
+Keep scale calibration, section orientation, preparation, detector/illumination and processing with the image. Compare multiple fields and an independent contrast method before assigning every dark region to pores or every bright region to a particular phase. Thresholding makes a segmentation rule explicit; it does not validate the physical labels.
+
+**Work:** Interpret a publicly documented micrograph with its original description, then state an alternative explanation for one feature. Design a preparation and observation sequence that could distinguish them. Estimate the sensitivity of an area fraction to sampling and segmentation choices. Preserve the unprocessed observation when reporting an annotated result.
+
+**Return:** [Materials engineering](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Use diffraction to test a structural model](Use-diffraction-to-test-a-structural-model.lingua#r_726YWJVGXJX6S1H7MK7BRRF17D).
+
+
+**Continue in clean manufacturing:** [Optical power, spectra, images, and model-defined features](../../../inquiry/metrology/applications/Optical-and-imaging-measurements.lingua#r_5N7AJNW24YZV9CGHHEB0S6283T).
+
+} r_2WXVFFSYPQSVRF0PPA8DS1F6RN

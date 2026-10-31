@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Bulk diffusion and the identity of the moving species (@gas-bulk-diffusion: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT", #industrial-gases-and-vacuum "A-finite-slab-release-model-and-its-limits.lingua#r_5WGVS0W17W2QSK239XSF7FKPKR") { r_1FPGB0TZ00BG7JFQ7EWPDS3BQ3
+**Read:** [Outgassing properties of vacuum materials — Paolo Chiggiato](../sources/Outgassing-Properties-Chiggiato.lingua#r_18MM2A316NWRJABS8E53468PWT), section 5 in full; [Conservation, Fick laws and diffusion boundaries](../../../engineering/materials-engineering/kinetics/Conservation-Fick-laws-and-diffusion-boundaries.lingua#r_7X1A26DJF0PSVET1EXJK0V09R2), [Similarity solutions, finite bodies and what a length scale means](../../../engineering/materials-engineering/kinetics/Similarity-solutions-finite-bodies-and-what-a-length-scale-means.lingua#r_1Q16MVYWQQ6T259JDGMK0BD04Y) and [An inspectable conservative diffusion account](../../../engineering/materials-engineering/computation/An-inspectable-conservative-diffusion-account.lingua#r_3EK1TAWX9NZ8ADXEWZEV0XGA6E).
+
+Gas release from a solid begins with a concentration field and boundary conditions. Hydrogen can diffuse through a metal as atoms and leave as molecular hydrogen after surface recombination. An atomic flux and a molecular gas flux then differ by a factor of two on the same number or molar basis.
+
+Constant-D diffusion is a useful first model. Traps, grain-boundary transport, composition-dependent mobility, phase change and surface barriers can change the response. A measured pressure reflects subsequent gas transport and pumping as well as release from the specimen.
+
+**Work:** Follow an explicitly labeled hydrogen inventory from dissolved atoms to gas molecules and measured throughput. Convert atomic molar flux to H₂ throughput at a stated gas temperature. Compare a diffusion-controlled boundary with a finite recombination law. Explain why fitting a pressure trace without the chamber response can produce a misleading diffusivity.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [A finite-slab release model and its limits](A-finite-slab-release-model-and-its-limits.lingua#r_5WGVS0W17W2QSK239XSF7FKPKR).
+
+} r_1FPGB0TZ00BG7JFQ7EWPDS3BQ3

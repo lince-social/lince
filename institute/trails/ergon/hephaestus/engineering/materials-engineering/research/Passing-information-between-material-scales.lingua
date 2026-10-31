@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Passing information between material scales (@mat-scale-transfer: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH", #source "../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W", #source "../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5", #source "../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND", #materials-engineering "Phase-field-discretization-conservation-and-convergence.lingua#r_5FVW69MNTC86W4VF2RDTSB8P7X") { r_6VNHKM5W9E5353SNZSSZHW103F
+**Read:** [Atomistic computer modeling of materials — MIT 3.320](../sources/Atomistic-Computer-Modeling-MIT.lingua#r_12NX0AYTQYSKNAS77BMZP9DQDH), coarse graining; [Applied Mechanics of Solids — Allan F. Bower](../../mechanical-engineering-and-machine-design/sources/Applied-Mechanics-of-Solids-Bower.lingua#r_109WFZBWMEMGHV9TGFD22H2F1W), continuum material descriptions; [Verifying precision in density-functional calculations — Bosoni and colleagues](../sources/Precision-of-DFT-Implementations-Bosoni.lingua#r_4N8GPD0R7RGEZSFDT5SYHCNQF5) and [Mesoscale tensile blind predictions — AM-Bench 2022](../sources/Mesoscale-Tensile-Blind-Predictions-AM-Bench.lingua#r_72TG9WD15YP5DCTVCCX26W7FND) for two distinct roles of microscopic evidence.
+
+Passing a number from one model into another does not automatically create a valid multiscale theory. Specify the quantity being transferred, its averaging, state, constraints and uncertainty. A zero-temperature elastic tensor, a thermally averaged transport coefficient and a rate-dependent flow law enter different larger-scale models.
+
+A calculation may resolve a mechanism but miss the population of defects that controls a real object. Conversely, an effective parameter may predict a restricted service regime without uniquely identifying the microstructure. Examine separation of length and time scales, localization, interfaces, nonlocality and feedback from larger-scale constraints.
+
+**Work:** Trace one proposed atomistic-to-component prediction. Derive each transfer relation and identify the first unjustified closure. Compare sequential parameter passing with a situation requiring coupled feedback. Propagate a bounded uncertainty through the chain and propose an intermediate measurement that tests the transfer rather than only its final output.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Phase-field discretization, conservation and convergence](Phase-field-discretization-conservation-and-convergence.lingua#r_5FVW69MNTC86W4VF2RDTSB8P7X).
+
+} r_6VNHKM5W9E5353SNZSSZHW103F

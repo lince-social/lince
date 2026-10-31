@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Wood Handbook — Forest Products Laboratory, 2021 (@mat-wood-handbook: 0, is #reference, #part-of @mat-sources) { r_2SP2KMHCD78MQGZN69GKPGJ3WM
+Forest Products Laboratory. *Wood Handbook—Wood as an Engineering Material*. General Technical Report FPL-GTR-282, 2021. Robert J. Ross, editor. [Official publication and download](https://research.fs.usda.gov/treesearch/62200), [chapter guide](https://research.fs.usda.gov/fpl/wood-handbook), [DOI](https://doi.org/10.2737/FPL-GTR-282).
+
+The institutional citation gives 543 pages. Read chapters 3–5 on structure, moisture/physical properties and mechanical behavior; 6–7 on products and stress grades; and 10–13 on adhesives, composites and drying. The full twenty-chapter handbook extends into fastenings, structural analysis, deterioration, preservation, finishing, construction, fire, specialty treatment and sterilization. Those chapters support later processing and service investigations.
+
+The official publication, chapter list and chapter 5 abstract were inspected on 30 October 2026. Chapter 5, by C. Adam Senalik and Benjamin Farber, is listed as 46 pages. After the initial download failed, the complete [GovInfo preserved PDF](https://www.govinfo.gov/content/pkg/GOVPUB-A13-PURL-gpo158673/pdf/GOVPUB-A13-PURL-gpo158673.pdf) was retrieved outside the repository: 546 PDF pages versus the bibliographic 543-page citation. Selected chapter 10 passages on surfaces/bonding and chapter 13 passages on moisture, drying stress, defects and kiln history were inspected; the full handbook and every table were not reviewed. Chapter 10 is by Charles R. Frihart and Christopher G. Hunt; chapter 13 is by Richard Bergman. Retain edition, species, moisture, table and test conditions when using data.
+
+This is authorized public access through the US Forest Service, not a claim that every credited illustration or incorporated component has unrestricted adaptation rights. Keep source media external. The handbook's reported specimen properties are not automatically the permitted values for a particular structure or jurisdiction.
+
+The degradation section assigns chapters 14–16 in full. Chapter 14’s opening and contents were inspected in the preserved full PDF on 30 October 2026: Rachel Arango, Stan T. Lebow and Jessie A. Glaeser distinguish fungal, bacterial, insect and marine-borer damage. The full preservation and finishing chapters have not been checked here for current product or regulatory applicability.
+
+**Return:** [Materials-engineering sources — reading and primary evidence](../Sources.lingua#r_51JAH6DB4WV2HZAB69G21ZHSMK).
+} r_2SP2KMHCD78MQGZN69GKPGJ3WM

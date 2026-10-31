@@ -1,0 +1,15 @@
+Import "../Materials-engineering.lingua"
+
+Substitution requires evidence at the required scale (@mat-selection-qualification: 0, is #chapter, #part-of @materials-engineering, #source "../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K", #source "../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ", #materials-engineering "../service/Cost-and-resources-per-accepted-useful-output.lingua#r_109Y60MW4B48Z4KBQPE0J10454") { r_66V0H0AFE6EWT6H4XF3BRRNMHH
+**Read:** [Data Evaluation: Theory and Practice for Materials Properties — Ronald G. Munro](../sources/Data-Evaluation-for-Materials-Properties-NIST.lingua#r_7N31EWH1JVE54EM3BRSQGYS04K); [Sustainable Materials Selection in Manufactured Products — DOE, 2023](../sources/Sustainable-Materials-Selection-DOE.lingua#r_04ADQ1BN156GM7AVH5N2T7EAJZ), assumptions and next steps in the three cases; the earlier process-state and degradation investigations.
+
+Replacing a material can change geometry, joining, processing, inspection and repair. Matching density or one strength value does not establish equivalent function. Distinguish a promising screening candidate, a characterized specimen, a demonstrated component and a repeatably produced part. Each supports different conclusions.
+
+State the proposed population of material states and service conditions. Link evidence across coupons, features, interfaces and assemblies with models whose limitations are explicit. Compare the substituted part against the same functional requirements and include altered failure mechanisms. Trace changes in feed or processing rather than assuming an old qualification transfers indefinitely.
+
+**Work:** Develop an evidence-based comparison for one substitution. Explain why each observation is needed, what alternative outcome would reject the proposal and what remains unknown. Use published measurements or clearly labeled calculations when no experiment is performed. A well-supported refusal to substitute is a valid result.
+
+**Return:** [Materials engineering — structure, processing and useful behavior](../Materials-engineering.lingua#r_05BF5JM8141RKF1VT5998YFZQ9).
+**Continue in materials engineering:** [Cost and resources per accepted useful output](../service/Cost-and-resources-per-accepted-useful-output.lingua#r_109Y60MW4B48Z4KBQPE0J10454).
+
+} r_66V0H0AFE6EWT6H4XF3BRRNMHH

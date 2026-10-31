@@ -1,0 +1,15 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Control, alarm and protective functions have dependencies (@gas-protective-functions: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA", #source "../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R", #source "../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA", #industrial-gases-and-vacuum "Reliability-availability-and-repair-answer-different-questions.lingua#r_3C3BCMPP4SW72KT3WNJAFWTBQT") { r_7KYWJD4BA6MHWEF865V1XR0DQW
+**Read:** [Fatal liquid nitrogen release — CSB Foundation Food Group investigation](../sources/Foundation-Food-Group-Investigation-CSB.lingua#r_7KXAYPC80QQ764WA8DKSJTDRGA), single-point failure and monitoring sections; [Reliability-centered maintenance — NASA, September 2008](../sources/Reliability-Centered-Maintenance-NASA.lingua#r_08ZD3ATSYCJX5586EYSY0M4N3R), failure analysis; [Guideline for Safe Practices for Cryogenic Air Separation Plants — EIGA 147/22](../sources/Cryogenic-Air-Separation-EIGA.lingua#r_39BST0TM9XV9VEZ14NXVJW7TWA), control and training passages.
+
+A control loop regulates production. An alarm communicates a condition. A protective action changes the process when specified conditions occur. They may share a sensor, power source, communication path or final valve. Giving them different names does not make their failures independent.
+
+Describe each function from process condition through sensing, decision, action and resulting physical state. Include loss of signal and loss of power. A command acknowledgement may establish software behavior without proving valve travel, isolation or acceptable process conditions.
+
+**Work:** Trace a hypothetical high-level protection and a low-pressure service alarm. Identify common dependencies and define an observable end-to-end test for each. Distinguish tests of the logic, the final element and the full physical function. Assign no safety-integrity rating from this qualitative exercise.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Reliability, availability and repair answer different questions](Reliability-availability-and-repair-answer-different-questions.lingua#r_3C3BCMPP4SW72KT3WNJAFWTBQT).
+
+} r_7KYWJD4BA6MHWEF865V1XR0DQW

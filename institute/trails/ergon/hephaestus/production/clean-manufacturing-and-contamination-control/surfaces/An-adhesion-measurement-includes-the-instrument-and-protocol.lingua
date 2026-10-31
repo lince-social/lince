@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+An adhesion measurement includes the instrument and protocol (@cm-adhesion-measurement: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM", #source "../sources/Origin-of-Adhesion-in-Humid-Air-Kim.lingua#r_5KY9XHR2M0AZYYGJRNTFPCPB0H", #clean-manufacturing "A-removal-curve-is-an-inference-about-a-population.lingua#r_68Y195WH7SFDA26FZ3895MZVSH") { r_56D4EV6D1TYS3NSS5NR4WTRNXJ
+**Read:** [Particle–substrate interactions — Don Rimai, edited by Goodarz Ahmadi](../sources/Particle-Substrate-Interactions-Rimai.lingua#r_67MEFYZ26RD2ERAEKSVC0ACCQM), part 2 pages 8–9; [Origin of adhesion in humid air — Kim and colleagues](../sources/Origin-of-Adhesion-in-Humid-Air-Kim.lingua#r_5KY9XHR2M0AZYYGJRNTFPCPB0H), the full paper when accessible; revisit the shared metrology Records used earlier.
+
+A force–displacement trace includes the probe, loading system, contact and surroundings. For a calibrated linear cantilever, F=kδ converts deflection into force, but the measured motion is not automatically surface separation. Compliance, optical sensitivity, geometry and offsets enter the conversion. Approach and withdrawal can sample different states.
+
+Record particle attachment, surface preparation, preload, dwell time, retraction rate, humidity, temperature and location. Repeated pulls on one contact need not represent independent surfaces; wear, transfer or conditioning can change later measurements. Centrifugation, flow removal and force microscopy impose different loading geometries and sample different populations.
+
+**Work:** Design a force-inference chain with calibration and blank checks. Separate repeatability at one site from variation across sites and specimens. Explain how censoring contacts below the instrument's force range or losing strongly attached particles during preparation changes the inferred distribution. Propose a second measurement method and account for the physical differences before comparing its numbers.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A removal curve is an inference about a population](A-removal-curve-is-an-inference-about-a-population.lingua#r_68Y195WH7SFDA26FZ3895MZVSH).
+
+} r_56D4EV6D1TYS3NSS5NR4WTRNXJ

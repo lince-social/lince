@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+The useful function defines the cleanliness question (@cm-function: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X", #source "../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5", #clean-manufacturing "A-working-vocabulary-in-English-and-Portuguese.lingua#r_0ZVPAQR75W9W44NBA2SJ0Z02AV") { r_4PKZ4GW7D011A155KHJSC0ZX1M
+**Read:** [Cleanroom programming and energy — Tschudi, Sartor and Xu](../sources/Cleanroom-Programming-and-Energy-LBNL.lingua#r_36R5RS6HEWBTYN4SHCVPQNP12X), contamination requirements; [Contamination control engineering — Tribble and colleagues, NASA CR 4740](../sources/Contamination-Control-Engineering-NASA.lingua#r_2XKKPYTW2DPQPQZ8VPV23BJ8A5), objectives and performance effects.
+
+Specify a useful result at a particular place and time: light reaching a detector, motion under load, an electrical interface or a product's required state. A deposit can be harmless on one surface and consequential on the next. Contamination therefore concerns a relationship between material, location, amount, history and function.
+
+Name the target before choosing a measurement. A room-average particle count might help understand exposure while leaving the state of a recessed product surface unknown. A visually clean container may still carry a chemical residue. Evidence about a cleaning action is not automatically evidence about the final product after handling and storage.
+
+**Work:** Draw the boundary of your chosen object and identify its sensitive surfaces or contents. Formulate three separate questions about particles, chemical composition and biological material. For each, say what observation would answer it and which questions would remain unanswered.
+
+**Return:** [Clean manufacturing and contamination control](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [A working vocabulary for contamination and cleanliness](A-working-vocabulary-in-English-and-Portuguese.lingua#r_0ZVPAQR75W9W44NBA2SJ0Z02AV).
+
+} r_4PKZ4GW7D011A155KHJSC0ZX1M

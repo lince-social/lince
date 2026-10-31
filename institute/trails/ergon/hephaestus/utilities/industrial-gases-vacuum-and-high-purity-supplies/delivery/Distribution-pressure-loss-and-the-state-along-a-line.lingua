@@ -1,0 +1,17 @@
+Import "../Industrial-gases-and-vacuum.lingua"
+
+Distribution pressure loss and the state along a line (@gas-line-flow: 0, is #chapter, #part-of @industrial-gases-and-vacuum, #source "../../../physics/fluid-dynamics/sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM", #source "../../../materials/chemical-feedstocks-and-supply-systems/sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV", #industrial-gases-and-vacuum "Trapped-liquid-and-pressure-from-thermal-expansion.lingua#r_4MNV9VRTPT0NMZXWR7Y627KVPV") { r_78CSBMS7KEPJTS603JFXSTDFD8
+**Read:** [Equations, Tables, and Charts for Compressible Flow — NACA 1135](../../../physics/fluid-dynamics/sources/Compressible-Flow-NACA-1135.lingua#r_5V6PTWHXNJS515S6PMX7BN2ZHM), compressible duct relations; [Oxygen Pipeline and Piping Systems — EIGA Doc 13/20](../../../materials/chemical-feedstocks-and-supply-systems/sources/Oxygen-Pipeline-and-Piping-Systems-EIGA.lingua#r_7BBE969N5JQJES1KG9AKNBEZBV), complete piping scope for an oxygen case; revisit [Viscous gas flow and pressure-dependent conductance](../transport/Viscous-gas-flow-and-pressure-dependent-conductance.lingua#r_7MT7K55E3BZFY7JE54FZVV32Y9).
+
+Gas density changes along a line. A liquid-style pressure-drop calculation using an arbitrary constant density may conceal a large error. First identify the regime: laminar or turbulent, continuum or rarefied, approximately isothermal or appreciably heated/cooled, steady or transient.
+
+As a restricted example, take steady, low-Mach, isothermal ideal-gas flow through a uniform circular pipe with negligible acceleration and elevation. Darcy friction gives −dp/dx=fD ρu²/(2D). With constant mass flux G=ρu and ρ=p/(RsT), integration for constant fD gives p₁²−p₂²=fD(L/D)G²RsT. The friction factor here is Darcy, not Fanning. This approximation fails as acceleration and choking become important.
+
+For changing cross sections or components, solve the connected balances with local states and compatible loss relations. Piping heat exchange also affects density and delivered temperature. A common header can couple users whose demands were treated separately in a steady sizing estimate.
+
+**Work:** Derive the squared-pressure expression and recover the small-pressure-drop limit. Compare two demand schedules with the same daily amount but different peaks; explain why their required line performance differs.
+
+**Return:** [Industrial gases, vacuum and high-purity supplies — from molecules to useful service](../Industrial-gases-and-vacuum.lingua#r_3GHQJEYMYEN6JDKSF4PPJ403RF).
+**Continue in gas and vacuum systems:** [Trapped liquid and pressure from thermal expansion](Trapped-liquid-and-pressure-from-thermal-expansion.lingua#r_4MNV9VRTPT0NMZXWR7Y627KVPV).
+
+} r_78CSBMS7KEPJTS603JFXSTDFD8

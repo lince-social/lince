@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Surfactants change interfaces and can form aggregates (@cm-surfactants: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD", #source "../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E", #clean-manufacturing "Count-surfactant-in-the-liquid-aggregates-and-on-surfaces.lingua#r_619R2K0Y50ZX50VS2H56ZT74XH") { r_7R2RBDMWH8BWXNH1KVWDHAEMSM
+**Read:** [Physical chemistry of interfaces and colloids — Diethelm Johannsmann](../sources/Physical-Chemistry-of-Interfaces-and-Colloids-Johannsmann.lingua#r_5FAT1MRFSVXVDS9Z6VCF4YM7TD), sections 5.2 and 7; [Cleaning and surface properties — Mauro Taborelli](../sources/Cleaning-and-Surface-Properties-Taborelli.lingua#r_1RDARBEFXDAW9Y2DNTJ2QBEP2E), detergent cleaning.
+
+An amphiphilic molecule has parts with different affinities for the surrounding phases. Its adsorption can change interfacial free energy and wetting. Under suitable composition and temperature, aggregates such as micelles can form. A micelle, an emulsion droplet and a dissolved individual molecule are different structures.
+
+The critical micelle concentration refers to a system and measurement convention. Salts, mixtures, temperature and adsorption on available surfaces can shift behavior. Adding more surfactant does not establish indefinitely improving cleaning: substrate compatibility, retained agent, foam, transport and rinsability also matter.
+
+**Work:** Draw monomers in water, adsorbed molecules and a simple micelle, labeling the chosen hydrophilic and hydrophobic regions. Explain two possible routes by which a residue can leave a surface without claiming every residue is dissolved inside a micelle. Read the full self-organization treatment before interpreting a change in surface tension as a complete phase description.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Count surfactant in the liquid, aggregates and on surfaces](Count-surfactant-in-the-liquid-aggregates-and-on-surfaces.lingua#r_619R2K0Y50ZX50VS2H56ZT74XH).
+
+} r_7R2RBDMWH8BWXNH1KVWDHAEMSM

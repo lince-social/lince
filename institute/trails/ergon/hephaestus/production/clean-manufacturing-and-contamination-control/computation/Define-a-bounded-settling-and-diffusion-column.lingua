@@ -1,0 +1,15 @@
+Import "../Clean-manufacturing-and-contamination-control.lingua"
+
+Define a bounded settling and diffusion column (@cm-column-model: 0, is #chapter, #part-of @clean-manufacturing, #source "../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0", #clean-manufacturing "../../../physics/fluid-dynamics/computation/Advection-schemes-boundedness-diffusion-and-shock-capture.lingua#r_0XH17KPCTVWEZATGC9DTC9PGFN") { r_18EAG216Z9S7QJ4BCWG5YZTMFZ
+**Read:** [The fluid mechanics of aerosols — Goodarz Ahmadi, Clarkson](../sources/Fluid-Mechanics-of-Aerosols-Ahmadi.lingua#r_175C6Q2GTKPZJJ6XSRHF5979G0), particle motion and mass diffusion; revisit the conservative transport equation. The following calculation is original teaching code, not a reconstruction of a published facility.
+
+Take a vertical column 0≤z≤H with no bulk fluid flow, constant downward settling speed w≥0 and constant diffusivity D≥0. Number flux upward is J=−wc−D∂c/∂z, and ∂c/∂t=−∂J/∂z. The bottom collects particles; the top has zero total flux. There are no sources, coagulation, growth, electrical forces or release from the collector.
+
+For D>0 the ideal bottom is absorbing. For pure advection, downward outflow leaves the column and the upper boundary supplies no particles. The initial profile is specified independently. Integrating gives remaining column inventory plus cumulative bottom collection equal to the initial inventory, all per unit horizontal area.
+
+**Work:** Derive this balance and its units. Distinguish the upper zero-total-flux condition from a zero gradient. Decide which observations of a real apparatus would be needed before this ideal model could be relevant; a matched final total alone does not establish its spatial dynamics.
+
+**Return:** [Clean manufacturing and contamination control — from familiar objects to controlled processes](../Clean-manufacturing-and-contamination-control.lingua#r_7D8SQ8BVQDZQBDBGC6DP0JAMZN).
+**Continue in clean manufacturing:** [Advection schemes, boundedness, diffusion and shock capture](../../../physics/fluid-dynamics/computation/Advection-schemes-boundedness-diffusion-and-shock-capture.lingua#r_0XH17KPCTVWEZATGC9DTC9PGFN).
+
+} r_18EAG216Z9S7QJ4BCWG5YZTMFZ

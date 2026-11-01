@@ -223,7 +223,6 @@ impl Runner {
         ];
         self.adb_with_budget(&args, deadline.saturating_duration_since(Instant::now()))
             .map_err(ReplyFailure::Uncertain)?;
-        let mut sent = Instant::now();
         let mut pause = Duration::ZERO;
         loop {
             let remaining = deadline.saturating_duration_since(Instant::now());
@@ -304,11 +303,6 @@ impl Runner {
                 return Err(ReplyFailure::Uncertain(
                     "Smoke APK exited unexpectedly; inspect logcat.txt".into(),
                 ));
-            }
-            if request["command"] == "snapshot" && sent.elapsed() >= Duration::from_millis(200) {
-                self.adb_with_budget(&args, deadline.saturating_duration_since(Instant::now()))
-                    .map_err(ReplyFailure::Uncertain)?;
-                sent = Instant::now();
             }
             pause = (pause + Duration::from_millis(50)).min(Duration::from_millis(200));
             thread::sleep(pause.min(deadline.saturating_duration_since(Instant::now())));
@@ -637,6 +631,7 @@ case "$1 $2" in
     request=$(printf %s "$encoded" | base64 -d)
     id=$(printf %s "$request" | sed -n 's/.*"id":\([0-9]*\).*/\1/p')
     case "$request" in
+      *'"command":"snapshot"'*) printf x >> "$root/snapshots" ;;
       *'"command":"press"'*)
         printf x >> "$root/mutations"
         if test ACK_TOKEN = no; then exit 0; fi
@@ -644,7 +639,15 @@ case "$1 $2" in
     esac
     printf '{"id":%s,"error":null,"buttons":["Save title"],"done":true}' "$id" > "$root/reply"
     ;;
-  'logcat --pid') printf 'LINCE_SMOKE '; cat "$root/reply" ;;
+  'logcat --pid')
+    if test -f "$root/delay"; then
+      polls=0
+      if test -f "$root/polls"; then polls=$(cat "$root/polls"); fi
+      polls=$((polls + 1))
+      printf %s "$polls" > "$root/polls"
+      if test "$polls" -lt "$(cat "$root/delay")"; then exit 0; fi
+    fi
+    printf 'LINCE_SMOKE '; cat "$root/reply" ;;
 esac
 "#
         .replace("ROOT_TOKEN", &root)
@@ -662,6 +665,19 @@ esac
             },
             directory,
         )
+    }
+
+    #[test]
+    fn delayed_snapshot_acknowledgement_does_not_queue_duplicate_requests() {
+        let (mut runner, directory) = fake(true);
+        fs::write(directory.0.join("delay"), "4").unwrap();
+        let reply = runner
+            .request(json!({"command":"snapshot"}), Duration::from_secs(2))
+            .map_err(ReplyFailure::message)
+            .unwrap();
+        assert_eq!(reply["done"], true);
+        assert_eq!(fs::read(directory.0.join("snapshots")).unwrap(), b"x");
+        assert!(!directory.0.join("mutations").exists());
     }
 
     #[test]

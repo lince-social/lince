@@ -19,17 +19,28 @@ const OUTPUT_LIMIT: usize = 2 * 1024 * 1024;
 #[serde(untagged)]
 enum Target {
     Name(String),
-    Named { name: String, role: Option<String> },
+    Named {
+        name: String,
+        role: Option<String>,
+        value: Option<String>,
+    },
 }
 
 impl Target {
     fn selector(&self) -> Selector {
         match self {
             Self::Name(name) => Selector::new(name),
-            Self::Named { name, role } => Selector {
+            Self::Named { name, role, .. } => Selector {
                 name: name.clone(),
                 role: role.clone(),
             },
+        }
+    }
+
+    fn value_filter(&self) -> Option<&str> {
+        match self {
+            Self::Named { value, .. } => value.as_deref(),
+            Self::Name(_) => None,
         }
     }
 }
@@ -239,10 +250,24 @@ fn matches(node: &Node, selector: &Selector) -> bool {
             .is_none_or(|role| role == &node.role || role == "EditText" && node.role == "TextInput")
 }
 
+fn matches_filtered(node: &Node, selector: &Selector, value: Option<&str>) -> bool {
+    matches(node, selector)
+        && value.is_none_or(|value| !node.secret && node.value.as_deref() == Some(value))
+}
+
+#[cfg(test)]
 fn selected<'a>(nodes: &'a [Node], selector: &Selector) -> Result<&'a Node> {
-    let mut found = nodes
-        .iter()
-        .filter(|node| node.enabled && node.bounds.is_some() && matches(node, selector));
+    selected_filtered(nodes, selector, None)
+}
+
+fn selected_filtered<'a>(
+    nodes: &'a [Node],
+    selector: &Selector,
+    value: Option<&str>,
+) -> Result<&'a Node> {
+    let mut found = nodes.iter().filter(|node| {
+        node.enabled && node.bounds.is_some() && matches_filtered(node, selector, value)
+    });
     let node = found
         .next()
         .ok_or("No visible enabled control matches the exact target")?;
@@ -295,6 +320,7 @@ struct Action {
     key: Option<String>,
     direction: Option<String>,
     fallback: Option<String>,
+    target_value: Option<String>,
 }
 
 #[derive(Clone)]
@@ -323,16 +349,17 @@ struct Android {
     cached: Option<(Instant, Snapshot)>,
     diagnostics: String,
     terminal: bool,
-    reject: Vec<Selector>,
+    reject: Vec<Target>,
 }
 
 impl Android {
     fn check_status(&self, snapshot: &Snapshot) -> Result<()> {
-        if self
-            .reject
-            .iter()
-            .any(|selector| snapshot.nodes.iter().any(|node| matches(node, selector)))
-        {
+        if self.reject.iter().any(|target| {
+            snapshot
+                .nodes
+                .iter()
+                .any(|node| matches_filtered(node, &target.selector(), target.value_filter()))
+        }) {
             return Err("An explicitly rejected UI status is visible".into());
         }
         Ok(())
@@ -422,10 +449,11 @@ impl Backend for Android {
         };
         let focused_enter =
             route == Route::Fallback && action.fallback.as_deref() == Some("focused-enter");
-        let target = match selected(&snapshot.nodes, &selector) {
-            Ok(target) => target,
-            Err(error) => return Dispatch::Rejected(error),
-        };
+        let target =
+            match selected_filtered(&snapshot.nodes, &selector, action.target_value.as_deref()) {
+                Ok(target) => target,
+                Err(error) => return Dispatch::Rejected(error),
+            };
         let [left, top, right, bottom] = target.bounds.unwrap();
         let center = ((left + right) / 2, (top + bottom) / 2);
         let command = if focused_enter {
@@ -497,16 +525,25 @@ impl Backend for Android {
         }
         self.check_status(snapshot)?;
         if let Some(target) = &expect.visible {
-            return Ok(selected(&snapshot.nodes, &target.selector()).is_ok());
+            return Ok(selected_filtered(
+                &snapshot.nodes,
+                &target.selector(),
+                target.value_filter(),
+            )
+            .is_ok());
         }
         if let Some(target) = &expect.absent {
-            return Ok(!snapshot
-                .nodes
-                .iter()
-                .any(|node| matches(node, &target.selector())));
+            return Ok(!snapshot.nodes.iter().any(|node| {
+                node.bounds.is_some()
+                    && matches_filtered(node, &target.selector(), target.value_filter())
+            }));
         }
         if let Some(value) = &expect.value {
-            let target = selected(&snapshot.nodes, &value.target.selector())?;
+            let target = selected_filtered(
+                &snapshot.nodes,
+                &value.target.selector(),
+                value.target.value_filter(),
+            )?;
             if target.secret {
                 return Err("Protected field values cannot be observed".into());
             }
@@ -651,8 +688,9 @@ pub(super) fn run(root: &Path, args: &[OsString]) -> Result<()> {
         if failed && !(plan.continue_independent && item.independent) {
             break;
         }
-        backend.reject = item.reject.iter().map(Target::selector).collect();
+        backend.reject = item.reject;
         let action = Action {
+            target_value: item.target.value_filter().map(str::to_string),
             kind: item.action.clone(),
             value: resolve(&item.value, &fixture)?,
             key: item.key,
@@ -774,6 +812,63 @@ mod tests {
     }
 
     #[test]
+    fn existing_nonsecret_value_selects_one_radius_and_never_matches_protected_or_clipped_fields() {
+        let nodes = parse(&xml(r#"<node class="android.widget.EditText" text="Radius: 3000" enabled="true" bounds="[0,0][100,40]"/><node class="android.widget.EditText" text="Radius: 5000" enabled="true" bounds="[0,40][100,80]"/>"#)).unwrap();
+        let target: Target =
+            serde_json::from_str(r#"{"name":"Radius","role":"TextInput","value":"5000"}"#).unwrap();
+        let selector = target.selector();
+        assert!(selected(&nodes, &selector).is_err());
+        assert_eq!(
+            selected_filtered(&nodes, &selector, target.value_filter())
+                .unwrap()
+                .value
+                .as_deref(),
+            Some("5000")
+        );
+        let mut protected = nodes[1].clone();
+        protected.secret = true;
+        protected.value = None;
+        assert!(selected_filtered(&[protected], &selector, target.value_filter()).is_err());
+        let mut backend = Android {
+            adb: PathBuf::from("unused"),
+            device: "test".into(),
+            allowed: vec![PACKAGE.into()],
+            cached: None,
+            diagnostics: String::new(),
+            terminal: false,
+            reject: vec![],
+        };
+        let mut snapshot = Snapshot {
+            owner: PACKAGE.into(),
+            nodes,
+        };
+        let visible = Expect {
+            visible: Some(target.clone()),
+            absent: None,
+            value: None,
+        };
+        assert!(backend.condition(&snapshot, &visible).unwrap());
+        let value = Expect {
+            visible: None,
+            absent: None,
+            value: Some(ValueExpectation {
+                target: target.clone(),
+                equals: "5000".into(),
+            }),
+        };
+        assert!(backend.condition(&snapshot, &value).unwrap());
+        snapshot.nodes[1].bounds = None;
+        assert!(!backend.condition(&snapshot, &visible).unwrap());
+        let absent = Expect {
+            visible: None,
+            absent: Some(target),
+            value: None,
+        };
+        assert!(backend.condition(&snapshot, &absent).unwrap());
+        backend.reject.clear();
+    }
+
+    #[test]
     fn shell_quotes_metacharacters_and_rejects_percent_space_aliases() {
         assert_eq!(input_text("a b;$(id)'x").unwrap(), "'a%sb;$(id)'\\''x'");
         assert!(input_text("literal%s").is_err());
@@ -852,6 +947,7 @@ mod tests {
                 key: None,
                 direction: None,
                 fallback: Some("Confirm".into()),
+                target_value: None,
             },
             Expect {
                 visible: Some(Target::Name("Confirm".into())),

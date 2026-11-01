@@ -32,6 +32,32 @@ pub mod workflows;
 
 pub fn run(directory: std::path::PathBuf) {
     use bevy::prelude::*;
+    let plugins = DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            title: "Lince Mobile".into(),
+            resolution: (430, 820).into(),
+            ..default()
+        }),
+        ..default()
+    });
+    #[cfg(all(
+        target_os = "android",
+        target_arch = "x86_64",
+        feature = "android-smoke",
+        debug_assertions
+    ))]
+    let plugins = {
+        use bevy::render::{
+            RenderPlugin,
+            settings::{InstanceFlags, RenderCreation, WgpuSettings},
+        };
+        let mut settings = WgpuSettings::default();
+        settings.instance_flags.remove(InstanceFlags::DEBUG);
+        plugins.set(RenderPlugin {
+            render_creation: RenderCreation::Automatic(Box::new(settings)),
+            ..default()
+        })
+    };
     App::new()
         .insert_resource(app::Mobile::new(directory))
         .insert_resource(bevy::winit::WinitSettings {
@@ -42,14 +68,7 @@ pub fn run(directory: std::path::PathBuf) {
                 std::time::Duration::from_secs(5),
             ),
         })
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Lince Mobile".into(),
-                resolution: (430, 820).into(),
-                ..default()
-            }),
-            ..default()
-        }))
+        .add_plugins(plugins)
         .add_plugins((
             lince_interface::theme::TypographyPlugin,
             bevy::input_focus::tab_navigation::TabNavigationPlugin,

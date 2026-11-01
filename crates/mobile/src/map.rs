@@ -986,6 +986,8 @@ fn apply_theme(world: &mut World, root: Entity) {
     }
 }
 
+pub(crate) const ATTRIBUTION: &str = "Natural Earth · © OpenStreetMap contributors · ESA WorldCover. Maps grant no live sharing permission.";
+
 fn map_button(world: &mut World, parent: Entity, label: &str, intent: Intent) {
     app::button(world, parent, label, app::Intent::Map(intent));
 }
@@ -1207,12 +1209,16 @@ pub fn render(world: &mut World, _parent: Entity) {
         map_button(world, controls, "Save point on Record", Intent::SavePoint);
     }
     let status = app::label(world, owner, "Offline world overview", 14.0);
-    app::label(
+    let attribution = app::label(
         world,
         owner,
-        "Natural Earth · © OpenStreetMap contributors · ESA WorldCover. Maps grant no live sharing permission.",
+        ATTRIBUTION,
         11.0,
     );
+    if compact {
+        world.get_mut::<Node>(status).unwrap().display = Display::None;
+        world.get_mut::<Node>(attribution).unwrap().display = Display::None;
+    }
     if world.resource::<State>().credits_open {
         for (name, license) in [
             (

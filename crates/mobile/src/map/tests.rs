@@ -223,6 +223,12 @@ async fn packaged_overview_and_example_are_offline_and_received_invitation_start
 fn ordinary_zoom_needs_no_detail_form_and_persisted_offline_mode_is_respected() {
     let temporary = tempfile::tempdir().unwrap();
     let (mut world, _, _) = fixture(temporary.path());
+    assert!(
+        world
+            .query::<(&Text, &Node)>()
+            .iter(&world)
+            .any(|(text, node)| text.0 == ATTRIBUTION && node.display != Display::None)
+    );
     assert!(world.resource::<State>().settings.online);
     assert_eq!(
         world.resource::<State>().settings.server,

@@ -419,7 +419,7 @@ pub(crate) fn render(world: &mut World, parent: Entity) {
     app::label(
         world,
         panel,
-        "Natural Earth · © OpenStreetMap contributors · ESA WorldCover",
+        crate::map::ATTRIBUTION,
         11.0,
     );
 }
@@ -473,6 +473,20 @@ mod tests {
                 .map(|text| text.0.clone())
                 .collect();
             assert!(!labels.iter().any(|label| label == "Another person's trip"));
+            let visible: Vec<_> = world
+                .query::<(&Text, &Node)>()
+                .iter(&world)
+                .filter(|(_, node)| node.display != Display::None)
+                .map(|(text, _)| text.0.as_str())
+                .collect();
+            assert_eq!(
+                visible
+                    .iter()
+                    .filter(|label| **label == crate::map::ATTRIBUTION)
+                    .count(),
+                1
+            );
+            assert!(!visible.contains(&"Offline world overview"));
         }
         crate::workflows::apply(&mut world, crate::workflows::Intent::New("Ride".into())).unwrap();
         let request = world

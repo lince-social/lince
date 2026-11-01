@@ -1,4 +1,6 @@
 mod catalogue;
+#[cfg(feature = "test-driver")]
+pub mod driver;
 pub mod components;
 mod isolation;
 pub mod showoff;

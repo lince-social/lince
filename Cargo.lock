@@ -19969,6 +19969,7 @@ dependencies = [
  "image 0.25.10",
  "lince-ailuros",
  "lince-interface",
+ "quick-xml 0.41.0",
  "reqwest",
  "rustix 1.1.4",
  "serde",

@@ -15,6 +15,8 @@ mod hand_models;
 mod maintenance;
 mod park;
 mod prune;
+mod ui_process;
+mod ui_test;
 #[cfg(any(feature = "authoring", test))]
 mod workspace;
 
@@ -182,6 +184,7 @@ fn dispatch() -> Result<()> {
         Some("android") => android::dispatch(&root, &extra),
         Some("android-clean") => android_clean::run(&root, &extra),
         Some("android-smoke") => android_smoke::run(&root, &extra),
+        Some("ui-test") => ui_test::run(&caller_directory, &extra),
         Some("plugin-example") => {
             if extra.len() != 1 {
                 return Err("usage: cargo xtask plugin-example <Lince-data-directory>".into());
@@ -317,7 +320,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <ailuros|lingua|design|workspace|park|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
+                "cargo xtask <ailuros|lingua|design|workspace|park|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|ui-test|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."

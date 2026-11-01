@@ -2,6 +2,7 @@ use super::*;
 
 fn fixture() -> (World, Entity, Entity, Entity) {
     let (mut world, root, native, application) = super::super::tests::fixture();
+    world.init_resource::<Assets<Font>>();
     world.init_resource::<crate::native::theme::Typography>();
     checked(&mut world, root, DesktopAction::MarkScratch).unwrap();
     focus_item(&mut world, application);

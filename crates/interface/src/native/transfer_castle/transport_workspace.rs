@@ -432,7 +432,35 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
 
 #[cfg_attr(test, test)]
 fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
+    use crate::native::laboratory::driver::{
+        Limits, Runner, Selector, Step, UiAction, UiBackend, UiCondition,
+    };
+    fn click(app: &mut App, owner: Entity, label: &str, visible: &str) {
+        let step = Step::action(
+            label,
+            Selector::new(label).with_role("Button"),
+            UiAction::Click,
+            UiCondition::Visible(Selector::new(visible).with_role("Button")),
+        )
+        .with_fallback();
+        let report = Runner::new(Limits::default()).run(&mut UiBackend::new(app, owner), &step);
+        assert!(
+            report.is_success(),
+            "{} {:?} {:?}: {}",
+            report.step,
+            report.selector,
+            report.outcome,
+            report.diagnostics
+        );
+    }
     let mut app = super::tests::app();
+    app.init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<bevy::mesh::skinning::SkinnedMeshInverseBindposes>>()
+        .add_plugins((
+            bevy::input::InputPlugin,
+            crate::native::actions::ActionsPlugin,
+            bevy::camera::visibility::VisibilityPlugin,
+        ));
     let root = app
         .world_mut()
         .spawn(crate::native::workspace::Workspaces::default())
@@ -459,7 +487,9 @@ fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
             "parties":[{"actor":person}],"promises":[{"transport":{}}]}),
         ];
     }
-    ui::Command::Transport.apply(app.world_mut(), owner);
+    ui::render(app.world_mut(), owner);
+    app.update();
+    click(&mut app, owner, "Transport", "Transport options");
     let surface = app.world().get::<View>(owner).unwrap().transport.unwrap();
     let map = app.world().get::<Surface>(surface).unwrap().map;
     app.world_mut()
@@ -467,8 +497,12 @@ fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
         .unwrap()
         .camera
         .zoom = 12.0;
-    for panel in [Panel::List, Panel::Options, Panel::Summary] {
-        Navigate::Panel(panel).apply(app.world_mut(), owner);
+    for (label, visible) in [
+        ("My active transports", "Collapse"),
+        ("Transport options", "New delivery"),
+        ("Collapse", "My active transports"),
+    ] {
+        click(&mut app, owner, label, visible);
         assert_eq!(
             app.world().get::<View>(owner).unwrap().transport,
             Some(surface)
@@ -483,7 +517,8 @@ fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
             12.0
         );
     }
-    ui::Command::New("Ride".into()).apply(app.world_mut(), owner);
+    click(&mut app, owner, "Transport options", "New ride");
+    click(&mut app, owner, "New ride", "Cancel");
     let request = app
         .world()
         .get::<TransferCastle>(owner)
@@ -493,7 +528,16 @@ fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
         .unwrap()
         .request_id
         .clone();
-    Navigate::Back.apply(app.world_mut(), owner);
+    let hidden_back = Step::action(
+        "guard hidden Back while composing",
+        Selector::new("Back").with_role("Button"),
+        UiAction::Click,
+        UiCondition::Visible(Selector::new("Transport").with_role("Button")),
+    )
+    .with_fallback();
+    let report =
+        Runner::new(Limits::default()).run(&mut UiBackend::new(&mut app, owner), &hidden_back);
+    assert_eq!(report.outcome, crate::testing::Outcome::Rejected);
     assert_eq!(
         app.world()
             .get::<TransferCastle>(owner)
@@ -508,12 +552,13 @@ fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
         app.world().get::<Node>(surface).unwrap().display,
         Display::None
     );
-    ui::Command::Cancel.apply(app.world_mut(), owner);
+    click(&mut app, owner, "Cancel", "Transport options");
     assert_eq!(
         app.world().get::<Node>(surface).unwrap().display,
         Display::Flex
     );
-    Navigate::Back.apply(app.world_mut(), owner);
+    click(&mut app, owner, "Back", "My active transports");
+    click(&mut app, owner, "Back", "Transport");
     assert_eq!(
         app.world()
             .get::<TransferCastle>(owner)
@@ -527,7 +572,7 @@ fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
         "general"
     );
     assert!(app.world().resource::<Requests>().0.is_empty());
-    ui::Command::Transport.apply(app.world_mut(), owner);
+    click(&mut app, owner, "Transport", "Transport options");
     let previous = app.world().get::<View>(owner).unwrap().transport.unwrap();
     {
         let mut view = app.world_mut().get_mut::<View>(owner).unwrap();

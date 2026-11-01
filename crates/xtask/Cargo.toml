@@ -15,7 +15,8 @@ image = { workspace = true, optional = true }
 reqwest = { workspace = true }
 sha2 = { workspace = true }
 serde = { workspace = true }
-lince-interface = { workspace = true, default-features = false }
+lince-interface = { workspace = true, default-features = false, features = ["test-driver"] }
+quick-xml = "=0.41.0"
 axum = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["net"] }
 serde_json = { workspace = true }
@@ -29,7 +30,7 @@ gltf = { version = "=1.4.1", default-features = false, features = ["utils", "nam
 image.workspace = true
 
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "=1.1.4", features = ["process"] }
+rustix = { version = "=1.1.4", features = ["process", "fs"] }
 
 [lints]
 workspace = true

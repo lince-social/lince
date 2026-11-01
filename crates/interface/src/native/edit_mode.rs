@@ -1804,9 +1804,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
             },
             crate::native::token_style::border(crate::native::tokens::Token::Accent),
         ));
-        if let Some(mut node) = world.get_mut::<AccessibilityNode>(filter) {
-            node.set_label(Tr::FilterSandStore.text());
-        }
+        crate::native::accessibility::input(world, filter, Tr::FilterSandStore.text(), false);
         let sands_heading = label(world, panel, "Sands", 18.0);
         let sands_group = store_group(world, panel);
         let castles_heading = label(world, panel, "Castles", 18.0);
@@ -2354,6 +2352,7 @@ pub(crate) mod tests {
     #[cfg_attr(test, test)]
     fn store_credits_only_appear_in_tabs_and_reselection_keeps_filter() {
         let (mut app, root) = fixture();
+        app.add_plugins(crate::native::accessibility::AccessibilityPlugin);
         EditAction::Open.apply(app.world_mut(), root);
         activate(&mut app, root, EditAction::Store);
         let world = app.world_mut();
@@ -2376,6 +2375,15 @@ pub(crate) mod tests {
         assert_eq!(
             app.world().get::<EditableText>(filter).unwrap().value(),
             "Square"
+        );
+        let accessible = app.world().get::<AccessibilityNode>(filter).unwrap();
+        assert_eq!(
+            (accessible.role(), accessible.label(), accessible.value()),
+            (
+                accesskit::Role::TextInput,
+                Some(Tr::FilterSandStore.text()),
+                Some("Square")
+            )
         );
     }
 

@@ -2,6 +2,9 @@
 
 extern crate self as lince_interface;
 
+#[cfg(feature = "test-driver")]
+pub mod testing;
+
 #[cfg(feature = "models")]
 pub mod transfers;
 

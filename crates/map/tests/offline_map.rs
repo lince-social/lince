@@ -218,6 +218,57 @@ async fn concurrent_castles_share_one_download_and_reopen_offline() {
 }
 
 #[tokio::test]
+async fn local_pack_precedes_populated_cache_and_online_server_without_requests() {
+    let directory = tempfile::tempdir().unwrap();
+    let local = tempfile::tempdir().unwrap();
+    let payload = |extent| {
+        let mut tile = VectorTile::decode(fixture().as_slice()).unwrap();
+        for layer in &mut tile.layers {
+            layer.extent = Some(extent);
+        }
+        tile.encode_to_vec()
+    };
+    let local_bytes = payload(4096);
+    let cached_bytes = payload(2048);
+    let server_bytes = payload(1024);
+    let relative = "4/2/3.pbf";
+    std::fs::create_dir_all(local.path().join("4/2")).unwrap();
+    std::fs::write(local.path().join(relative), &local_bytes).unwrap();
+    packs::manifest(
+        local.path(),
+        lince_map::pack::Format::Directory,
+        &[relative],
+        "priority-local",
+    );
+    let count = Arc::new(AtomicUsize::new(0));
+    let (url, server) = server(server_bytes.clone(), count.clone()).await;
+    let settings = Settings {
+        local_directory: local.path().into(),
+        server: url,
+        dataset_version: "priority-v1".into(),
+        online: true,
+        ..Default::default()
+    };
+    let cache = directory.path().join(settings.source_id());
+    std::fs::create_dir_all(cache.join("4/2")).unwrap();
+    std::fs::write(cache.join(relative), &cached_bytes).unwrap();
+    let store = TileStore::new(settings, directory.path()).unwrap();
+    let chosen = store.load(Tile { z: 4, x: 2, y: 3 }).await.unwrap();
+    assert_eq!(chosen, lince_map::source::normalize(&local_bytes).unwrap());
+    assert_ne!(chosen, lince_map::source::normalize(&cached_bytes).unwrap());
+    assert_ne!(chosen, lince_map::source::normalize(&server_bytes).unwrap());
+    assert_eq!(std::fs::read(cache.join(relative)).unwrap(), cached_bytes);
+    assert_eq!(count.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        store
+            .progress(&[Tile { z: 4, x: 2, y: 3 }])
+            .downloaded_bytes,
+        0
+    );
+    server.abort();
+}
+
+#[tokio::test]
 async fn local_tiles_win_and_cancelled_area_download_does_not_fetch() {
     let directory = tempfile::tempdir().unwrap();
     let local = tempfile::tempdir().unwrap();

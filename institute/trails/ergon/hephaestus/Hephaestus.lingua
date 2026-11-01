@@ -37,6 +37,116 @@ Use the opening lessons to understand the shared questions of each area. Return 
 - [Computing — representation, algorithms and working systems](computer-science/Computing.lingua#r_02FE84C805C79A9D396F478641)
 - [Engineering — systems, design, construction, and operation](engineering/Engineering.lingua#r_5DA6VY09MAD2N8D9SH0FFJVV68)
 - [Scientific inquiry and practice — questions, evidence and shared knowledge](inquiry/Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB)
+
+**Combined eighth-pass publication verification.**
+
+Historical evidence recorded before the skeleton migration. Counts, pending statuses, temporary handles and next-step instructions describe that checkpoint; consult this entrance’s current scope and next steps before acting.
+
+Freeze the final eight-block corpus and exact first integration test after register/readiness verification. Expected scope is **551 selected common Records / 2,817 discovered documents**. Copy `institute/trails/` and `crates/resources/tests/ergon.rs` to `/tmp/hephaestus-eighth-pass-verification/`, compare every copied byte with the worktree and record SHA-256 entries in `/tmp/hephaestus-eighth-pass-snapshot.json`. Recheck all hashes immediately before running and after termination. Later gap work is outside the snapshot.
+
+Compile the frozen exact test with warnings as errors against the current built resource/test libraries and `CARGO_MANIFEST_DIR` set to the snapshot resources directory. Run the exact Hephaestus publication/export/relocation test through Nix, record its handle in `/tmp/hephaestus-eighth-pass-runtime.json`, and poll the same handle until terminal. Do not duplicate a quiet run. All older publication handles, including seventh `61242`, are terminal PASS and must not be polled or restarted.
+
+The snapshot was created and all **3,846 copied files** matched their worktree originals. Every hash was rechecked immediately before runtime. Warnings-as-errors compilation **49604** passed using `CARGO_MANIFEST_DIR=/tmp/hephaestus-eighth-pass-verification/crates/resources`, the frozen `crates/resources/tests/ergon.rs`, and existing `liblince_resources-1402c3875a767934.rlib`, `libtempfile-52682742c422660d.rlib`, `libregex-420b8035ffef755a.rlib`. The current repository Cargo check passed separately. The compiler output is `/tmp/hephaestus-eighth-pass-test`.
+
+**Runtime session `14625` is terminal PASS:** `nix develop -c /tmp/hephaestus-eighth-pass-test --exact hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations --nocapture` completed with **one passed, zero failed and eighteen filtered tests in 5,481.96 seconds**. All **3,846 hashes** were rechecked unchanged after termination. `/tmp/hephaestus-eighth-pass-runtime.json` records terminal evidence. Do not poll or restart it. This exact run excludes the other eighteen tests and all later gap-block work; use the newer combined snapshot for those additions.
+
+**Combined publication verification through magnetic foundations.**
+
+Historical evidence recorded before the skeleton migration. Counts, pending statuses, temporary handles and next-step instructions describe that checkpoint; consult this entrance’s current scope and next steps before acting.
+
+The immutable snapshot `/tmp/hephaestus-magnetic-pass-verification/` covers **618 selected Records / 2,888 discovered documents**, including all six additions after the eighth common pass: operators, quantum, human-use/trust, people/operation, oriented fields and magnetic/inductive physics. `/tmp/hephaestus-magnetic-pass-snapshot.json` records **3,917 SHA-256 entries** covering the copied `institute/trails/` tree and exact integration-test file. Every copy was compared with its worktree source, and every hash was rechecked immediately before runtime. Later spacetime/astronomy edits are outside this scope.
+
+Warnings-as-errors compilation **73736** passed. The exact command was `nix develop -c env CARGO_MANIFEST_DIR=/tmp/hephaestus-magnetic-pass-verification/crates/resources rustc --edition=2024 --test --cfg 'feature="publication"' -D warnings /tmp/hephaestus-magnetic-pass-verification/crates/resources/tests/ergon.rs -L dependency=target/debug/deps --extern lince_resources=target/debug/deps/liblince_resources-1402c3875a767934.rlib --extern tempfile=target/debug/deps/libtempfile-52682742c422660d.rlib --extern regex=target/debug/deps/libregex-420b8035ffef755a.rlib -o /tmp/hephaestus-magnetic-pass-test`. The current Cargo check passed independently.
+
+**Runtime session `54055` is live:** `nix develop -c /tmp/hephaestus-magnetic-pass-test --exact hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations --nocapture` reported `running 1 test`. `/tmp/hephaestus-magnetic-pass-runtime.json` records its handle and scope. Poll the same handle until terminal and recheck all **3,917 hashes** afterward. The exact test covers common selection/reachability, representative discovery, preserved specialist routes and sources, embedded programs, export, relocation and fresh reopening. It excludes the other eighteen tests. A live run is pending evidence; do not duplicate it because it is quiet.
+
+Eighth runtime `14625` and all older runs are terminal PASS. Do not poll or restart those handles. Continue common spacetime/gravity and astronomical work while preserving this snapshot.
+
+**Combined seventh-pass publication verification.**
+
+Historical evidence recorded before the skeleton migration. Counts, pending statuses, temporary handles and next-step instructions describe that checkpoint; consult this entrance’s current scope and next steps before acting.
+
+All older runtime handles are terminal PASS and must not be restarted. The seventh-pass snapshot must cover **483 selected Records and 2,403 discovered documents**, with all six latest blocks and the exact current first integration test. Freeze after register/handoff finalization, compare every copied trail/test file against its worktree original and record SHA-256 hashes. Compile with warnings as errors against the current built libraries, run the exact Hephaestus test against that immutable snapshot and record its live handle. Recheck every snapshot hash after termination. A live run is pending evidence, never a completion claim; subsequent eighth-pass changes are outside its scope.
+
+The seventh-pass snapshot has now been created at `/tmp/hephaestus-seventh-pass-verification/`. `/tmp/hephaestus-seventh-pass-snapshot.json` records **3,783 SHA-256 entries** for the copied trails and exact integration test; every copy matched the worktree and every hash was rechecked unchanged immediately before runtime. Compilation session `49236` passed with `-D warnings`, using `CARGO_MANIFEST_DIR` set to the snapshot resources directory and the existing built resources/tempfile libraries plus `libregex-420b8035ffef755a.rlib` for the local-link normalization assertion. The exact command is `nix develop -c env CARGO_MANIFEST_DIR=/tmp/hephaestus-seventh-pass-verification/crates/resources rustc --edition=2024 --test --cfg 'feature="publication"' -D warnings /tmp/hephaestus-seventh-pass-verification/crates/resources/tests/ergon.rs -L dependency=target/debug/deps --extern lince_resources=target/debug/deps/liblince_resources-1402c3875a767934.rlib --extern tempfile=target/debug/deps/libtempfile-52682742c422660d.rlib --extern regex=target/debug/deps/libregex-420b8035ffef755a.rlib -o /tmp/hephaestus-seventh-pass-test`.
+
+**Runtime session `61242` is terminal PASS:** `nix develop -c /tmp/hephaestus-seventh-pass-test --exact hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations --nocapture` completed with **one passed, zero failed and eighteen filtered tests in 4,788.13 seconds**. All **3,783 SHA-256 entries** were rechecked unchanged after termination. `/tmp/hephaestus-seventh-pass-runtime.json` records the result and manifest verification. Do not poll or restart this handle. Every eighth-pass addition is outside this snapshot's scope.
+
+The exact test verifies broad/core edges, selected membership and reachability, multi-entry discovery, retained standalone specialist routes, source/context references, embedded common programs, export, relocation and reopening in a fresh library. Its success covers the immutable seven-pass snapshot only. All older publication runs are terminal PASS; no publication-test handle remains live at this checkpoint. Finish eighth inquiry and the substantive cross-area review, then prepare a new immutable eighth-pass verification.
+
+**Completed structure and earlier work.**
+
+Historical evidence recorded before the skeleton migration. Counts, pending statuses, temporary handles and next-step instructions describe that checkpoint; consult this entrance’s current scope and next steps before acting.
+
+The six broad entrances, engineering nesting, six introductory lessons and broader production introduction were authored and verified in the initial breadth-first checkpoint. That checkpoint passed the warnings-as-errors Cargo check, syntax checks, the 16-document discovery/export test and reference/numerical audits. Its initial core selection contained 13 Records. The sixteen earlier completed Hephaestus subjects retain their detailed history in the Ergon development history; none was replaced by an introduction.
+
+**Fifth-pass publication verification.**
+
+Historical evidence recorded before the skeleton migration. Counts, pending statuses, temporary handles and next-step instructions describe that checkpoint; consult this entrance’s current scope and next steps before acting.
+
+The immutable snapshot `/tmp/hephaestus-fifth-pass-verification/` contains five common blocks across six areas: **357 selected common Records and 2,112 discovered documents**. `/tmp/hephaestus-fifth-pass-snapshot.json` holds **3,662 SHA-256 entries** for the copied trails and exact integration-test file. Every copy was compared with the worktree at creation and all snapshot hashes were verified again before runtime. Later worktree changes are outside its scope.
+
+Compilation passed with warnings as errors in session `81045`, through `nix develop -c env CARGO_MANIFEST_DIR=/tmp/hephaestus-fifth-pass-verification/crates/resources rustc --edition=2024 --test --cfg 'feature="publication"' -D warnings /tmp/hephaestus-fifth-pass-verification/crates/resources/tests/ergon.rs -L dependency=target/debug/deps --extern lince_resources=target/debug/deps/liblince_resources-1402c3875a767934.rlib --extern tempfile=target/debug/deps/libtempfile-52682742c422660d.rlib -o /tmp/hephaestus-fifth-pass-test`. The current repository Cargo check separately passed.
+
+**Runtime session `50681` is terminal PASS:** `nix develop -c /tmp/hephaestus-fifth-pass-test --exact hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations --nocapture` completed with **one passed, zero failed and eighteen filtered tests in 2,939.40 seconds**. Every one of the 3,662 snapshot SHA-256 entries was rechecked unchanged after termination. `/tmp/hephaestus-fifth-pass-runtime.json` records the terminal result and manifest verification. Do not poll or restart this handle. Every sixth-pass addition is outside this snapshot's scope.
+
+The passing test checks exact broad/core edges, selected membership and reachability, multi-entry discovery, preserved historical routes, source/context references, embedded programs, export, relocation and reopening. All older publication runtimes are terminal PASS too. At that fifth-pass checkpoint no publication-test handles remained live. The later sixth-pass snapshot now has its separate status above.
+
+**Fourth-pass publication verification.**
+
+Historical evidence recorded before the skeleton migration. Counts, pending statuses, temporary handles and next-step instructions describe that checkpoint; consult this entrance’s current scope and next steps before acting.
+
+The immutable snapshot `/tmp/hephaestus-fourth-pass-verification/` contains four common blocks across all six areas: **291 selected common Records and 2,059 discovered documents**. `/tmp/hephaestus-fourth-pass-snapshot.json` records **3,609 SHA-256 file entries**, checked against the worktree at creation and rechecked unchanged after the completed run. Later fifth-pass worktree changes are outside this scope.
+
+Compilation passed with warnings as errors in session `41259`, using `nix develop -c env CARGO_MANIFEST_DIR=/tmp/hephaestus-fourth-pass-verification/crates/resources rustc --edition=2024 --test --cfg 'feature="publication"' -D warnings /tmp/hephaestus-fourth-pass-verification/crates/resources/tests/ergon.rs -L dependency=target/debug/deps --extern lince_resources=target/debug/deps/liblince_resources-1402c3875a767934.rlib --extern tempfile=target/debug/deps/libtempfile-52682742c422660d.rlib -o /tmp/hephaestus-fourth-pass-test`. Existing built publication libraries were reused; the current repository Cargo check separately passed.
+
+**Runtime session `35544` is terminal PASS:** `nix develop -c /tmp/hephaestus-fourth-pass-test --exact hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations --nocapture` completed with one passed, zero failed and eighteen filtered tests in **2,724.55 seconds**. All 3,609 snapshot hashes were rechecked unchanged afterward. `/tmp/hephaestus-fourth-pass-runtime.json` records the result. Do not poll or restart this handle.
+
+The test checks exact broad/core edges, selection/reachability, representative multi-entry discovery, retained historical routes, context/source references, all embedded common programs, export, relocation and reopening in a fresh library. Its pass does not verify any fifth-pass additions. The third-pass run is also terminal PASS (one test, 2,520.97 seconds, 3,553 snapshot files unchanged), as are the original nineteen-test and first/second-pass runs. There are no live publication-test handles at this checkpoint. Continue the fifth common pass and later prepare one immutable combined fifth-pass verification.
+
+**Sixth-pass publication verification.**
+
+Historical evidence recorded before the skeleton migration. Counts, pending statuses, temporary handles and next-step instructions describe that checkpoint; consult this entrance’s current scope and next steps before acting.
+
+The immutable snapshot `/tmp/hephaestus-sixth-pass-verification/` contains six common blocks across all six areas: **425 selected common Records and 2,338 discovered documents**. `/tmp/hephaestus-sixth-pass-snapshot.json` records **3,718 SHA-256 entries**, covering the copied trails and exact integration-test file. Copies matched the worktree at creation and every hash was verified again before runtime. Any seventh-pass or later worktree changes are outside its scope. The snapshot must remain unchanged.
+
+Warnings-as-errors compilation in session `46446` passed using `nix develop -c env CARGO_MANIFEST_DIR=/tmp/hephaestus-sixth-pass-verification/crates/resources rustc --edition=2024 --test --cfg 'feature="publication"' -D warnings /tmp/hephaestus-sixth-pass-verification/crates/resources/tests/ergon.rs -L dependency=target/debug/deps --extern lince_resources=target/debug/deps/liblince_resources-1402c3875a767934.rlib --extern tempfile=target/debug/deps/libtempfile-52682742c422660d.rlib -o /tmp/hephaestus-sixth-pass-test`. Current Cargo check `30068` separately passed, as did corpus parser `22684`, register parser `96780`, final audit `15265`, extracted report checks and whitespace checks. The other eighteen integration tests were preserved, not re-executed by this exact run.
+
+**Runtime session `61442` is terminal PASS:** `nix develop -c /tmp/hephaestus-sixth-pass-test --exact hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations --nocapture` completed with **one passed, zero failed and eighteen filtered tests in 3,795.60 seconds**. Every one of the 3,718 snapshot SHA-256 entries was rechecked unchanged after termination. `/tmp/hephaestus-sixth-pass-runtime.json` records the terminal result and manifest verification. Do not poll or restart this handle. Every seventh-pass addition is outside this snapshot scope.
+
+The exact test verifies root/core edges, selected membership and reachability, multi-entry discovery, preserved historical specialist routes, source/context references, all embedded common programs, export, relocation and reopening. Its terminal success covers only the immutable six-pass snapshot. It does not establish completion of the whole curriculum or verification of seventh-pass additions.
+
+**Third-pass publication verification.**
+
+Historical evidence recorded before the skeleton migration. Counts, pending statuses, temporary handles and next-step instructions describe that checkpoint; consult this entrance’s current scope and next steps before acting.
+
+The immutable snapshot `/tmp/hephaestus-third-pass-verification/` was created after the installed inquiry block and register update. All **3,553 copied files** matched the worktree, and their SHA-256 hashes are recorded in `/tmp/hephaestus-third-pass-snapshot.json`. It includes the current first integration test and the full trail tree available to discovery. The expected common scope is **227 selected Records and 2,003 discovered documents**.
+
+Compilation passed with warnings as errors in session `86318`, using `nix develop -c env CARGO_MANIFEST_DIR=/tmp/hephaestus-third-pass-verification/crates/resources rustc --edition=2024 --test --cfg 'feature="publication"' -D warnings /tmp/hephaestus-third-pass-verification/crates/resources/tests/ergon.rs -L dependency=target/debug/deps --extern lince_resources=target/debug/deps/liblince_resources-1402c3875a767934.rlib --extern tempfile=target/debug/deps/libtempfile-52682742c422660d.rlib -o /tmp/hephaestus-third-pass-test`. This uses the existing built publication libraries; the current repository Cargo check also passed separately.
+
+**Runtime test is live in session `45678`:** `nix develop -c /tmp/hephaestus-third-pass-test --exact hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations --nocapture`. It reported `running 1 test`. Revalidate and collect this same handle; do not launch a duplicate because it is slow or an observation times out. The test checks exact six-area/core edges, selection/reachability, representative multi-entry discovery, historical shared routes, context/source references, embedded program preservation, export, relocation and fresh-library reopening. Preserve the snapshot unchanged and recheck its manifest when the process becomes terminal. A parser/Cargo pass and successful compilation do not establish this runtime result.
+
+The earlier original nineteen-test regression and first/second-pass snapshots remain passed and must not be relaunched merely because this pass is new. Continue the next mathematical block in the worktree while this immutable copy runs; its eventual result proves this recorded snapshot's scope, not later fourth-pass changes.
+
+**Historical authored-completion evidence, 30 October 2026.**
+
+Historical specialization sequence, deferred until the broad and middle layers are developed: after the shared measurement and reproducible-computing foundations, prioritize the connected extraction-to-chip chain: chemistry, geology and mineralogy, mining and beneficiation, refining and metallurgy, industrial feedstocks, power and water, machinery and materials, gases and vacuum, clean manufacturing, semiconductor devices/fabrication, circuit design, packaging/test, logistics, operation, maintenance, and recovery. Supporting subjects remain full trails, not short appendices. No completed general foundation stands in for an unfinished specialist subject.
+
+**Current development and verification.**
+
+The six Hephaestus common foundations have 637 learning Records, selected with six maps and the root as 644 Records. The first mathematics middle-layer opening has ten lessons and its entrance. Full subject formation remains unfinished. Existing completed subjects and their evidence are preserved; their historical inventory ratio is not a percentage of civilization reproduced.
+
+**Current development and verification.**
+
+Next substantive work is the classical-mechanics branch, followed by comparable chemistry, computing, engineering and inquiry blocks. Reuse generalized-coordinate, virtual-work, Lagrange and Hamiltonian material already present; derive a coherent Newton-to-Lagrange bridge and independently check constraint reactions and work. A moving-guide example may expose the distinction between zero virtual work and actual reaction power. Inspect existing studies and actual primary passages before choosing it. Keep full specialist mechanics for later passes.
+
+**Current development and verification.**
+
+Before this migration, the mathematics opening passed 12,632 extracted-program assertions, parser and warnings-as-errors Cargo. Publication/export/relocation for spacetime, astronomy and that opening was still pending. The older magnetic verification uses immutable snapshot `/tmp/hephaestus-magnetic-pass-verification/`, manifest `/tmp/hephaestus-magnetic-pass-snapshot.json` (3,917 hashes), runtime handle 54055 and scope 618 selected / 2,888 discovered. Check its actual terminal result and hashes before recording success; it cannot validate this new skeleton. Earlier temporary generators assume the removed register layout and must not be rerun over this migration.
+
+**Current development and verification.**
+
+Historical app checks also included source/Sync views, keyboard link navigation, incoming-link display, opening/return and workspace restoration; prior unrelated interface compilation failures were not evidence of content failure. Recheck relevant application behavior when publishing or changing the interface. No interface feature is introduced by this content migration.
 } r_00000000000000000000002001
 
 Extension @hephaestus "lince.vocabulary" {

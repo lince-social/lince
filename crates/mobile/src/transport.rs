@@ -281,13 +281,13 @@ pub(crate) fn render(world: &mut World, parent: Entity) {
         GlobalZIndex(60),
         lince_interface::style::background(lince_interface::tokens::Token::Surface),
     ));
+    let status = world.resource::<Mobile>().status.clone();
+    let status = app::label(world, panel, &status, 14.0);
+    world.entity_mut(status).insert(app::Status);
     if editor {
         crate::workflows::render(world, panel);
         return;
     }
-    let status = world.resource::<Mobile>().status.clone();
-    let status = app::label(world, panel, &status, 14.0);
-    world.entity_mut(status).insert(app::Status);
     if workspace.panel == Panel::Summary {
         button(
             world,
@@ -493,6 +493,24 @@ mod tests {
             .clone();
         assert!(apply(&mut world, Intent::Back).is_err());
         assert!(active(&world));
+        assert_eq!(
+            world
+                .resource::<crate::workflows::State>()
+                .form
+                .as_ref()
+                .unwrap()
+                .request_id,
+            request
+        );
+        crate::app::back(&mut world);
+        controls::clear(&mut world, parent);
+        render(&mut world, parent);
+        assert!(
+            world
+                .query::<(&Text, &app::Status)>()
+                .iter(&world)
+                .any(|(text, _)| text.0 == "Your draft is kept. Save or cancel it before leaving.")
+        );
         assert_eq!(
             world
                 .resource::<crate::workflows::State>()

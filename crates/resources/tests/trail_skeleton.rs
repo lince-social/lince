@@ -9,6 +9,7 @@ use std::{
 
 fn project(path: &Path) -> anicca::ProjectedDocument {
     let source = fs::read_to_string(path).unwrap();
+    let source = anicca::ensure_uids(&source).unwrap().0;
     anicca::project(&anicca::parse(&source).unwrap()).unwrap()
 }
 
@@ -37,6 +38,20 @@ fn curriculum_entrances_form_a_connected_skeleton_without_markdown_inventories()
         .canonicalize()
         .unwrap();
     let trails = institute.join("trails");
+    assert!(!trails.join("ergon/connected-systems").exists());
+    let directories: BTreeSet<_> = fs::read_dir(&trails)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| path.is_dir())
+        .map(|path| path.file_name().unwrap().to_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(
+        directories,
+        ["ascholia", "scholazein", "lince", "ergon"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect()
+    );
     assert!(!institute.join("anicca/Ergon.md").exists());
     assert!(!institute.join("anicca/Trails.md").exists());
     let root = "r_7A4AY51TXG87NVHR9J1XNZTJQ9";
@@ -54,7 +69,7 @@ fn curriculum_entrances_form_a_connected_skeleton_without_markdown_inventories()
             .iter()
             .filter(|assertion| assertion.predicate == "contains" && assertion.object_uri.is_some())
             .count(),
-        5
+        4
     );
     let mut pending = vec![(entry, root.to_owned())];
     let mut records = BTreeMap::new();
@@ -90,9 +105,19 @@ fn curriculum_entrances_form_a_connected_skeleton_without_markdown_inventories()
     let mut done = BTreeSet::new();
     visit(root, &edges, &mut BTreeSet::new(), &mut done);
     assert_eq!(done.len(), records.len());
+    assert!(edges[root].contains("r_YJQ36ETAKE8J7F8Y65DG7V43MB"));
+    assert_eq!(
+        records["r_YJQ36ETAKE8J7F8Y65DG7V43MB"].slug.as_deref(),
+        Some("tool")
+    );
     assert_eq!(edges["r_00000000000000000000002001"].len(), 6);
     assert!(edges["r_0BDE857C410434BA79D017008C"].contains("r_3TKT81FRMZKC1D63FV1RHY8DCJ"));
     assert_eq!(records["r_3TKT81FRMZKC1D63FV1RHY8DCJ"].head, "Algebra");
+    assert!(
+        records["r_0BDE857C410434BA79D017008C"]
+            .body
+            .contains("Construct and explain a mathematical proof")
+    );
     assert!(edges["r_2Y7YR9YHGPS7CWXQ7R4SAJVBR4"].contains("r_7D8SQ8BVQDZQBDBGC6DP0JAMZN"));
     assert!(
         records["r_7D8SQ8BVQDZQBDBGC6DP0JAMZN"]

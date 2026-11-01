@@ -1,19 +1,23 @@
 Import "hephaestus/Hephaestus.lingua"
 Import "gaia/Nature.lingua"
-Import "connected-systems/Connected-system-journeys.lingua"
 
-Ergon — useful labor and productive knowledge (@ergon: 0, is #chapter, #ergon "hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #ergon "gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21", #contains "hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #contains "gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21", #contains "connected-systems/Connected-system-journeys.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA") { r_FE78A5A2D2A3261F711703DCC1
-Follow [Hephaestus](hephaestus/Hephaestus.lingua) for mathematics, hard sciences, engineering, computing, and productive infrastructure. Follow [Gaia](gaia/Nature.lingua) for Earth, life, food, and health. Shared productive journeys connect their Records without duplicating them. Questions about reasons, values, and institutions connect to [Philosophy](../scholazein/philosophy/Philosophy.lingua).
+Ergon — useful labor and productive knowledge (@ergon: 0, is #chapter, #ergon "hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #ergon "gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21", #contains "hephaestus/Hephaestus.lingua#r_00000000000000000000002001", #contains "gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21") { r_FE78A5A2D2A3261F711703DCC1
+Follow [Hephaestus](hephaestus/Hephaestus.lingua) for mathematics, hard sciences, engineering, computing, and productive infrastructure. Follow [Gaia](gaia/Nature.lingua) for Earth, life, food, and health. Their subject entrances connect shared productive work without duplicating lessons. Questions about reasons, values, and institutions connect to [Philosophy](../scholazein/philosophy/Philosophy.lingua).
 
 [Trail authoring](../lince/Trails.lingua#r_7A4AY51TXG87NVHR9J1XNZTJQ9).
 
-**Scope:** Ergon joins the knowledge and work that sustain collective life. Hephaestus covers hard sciences and their productive applications; Gaia covers Earth, living systems, food, and health. Connected system journeys reuse both branches and relevant social knowledge.
+**Scope:** Ergon joins the knowledge and work that sustain collective life. Hephaestus covers hard sciences and their productive applications; Gaia covers Earth, living systems, food, and health. Work spanning subjects reuses both branches and relevant social knowledge; its scope and development belong in the relevant subject entrances.
 
 **Branches:**
 
 - [Hephaestus — hard sciences and productive work](hephaestus/Hephaestus.lingua#r_00000000000000000000002001)
 - [Gaia — Earth, living systems, and their relationships](gaia/Nature.lingua#r_5DAMNRQZX9M2PRPHVJB673XX21)
-- [Connected system journeys](connected-systems/Connected-system-journeys.lingua#r_130DJVF2VF7PTVA9NBR8B9VNJA)
+
+**Development scope — Sustaining a regional Ergon ecosystem.**
+
+This route brings together the people, knowledge, facilities, resources, services, and agreements needed to sustain advanced technical activity in a region. It connects education, research, production, utilities, logistics, maintenance, governance, and Transfers, treating outside dependencies and cooperation between specialised communities as explicit parts of the system.
+
+**Work across subjects.** Follow a declared chain such as minerals to microchips, or sources to a continuing library. Offer an orientation through its stages with optional depth into each branch; do not concatenate every participating field into one compulsory curriculum.
 } r_FE78A5A2D2A3261F711703DCC1
 
 Extension @ergon "lince.vocabulary" {

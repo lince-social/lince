@@ -133,6 +133,24 @@ Understand substances, structure, transformations, and chemical evidence from an
 Follow the links directly or select both endpoints of #general-chemistry assertions through an ordinary Protein. Five shared learning Records retain their other continuations. Discovery imports load referenced definitions without defining the selected learning boundary; source and other-subject references do not recursively join the route. No views directory, manifest, or additional Trail feature is required.
 
 **Continue:** [Begin general chemistry from zero](Reading-from-zero.lingua#r_0470T6ZDV7KCP63TE2D5GX9ANG).
+
+**Historical authored-completion checkpoint.**
+
+| Scope | Developed material | Verification |
+| --- | --- | --- |
+| ERG-055 General chemistry | [Entrance](General-chemistry.lingua), 107 authored Records including 19 source Records, plus five reused learning Records and a Chemistry entrance | Syntax; five-entry discovery of the 319-document composition; exact 92-Record learning selection and reachability; four routes, source URLs, internal learning locations, and original solver preserved after relocated export; independent chemical/numerical examples |
+
+**Historical authored-completion evidence, 28–30 October 2026.**
+
+General-chemistry checks on 29 October 2026: the new publication integration test passed, and the three earlier subject tests passed with the additional shared continuations present. `cargo check --locked -p lince-resources --features publication --tests` passed. The new material begins from ordinary materials, chemical language, atoms, amounts, and reactions, then develops structure/bonding, phases/solutions, energy and chemical potential, rates/mechanisms, activities and coupled equilibria, aqueous systems, electrochemistry, descriptive/organic/nuclear chemistry, chemical evidence, and material/infrastructure connections. Whole-book/course study, sustained supervised laboratory work, advanced speciation and kinetic investigations, a material-chain project, and independent scholarship provide successive depth. These describe learning demands; the authored content does not claim those laboratory/research projects have already been performed.
+
+The reading includes all 21 OpenStax Chemistry 2e chapters, the complete Chem1 programme, UECE's complete Portuguese introductory book, the UNILA laboratory manual, MIT 5.111SC and the stronger 5.112 lecture progression, complete assigned Harvey chapters, the complete abridged IUPAC Green Book during advanced study, primary definitions/evaluated data, and focused research. The source Records retain current OpenStax notices, the UECE PDF/repository author/licence discrepancy, differing table dates, registered ACS-platform conditions, untested optional simulations, and automated-access limits. All books, articles, PDFs, course media, simulations, and external data remain references.
+
+The inline ideal monoprotic titration program ran in a fresh Python 3.13.13 process from another working directory. A 101-point grid checked monotonicity, nonnegativity, mass/charge closure, and acid/water relations. An independent 70-digit Decimal calculation solved the polynomial form by a different bracketing variable at eight cases, including either side of equivalence; results agreed within the predeclared numerical criterion. Invalid/nonfinite/out-of-range volumes were rejected. Exact fractions and high-precision SI-based calculations separately checked the mole/isotope, reaction/limiting-feed, dilution, calorimetry, photon/gas, phase-pressure, Gibbs, weak-acid, solubility, Henry, colligative, polymer, extraction, Nernst, electrolysis, and half-life examples. The publication audit exposed an ambiguous Markdown-style kinetic formula, which was rewritten as an explicit concentration function and then passed.
+
+Five reused Records (`ql-units`, `ql-balances`, `ql-concentrations`, `rc-numericaltests`, and `met-chemistry-case`) have distinct `#general-chemistry` continuations and visible body links. Their existing imports and learning connections remain usable. The Chemistry entrance is connected through STEM and returns to Inquiry, Ergon, and Philosophy. The completed ERG-055 planning Record is removed, with its UID preserved in the developed root.
+
+The final chemistry checkpoint's Lingua checks passed for 213 Inquiry files, 109 STEM files, and the updated register. The combined audit checked 3,703 local targets, confirmed 322 unique Inquiry/STEM identities, synchronized 196 remaining original subject scopes and the group counts, and found no bundled source media or views directories. The wider goal and the eight additional connected pathways remain active.
 } r_206GS6CVXD8WSY1VX7PRF7136V
 
 Extension @general-chemistry "lince.vocabulary" {

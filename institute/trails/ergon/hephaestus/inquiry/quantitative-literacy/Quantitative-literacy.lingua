@@ -75,6 +75,18 @@ Read the linked explanations alongside the assigned books and articles. The shor
 Return to [shared inquiry](../Inquiry.lingua#r_75MNKZQKNB0XBG021SWWW2HASB) or [Philosophy](../../../../scholazein/philosophy/Philosophy.lingua#r_00000000000000000000001001) when asking what counts as evidence, why a model abstracts particular features, or what a numerical conclusion leaves undetermined.
 
 Follow these links directly, or select the Records at either endpoint of `#quantitative-literacy` assertions through an ordinary Protein. Sources and comparisons keep their own connections.
+
+**Historical authored-completion checkpoint.**
+
+| Scope | Developed material | Verification |
+| --- | --- | --- |
+| ERG-001 Quantitative and technical literacy | [Entrance](Quantitative-literacy.lingua), 53 Records including 12 source Records | Lingua check; discovery from five entries; exact learning-assertion boundary and reachability; export and relocated reopening; external references preserved; worked calculations checked |
+
+**Historical authored-completion evidence, 28–30 October 2026.**
+
+Verification on 28 October 2026: `cargo check --locked -p lince-resources --features publication --tests` passed; the publication integration test in `crates/resources/tests/ergon.rs` passed. Lingua checks passed for Inquiry, STEM, and the updated register. A separate local-reference audit checked 1,140 targets across the new content and touched entrances/register, confirmed unique new or moved identities, and found no bundled source media. Run Cargo and Lingua through the repository's Nix environment.
+
+The quantitative subject starts at arithmetic and extends through equations, functions, graphs, geometry, technical drawings, process accounting, uncertainty, similarity, sensitivity, and approximation. Metrology deepens into calibration design, traceability, physical influences, regression, uncertainty including correlation/nonlinearity/vector results, sampling, nine physical measurement families, comparison, conformity, laboratory competence, and independent research. Both use whole books and increasingly demanding studies. The wider subject scopes below remain pending even where an existing narrow trail or introductory Record can be reused.
 } r_4XVN56PQC13JGNFPV0CSGXDCZ2
 
 Extension @quantitative-literacy "lince.vocabulary" {

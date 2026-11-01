@@ -103,6 +103,22 @@ The first two-lot analysis is deliberately small enough to check by hand. Whole 
 Follow the links directly or select both endpoints of #reproducible-computation assertions through an ordinary Protein. A shared Record retains its other learning continuations. Source citations, imports for discovery, and links to other subjects do not recursively expand the learning selection. No views directory or additional Trail feature is needed.
 
 **Continue:** [Begin reproducible computational work from zero](Reading-from-zero.lingua#r_7PQM3TCWSZAA50H4HQ0YF55ZJY).
+
+**Historical authored-completion checkpoint.**
+
+| Scope | Developed material | Verification |
+| --- | --- | --- |
+| ERG-008 Reproducible computational work | [Entrance](Reproducible-computation.lingua), 80 authored Records including 21 source Records, plus four reused quantitative/metrology learning Records | Syntax; five-entry discovery of the 212-document composition; exact 62-Record learning selection and reachability; all three routes and inline code preserved after export/relocation; executable examples, failure behavior, and independent numerical checks |
+
+**Historical authored-completion evidence, 28–30 October 2026.**
+
+Reproducible-computing checks on 29 October 2026: the three integration tests in `crates/resources/tests/ergon.rs` passed, including both earlier subjects. The new subject begins with files, an explicit calculation, programming preparation, data meaning/schema, and independent arithmetic, then develops software practices, environments, workflows, continuous checking/revalidation, floating point, conditioning, convergence, stochastic execution, resources, publication, and preservation. Its sustained readings include all nine chapters of Sundnes, the complete research-software book and project, the research-code handbook and numerical extension, substantial Pro Git chapters, whole research papers, and exact primary manuals. Demanding deterministic, stochastic, published-result reproduction, and independent scholarly projects define the later depth.
+
+All eight original inline example files were extracted into a temporary exercise area and run with Python 3.13.13 through Nix. Five included unit/integration checks passed; additional independent checks verified exact balance totals, zero/undefined ratios, invalid inputs, file/row/decimal bounds, input/source alias protection, and preservation of an existing report after failure. Unchanged code/input produced byte-identical reports after relocation, a changed working directory, time zone, locale, and Python hash seed. The Make workflow passed. Exact fractions and high-precision Decimal independently checked the decay and quadratic-cancellation examples; the squared-uniform mean/error formulas and task-order experiment were checked separately. These are observations about the authored examples, not claims that a reader's future research projects have already been completed.
+
+The new route reuses `ql-data`, `ql-sensitivity`, `ql-discretization`, and `met-monte-carlo` through additional assertions and visible continuations. Existing quantitative and metrology discovery roots retain their own compositions. Export tests preserve both old routes, the new route, external URL sets, internal learning-reference locations, and every inline code block. Books, articles, images, external datasets, and environments remain external references; only original teaching inputs and code are inline.
+
+At this checkpoint `cargo check --locked -p lince-resources --features publication --tests` passed. Lingua checks passed for all 213 Inquiry files and the updated register. The combined local audit checked 2,493 targets, confirmed 214 unique Inquiry/STEM identities, synchronized the remaining 197 original subject scopes and group counts, and found no bundled source media. The full goal remains active, including the eight additional connected pathways below.
 } r_78FWWJDCV0ZGG7VYSPRCWN56DQ
 
 Extension @reproducible-computation "lince.vocabulary" {

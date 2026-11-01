@@ -52,9 +52,26 @@
     ],
     "interaction": "Scripted ADB touch using actual Android accessibility bounds",
     "initial_settings": "/tmp/lince-transfer-original-settings.json",
-    "resource_samples": "/tmp/lince-transfer-phone-measurements.jsonl",
+    "resource_samples": "/tmp/lince-transfer-session-resources.jsonl",
     "release_and_smoketest_apps": "Preserved",
-    "location_acceptance": "Not yet exercised"
+    "location_acceptance": "Not yet exercised",
+    "idle_baseline_seconds": 344.032,
+    "current_apk": {
+      "source": "add79d1cf94c956e1bf2b9539c43af6b11b6dfc4",
+      "sha256": "42c449618191a3b91981ee3f4e30c4730f25a1f3dc11df05051aff588f0c3f12",
+      "signing_certificate_sha256": "d1d84c62aab42ef2fc4d188aa5e6b6a58dc8022179684bd6b7b2d1408eb385eb",
+      "reuse_reason": "Subsequent opt-in native/test-driver and host xtask changes do not alter Android app inputs"
+    },
+    "pre_acquisition_wire": {
+      "transport": "real authenticated Wire requests to the actual phone on Wi-Fi",
+      "b": "Stopped live state; exact saved-place and named referenced-address data allowed",
+      "c": "Stopped live state; saved-place and named referenced-address generalized to 5000m with no address text",
+      "d": "Explicit Forbidden for live, saved place and named referenced address"
+    },
+    "settings_changes_pending_restore": [
+      "Location enabled through Android cmd location",
+      "Disposable debug app coarse location and notification permissions granted; precise permission remains denied"
+    ]
   },
   "prior_regression_evidence": {
     "run": 41305358636,
@@ -70,5 +87,26 @@
       "Location invitation reused an online map store",
       "Android 16 emulator driver crashed in Vulkan debug-utils before first smoke snapshot"
     ]
+  },
+  "shared_interface_testing": {
+    "source": "bac01f78",
+    "status": "implemented and focused checks passed",
+    "core": "Bounded steps, cancellation, explicit fallback only before accepted input, no replay after uncertain acknowledgement, diagnostics and input cleanup",
+    "native": "Virtual frames and normal pointer/keyboard/accessibility pipelines; five Laboratory cases; Transfer panel workflow uses the driver",
+    "android": "cargo xtask ui-test android PLAN.json; bounded ADB commands, exact scoped selectors, private fixture references, incremental redacted reports and optional failed-plan debug shutdown; existing Android smoke journey uses the same core",
+    "local_tests": {
+      "core_passed": 5,
+      "native_passed": 8,
+      "android_tools_passed": 10,
+      "android_tools_seconds": 0.59
+    },
+    "clean_ci_tools": {
+      "run": 41321315594,
+      "core_passed": 5,
+      "android_tools_passed": 10,
+      "android_tools_seconds": 0.57,
+      "artifact_directory": "/tmp/lince-transfer-bac01f78-ui-tools"
+    },
+    "actual_phone": "Navigation and native editing exercised. Captured and fixed missing shell TTY XML capture; uppercase Android dialog labels observed and supported. Driver sign-in verified through normal UI. No business action replay."
   }
 }

@@ -435,7 +435,10 @@ impl Backend for Android {
             "input keyevent 66".into()
         } else {
             match action.kind.as_str() {
-                "tap" => format!("input tap {} {}", center.0, center.1),
+                "tap" => format!(
+                    "input swipe {} {} {} {} 100",
+                    center.0, center.1, center.0, center.1
+                ),
                 "text" => {
                     if target.name != "Editor" || !target.editable || !target.focused {
                         return Dispatch::Rejected(

@@ -28,7 +28,7 @@ impl Options {
         let mut options = Self {
             action: "run".into(),
             sdk: None,
-            avd: "lince-api35".into(),
+            avd: "lince-api36-16k".into(),
             apk: None,
             device: None,
             headless: false,
@@ -116,7 +116,7 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
             "SDK discovery: --sdk, ANDROID_HOME, ANDROID_SDK_ROOT, or .cache-lince-android/sdk in this repository."
         );
         println!(
-            "setup downloads the emulator and Android 35 Google APIs image for this computer."
+            "setup downloads the emulator and Android 16 Google APIs 16 KB image for this computer."
         );
         println!(
             "run builds nothing. It installs an existing APK; --release selects the signed release app."
@@ -382,7 +382,7 @@ fn image(arch: &str) -> Result<String> {
         "aarch64" => "arm64-v8a",
         _ => return Err(format!("Android emulator setup is unsupported on {arch}")),
     };
-    Ok(format!("system-images;android-35;google_apis;{abi}"))
+    Ok(format!("system-images;android-36;google_apis_ps16k;{abi}"))
 }
 
 fn setup(sdk: &Path, avd: &str) -> Result<()> {

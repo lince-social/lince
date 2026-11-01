@@ -32,7 +32,11 @@ fn confirmation_waits_for_status_reply_and_runs_once() {
             created: None,
             facts: 0,
             warnings: vec![],
-            data: Some(serde_json::json!({"devices": []})),
+            data: Some(serde_json::json!({
+                "has_roster": false,
+                "waiting_at_the_door": [],
+                "discovery": null
+            })),
         },
     );
     apply(&mut world);
@@ -41,8 +45,8 @@ fn confirmation_waits_for_status_reply_and_runs_once() {
         "message"
     );
     assert_eq!(
-        world.resource::<Mobile>().rows["roster"][0]["devices"],
-        serde_json::json!([])
+        world.resource::<Mobile>().rows["roster"][0]["has_roster"],
+        serde_json::json!(false)
     );
     assert!(world.resource::<Mobile>().deleting.is_none());
     assert!(!world.resource::<Mobile>().confirmed);

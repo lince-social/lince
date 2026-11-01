@@ -61,7 +61,7 @@ jobs:
         with:
           gradle-version: '8.11.1'
       - name: Install Android tools
-        run: sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358'
+        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: android-${{ matrix.abi }}-ndk28
@@ -77,8 +77,8 @@ jobs:
           gradle -p crates/mobile/android --no-daemon -PlinceAbi='${{ matrix.abi }}' -PlinceSmoke='${{ matrix.smoke }}' lintDebug assembleDebug
       - name: Verify APK
         run: |
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           cd crates/mobile/android/app/build/outputs/apk/debug
           sha256sum app-debug.apk > app-debug.apk.sha256
       - name: Enable emulator acceleration
@@ -91,7 +91,7 @@ jobs:
         if: matrix.smoke
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 36
           target: google_apis_ps16k
           arch: x86_64
           profile: pixel_6
@@ -133,8 +133,8 @@ jobs:
           printf '%s' "$LINCE_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$LINCE_ANDROID_KEYSTORE"
           export LINCE_ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))
           gradle -p crates/mobile/android --no-daemon lintRelease assembleRelease
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs crates/mobile/android/app/build/outputs/apk/release/app-release.apk
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 crates/mobile/android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs crates/mobile/android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 crates/mobile/android/app/build/outputs/apk/release/app-release.apk
           cd crates/mobile/android/app/build/outputs/apk/release
           sha256sum app-release.apk > app-release.apk.sha256
           jq -n --arg commit "$GITHUB_SHA" --argjson version_code "$LINCE_ANDROID_VERSION_CODE" --arg workflow_run "$GITHUB_RUN_ID" '{package: "social.lince.mobile", apk: "app-release.apk", commit: $commit, version_code: $version_code, workflow_run: $workflow_run, install: "Open app-release.apk on the phone to install or update Lince."}' > build-info.json

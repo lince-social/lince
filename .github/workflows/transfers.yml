@@ -47,7 +47,7 @@ jobs:
       - name: Run Transfer and location regressions
         run: |
           set -o pipefail
-          cargo test --no-fail-fast --locked -p lince-interface -p lince-mobile --features lince-interface/native-presentation,lince-mobile/preview --lib -- transfers::workspace::tests transfers::actions::lifecycle_tests transfers::transport:: transport::tests native::transfer_castle:: map_navigation::tests map::tests location::tests visibility::tests workflows::tests --test-threads=1 2>&1 | tee transfer-validation/regressions.log
+          cargo test --no-fail-fast --locked -p lince-interface -p lince-mobile --features lince-interface/native-presentation,lince-mobile/preview --lib -- transfers::workspace::tests transfers::actions::lifecycle_tests transfers::transport:: transport::tests native::transfer_castle:: map_navigation::tests map::tests location::tests visibility::tests workflows::tests confirmation --test-threads=1 2>&1 | tee transfer-validation/regressions.log
       - name: Run backend Transport journeys
         if: ${{ !cancelled() }}
         run: |

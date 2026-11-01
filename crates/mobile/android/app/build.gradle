@@ -28,13 +28,14 @@ dependencies {
 
 android {
     namespace 'social.lince.mobile'
-    compileSdk 35
+    compileSdk 36
+    buildToolsVersion '36.0.0'
     ndkVersion '28.2.13676358'
     buildFeatures { buildConfig true }
     defaultConfig {
         applicationId 'social.lince.mobile'
         minSdk 28
-        targetSdk 35
+        targetSdk 36
         versionCode code
         versionName packages.find { it.name == 'lince-mobile' }.version
         buildConfigField 'boolean', 'LINCE_SMOKE', smoke.toString()

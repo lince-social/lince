@@ -143,17 +143,7 @@ impl Plugin for VisibilityUiPlugin {
 }
 
 pub fn mount(world: &mut World, parent: Entity, record: &str, data: Data) -> Entity {
-    let panel = world
-        .spawn((
-            ChildOf(parent),
-            Node {
-                width: percent(100),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(8),
-                ..default()
-            },
-        ))
-        .id();
+    let panel = controls::column(world, parent);
     let mut state = Panel {
         draft: None,
         owner: panel,
@@ -192,17 +182,7 @@ pub fn mount_policy_draft(
 ) -> Entity {
     context.saved = None;
     context.data = Data::Record;
-    let entity = world
-        .spawn((
-            ChildOf(parent),
-            Node {
-                width: percent(100),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(8),
-                ..default()
-            },
-        ))
-        .id();
+    let entity = controls::column(world, parent);
     world.entity_mut(entity).insert(Panel {
         draft: Some(exclusions),
         owner: entity,

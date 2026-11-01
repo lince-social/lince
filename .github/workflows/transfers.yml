@@ -11,16 +11,17 @@ concurrency:
   group: transfers-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CARGO_BUILD_JOBS: '2'
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  RUSTFLAGS: '-D warnings -C link-arg=-fuse-ld=mold'
+  RUST_MIN_STACK: '33554432'
+
 jobs:
   regressions:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
-    env:
-      CARGO_BUILD_JOBS: '2'
-      CARGO_INCREMENTAL: '0'
-      CARGO_PROFILE_DEV_DEBUG: '0'
-      RUSTFLAGS: '-D warnings -C link-arg=-fuse-ld=mold'
-      RUST_MIN_STACK: '33554432'
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -33,6 +34,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: transfers-native
+          cache-on-failure: true
       - name: Check migration guard
         run: |
           mkdir -p transfer-validation
@@ -41,21 +43,76 @@ jobs:
           cargo test --locked -p store --test migration_guard 2>&1 | tee transfer-validation/migration-guard.log
       - name: Check native and mobile
         run: |
-          mkdir -p transfer-validation
           set -o pipefail
           cargo check --locked -p lince-interface -p lince-mobile --features lince-interface/native-presentation,lince-mobile/preview 2>&1 | tee transfer-validation/check.log
       - name: Run Transfer and location regressions
         run: |
           set -o pipefail
-          cargo test --no-fail-fast --locked -p lince-interface -p lince-mobile --features lince-interface/native-presentation,lince-mobile/preview --lib -- transfers::workspace::tests transfers::actions::lifecycle_tests transfers::transport:: transport::tests native::transfer_castle:: map_navigation::tests map::tests location::tests visibility::tests workflows::tests confirmation --test-threads=1 2>&1 | tee transfer-validation/regressions.log
-      - name: Run backend Transport journeys
-        if: ${{ !cancelled() }}
+          cargo test --no-fail-fast --locked -p lince-interface -p lince-mobile --features lince-interface/native-presentation,lince-mobile/preview --lib -- transfers::workspace::tests transfers::actions::lifecycle_tests transfers::transport:: transport::tests native::transfer_castle:: map_navigation::tests map::tests location::tests visibility::tests workflows::tests confirmation native::accessibility::tests::live_status_changes_and_input_labels_are_exposed native::accessibility::actions::tests::accessibility_value_uses_normal_editor_limits_unicode_and_keyboard_ownership native::accessibility::actions::tests::disabled_controls_remain_describable_and_protected_fields_never_export_plain_text_runs native::accessibility::actions::tests::protecting_an_existing_field_retires_its_older_plain_text_description --test-threads=1 2>&1 | tee transfer-validation/regressions.log
+      - name: Record source identity
+        if: always()
         run: |
+          mkdir -p transfer-validation
+          printf '%s\n' "$GITHUB_SHA" > transfer-validation/revision
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-validation-native
+          path: transfer-validation
+          if-no-files-found: error
+
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.96.0'
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mold pkg-config clang libclang-dev libfontconfig-dev libpipewire-0.3-dev libdbus-1-dev libglib2.0-dev libpulse-dev libspeechd-dev libva-dev libssl-dev libsqlite3-dev libasound2-dev libwayland-dev libxkbcommon-dev libx11-dev libxcb1-dev libxrandr-dev libxi-dev libxcursor-dev libgl1-mesa-dev libvulkan-dev libegl1-mesa-dev libgbm-dev libdrm-dev libudev-dev libinput-dev libseat-dev
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: transfers-backend
+          cache-on-failure: true
+      - name: Run backend Transport journeys
+        run: |
+          mkdir -p transfer-validation
           set -o pipefail
           cargo test --locked -p engine --test transport_journey -- --test-threads=1 2>&1 | tee transfer-validation/journeys.log
-      - name: Run Transfer Laboratory
-        if: ${{ !cancelled() }}
+      - name: Record source identity
+        if: always()
         run: |
+          mkdir -p transfer-validation
+          printf '%s\n' "$GITHUB_SHA" > transfer-validation/revision
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-validation-backend
+          path: transfer-validation
+          if-no-files-found: error
+
+  laboratory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.96.0'
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mold pkg-config clang libclang-dev libfontconfig-dev libpipewire-0.3-dev libdbus-1-dev libglib2.0-dev libpulse-dev libspeechd-dev libva-dev libssl-dev libsqlite3-dev libasound2-dev libwayland-dev libxkbcommon-dev libx11-dev libxcb1-dev libxrandr-dev libxi-dev libxcursor-dev libgl1-mesa-dev libvulkan-dev libegl1-mesa-dev libgbm-dev libdrm-dev libudev-dev libinput-dev libseat-dev
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: transfers-laboratory
+          cache-on-failure: true
+      - name: Run Transfer Laboratory
+        run: |
+          mkdir -p transfer-validation
           set -o pipefail
           cargo run --locked -p lince-interface --features native-presentation,images --example transfer_laboratory -- transfer-validation/laboratory.json map_first_transport_panels_preserve_map_and_guard_an_open_draft four_lince_transport_control_draft_finishes_sharing_before_later_settlement 2>&1 | tee transfer-validation/laboratory.log
       - name: Record source identity
@@ -63,6 +120,32 @@ jobs:
         run: |
           mkdir -p transfer-validation
           printf '%s\n' "$GITHUB_SHA" > transfer-validation/revision
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-validation-laboratory
+          path: transfer-validation
+          if-no-files-found: error
+
+  evidence:
+    if: always()
+    needs: [regressions, backend, laboratory]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: transfer-validation-*
+          merge-multiple: true
+          path: transfer-validation
+      - name: Record source and job outcomes
+        if: always()
+        env:
+          JOB_OUTCOMES: ${{ toJSON(needs) }}
+        run: |
+          mkdir -p transfer-validation
+          printf '%s\n' "$GITHUB_SHA" > transfer-validation/revision
+          printf '%s\n' "$JOB_OUTCOMES" > transfer-validation/job-outcomes.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

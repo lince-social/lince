@@ -1,0 +1,57 @@
+{
+  "scope": "Transfers acceptance, with Play builds excluded",
+  "completed_plan_items": {
+    "1": {
+      "status": "verified",
+      "source": "fe3eca02c9ec28389b11508f83eb76c9a845e122",
+      "actions_run": 41308282330,
+      "arm64_job": 124853124211,
+      "evidence": [
+        "try_update preserves AcqRel/Acquire and closure behavior",
+        "Four gemm-common FP16 assembly helpers have scoped neon,fp16 attributes; runtime dispatch and fallback preserved",
+        "Unpatched ARM64 object-generation harness failed; patched harness passed with warnings denied",
+        "Actual Android ARM64 APK assembly, signature verification and 16 KB alignment checks passed",
+        "AGP 8.10.1, Gradle 8.11.1, compile/target SDK 36 and Android 16 16 KB emulator configuration aligned"
+      ],
+      "apk_sha256": "c1c57f2deb95d0536b782551b9e50d458ea328ec9609d3bc6a720b6f067036d0",
+      "package": "social.lince.mobile.debug",
+      "target_sdk": 36,
+      "signing_certificate_sha256": "920ee5a7cf05bf6a2b6491c14506773c0186e8aecdf35678cf00a0f44551802d",
+      "native_elf_alignment": "All 28 PT_LOAD segments in seven libraries use 0x4000",
+      "artifact_directory": "/tmp/lince-transfer-final-apk-fe3eca02"
+    }
+  },
+  "phone_evidence": {
+    "model": "Moto g05",
+    "android_version": 15,
+    "page_size": 4096,
+    "initial_apk_source": "4d09b96026cbe61ae7edce496595f169b0bad98e",
+    "initial_apk_sha256": "4f6e7c180dd903f9c7d9fe025382106d1fea6677793c98d93a8af0c37307a08c",
+    "passed": [
+      "Debug-only APK installed through cargo xtask android run and survived startup",
+      "Create my Organ and Confirm completed; Open my Organ became available",
+      "Pages, general Transfers, Transport full map and Back navigation",
+      "New ride without an acting Person refuses with visible feedback"
+    ],
+    "interaction": "Scripted ADB touch using actual Android accessibility bounds",
+    "initial_settings": "/tmp/lince-transfer-original-settings.json",
+    "resource_samples": "/tmp/lince-transfer-phone-measurements.jsonl",
+    "release_and_smoketest_apps": "Preserved",
+    "location_acceptance": "Not yet exercised"
+  },
+  "prior_regression_evidence": {
+    "run": 41305358636,
+    "artifact_directory": "/tmp/lince-transfer-native-41305358636",
+    "passed": [
+      "Migration guard and native/mobile checks",
+      "Both backend Transport journeys",
+      "map_first_transport_panels_preserve_map_and_guard_an_open_draft",
+      "four_lince_transport_control_draft_finishes_sharing_before_later_settlement"
+    ],
+    "failures_under_repair": [
+      "Scratch chooser test fixture lacked Typography",
+      "Location invitation reused an online map store",
+      "Android 16 emulator driver crashed in Vulkan debug-utils before first smoke snapshot"
+    ]
+  }
+}

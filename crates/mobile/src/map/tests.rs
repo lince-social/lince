@@ -206,11 +206,24 @@ async fn packaged_overview_and_example_are_offline_and_received_invitation_start
     );
     assert!(!world.resource::<State>().settings.online);
     assert!(world.resource::<State>().settings.server.is_empty());
+    assert!(!world.resource::<State>().online);
+    let store = world.resource::<State>().store.as_ref().unwrap();
+    assert!(!store.settings().online);
+    assert!(store.settings().server.is_empty());
     close_surface(&mut world);
     render(&mut world, Entity::PLACEHOLDER);
     assert_eq!(
         world.resource::<State>().invitation.as_ref(),
         Some(&invitation)
+    );
+    assert!(!world.resource::<State>().settings.online);
+    assert!(!maps.join("settings.json").exists());
+    open(&mut world, Vec::new());
+    assert!(world.resource::<State>().invitation.is_none());
+    assert!(world.resource::<State>().settings.online);
+    assert_eq!(
+        world.resource::<State>().settings.server,
+        data::source::PUBLIC_SERVER
     );
     let state = State::default();
     assert!(state.invitation.is_none());

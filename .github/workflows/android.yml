@@ -65,6 +65,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: android-${{ matrix.abi }}-ndk28
+          cache-on-failure: true
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --version 4.1.2 --locked
       - name: Check Android library

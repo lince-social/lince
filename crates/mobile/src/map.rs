@@ -318,6 +318,12 @@ fn scope(world: &mut World) {
 }
 
 pub fn open(world: &mut World, records: Vec<String>) {
+    if world
+        .get_resource::<State>()
+        .is_some_and(|state| state.invitation.is_some())
+    {
+        world.resource_mut::<State>().scope.clear();
+    }
     scope(world);
     close_surface(world);
     let state = &mut *world.resource_mut::<State>();
@@ -333,6 +339,12 @@ pub fn open(world: &mut World, records: Vec<String>) {
 }
 
 pub(crate) fn transport(world: &mut World, records: Vec<String>) {
+    if world
+        .get_resource::<State>()
+        .is_some_and(|state| state.invitation.is_some())
+    {
+        world.resource_mut::<State>().scope.clear();
+    }
     scope(world);
     if world.resource::<State>().records != records {
         let state = &mut *world.resource_mut::<State>();
@@ -355,7 +367,24 @@ fn active(world: &World) -> bool {
 pub fn observe(world: &mut World, invitation: nucleus::location::Invitation) -> Result<(), String> {
     invitation.reference().map_err(str::to_owned)?;
     open(world, vec![invitation.record_uid.clone()]);
-    world.resource_mut::<State>().invitation = Some(invitation);
+    let mut settings = world.resource::<State>().settings.clone();
+    settings.online = false;
+    settings.server.clear();
+    let store = TileStore::new(
+        settings.clone(),
+        world.resource::<Mobile>().data_directory().join("maps"),
+    )?;
+    let mut state = world.resource_mut::<State>();
+    state.settings = settings;
+    state.store = Some(store);
+    state.online = false;
+    state.download = None;
+    state.import = None;
+    state.picked_pack = None;
+    state.sources_open = false;
+    state.credits_open = false;
+    state.list_open = false;
+    state.invitation = Some(invitation);
     world.resource_mut::<Mobile>().navigation.open(Page::Map);
     Ok(())
 }

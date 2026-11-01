@@ -85,7 +85,10 @@ fn main() -> Result<(), Error> {
         return Err(Error::other("Pass an application executable after --."));
     }
     #[cfg(all(target_os = "linux", feature = "park"))]
-    if has_arg(&args, "--park") && !lince_park::session::environment_ready() {
+    if has_arg(&args, "--park")
+        && !has_arg(&args, "--park-nested")
+        && !lince_park::session::environment_ready()
+    {
         return Err(lince_park::session::reexec_environment());
     }
     #[cfg(not(feature = "facade"))]

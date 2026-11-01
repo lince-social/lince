@@ -1,0 +1,112 @@
+Build workflow report (0) {
+## Dates and evidence
+
+Report updated 2026-11-01. “Earlier” means already recorded by 2026-11-01; exact execution dates are unavailable in this checkout and are not inferred. Current experiments below ran on 2026-11-01. Historical target receipts are absent here; detailed prior contracts/results remain in `git show c48bb8a2:institute/anicca/Build.md`. Current receipts: `target/build-iteration/common-workflows/`.
+
+The remaining user-selected tasks are in [Build.md](../../anicca/Build.md). This report records completed work and decisions, not permission to launch more experiments.
+
+## Current working defaults
+
+- Use one `nix develop .#interface` shell for a work session; run `cargo xtask` inside it and use `cargo check` for checks. Warnings are errors. Preserve caches and actual source/tool/feature invalidation.
+- Keep pinned Rust 1.96/LLVM, local Linux Clang/Wild 0.9, automatic Cargo jobs, incremental dev compilation, line tables and Interface 256 codegen units. Shipping settings are separate.
+- GitHub Actions has two platform workflows: Linux Lince with Park, and Android Lince. Automated Actions use compilation checks and requested optimized packages, without test suites. Local tests and performance experiments remain allowed. Linux Actions retains mold until the optimized Wild comparison qualifies a change; Android keeps its NDK linker and 16 KB alignment.
+- Actions restores compatible Cargo libraries/metadata, registry archives and Git dependencies, then restores timestamps only for unchanged source bytes and permissions. Cache identity includes compiler, native libraries/tools, Rust flags, lockfile and build recipes. Application edits share the dependency cache rather than creating a large archive per commit; changed inputs still recompile. APKs, signing material and final executables are excluded. Android also caches cargo-ndk and Gradle dependencies.
+- For Park protocol changes use `cargo xtask park protocol-check`. It currently passes 185 tests with two existing ignored cases. Native graphics, physical input and recovery need their relevant Park probes and acceptance checks; protocol tests do not replace them.
+- For the four Store transaction targets use `cargo xtask test-store-transactions`: account, assertion, record and standing transactions; scoped SQLite optimization level 2 and four test threads. All 74 current cases pass. Native/shipping SQLite settings are unchanged.
+- Keep scoped Store/Fiote/authoring dependencies, content-aware Anicca/native/icon caching and recovery, scanner pruning, PATH normalization and repository-root content discovery. Freedoom generation remains optional under `stuff`.
+- Keep Engine-bound typed execution identity, pure Nucleus types, Store's fail-closed behavior and simulation's own-input guard. Complete effective-input provenance is still unfinished.
+- Socket caching and nextest remain scoped options, not universal defaults. Nextest was validated for seven Store cases; its combination with the optimized four-target recipe is untested. Normal commands must not depend on missing scripts under `target`.
+- `cargo xtask dev` uses release; Park session/protocol commands use development/test profiles. Do not infer release gains from dev-only timings or add independent percentages.
+
+## Experiments retained as defaults or scoped recipes
+
+| When | Experiment | Result and decision |
+| --- | --- | --- |
+| Earlier | R05: narrow Store dependency in Park | Store-edit checking 95.1% faster; implemented. |
+| Earlier | R06: optional authoring helper | Authoring-edit help 71.2% faster; core-edit help 21.4% faster; implemented with coverage retained. |
+| Earlier | R08: Park fixture deadlines | Selected test group 94.8% faster; fixture-only controls implemented, production deadlines unchanged. |
+| Earlier | R12/R13: scanner pruning | Scanner stage 63.27%, then 11.70% faster; implemented. These are stage gains. |
+| Earlier | R15/R16: generated/native output reuse | Anicca measured edit/repeat sequence 42.36% faster; Freedoom repeated C stage 90.62% faster. Caching implemented; initial population costs remain. |
+| Earlier | R11/R14/R17/R18: invalidation and output recovery | Added/deleted inputs detected and missing icons regenerated identically; correctness defaults, no independent speed claim. |
+| Earlier | R40: execution identity boundary | Store-edit checking 81.80% faster; explicit binding and fail-closed Store implemented. |
+| Earlier | R45: simulation own-input identity | Own optimization/debug/target/compiler distinctions covered; broader provenance gaps remain. Correctness fix, no speed claim. |
+| Earlier | R46: native-only Fiote dependency | Models-only Fiote-edit checking 74.44% faster; implemented, native graph preserved. |
+| Earlier | R51: helper Glam features | Metadata 73.32% smaller; std-only helper features implemented, elapsed gain unproven. |
+| Earlier | R62: optimized Store transaction recipe | Unchanged/fixture-edit/Store-edit workflows 31.27%/33.42%/34.02% faster; validated only for four transaction targets. |
+| Earlier | R10/R57: optional runner/socket | Seven Store cases 23.18% faster with nextest; old three-crate cache miss batch 63.16% faster with a socket. Retain those scopes; no universal gain. |
+| Earlier | R68: PATH normalization | Nested-shell/return checks 92.30% faster; native executable byte-identical and real compiler invalidation preserved. Implemented. |
+| Earlier | R69: handbook discovery | Focused tests and 16 shell/override cases pass; repo-root default and explicit empty override implemented. No speed claim. |
+| 2026-11-01 | Normal Store command | Added `test-store-transactions`; all 74 current cases pass without warnings. Helper preparation 57.37 s, test preparation 217 s, execution 96.41 s. Validation, not a new speedup percentage. |
+| 2026-11-01 | Deterministic Park expiry fixture | Replace a 5.1 s sleep with test-only aging of the same input timestamps. Normal-command median 6.406 → 1.395 s, 78.22% faster; edited/restored test cycles 14.876 → 5.045 s, 66.09% faster. Implemented in the ordinary protocol command. |
+| 2026-11-01 | Expiry correctness and final checks | Original denial/history assertions retained; deliberately refreshing expired authority makes the original test fail. Mutation/probes restored. All 185 protocol tests pass; two existing ignored cases unchanged. Helper, non-test server and server-only test checks pass with warnings denied. Four test-helper cfg gates corrected; nested production branches unchanged. |
+
+Current evidence: `store-command-result.json`, `expiry-fixture/result.json`, `expiry-fixture/mutation-result.json`, `park-warm/`, `park-expiry-warm/`, `park-codegen/`, `park-expiry-iteration/` and `final-verification.json`, relative to the current receipts directory. Initial baseline preparation was 153 s for helper checking and 167 s for Park tests; these are retained-cache preparations, not controlled cold-build measurements.
+
+## Rejected or invalidated configurations
+
+Do not repeat these unchanged. Reopen only for a new measured workload, changed implementation/support or a materially different design.
+
+| When | Experiment | Result and decision |
+| --- | --- | --- |
+| Earlier | R41: alternative linkers | Identical-input links: Wild 0.9 2.85 s; Wild 0.11 3.45 s; mold 4.57 s; LLD 8.74 s. Keep Wild 0.9. Checked Wild incremental linking was unimplemented; no new implementation was tested. |
+| Earlier | R56/R58/R65: debug removal, Interface128, four jobs | Shared cycles regress 8.87% / 18.26% / show no reliable gain. Keep existing defaults. |
+| Earlier | R64/R66: optimized incrementality | Broad variant fails consistency; binary-only variant improves compilation but optimized runtime regresses 1.58%. Both restored. |
+| Earlier | R61: native-wide SQLite2 | Fixture execution 64.07% faster, but shared edit-to-result 5.49% slower. Reject broad default; R62's four-target recipe is separate. |
+| Earlier | R48: Protein runtime split | Two layouts regress optimized runtime 0.93–2.27%. Restored; preserve exact schema/security behavior in any new design. |
+| Earlier | Cranelift / frontend workers | Preview fails recovery; full-helper backend lacks a required intrinsic; mixed helper is slower. Four frontend workers fail the Engine-edit gain gate. Keep LLVM/current frontend settings. |
+| Earlier | Cargo fork / Corgi | Helper fork saves only 0.09 s; Corgi rejects relative-path Cargo env tables. No replacement default. |
+| Earlier | Harness consolidation / blanket host optimization | Four-target harness saves only 0.201 s; current native producers are fresh and host execution is small. No broad change. |
+| 2026-11-01 | R71: Bevy dynamic library | Loading/coexistence pass; shared-target setup 423.301 s. Leaf/shared consistency gates fail with contamination/I/O variation. Experimental feature and its lockfile additions removed; no qualified gain or native/release approval. |
+| 2026-11-01 | Socket as a universal cache default | Three confirmed misses: TCP 0.15138 s versus socket 0.16018 s; hits 0.08853/0.08291 s. Nine paired outputs match. No useful gain; default unchanged. Initial non-cacheable probe excluded. |
+| 2026-11-01 | Park test-only 512 codegen units | Edited/restored cycles 14.87566 → 14.92321 s, 0.32% slower. All 185 cases pass, probes restored. Keep 256; this does not decide the separate native Interface512 candidate. |
+
+## 2026-11-01 — Task 4: Actions build-cost investigation
+
+Inspected actual API job timings/logs for the three latest completed main runs with successful native-build and Park Linux jobs: 2026-10-30 and twice on 2026-10-31. Their build, Park and helper workflow files are byte-identical to the current checkout; Ubuntu24.04/Rust1.96 are unchanged. Source revisions differ: this is attribution, not a controlled before/after benchmark. Cancelled/in-progress/early-failed samples are excluded from these medians.
+
+| Measured step | Median | Range |
+| --- | --- | --- |
+| Park compiler/protocol checks | 71m26s | 62m36s–76m34s |
+| Cargo-reported preparation within that step | 70m21.51s | 61m19.21s–75m25.93s |
+| Sum of reported libtest execution | 26.79s | 26.11s–27.25s |
+| Native release compilation | 6m33s | 5m11s–51m12s |
+| Release cache restore / save | 3m03s / 1m59s | 2m12s–3m10s / 1m52s–2m14s |
+| Park validation-helper preparation | 10m04s | 9m59s–10m53s |
+
+Finding: the largest observed repeated cost is Park checking/test compilation. Each log has 3,792 Checking/Compiling entries (not unique crates). Cargo preparation accounts for about 98% of the step; this is reported wall time, not compiler CPU attribution. Park's Linux job restores/saves no Cargo artifact cache and tests the source-timestamp script without applying it to restored artifacts. Nix tool/library substitution does not provide compiled project artifacts. The release job demonstrably restores its prefix-matched cache and unchanged source timestamps; unique save keys or cache-hit=false do not mean no cache was restored.
+
+At investigation time, the candidate was compatible Park dev/test artifact reuse while preserving the commands. The later owner instruction replaces those Actions suites with compilation checks; see the consolidation report below. The API snapshot listed 12 caches totaling 9.28 GB and no binary-v2/park-validation entries; the configured quota and disappearance/eviction cause are unverified. No cache was deleted. The investigation itself changed no workflows and claimed no speedup. Main release publication preceded the Park job.
+
+Sources: [2026-10-31 Park check](https://github.com/lince-social/lince/actions/runs/41204290581/job/124548726549), [2026-10-31 Park check](https://github.com/lince-social/lince/actions/runs/41148219014/job/124382451841), [2026-10-30 Park check](https://github.com/lince-social/lince/actions/runs/41051597656/job/124072943905). API records, logs, workflow hashes, exclusions, cache snapshot and calculated results: `target/build-iteration/actions-cost/result.json` and adjacent receipts. Task 4's investigation is complete; hosted validation of the implemented caches remains task 5.
+
+## 2026-11-01 — Actions consolidation and cache validation
+
+| Change or experiment | Result and decision |
+| --- | --- |
+| One workflow per supported Actions platform | Keep `build.yml` for Linux Lince/Park and `android.yml` for Android. Remove the separate Park, validation, probe, Transfer, Android-smoke and disabled Instinct workflows. No automated test suites or emulators remain. |
+| Linux checks versus packages | Pull requests/dev use locked Cargo checks for native Lince/Park, tools/clients and headless Lince. Main/version tags build the optimized native package. Manual runs choose checks or a package; publication additionally requires explicit selection. Existing package checks, signing and main/tag publication remain. |
+| Android checks versus packages | Automated ARM64 Rust checks; manual ARM64/x86_64/both packages. Install Java/Gradle only for packaging and skip the duplicate preliminary check when building a package. Signed release APK/Play bundle choices retain main/ARM64 restrictions and signature/alignment verification. NDK/release settings remain unchanged. |
+| Scoped compiled-input caches | Implement compatible Linux check/release and Android ABI/mode caches with content-aware timestamps. Stable dependency keys avoid per-commit archive churn. Native installer and Android Gradle flags are fingerprinted; first use of the new namespace is cold. Final executables and signing outputs are excluded. |
+| Local invalidation tests | All 18 pass in 8.055 s, including real Cargo unchanged-source reuse and recompilation after changed/new/deleted inputs, permissions, compiler flags, lockfile, native tools and build recipes. This validates reuse correctness, not hosted transfer savings. |
+| Workflow validation | Actionlint, ShellCheck and diff checks pass; 16 event/platform combinations and signing guards pass. Exactly two workflows remain, with no suite/emulator commands. No remote workflow dispatch or publishing was performed. |
+
+Receipts: `target/build-iteration/actions-consolidation/`. Hosted cold/warm/source-edit timings and cache sizes remain unmeasured until these files run remotely. The old 71m26s Park step included test compilation; it is not a like-for-like baseline for the new check-only workflow. No hosted percentage improvement is claimed.
+
+## Promising result awaiting adoption checks
+
+Earlier R59: native Interface512 shared edit/restoration cycles improved 105.549 → 79.254 s (24.91%); setup cost 214.60 s. Native control recorded 450 passes/10 failures and a 600 s timeout. Four failures were corrected socket-path fixture errors; six behavior cases and the post-catalogue timeout remained unresolved in that run. Keep Interface256 until a valid runtime comparison passes. These are validation blockers for this candidate, not independent build optimizations. The prior failures involved two customization fixtures and Practice rows, mail permissions, vocabulary confirmation and shader completion; reproduce/report any remaining blocker without expanding this plan into product repairs. This is distinct from the rejected Park test-only 512 setting.
+
+## Not queued without evidence
+
+Storage/RAM/no-CoW, Crane packaging reuse, narrower Nix sources, feature unification, asset separation, broader nextest and further compiler flags lack a demonstrated large common-workflow opportunity. Storage requires owned file-I/O attribution; package reuse requires repeated dependency recompilation; source filtering requires generator/path/input inventory and complete installed Trails content. Initial inspection is not a speedup.
+
+Simulation policy separation and Action serialization are architectural proposals, not proven build wins. A simulation prototype must preserve automatic enforcement, all nine roots, no-Cell execution, worker placement and session/replay/campaign/preview identity binding. Action changes must preserve its live schema, strict input rejection and optimized behavior. Complete effective-input identity must cover resolved features/config/profile, included/generated/local source and native tools/flags; retain fail-closed behavior and avoid Cargo private fingerprints as a stable API. These contracts gate affected proposals; they do not justify speculative rewrites.
+
+Remote infrastructure, build-system migration, recurring automation and PGO/BOLT require their own concrete objective/resources. They are not prerequisites for the current task queue.
+
+## Rules for a selected experiment
+
+Record hypothesis, exact pins/commands, source guards, useful-saving threshold, bounded samples/time, setup/cache state and rollback before changing code. Benchmark one factor at a time, sequentially, with at least three balanced uncontaminated samples per side for a performance claim. Keep all samples, ranges and exclusions; separate checking, compilation/linking, loading, execution and one-time setup.
+
+Require useful complete-workflow gains, preserved correctness/privacy/recovery and final binary performance. Verify relevant source additions/deletions, dependency/features/tools/native invalidation, and the actual normal command before adoption. Full physical/session acceptance is required only where affected. Restore probes/rejected changes and record adopt, scoped opt-in, reject or conditional deferral. Validate interactions in the useful combination; never add separate gains or attribute global pressure to owned builds.
+}

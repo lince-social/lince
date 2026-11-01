@@ -1,0 +1,38 @@
+name: Restore compatible Rust compilation inputs
+description: Reuse libraries and metadata without caching test results or final executables
+inputs:
+  scope:
+    description: Platform and compilation mode
+    required: true
+  target:
+    description: Rust target triple
+    default: x86_64-unknown-linux-gnu
+outputs:
+  key:
+    description: Cache key to save after compilation
+    value: ${{ steps.identity.outputs.key }}
+  paths:
+    description: Compilation inputs included in the cache
+    value: ${{ steps.identity.outputs.paths }}
+  hit:
+    description: Whether this dependency and configuration cache already exists
+    value: ${{ steps.restore.outputs.cache-hit }}
+runs:
+  using: composite
+  steps:
+    - name: Identify compatible compiler inputs
+      id: identity
+      shell: bash
+      env:
+        CACHE_SCOPE: ${{ inputs.scope }}
+        CACHE_TARGET: ${{ inputs.target }}
+      run: python3 -B institute/scripts/ci-cache-identity.py >> "$GITHUB_OUTPUT"
+    - uses: actions/cache/restore@v4
+      id: restore
+      with:
+        path: ${{ steps.identity.outputs.paths }}
+        key: ${{ steps.identity.outputs.key }}
+        restore-keys: ${{ steps.identity.outputs.prefix }}
+    - name: Restore timestamps only for unchanged sources
+      shell: bash
+      run: python3 -B institute/scripts/ci-source-cache.py

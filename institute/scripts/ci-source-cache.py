@@ -24,7 +24,7 @@ def snapshot(root):
         path = root / name
         if path.is_symlink() or not path.is_file():
             continue
-        if path.resolve() != path or path.suffix in (".lingua", ".md"):
+        if path.resolve() != path:
             continue
         stat = path.stat()
         identity = [hashlib.sha256(path.read_bytes()).hexdigest(), stat.st_mode]

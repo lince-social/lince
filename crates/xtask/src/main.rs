@@ -311,6 +311,27 @@ fn dispatch() -> Result<()> {
             no_extra(&extra)?;
             prune::with_cleanup(&root, check_instinct)
         }
+        Some("test-store-transactions") => {
+            no_extra(&extra)?;
+            checked(cargo_command().args([
+                "--config",
+                "profile.dev.package.libsqlite3-sys.opt-level=2",
+                "test",
+                "--locked",
+                "-p",
+                "store",
+                "--test",
+                "account_transactions",
+                "--test",
+                "assertion_transactions",
+                "--test",
+                "record_transactions",
+                "--test",
+                "standing_transactions",
+                "--",
+                "--test-threads=4",
+            ]))
+        }
         Some("test-all") => {
             no_extra(&extra)?;
             prune::with_cleanup(&root, || {
@@ -320,7 +341,7 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <ailuros|lingua|design|workspace|park|dev|check|check-instinct|test|test-all|release|server|facade|version|android|android-clean|android-smoke|ui-test|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
+                "cargo xtask <ailuros|lingua|design|workspace|park|dev|check|check-instinct|test|test-store-transactions|test-all|release|server|facade|version|android|android-clean|android-smoke|ui-test|mobile-preview|plugin-example|plugin-files|plugin-activitypub|plugin-irc|hand-models>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."
@@ -342,6 +363,7 @@ fn dispatch() -> Result<()> {
                 "check and test forward arguments to Cargo; test-all runs every workspace target."
             );
             println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
+            println!("test-store-transactions runs the four Store transaction targets with the validated SQLite profile.");
             println!(
                 "dev, check, check-instinct, test and test-all prune superseded incremental snapshots before and after running."
             );

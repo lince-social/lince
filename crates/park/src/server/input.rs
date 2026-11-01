@@ -33,6 +33,13 @@ pub(super) struct Authority {
 }
 
 impl State {
+    #[cfg(all(test, feature = "server-tests"))]
+    pub(super) fn elapse_input_authority(&mut self, elapsed: std::time::Duration) {
+        for entry in &mut self.authority {
+            entry.time -= elapsed;
+        }
+    }
+
     pub(super) fn forget_trigger(&mut self, trigger: Trigger) {
         for entry in &mut self.authority {
             if entry.trigger == Some(trigger) {

@@ -224,7 +224,10 @@ fn releases_do_not_refresh_expired_press_authority_and_history_remains_bounded()
     for keyboard in [false, true] {
         input(&mut harness, keyboard, true);
     }
-    std::thread::sleep(Duration::from_millis(5100));
+    harness
+        .server
+        .state
+        .elapse_input_authority(Duration::from_millis(5100));
     for keyboard in [false, true] {
         let serial = input(&mut harness, keyboard, false);
         let token = input_token(&mut harness, &window, serial);

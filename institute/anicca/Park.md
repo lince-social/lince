@@ -1,69 +1,47 @@
-# Park: remaining acceptance checks
+# Park: remaining work
 
-Updated 2026-11-01. Testing and compilation are paused until the user resumes them. This is the remaining finite checklist; subsequent day-to-day use and UX bug reports do not add an indefinite acceptance gate.
+## Candidate preparation
 
-## Starting point and blockers
+- [ ] **Niri P01 — Correct the output-state/rollback failure.** Establish the cause of the documented EINVAL/RecoveryFailure and fix the failing recovery path before disruptive output testing. **Why:** a display-setting change can currently terminate the desktop and its clients.
+- [ ] **Niri P02 — Test automatic settings initialization.** When compilation is authorized, run the existing initialization regression covering private file creation and preservation of an existing configuration. **Why:** prevents first-login setup failures and accidental settings replacement.
+- [ ] **Niri P03 — Test automatic terminal selection.** When compilation is authorized, run the existing terminal-selection regression for executable TERM values and Ghostty fallback. **Why:** terminal launching must work without a manually supplied binary path.
+- [ ] **Niri P04 — Publish the corrected prebuilt candidate.** After P01/P02/P03, publish matching binary and flake artifacts containing the required source fixes. **Why:** local source corrections otherwise never reach the installed desktop.
+- [ ] **Niri P05 — Install the corrected candidate.** At an agreed time, install the P04 prebuilt package through the personal NixOS flake. **Why:** physical acceptance must exercise the corrected release.
+- [ ] **P06 — Verify the running candidate's identity.** After entering the corrected session, record its executable, revision, optimized mode and ui/instinct/park features against the published artifact. **Why:** avoids testing an older process after an upgrade.
+- [ ] **Niri P07 — Verify installed content loading.** Exercise native Lince content outside the development shell, with content/lince as the LINCE_CONTENT path when configured. **Why:** catches packaged-content path failures hidden by the source checkout.
 
-- On 2026-10-31, the installed optimized release identified revision `363669ca48d600b5484239c7ae1f21ec4759ed43`, with `ui`, `instinct` and `park` enabled. That revision includes the DMA-BUF render-device feedback, VT-handoff and flake-packaging corrections. The public release input, Park module and UWSM login entry were restored. Recheck the running executable when testing resumes; checkout changes do not update a running session.
-- Ghostty opened after configuring `terminal.program = "ghostty"`. Launcher and locker commands were unconfigured at the last inspection. Restore selected external providers and the intended keyboard settings (`br`, repeat rate 35, delay 300 ms), merging existing settings and preserving Lince data. Use the chosen Grim/Slurp capture integration if needed; do not add legacy capture protocols or a bar-specific workaround.
-- The output configuration/rollback crash remains unresolved: on 2026-10-31, mode-setting with AR24/modifier `72057594037927944` failed state testing with `EINVAL`, followed by `RecoveryFailure` for both configuration and rollback. The triggering action is unknown. Investigate `session.rs` and `session/display.rs`; distinguish output-format recovery from lost device ownership before repeating disruptive output checks.
-- Display-power integration is unfinished. Noctalia's earlier generic `wlr-randr` handoff failed before Park received a power request. Use a compatible helper through Park's authorized `WAYLAND_SOCKET` connection; a child reconnecting publicly does not inherit output-control permission. Do not weaken permissions or repurpose screenshot grants.
-- Automatic `park.json` creation and executable `$TERM` selection with Ghostty fallback were implemented in the working tree. The session library check passed; command tests were interrupted during compilation. Their tests and installation remain pending, separately from the physical checks below. Do not resume compilation without the user's instruction.
+## External commands and input setup
 
-## Remaining checks
+- [ ] **Niri P08 — Restore the intended keyboard configuration.** Merge br layout, repeat rate 35 and repeat delay 300 ms into existing settings. **Why:** physical typing must use the user's actual layout.
+- [ ] **Niri P09 — Configure the external launcher command.** Connect the selected provider to Park's launcher action. **Why:** Mod+D cannot launch applications without a provider.
+- [ ] **Niri P10 — Configure the external locker command.** Connect the selected locker to Park's lock action. **Why:** authentication and locked recovery require a functioning locker.
+- [ ] **Niri P11 — Wire an authorized display-power helper.** Use the inherited WAYLAND_SOCKET output-control grant without weakening public-client permissions. **Why:** the former power command failed before reaching Park.
 
-Execute in this order where dependencies permit. Independent checks may proceed while another is blocked. The assistant prepares tools, captures evidence and investigates failures; the user performs physical actions and confirms visible results.
+## Interaction and rendering
 
-### 1. B2.1 — Verify the installed candidate
+- [ ] **P12 — Test keyboard-driven application launching.** After P09, use Mod+D to type a query and launch an application. **Why:** opening a launcher panel alone does not prove focus or dispatch works.
+- [ ] **P13 — Test normal lock/unlock authentication.** After P10, use Mod+Escape and unlock with the user's normal authentication. **Why:** a visible lock screen alone does not establish a usable, authenticated unlock.
+- [ ] **P14 — Verify client hardware rendering.** Inspect the renderer selected by an ordinary native Wayland client in the corrected session. **Why:** the earlier installed release selected software rendering despite working windows.
+- [ ] **P15 — Test visible video playback.** Reuse the existing video check on the corrected candidate without competing compilation/GPU scenes. **Why:** hardware selection and decoded-frame counts alone do not prove the observed playback slowdown is fixed.
+- [ ] **P16 — Test canvas animation responsiveness.** Reuse the existing animation check on the corrected candidate. **Why:** the earlier approximately 18-FPS animation slowdown is separate from video decoding.
+- [ ] **P17 — Test physical keyboard composition.** After P08, type using the actual layout/dead keys or configured IME. **Why:** injected Unicode bypasses the input path used for real typing.
+- [ ] **P18 — Save a native Lince edit.** Make and save an identifiable edit through the native interface. **Why:** establishes real user work to verify after logout.
+- [ ] **P19 — Test the outstanding portal consent interaction.** Use the selected portal's actual consent UI for the pending request and confirm the requested result. **Why:** protocol automation alone does not establish that the user can complete the permission flow.
+- [ ] **P20 — Complete 15 minutes of ordinary work.** Use browser, terminal and Lince in the same acceptance session without crash, lost work, wrong-target input, private exposure or stuck input. **Why:** catches interactions between components that isolated checks miss; no extra endurance run is required.
 
-- [ ] Verify the running executable's exact revision, optimized mode and `ui`/`instinct`/`park` features outside the development shell; verify the packaged UWSM session and NixOS module evaluation.
-- [ ] Verify content loads from `content/lince` when configuring `LINCE_CONTENT`. Preserve the public `main-binary` flake input, prebuilt package, existing greeter and Niri fallback.
-- [ ] If the output investigation requires code changes, publish/install one coherent corrected candidate and verify binary/flake source identity before final acceptance. Reuse the existing A2 smoke and only affected checks; installation alone does not update an already-running Park session.
+## Outputs and recovery
 
-### 2. B2.2 — External launcher and locker
+- [ ] **P21 — Test resolution-preview rollback.** After P01/P06, preview a supported resolution change and let it revert. **Why:** a bad mode choice must not leave the desktop unusable.
+- [ ] **P22 — Test scale-preview rollback.** After P01/P06, preview a supported scale change and let it revert. **Why:** scaling changes logical geometry and can break input mapping independently of resolution.
+- [ ] **P23 — Test second-output reconnection.** Disconnect/reconnect HDMI and verify existing windows remain reachable with correct pointer mapping. **Why:** unplugging a display must not strand windows or misdirect input.
+- [ ] **P24 — Test one VT round trip.** After P01/P06, discover and agree on current departure/return VTs, record the transition and require the same compositor/windows to survive with resumed input and no replayed held keys. **Why:** the previous installed release exited during this operation.
+- [ ] **P25 — Test ordinary display-power recovery.** After P11, turn displays off/on and verify current-epoch power confirmation within two seconds. **Why:** output disablement or a successful helper exit does not prove power recovery.
+- [ ] **P26 — Test hotplug while locked.** After P13, reconnect the second output while locked and check for private-content exposure. **Why:** new outputs must not bypass lock privacy.
+- [ ] **P27 — Test one locked suspend/wake.** After P11/P13, suspend while locked, wake and verify privacy, normal authentication and recovered output/input. **Why:** device reacquisition after sleep can fail even when ordinary unlock works.
 
-Requires working selected external providers.
+## Logout and persistence — run last
 
-- [ ] Press Mod+D, enter a query with the keyboard and launch an application. Panel IPC open/close alone is insufficient.
-- [ ] Press Mod+Escape, lock and unlock using normal authentication. An existing PAM service alone is insufficient.
-
-### 3. B2.3 — Rendering and ordinary interaction
-
-Keyboard, saved-edit and rendering checks can start in an existing Park session; launcher/portal checks depend on provider setup.
-
-- [ ] Confirm ordinary native Wayland clients use hardware rendering and the existing video/canvas check no longer reproduces software-rendered slowdown. The old release delivered about 18 video callbacks/animation frames per second despite approximately 60 decoded frames per second; decoder progress alone is not a pass, and browser callbacks do not prove physical scanout FPS.
-- [ ] Test physical keyboard layout/dead keys or the configured IME. Injected Unicode is insufficient.
-- [ ] Save an actual native Lince edit and complete outstanding launcher/portal consent interactions.
-- [ ] Complete 15 minutes of browser/terminal/Lince work without crash, lost work, wrong-target input, private exposure or stuck input. Combine this with the other checks in the same session; no additional endurance run is required.
-
-### 4. B1.2 — Outputs, hotplug and VT recovery
-
-Resolve the known output/rollback failure first. Use a candidate containing the VT correction; the older `5daf8c25` release exited on a VT switch with a page-flip permission error.
-
-- [ ] Preview a supported resolution/scale change and roll it back successfully.
-- [ ] Disconnect/reconnect the second output; existing windows remain reachable and output/input mapping remains correct. Earlier position-preview success does not establish resolution/scale recovery.
-- [ ] Discover the current Park VT through logind, agree on departure/return keys, capture service/session/foreground-VT changes, then leave and return once. Require the same compositor process and windows to survive, input to resume and no replayed held keys. Never reuse a historical VT number.
-
-### 5. B1.3 — Display power and locked recovery
-
-Requires the authorized power helper and a working external locker.
-
-- [ ] Turn displays off/on normally; confirm the current power epoch within the existing two-second bound. Disabling an output is not proof of a power transition.
-- [ ] Suspend/wake once with the locker active; verify normal authentication and recovered output/input. Check locked wake/hotplug exposes no private content. Reuse existing locker-loss protocol evidence rather than crashing the locker deliberately.
-
-### 6. B2.4 — Save-aware logout and restart
-
-Run last, at an agreed time, keeping Niri and the previous NixOS generation available.
-
-- [ ] Exercise save-aware logout, return to Niri and confirm Park services/display environment are cleaned up.
-- [ ] Log into Park again and verify saved settings and the saved Lince edit return.
-
-## Execution and completion
-
-- On resuming, ask the user to perform one concrete physical action at a time, wait for confirmation, inspect evidence, then continue. Coordinate VT switching, suspend, logout and system activation explicitly.
-- Record each result immediately in the existing fixture/observation ledger or run report: action/selector, result, executable revision, relevant inputs, duration and persistent log path. Save the service invocation, process/executable identity and logs before disruptive actions or reboot. Old `target/park-validation` evidence was absent after reinstall; do not depend on missing helpers or old store paths.
-- Remove each successful checklist item only after its required fix and execution pass, retaining its receipt. Remove a whole group only when all its requirements pass. Keep failures and deferred items; delete this file when everything is complete.
-- Reuse valid independent passes with their original provenance. After changes, repeat failures and affected checks only; never transfer a pass silently to another binary. An exact test selector must execute its intended case; zero cases is not a pass.
-- Use the installed prebuilt candidate. If using the existing final runner, set `executable` to its verified absolute path before initialization and select `--only B2`; leaving it null can trigger a local release compilation. The default A1–A3 selection does not run a physical session.
-- Do not run performance observations alongside compilation or competing GPU scenes. Reuse existing profiles and incremental output; use `cargo check`, treat warnings as errors and never `cargo clean`. Run applications through `cargo xtask` or Nix shell commands.
-- No new provider/hardware matrices, stress cycles, resource soaks or duplicate automated suites. Native Wayland SDR keyboard/mouse is the scope; XWayland, accessibility, HDR, VRR, tablet/touch, rotation matrices and the separate workspace refactor are outside this checklist. UX bugs can be recorded at any time.
+- [ ] **P28 — Test save-aware logout.** At an agreed time, exercise Park's save-aware exit and return to Niri. **Why:** leaving the desktop must protect unsaved user work.
+- [ ] **Niri P29 — Verify session cleanup.** After P28, inspect Park services and display-environment cleanup. **Why:** stale session state can break applications in the next desktop.
+- [ ] **P30 — Verify saved settings after relogin.** Log into Park again and check the saved configuration. **Why:** settings that work only until logout are not persistent.
+- [ ] **P31 — Verify the saved edit after relogin.** Reopen the edit saved in P18. **Why:** confirms native user data survives the complete session restart.

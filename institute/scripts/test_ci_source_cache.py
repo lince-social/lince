@@ -127,6 +127,35 @@ class SourceCacheTests(unittest.TestCase):
         self.restore()
         self.assertFalse(self.check()["dependency"])
 
+    def document_input(self, extension):
+        document = self.write(f"crates/dependency/data/input.{extension}", "first\n")
+        self.track()
+        self.prime()
+        self.checkout()
+        self.restore()
+        self.assertTrue(self.check()["dependency"])
+        document.write_text("other\n")
+        self.restore()
+        self.assertFalse(self.check()["dependency"])
+        document.unlink()
+        self.track()
+        self.restore()
+        self.assertFalse(self.check()["dependency"])
+
+    def test_markdown_input_reuses_unchanged_and_invalidates_changed_or_removed(self):
+        self.document_input("md")
+
+    def test_lingua_input_reuses_unchanged_and_invalidates_changed_or_removed(self):
+        self.document_input("lingua")
+
+    def test_added_document_directory_input_reruns_build_script(self):
+        self.prime()
+        for extension in ("md", "lingua"):
+            self.write(f"crates/dependency/data/added.{extension}", "content\n")
+            self.track()
+            self.restore()
+            self.assertFalse(self.check()["dependency"])
+
     def test_changed_revision_recompiles_with_restored_timestamps(self):
         self.source.write_text(
             self.source.read_text()

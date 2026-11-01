@@ -711,7 +711,7 @@ impl Server {
             description.capabilities.clone(), socket, false)
     }
 
-    #[cfg(any(feature = "nested", test))]
+    #[cfg(any(feature = "nested", all(test, feature = "server-tests")))]
     pub(crate) fn spawn_foreground_helper(
         &mut self,
         description: &crate::launch::Description,
@@ -721,7 +721,7 @@ impl Server {
             description.capabilities.clone(), socket, true)
     }
 
-    #[cfg(any(feature = "nested", test))]
+    #[cfg(any(feature = "nested", all(test, feature = "server-tests")))]
     pub(crate) fn spawn_foreground(
         &mut self,
         application: crate::launch::Application,
@@ -1005,7 +1005,7 @@ impl Server {
         }
     }
 
-    #[cfg(any(feature = "nested", test))]
+    #[cfg(any(feature = "nested", all(test, feature = "server-tests")))]
     pub(crate) fn frame_started_nodes(&mut self, nodes: &[SurfaceNode]) {
         self.finish_frame_callbacks(nodes);
     }

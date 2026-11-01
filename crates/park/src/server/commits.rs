@@ -61,7 +61,7 @@ impl Visual {
 }
 
 impl Server {
-    #[cfg(any(feature = "nested", test))]
+    #[cfg(any(feature = "nested", all(test, feature = "server-tests")))]
     pub(crate) fn callback_nodes(&self, window: &WindowSnapshot) -> Vec<SurfaceNode> {
         let visual = Visual::new(
             window.geometry,

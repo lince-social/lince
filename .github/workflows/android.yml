@@ -1,14 +1,28 @@
-name: lince-android
+name: Android Lince
 
 on:
+  push:
+    branches: [main, dev]
+    paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml', 'institute/scripts/**']
+  pull_request:
+    paths: ['crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.cargo/**', '.github/actions/**', '.github/workflows/android.yml', 'institute/scripts/**']
   workflow_dispatch:
     inputs:
-      signed_release:
-        description: Assemble a release APK using the configured Android signing secrets
+      build_packages:
+        description: Build requested packages; otherwise check the Rust library only
         type: boolean
         default: true
+      abi:
+        description: Android CPU architecture
+        type: choice
+        options: [arm64-v8a, x86_64, all]
+        default: arm64-v8a
+      signed_release:
+        description: Build an ARM64 signed release APK on main instead of a debug APK
+        type: boolean
+        default: false
       play_bundle:
-        description: Assemble a Play bundle using the separate upload key
+        description: Build an ARM64 Play bundle on main using the upload key
         type: boolean
         default: false
 
@@ -20,104 +34,91 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  transfers:
-    uses: ./.github/workflows/transfers.yml
-  apk:
+  android:
+    name: Android (${{ matrix.abi }})
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - abi: arm64-v8a
-            target: aarch64-linux-android
-            smoke: false
-          - abi: x86_64
-            target: x86_64-linux-android
-            smoke: true
+        include: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.abi == 'all' && '[{"abi":"arm64-v8a","target":"aarch64-linux-android"},{"abi":"x86_64","target":"x86_64-linux-android"}]' || github.event_name == 'workflow_dispatch' && inputs.abi == 'x86_64' && '[{"abi":"x86_64","target":"x86_64-linux-android"}]' || '[{"abi":"arm64-v8a","target":"aarch64-linux-android"}]') }}
     env:
       CARGO_INCREMENTAL: '0'
       RUSTUP_TOOLCHAIN: '1.96.0'
       RUSTFLAGS: '-D warnings -C link-arg=-Wl,-z,max-page-size=16384'
     steps:
-      - name: Restrict signing to main
-        if: github.event_name == 'workflow_dispatch' && (inputs.signed_release || inputs.play_bundle) && github.ref != 'refs/heads/main'
+      - name: Restrict signing to main and ARM64
+        if: github.event_name == 'workflow_dispatch' && (inputs.signed_release || inputs.play_bundle)
+        env:
+          SELECTED_ABI: ${{ inputs.abi }}
         run: |
-          echo 'Signed distribution builds must run from main.' >&2
-          exit 1
+          if [[ "$GITHUB_REF" != refs/heads/main || "$SELECTED_ABI" == x86_64 ]]; then
+            echo 'Distribution signing requires main and ARM64.' >&2
+            exit 1
+          fi
       - uses: actions/checkout@v4
+      - name: Read pinned Rust version
+        id: toolchain
+        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: '1.96.0'
+          toolchain: ${{ steps.toolchain.outputs.version }}
           targets: ${{ matrix.target }}
       - uses: actions/setup-java@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.build_packages
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools'
+          packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.build_packages
         with:
           gradle-version: '8.11.1'
-      - name: Install Android tools
-        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
-      - uses: Swatinem/rust-cache@v2
+      - name: Install Android compiler tools
+        run: |
+          sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
+          cat "$ANDROID_HOME/ndk/28.2.13676358/source.properties" > "$RUNNER_TEMP/lince-native-inputs"
+          "$ANDROID_HOME/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" --version >> "$RUNNER_TEMP/lince-native-inputs"
+      - uses: actions/cache@v4
         with:
-          shared-key: android-${{ matrix.abi }}-ndk28
-          cache-on-failure: true
-      - name: Install cargo-ndk
-        run: cargo install cargo-ndk --version 4.1.2 --locked
+          path: ~/.cargo/bin/cargo-ndk
+          key: cargo-ndk-ubuntu24-${{ runner.arch }}-4.1.2
+      - name: Prepare cargo-ndk
+        run: |
+          if ! cargo ndk --version 2>/dev/null | grep -Fxq 'cargo-ndk 4.1.2'; then
+            cargo install cargo-ndk --version 4.1.2 --locked --force
+          fi
+      - uses: ./.github/actions/rust-artifacts
+        id: cache
+        with:
+          scope: android-${{ matrix.abi }}-${{ github.event_name == 'workflow_dispatch' && inputs.build_packages && 'package' || 'check' }}
+          target: ${{ matrix.target }}
       - name: Check Android library
+        if: github.event_name != 'workflow_dispatch' || !inputs.build_packages
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
           cargo ndk -t '${{ matrix.abi }}' --platform 28 check --locked -p lince-mobile --lib
-      - name: Check app and assemble debug APK
+      - name: Assemble requested debug APK
+        if: github.event_name == 'workflow_dispatch' && inputs.build_packages && (matrix.abi != 'arm64-v8a' || (!inputs.signed_release && !inputs.play_bundle))
         run: |
           export LINCE_ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))
-          gradle -p crates/mobile/android --no-daemon -PlinceAbi='${{ matrix.abi }}' -PlinceSmoke='${{ matrix.smoke }}' lintDebug assembleDebug
-      - name: Verify APK
-        run: |
+          gradle -p crates/mobile/android --no-daemon -PlinceAbi='${{ matrix.abi }}' assembleDebug
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           cd crates/mobile/android/app/build/outputs/apk/debug
           sha256sum app-debug.apk > app-debug.apk.sha256
-      - name: Enable emulator acceleration
-        if: matrix.smoke
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Install, launch, edit and restart on 16 KB Android
-        if: matrix.smoke
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 36
-          target: google_apis_ps16k
-          arch: x86_64
-          profile: pixel_6
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: RUSTFLAGS='-D warnings' cargo run --locked -p xtask -- android-smoke --device emulator-5554 --pagesize 16384 --apk crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk --output target/android-smoke
       - uses: actions/upload-artifact@v4
-        if: always() && matrix.smoke
+        if: ${{ success() && hashFiles('crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk') != '' }}
         with:
-          name: android-smoke-evidence
-          path: target/android-smoke
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() && hashFiles('crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk') != '' }}
-        with:
-          name: lince-android-${{ matrix.abi }}-${{ matrix.smoke && 'smoketest' || 'debug' }}
+          name: lince-android-${{ matrix.abi }}-debug
           path: |
             crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
             crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk.sha256
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        with:
-          name: lince-android-${{ matrix.abi }}-native-symbols
-          path: crates/mobile/android/app/build/rust/debug/jniLibs/${{ matrix.abi }}/liblince_mobile.so
-          if-no-files-found: error
       - name: Assemble signed release
-        if: github.ref == 'refs/heads/main' && !matrix.smoke && inputs.signed_release
+        if: github.event_name == 'workflow_dispatch' && inputs.build_packages && github.ref == 'refs/heads/main' && matrix.abi == 'arm64-v8a' && inputs.signed_release
         env:
           LINCE_ANDROID_KEYSTORE_BASE64: ${{ secrets.LINCE_ANDROID_KEYSTORE_BASE64 }}
           LINCE_ANDROID_STORE_PASSWORD: ${{ secrets.LINCE_ANDROID_STORE_PASSWORD }}
@@ -133,14 +134,14 @@ jobs:
           trap 'rm -f "$LINCE_ANDROID_KEYSTORE"' EXIT
           printf '%s' "$LINCE_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$LINCE_ANDROID_KEYSTORE"
           export LINCE_ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))
-          gradle -p crates/mobile/android --no-daemon lintRelease assembleRelease
+          gradle -p crates/mobile/android --no-daemon assembleRelease
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs crates/mobile/android/app/build/outputs/apk/release/app-release.apk
           "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 crates/mobile/android/app/build/outputs/apk/release/app-release.apk
           cd crates/mobile/android/app/build/outputs/apk/release
           sha256sum app-release.apk > app-release.apk.sha256
           jq -n --arg commit "$GITHUB_SHA" --argjson version_code "$LINCE_ANDROID_VERSION_CODE" --arg workflow_run "$GITHUB_RUN_ID" '{package: "social.lince.mobile", apk: "app-release.apk", commit: $commit, version_code: $version_code, workflow_run: $workflow_run, install: "Open app-release.apk on the phone to install or update Lince."}' > build-info.json
       - uses: actions/upload-artifact@v4
-        if: github.ref == 'refs/heads/main' && !matrix.smoke && inputs.signed_release
+        if: github.event_name == 'workflow_dispatch' && inputs.build_packages && github.ref == 'refs/heads/main' && matrix.abi == 'arm64-v8a' && inputs.signed_release
         with:
           name: lince-android-arm64-release
           path: |
@@ -150,7 +151,7 @@ jobs:
             crates/mobile/android/app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
           if-no-files-found: error
       - name: Assemble Play bundle
-        if: github.event_name == 'workflow_dispatch' && inputs.play_bundle && github.ref == 'refs/heads/main' && !matrix.smoke
+        if: github.event_name == 'workflow_dispatch' && inputs.build_packages && inputs.play_bundle && github.ref == 'refs/heads/main' && matrix.abi == 'arm64-v8a'
         env:
           LINCE_ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.LINCE_ANDROID_UPLOAD_KEYSTORE_BASE64 }}
           LINCE_ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.LINCE_ANDROID_UPLOAD_STORE_PASSWORD }}
@@ -171,7 +172,7 @@ jobs:
           cd crates/mobile/android/app/build/outputs/bundle/release
           sha256sum app-release.aab > app-release.aab.sha256
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'workflow_dispatch' && inputs.play_bundle && github.ref == 'refs/heads/main' && !matrix.smoke
+        if: github.event_name == 'workflow_dispatch' && inputs.build_packages && inputs.play_bundle && github.ref == 'refs/heads/main' && matrix.abi == 'arm64-v8a'
         with:
           name: lince-android-arm64-play-bundle
           path: |
@@ -179,3 +180,10 @@ jobs:
             crates/mobile/android/app/build/outputs/bundle/release/app-release.aab.sha256
             crates/mobile/android/app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
           if-no-files-found: error
+      - name: Save compiled inputs
+        if: ${{ !cancelled() && steps.cache.outputs.hit != 'true' && steps.cache.outputs.key != '' }}
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: ${{ steps.cache.outputs.paths }}
+          key: ${{ steps.cache.outputs.key }}

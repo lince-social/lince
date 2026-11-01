@@ -1,4 +1,4 @@
-name: lince-build-release-deploy
+name: Linux Lince and Park
 
 on:
   push:
@@ -7,10 +7,24 @@ on:
       - dev
     tags:
       - 'v*'
+  pull_request:
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - '.cargo/**'
+      - '.github/**'
+      - 'institute/scripts/**'
+      - 'institute/packaging/**'
   workflow_dispatch:
     inputs:
-      validation_candidate:
-        description: Build the Park acceptance candidate without rerunning the broad CI suite
+      build_release:
+        description: Build the optimized Linux binary instead of checks only
+        type: boolean
+        default: true
+      publish_release:
+        description: Publish the built release on main or a version tag
         type: boolean
         default: false
 
@@ -27,23 +41,55 @@ env:
   RUSTFLAGS: "-D warnings"
   CARGO_INCREMENTAL: "0"
   CARGO_TERM_COLOR: always
+  LINCE_CI_LINKER: mold
+  LINCE_BUILD_ENVIRONMENT: "1"
 
 jobs:
+  checks:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && !inputs.build_release)
+    name: Linux compile checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read pinned Rust version
+        id: toolchain
+        run: bash institute/scripts/rust-channel.sh >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.version }}
+      - name: Prepare Linux compiler and libraries
+        run: bash institute/scripts/ci-linux-setup.sh
+      - uses: ./.github/actions/rust-artifacts
+        id: cache
+        with:
+          scope: linux-checks
+      - name: Check Lince, Park and development tools
+        run: |
+          cargo check --locked -p lince -p xtask -p lince-park-clients --features lince/instinct,lince/park --timings
+          cargo check --locked -p lince --no-default-features --features instinct --timings
+      - name: Save compiled inputs
+        if: ${{ !cancelled() && steps.cache.outputs.hit != 'true' && steps.cache.outputs.key != '' }}
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: ${{ steps.cache.outputs.paths }}
+          key: ${{ steps.cache.outputs.key }}
+      - name: Upload compilation timings
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-check-timings
+          path: target/cargo-timings/*.html
+          if-no-files-found: ignore
+          retention-days: 7
   binary:
-    if: github.ref != 'refs/heads/dev'
-    name: binary (${{ matrix.variant }}, ${{ matrix.os }}, ${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
+    if: github.event_name != 'pull_request' && github.ref != 'refs/heads/dev' && (github.event_name != 'workflow_dispatch' || inputs.build_release)
+    name: Linux release
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04]
-        target: [x86_64-unknown-linux-gnu]
-        variant: [native]
-        include:
-          - os: ubuntu-24.04
-            extension: ""
+    env:
+      BUILD_TARGET: x86_64-unknown-linux-gnu
 
     steps:
       - uses: actions/checkout@v4
@@ -58,78 +104,21 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.toolchain.outputs.version }}
-          targets: ${{ matrix.target }}
+          targets: ${{ env.BUILD_TARGET }}
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            mold \
-            pigz \
-            pkg-config \
-            meson \
-            ninja-build \
-            curl \
-            libfontconfig-dev \
-            clang \
-            libclang-dev \
-            libpipewire-0.3-dev \
-            libdbus-1-dev \
-            libglib2.0-dev \
-            libpulse-dev \
-            libspeechd-dev \
-            libva-dev \
-            libssl-dev \
-            libsqlite3-dev \
-            libasound2-dev \
-            libwayland-dev \
-            libxkbcommon-dev \
-            libx11-dev \
-            libxcb1-dev \
-            libxrandr-dev \
-            libxi-dev \
-            libxcursor-dev \
-            libgl1-mesa-dev \
-            libvulkan-dev \
-            libegl1-mesa-dev libgbm-dev libdrm-dev libudev-dev libinput-dev libseat-dev
-          curl --fail --location --retry 3 --output /tmp/libdisplay-info-0.4.0.tar.xz \
-            https://gitlab.freedesktop.org/emersion/libdisplay-info/-/releases/0.4.0/downloads/libdisplay-info-0.4.0.tar.xz
-          printf '%s\n' '43b180baa143e2035654759d84e2b2f5ee77d5fe817c423838c7fe59c0d68459  /tmp/libdisplay-info-0.4.0.tar.xz' | sha256sum --check
-          tar -xf /tmp/libdisplay-info-0.4.0.tar.xz -C /tmp
-          meson setup /tmp/libdisplay-info-build /tmp/libdisplay-info-0.4.0 --prefix=/usr/local --buildtype=release
-          sudo meson install -C /tmp/libdisplay-info-build
-          sudo ldconfig
-          pkg-config --atleast-version=0.4.0 libdisplay-info
-          printf '%s\n' 'RUSTFLAGS=-D warnings -C link-arg=-fuse-ld=mold' >> "$GITHUB_ENV"
-
-      - name: Restore compiled crates
+      - name: Prepare Linux compiler and libraries
+        run: bash institute/scripts/ci-linux-setup.sh
+      - uses: ./.github/actions/rust-artifacts
         id: cache
-        uses: actions/cache/restore@v4
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target/debug
-            target/release
-            target/${{ matrix.target }}/release
-          key: binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-
-            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-${{ hashFiles('.cargo/config.toml') }}-
-            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-
-            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-
-
-      - name: Restore timestamps of unchanged build inputs
-        continue-on-error: true
-        run: python3 -B institute/scripts/ci-source-cache.py
+          scope: linux-release
+          target: ${{ env.BUILD_TARGET }}
 
       - name: Build native Lince
-        if: matrix.variant == 'native'
         timeout-minutes: 105
         env:
           LINCE_REVISION: ${{ github.sha }}
-          BUILD_TARGET: ${{ matrix.target }}
+          BUILD_TARGET: ${{ env.BUILD_TARGET }}
         run: |
           mkdir -p target
           cargo xtask park release --target "$BUILD_TARGET" > target/release-build-info.json
@@ -138,111 +127,41 @@ jobs:
           fi
         shell: bash
 
-      - name: Build headless Lince for NixOS server
-        if: matrix.variant == 'headless'
-        timeout-minutes: 105
-        env:
-          LINCE_REVISION: ${{ github.sha }}
-          BUILD_TARGET: ${{ matrix.target }}
-        shell: bash
+      - name: Package Linux binary
         run: |
-          mkdir -p target
-          cargo xtask park release --target "$BUILD_TARGET" --headless > target/release-build-info.json
-          jq -e '.optimized == true and .features == {ui: false, instinct: true, park: false}' target/release-build-info.json >/dev/null
-
-      - name: Package binary
-        if: matrix.variant == 'native'
-        env:
-          BUILD_TARGET: ${{ matrix.target }}
-          BINARY_EXTENSION: ${{ matrix.extension }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p binary-artifacts package/lince/bin
-          if [[ "$BUILD_TARGET" == *-linux-gnu ]]; then
-            bash institute/packaging/linux/package.sh \
-              "target/$BUILD_TARGET/release/lince" "binary-artifacts/lince-$BUILD_TARGET.tar.gz"
-            exit 0
-          fi
-          install -m755 "target/$BUILD_TARGET/release/lince$BINARY_EXTENSION" "package/lince/bin/lince$BINARY_EXTENSION"
-          install -m644 LICENSE package/lince/LICENSE
-          install -m644 target/release-build-info.json package/lince/build-info.json
-          printf '%s\n' "$GITHUB_SHA" > package/lince/revision
-          if [ "$RUNNER_OS" = Windows ]; then
-            asset="lince-$BUILD_TARGET.zip"
-            7z a "binary-artifacts/$asset" ./package/lince
-          else
-            asset="lince-$BUILD_TARGET.tar.gz"
-            if command -v pigz >/dev/null 2>&1; then
-              tar -I pigz -cf "binary-artifacts/$asset" -C package lince
-            else
-              tar -czf "binary-artifacts/$asset" -C package lince
-            fi
-          fi
-          if command -v sha256sum >/dev/null 2>&1; then
-            (cd binary-artifacts && sha256sum "$asset" > "$asset.sha256")
-          else
-            (cd binary-artifacts && shasum -a 256 "$asset" > "$asset.sha256")
-          fi
-          printf '%s\n' "$BUILD_TARGET" > "binary-artifacts/$asset.target"
+          mkdir -p binary-artifacts
+          bash institute/packaging/linux/package.sh "target/$BUILD_TARGET/release/lince" "binary-artifacts/lince-$BUILD_TARGET.tar.gz"
 
       - name: Upload binaries
-        if: matrix.variant == 'native'
         uses: actions/upload-artifact@v4
         with:
-          name: lince-binary-artifacts-${{ matrix.target }}
+          name: lince-binary-artifacts-${{ env.BUILD_TARGET }}
           path: binary-artifacts/*
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
 
-      - name: Save compiled crates
-        if: ${{ !cancelled() && steps.cache.outputs.cache-primary-key != '' && steps.cache.outputs.cache-hit != 'true' }}
+      - name: Save compiled inputs
+        if: ${{ !cancelled() && steps.cache.outputs.hit != 'true' && steps.cache.outputs.key != '' }}
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target/debug
-            target/release
-            target/${{ matrix.target }}/release
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-
-      - name: Package headless binary
-        if: matrix.variant == 'headless'
-        env:
-          BUILD_TARGET: ${{ matrix.target }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          install -Dm755 "target/$BUILD_TARGET/release/lince" server-artifacts/lince
-          install -m644 target/release-build-info.json server-artifacts/build-info.json
-          printf '%s\n' "$GITHUB_SHA" > server-artifacts/revision
-
-      - name: Upload headless binary
-        if: matrix.variant == 'headless'
-        uses: actions/upload-artifact@v4
-        with:
-          name: lince-server-artifacts-${{ matrix.target }}
-          path: server-artifacts/*
-          if-no-files-found: error
-          retention-days: 7
-          compression-level: 0
+          path: ${{ steps.cache.outputs.paths }}
+          key: ${{ steps.cache.outputs.key }}
 
       - name: Upload build timings
         if: always() && !cancelled()
         uses: actions/upload-artifact@v4
         with:
-          name: build-timings-${{ matrix.variant }}-${{ matrix.target }}
+          name: build-timings-linux-${{ env.BUILD_TARGET }}
           path: |
             target/cargo-timings/*.html
-            target/${{ matrix.target }}/cargo-timings/*.html
+            target/${{ env.BUILD_TARGET }}/cargo-timings/*.html
           if-no-files-found: ignore
           retention-days: 7
 
   publish-rolling:
-    if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || !inputs.validation_candidate) }}
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
     needs: [binary]
     runs-on: ubuntu-latest
     permissions:
@@ -328,7 +247,7 @@ jobs:
           gh release upload "$TAG" release-artifacts/* --clobber --repo "$GH_REPO"
 
   publish-main:
-    if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || !inputs.validation_candidate) }}
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
     needs: [binary]
     runs-on: ubuntu-latest
     permissions:
@@ -389,7 +308,7 @@ jobs:
             --clobber --repo "$GH_REPO"
 
   publish-tag:
-    if: ${{ startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || !inputs.validation_candidate) }}
+    if: ${{ startsWith(github.ref, 'refs/tags/') && (github.event_name != 'workflow_dispatch' || (inputs.build_release && inputs.publish_release)) }}
     needs: [binary]
     runs-on: ubuntu-latest
     permissions:
@@ -469,22 +388,6 @@ jobs:
         with:
           body_path: RELEASE_NOTES.md
           files: release-artifacts/*
-
-  park-checks:
-    needs: [binary, publish-main, publish-rolling, publish-tag]
-    if: ${{ always() && !cancelled() && (needs.binary.result == 'success' || github.ref == 'refs/heads/dev') && (github.event_name != 'workflow_dispatch' || !inputs.validation_candidate) }}
-    uses: ./.github/workflows/park.yml
-    with:
-      advisory: true
-
-  park-validation:
-    needs: [binary, publish-main, publish-rolling, publish-tag]
-    if: ${{ always() && !cancelled() && needs.binary.result == 'success' }}
-    uses: ./.github/workflows/park-validation.yml
-    with:
-      revision: ${{ github.sha }}
-      advisory: true
-      release_artifact: true
 
   deploy-nixos:
     needs: [binary, publish-main, publish-rolling]

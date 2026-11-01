@@ -10,7 +10,6 @@ description = "Shared presentation models and Bevy UI primitives for Lince hosts
 
 [features]
 default = ["ui"]
-dev-dynamic-linking = ["ui", "bevy/dynamic_linking"]
 ui = ["dep:bevy", "dep:fontique", "dep:tokio", "dep:nucleus", "dep:chrono", "dep:accesskit", "dep:parley", "bevy/bevy_picking"]
 models = ["dep:nucleus", "dep:protein", "dep:chrono", "dep:qrcode", "dep:pulldown-cmark"]
 map-presentation = ["ui", "models", "dep:lince-map", "bevy/bevy_render", "bevy/bevy_core_pipeline", "bevy/bevy_ui_render"]

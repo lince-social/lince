@@ -1,0 +1,43 @@
+Park (@park: 0) {
+Park is Lince's native Wayland desktop compositor, hosting ordinary application windows alongside Lince's native interface. Login, bars, launchers, lockers and portals are external programs. A terminal Castle backed by libghostty is distinct from the external Ghostty application.
+
+## Validation scope
+
+The current acceptance scope is native Wayland SDR keyboard/mouse operation. XWayland, accessibility, HDR, VRR, tablet/touch, rotation matrices and the separate workspace refactor are outside this checklist. Existing valid passes retain their original provenance; the remaining work is in institute/anicca/Park.md. Day-to-day use and UX reports continue independently of the finite acceptance checklist.
+
+## Completed implementation and observations
+
+On 2026-10-31, the installed optimized release identified revision 363669ca48d600b5484239c7ae1f21ec4759ed43, with ui, instinct and park enabled. That revision includes DMA-BUF render-device feedback, VT-handoff corrections and repaired flake packaging. The personal NixOS configuration used the public main-binary release input, imported the Park module and provided a UWSM login entry. These are dated observations, not proof of a later running session's identity.
+
+DMA-BUF feedback advertises the EGL renderer's device while preserving accepted format/import restrictions. The earlier wire regression and real external EGL-client comparison passed: the comparison selected llvmpipe without device feedback and Intel Iris Xe hardware with it. This establishes device selection in that fixture, not final desktop video performance.
+
+The VT correction pauses rendering, DRM outputs and input before requesting a different VT, restores on a refused switch and ignores inactive-seat events. Physical recovery was not established by the source check. The older 5daf8c25 release terminated during a controlled VT switch with a page-flip permission error; subsequent teardown errors did not establish the cause.
+
+Ghostty opened after setting terminal.program to ghostty. Automatic park.json creation and executable TERM selection with Ghostty fallback were subsequently implemented in the working tree. Explicit terminal settings take precedence; executable names resolve through PATH without a manually supplied binary path. TERM commonly contains a terminal type rather than an executable, so an unavailable value falls back to Ghostty. The session library check passed; the command regression run was interrupted during compilation. That source work was not demonstrated in the installed desktop.
+
+Earlier installed-release observations covered visible Firefox interaction/fullscreen, a private Ghostty shell, native two-window presentation/lifecycle, bar reservation/release and launcher panel IPC. They do not prove physical keyboard composition, launcher query/launch, normal authentication, hardware-rendered smooth video or saved logout/restart. Earlier position-preview rollback did not establish resolution/scale rollback. No actual display-power cycle passed. Do not transfer these observations silently to another binary.
+
+## Failure evidence and integration boundaries
+
+On 2026-10-31, output mode-setting with AR24 and modifier 72057594037927944 failed state testing with EINVAL, followed by RecoveryFailure for both configuration and rollback. The triggering action is unknown. Relevant code is session.rs and session/display.rs; output-format recovery and lost device ownership are distinct possible causes. Neither the modifier nor a particular user action has been established as the cause.
+
+The old desktop's visible video decoded approximately 60 frames per second but delivered approximately 18 video-frame callbacks per second, with animation around 18 FPS. Decoder progress alone was not a smooth-video pass. Browser callbacks do not establish physical scanout FPS.
+
+The earlier Noctalia power backend attempted a missing wlr-randr executable and failed before Park received a power request. Park supports output-power management and authorized helper spawning through an inherited WAYLAND_SOCKET connection. A child reconnecting through the public socket does not inherit its parent's output-control grant. Output disablement is distinct from confirmed display-power transition; power confirmation is tied to the current epoch with an existing two-second bound. Screenshot permissions are not an output-control channel.
+
+The user chose external Grim/Slurp capture rather than a legacy capture-protocol adapter. Park exposes ext-image-copy-capture. The former region wrapper removed WAYLAND_SOCKET only for Slurp so Grim retained its authorized connection. Providers remain generic external tools, not bar-specific compositor integrations.
+
+Lince data and existing settings are preserved when merging provider configuration. The intended personal keyboard settings were br, repeat rate 35 and delay 300 ms. The content wrapper path is content/lince when setting LINCE_CONTENT. The personal configuration was under /home/user/git/xaviduds/nixos, host computer; the normal session data directory is retained. Niri, the existing greeter and the previous NixOS generation remain available as fallback.
+
+## Test procedure and evidence
+
+Testing and compilation were paused by the user. Editing this documentation does not resume them. Applications run through cargo xtask or Nix shell commands; source validation uses cargo check with warnings treated as errors, existing profiles and incremental output. No cargo clean is needed.
+
+On resuming, the assistant prepares tools, captures evidence and investigates failures. The user performs physical actions and confirms visible results. Ask for one concrete physical action at a time and wait for the answer. Coordinate VT switching, suspend, logout and system activation explicitly. Discover the current Park VT through logind every time; agree on departure and return keys instead of reusing historical VT numbers. Save logs before disruptive actions or reboot, and recover through the existing greeter to Niri if Park exits.
+
+Results are recorded immediately in the existing fixture/observation ledger or run report with action/selector, result, executable revision, relevant inputs, duration and persistent log path. Capture the service invocation and process/executable identity for session recovery checks. The old target/park-validation evidence was absent after reinstall; historical store paths, helpers, PIDs and sockets are not current configuration.
+
+Remove a Markdown task only after its required fix or execution passes, keeping the receipt. Keep failed and deferred tasks; delete the Markdown when no tasks remain. After changes, repeat failures and affected checks only. An exact selector must execute its intended case; zero cases is not a pass. A failed check does not suppress independent observations. No new provider/hardware matrices, stress cycles, resource soaks or duplicate automated suites are required.
+
+Use the verified installed prebuilt candidate for physical acceptance. The existing final runner needs its executable field set to that absolute binary path before initialization and --only B2 selected for installed-package preparation. A null executable can trigger local release compilation; the default A1–A3 selection does not run a physical session. Existing A2 smoke is reused for a corrected final release. Performance observations run without competing compilation or GPU scenes. System activation does not replace an already-running compositor; a coordinated new login selects the replacement executable.
+}

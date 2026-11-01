@@ -222,7 +222,9 @@ impl Runner {
             &encoded,
         ];
         self.adb_with_budget(&args, deadline.saturating_duration_since(Instant::now()))
-            .map_err(ReplyFailure::Uncertain)?;
+            .map_err(|error| ReplyFailure::Uncertain(format!("Submit smoke request: {error}")))?;
+        let mut submitted_pids: std::collections::HashSet<String> =
+            self.seen_pid.iter().cloned().collect();
         let mut pause = Duration::ZERO;
         loop {
             let remaining = deadline.saturating_duration_since(Instant::now());
@@ -233,7 +235,9 @@ impl Runner {
             }
             let output = self
                 .adb_output(&["shell", "pidof", PACKAGE], remaining)
-                .map_err(ReplyFailure::Uncertain)?;
+                .map_err(|error| {
+                    ReplyFailure::Uncertain(format!("Inspect smoke process: {error}"))
+                })?;
             let text = String::from_utf8_lossy(&output.stdout);
             let pids = text.split_whitespace().collect::<Vec<_>>();
             if !output.status.success() && output.status.code() != Some(1) {
@@ -252,11 +256,21 @@ impl Runner {
                         "Smoke APK returned an invalid process identity".into(),
                     ));
                 }
-                if self.seen_pid.as_deref().is_some_and(|seen| seen != *pid) && !self.allow_restart
-                {
+                let changed = self.seen_pid.as_deref().is_some_and(|seen| seen != *pid);
+                if changed && !self.allow_restart {
                     return Err(ReplyFailure::Uncertain(
                         "Smoke APK restarted unexpectedly; inspect logcat.txt".into(),
                     ));
+                }
+                if submitted_pids.insert((*pid).into())
+                    && changed
+                    && self.allow_restart
+                    && request["command"] == "snapshot"
+                {
+                    self.adb_with_budget(&args, deadline.saturating_duration_since(Instant::now()))
+                        .map_err(|error| {
+                            ReplyFailure::Uncertain(format!("Submit restarted snapshot: {error}"))
+                        })?;
                 }
                 self.seen_pid = Some((*pid).into());
                 let logs = self
@@ -264,7 +278,9 @@ impl Runner {
                         &["logcat", "--pid", pid, "-d", "-t", "500"],
                         deadline.saturating_duration_since(Instant::now()),
                     )
-                    .map_err(ReplyFailure::Uncertain)?;
+                    .map_err(|error| {
+                        ReplyFailure::Uncertain(format!("Read smoke acknowledgement: {error}"))
+                    })?;
                 if logs.lines().any(|line| {
                     line.contains("Fatal signal")
                         || line.contains("FATAL EXCEPTION")
@@ -625,16 +641,25 @@ mod tests {
 root=ROOT_TOKEN
 shift 2
 case "$1 $2" in
-  'shell pidof') printf '12345\n' ;;
+  'shell pidof')
+    if test -f "$root/switched"; then printf '54321\n'; else printf '12345\n'; fi ;;
   'shell am')
     for encoded do :; done
     request=$(printf %s "$encoded" | base64 -d)
     id=$(printf %s "$request" | sed -n 's/.*"id":\([0-9]*\).*/\1/p')
     case "$request" in
-      *'"command":"snapshot"'*) printf x >> "$root/snapshots" ;;
+      *'"command":"snapshot"'*)
+        printf x >> "$root/snapshots"
+        if test -f "$root/armed"; then
+          rm "$root/armed" "$root/reply"
+          touch "$root/switched"
+          exit 0
+        fi
+        ;;
       *'"command":"press"'*)
         printf x >> "$root/mutations"
         if test ACK_TOKEN = no; then exit 0; fi
+        if test -f "$root/restart"; then touch "$root/armed"; fi
         ;;
     esac
     printf '{"id":%s,"error":null,"buttons":["Save title"],"done":true}' "$id" > "$root/reply"
@@ -665,6 +690,27 @@ esac
             },
             directory,
         )
+    }
+
+    #[test]
+    fn intentional_restart_resubmits_only_snapshot_once_to_the_new_process() {
+        let (mut runner, directory) = fake(true);
+        fs::write(directory.0.join("restart"), "").unwrap();
+        runner.allow_restart = true;
+        runner
+            .drive(
+                "restart",
+                Some(SmokeAction::Press {
+                    primary: "Save title".into(),
+                    alternate: None,
+                }),
+                Duration::from_secs(2),
+                |snapshot| snapshot["done"] == true,
+            )
+            .unwrap();
+        assert_eq!(runner.seen_pid.as_deref(), Some("54321"));
+        assert_eq!(fs::read(directory.0.join("snapshots")).unwrap(), b"xxx");
+        assert_eq!(fs::read(directory.0.join("mutations")).unwrap(), b"x");
     }
 
     #[test]

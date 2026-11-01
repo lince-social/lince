@@ -220,6 +220,89 @@ fn fixture() -> World {
     world
 }
 
+fn safe_modal(world: &mut World) -> Entity {
+    let roots = world
+        .query_filtered::<Entity, With<crate::safe_area::InsetModal>>()
+        .iter(world)
+        .collect::<Vec<_>>();
+    assert_eq!(roots.len(), 1);
+    roots[0]
+}
+
+fn assert_modal_insets(world: &World, root: Entity, expected: [f32; 4]) {
+    let node = world.get::<Node>(root).unwrap();
+    assert_eq!(
+        [node.left, node.top, node.right, node.bottom],
+        expected.map(px)
+    );
+    assert_eq!(node.padding, UiRect::all(px(18)));
+    assert_eq!(node.overflow, Overflow::scroll_y());
+    assert!(world.get::<Modal>(root).is_some());
+}
+
+#[test]
+fn safe_insets_arriving_before_location_and_visibility_mount_are_retained() {
+    let mut world = fixture();
+    let mut window = Window::default();
+    window.resolution.set_scale_factor_override(Some(2.0));
+    world.spawn(window);
+    world.init_resource::<Messages<lince_interface::visibility::Request>>();
+    crate::safe_area::update(&mut world, [8, 60, 12, 40]);
+    let record = nucleus::new_uid("r");
+    crate::location::open(&mut world, &record, None);
+    let location = safe_modal(&mut world);
+    assert_modal_insets(&world, location, [4.0, 30.0, 6.0, 20.0]);
+    crate::visibility::open(&mut world, &record, nucleus::visibility::Data::LiveLocation);
+    assert!(world.get_entity(location).is_err());
+    let visibility = safe_modal(&mut world);
+    assert_modal_insets(&world, visibility, [4.0, 30.0, 6.0, 20.0]);
+}
+
+#[test]
+fn safe_insets_update_open_modal_on_rotation_and_scale_without_resetting_scroll_or_edit() {
+    let mut world = fixture();
+    let mut window = Window::default();
+    window.resolution.set_scale_factor_override(Some(2.0));
+    let window = world.spawn(window).id();
+    world.init_resource::<Messages<lince_interface::visibility::Request>>();
+    crate::visibility::open(
+        &mut world,
+        &nucleus::new_uid("r"),
+        nucleus::visibility::Data::Place,
+    );
+    let root = safe_modal(&mut world);
+    assert_modal_insets(&world, root, [0.0; 4]);
+    world
+        .entity_mut(root)
+        .insert(ScrollPosition(Vec2::new(0.0, 71.0)));
+    let editor = world
+        .spawn((EditableText::new("unfinished address"), ChildOf(root)))
+        .id();
+    crate::safe_area::update(&mut world, [0, 80, 0, 48]);
+    assert_modal_insets(&world, root, [0.0, 40.0, 0.0, 24.0]);
+    world
+        .get_mut::<Window>(window)
+        .unwrap()
+        .resolution
+        .set_scale_factor_override(Some(1.0));
+    crate::safe_area::refresh(&mut world);
+    assert_modal_insets(&world, root, [0.0, 80.0, 0.0, 48.0]);
+    crate::safe_area::update(&mut world, [30, 0, 70, 0]);
+    assert_modal_insets(&world, root, [30.0, 0.0, 70.0, 0.0]);
+    assert_eq!(
+        world.get::<ScrollPosition>(root).unwrap().0,
+        Vec2::new(0.0, 71.0)
+    );
+    assert_eq!(
+        world
+            .get::<EditableText>(editor)
+            .unwrap()
+            .value()
+            .to_string(),
+        "unfinished address"
+    );
+}
+
 #[test]
 fn person_drafts_are_separate_and_passwords_never_reach_disk() {
     let directory = tempfile::tempdir().unwrap();

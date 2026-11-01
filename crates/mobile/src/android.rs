@@ -682,24 +682,7 @@ pub fn receive(world: &mut World) {
                 world.resource_mut::<crate::app::Mobile>().dirty = true;
             }
             Event::Insets(values) => {
-                let scale = world
-                    .query::<&Window>()
-                    .iter(world)
-                    .next()
-                    .map_or(1.0, Window::scale_factor);
-                let [left, top, right, bottom] =
-                    values.map(|value| px(12.0 + value.max(0) as f32 / scale));
-                for mut node in world
-                    .query_filtered::<&mut Node, With<crate::app::Shell>>()
-                    .iter_mut(world)
-                {
-                    node.padding = UiRect {
-                        left,
-                        top,
-                        right,
-                        bottom,
-                    };
-                }
+                crate::safe_area::update(world, values);
             }
             Event::Back => crate::app::queue_back(world),
             Event::Edit(id, value, committed) => {

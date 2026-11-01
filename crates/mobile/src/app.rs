@@ -300,6 +300,7 @@ impl Plugin for MobilePlugin {
             .add_systems(
                 PostUpdate,
                 (
+                    crate::safe_area::refresh,
                     capture,
                     crate::workflows::persist_draft,
                     flush_on_suspend,

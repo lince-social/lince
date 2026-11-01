@@ -20,6 +20,7 @@ pub mod picker;
 pub mod profiles;
 mod qr;
 pub mod record;
+mod safe_area;
 mod scroll;
 pub mod session;
 #[cfg(all(target_os = "android", feature = "android-smoke", debug_assertions))]

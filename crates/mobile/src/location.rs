@@ -83,22 +83,11 @@ fn open_panel(world: &mut World, record: &str, transfer: Option<&str>, observer:
         crate::session::Identity::Person(person) => Some(person.clone()),
         _ => None,
     };
+    let modal = crate::safe_area::modal(world);
     let parent = world
         .spawn((
             Overlay,
-            crate::app::Modal,
-            Node {
-                position_type: PositionType::Absolute,
-                left: px(0),
-                right: px(0),
-                top: px(0),
-                bottom: px(0),
-                flex_direction: FlexDirection::Column,
-                overflow: Overflow::scroll_y(),
-                padding: UiRect::all(px(18)),
-                row_gap: px(12),
-                ..default()
-            },
+            modal,
             GlobalZIndex(100),
             BackgroundColor(lince_interface::theme::PAPER),
         ))

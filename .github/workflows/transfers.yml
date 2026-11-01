@@ -49,6 +49,11 @@ jobs:
         run: |
           set -o pipefail
           cargo test --no-fail-fast --locked -p lince-interface -p lince-mobile --features lince-interface/native-presentation,lince-mobile/preview --lib -- transfers::workspace::tests transfers::actions::lifecycle_tests transfers::transport:: transport::tests native::transfer_castle:: map_navigation::tests map::tests location::tests visibility::tests workflows::tests confirmation accessibility_bounds::tests safe_insets testing::tests native::laboratory::driver:: native::edit_mode::tests::store_credits_only_appear_in_tabs_and_reselection_keeps_filter native::accessibility::tests::live_status_changes_and_input_labels_are_exposed native::accessibility::actions::tests::accessibility_value_uses_normal_editor_limits_unicode_and_keyboard_ownership native::accessibility::actions::tests::disabled_controls_remain_describable_and_protected_fields_never_export_plain_text_runs native::accessibility::actions::tests::protecting_an_existing_field_retires_its_older_plain_text_description --test-threads=1 2>&1 | tee transfer-validation/regressions.log
+      - name: Run map storage and navigation contracts
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          cargo test --locked -p lince-map --tests -- --test-threads=1 2>&1 | tee transfer-validation/map-contracts.log
       - name: Record source identity
         if: always()
         run: |

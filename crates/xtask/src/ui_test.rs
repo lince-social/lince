@@ -460,7 +460,7 @@ impl Backend for Android {
             if !target.focused {
                 return Dispatch::Unavailable("The fallback target is not focused".into());
             }
-            "input keyevent 66".into()
+            "input keyevent --duration 100 66".into()
         } else {
             match action.kind.as_str() {
                 "tap" => format!(
@@ -487,11 +487,11 @@ impl Backend for Android {
                     }
                 }
                 "key" => match action.key.as_deref().unwrap_or("ENTER") {
-                    "BACK" => "input keyevent 4".into(),
-                    "ENTER" => "input keyevent 66".into(),
-                    "TAB" => "input keyevent 61".into(),
-                    "ESCAPE" => "input keyevent 111".into(),
-                    "DELETE" => "input keyevent 67".into(),
+                    "BACK" => "input keyevent --duration 100 4".into(),
+                    "ENTER" => "input keyevent --duration 100 66".into(),
+                    "TAB" => "input keyevent --duration 100 61".into(),
+                    "ESCAPE" => "input keyevent --duration 100 111".into(),
+                    "DELETE" => "input keyevent --duration 100 67".into(),
                     _ => return Dispatch::Rejected("Unsupported scoped key".into()),
                 },
                 "scroll" => {

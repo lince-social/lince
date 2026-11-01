@@ -172,7 +172,10 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
             ..default()
         });
         let controls = ui::row(world, root);
-        world.entity_mut(controls).insert(ZIndex(2));
+        world.entity_mut(controls).insert((
+            ZIndex(2),
+            crate::native::token_style::background(crate::native::tokens::Token::Surface),
+        ));
         let panel = ui::scroll(world, root);
         world.entity_mut(panel).insert((
             Node {

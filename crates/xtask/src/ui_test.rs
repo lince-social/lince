@@ -107,7 +107,7 @@ fn polls() -> usize {
     8
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 struct Node {
     name: String,
     role: String,
@@ -353,6 +353,92 @@ struct Android {
 }
 
 impl Android {
+    fn reveal(
+        &mut self,
+        initial: &Snapshot,
+        selector: &Selector,
+        action: &Action,
+        remaining: Duration,
+    ) -> Dispatch {
+        let start = Instant::now();
+        let mut snapshot = initial.clone();
+        let mut submitted = false;
+        let result = (|| -> Result<()> {
+            for attempt in 0..=8 {
+                let matches = snapshot
+                    .nodes
+                    .iter()
+                    .filter(|node| {
+                        node.enabled
+                            && node.bounds.is_some()
+                            && matches_filtered(node, selector, action.target_value.as_deref())
+                    })
+                    .count();
+                if matches == 1 {
+                    return Ok(());
+                }
+                if matches > 1 {
+                    return Err("Reveal target is ambiguous".into());
+                }
+                if attempt == 8 || start.elapsed() >= remaining {
+                    return Err("Reveal exhausted its bounded scroll budget".into());
+                }
+                let mut scrolls = snapshot.nodes.iter().filter(|node| {
+                    node.role == "ScrollView" && node.enabled && node.bounds.is_some()
+                });
+                let scroll = scrolls
+                    .next()
+                    .ok_or("Reveal needs a visible enabled ScrollView")?;
+                if scrolls.next().is_some() {
+                    return Err("Reveal ScrollView is ambiguous".into());
+                }
+                let [left, top, right, bottom] = scroll.bounds.unwrap();
+                let (from, to) = match action.direction.as_deref().unwrap_or("down") {
+                    "down" => (top + (bottom - top) * 3 / 4, top + (bottom - top) / 4),
+                    "up" => (top + (bottom - top) / 4, top + (bottom - top) * 3 / 4),
+                    _ => return Err("Reveal direction must be up or down".into()),
+                };
+                if self.owner(remaining.saturating_sub(start.elapsed()))? != snapshot.owner {
+                    return Err("The foreground owner changed before reveal input".into());
+                }
+                if start.elapsed() >= remaining {
+                    return Err("Reveal deadline expired before input".into());
+                }
+                self.cached = None;
+                submitted = true;
+                let output = self
+                    .command(
+                        &format!(
+                            "input swipe {} {from} {} {to} 100",
+                            (left + right) / 2,
+                            (left + right) / 2
+                        ),
+                        remaining.saturating_sub(start.elapsed()),
+                    )
+                    .map_err(|_| "Reveal input acknowledgement is uncertain")?;
+                if !output.status.success() {
+                    return Err("Reveal input acknowledgement is uncertain".into());
+                }
+                let next = self.snapshot(remaining.saturating_sub(start.elapsed()))?;
+                if next.nodes == snapshot.nodes {
+                    return Err("Reveal viewport did not change after scrolling".into());
+                }
+                snapshot = next;
+            }
+            unreachable!()
+        })();
+        match result {
+            Ok(()) => Dispatch::Accepted,
+            Err(error) if submitted => {
+                self.terminal = true;
+                self.diagnostics.push_str("; reveal stopped: ");
+                self.diagnostics.push_str(&error);
+                Dispatch::Accepted
+            }
+            Err(error) => Dispatch::Rejected(error),
+        }
+    }
+
     fn check_status(&self, snapshot: &Snapshot) -> Result<()> {
         if self.reject.iter().any(|target| {
             snapshot
@@ -429,6 +515,9 @@ impl Backend for Android {
     ) -> Dispatch {
         if self.terminal {
             return Dispatch::Rejected("Input acknowledgement is uncertain".into());
+        }
+        if action.kind == "reveal" {
+            return self.reveal(snapshot, selector, action, remaining);
         }
         let start = Instant::now();
         match self.owner(remaining) {
@@ -603,7 +692,7 @@ pub(super) fn run(root: &Path, args: &[OsString]) -> Result<()> {
             r#"{{"device":"SERIAL","report":"results.json","timeout_ms":6000,"max_polls":8,"steps":[{{"name":"Open navigation","target":{{"name":"Pages","role":"Button"}},"action":"tap","expect":{{"visible":"Organ"}}}}]}}"#
         );
         println!(
-            "Actions: tap, text, key, scroll, observe. Each step requires one visible, absent or value postcondition. Explicit fallback_name runs only before accepted input. Failed plans stop the disposable debug app unless keep_open_on_failure is true. Private text values may use {{\"fixture\":\"/json/pointer\"}} with a plan fixture path."
+            "Actions: tap, text, key, scroll, reveal, observe. Reveal scrolls down (or direction up) to an exact target, stopping on an unchanged viewport or after eight scrolls. Each step requires one visible, absent or value postcondition. Explicit fallback_name runs only before accepted input. Failed plans stop the disposable debug app unless keep_open_on_failure is true. Private text values may use {{\"fixture\":\"/json/pointer\"}} with a plan fixture path."
         );
         return Ok(());
     }
@@ -623,9 +712,12 @@ pub(super) fn run(root: &Path, args: &[OsString]) -> Result<()> {
                 + usize::from(step.expect.absent.is_some())
                 + usize::from(step.expect.value.is_some())
                 != 1
+                || step.action == "reveal"
+                    && (step.fallback_name.is_some()
+                        || !matches!(step.direction.as_deref(), None | Some("up" | "down")))
                 || !matches!(
                     step.action.as_str(),
-                    "tap" | "text" | "key" | "scroll" | "observe"
+                    "tap" | "text" | "key" | "scroll" | "reveal" | "observe"
                 )
         })
     {
@@ -915,6 +1007,74 @@ mod tests {
         }
         assert!(encoded.contains("Stop"));
         assert!(encoded.contains("TextView"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn reveal_is_bounded_skips_visible_targets_and_stops_on_unchanged_viewports() {
+        use std::os::unix::fs::PermissionsExt;
+        let scroll = r#"<node package="social.lince.mobile.debug" class="android.widget.ScrollView" bounds="[0,0][400,800]"/>"#;
+        let target = r#"<node package="social.lince.mobile.debug" class="android.widget.Button" text="Save" bounds="[0,700][400,780]"/>"#;
+        for (mode, expected_scrolls, passed) in [
+            ("visible", 0, true),
+            ("one", 1, true),
+            ("stuck", 1, false),
+            ("budget", 8, false),
+        ] {
+            let directory =
+                std::env::temp_dir().join(format!("lince-ui-reveal-{}-{mode}", std::process::id()));
+            fs::create_dir_all(&directory).unwrap();
+            let adb = directory.join("adb");
+            let counter = directory.join("scrolls");
+            fs::write(&counter, "").unwrap();
+            let initial = Snapshot {
+                owner: PACKAGE.into(),
+                nodes: parse(&xml(&format!(
+                    "{scroll}{}",
+                    if mode == "visible" { target } else { "" }
+                )))
+                .unwrap(),
+            };
+            let extra = match mode {
+                "one" => format!("printf '%s' {};", quote(target)),
+                "budget" => "printf '<node package=\"social.lince.mobile.debug\" class=\"android.widget.TextView\" text=\"%s\" bounds=\"[0,0][50,50]\"/>' \"$(wc -l < \"$counter\")\";".into(),
+                _ => String::new(),
+            };
+            fs::write(&adb, format!("#!/bin/sh\ncounter={}\ncase \"$4\" in\n'dumpsys activity activities') printf '%s\\n' 'mResumedActivity: ActivityRecord{{a u0 social.lince.mobile.debug/.MainActivity t1}}';;\nlince_ui_dump=*) printf '%s' {}; {extra} printf '%s' '</hierarchy>';;\n'input swipe '*) printf 'x\\n' >> \"$counter\";;\n*) exit 1;;\nesac\n", quote(counter.to_str().unwrap()), quote(&format!("<hierarchy>{scroll}")))).unwrap();
+            fs::set_permissions(&adb, fs::Permissions::from_mode(0o700)).unwrap();
+            let mut backend = Android {
+                adb,
+                device: "test".into(),
+                allowed: vec![PACKAGE.into()],
+                cached: None,
+                diagnostics: String::new(),
+                terminal: false,
+                reject: vec![],
+            };
+            let result = backend.dispatch(
+                &initial,
+                &Selector::new("Save"),
+                &Action {
+                    kind: "reveal".into(),
+                    value: None,
+                    key: None,
+                    direction: None,
+                    fallback: None,
+                    target_value: None,
+                },
+                Route::Primary,
+                Duration::from_secs(5),
+            );
+            assert!(matches!(result, Dispatch::Accepted));
+            assert_eq!(!backend.terminal, passed, "{mode}");
+            assert_eq!(
+                fs::read_to_string(&counter).unwrap().lines().count(),
+                expected_scrolls,
+                "{mode}"
+            );
+            assert!(!backend.diagnostics.contains("Save"));
+            fs::remove_dir_all(directory).unwrap();
+        }
     }
 
     #[cfg(unix)]

@@ -39,15 +39,10 @@ pub fn publish(world: &mut World) {
         window.physical_width() as f32,
         window.physical_height() as f32,
     );
-    let viewport = world
-        .query_filtered::<(&ComputedNode, &UiGlobalTransform), With<Content>>()
-        .iter(world)
-        .next()
-        .map(|(node, transform)| Rect::from_center_size(transform.translation, node.size()));
     let modal = modal(world);
     let mut items = Vec::new();
-    for (entity, node, transform) in world
-        .query::<(Entity, &ComputedNode, &UiGlobalTransform)>()
+    for entity in world
+        .query_filtered::<Entity, (With<ComputedNode>, With<UiGlobalTransform>)>()
         .iter(world)
     {
         if !within_modal(world, entity, modal) {
@@ -113,23 +108,9 @@ pub fn publish(world: &mut World) {
         if label.is_empty() {
             continue;
         }
-        let mut bounds = Rect::from_center_size(transform.translation, node.size());
-        bounds.min = bounds.min.max(Vec2::ZERO);
-        bounds.max = bounds.max.min(screen);
-        let mut parent = world.get::<ChildOf>(entity).map(ChildOf::parent);
-        while let Some(current) = parent {
-            if world.get::<Content>(current).is_some() {
-                if let Some(viewport) = viewport {
-                    bounds.min = bounds.min.max(viewport.min);
-                    bounds.max = bounds.max.min(viewport.max);
-                }
-                break;
-            }
-            parent = world.get::<ChildOf>(current).map(ChildOf::parent);
-        }
-        if bounds.width() <= 0.0 || bounds.height() <= 0.0 {
+        let Some(bounds) = crate::accessibility_bounds::clipped(world, entity, screen) else {
             continue;
-        }
+        };
         items.push(serde_json::json!({"token":entity.to_bits().to_string(),"kind":kind,"label":label,"password":password,"bounds":[bounds.min.x,bounds.min.y,bounds.max.x,bounds.max.y]}));
     }
     items.sort_by(|a, b| {

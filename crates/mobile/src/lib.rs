@@ -2,6 +2,8 @@
 
 #[cfg(target_os = "android")]
 mod accessibility;
+#[cfg(any(target_os = "android", test))]
+mod accessibility_bounds;
 #[cfg(target_os = "android")]
 mod android;
 pub mod app;
